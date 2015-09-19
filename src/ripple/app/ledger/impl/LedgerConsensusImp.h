@@ -340,6 +340,7 @@ private:
 
     // nodes that have bowed out of this consensus process
     hash_set<NodeID> mDeadNodes;
+    beast::Journal j_;
 };
 
 //------------------------------------------------------------------------------

@@ -65,11 +65,11 @@ DatabaseCon::Setup setup_DatabaseCon (Config const& c)
     return setup;
 }
 
-void DatabaseCon::setupCheckpointing (JobQueue* q)
+void DatabaseCon::setupCheckpointing (JobQueue* q, Logs& l)
 {
     if (! q)
         throw std::logic_error ("No JobQueue");
-    checkpointer_ = makeCheckpointer (session_, *q);
+    checkpointer_ = makeCheckpointer (session_, *q, l);
 }
 
 } // ripple

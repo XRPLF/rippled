@@ -576,7 +576,7 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
 STAmount
 Taker::get_funds (AccountID const& account, STAmount const& amount) const
 {
-    return accountFunds(view_, account, amount, fhZERO_IF_FROZEN);
+    return accountFunds(view_, account, amount, fhZERO_IF_FROZEN, journal_);
 }
 
 TER Taker::transferXRP (
@@ -594,7 +594,7 @@ TER Taker::transferXRP (
     if (amount == zero)
         return tesSUCCESS;
 
-    return ripple::transferXRP (view_, from, to, amount);
+    return ripple::transferXRP (view_, from, to, amount, journal_);
 }
 
 TER Taker::redeemIOU (
@@ -617,7 +617,7 @@ TER Taker::redeemIOU (
     if (get_funds (account, amount) <= zero)
         throw std::logic_error ("redeemIOU has no funds to redeem");
 
-    auto ret = ripple::redeemIOU (view_, account, amount, issue);
+    auto ret = ripple::redeemIOU (view_, account, amount, issue, journal_);
 
     if (get_funds (account, amount) < zero)
         throw std::logic_error ("redeemIOU redeemed more funds than available");
@@ -640,7 +640,7 @@ TER Taker::issueIOU (
     if (amount == zero)
         return tesSUCCESS;
 
-    return ripple::issueIOU (view_, account, amount, issue);
+    return ripple::issueIOU (view_, account, amount, issue, journal_);
 }
 
 // Performs funds transfers to fill the given offer and adjusts offer.

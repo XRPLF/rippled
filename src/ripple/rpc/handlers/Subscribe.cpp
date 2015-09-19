@@ -42,7 +42,7 @@ Json::Value doSubscribe (RPC::Context& context)
     if (!context.infoSub && !context.params.isMember (jss::url))
     {
         // Must be a JSON-RPC call.
-        WriteLog (lsINFO, RPCHandler)
+        JLOG (context.j.info)
             << "doSubscribe: RPC subscribe requires a url";
 
         return rpcError (rpcINVALID_PARAMS);
@@ -71,18 +71,18 @@ Json::Value doSubscribe (RPC::Context& context)
 
         if (!ispSub)
         {
-            WriteLog (lsDEBUG, RPCHandler)
+            JLOG (context.j.debug)
                 << "doSubscribe: building: " << strUrl;
 
             auto rspSub = make_RPCSub (context.app.getOPs (),
                 context.app.getIOService (), context.app.getJobQueue (),
-                    strUrl, strUsername, strPassword);
+                    strUrl, strUsername, strPassword, context.app.logs ());
             ispSub  = context.netOps.addRpcSub (
                 strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
         }
         else
         {
-            WriteLog (lsTRACE, RPCHandler)
+            JLOG (context.j.trace)
                 << "doSubscribe: reusing: " << strUrl;
 
             if (auto rpcSub = std::dynamic_pointer_cast<RPCSub> (ispSub))
@@ -108,7 +108,7 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else if (!context.params[jss::streams].isArray ())
     {
-        WriteLog (lsINFO, RPCHandler)
+        JLOG (context.j.info)
             << "doSubscribe: streams requires an array.";
 
         return rpcError (rpcINVALID_PARAMS);
@@ -194,7 +194,7 @@ Json::Value doSubscribe (RPC::Context& context)
         else
         {
             context.netOps.subAccount (ispSub, ids, false);
-            WriteLog (lsDEBUG, RPCHandler)
+            JLOG (context.j.debug)
                 << "doSubscribe: accounts: " << ids.size ();
         }
     }
@@ -235,7 +235,7 @@ Json::Value doSubscribe (RPC::Context& context)
                     || !to_currency (book.in.currency,
                                      taker_pays[jss::currency].asString ()))
             {
-                WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
+                JLOG (context.j.info) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
@@ -248,7 +248,7 @@ Json::Value doSubscribe (RPC::Context& context)
                      || (!book.in.currency != !book.in.account)
                      || noAccount() == book.in.account)
             {
-                WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
+                JLOG (context.j.info) << "Bad taker_pays issuer.";
 
                 return rpcError (rpcSRC_ISR_MALFORMED);
             }
@@ -258,7 +258,7 @@ Json::Value doSubscribe (RPC::Context& context)
                     || !to_currency (book.out.currency,
                                      taker_gets[jss::currency].asString ()))
             {
-                WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
+                JLOG (context.j.info) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
@@ -271,7 +271,7 @@ Json::Value doSubscribe (RPC::Context& context)
                      || (!book.out.currency != !book.out.account)
                      || noAccount() == book.out.account)
             {
-                WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
+                JLOG (context.j.info) << "Bad taker_gets issuer.";
 
                 return rpcError (rpcDST_ISR_MALFORMED);
             }
@@ -279,7 +279,7 @@ Json::Value doSubscribe (RPC::Context& context)
             if (book.in.currency == book.out.currency
                     && book.in.account == book.out.account)
             {
-                WriteLog (lsINFO, RPCHandler)
+                JLOG (context.j.info)
                     << "taker_gets same as taker_pays.";
                 return rpcError (rpcBAD_MARKET);
             }
@@ -296,7 +296,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
             if (!isConsistent (book))
             {
-                WriteLog (lsWARNING, RPCHandler) << "Bad market: " << book;
+                JLOG (context.j.warning) << "Bad market: " << book;
                 return rpcError (rpcBAD_MARKET);
             }
 

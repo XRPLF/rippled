@@ -29,6 +29,8 @@
 
 namespace ripple {
 
+class Logs;
+
 /** Iterates and consumes raw offers in an order book.
     Offers are presented from highest quality to lowest quality. This will
     return all offers present including missing, invalid, unfunded, etc.
@@ -78,7 +80,7 @@ public:
         @return `true` if there is a next offer
     */
     bool
-    step ();
+    step (Logs& l);
 };
 
 }

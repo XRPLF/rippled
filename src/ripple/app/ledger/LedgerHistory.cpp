@@ -45,9 +45,10 @@ LedgerHistory::LedgerHistory (
     , collector_ (collector)
     , mismatch_counter_ (collector->make_counter ("ledger.history", "mismatch"))
     , m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
-        stopwatch(), app_.logs().journal("TaggedCache"))
+        stopwatch(), app_.journal("TaggedCache"))
     , m_consensus_validated ("ConsensusValidated", 64, 300,
-        stopwatch(), app_.logs().journal("TaggedCache"))
+        stopwatch(), app_.journal("TaggedCache"))
+    , j_ (app.journal ("LedgerHistory"))
 {
 }
 
@@ -135,19 +136,20 @@ Ledger::pointer LedgerHistory::getLedgerByHash (LedgerHash const& hash)
 
 static
 void
-log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
+log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg,
+    beast::Journal& j)
 {
     auto metaData = ledger->txRead(tx).second;
 
     if (metaData != nullptr)
     {
-        WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+        JLOG (j.debug) << "MISMATCH on TX " << tx <<
             ": " << msg << " is missing this transaction:\n" <<
             metaData->getJson (0);
     }
     else
     {
-        WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+        JLOG (j.debug) << "MISMATCH on TX " << tx <<
             ": " << msg << " is missing this transaction.";
     }
 }
@@ -155,15 +157,16 @@ log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg)
 static
 void
 log_metadata_difference(
-    Ledger::pointer builtLedger, Ledger::pointer validLedger, uint256 const& tx)
+    Ledger::pointer builtLedger, Ledger::pointer validLedger, uint256 const& tx,
+    beast::Journal j)
 {
-    auto getMeta = [](Ledger const& ledger,
+    auto getMeta = [j](Ledger const& ledger,
         uint256 const& txID) -> std::shared_ptr<TxMeta>
     {
         auto meta = ledger.txRead(txID).second;
         if (!meta)
             return {};
-        return std::make_shared<TxMeta> (txID, ledger.seq(), *meta);
+        return std::make_shared<TxMeta> (txID, ledger.seq(), *meta, j);
     };
 
     auto validMetaData = getMeta (*validLedger, tx);
@@ -185,7 +188,7 @@ log_metadata_difference(
 
         if (!result_diff && !index_diff && !nodes_diff)
         {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+            JLOG (j.error) << "MISMATCH on TX " << tx <<
                 ": No apparent mismatches detected!";
             return;
         }
@@ -194,31 +197,31 @@ log_metadata_difference(
         {
             if (result_diff && index_diff)
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different result and index!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
+                JLOG (j.debug) << " Built:" <<
                     " Result: " << builtMetaData->getResult () <<
                     " Index: " << builtMetaData->getIndex ();
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
+                JLOG (j.debug) << " Valid:" <<
                     " Result: " << validMetaData->getResult () <<
                     " Index: " << validMetaData->getIndex ();
             }
             else if (result_diff)
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different result!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
+                JLOG (j.debug) << " Built:" <<
                     " Result: " << builtMetaData->getResult ();
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
+                JLOG (j.debug) << " Valid:" <<
                     " Result: " << validMetaData->getResult ();
             }
             else if (index_diff)
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different index!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
+                JLOG (j.debug) << " Built:" <<
                     " Index: " << builtMetaData->getIndex ();
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
+                JLOG (j.debug) << " Valid:" <<
                     " Index: " << validMetaData->getIndex ();
             }
         }
@@ -226,55 +229,55 @@ log_metadata_difference(
         {
             if (result_diff && index_diff)
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different result, index and nodes!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:\n" <<
+                JLOG (j.debug) << " Built:\n" <<
                     builtMetaData->getJson (0);
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:\n" <<
+                JLOG (j.debug) << " Valid:\n" <<
                     validMetaData->getJson (0);
             }
             else if (result_diff)
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different result and nodes!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
+                JLOG (j.debug) << " Built:" <<
                     " Result: " << builtMetaData->getResult () <<
                     " Nodes:\n" << builtNodes.getJson (0);
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
+                JLOG (j.debug) << " Valid:" <<
                     " Result: " << validMetaData->getResult () <<
                     " Nodes:\n" << validNodes.getJson (0);
             }
             else if (index_diff)
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different index and nodes!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
+                JLOG (j.debug) << " Built:" <<
                     " Index: " << builtMetaData->getIndex () <<
                     " Nodes:\n" << builtNodes.getJson (0);
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
+                JLOG (j.debug) << " Valid:" <<
                     " Index: " << validMetaData->getIndex () <<
                     " Nodes:\n" << validNodes.getJson (0);
             }
             else // nodes_diff
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "MISMATCH on TX " << tx <<
+                JLOG (j.debug) << "MISMATCH on TX " << tx <<
                     ": Different nodes!";
-                WriteLog (lsDEBUG, LedgerMaster) << " Built:" <<
+                JLOG (j.debug) << " Built:" <<
                     " Nodes:\n" << builtNodes.getJson (0);
-                WriteLog (lsDEBUG, LedgerMaster) << " Valid:" <<
+                JLOG (j.debug) << " Valid:" <<
                     " Nodes:\n" << validNodes.getJson (0);
             }
         }
     }
     else if (validMetaData != nullptr)
     {
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+        JLOG (j.error) << "MISMATCH on TX " << tx <<
             ": Metadata Difference (built has none)\n" <<
             validMetaData->getJson (0);
     }
     else // builtMetaData != nullptr
     {
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on TX " << tx <<
+        JLOG (j.error) << "MISMATCH on TX " << tx <<
             ": Metadata Difference (valid has none)\n" <<
             builtMetaData->getJson (0);
     }
@@ -308,7 +311,7 @@ void LedgerHistory::handleMismatch (
 
     if (!builtLedger || !validLedger)
     {
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH cannot be analyzed:" <<
+        JLOG (j_.error) << "MISMATCH cannot be analyzed:" <<
             " builtLedger: " << to_string (built) << " -> " << builtLedger <<
             " validLedger: " << to_string (valid) << " -> " << validLedger;
         return;
@@ -322,14 +325,14 @@ void LedgerHistory::handleMismatch (
     if (builtLedger->info().parentHash != validLedger->info().parentHash)
     {
         // Disagreement over prior ledger indicates sync issue
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on prior ledger";
+        JLOG (j_.error) << "MISMATCH on prior ledger";
         return;
     }
 
     if (builtLedger->info().closeTime != validLedger->info().closeTime)
     {
         // Disagreement over close time indicates Byzantine failure
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH on close time";
+        JLOG (j_.error) << "MISMATCH on close time";
         return;
     }
 
@@ -337,16 +340,16 @@ void LedgerHistory::handleMismatch (
     auto const builtTx = leaves(builtLedger->txMap());
     auto const validTx = leaves(validLedger->txMap());
     if (builtTx == validTx)
-        WriteLog (lsERROR, LedgerMaster) <<
+        JLOG (j_.error) <<
             "MISMATCH with same " << builtTx.size() << " transactions";
     else
-        WriteLog (lsERROR, LedgerMaster) << "MISMATCH with " <<
+        JLOG (j_.error) << "MISMATCH with " <<
             builtTx.size() << " built and " <<
             validTx.size() << " valid transactions.";
 
-    WriteLog(lsERROR, LedgerMaster) << "built\n" <<
+    JLOG (j_.error) << "built\n" <<
         getJson(*builtLedger);
-    WriteLog(lsERROR, LedgerMaster) << "valid\n" <<
+    JLOG (j_.error) << "valid\n" <<
         getJson(*validLedger);
 
     // Log all differences between built and valid ledgers
@@ -356,12 +359,12 @@ void LedgerHistory::handleMismatch (
     {
         if ((*b)->key() < (*v)->key())
         {
-            log_one (builtLedger, (*b)->key(), "valid");
+            log_one (builtLedger, (*b)->key(), "valid", j_);
             ++b;
         }
         else if ((*b)->key() > (*v)->key())
         {
-            log_one(validLedger, (*v)->key(), "built");
+            log_one(validLedger, (*v)->key(), "built", j_);
             ++v;
         }
         else
@@ -369,16 +372,16 @@ void LedgerHistory::handleMismatch (
             if ((*b)->peekData() != (*v)->peekData())
             {
                 // Same transaction with different metadata
-                log_metadata_difference(builtLedger, validLedger, (*b)->key());
+                log_metadata_difference(builtLedger, validLedger, (*b)->key(), j_);
             }
             ++b;
             ++v;
         }
     }
     for (; b != builtTx.end(); ++b)
-        log_one (builtLedger, (*b)->key(), "valid");
+        log_one (builtLedger, (*b)->key(), "valid", j_);
     for (; v != validTx.end(); ++v)
-        log_one (validLedger, (*v)->key(), "built");
+        log_one (validLedger, (*v)->key(), "built", j_);
 }
 
 void LedgerHistory::builtLedger (Ledger::ref ledger)
@@ -396,7 +399,7 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
     {
         if (entry->second.isNonZero() && (entry->second != hash))
         {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index
+            JLOG (j_.error) << "MISMATCH: seq=" << index
                 << " validated:" << entry->second
                 << " then:" << hash;
             handleMismatch (hash, entry->first);
@@ -420,7 +423,7 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     {
         if (entry->first.isNonZero() && (entry->first != hash))
         {
-            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index
+            JLOG (j_.error) << "MISMATCH: seq=" << index
                 << " built:" << entry->first
                 << " then:" << hash;
             handleMismatch (entry->first, hash);

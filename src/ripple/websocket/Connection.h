@@ -121,6 +121,7 @@ private:
     weak_connection_ptr m_connection;
 
     int pingFreq_;
+    beast::Journal j_;
 };
 
 template <class WebSocket>
@@ -144,6 +145,7 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
         , m_handler (handler)
         , m_connection (cpConnection)
         , pingFreq_ (app.config ().WEBSOCKET_PING_FREQ)
+        , j_ (app.journal ("ConnectionImpl"))
 {
     // VFALCO Disabled since it might cause hangs
     pingFreq_ = 0;
@@ -159,7 +161,7 @@ template <class WebSocket>
 void ConnectionImpl <WebSocket>::rcvMessage (
     message_ptr const& msg, bool& msgRejected, bool& runQueue)
 {
-    WriteLog (lsWARNING, ConnectionImpl)
+    JLOG (j_.warning)
             << "WebSocket: rcvMessage";
     ScopedLockType sl (m_receiveQueueMutex);
 
@@ -279,7 +281,7 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     else
     {
         RPC::Context context {
-            jvRequest, app_, loadType, m_netOPs, app_.getLedgerMaster(),
+            app_.journal ("RPCHandler"), jvRequest, app_, loadType, m_netOPs, app_.getLedgerMaster(),
             role, {app_, suspend, "WSClient::command"},
             this->shared_from_this ()};
         RPC::doCommand (context, jvResult[jss::result]);
@@ -335,7 +337,7 @@ void ConnectionImpl <WebSocket>::preDestroy ()
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
 {
-    WriteLog (lsWARNING, ConnectionImpl)
+    JLOG (j_.warning)
             << "WebSocket: sending '" << to_string (jvObj);
     connection_ptr ptr = m_connection.lock ();
 
@@ -346,7 +348,7 @@ void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::disconnect ()
 {
-    WriteLog (lsWARNING, ConnectionImpl)
+    JLOG (j_.warning)
             << "WebSocket: disconnecting";
     connection_ptr ptr = m_connection.lock ();
 

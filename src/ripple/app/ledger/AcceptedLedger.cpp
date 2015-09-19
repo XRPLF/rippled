@@ -26,13 +26,13 @@ namespace ripple {
 
 AcceptedLedger::AcceptedLedger (
     std::shared_ptr<ReadView const> const& ledger,
-    AccountIDCache const& accountCache)
+    AccountIDCache const& accountCache, Logs& logs)
     : mLedger (ledger)
 {
     for (auto const& item : ledger->txs)
     {
         insert (std::make_shared<AcceptedLedgerTx>(
-            ledger, item.first, item.second, accountCache));
+            ledger, item.first, item.second, accountCache, logs));
     }
 }
 

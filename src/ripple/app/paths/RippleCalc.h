@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/app/paths/PathState.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
 
@@ -98,6 +99,7 @@ public:
         // A set of paths that are included in the transaction that we'll
         // explore for liquidity.
         STPathSet const& spsPaths,
+        Logs& l,
         Input const* const pInputs = nullptr);
 
     // The view we are currently working on
@@ -114,6 +116,8 @@ public:
 
     // Map of currency, issuer to node index.
     AccountIssueToNodeIndex mumSource_;
+    beast::Journal j_;
+    Logs& logs_;
 
 private:
     RippleCalc (
@@ -123,8 +127,11 @@ private:
 
         AccountID const& uDstAccountID,
         AccountID const& uSrcAccountID,
-        STPathSet const& spsPaths)
+        STPathSet const& spsPaths,
+        Logs& l)
             : view (view_),
+              j_ (l.journal ("RippleCalc")),
+              logs_ (l),
               saDstAmountReq_(saDstAmountReq),
               saMaxAmountReq_(saMaxAmountReq),
               uDstAccountID_(uDstAccountID),

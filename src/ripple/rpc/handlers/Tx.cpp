@@ -126,7 +126,8 @@ Json::Value doTx (RPC::Context& context)
             auto rawMeta = lgr->txRead (txn->getID()).second;
             if (rawMeta)
             {
-                auto txMeta = std::make_shared <TxMeta> (txn->getID(), lgr->seq(), *rawMeta);
+                auto txMeta = std::make_shared<TxMeta> (txn->getID (),
+                    lgr->seq (), *rawMeta, context.app.journal ("TxMeta"));
                 okay = true;
                 auto meta = txMeta->getJson (0);
                 addPaymentDeliveredAmount (meta, context, txn, txMeta);

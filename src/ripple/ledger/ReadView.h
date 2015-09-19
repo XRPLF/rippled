@@ -29,6 +29,7 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/XRPAmount.h>
 #include <beast/hash/uhash.h>
+#include <beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <cstdint>
@@ -208,13 +209,13 @@ public:
     ReadView& operator= (ReadView&& other) = delete;
     ReadView& operator= (ReadView const& other) = delete;
 
-    ReadView()
+    ReadView ()
         : sles(*this)
         , txs(*this)
     {
     }
 
-    ReadView (ReadView const&)
+    ReadView (ReadView const& other)
         : sles(*this)
         , txs(*this)
     {
@@ -392,6 +393,9 @@ class DigestAwareReadView
 {
 public:
     using digest_type = uint256;
+
+    DigestAwareReadView () = default;
+    DigestAwareReadView (const DigestAwareReadView&) = default;
 
     /** Return the digest associated with the key.
 

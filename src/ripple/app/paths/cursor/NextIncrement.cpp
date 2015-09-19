@@ -39,7 +39,7 @@ void PathCursor::nextIncrement () const
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
     // VFALCO-FIXME this generates errors
-    // WriteLog (lsTRACE, RippleCalc)
+    // JLOG (j_.trace)
     //     << "nextIncrement: Path In: " << pathState_.getJson ();
 
     auto status = liquidity();
@@ -61,7 +61,7 @@ void PathCursor::nextIncrement () const
             pathState_.outPass(), pathState_.inPass()));
 
         // VFALCO-FIXME this generates errors
-        // WriteLog (lsTRACE, RippleCalc)
+        // JLOG (j_.trace)
         //     << "nextIncrement: Path after forward: " << pathState_.getJson ();
     }
     else

@@ -74,7 +74,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
 
 std::shared_ptr<SHAMapAbstractNode>
 SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
-                         uint256 const& hash, bool hashValid)
+                         uint256 const& hash, bool hashValid, beast::Journal j)
 {
     if (format == snfWIRE)
     {
@@ -181,7 +181,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
     {
         if (rawNode.size () < 4)
         {
-            WriteLog (lsINFO, SHAMapNodeID) << "size < 4";
+            JLOG (j.info) << "size < 4";
             throw std::runtime_error ("invalid P node");
         }
 
@@ -214,7 +214,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
 
             if (u.isZero ())
             {
-                WriteLog (lsINFO, SHAMapNodeID) << "invalid PLN node";
+                JLOG (j.info) << "invalid PLN node";
                 throw std::runtime_error ("invalid PLN node");
             }
 
@@ -257,7 +257,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         }
         else
         {
-            WriteLog (lsINFO, SHAMapNodeID) << "Unknown node prefix " << std::hex << prefix << std::dec;
+            JLOG (j.info) << "Unknown node prefix " << std::hex << prefix << std::dec;
             throw std::runtime_error ("invalid node prefix");
         }
     }

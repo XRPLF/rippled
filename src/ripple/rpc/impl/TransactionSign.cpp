@@ -206,13 +206,14 @@ static Json::Value checkPayment(
                 fullLiquidityPath,
                 app);
 
+            auto j = app.journal ("RPCHandler");
             if (! result)
             {
-                WriteLog (lsDEBUG, RPCHandler)
+                JLOG (j.debug)
                     << "transactionSign: build_path: No paths found.";
                 return rpcError (rpcNO_PATH);
             }
-            WriteLog (lsDEBUG, RPCHandler)
+            JLOG (j.debug)
                 << "transactionSign: build_path: "
                 << result->getJson (0);
 
@@ -335,6 +336,8 @@ transactionPreProcessImpl (
     Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
+    auto j = app.journal ("RPCHandler");
+
     KeyPair keypair;
     {
         Json::Value jvResult;
@@ -373,7 +376,7 @@ transactionPreProcessImpl (
     if (verify && !sle)
     {
         // If not offline and did not find account, error.
-        WriteLog (lsDEBUG, RPCHandler)
+        JLOG (j.debug)
             << "transactionSign: Failed to find source account "
             << "in current ledger: "
             << toBase58(srcAddressID);
@@ -412,7 +415,7 @@ transactionPreProcessImpl (
         {
             if (! sle)
             {
-                WriteLog (lsDEBUG, RPCHandler)
+                JLOG (j.debug)
                 << "transactionSign: Failed to find source account "
                 << "in current ledger: "
                 << toBase58(srcAddressID);
@@ -432,7 +435,7 @@ transactionPreProcessImpl (
             // XXX Ignore transactions for accounts not created.
             return rpcError (rpcSRC_ACT_NOT_FOUND);
 
-        WriteLog (lsTRACE, RPCHandler)
+        JLOG (j.trace)
             << "verify: " << toBase58(calcAccountID(keypair.publicKey))
             << " : " << toBase58(srcAddressID);
 
@@ -656,9 +659,10 @@ Json::Value transactionSign (
     Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
-    WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << jvRequest;
-
     using namespace detail;
+
+    auto j = app.journal ("RPCHandler");
+    JLOG (j.debug) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -689,9 +693,11 @@ Json::Value transactionSubmit (
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction)
 {
-    WriteLog (lsDEBUG, RPCHandler) << "transactionSubmit: " << jvRequest;
-
     using namespace detail;
+
+    auto j = app.journal ("RPCHandler");
+    JLOG (j.debug) << "transactionSubmit: " << jvRequest;
+
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -762,7 +768,8 @@ Json::Value transactionSignFor (
     Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
-    WriteLog (lsDEBUG, RPCHandler) << "transactionSignFor: " << jvRequest;
+    auto j = app.journal ("RPCHandler");
+    JLOG (j.debug) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
     const char accountField[] = "account";
@@ -863,7 +870,8 @@ Json::Value transactionSubmitMultiSigned (
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction)
 {
-    WriteLog (lsDEBUG, RPCHandler)
+    auto j = app.journal ("RPCHandler");
+    JLOG (j.debug)
         << "transactionSubmitMultiSigned: " << jvRequest;
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
@@ -892,7 +900,7 @@ Json::Value transactionSubmitMultiSigned (
     if (!sle)
     {
         // If did not find account, error.
-        WriteLog (lsDEBUG, RPCHandler)
+        JLOG (j.debug)
             << "transactionSubmitMultiSigned: Failed to find source account "
             << "in current ledger: "
             << toBase58(srcAddressID);

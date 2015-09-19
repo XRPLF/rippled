@@ -58,6 +58,7 @@ private:
 
     std::shared_ptr<SHAMap> mMap;
     bool                    mHaveRoot;
+    beast::Journal          j_;
 
     void onTimer (bool progress, ScopedLockType& peerSetLock);
 

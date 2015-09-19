@@ -1685,7 +1685,8 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
             }
 
             ret.emplace_back (txn, std::make_shared<TxMeta> (
-                txn->getID (), txn->getLedger (), txnMeta));
+                txn->getID (), txn->getLedger (), txnMeta,
+                app_.journal ("TxMeta")));
         }
     }
 
@@ -2027,7 +2028,7 @@ void NetworkOPsImp::pubProposedTransaction (
         }
     }
     AcceptedLedgerTx alt (lpCurrent, stTxn, terResult,
-        app_.accountIDCache());
+        app_.accountIDCache(), app_.logs());
     m_journal.trace << "pubProposed: " << alt.getJson ();
     pubAccountTransaction (lpCurrent, alt, false);
 }
@@ -2042,7 +2043,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref lpAccepted)
     if (! alpAccepted)
     {
         alpAccepted = std::make_shared<AcceptedLedger> (
-            lpAccepted, app_.accountIDCache());
+            lpAccepted, app_.accountIDCache(), app_.logs());
         app_.getAcceptedLedgerCache().canonicalize (
             lpAccepted->info().hash, alpAccepted);
     }
@@ -2153,7 +2154,7 @@ Json::Value NetworkOPsImp::transJson(
         if (account != amount.issue ().account)
         {
             auto const ownerFunds = accountFunds(*lpCurrent,
-                account, amount, fhIGNORE_FREEZE);
+                account, amount, fhIGNORE_FREEZE, app_.journal ("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }
@@ -2585,6 +2586,7 @@ void NetworkOPsImp::getBookPage (
     STAmount        saDirRate;
 
     auto uTransferRate = rippleTransferRate(view, book.out.account);
+    auto viewJ = app_.journal ("View");
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
     if (! bAdmin && left > 300)
@@ -2615,7 +2617,7 @@ void NetworkOPsImp::getBookPage (
                 saDirRate = amountFromQuality (getQuality (uTipIndex));
 
                 cdirFirst (view,
-                    uTipIndex, sleOfferDir, uBookEntry, offerIndex);
+                    uTipIndex, sleOfferDir, uBookEntry, offerIndex, viewJ);
 
                 m_journal.trace << "getBookPage:   uTipIndex=" << uTipIndex;
                 m_journal.trace << "getBookPage: offerIndex=" << offerIndex;
@@ -2665,7 +2667,7 @@ void NetworkOPsImp::getBookPage (
 
                         saOwnerFunds = accountHolds (view,
                             uOfferOwnerID, book.out.currency,
-                                book.out.account, fhZERO_IF_FROZEN);
+                                book.out.account, fhZERO_IF_FROZEN, viewJ);
 
                         if (saOwnerFunds < zero)
                         {
@@ -2745,7 +2747,7 @@ void NetworkOPsImp::getBookPage (
             }
 
             if (! cdirNext(view,
-                    uTipIndex, sleOfferDir, uBookEntry, offerIndex))
+                    uTipIndex, sleOfferDir, uBookEntry, offerIndex, viewJ))
             {
                 bDirectAdvance  = true;
             }

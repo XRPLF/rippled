@@ -111,7 +111,9 @@ public:
     }
 
 private:
-    static void timerEntry (std::weak_ptr<PeerSet>, const boost::system::error_code& result);
+    static void timerEntry (
+        std::weak_ptr<PeerSet>, const boost::system::error_code& result,
+        beast::Journal j);
     static void timerJobEntry (std::shared_ptr<PeerSet>);
 
 protected:

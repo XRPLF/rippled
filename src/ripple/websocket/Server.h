@@ -40,6 +40,7 @@ private:
 
     ServerDescription desc_;
     LockType m_endpointLock;
+    beast::Journal j_;
     typename WebSocket::EndpointPtr m_endpoint;
 
 public:
@@ -47,6 +48,7 @@ public:
        : beast::Stoppable (WebSocket::versionName(), desc.source)
         , Thread ("websocket")
         , desc_(desc)
+       , j_ (desc.app.journal ("WebSocket"))
     {
         startThread ();
     }
@@ -59,7 +61,7 @@ public:
 private:
     void run () override
     {
-        WriteLog (lsWARNING, WebSocket)
+        JLOG (j_.warning)
             << "Websocket: creating endpoint " << desc_.port;
 
         auto handler = WebSocket::makeHandler (desc_);
@@ -68,7 +70,7 @@ private:
             m_endpoint = WebSocket::makeEndpoint (std::move (handler));
         }
 
-        WriteLog (lsWARNING, WebSocket)
+        JLOG (j_.warning)
             << "Websocket: listening on " << desc_.port;
 
         listen();
@@ -77,17 +79,17 @@ private:
             m_endpoint.reset();
         }
 
-        WriteLog (lsWARNING, WebSocket)
+        JLOG (j_.warning)
             << "Websocket: finished listening on " << desc_.port;
 
         stopped ();
-        WriteLog (lsWARNING, WebSocket)
+        JLOG (j_.warning)
             << "Websocket: stopped on " << desc_.port;
     }
 
     void onStop () override
     {
-        WriteLog (lsWARNING, WebSocket)
+        JLOG (j_.warning)
             << "Websocket: onStop " << desc_.port;
 
         typename WebSocket::EndpointPtr endpoint;

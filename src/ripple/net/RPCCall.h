@@ -40,7 +40,8 @@ namespace RPCCall {
 
 int fromCommandLine (
     Config const& config,
-    const std::vector<std::string>& vCmd);
+    const std::vector<std::string>& vCmd,
+    Logs& logs);
 
 void fromNetwork (
     boost::asio::io_service& io_service,
@@ -48,6 +49,7 @@ void fromNetwork (
     std::string const& strUsername, std::string const& strPassword,
     std::string const& strPath, std::string const& strMethod,
     Json::Value const& jvParams, const bool bSSL, bool quiet,
+    Logs& logs,
     std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> ());
 }
 
