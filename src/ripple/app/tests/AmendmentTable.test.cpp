@@ -104,7 +104,7 @@ private:
         return make_AmendmentTable (
             weeks (w),
             majorityFraction,
-            deprecatedLogs().journal("TestAmendmentTable"));
+            beast::Journal{});
     };
 
     // Create the amendments by string pairs instead of AmendmentNames

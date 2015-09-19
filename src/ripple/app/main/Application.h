@@ -91,6 +91,7 @@ public:
 
     virtual ~Application () = default;
     virtual Config const& config() const = 0;
+    virtual Logs& logs() = 0;
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual Family&                 family() = 0;

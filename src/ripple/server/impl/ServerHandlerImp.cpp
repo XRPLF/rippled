@@ -61,10 +61,10 @@ ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     : ServerHandler (parent)
     , app_ (app)
     , m_resourceManager (resourceManager)
-    , m_journal (deprecatedLogs().journal("Server"))
+    , m_journal (app_.logs().journal("Server"))
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
-        *this, io_service, deprecatedLogs().journal("Server")))
+        *this, io_service, app_.logs().journal("Server")))
     , m_jobQueue (jobQueue)
 {
     auto const& group (cm.group ("rpc"));

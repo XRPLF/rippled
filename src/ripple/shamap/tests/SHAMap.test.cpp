@@ -62,7 +62,7 @@ public:
         h4.SetHex ("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
         h5.SetHex ("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-        SHAMap sMap (SHAMapType::FREE, f, beast::Journal());
+        SHAMap sMap (SHAMapType::FREE, f);
         SHAMapItem i1 (h1, IntToVUC (1)), i2 (h2, IntToVUC (2)), i3 (h3, IntToVUC (3)), i4 (h4, IntToVUC (4)), i5 (h5, IntToVUC (5));
         unexpected (!sMap.addItem (i2, true, false), "no add");
         unexpected (!sMap.addItem (i1, true, false), "no add");
@@ -118,7 +118,7 @@ public:
             hashes[6].SetHex ("76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF94361143615");
             hashes[7].SetHex ("DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230E5");
 
-            SHAMap map (SHAMapType::FREE, f, beast::Journal());
+            SHAMap map (SHAMapType::FREE, f);
 
             expect (map.getHash() == uint256(), "bad initial empty map hash");
             for (int i = 0; i < keys.size(); ++i)

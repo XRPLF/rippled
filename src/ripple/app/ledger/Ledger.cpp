@@ -172,9 +172,9 @@ public:
 Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     : mImmutable (false)
     , txMap_  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        family, deprecatedLogs().journal("SHAMap")))
+        family))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        family, deprecatedLogs().journal("SHAMap")))
+        family))
 {
     info_.seq = 1;
     info_.drops = SYSTEM_CURRENCY_START;
@@ -208,10 +208,9 @@ Ledger::Ledger (uint256 const& parentHash,
                 Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, transHash, family,
-                deprecatedLogs().journal("SHAMap")))
+        SHAMapType::TRANSACTION, transHash, family))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
-        family, deprecatedLogs().journal("SHAMap")))
+        family))
 {
     info_.seq = ledgerSeq;
     info_.parentCloseTime = parentCloseTime;
@@ -268,7 +267,7 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger,
     NetClock::time_point closeTime)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        prevLedger.stateMap_->family(), deprecatedLogs().journal("SHAMap")))
+        prevLedger.stateMap_->family()))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
     , fees_(prevLedger.fees_)
 {
@@ -301,11 +300,9 @@ Ledger::Ledger (void const* data,
         Config const& config, Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family,
-            deprecatedLogs().journal("SHAMap")))
+          SHAMapType::TRANSACTION, family))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family,
-            deprecatedLogs().journal("SHAMap")))
+          SHAMapType::STATE, family))
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix, family);
@@ -317,11 +314,9 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
             Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family,
-            deprecatedLogs().journal("SHAMap")))
+          SHAMapType::TRANSACTION, family))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family,
-            deprecatedLogs().journal("SHAMap")))
+          SHAMapType::STATE, family))
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
@@ -395,9 +390,9 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
     info_.closeFlags = sit.get8 ();
     updateHash ();
     txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
-        family, deprecatedLogs().journal("SHAMap"));
+        family);
     stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
-        family, deprecatedLogs().journal("SHAMap"));
+        family);
 }
 
 void Ledger::addRaw (Serializer& s) const

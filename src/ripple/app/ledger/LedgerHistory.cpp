@@ -45,9 +45,9 @@ LedgerHistory::LedgerHistory (
     , collector_ (collector)
     , mismatch_counter_ (collector->make_counter ("ledger.history", "mismatch"))
     , m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
-        stopwatch(), deprecatedLogs().journal("TaggedCache"))
+        stopwatch(), app_.logs().journal("TaggedCache"))
     , m_consensus_validated ("ConsensusValidated", 64, 300,
-        stopwatch(), deprecatedLogs().journal("TaggedCache"))
+        stopwatch(), app_.logs().journal("TaggedCache"))
 {
 }
 
