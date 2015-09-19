@@ -134,8 +134,8 @@ public:
 
         if (object1.getSerializer () == object2.getSerializer ())
         {
-            WriteLog (lsINFO, STObject) << "O1: " << object1.getJson (0);
-            WriteLog (lsINFO, STObject) << "O2: " << object2.getJson (0);
+            log << "O1: " << object1.getJson (0);
+            log << "O2: " << object2.getJson (0);
             fail ("STObject error 4");
         }
         else

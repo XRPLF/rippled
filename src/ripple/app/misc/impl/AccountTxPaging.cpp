@@ -50,7 +50,7 @@ convertBlobsToTxResult (
     tr->setLedger (ledger_index);
 
     auto metaset = std::make_shared<TxMeta> (
-        tr->getID (), tr->getLedger (), rawMeta);
+        tr->getID (), tr->getLedger (), rawMeta, app.journal ("TxMeta"));
 
     to.emplace_back(std::move(tr), metaset);
 };

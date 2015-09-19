@@ -60,7 +60,7 @@ enum
 InboundLedger::InboundLedger (
     Application& app, uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
     : PeerSet (app, hash, ledgerAcquireTimeoutMillis, false, clock,
-        app.logs().journal("InboundLedger"))
+        app.journal("InboundLedger"))
     , mHaveHeader (false)
     , mHaveState (false)
     , mHaveTransactions (false)
@@ -72,7 +72,7 @@ InboundLedger::InboundLedger (
     , mReceiveDispatched (false)
 {
 
-    if (m_journal.trace) m_journal.trace <<
+    JLOG (m_journal.trace) <<
         "Acquiring ledger " << mHash;
 }
 
@@ -295,7 +295,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         mByHash = true;
 
         std::size_t pc = getPeerCount ();
-        WriteLog (lsDEBUG, InboundLedger) <<
+        JLOG (m_journal.debug) <<
             "No progress(" << pc <<
             ") for ledger " << mHash;
 

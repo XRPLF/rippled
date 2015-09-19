@@ -237,10 +237,11 @@ SetSignerList::replaceSignerList ()
     view().insert (signerList);
     writeSignersToSLE (signerList);
 
+    auto viewJ = ctx_.app.journal ("View");
     // Add the signer list to the account's directory.
     std::uint64_t hint;
     TER result = dirAdd(ctx_.view (), hint, ownerDirKeylet.key,
-        signerListKeylet.key, describeOwnerDir (account_));
+        signerListKeylet.key, describeOwnerDir (account_), viewJ);
 
     JLOG(j_.trace) << "Create signer list for account " <<
         toBase58(account_) << ": " << transHuman (result);
@@ -251,7 +252,7 @@ SetSignerList::replaceSignerList ()
     signerList->setFieldU64 (sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount);
+    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
 
     return result;
 }
@@ -291,12 +292,13 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
     // Remove the node from the account directory.
     auto const hint = (*signers)[sfOwnerNode];
 
+    auto viewJ = ctx_.app.journal ("View");
     TER const result  = dirDelete(ctx_.view(), false, hint,
-        ownerDirKeylet.key, signerListKeylet.key, false, (hint == 0));
+        ownerDirKeylet.key, signerListKeylet.key, false, (hint == 0), viewJ);
 
     if (result == tesSUCCESS)
         adjustOwnerCount(view(),
-            view().peek(accountKeylet), removeFromOwnerCount);
+            view().peek(accountKeylet), removeFromOwnerCount, viewJ);
 
     ctx_.view().erase (signers);
 

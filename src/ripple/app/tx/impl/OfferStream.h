@@ -113,7 +113,7 @@ public:
         @return `true` if there is a valid offer.
     */
     bool
-    step ();
+    step (Logs& l);
 };
 
 }

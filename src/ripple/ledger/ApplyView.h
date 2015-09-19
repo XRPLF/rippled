@@ -109,6 +109,9 @@ class ApplyView
     : public ReadView
 {
 public:
+
+    ApplyView () = default;
+
     /** Returns the tx apply flags.
 
         Flags can affect the outcome of transaction

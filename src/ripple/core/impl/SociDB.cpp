@@ -185,8 +185,8 @@ namespace {
 class WALCheckpointer : public Checkpointer
 {
 public:
-    WALCheckpointer (sqlite_api::sqlite3& conn, JobQueue& q)
-            : conn_ (conn), jobQueue_ (q)
+    WALCheckpointer (sqlite_api::sqlite3& conn, JobQueue& q, Logs& logs)
+            : conn_ (conn), jobQueue_ (q), j_ (logs.journal ("WALCheckpointer"))
     {
         sqlite_api::sqlite3_wal_hook (&conn_, &sqliteWALHook, this);
     }
@@ -199,6 +199,7 @@ private:
     JobQueue& jobQueue_;
 
     bool running_ = false;
+    beast::Journal j_;
 
     static
     int sqliteWALHook (
@@ -235,13 +236,13 @@ private:
         auto fname = sqlite3_db_filename (&conn_, "main");
         if (ret != SQLITE_OK)
         {
-            WriteLog ((ret == SQLITE_LOCKED) ? lsTRACE : lsWARNING,
-                      WALCheckpointer)
+            auto& jm = (ret == SQLITE_LOCKED) ? j_.trace : j_.warning;
+            JLOG (jm)
                 << "WAL(" << fname << "): error " << ret;
         }
         else
         {
-            WriteLog (lsTRACE, WALCheckpointer)
+            JLOG (j_.trace)
                 << "WAL(" << fname << "): frames="
                 << log << ", written=" << ckpt;
         }
@@ -254,10 +255,10 @@ private:
 } // namespace
 
 std::unique_ptr <Checkpointer> makeCheckpointer (
-    soci::session& session, JobQueue& queue)
+    soci::session& session, JobQueue& queue, Logs& logs)
 {
     if (auto conn = getConnection (session))
-        return std::make_unique <WALCheckpointer> (*conn, queue);
+        return std::make_unique <WALCheckpointer> (*conn, queue, logs);
     return {};
 }
 

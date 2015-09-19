@@ -126,6 +126,8 @@ private:
 
     // Maps ledger indexes to the corresponding hash.
     std::map <LedgerIndex, LedgerHash> mLedgersByIndex; // validated ledgers
+
+    beast::Journal j_;
 };
 
 } // ripple

@@ -107,7 +107,8 @@ public:
             std::uint64_t totDrops, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
             std::uint32_t ledgerSeq, bool & loaded, Config const& config,
-            Family& family);
+            Family& family,
+            beast::Journal j);
 
     // Create a new ledger that's a snapshot of this one
     Ledger (Ledger const& target, bool isMutable);
@@ -330,9 +331,9 @@ public:
     std::vector<uint256> getNeededAccountStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
-    bool walkLedger () const;
+    bool walkLedger (beast::Journal j) const;
 
-    bool assertSane ();
+    bool assertSane (beast::Journal ledgerJ);
 
 private:
     class sles_iter_impl;

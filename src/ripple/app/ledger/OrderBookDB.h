@@ -82,6 +82,8 @@ private:
     BookToListenersMap mListeners;
 
     std::uint32_t mSeq;
+
+    beast::Journal j_;
 };
 
 } // ripple

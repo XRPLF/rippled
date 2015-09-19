@@ -185,7 +185,7 @@ private:
 
     ManifestDisposition
     canApply (PublicKey const& pk, std::uint32_t seq,
-        beast::Journal const& journal) const;
+        beast::Journal journal) const;
 
 public:
     ManifestCache() = default;
@@ -193,17 +193,17 @@ public:
     ManifestCache& operator= (ManifestCache const&) = delete;
     ~ManifestCache() = default;
 
-    void configValidatorKey(std::string const& line, beast::Journal const& journal);
-    void configManifest (Manifest m, UniqueNodeList& unl, beast::Journal const& journal);
+    void configValidatorKey(std::string const& line, beast::Journal journal);
+    void configManifest (Manifest m, UniqueNodeList& unl, beast::Journal journal);
 
     void addTrustedKey (PublicKey const& pk, std::string comment);
 
     ManifestDisposition
     applyManifest (
-        Manifest m, UniqueNodeList& unl, beast::Journal const& journal);
+        Manifest m, UniqueNodeList& unl, beast::Journal journal);
 
     void load (
-        DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal const& journal);
+        DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal journal);
     void save (DatabaseCon& dbCon) const;
 
     // A "for_each" for populated manifests only

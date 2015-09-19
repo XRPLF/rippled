@@ -30,6 +30,8 @@
 
 namespace ripple {
 
+class Logs;
+
 class JobQueue : public beast::Stoppable
 {
 protected:
@@ -82,7 +84,7 @@ public:
 
 std::unique_ptr <JobQueue>
 make_JobQueue (beast::insight::Collector::ptr const& collector,
-    beast::Stoppable& parent, beast::Journal journal);
+    beast::Stoppable& parent, beast::Journal journal, Logs& logs);
 
 }
 

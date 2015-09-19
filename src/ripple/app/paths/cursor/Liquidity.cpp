@@ -34,14 +34,14 @@ TER PathCursor::liquidity () const
 
     for (pc.nodeIndex_ = pc.nodeSize(); pc.nodeIndex_--; )
     {
-        WriteLog (lsTRACE, RippleCalc)
+        JLOG (j_.trace)
             << "reverseLiquidity>"
             << " nodeIndex=" << pc.nodeIndex_
             << ".issue_.account=" << to_string (pc.node().issue_.account);
 
         resultCode  = pc.reverseLiquidity();
 
-        WriteLog (lsTRACE, RippleCalc)
+        JLOG (j_.trace)
             << "reverseLiquidity< "
             << "nodeIndex=" << pc.nodeIndex_
             << " resultCode=" << transToken (resultCode)
@@ -53,7 +53,7 @@ TER PathCursor::liquidity () const
     }
 
     // VFALCO-FIXME this generates errors
-    // WriteLog (lsTRACE, RippleCalc)
+    // JLOG (j_.trace)
     //     << "nextIncrement: Path after reverse: " << pathState_.getJson ();
 
     if (resultCode != tesSUCCESS)
@@ -63,14 +63,14 @@ TER PathCursor::liquidity () const
 
     for (pc.nodeIndex_ = 0; pc.nodeIndex_ < pc.nodeSize(); ++pc.nodeIndex_)
     {
-        WriteLog (lsTRACE, RippleCalc)
+        JLOG (j_.trace)
             << "forwardLiquidity> nodeIndex=" << nodeIndex_;
 
         resultCode = pc.forwardLiquidity();
         if (resultCode != tesSUCCESS)
             return resultCode;
 
-        WriteLog (lsTRACE, RippleCalc)
+        JLOG (j_.trace)
             << "forwardLiquidity<"
             << " nodeIndex:" << pc.nodeIndex_
             << " resultCode:" << resultCode;

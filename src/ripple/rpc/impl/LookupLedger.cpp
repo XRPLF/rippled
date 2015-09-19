@@ -179,7 +179,7 @@ bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger,
     }
     catch (SHAMapMissingNode const&)
     {
-        WriteLog (lsWARNING, RPCHandler)
+        JLOG (app.journal ("RPCHandler").warning)
                 << "Missing SHANode " << std::to_string (seq);
         return false;
     }

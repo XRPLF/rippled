@@ -47,7 +47,8 @@ public:
         std::string const& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
+        Logs& l);
 
     static void get (
         bool bSSL,
@@ -57,7 +58,8 @@ public:
         std::string const& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
+        Logs& l);
 
     static void request (
         bool bSSL,
@@ -67,7 +69,8 @@ public:
         std::function <void (boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
+        Logs& l);
 };
 
 } // ripple

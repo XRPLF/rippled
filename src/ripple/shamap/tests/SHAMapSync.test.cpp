@@ -99,7 +99,6 @@ public:
         srand (seed);
 
         beast::Journal const j;                            // debug journal
-
         TestFamily f(j);
         SHAMap source (SHAMapType::FREE, f);
         SHAMap destination (SHAMapType::FREE, f);

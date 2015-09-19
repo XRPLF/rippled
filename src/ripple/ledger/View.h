@@ -65,11 +65,13 @@ isGlobalFrozen (ReadView const& view,
 STAmount
 accountHolds (ReadView const& view,
     AccountID const& account, Currency const& currency,
-        AccountID const& issuer, FreezeHandling zeroIfFrozen);
+        AccountID const& issuer, FreezeHandling zeroIfFrozen,
+              beast::Journal j);
 
 STAmount
 accountFunds (ReadView const& view, AccountID const& id,
-    STAmount const& saDefault, FreezeHandling freezeHandling);
+    STAmount const& saDefault, FreezeHandling freezeHandling,
+        beast::Journal j);
 
 /** Iterate all items in an account's owner directory. */
 void
@@ -113,7 +115,8 @@ cdirFirst (ReadView const& view,
     uint256 const& uRootIndex,  // --> Root of directory.
     std::shared_ptr<SLE const>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-- next entry
-    uint256& uEntryIndex);      // <-- The entry, if available. Otherwise, zero.
+    uint256& uEntryIndex,       // <-- The entry, if available. Otherwise, zero.
+    beast::Journal j);
 
 // Return the current entry and advance uDirEntry.
 // <-- true, if had a next entry.
@@ -123,7 +126,8 @@ cdirNext (ReadView const& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE const>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-> next entry
-    uint256& uEntryIndex);      // <-- The entry, if available. Otherwise, zero.
+    uint256& uEntryIndex,       // <-- The entry, if available. Otherwise, zero.
+    beast::Journal j);
 
 // Return the list of enabled amendments
 using enabledAmendments_t = std::set <uint256>;
@@ -188,7 +192,7 @@ bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
 void
 adjustOwnerCount (ApplyView& view,
     std::shared_ptr<SLE> const& sle,
-        int amount);
+        int amount, beast::Journal j);
 
 // Return the first entry and advance uDirEntry.
 // <-- true, if had a next entry.
@@ -198,7 +202,8 @@ dirFirst (ApplyView& view,
     uint256 const& uRootIndex,  // --> Root of directory.
     std::shared_ptr<SLE>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-- next entry
-    uint256& uEntryIndex);      // <-- The entry, if available. Otherwise, zero.
+    uint256& uEntryIndex,       // <-- The entry, if available. Otherwise, zero.
+    beast::Journal j);
 
 // Return the current entry and advance uDirEntry.
 // <-- true, if had a next entry.
@@ -208,7 +213,8 @@ dirNext (ApplyView& view,
     uint256 const& uRootIndex,  // --> Root of directory
     std::shared_ptr<SLE>& sleNode,      // <-> current node
     unsigned int& uDirEntry,    // <-> next entry
-    uint256& uEntryIndex);      // <-- The entry, if available. Otherwise, zero.
+    uint256& uEntryIndex,       // <-- The entry, if available. Otherwise, zero.
+    beast::Journal j);
 
 std::function<void (SLE::ref, bool)>
 describeOwnerDir(AccountID const& account);
@@ -223,7 +229,8 @@ dirAdd (ApplyView& view,
     std::uint64_t&                      uNodeDir,      // Node of entry.
     uint256 const&                      uRootIndex,
     uint256 const&                      uLedgerIndex,
-    std::function<void (SLE::ref, bool)> fDescriber);
+    std::function<void (SLE::ref, bool)> fDescriber,
+    beast::Journal j);
 
 TER
 dirDelete (ApplyView& view,
@@ -232,7 +239,8 @@ dirDelete (ApplyView& view,
     uint256 const&       uRootIndex,
     uint256 const&       uLedgerIndex,  // Item being deleted
     const bool           bStable,
-    const bool           bSoft);
+    const bool           bSoft,
+    beast::Journal j);
 
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
@@ -256,13 +264,15 @@ trustCreate (ApplyView& view,
     STAmount const& saLimit,            // --> limit for account being set.
                                         // Issuer should be the account being set.
     std::uint32_t uSrcQualityIn,
-    std::uint32_t uSrcQualityOut);
+    std::uint32_t uSrcQualityOut,
+    beast::Journal j);
 
 TER
 trustDelete (ApplyView& view,
     std::shared_ptr<SLE> const& sleRippleState,
         AccountID const& uLowAccountID,
-            AccountID const& uHighAccountID);
+            AccountID const& uHighAccountID,
+                beast::Journal j);
 
 /** Delete an offer.
 
@@ -272,7 +282,8 @@ trustDelete (ApplyView& view,
 */
 TER
 offerDelete (ApplyView& view,
-    std::shared_ptr<SLE> const& sle);
+    std::shared_ptr<SLE> const& sle,
+        beast::Journal j);
 
 //------------------------------------------------------------------------------
 
@@ -287,31 +298,36 @@ offerDelete (ApplyView& view,
 TER
 rippleCredit (ApplyView& view,
     AccountID const& uSenderID, AccountID const& uReceiverID,
-    const STAmount & saAmount, bool bCheckIssuer);
+    const STAmount & saAmount, bool bCheckIssuer,
+    beast::Journal j);
 
 TER
 accountSend (ApplyView& view,
     AccountID const& from,
         AccountID const& to,
-            const STAmount & saAmount);
+            const STAmount & saAmount,
+                 beast::Journal j);
 
 TER
 issueIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount,
-            Issue const& issue);
+            Issue const& issue,
+                beast::Journal j);
 
 TER
 redeemIOU (ApplyView& view,
     AccountID const& account,
         STAmount const& amount,
-            Issue const& issue);
+            Issue const& issue,
+                beast::Journal j);
 
 TER
 transferXRP (ApplyView& view,
     AccountID const& from,
         AccountID const& to,
-            STAmount const& amount);
+            STAmount const& amount,
+                beast::Journal j);
 
 } // ripple
 

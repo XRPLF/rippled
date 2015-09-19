@@ -343,6 +343,7 @@ Payment::doApply ()
                         uDstAccountID,
                         account_,
                         spsPaths,
+                        ctx_.app.logs(),
                         &rcInput);
                     // VFALCO NOTE We might not need to apply, depending
                     //             on the TER. But always applying *should*

@@ -418,7 +418,8 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
     }
 
     assert (seq_ >= 1);
-    auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
+    auto node = SHAMapAbstractNode::make(
+        rootNode, 0, format, uZero, false, f_.journal ());
     if (!node || !node->isValid ())
         return SHAMapAddNode::invalid ();
 
@@ -458,7 +459,8 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     }
 
     assert (seq_ >= 1);
-    auto node = SHAMapAbstractNode::make(rootNode, 0, format, uZero, false);
+    auto node = SHAMapAbstractNode::make(
+        rootNode, 0, format, uZero, false, f_.journal ());
     if (!node || !node->isValid() || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
 
@@ -535,7 +537,8 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                 return SHAMapAddNode::invalid ();
             }
 
-            auto newNode = SHAMapAbstractNode::make(rawNode, 0, snfWIRE, uZero, false);
+            auto newNode = SHAMapAbstractNode::make(
+                rawNode, 0, snfWIRE, uZero, false, f_.journal ());
 
             if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
             {

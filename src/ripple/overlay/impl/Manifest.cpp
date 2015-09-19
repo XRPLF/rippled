@@ -119,7 +119,7 @@ bool Manifest::revoked () const
 
 void
 ManifestCache::configValidatorKey(
-    std::string const& line, beast::Journal const& journal)
+    std::string const& line, beast::Journal journal)
 {
     auto const words = beast::rfc2616::split(line.begin(), line.end(), ' ');
 
@@ -157,7 +157,7 @@ ManifestCache::configValidatorKey(
 
 void
 ManifestCache::configManifest (
-    Manifest m, UniqueNodeList& unl, beast::Journal const& journal)
+    Manifest m, UniqueNodeList& unl, beast::Journal journal)
 {
     if (!m.verify())
     {
@@ -190,7 +190,7 @@ ManifestCache::addTrustedKey (PublicKey const& pk, std::string comment)
 
 ManifestDisposition
 ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
-    beast::Journal const& journal) const
+    beast::Journal journal) const
 {
     auto const iter = map_.find(pk);
 
@@ -227,7 +227,7 @@ ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
 
 ManifestDisposition
 ManifestCache::applyManifest (
-    Manifest m, UniqueNodeList& unl, beast::Journal const& journal)
+    Manifest m, UniqueNodeList& unl, beast::Journal journal)
 {
     {
         std::lock_guard<std::mutex> lock (mutex_);
@@ -334,7 +334,7 @@ ManifestCache::applyManifest (
 }
 
 void ManifestCache::load (
-    DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal const& journal)
+    DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal journal)
 {
     static const char* const sql =
         "SELECT RawData FROM ValidatorManifests;";

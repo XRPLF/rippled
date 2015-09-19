@@ -76,16 +76,17 @@ OfferStream::erase (ApplyView& view)
 }
 
 bool
-OfferStream::step ()
+OfferStream::step (Logs& l)
 {
     // Modifying the order or logic of these
     // operations causes a protocol breaking change.
 
+    auto viewJ = l.journal ("View");
     for(;;)
     {
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
-        if (! tip_.step())
+        if (! tip_.step(l))
             return false;
 
         std::shared_ptr<SLE> entry = tip_.entry();
@@ -109,7 +110,7 @@ OfferStream::step ()
             JLOG(j_.trace) <<
                 "Removing expired offer " << entry->getIndex();
             offerDelete (cancelView_,
-                cancelView_.peek(keylet::offer(entry->key())));
+                cancelView_.peek(keylet::offer(entry->key())), viewJ);
             continue;
         }
 
@@ -123,14 +124,14 @@ OfferStream::step ()
             JLOG(j_.warning) <<
                 "Removing bad offer " << entry->getIndex();
             offerDelete (cancelView_,
-                cancelView_.peek(keylet::offer(entry->key())));
+                cancelView_.peek(keylet::offer(entry->key())), viewJ);
             offer_ = Offer{};
             continue;
         }
 
         // Calculate owner funds
         auto const owner_funds = accountFunds(view_,
-            offer_.owner(), amount.out, fhZERO_IF_FROZEN);
+            offer_.owner(), amount.out, fhZERO_IF_FROZEN, viewJ);
 
         // Check for unfunded offer
         if (owner_funds <= zero)
@@ -139,12 +140,12 @@ OfferStream::step ()
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
             auto const original_funds = accountFunds(cancelView_,
-                offer_.owner(), amount.out, fhZERO_IF_FROZEN);
+                offer_.owner(), amount.out, fhZERO_IF_FROZEN, viewJ);
 
             if (original_funds == owner_funds)
             {
                 offerDelete (cancelView_, cancelView_.peek(
-                    keylet::offer(entry->key())));
+                    keylet::offer(entry->key())), viewJ);
                 JLOG(j_.trace) <<
                     "Removing unfunded offer " << entry->getIndex();
             }

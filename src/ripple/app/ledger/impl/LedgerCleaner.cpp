@@ -319,7 +319,7 @@ public:
             doTxns = true;
         }
 
-        if (doNodes && !nodeLedger->walkLedger())
+        if (doNodes && !nodeLedger->walkLedger(app_.journal ("Ledger")))
         {
             m_journal.debug << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getInboundLedgers().acquire(

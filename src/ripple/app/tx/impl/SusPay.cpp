@@ -232,7 +232,7 @@ SusPayCreate::doApply()
         uint64_t page;
         TER ter = dirAdd(ctx_.view(), page,
             keylet::ownerDir(account).key,
-                slep->key(), describeOwnerDir(account));
+                slep->key(), describeOwnerDir(account), ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
         (*slep)[sfOwnerNode] = page;
@@ -337,7 +337,7 @@ SusPayFinish::doApply()
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
             page, keylet::ownerDir(account).key,
-                k.key, false, page == 0);
+                k.key, false, page == 0, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
     }
@@ -406,7 +406,7 @@ SusPayCancel::doApply()
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
             page, keylet::ownerDir(account).key,
-                k.key, false, page == 0);
+                k.key, false, page == 0, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
     }

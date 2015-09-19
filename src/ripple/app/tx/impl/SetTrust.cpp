@@ -137,6 +137,8 @@ SetTrust::doApply ()
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
+    auto viewJ = ctx_.app.journal ("View");
+
     if (bSetAuth && !(sle->getFieldU32 (sfFlags) & lsfRequireAuth))
     {
         j_.trace <<
@@ -159,7 +161,7 @@ SetTrust::doApply ()
                 "Clearing redundant line.";
 
             return trustDelete (view(),
-                sleDelete, account_, uDstAccountID);
+                sleDelete, account_, uDstAccountID, viewJ);
         }
         else
         {
@@ -336,7 +338,7 @@ SetTrust::doApply ()
         {
             // Set reserve for low account.
             adjustOwnerCount(view(),
-                sleLowAccount, 1);
+                sleLowAccount, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -347,7 +349,7 @@ SetTrust::doApply ()
         {
             // Clear reserve for low account.
             adjustOwnerCount(view(),
-                sleLowAccount, -1);
+                sleLowAccount, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
@@ -355,7 +357,7 @@ SetTrust::doApply ()
         {
             // Set reserve for high account.
             adjustOwnerCount(view(),
-                sleHighAccount, 1);
+                sleHighAccount, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -366,7 +368,7 @@ SetTrust::doApply ()
         {
             // Clear reserve for high account.
             adjustOwnerCount(view(),
-                sleHighAccount, -1);
+                sleHighAccount, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
 
@@ -378,7 +380,7 @@ SetTrust::doApply ()
             // Delete.
 
             terResult = trustDelete (view(),
-                sleRippleState, uLowAccountID, uHighAccountID);
+                sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
         else if (bReserveIncrease && mPriorBalance < reserveCreate)
@@ -442,7 +444,7 @@ SetTrust::doApply ()
             saBalance,
             saLimitAllow,       // Limit for who is being charged.
             uQualityIn,
-            uQualityOut);
+            uQualityOut, viewJ);
     }
 
     return terResult;

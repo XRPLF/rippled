@@ -108,7 +108,7 @@ TER PathState::pushImpliedNodes (
 {
     TER resultCode = tesSUCCESS;
 
-     WriteLog (lsTRACE, RippleCalc) << "pushImpliedNodes>" <<
+     JLOG (j_.trace) << "pushImpliedNodes>" <<
          " " << account <<
          " " << currency <<
          " " << issuer;
@@ -147,7 +147,7 @@ TER PathState::pushImpliedNodes (
             STPathElement::typeAll, issuer, currency, issuer);
     }
 
-    WriteLog (lsTRACE, RippleCalc)
+    JLOG (j_.trace)
         << "pushImpliedNodes< : " << transToken (resultCode);
 
     return resultCode;
@@ -185,7 +185,7 @@ TER PathState::pushNode (
 
     TER resultCode = tesSUCCESS;
 
-    WriteLog (lsTRACE, RippleCalc)
+    JLOG (j_.trace)
          << "pushNode> " << iType << ": "
          << (hasAccount ? to_string(account) : std::string("-")) << " "
          << (hasCurrency ? to_string(currency) : std::string("-")) << "/"
@@ -201,18 +201,18 @@ TER PathState::pushNode (
     if (iType & ~STPathElement::typeAll)
     {
         // Of course, this could never happen.
-        WriteLog (lsDEBUG, RippleCalc) << "pushNode: bad bits.";
+        JLOG (j_.debug) << "pushNode: bad bits.";
         resultCode = temBAD_PATH;
     }
     else if (hasIssuer && isXRP (node.issue_))
     {
-        WriteLog (lsDEBUG, RippleCalc) << "pushNode: issuer specified for XRP.";
+        JLOG (j_.debug) << "pushNode: issuer specified for XRP.";
 
         resultCode = temBAD_PATH;
     }
     else if (hasIssuer && !issuer)
     {
-        WriteLog (lsDEBUG, RippleCalc) << "pushNode: specified bad issuer.";
+        JLOG (j_.debug) << "pushNode: specified bad issuer.";
 
         resultCode = temBAD_PATH;
     }
@@ -220,7 +220,7 @@ TER PathState::pushNode (
     {
         // You can't default everything to the previous node as you would make
         // no progress.
-        WriteLog (lsDEBUG, RippleCalc)
+        JLOG (j_.debug)
             << "pushNode: offer must specify at least currency or issuer.";
         resultCode = temBAD_PATH;
     }
@@ -244,14 +244,14 @@ TER PathState::pushNode (
         }
         else if (!account)
         {
-            WriteLog (lsDEBUG, RippleCalc)
+            JLOG (j_.debug)
                 << "pushNode: specified bad account.";
             resultCode = temBAD_PATH;
         }
         else
         {
             // Add required intermediate nodes to deliver to current account.
-            WriteLog (lsTRACE, RippleCalc)
+            JLOG (j_.trace)
                 << "pushNode: imply for account.";
 
             resultCode = pushImpliedNodes (
@@ -274,18 +274,18 @@ TER PathState::pushNode (
                 // specific currency.
                 if (!sleRippleState)
                 {
-                    WriteLog (lsTRACE, RippleCalc)
+                    JLOG (j_.trace)
                             << "pushNode: No credit line between "
                             << backNode.account_ << " and " << node.account_
                             << " for " << node.issue_.currency << "." ;
 
-                    WriteLog (lsTRACE, RippleCalc) << getJson ();
+                    JLOG (j_.trace) << getJson ();
 
                     resultCode   = terNO_LINE;
                 }
                 else
                 {
-                    WriteLog (lsTRACE, RippleCalc)
+                    JLOG (j_.trace)
                             << "pushNode: Credit line found between "
                             << backNode.account_ << " and " << node.account_
                             << " for " << node.issue_.currency << "." ;
@@ -297,7 +297,7 @@ TER PathState::pushNode (
 
                     if (!sleBck)
                     {
-                        WriteLog (lsWARNING, RippleCalc)
+                        JLOG (j_.warning)
                             << "pushNode: delay: can't receive IOUs from "
                             << "non-existent issuer: " << backNode.account_;
 
@@ -308,7 +308,7 @@ TER PathState::pushNode (
                                   (bHigh ? lsfHighAuth : lsfLowAuth)) &&
                              sleRippleState->getFieldAmount(sfBalance) == zero)
                     {
-                        WriteLog (lsWARNING, RippleCalc)
+                        JLOG (j_.warning)
                                 << "pushNode: delay: can't receive IOUs from "
                                 << "issuer without auth.";
 
@@ -330,7 +330,7 @@ TER PathState::pushNode (
                                 node.issue_.currency);
                             if (-saOwed >= saLimit)
                             {
-                                WriteLog (lsDEBUG, RippleCalc) <<
+                                JLOG (j_.debug) <<
                                     "pushNode: dry:" <<
                                     " saOwed=" << saOwed <<
                                     " saLimit=" << saLimit;
@@ -367,19 +367,19 @@ TER PathState::pushNode (
 
         if (!isConsistent (node.issue_))
         {
-            WriteLog (lsDEBUG, RippleCalc)
+            JLOG (j_.debug)
                 << "pushNode: currency is inconsistent with issuer.";
 
             resultCode = temBAD_PATH;
         }
         else if (backNode.issue_ == node.issue_)
         {
-            WriteLog (lsDEBUG, RippleCalc) <<
+            JLOG (j_.debug) <<
                 "pushNode: bad path: offer to same currency and issuer";
             resultCode = temBAD_PATH;
         }
         else {
-            WriteLog (lsTRACE, RippleCalc) << "pushNode: imply for offer.";
+            JLOG (j_.trace) << "pushNode: imply for offer.";
 
             // Insert intermediary issuer account if needed.
             resultCode   = pushImpliedNodes (
@@ -392,7 +392,7 @@ TER PathState::pushNode (
             nodes_.push_back (node);
     }
 
-    WriteLog (lsTRACE, RippleCalc) << "pushNode< : " << transToken (resultCode);
+    JLOG (j_.trace) << "pushNode< : " << transToken (resultCode);
     return resultCode;
 }
 
@@ -428,7 +428,7 @@ TER PathState::expandPath (
         = isXRP(uMaxCurrencyID) ? xrpAccount() : uSenderID;
     // Sender is always issuer for non-XRP.
 
-    WriteLog (lsTRACE, RippleCalc)
+    JLOG (j_.trace)
         << "expandPath> " << spSourcePath.getJson (0);
 
     terStatus = tesSUCCESS;
@@ -437,7 +437,7 @@ TER PathState::expandPath (
     if ((isXRP (uMaxCurrencyID) && !isXRP (uMaxIssuerID))
         || (isXRP (currencyOutID) && !isXRP (issuerOutID)))
     {
-        WriteLog (lsDEBUG, RippleCalc)
+        JLOG (j_.debug)
             << "expandPath> issuer with XRP";
         terStatus   = temBAD_PATH;
     }
@@ -458,7 +458,7 @@ TER PathState::expandPath (
             uSenderIssuerID);
     }
 
-    WriteLog (lsDEBUG, RippleCalc)
+    JLOG (j_.debug)
         << "expandPath: pushed:"
         << " account=" << uSenderID
         << " currency=" << uMaxCurrencyID
@@ -487,7 +487,7 @@ TER PathState::expandPath (
                 : AccountID(issuerOutID)                      // Use implied node.
                 : xrpAccount();
 
-        WriteLog (lsDEBUG, RippleCalc)
+        JLOG (j_.debug)
             << "expandPath: implied check:"
             << " uMaxIssuerID=" << uMaxIssuerID
             << " uSenderIssuerID=" << uSenderIssuerID
@@ -503,7 +503,7 @@ TER PathState::expandPath (
             || uMaxIssuerID != nextAccountID)
             // Next is not implied issuer
         {
-            WriteLog (lsDEBUG, RippleCalc)
+            JLOG (j_.debug)
                 << "expandPath: sender implied:"
                 << " account=" << uMaxIssuerID
                 << " currency=" << uMaxCurrencyID
@@ -525,7 +525,7 @@ TER PathState::expandPath (
     {
         if (terStatus == tesSUCCESS)
         {
-            WriteLog (lsTRACE, RippleCalc) << "expandPath: element in path";
+            JLOG (j_.trace) << "expandPath: element in path";
             terStatus = pushNode (
                 speElement.getNodeType (), speElement.getAccountID (),
                 speElement.getCurrency (), speElement.getIssuerID ());
@@ -544,7 +544,7 @@ TER PathState::expandPath (
             || backNode.account_ != issuerOutID)       // Need implied issuer
         {
             // Add implied account.
-            WriteLog (lsDEBUG, RippleCalc)
+            JLOG (j_.debug)
                 << "expandPath: receiver implied:"
                 << " account=" << issuerOutID
                 << " currency=" << currencyOutID
@@ -587,7 +587,7 @@ TER PathState::expandPath (
             if (!umForward.insert ({accountIssue, index++}).second)
             {
                 // Failed to insert. Have a loop.
-                WriteLog (lsDEBUG, RippleCalc) <<
+                JLOG (j_.debug) <<
                     "expandPath: loop detected: " << getJson ();
 
                 terStatus = temBAD_PATH_LOOP;
@@ -596,7 +596,7 @@ TER PathState::expandPath (
         }
     }
 
-    WriteLog (lsDEBUG, RippleCalc)
+    JLOG (j_.debug)
         << "expandPath:"
         << " in=" << uMaxCurrencyID
         << "/" << uMaxIssuerID
@@ -692,7 +692,7 @@ TER PathState::checkNoRipple (
         sleOut->getFieldU32 (sfFlags) &
             ((secondAccount > thirdAccount) ? lsfHighNoRipple : lsfLowNoRipple))
     {
-        WriteLog (lsINFO, RippleCalc)
+        JLOG (j_.info)
             << "Path violates noRipple constraint between "
             << firstAccount << ", "
             << secondAccount << " and "

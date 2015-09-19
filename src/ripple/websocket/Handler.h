@@ -77,6 +77,7 @@ private:
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
     ServerDescription desc_;
+    beast::Journal j_;
 
 protected:
     // VFALCO TODO Make this private.
@@ -90,6 +91,7 @@ public:
     HandlerImpl (ServerDescription const& desc)
         : app_ (desc.app)
         , desc_ (desc)
+        , j_ (app_.journal ("HandlerLog"))
     {
         auto const& group (desc_.collectorManager.group ("rpc"));
         rpc_requests_ = group->make_counter ("requests");
@@ -125,7 +127,8 @@ public:
     {
         try
         {
-            WriteLog (broadcast ? lsTRACE : lsDEBUG, HandlerLog)
+            auto& jm = broadcast ? j_.trace : j_.debug;
+            JLOG (jm)
                     << "Ws:: Sending '" << strMessage << "'";
 
             cpClient->send (strMessage);
@@ -161,7 +164,7 @@ public:
             cpClient->terminate ({});
             try
             {
-                WriteLog (lsDEBUG, HandlerLog) <<
+                JLOG (j_.debug) <<
                     "Ws:: ping_out(" <<
                     // TODO(tom): re-enable this logging.
                     // cpClient->get_socket ().remote_endpoint ().to_string ()
@@ -211,7 +214,7 @@ public:
 
             assert (result.second);
             (void) result.second;
-            WriteLog (lsDEBUG, HandlerLog) <<
+            JLOG (j_.debug) <<
                 "Ws:: on_open(" << remoteEndpoint << ")";
         }
         catch (...)
@@ -233,7 +236,7 @@ public:
         }
         try
         {
-            WriteLog (lsDEBUG, HandlerLog) <<
+            JLOG (j_.debug) <<
            "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint() << ")";
         }
         catch (...)
@@ -265,7 +268,7 @@ public:
             {
                 try
                 {
-                    WriteLog (lsDEBUG, HandlerLog) <<
+                    JLOG (j_.debug) <<
                         "Ws:: " << reason << "(" <<
                            cpClient->get_socket ().remote_endpoint() <<
                            ") not found";
@@ -284,7 +287,7 @@ public:
         ptr->preDestroy (); // Must be done before we return
         try
         {
-            WriteLog (lsDEBUG, HandlerLog) <<
+            JLOG (j_.debug) <<
                 "Ws:: " << reason << "(" <<
                    cpClient->get_socket ().remote_endpoint () << ") found";
         }
@@ -326,7 +329,7 @@ public:
         {
             try
             {
-                WriteLog (lsDEBUG, HandlerLog) <<
+                JLOG (j_.debug) <<
                     "Ws:: Rejected(" <<
                     cpClient->get_socket().remote_endpoint() <<
                     ") '" << mpMessage->get_payload () << "'";
@@ -383,7 +386,7 @@ public:
 
         try
         {
-            WriteLog (lsDEBUG, HandlerLog)
+            JLOG (j_.debug)
                     << "Ws:: Receiving("
                     << cpClient->get_socket ().remote_endpoint ()
                     << ") '" << mpMessage->get_payload () << "'";
@@ -435,9 +438,11 @@ public:
             data->jvRequest = std::move(jvRequest);
             data->conn = conn;
 
-            auto coroutine = [data] (RPC::Suspend const& suspend) {
+            auto j = app_.journal ("RPCHandler");
+            auto coroutine = [data, j] (RPC::Suspend const& suspend) {
                 data->buffer = to_string(
-                    data->conn->invokeCommand(data->jvRequest, suspend));
+                    data->conn->invokeCommand(
+                        data->jvRequest, suspend));
             };
             static auto const disableWebsocketsCoroutines = true;
             auto useCoroutines = disableWebsocketsCoroutines ?

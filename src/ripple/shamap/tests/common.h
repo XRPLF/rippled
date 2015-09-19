@@ -46,7 +46,6 @@ private:
     beast::Journal j_;
 
 public:
-    explicit
     TestFamily (beast::Journal j)
         : treecache_ ("TreeNodeCache", 65536, 60, clock_, j)
         , fullbelow_ ("full_below", clock_)

@@ -26,6 +26,8 @@
 
 namespace ripple {
 
+class Logs;
+
 /**
     A transaction that is in a closed ledger.
 
@@ -56,12 +58,14 @@ public:
         std::shared_ptr<ReadView const> const& ledger,
         std::shared_ptr<STTx const> const&,
         std::shared_ptr<STObject const> const&,
-        AccountIDCache const&);
+        AccountIDCache const&,
+        Logs&);
     AcceptedLedgerTx (
         std::shared_ptr<ReadView const> const&,
         STTx::ref,
         TER,
-        AccountIDCache const&);
+        AccountIDCache const&,
+        Logs&);
 
     std::shared_ptr <STTx const> const& getTxn () const
     {
@@ -118,6 +122,7 @@ private:
     Blob        mRawMeta;
     Json::Value                     mJson;
     AccountIDCache const& accountCache_;
+    Logs& logs_;
 
     void buildJson ();
 };
