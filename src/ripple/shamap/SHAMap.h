@@ -104,15 +104,13 @@ public:
     SHAMap (
         SHAMapType t,
         Family& f,
-        beast::Journal journal,
         std::uint32_t seq = 1
         );
 
     SHAMap (
         SHAMapType t,
         uint256 const& hash,
-        Family& f,
-        beast::Journal journal);
+        Family& f);
 
     Family&
     family()

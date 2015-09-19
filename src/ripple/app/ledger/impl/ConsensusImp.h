@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/shamap/SHAMap.h>
 #include <beast/utility/Journal.h>
@@ -35,7 +36,7 @@ class ConsensusImp
     : public Consensus
 {
 public:
-    ConsensusImp (FeeVote::Setup const& voteSetup);
+    ConsensusImp (FeeVote::Setup const& voteSetup, Logs& logs);
 
     ~ConsensusImp () = default;
 

@@ -71,7 +71,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
         if (ledgerIndex >= ledger->info().seq)
             return RPC::make_param_error("Ledger index too large");
 
-        auto const j = deprecatedLogs().journal("RPCHandler");
+        auto const j = context.app.logs().journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated ledger
         auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         if (! neededHash)

@@ -116,9 +116,10 @@ public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
     NetworkOPsImp (
-        Application& app, clock_type& clock, bool standalone, std::size_t network_quorum,
-            JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
-                beast::Journal journal)
+        Application& app, clock_type& clock, bool standalone,
+            std::size_t network_quorum, JobQueue& job_queue,
+                LedgerMaster& ledgerMaster, Stoppable& parent,
+                    beast::Journal journal)
         : NetworkOPs (parent)
         , app_ (app)
         , m_clock (clock)
@@ -129,7 +130,7 @@ public:
         , m_amendmentBlocked (false)
         , m_heartbeatTimer (this)
         , m_clusterTimer (this)
-        , mConsensus (make_Consensus (app_.config()))
+        , mConsensus (make_Consensus (app_.config(), app_.logs()))
         , m_ledgerMaster (ledgerMaster)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)

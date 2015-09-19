@@ -1083,7 +1083,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     if (mValidating &&
         ! ledgerMaster_.isCompatible (newLCL,
-            deprecatedLogs().journal("LedgerConsensus").warning,
+            app_.logs().journal("LedgerConsensus").warning,
             "Not validating"))
     {
         mValidating = false;
@@ -1424,7 +1424,7 @@ void LedgerConsensusImp::takeInitialPosition (
     std::shared_ptr<ReadView const> const& initialLedger)
 {
     std::shared_ptr<SHAMap> initialSet = std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, app_.family(), deprecatedLogs().journal("SHAMap"));
+        SHAMapType::TRANSACTION, app_.family());
 
     // Build SHAMap containing all transactions in our open ledger
     for (auto const& tx : initialLedger->txs)
@@ -1829,8 +1829,7 @@ applyTransaction (Application& app, OpenView& view,
     {
         auto const result = apply(app, view, *txn, flags,
             app.getHashRouter().sigVerify(),
-                app.config(), deprecatedLogs().
-                    journal("LedgerConsensus"));
+                app.config(), app.logs().journal("LedgerConsensus"));
         if (result.second)
         {
             WriteLog (lsDEBUG, LedgerConsensus)

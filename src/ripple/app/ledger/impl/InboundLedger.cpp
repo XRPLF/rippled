@@ -60,7 +60,7 @@ enum
 InboundLedger::InboundLedger (
     Application& app, uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
     : PeerSet (app, hash, ledgerAcquireTimeoutMillis, false, clock,
-        deprecatedLogs().journal("InboundLedger"))
+        app.logs().journal("InboundLedger"))
     , mHaveHeader (false)
     , mHaveState (false)
     , mHaveTransactions (false)

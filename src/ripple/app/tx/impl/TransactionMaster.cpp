@@ -28,7 +28,7 @@ namespace ripple {
 TransactionMaster::TransactionMaster (Application& app)
     : mApp (app)
     , mCache ("TransactionCache", 65536, 1800, stopwatch(),
-        deprecatedLogs().journal("TaggedCache"))
+        mApp.logs().journal("TaggedCache"))
 {
 }
 

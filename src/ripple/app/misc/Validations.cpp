@@ -75,7 +75,7 @@ public:
     ValidationsImp (Application& app)
         : app_ (app)
         , mValidations ("Validations", 128, 600, stopwatch(),
-            deprecatedLogs().journal("TaggedCache"))
+            app.logs().journal("TaggedCache"))
         , mWriting (false)
     {
         mStaleValidations.reserve (512);

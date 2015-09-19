@@ -53,8 +53,12 @@ public:
                  std::shared_ptr <Backend> writableBackend,
                  std::shared_ptr <Backend> archiveBackend,
                  beast::Journal journal)
-            : DatabaseImp (name, scheduler, readThreads,
-                    std::unique_ptr <Backend>(), journal)
+            : DatabaseImp (
+                name,
+                scheduler,
+                readThreads,
+                std::unique_ptr <Backend>(),
+                journal)
             , writableBackend_ (writableBackend)
             , archiveBackend_ (archiveBackend)
     {}

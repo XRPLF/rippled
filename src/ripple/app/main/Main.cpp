@@ -186,7 +186,9 @@ static int runShutdownTests (std::unique_ptr<Config> config)
     {
         std::cerr << "\n\nStarting server. Iteration: " << i << "\n"
                   << std::endl;
-        auto app = make_Application (std::move(config), deprecatedLogs());
+        auto app = make_Application (
+            std::move(config),
+            std::make_unique<Logs>());
         auto shutdownApp = [&app](std::chrono::seconds sleepTime, int iteration)
         {
             std::this_thread::sleep_for (sleepTime);
@@ -210,8 +212,9 @@ static int runUnitTests (
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (*config);
 
-    // VFALCO TODO Remove dependence on constructing Application object
-    auto app = make_Application (std::move(config), deprecatedLogs());
+    auto app = make_Application (
+        std::move(config),
+        std::make_unique<Logs>());
 
     using namespace beast::unit_test;
     beast::debug_ostream stream;
@@ -348,13 +351,6 @@ int run (int argc, char** argv)
             std::cerr << logMe;
     }
 
-    if (vm.count ("quiet"))
-        deprecatedLogs().severity(beast::Journal::kFatal);
-    else if (vm.count ("verbose"))
-        deprecatedLogs().severity(beast::Journal::kTrace);
-    else
-        deprecatedLogs().severity(beast::Journal::kInfo);
-
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
@@ -478,10 +474,21 @@ int run (int argc, char** argv)
     if (vm.count ("shutdowntest"))
         return runShutdownTests (std::move(config));
 
+    // No arguments. Run server.
     if (!vm.count ("parameters"))
     {
-        // No arguments. Run server.
-        auto app = make_Application (std::move(config), deprecatedLogs());
+        auto logs = std::make_unique<Logs>();
+
+        if (vm.count ("quiet"))
+            logs->severity (beast::Journal::kFatal);
+        else if (vm.count ("verbose"))
+            logs->severity (beast::Journal::kTrace);
+        else
+            logs->severity (beast::Journal::kInfo);
+
+        auto app = make_Application (
+            std::move(config),
+            std::move (logs));
         setupServer (*app);
         startServer (*app);
         return 0;

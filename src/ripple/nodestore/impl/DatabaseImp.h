@@ -72,7 +72,7 @@ public:
         , m_scheduler (scheduler)
         , m_backend (std::move (backend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
-            stopwatch(), deprecatedLogs().journal("TaggedCache"))
+            stopwatch(), journal)
         , m_negCache ("NodeStore", stopwatch(),
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)

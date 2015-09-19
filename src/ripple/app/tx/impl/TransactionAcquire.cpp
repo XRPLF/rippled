@@ -41,11 +41,11 @@ enum
 
 TransactionAcquire::TransactionAcquire (Application& app, uint256 const& hash, clock_type& clock)
     : PeerSet (app, hash, TX_ACQUIRE_TIMEOUT, true, clock,
-        deprecatedLogs().journal("TransactionAcquire"))
+        app.logs().journal("TransactionAcquire"))
     , mHaveRoot (false)
 {
     mMap = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, hash,
-        app_.family(), deprecatedLogs().journal("SHAMap"));
+        app_.family());
     mMap->setUnbacked ();
 }
 

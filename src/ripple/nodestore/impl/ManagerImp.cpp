@@ -93,11 +93,15 @@ ManagerImp::make_Database (
     int readThreads,
     Section const& backendParameters)
 {
-    std::unique_ptr <Backend> backend (make_Backend (
-        backendParameters, scheduler, journal));
-
-    return std::make_unique <DatabaseImp> (name, scheduler, readThreads,
-        std::move (backend), journal);
+    return std::make_unique <DatabaseImp> (
+        name,
+        scheduler,
+        readThreads,
+        make_Backend (
+            backendParameters,
+            scheduler,
+            journal),
+        journal);
 }
 
 std::unique_ptr <DatabaseRotating>
@@ -109,8 +113,13 @@ ManagerImp::make_DatabaseRotating (
         std::shared_ptr <Backend> archiveBackend,
         beast::Journal journal)
 {
-    return std::make_unique <DatabaseRotatingImp> (name, scheduler,
-            readThreads, writableBackend, archiveBackend, journal);
+    return std::make_unique <DatabaseRotatingImp> (
+        name,
+        scheduler,
+        readThreads,
+        writableBackend,
+        archiveBackend,
+        journal);
 }
 
 Factory*

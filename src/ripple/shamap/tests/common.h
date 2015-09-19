@@ -43,6 +43,7 @@ private:
     TreeNodeCache treecache_;
     FullBelowCache fullbelow_;
     std::unique_ptr<NodeStore::Database> db_;
+    beast::Journal j_;
 
 public:
     explicit
@@ -61,6 +62,12 @@ public:
     clock()
     {
         return clock_;
+    }
+
+    beast::Journal const&
+    journal() override
+    {
+        return j_;
     }
 
     FullBelowCache&
