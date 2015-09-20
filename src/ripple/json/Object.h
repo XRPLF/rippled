@@ -318,13 +318,11 @@ public:
     {
     }
 
-#ifdef _MSC_VER
     WriterObject (WriterObject&& other) noexcept
             : writer_ (std::move (other.writer_)),
               object_ (std::move (other.object_))
     {
     }
-#endif
 
     Object* operator->()
     {

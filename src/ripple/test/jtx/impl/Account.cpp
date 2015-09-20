@@ -26,28 +26,6 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-#ifdef _MSC_VER
-Account::Account (Account&& other)
-    : name_(std::move(other.name_))
-    , pk_(std::move(other.pk_))
-    , sk_(std::move(other.sk_))
-    , id_(std::move(other.id_))
-    , human_(std::move(other.human_))
-{
-}
-
-Account&
-Account::operator= (Account&& rhs)
-{
-    name_ = std::move(rhs.name_);
-    pk_ = std::move(rhs.pk_);
-    sk_ = std::move(rhs.sk_);
-    id_ = std::move(rhs.id_);
-    human_ = std::move(rhs.human_);
-    return *this;
-}
-#endif
-
 Account::Account(std::string name,
         std::pair<PublicKey, SecretKey> const& keys)
     : name_(std::move(name))
@@ -58,15 +36,8 @@ Account::Account(std::string name,
 {
 }
 
-Account::Account (std::string name,
-        KeyType type)
-#ifndef _MSC_VER
-    : Account(name,
-#else
-    // Fails on Clang and possibly gcc
-    : Account(std::move(name),
-#endif
-        generateKeyPair(type, generateSeed(name)))
+Account::Account (std::string name, KeyType type)
+    : Account(name, generateKeyPair(type, generateSeed(name)))
 {
 }
 
