@@ -166,7 +166,7 @@ Handler handlerArray[] {
 
 const Handler* getHandler(std::string const& name) {
     static HandlerTable const handlers(handlerArray);
-    return handlers->getHandler(name);
+    return handlers.getHandler(name);
 }
 
 } // RPC

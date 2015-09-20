@@ -55,19 +55,11 @@ private:
 
 public:
     ApplyStateTable() = default;
+    ApplyStateTable (ApplyStateTable&&) = default;
+
     ApplyStateTable (ApplyStateTable const&) = delete;
     ApplyStateTable& operator= (ApplyStateTable&&) = delete;
     ApplyStateTable& operator= (ApplyStateTable const&) = delete;
-
-#ifdef _MSC_VER
-    ApplyStateTable (ApplyStateTable&& other)
-        : items_ (std::move(other.items_))
-        , dropsDestroyed_ (std::move(other.dropsDestroyed_))
-    {
-    }
-#else
-    ApplyStateTable (ApplyStateTable&&) = default;
-#endif
 
     void
     apply (RawView& to) const;
