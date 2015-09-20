@@ -22,8 +22,6 @@
 
 #include <beast/hash/hash_append.h>
 
-#include <beast/utility/noexcept.h>
-
 #include <functional>
 #include <iostream>
 #include <type_traits>

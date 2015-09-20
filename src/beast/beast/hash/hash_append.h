@@ -24,7 +24,6 @@
 #include <beast/config/CompilerConfig.h> // for constexpr
 #include <beast/hash/endian.h>
 #include <beast/utility/meta.h>
-#include <beast/utility/noexcept.h>
 #include <array>
 #include <cstdint>
 #include <cstring>

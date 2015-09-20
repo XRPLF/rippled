@@ -20,7 +20,6 @@
 #ifndef BEAST_CRYPTO_SHA512_CONTEXT_H_INCLUDED
 #define BEAST_CRYPTO_SHA512_CONTEXT_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <cstring>
 

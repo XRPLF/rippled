@@ -21,7 +21,6 @@
 */
 //==============================================================================
 
-#include <beast/utility/static_initializer.h>
 #include <algorithm>
 #include <memory>
 
@@ -29,8 +28,8 @@ namespace beast {
 
 File const& File::nonexistent()
 {
-    static beast::static_initializer<File> instance;
-    return *instance;
+    static File const instance;
+    return instance;
 }
 
 //------------------------------------------------------------------------------

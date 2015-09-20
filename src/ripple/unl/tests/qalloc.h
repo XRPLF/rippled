@@ -57,7 +57,7 @@ private:
 
         void*
         allocate (std::size_t bytes, std::size_t align);
-        
+
         bool
         deallocate();
     };
@@ -113,10 +113,8 @@ public:
 
     qalloc_type (qalloc_type const&) = default;
     qalloc_type& operator= (qalloc_type const&) = default;
-#ifndef _MSC_VER
     qalloc_type (qalloc_type&& other) = default;
     qalloc_type& operator= (qalloc_type&&) = default;
-#endif
 
     qalloc_type();
 

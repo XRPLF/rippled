@@ -19,18 +19,20 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <exception>
 
 namespace ripple {
 
 namespace detail {
 
+[[noreturn]]
 void
 accessViolation()
 {
-    // dereference memory
-    // location zero
+    // dereference memory location zero
     int volatile* j = 0;
     (void)*j;
+    std::terminate ();
 }
 
 // This hook lets you do pre or post

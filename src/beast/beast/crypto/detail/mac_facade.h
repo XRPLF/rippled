@@ -22,7 +22,6 @@
 
 #include <beast/crypto/secure_erase.h>
 #include <beast/hash/endian.h>
-#include <beast/utility/noexcept.h>
 #include <type_traits>
 #include <array>
 

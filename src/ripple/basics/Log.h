@@ -23,7 +23,6 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <beast/utility/ci_char_traits.h>
 #include <beast/utility/Journal.h>
-#include <beast/utility/noexcept.h>
 #include <boost/filesystem.hpp>
 #include <map>
 #include <mutex>
