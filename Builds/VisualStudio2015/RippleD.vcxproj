@@ -1883,8 +1883,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Buffer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\ByteOrder.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\chrono.h">

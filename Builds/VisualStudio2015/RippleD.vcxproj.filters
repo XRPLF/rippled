@@ -2625,9 +2625,6 @@
     <ClInclude Include="..\..\src\ripple\basics\Buffer.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\ByteOrder.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
