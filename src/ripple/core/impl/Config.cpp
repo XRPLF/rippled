@@ -209,6 +209,7 @@ Config::Config ()
 
     NETWORK_QUORUM          = 0;    // Don't need to see other nodes
     VALIDATION_QUORUM       = 1;    // Only need one node to vouch
+    LOCK_QUORUM             = false;
 
     FEE_ACCOUNT_RESERVE     = DEFAULT_FEE_ACCOUNT_RESERVE;
     FEE_OWNER_RESERVE       = DEFAULT_FEE_OWNER_RESERVE;
