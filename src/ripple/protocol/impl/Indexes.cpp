@@ -21,6 +21,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/Indexes.h>
 #include <beast/utility/static_initializer.h>
+#include <beast/ByteOrder.h>
 #include <cassert>
 
 namespace ripple {
@@ -127,7 +128,7 @@ getQualityIndex (uint256 const& uBase, const std::uint64_t uNodeDir)
 
     // TODO(tom): there must be a better way.
     // VFALCO [base_uint] This assumes a certain storage format
-    ((std::uint64_t*) uNode.end ())[-1] = htobe64 (uNodeDir);
+    ((std::uint64_t*) uNode.end ())[-1] = beast::ByteOrder::bigEndianInt64 (&uNodeDir);
 
     return uNode;
 }
@@ -144,7 +145,9 @@ std::uint64_t
 getQuality (uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
-    return be64toh (((std::uint64_t*) uBase.end ())[-1]);
+    return beast::ByteOrder::isBigEndian() ?
+        beast::ByteOrder::bigEndianInt(&((std::uint64_t*) uBase.end ())[-1]) :
+        beast::ByteOrder::swapIfBigEndian(((std::uint64_t*) uBase.end ())[-1]);
 }
 
 uint256
