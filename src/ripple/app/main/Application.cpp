@@ -832,7 +832,8 @@ public:
             config_->section (SECTION_AMENDMENTS));
         initializePathfinding ();
 
-        m_ledgerMaster->setMinValidations (config_->VALIDATION_QUORUM);
+        m_ledgerMaster->setMinValidations (
+            config_->VALIDATION_QUORUM, config_->LOCK_QUORUM);
 
         auto const startUp = config_->START_UP;
         if (startUp == Config::FRESH)

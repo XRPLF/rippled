@@ -459,6 +459,7 @@ int run (int argc, char** argv)
         try
         {
             config->VALIDATION_QUORUM = vm["quorum"].as <int> ();
+            config->LOCK_QUORUM = true;
 
             if (config->VALIDATION_QUORUM < 0)
                 throw std::domain_error ("");

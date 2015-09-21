@@ -101,7 +101,7 @@ public:
 
     virtual int getMinValidations () = 0;
 
-    virtual void setMinValidations (int v) = 0;
+    virtual void setMinValidations (int v, bool strict) = 0;
 
     virtual std::uint32_t getEarliestFetch () = 0;
 
