@@ -48,7 +48,7 @@
 # ifndef WIN32_LEAN_AND_MEAN
 #  define WIN32_LEAN_AND_MEAN
 # endif
-# include <Windows.h>
+# include <windows.h>
 #pragma pop_macro("STRICT")
 #pragma pop_macro("UNICODE")
 #pragma pop_macro("NOMINMAX")

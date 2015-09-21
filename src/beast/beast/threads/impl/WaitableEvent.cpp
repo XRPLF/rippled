@@ -25,7 +25,7 @@
 
 #if BEAST_WINDOWS
 
-#include <Windows.h>
+#include <windows.h>
 #undef check
 #undef direct
 #undef max
