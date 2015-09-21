@@ -28,7 +28,7 @@
 #include <utility>
 
 #ifndef BEAST_NUDB_POSIX_FILE
-# ifdef _MSC_VER
+# ifdef _WIN32
 #  define BEAST_NUDB_POSIX_FILE 0
 # else
 #  define BEAST_NUDB_POSIX_FILE 1

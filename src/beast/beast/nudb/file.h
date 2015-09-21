@@ -28,7 +28,7 @@ namespace beast {
 namespace nudb {
 
 using native_file =
-#ifdef _MSC_VER
+#ifdef _WIN32
     win32_file;
 #else
     posix_file;

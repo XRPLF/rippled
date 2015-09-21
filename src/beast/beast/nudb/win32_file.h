@@ -25,7 +25,7 @@
 #include <string>
 
 #ifndef BEAST_NUDB_WIN32_FILE
-# ifdef _MSC_VER
+# ifdef _WIN32
 #  define BEAST_NUDB_WIN32_FILE 1
 # else
 #  define BEAST_NUDB_WIN32_FILE 0
