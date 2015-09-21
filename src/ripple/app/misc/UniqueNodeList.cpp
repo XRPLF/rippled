@@ -845,7 +845,7 @@ bool UniqueNodeListImp::nodeLoad (boost::filesystem::path pConfig)
         return false;
     }
 
-    std::ifstream   ifsDefault (pConfig.native ().c_str (), std::ios::in);
+    boost::filesystem::ifstream   ifsDefault (pConfig.native ().c_str (), std::ios::in);
 
     if (!ifsDefault)
     {

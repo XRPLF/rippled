@@ -63,9 +63,8 @@ bool Logs::File::open (boost::filesystem::path const& path)
 
     bool wasOpened = false;
 
-    // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr <std::ofstream> stream (
-        new std::ofstream (path.c_str (), std::fstream::app));
+    std::unique_ptr <boost::filesystem::ofstream> stream (
+        new boost::filesystem::ofstream (path.c_str (), std::fstream::app));
 
     if (stream->good ())
     {

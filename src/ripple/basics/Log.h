@@ -25,6 +25,7 @@
 #include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <map>
 #include <mutex>
 #include <utility>
