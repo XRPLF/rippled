@@ -105,6 +105,7 @@ public:
     std::unique_ptr <LedgerCleaner> mLedgerCleaner;
 
     int mMinValidations;    // The minimum validations to publish a ledger.
+    bool mStrictValCount;   // Don't raise the minimum
     uint256 mLastValidateHash;
     std::uint32_t mLastValidateSeq;
 
@@ -153,6 +154,7 @@ public:
         , mLedgerCleaner (make_LedgerCleaner (
             app, *this, deprecatedLogs().journal("LedgerCleaner")))
         , mMinValidations (0)
+        , mStrictValCount (false)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
         , mAdvanceWork (false)
@@ -743,7 +745,7 @@ public:
                 if (seq > mLastValidLedger.second)
                     mLastValidLedger = std::make_pair (hash, seq);
 
-                if (mMinValidations < (valCount/2 + 1))
+                if (!mStrictValCount && (mMinValidations < (valCount/2 + 1)))
                 {
                     mMinValidations = (valCount/2 + 1);
                     WriteLog (lsINFO, LedgerMaster)
@@ -1354,10 +1356,12 @@ public:
         return mMinValidations;
     }
 
-    void setMinValidations (int v) override
+    void setMinValidations (int v, bool strict) override
     {
-        WriteLog (lsINFO, LedgerMaster) << "Validation quorum: " << v;
+        WriteLog (lsINFO, LedgerMaster) << "Validation quorum: " << v
+            << (strict ? " strict" : "");
         mMinValidations = v;
+        mStrictValCount = strict;
     }
 
     std::string getCompleteLedgers () override
