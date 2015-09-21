@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 #define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 
-#include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
+#include <beast/ByteOrder.h>
 #include <boost/format.hpp>
 #include <sstream>
 #include <string>
@@ -42,7 +42,7 @@ inline std::string strHex (Blob const& vucData)
 
 inline std::string strHex (const std::uint64_t uiHost)
 {
-    uint64_t    uBig    = htobe64 (uiHost);
+    uint64_t    uBig    = beast::ByteOrder::bigEndianInt64 (&uiHost);
 
     return strHex ((unsigned char*) &uBig, sizeof (uBig));
 }
