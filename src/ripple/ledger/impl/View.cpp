@@ -136,7 +136,7 @@ accountHolds (ReadView const& view,
         else if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
             isFrozen(view, account, currency, issuer))
         {
-            amount.clear (IssueRef (currency, issuer));
+            amount.clear (Issue (currency, issuer));
         }
         else
         {

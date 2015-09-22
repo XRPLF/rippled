@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-BookTip::BookTip (ApplyView& view, BookRef book)
+BookTip::BookTip (ApplyView& view, Book const& book)
     : view_ (view)
     , m_valid (false)
     , m_book (getBookBase (book))

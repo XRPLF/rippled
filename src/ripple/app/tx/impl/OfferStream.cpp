@@ -24,7 +24,7 @@
 namespace ripple {
 
 OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
-    BookRef book, Clock::time_point when,
+    Book const& book, Clock::time_point when,
         StepCounter& counter, beast::Journal journal)
     : j_ (journal)
     , view_ (view)
