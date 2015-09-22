@@ -29,150 +29,67 @@
 namespace ripple {
 
 /** A currency issued by an account.
-
-    When ByValue is `false`, this only stores references, and the caller
-    is responsible for managing object lifetime.
-
-    @see Currency, AccountID, Issue, IssueRef, Book
+    @see Currency, AccountID, Issue, Book
 */
-template <bool ByValue>
-class IssueType
+class Issue
 {
 public:
-    using IssueCurrency = typename
-        std::conditional <ByValue, Currency, Currency const&>::type;
+    Currency currency;
+    AccountID account;
 
-    using IssueAccount = typename
-        std::conditional <ByValue, AccountID, AccountID const&>::type;
-
-    IssueCurrency currency;
-    IssueAccount account;
-
-    IssueType ()
+    Issue ()
     {
     }
 
-    IssueType (Currency const& c, AccountID const& a)
+    Issue (Currency const& c, AccountID const& a)
             : currency (c), account (a)
     {
     }
-
-    template <bool OtherByValue>
-    IssueType (IssueType <OtherByValue> const& other)
-        : currency (other.currency)
-        , account (other.account)
-    {
-    }
-
-    /** Assignment. */
-    template <bool MaybeByValue = ByValue, bool OtherByValue>
-    std::enable_if_t <MaybeByValue, IssueType&>
-    operator= (IssueType <OtherByValue> const& other)
-    {
-        currency = other.currency;
-        account = other.account;
-        return *this;
-    }
 };
 
-template <bool ByValue>
-bool isConsistent(IssueType<ByValue> const& ac)
-{
-    return isXRP (ac.currency) == isXRP (ac.account);
-}
+bool
+isConsistent (Issue const& ac);
 
-template <bool ByValue>
-std::string to_string (IssueType<ByValue> const& ac)
-{
-    if (isXRP (ac.account))
-        return to_string (ac.currency);
+std::string
+to_string (Issue const& ac);
 
-    return to_string(ac.account) + "/" + to_string(ac.currency);
-}
+std::ostream&
+operator<< (std::ostream& os, Issue const& x);
 
-template <bool ByValue>
-std::ostream& operator<< (
-    std::ostream& os, IssueType<ByValue> const& x)
-{
-    os << to_string (x);
-    return os;
-}
-
-template <bool ByValue, class Hasher>
-void hash_append (Hasher& h, IssueType<ByValue> const& r)
+template <class Hasher>
+void
+hash_append(Hasher& h, Issue const& r)
 {
     using beast::hash_append;
-    hash_append (h, r.currency, r.account);
+    hash_append(h, r.currency, r.account);
 }
 
 /** Ordered comparison.
     The assets are ordered first by currency and then by account,
     if the currency is not XRP.
 */
-template <bool LhsByValue, bool RhsByValue>
-int compare (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    int diff = compare (lhs.currency, rhs.currency);
-    if (diff != 0)
-        return diff;
-    if (isXRP (lhs.currency))
-        return 0;
-    return compare (lhs.account, rhs.account);
-}
+int
+compare (Issue const& lhs, Issue const& rhs);
 
 /** Equality comparison. */
 /** @{ */
-template <bool LhsByValue, bool RhsByValue>
-bool operator== (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    return compare (lhs, rhs) == 0;
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator!= (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    return ! (lhs == rhs);
-}
+bool
+operator== (Issue const& lhs, Issue const& rhs);
+bool
+operator!= (Issue const& lhs, Issue const& rhs);
 /** @} */
 
 /** Strict weak ordering. */
 /** @{ */
-template <bool LhsByValue, bool RhsByValue>
-bool operator< (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    return compare (lhs, rhs) < 0;
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator> (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    return rhs < lhs;
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator>= (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    return ! (lhs < rhs);
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator<= (IssueType <LhsByValue> const& lhs,
-    IssueType <RhsByValue> const& rhs)
-{
-    return ! (rhs < lhs);
-}
+bool
+operator< (Issue const& lhs, Issue const& rhs);
+bool
+operator> (Issue const& lhs, Issue const& rhs);
+bool
+operator>= (Issue const& lhs, Issue const& rhs);
+bool
+operator<= (Issue const& lhs, Issue const& rhs);
 /** @} */
-
-//------------------------------------------------------------------------------
-
-using Issue = IssueType <true>;
-using IssueRef = IssueType <false>;
 
 //------------------------------------------------------------------------------
 

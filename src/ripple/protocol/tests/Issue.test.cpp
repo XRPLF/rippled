@@ -75,9 +75,9 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Comparison, hash tests for IssueType
+    // Comparison, hash tests for Issue
     template <class Issue>
-    void testIssueType ()
+    void testIssue ()
     {
         Currency const c1 (1); AccountID const i1 (1);
         Currency const c2 (2); AccountID const i2 (2);
@@ -128,8 +128,8 @@ public:
         AccountID   const i1 (1);
         Currency const c2 (2);
         AccountID   const i2 (2);
-        IssueRef const a1 (c1, i1);
-        IssueRef const a2 (c2, i2);
+        Issue const a1 (c1, i1);
+        Issue const a2 (c2, i2);
 
         {
             Set c;
@@ -153,9 +153,9 @@ public:
             c.insert (a2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (IssueRef (c1, i2)) == 0)) return;
-            if (! expect (c.erase (IssueRef (c1, i1)) == 1)) return;
-            if (! expect (c.erase (IssueRef (c2, i2)) == 1)) return;
+            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
+            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
+            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
             if (! expect (c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
@@ -174,8 +174,8 @@ public:
         AccountID   const i1 (1);
         Currency const c2 (2);
         AccountID   const i2 (2);
-        IssueRef const a1 (c1, i1);
-        IssueRef const a2 (c2, i2);
+        Issue const a1 (c1, i1);
+        Issue const a2 (c2, i2);
 
         {
             Map c;
@@ -199,9 +199,9 @@ public:
             c.insert (std::make_pair (a2, 2));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (IssueRef (c1, i2)) == 0)) return;
-            if (! expect (c.erase (IssueRef (c1, i1)) == 1)) return;
-            if (! expect (c.erase (IssueRef (c2, i2)) == 1)) return;
+            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
+            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
+            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
     }
@@ -211,22 +211,22 @@ public:
         testcase ("std::set <Issue>");
         testIssueSet <std::set <Issue>> ();
 
-        testcase ("std::set <IssueRef>");
-        testIssueSet <std::set <IssueRef>> ();
+        testcase ("std::set <Issue>");
+        testIssueSet <std::set <Issue>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
         testcase ("std::unordered_set <Issue>");
         testIssueSet <std::unordered_set <Issue>> ();
 
-        testcase ("std::unordered_set <IssueRef>");
-        testIssueSet <std::unordered_set <IssueRef>> ();
+        testcase ("std::unordered_set <Issue>");
+        testIssueSet <std::unordered_set <Issue>> ();
 #endif
 
         testcase ("hash_set <Issue>");
         testIssueSet <hash_set <Issue>> ();
 
-        testcase ("hash_set <IssueRef>");
-        testIssueSet <hash_set <IssueRef>> ();
+        testcase ("hash_set <Issue>");
+        testIssueSet <hash_set <Issue>> ();
     }
 
     void testIssueMaps ()
@@ -234,28 +234,28 @@ public:
         testcase ("std::map <Issue, int>");
         testIssueMap <std::map <Issue, int>> ();
 
-        testcase ("std::map <IssueRef, int>");
-        testIssueMap <std::map <IssueRef, int>> ();
+        testcase ("std::map <Issue, int>");
+        testIssueMap <std::map <Issue, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
         testcase ("std::unordered_map <Issue, int>");
         testIssueMap <std::unordered_map <Issue, int>> ();
 
-        testcase ("std::unordered_map <IssueRef, int>");
-        testIssueMap <std::unordered_map <IssueRef, int>> ();
+        testcase ("std::unordered_map <Issue, int>");
+        testIssueMap <std::unordered_map <Issue, int>> ();
 
         testcase ("hash_map <Issue, int>");
         testIssueMap <hash_map <Issue, int>> ();
 
-        testcase ("hash_map <IssueRef, int>");
-        testIssueMap <hash_map <IssueRef, int>> ();
+        testcase ("hash_map <Issue, int>");
+        testIssueMap <hash_map <Issue, int>> ();
 
 #endif
     }
 
     //--------------------------------------------------------------------------
 
-    // Comparison, hash tests for BookType
+    // Comparison, hash tests for Book
     template <class Book>
     void testBook ()
     {
@@ -320,10 +320,10 @@ public:
         AccountID   const i1 (1);
         Currency const c2 (2);
         AccountID   const i2 (2);
-        IssueRef const a1 (c1, i1);
-        IssueRef const a2 (c2, i2);
-        BookRef  const b1 (a1, a2);
-        BookRef  const b2 (a2, a1);
+        Issue const a1 (c1, i1);
+        Issue const a2 (c2, i2);
+        Book  const b1 (a1, a2);
+        Book  const b2 (a2, a1);
 
         {
             Set c;
@@ -347,9 +347,9 @@ public:
             c.insert (b2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (BookRef (a1, a1)) == 0)) return;
-            if (! expect (c.erase (BookRef (a1, a2)) == 1)) return;
-            if (! expect (c.erase (BookRef (a2, a1)) == 1)) return;
+            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
+            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
+            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
             if (! expect (c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
@@ -368,13 +368,13 @@ public:
         AccountID   const i1 (1);
         Currency const c2 (2);
         AccountID   const i2 (2);
-        IssueRef const a1 (c1, i1);
-        IssueRef const a2 (c2, i2);
-        BookRef  const b1 (a1, a2);
-        BookRef  const b2 (a2, a1);
+        Issue const a1 (c1, i1);
+        Issue const a2 (c2, i2);
+        Book  const b1 (a1, a2);
+        Book  const b2 (a2, a1);
 
         //typename Map::value_type value_type;
-        //std::pair <BookRef const, int> value_type;
+        //std::pair <Book const, int> value_type;
 
         {
             Map c;
@@ -402,9 +402,9 @@ public:
             c.insert (std::make_pair (b2, 1));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (BookRef (a1, a1)) == 0)) return;
-            if (! expect (c.erase (BookRef (a1, a2)) == 1)) return;
-            if (! expect (c.erase (BookRef (a2, a1)) == 1)) return;
+            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
+            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
+            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
     }
@@ -414,22 +414,22 @@ public:
         testcase ("std::set <Book>");
         testBookSet <std::set <Book>> ();
 
-        testcase ("std::set <BookRef>");
-        testBookSet <std::set <BookRef>> ();
+        testcase ("std::set <Book>");
+        testBookSet <std::set <Book>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
         testcase ("std::unordered_set <Book>");
         testBookSet <std::unordered_set <Book>> ();
 
-        testcase ("std::unordered_set <BookRef>");
-        testBookSet <std::unordered_set <BookRef>> ();
+        testcase ("std::unordered_set <Book>");
+        testBookSet <std::unordered_set <Book>> ();
 #endif
 
         testcase ("hash_set <Book>");
         testBookSet <hash_set <Book>> ();
 
-        testcase ("hash_set <BookRef>");
-        testBookSet <hash_set <BookRef>> ();
+        testcase ("hash_set <Book>");
+        testBookSet <hash_set <Book>> ();
     }
 
     void testBookMaps ()
@@ -437,21 +437,21 @@ public:
         testcase ("std::map <Book, int>");
         testBookMap <std::map <Book, int>> ();
 
-        testcase ("std::map <BookRef, int>");
-        testBookMap <std::map <BookRef, int>> ();
+        testcase ("std::map <Book, int>");
+        testBookMap <std::map <Book, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
         testcase ("std::unordered_map <Book, int>");
         testBookMap <std::unordered_map <Book, int>> ();
 
-        testcase ("std::unordered_map <BookRef, int>");
-        testBookMap <std::unordered_map <BookRef, int>> ();
+        testcase ("std::unordered_map <Book, int>");
+        testBookMap <std::unordered_map <Book, int>> ();
 
         testcase ("hash_map <Book, int>");
         testBookMap <hash_map <Book, int>> ();
 
-        testcase ("hash_map <BookRef, int>");
-        testBookMap <hash_map <BookRef, int>> ();
+        testcase ("hash_map <Book, int>");
+        testBookMap <hash_map <Book, int>> ();
 #endif
     }
 
@@ -468,10 +468,10 @@ public:
         // ---
 
         testcase ("Issue");
-        testIssueType <Issue> ();
+        testIssue <Issue> ();
 
-        testcase ("IssueRef");
-        testIssueType <IssueRef> ();
+        testcase ("Issue");
+        testIssue <Issue> ();
 
         testIssueSets ();
         testIssueMaps ();
@@ -481,8 +481,8 @@ public:
         testcase ("Book");
         testBook <Book> ();
 
-        testcase ("BookRef");
-        testBook <BookRef> ();
+        testcase ("Book");
+        testBook <Book> ();
 
         testBookSets ();
         testBookMaps ();
