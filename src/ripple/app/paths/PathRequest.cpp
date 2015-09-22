@@ -477,11 +477,15 @@ PathRequest::findPaths (
     m_journal.debug << iIdentifier
         << " Paths found, calling rippleCalc";
 
+    path::RippleCalc::Input rcInput;
+    if (convert_all_)
+        rcInput.partialPaymentAllowed = true;
+
     auto rc = path::RippleCalc::rippleCalculate(
         *sandbox, saMaxAmount,
         convert_all_ ? STAmount(saDstAmount.issue(), STAmount::cMaxValue,
             STAmount::cMaxOffset) : saDstAmount,
-        *raDstAccount, *raSrcAccount, *result);
+        *raDstAccount, *raSrcAccount, *result, &rcInput);
 
     if (! convert_all_ &&
         ! fullLiquidityPath.empty() &&
