@@ -119,7 +119,7 @@ void
 FeeVoteImpl::doValidation (Ledger::ref lastClosedLedger,
     STObject& baseValidation)
 {
-    if (lastClosedLedger->getBaseFee () != target_.reference_fee)
+    if (lastClosedLedger->fees().base != target_.reference_fee)
     {
         if (journal_.info) journal_.info <<
             "Voting for base fee of " << target_.reference_fee;
@@ -127,7 +127,7 @@ FeeVoteImpl::doValidation (Ledger::ref lastClosedLedger,
         baseValidation.setFieldU64 (sfBaseFee, target_.reference_fee);
     }
 
-    if (lastClosedLedger->getReserve (0) != target_.account_reserve)
+    if (lastClosedLedger->fees().accountReserve(0) != target_.account_reserve)
     {
         if (journal_.info) journal_.info <<
             "Voting for base resrve of " << target_.account_reserve;
@@ -135,7 +135,7 @@ FeeVoteImpl::doValidation (Ledger::ref lastClosedLedger,
         baseValidation.setFieldU32(sfReserveBase, target_.account_reserve);
     }
 
-    if (lastClosedLedger->getReserveInc () != target_.owner_reserve)
+    if (lastClosedLedger->fees().increment != target_.owner_reserve)
     {
         if (journal_.info) journal_.info <<
             "Voting for reserve increment of " << target_.owner_reserve;
@@ -154,13 +154,13 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     assert ((lastClosedLedger->info().seq % 256) == 0);
 
     detail::VotableInteger<std::uint64_t> baseFeeVote (
-        lastClosedLedger->getBaseFee (), target_.reference_fee);
+        lastClosedLedger->fees().base, target_.reference_fee);
 
     detail::VotableInteger<std::uint32_t> baseReserveVote (
-        lastClosedLedger->getReserve (0), target_.account_reserve);
+        lastClosedLedger->fees().accountReserve(0).drops(), target_.account_reserve);
 
     detail::VotableInteger<std::uint32_t> incReserveVote (
-        lastClosedLedger->getReserveInc (), target_.owner_reserve);
+        lastClosedLedger->fees().increment, target_.owner_reserve);
 
     for (auto const& e : set)
     {
@@ -203,9 +203,9 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     std::uint32_t const incReserve = incReserveVote.getVotes ();
 
     // add transactions to our position
-    if ((baseFee != lastClosedLedger->getBaseFee ()) ||
-            (baseReserve != lastClosedLedger->getReserve (0)) ||
-            (incReserve != lastClosedLedger->getReserveInc ()))
+    if ((baseFee != lastClosedLedger->fees().base) ||
+            (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
+            (incReserve != lastClosedLedger->fees().increment))
     {
         if (journal_.warning) journal_.warning <<
             "We are voting for a fee change: " << baseFee <<
