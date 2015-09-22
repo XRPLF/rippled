@@ -29,145 +29,66 @@ namespace ripple {
     The order book is a pair of Issues called in and out.
     @see Issue.
 */
-template <bool ByValue>
-class BookType
+class Book
 {
 public:
-    using Issue = IssueType <ByValue>;
-
     Issue in;
     Issue out;
 
-    BookType ()
+    Book ()
     {
     }
 
-    BookType (Issue const& in_, Issue const& out_)
+    Book (Issue const& in_, Issue const& out_)
         : in (in_)
         , out (out_)
     {
     }
-
-    template <bool OtherByValue>
-    BookType (BookType <OtherByValue> const& other)
-        : in (other.in)
-        , out (other.out)
-    {
-    }
-
-    /** Assignment.
-        This is only valid when ByValue == `true`
-    */
-    template <bool OtherByValue>
-    BookType& operator= (BookType <OtherByValue> const& other)
-    {
-        in = other.in;
-        out = other.out;
-        return *this;
-    }
 };
 
-template <bool ByValue>
-bool isConsistent(BookType<ByValue> const& book)
-{
-    return isConsistent(book.in) && isConsistent (book.out)
-            && book.in != book.out;
-}
+bool
+isConsistent (Book const& book);
 
-template <bool ByValue>
-std::string to_string (BookType<ByValue> const& book)
-{
-    return to_string(book.in) + "->" + to_string(book.out);
-}
+std::string
+to_string (Book const& book);
 
-template <bool ByValue>
-std::ostream& operator<<(std::ostream& os, BookType<ByValue> const& x)
-{
-    os << to_string (x);
-    return os;
-}
+std::ostream&
+operator<< (std::ostream& os, Book const& x);
 
-template <bool ByValue, class Hasher>
-void hash_append (Hasher& h, BookType<ByValue> const& b)
+template <class Hasher>
+void
+hash_append (Hasher& h, Book const& b)
 {
     using beast::hash_append;
-    hash_append (h, b.in, b.out);
+    hash_append(h, b.in, b.out);
 }
 
-template <bool ByValue>
-BookType<ByValue> reversed (BookType<ByValue> const& book)
-{
-    return BookType<ByValue> (book.out, book.in);
-}
+Book
+reversed (Book const& book);
 
 /** Ordered comparison. */
-template <bool LhsByValue, bool RhsByValue>
-int compare (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    int const diff (compare (lhs.in, rhs.in));
-    if (diff != 0)
-        return diff;
-    return compare (lhs.out, rhs.out);
-}
+int
+compare (Book const& lhs, Book const& rhs);
 
 /** Equality comparison. */
 /** @{ */
-template <bool LhsByValue, bool RhsByValue>
-bool operator== (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    return (lhs.in == rhs.in) &&
-           (lhs.out == rhs.out);
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator!= (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    return (lhs.in != rhs.in) ||
-           (lhs.out != rhs.out);
-}
+bool
+operator== (Book const& lhs, Book const& rhs);
+bool
+operator!= (Book const& lhs, Book const& rhs);
 /** @} */
 
 /** Strict weak ordering. */
 /** @{ */
-template <bool LhsByValue, bool RhsByValue>
-bool operator< (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    int const diff (compare (lhs.in, rhs.in));
-    if (diff != 0)
-        return diff < 0;
-    return lhs.out < rhs.out;
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator> (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    return rhs < lhs;
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator>= (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    return ! (lhs < rhs);
-}
-
-template <bool LhsByValue, bool RhsByValue>
-bool operator<= (BookType <LhsByValue> const& lhs,
-    BookType <RhsByValue> const& rhs)
-{
-    return ! (rhs < lhs);
-}
+bool
+operator< (Book const& lhs,Book const& rhs);
+bool
+operator> (Book const& lhs, Book const& rhs);
+bool
+operator>= (Book const& lhs, Book const& rhs);
+bool
+operator<= (Book const& lhs, Book const& rhs);
 /** @} */
-
-//------------------------------------------------------------------------------
-
-using Book = BookType <true>;
-using BookRef = BookType <false>;
 
 }
 
@@ -175,8 +96,8 @@ using BookRef = BookType <false>;
 
 namespace std {
 
-template <bool ByValue>
-struct hash <ripple::IssueType <ByValue>>
+template <>
+struct hash <ripple::Issue>
     : private boost::base_from_member <std::hash <ripple::Currency>, 0>
     , private boost::base_from_member <std::hash <ripple::AccountID>, 1>
 {
@@ -188,7 +109,7 @@ private:
 
 public:
     using value_type = std::size_t;
-    using argument_type = ripple::IssueType <ByValue>;
+    using argument_type = ripple::Issue;
 
     value_type operator() (argument_type const& value) const
     {
@@ -202,17 +123,17 @@ public:
 
 //------------------------------------------------------------------------------
 
-template <bool ByValue>
-struct hash <ripple::BookType <ByValue>>
+template <>
+struct hash <ripple::Book>
 {
 private:
-    using hasher = std::hash <ripple::IssueType <ByValue>>;
+    using hasher = std::hash <ripple::Issue>;
 
     hasher m_hasher;
 
 public:
     using value_type = std::size_t;
-    using argument_type = ripple::BookType <ByValue>;
+    using argument_type = ripple::Book;
 
     value_type operator() (argument_type const& value) const
     {
@@ -228,20 +149,20 @@ public:
 
 namespace boost {
 
-template <bool ByValue>
-struct hash <ripple::IssueType <ByValue>>
-    : std::hash <ripple::IssueType <ByValue>>
+template <>
+struct hash <ripple::Issue>
+    : std::hash <ripple::Issue>
 {
-    using Base = std::hash <ripple::IssueType <ByValue>>;
+    using Base = std::hash <ripple::Issue>;
     // VFALCO NOTE broken in vs2012
     //using Base::Base; // inherit ctors
 };
 
-template <bool ByValue>
-struct hash <ripple::BookType <ByValue>>
-    : std::hash <ripple::BookType <ByValue>>
+template <>
+struct hash <ripple::Book>
+    : std::hash <ripple::Book>
 {
-    using Base = std::hash <ripple::BookType <ByValue>>;
+    using Base = std::hash <ripple::Book>;
     // VFALCO NOTE broken in vs2012
     //using Base::Base; // inherit ctors
 };

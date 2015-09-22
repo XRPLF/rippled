@@ -2650,7 +2650,7 @@ void NetworkOPsImp::getBookPage (
                 {
                     // If either asset is globally frozen, consider all offers
                     // that aren't ours to be totally unfunded
-                    saOwnerFunds.clear (IssueRef (book.out.currency, book.out.account));
+                    saOwnerFunds.clear (book.out);
                 }
                 else
                 {
@@ -2817,7 +2817,7 @@ void NetworkOPsImp::getBookPage (
             {
                 // If either asset is globally frozen, consider all offers
                 // that aren't ours to be totally unfunded
-                saOwnerFunds.clear (IssueRef (book.out.currency, book.out.account));
+                saOwnerFunds.clear (book.out);
             }
             else
             {
