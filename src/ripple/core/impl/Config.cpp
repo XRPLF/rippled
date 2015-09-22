@@ -487,9 +487,6 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_PATH_SEARCH_MAX, strTemp))
         PATH_SEARCH_MAX     = beast::lexicalCastThrow <int> (strTemp);
 
-    if (getSingleSection (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
-        ACCOUNT_PROBE_MAX   = beast::lexicalCastThrow <int> (strTemp);
-
     if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp))
     {
         VALIDATORS_FILE     = strTemp;

@@ -241,9 +241,6 @@ public:
     std::uint32_t                      FETCH_DEPTH = 1000000000;
     int                         NODE_SIZE = 0;
 
-    // Client behavior
-    int                         ACCOUNT_PROBE_MAX = 10;
-
     bool                        SSL_VERIFY = true;
     std::string                 SSL_VERIFY_FILE;
     std::string                 SSL_VERIFY_DIR;
