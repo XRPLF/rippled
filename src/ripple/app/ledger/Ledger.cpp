@@ -1178,46 +1178,6 @@ qualityDirDescriber (
     }
 }
 
-void Ledger::deprecatedUpdateCachedFees() const
-{
-    if (mBaseFee)
-        return;
-    std::uint64_t baseFee = getConfig ().FEE_DEFAULT;
-    std::uint32_t referenceFeeUnits = getConfig ().TRANSACTION_FEE_BASE;
-    std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
-    std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
-
-    // VFALCO NOTE this doesn't go through the CachedSLEs
-    auto const sle = this->read(keylet::fees());
-    if (sle)
-    {
-        if (sle->getFieldIndex (sfBaseFee) != -1)
-            baseFee = sle->getFieldU64 (sfBaseFee);
-
-        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-            referenceFeeUnits = sle->getFieldU32 (sfReferenceFeeUnits);
-
-        if (sle->getFieldIndex (sfReserveBase) != -1)
-            reserveBase = sle->getFieldU32 (sfReserveBase);
-
-        if (sle->getFieldIndex (sfReserveIncrement) != -1)
-            reserveIncrement = sle->getFieldU32 (sfReserveIncrement);
-    }
-
-    {
-        // VFALCO Why not do this before calling getASNode?
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        if (mBaseFee == 0)
-        {
-            mBaseFee = baseFee;
-            mReferenceFeeUnits = referenceFeeUnits;
-            mReserveBase = reserveBase;
-            mReserveIncrement = reserveIncrement;
-        }
-    }
-}
-
 std::vector<uint256>
 Ledger::getNeededTransactionHashes (
     int max, SHAMapSyncFilter* filter) const
