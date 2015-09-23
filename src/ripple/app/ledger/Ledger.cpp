@@ -243,11 +243,11 @@ Ledger::Ledger (uint256 const& parentHash,
 
     if (! setup(config))
         loaded = false;
-
+    
     if (! loaded)
     {
         updateHash ();
-        getApp().family().missing_node (info_.hash);
+        family.missing_node (info_.hash);
     }
 }
 
