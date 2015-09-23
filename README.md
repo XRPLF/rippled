@@ -1,4 +1,4 @@
-![Ripple](/images/ripple.png)
+![Stellar](/images/ripple.png)
 
 #The World’s Fastest and Most Secure Payment System
 
