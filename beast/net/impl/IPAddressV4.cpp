@@ -147,8 +147,7 @@ bool is_public (AddressV4 const& addr)
 {
     return
         ! is_private (addr) &&
-        ! is_multicast (addr) &&
-        (addr != AddressV4::broadcast (addr));
+        ! is_multicast (addr);
 }
 
 //------------------------------------------------------------------------------
