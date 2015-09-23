@@ -460,6 +460,7 @@ int run (int argc, char** argv)
         if (vm.count ("quorum"))
         {
             getConfig ().VALIDATION_QUORUM = vm["quorum"].as <int> ();
+            getConfig ().LOCK_QUORUM = true;
 
             if (getConfig ().VALIDATION_QUORUM < 0)
                 iResult = 1;
