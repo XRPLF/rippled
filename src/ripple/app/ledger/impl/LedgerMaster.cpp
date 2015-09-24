@@ -313,7 +313,7 @@ public:
         mHeldTransactions.insert (transaction->getSTransaction ());
     }
 
-    void switchLCL (Ledger::pointer lastClosed)
+    void switchLCL (Ledger::pointer lastClosed) override
     {
         assert (lastClosed);
 
@@ -336,7 +336,8 @@ public:
         }
     }
 
-    bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
+    bool
+    fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) override
     {
         return mLedgerHistory.fixIndex (ledgerIndex, ledgerHash);
     }
@@ -1283,7 +1284,7 @@ public:
     }
 
     // The current ledger is the ledger we believe new transactions should go in
-    std::shared_ptr<ReadView const> getCurrentLedger ()
+    std::shared_ptr<ReadView const> getCurrentLedger () override
     {
         return app_.openLedger().current();
     }
