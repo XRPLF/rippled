@@ -23,6 +23,7 @@
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/Log.h>
 #include <beast/utility/Journal.h>
 
 namespace ripple {

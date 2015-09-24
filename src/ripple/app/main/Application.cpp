@@ -310,7 +310,7 @@ private:
 
 public:
     std::unique_ptr<Config const> config_;
-    Logs& logs_;
+    std::unique_ptr<Logs> logs_;
     beast::Journal m_journal;
     Application::MutexType m_masterMutex;
 
@@ -383,16 +383,18 @@ public:
 
     //--------------------------------------------------------------------------
 
-    ApplicationImp (std::unique_ptr<Config const> config, Logs& logs)
+    ApplicationImp (
+            std::unique_ptr<Config const> config,
+            std::unique_ptr<Logs> logs)
         : RootStoppable ("Application")
         , BasicApp (numberOfThreads(*config))
         , config_ (std::move(config))
-        , logs_ (logs)
+        , logs_ (std::move(logs))
 
-        , m_journal (logs_.journal("Application"))
+        , m_journal (logs_->journal("Application"))
 
         , timeKeeper_ (make_TimeKeeper(
-            logs_.journal("TimeKeeper")))
+            logs_->journal("TimeKeeper")))
 
         , m_txMaster (*this)
 
@@ -400,7 +402,7 @@ public:
 
         , m_shaMapStore (make_SHAMapStore (*this, setup_SHAMapStore (*config_),
             *this, m_nodeStoreScheduler,
-            logs_.journal ("SHAMapStore"), logs_.journal ("NodeObject"),
+            logs_->journal ("SHAMapStore"), logs_->journal ("NodeObject"),
             m_txMaster, *config_))
 
         , m_nodeStore (m_shaMapStore->makeDatabase ("NodeStore.main", 4))
@@ -408,10 +410,10 @@ public:
         , accountIDCache_(128000)
 
         , m_tempNodeCache ("NodeCache", 16384, 90, stopwatch(),
-            logs_.journal("TaggedCache"))
+            logs_->journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
-            config_->section (SECTION_INSIGHT), logs_.journal("Collector")))
+            config_->section (SECTION_INSIGHT), logs_->journal("Collector")))
 
         , family_ (*this, *m_nodeStore, *m_collectorManager)
 
@@ -420,13 +422,13 @@ public:
         , m_localCredentials (*this)
 
         , m_resourceManager (Resource::make_Manager (
-            m_collectorManager->collector(), logs_.journal("Resource")))
+            m_collectorManager->collector(), logs_->journal("Resource")))
 
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
         , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
-            m_nodeStoreScheduler, logs_.journal("JobQueue")))
+            m_nodeStoreScheduler, logs_->journal("JobQueue")))
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue
@@ -435,11 +437,11 @@ public:
         , m_orderBookDB (*this, *m_jobQueue)
 
         , m_pathRequests (std::make_unique<PathRequests> (
-            *this, logs_.journal("PathRequest"), m_collectorManager->collector ()))
+            *this, logs_->journal("PathRequest"), m_collectorManager->collector ()))
 
         , m_ledgerMaster (make_LedgerMaster (*this, stopwatch (),
             *m_jobQueue, m_collectorManager->collector (),
-            logs_.journal("LedgerMaster")))
+            logs_->journal("LedgerMaster")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
@@ -458,12 +460,12 @@ public:
             }))
 
         , m_acceptedLedgerCache ("AcceptedLedger", 4, 60, stopwatch(),
-            logs_.journal("TaggedCache"))
+            logs_->journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
             config_->RUN_STANDALONE, config_->NETWORK_QUORUM,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
-            logs_.journal("NetworkOPs")))
+            logs_->journal("NetworkOPs")))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (make_UniqueNodeList (*this, *m_jobQueue))
@@ -473,16 +475,16 @@ public:
 
         , m_amendmentTable (make_AmendmentTable
                             (weeks(2), MAJORITY_FRACTION,
-                             logs_.journal("AmendmentTable")))
+                             logs_->journal("AmendmentTable")))
 
-        , mFeeTrack (std::make_unique<LoadFeeTrack>(logs_.journal("LoadManager")))
+        , mFeeTrack (std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , mHashRouter (std::make_unique<HashRouter>(
             HashRouter::getDefaultHoldTime ()))
 
         , mValidations (make_Validations (*this))
 
-        , m_loadManager (make_LoadManager (*this, *this, logs_.journal("LoadManager")))
+        , m_loadManager (make_LoadManager (*this, *this, logs_->journal("LoadManager")))
 
         , m_sweepTimer (this)
 
@@ -490,10 +492,10 @@ public:
 
         , m_signals (get_io_service())
 
-        , m_resolver (ResolverAsio::New (get_io_service(), logs_.journal("Resolver")))
+        , m_resolver (ResolverAsio::New (get_io_service(), logs_->journal("Resolver")))
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
-            logs_.journal("Application"), std::chrono::milliseconds (100), get_io_service())
+            logs_->journal("Application"), std::chrono::milliseconds (100), get_io_service())
     {
         add (m_resourceManager.get ());
 
@@ -558,11 +560,11 @@ public:
     {
         return *config_;
     }
-    
+
     Logs&
     logs() override
     {
-        return logs_;
+        return *logs_;
     }
 
     boost::asio::io_service& getIOService () override
@@ -794,11 +796,11 @@ public:
             // Let debug messages go to the file but only WARNING or higher to
             // regular output (unless verbose)
 
-            if (!logs_.open(debug_log))
+            if (!logs_->open(debug_log))
                 std::cerr << "Can't open log file " << debug_log << '\n';
 
-            if (logs_.severity() > beast::Journal::kDebug)
-                logs_.severity (beast::Journal::kDebug);
+            if (logs_->severity() > beast::Journal::kDebug)
+                logs_->severity (beast::Journal::kDebug);
         }
 
         if (!config_->RUN_STANDALONE)
@@ -1133,7 +1135,7 @@ void ApplicationImp::startGenesisLedger ()
     next->setImmutable (*config_);
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, *config_,
-        cachedSLEs_, logs_.journal("OpenLedger"));
+        cachedSLEs_, logs_->journal("OpenLedger"));
     m_ledgerMaster->switchLCL (next);
 }
 
@@ -1387,7 +1389,7 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, *config_,
-            cachedSLEs_, logs_.journal("OpenLedger"));
+            cachedSLEs_, logs_->journal("OpenLedger"));
 
         if (replay)
         {
@@ -1622,7 +1624,7 @@ void ApplicationImp::updateTables ()
         NodeStore::DummyScheduler scheduler;
         std::unique_ptr <NodeStore::Database> source =
             NodeStore::Manager::instance().make_Database ("NodeStore.import", scheduler,
-                logs_.journal("NodeObject"), 0,
+                logs_->journal("NodeObject"), 0,
                 config_->section(ConfigSection::importNodeDatabase ()));
 
         WriteLog (lsWARNING, NodeObject) <<
@@ -1641,10 +1643,12 @@ Application::Application ()
 }
 
 std::unique_ptr<Application>
-make_Application (std::unique_ptr<Config const> config, Logs& logs)
+make_Application (
+    std::unique_ptr<Config const> config,
+    std::unique_ptr<Logs> logs)
 {
     return std::make_unique<ApplicationImp> (
-        std::move(config), logs);
+        std::move(config), std::move(logs));
 }
 
 Application& getApp ()
