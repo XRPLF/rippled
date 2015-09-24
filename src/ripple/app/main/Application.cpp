@@ -463,7 +463,7 @@ public:
             logs_->journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
-            config_->RUN_STANDALONE, config_->NETWORK_QUORUM,
+            config_->RUN_STANDALONE, config_->NETWORK_QUORUM, config_->START_VALID,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
             logs_->journal("NetworkOPs")))
 

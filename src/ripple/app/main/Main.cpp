@@ -292,6 +292,7 @@ int run (int argc, char** argv)
     ("quorum", po::value <int> (), "Set the validation quorum.")
     ("verbose,v", "Verbose logging.")
     ("load", "Load the current ledger from the local DB.")
+    ("valid", "Consider the initial ledger a valid network ledger.")
     ("replay","Replay a ledger close.")
     ("ledger", po::value<std::string> (), "Load the specified ledger and start from .")
     ("ledgerfile", po::value<std::string> (), "Load the specified ledger file.")
@@ -409,8 +410,22 @@ int run (int argc, char** argv)
     {
         config->START_UP = Config::LOAD;
     }
-    else if (vm.count ("net"))
+
+    if (vm.count ("valid"))
     {
+        config->START_VALID = true;
+    }
+
+    if (vm.count ("net"))
+    {
+        if ((config->START_UP == Config::LOAD) ||
+            (config->START_UP == Config::REPLAY))
+        {
+            std::cerr <<
+                "Net and load/reply options are incompatible" << std::endl;
+            return -1;
+        }
+
         config->START_UP = Config::NETWORK;
 
         if (config->VALIDATION_QUORUM < 2)
