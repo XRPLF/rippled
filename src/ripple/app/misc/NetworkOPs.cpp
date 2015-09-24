@@ -117,7 +117,7 @@ public:
     //
     NetworkOPsImp (
         Application& app, clock_type& clock, bool standalone,
-            std::size_t network_quorum, JobQueue& job_queue,
+            std::size_t network_quorum, bool start_valid, JobQueue& job_queue,
                 LedgerMaster& ledgerMaster, Stoppable& parent,
                     beast::Journal journal)
         : NetworkOPs (parent)
@@ -125,7 +125,7 @@ public:
         , m_clock (clock)
         , m_journal (journal)
         , m_localTX (make_LocalTxs ())
-        , mMode (omDISCONNECTED)
+        , mMode (start_valid ? omFULL : omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , m_amendmentBlocked (false)
         , m_heartbeatTimer (this)
@@ -136,7 +136,7 @@ public:
         , mLastLoadFactor (256)
         , m_job_queue (job_queue)
         , m_standalone (standalone)
-        , m_network_quorum (network_quorum)
+        , m_network_quorum (start_valid ? 0 : network_quorum)
     {
     }
 
@@ -2927,11 +2927,12 @@ NetworkOPs::~NetworkOPs ()
 
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock, bool standalone,
-    std::size_t network_quorum, JobQueue& job_queue, LedgerMaster& ledgerMaster,
+    std::size_t network_quorum, bool startvalid,
+    JobQueue& job_queue, LedgerMaster& ledgerMaster,
     beast::Stoppable& parent, beast::Journal journal)
 {
     return std::make_unique<NetworkOPsImp> (app, clock, standalone, network_quorum,
-        job_queue, ledgerMaster, parent, journal);
+        startvalid, job_queue, ledgerMaster, parent, journal);
 }
 
 } // ripple

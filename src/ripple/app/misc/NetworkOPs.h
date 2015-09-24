@@ -236,7 +236,8 @@ public:
 
 std::unique_ptr<NetworkOPs>
 make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock, bool standalone,
-    std::size_t network_quorum, JobQueue& job_queue, LedgerMaster& ledgerMaster,
+    std::size_t network_quorum, bool start_valid,
+    JobQueue& job_queue, LedgerMaster& ledgerMaster,
     beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple

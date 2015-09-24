@@ -185,7 +185,7 @@ public:
     };
     StartUpType                 START_UP = NORMAL;
 
-
+    bool                        START_VALID = false;
 
     std::string                 START_LEDGER;
 
