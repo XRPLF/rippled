@@ -556,8 +556,6 @@ AmendmentTableImpl::setJson (Json::Value& v, const uint256& id, const AmendmentS
     {
         int votesTotal = 0, votesNeeded = 0, votesFor = 0;
         {
-            ScopedLockType sl (mLock);
-
             votesTotal = m_lastVote.mTrustedValidations;
             votesNeeded = m_lastVote.mThreshold;
             auto j = m_lastVote.mVotes.find (id);
