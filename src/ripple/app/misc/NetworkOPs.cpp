@@ -1087,8 +1087,9 @@ void NetworkOPsImp::tryStartConsensus ()
         // check if the ledger is good enough to go to omFULL
         // Note: Do not go to omFULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to omCONNECTED -- TODO
+        auto current = m_ledgerMaster.getCurrentLedger();
         if (app_.timeKeeper().now().time_since_epoch().count() <
-            m_ledgerMaster.getCurrentLedger ()->info().closeTime)
+            (current->info().parentCloseTime + 2* current->info().closeTimeResolution))
         {
             setMode (omFULL);
         }

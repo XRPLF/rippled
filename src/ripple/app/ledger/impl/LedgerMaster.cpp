@@ -194,6 +194,13 @@ public:
     bool isCompatible (Ledger::pointer ledger,
         beast::Journal::Stream s, const char* reason) override
     {
+        if (mStrictValCount)
+        {
+            // If we're only using validation count, then we can't
+            // reject a ledger even if it's ioncompatible
+            return true;
+        }
+
         auto validLedger = getValidatedLedger();
 
         if (validLedger &&
