@@ -256,6 +256,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         publicKey.toPublicKey(), cluster);
     if (result != PeerFinder::Result::success)
     {
+        m_peerFinder->on_closed(slot);
         if (journal.debug) journal.debug <<
             "Peer " << remote_endpoint << " redirected, slots full";
         handoff.moved = false;
