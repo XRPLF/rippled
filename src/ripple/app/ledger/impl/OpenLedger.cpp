@@ -41,7 +41,7 @@ OpenLedger::empty() const
 {
     std::lock_guard<
         std::mutex> lock(modify_mutex_);
-    return current_->txCount() != 0;
+    return current_->txCount() == 0;
 }
 
 std::shared_ptr<ReadView const>
