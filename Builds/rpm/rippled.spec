@@ -1,14 +1,18 @@
+%define rippled_branch %(echo $RIPPLED_BRANCH)
 Name:           rippled
-Version:        0.29.1-rc1
-Release:        1%{?dist}
+# Version must be limited to MAJOR.MINOR.PATCH
+Version:        0.29.1
+# Release should include either the build or hotfix number (ex: hf1%{?dist} or b2%{?dist})
+# If there is no b# or hf#, then use 1%{?dist}
+Release:        rc1%{?dist}
 Summary:        Ripple peer-to-peer network daemon
 
 Group:          Applications/Internet
 License:        ISC
 URL:            https://github.com/ripple/rippled
 
-# curl -L -o SOURCES/rippled-release.zip https://github.com/ripple/rippled/archive/release.zip
-Source0:        rippled-release.zip
+# curl -L -o SOURCES/rippled-release.zip https://github.com/ripple/rippled/archive/${RIPPLED_BRANCH}.zip
+Source0:        rippled-%{rippled_branch}.zip
 BuildRoot:      %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  gcc-c++ scons openssl-devel protobuf-devel
@@ -20,13 +24,11 @@ Rippled is the server component of the Ripple network.
 
 
 %prep
-%setup -n rippled-release
+%setup -n rippled-%{rippled_branch}
 
 
 %build
-# Assume boost is manually installed
-export RIPPLED_BOOST_HOME=/usr/local/boost_1_55_0
-scons -j `grep -c processor /proc/cpuinfo` build/rippled
+scons -j `grep -c processor /proc/cpuinfo`
 
 
 %install
@@ -49,4 +51,4 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 /usr/bin/rippled
 /usr/share/rippled/LICENSE
-/etc/rippled/rippled-example.cfg
+%config(noreplace) /etc/rippled/rippled.cfg
