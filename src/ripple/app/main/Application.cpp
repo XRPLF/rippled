@@ -1039,7 +1039,7 @@ void ApplicationImp::setup()
     {
         // Should this message be here, conceptually? In theory this sort
         // of message, if displayed, should be displayed from PeerFinder.
-        if (config_->PEER_PRIVATE && config_->IPS.empty ())
+        if (config_->PEER_PRIVATE && config_->IPS_FIXED.empty ())
             m_journal.warning << "No outbound peer connections will be made";
 
         // VFALCO NOTE the state timer resets the deadlock detector.
