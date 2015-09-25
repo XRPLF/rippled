@@ -118,14 +118,11 @@ public:
 
 namespace detail
 {
-/** preEnabledAmendments is a static collection of amendments that are are
-   enabled at build time.
-
-   Add amendments to this collection at build time to enable them on this
-   server.
-*/
-
+/** Amendments that this server supports and enables by default */
 std::vector<AmendmentName> const preEnabledAmendments;
+
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<AmendmentName> const supportedAmendments;
 }
 
 void
@@ -166,6 +163,9 @@ parseSection (std::vector<AmendmentName>& names, Section const& section)
 void
 AmendmentTableImpl::addInitial (Section const& section)
 {
+    for (auto const& a : detail::supportedAmendments)
+        addKnown (a);
+
     for (auto const& a : detail::preEnabledAmendments)
     {
         if (!a.valid ())
