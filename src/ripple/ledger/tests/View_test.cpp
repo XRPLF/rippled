@@ -551,6 +551,14 @@ class View_test
             }
             expect(! v1.exists(k(1)));
         }
+
+        // Make sure OpenLedger::empty works
+        {
+            Env env(*this);
+            expect(env.openLedger.empty());
+            env.fund(XRP(10000), Account("test"));
+            expect(!env.openLedger.empty());
+        }
     }
 
     void run()

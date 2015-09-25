@@ -1132,12 +1132,6 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt (newLCL);
 
-    // Build new open ledger
-    auto newOL = std::make_shared<Ledger>(
-        open_ledger, *newLCL, app_.timeKeeper().closeTime());
-    OpenView accum(&*newOL);
-    assert(accum.open());
-
     // Apply disputed transactions that didn't get in
     //
     // The first crack of transactions to get into the new
@@ -1177,6 +1171,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     }
 
     {
+        // Build new open ledger
+
         auto lock = beast::make_lock(
             app_.getMasterMutex(), std::defer_lock);
         LedgerMaster::ScopedLockType sl (
