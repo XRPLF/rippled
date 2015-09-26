@@ -218,7 +218,11 @@ ConnectAttempt::onHandshake (error_code ec)
     beast::http::message req = makeRequest(
         ! overlay_.peerFinder().config().peerPrivate,
             remote_endpoint_.address());
-    auto const hello = buildHello (sharedValue, app_);
+    auto const hello = buildHello (
+        sharedValue,
+        overlay_.setup().public_ip,
+        beast::IPAddressConversion::from_asio(remote_endpoint_),
+        app_);
     appendHello (req, hello);
 
     using beast::http::write;
@@ -399,7 +403,10 @@ ConnectAttempt::processResponse (beast::http::message const& m,
 
     RippleAddress publicKey;
     std::tie(publicKey, success) = verifyHello (hello,
-        sharedValue, journal_, app_);
+        sharedValue,
+        overlay_.setup().public_ip,
+        beast::IPAddressConversion::from_asio(remote_endpoint_),
+        journal_, app_);
     if(! success)
         return close(); // verifyHello logs
     if(journal_.info) journal_.info <<
