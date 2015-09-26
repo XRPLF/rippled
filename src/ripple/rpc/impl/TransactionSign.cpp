@@ -792,7 +792,7 @@ Json::Value transactionSignFor (
     {
         Json::Value err = checkMultiSignFields (jvRequest);
         if (RPC::contains_error (err))
-            return std::move (err);
+            return err;
     }
 
     // Add and amend fields based on the transaction type.
@@ -880,7 +880,7 @@ Json::Value transactionSubmitMultiSigned (
     {
         Json::Value err = checkMultiSignFields (jvRequest);
         if (RPC::contains_error (err))
-            return std::move (err);
+            return err;
     }
 
     Json::Value& tx_json (jvRequest ["tx_json"]);
@@ -913,7 +913,7 @@ Json::Value transactionSubmitMultiSigned (
             jvRequest, role, false, app.config(), app.getFeeTrack(), ledger);
 
         if (RPC::contains_error(err))
-            return std::move (err);
+            return err;
 
         err = checkPayment (
             jvRequest,
@@ -925,7 +925,7 @@ Json::Value transactionSubmitMultiSigned (
             false);
 
         if (RPC::contains_error(err))
-            return std::move (err);
+            return err;
     }
 
     // Grind through the JSON in tx_json to produce a STTx
