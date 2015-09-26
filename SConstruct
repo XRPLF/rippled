@@ -724,6 +724,22 @@ def get_soci_sources(style):
                        CPPPATH=cpp_path)
     return result
 
+def use_shp(toolchain):
+    '''
+    Return True if we want to use the --system-header-prefix command-line switch
+    '''
+    if toolchain != 'clang':
+        return False
+    if use_shp.cache is None:
+        try:
+            ver = subprocess.check_output(
+                ['clang', '--version'], stderr=subprocess.STDOUT).strip()
+            use_shp.cache = 'version 3.4' not in ver and 'version 3.0' not in ver
+        except:
+            use_shp.cache = False
+    return use_shp.cache
+use_shp.cache = None
+
 def get_common_sources(toolchain):
     result = []
     if toolchain == 'msvc':
@@ -761,6 +777,11 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
     append_sources(result, *list_sources('src/ripple/unl', '.cpp'))
 
+    if use_shp(toolchain):
+        cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
+    else:
+        cc_flags = {}
+
     append_sources(
         result,
         *list_sources('src/ripple/nodestore', '.cpp'),
@@ -768,7 +789,8 @@ def get_classic_sources(toolchain):
             'src/rocksdb2/include',
             'src/snappy/snappy',
             'src/snappy/config',
-        ])
+        ],
+        **cc_flags)
 
     result += get_soci_sources('classic')
     result += get_common_sources(toolchain)
@@ -800,6 +822,11 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/unl.cpp',
     )
 
+    if use_shp(toolchain):
+        cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
+    else:
+        cc_flags = {}
+
     append_sources(
         result,
         'src/ripple/unity/nodestore.cpp',
@@ -807,7 +834,8 @@ def get_unity_sources(toolchain):
             'src/rocksdb2/include',
             'src/snappy/snappy',
             'src/snappy/config',
-        ])
+        ],
+        **cc_flags)
 
     result += get_soci_sources('unity')
     result += get_common_sources(toolchain)
@@ -917,6 +945,11 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/git_id.cpp',
                 **git_commit_tag)
 
+            if use_shp(toolchain):
+                cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
+            else:
+                cc_flags = {}
+
             object_builder.add_source_files(
                 'src/beast/beast/unity/hash_unity.cpp',
                 'src/ripple/unity/beast.cpp',
@@ -925,7 +958,8 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
                 'src/ripple/unity/server.cpp',
-                'src/ripple/unity/websocket02.cpp'
+                'src/ripple/unity/websocket02.cpp',
+                **cc_flags
             )
 
             object_builder.add_source_files(
@@ -933,9 +967,11 @@ for tu_style in ['classic', 'unity']:
                 CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
 
             if 'gcc' in toolchain:
-                no_uninitialized_warning = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
+                cc_flags = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
+            elif use_shp(toolchain):
+                cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
             else:
-                no_uninitialized_warning = {}
+                cc_flags = {}
 
             object_builder.add_source_files(
                 'src/ripple/unity/ed25519.c',
@@ -952,7 +988,7 @@ for tu_style in ['classic', 'unity']:
                     'src/snappy/snappy',
                     'src/snappy/config',
                 ],
-                **no_uninitialized_warning
+                **cc_flags
             )
 
             object_builder.add_source_files(

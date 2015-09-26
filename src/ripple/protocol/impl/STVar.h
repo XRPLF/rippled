@@ -127,7 +127,7 @@ make_stvar(Args&&... args)
 {
     STVar st;
     st.construct<T>(std::forward<Args>(args)...);
-    return std::move(st);
+    return st;
 }
 
 inline
