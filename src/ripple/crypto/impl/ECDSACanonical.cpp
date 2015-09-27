@@ -98,7 +98,7 @@ public:
         : m_skip (0)
     {
         // The format is: <02> <length of signature> <signature>
-        if ((sig[0] != 0x02) || (size < 3))
+        if ((size < 3) || (sig[0] != 0x02))
             return;
 
         std::size_t const len (sig[1]);
