@@ -928,8 +928,16 @@ void Ledger::updateSkipList ()
 static bool saveValidatedLedger (
     Application& app, std::shared_ptr<Ledger> const& ledger, bool current)
 {
-    // TODO(tom): Fix this hard-coded SQL!
     auto j = app.journal ("Ledger");
+
+     if (! app.pendingSaves().startWork (ledger->info().seq))
+     {
+         // The save was completed synchronously
+         JLOG (j.debug) << "Save aborted";
+         return true;
+     }
+
+    // TODO(tom): Fix this hard-coded SQL!
     JLOG (j.trace)
         << "saveValidatedLedger "
         << (current ? "" : "fromAcquire ") << ledger->info().seq;
@@ -998,7 +1006,7 @@ static bool saveValidatedLedger (
         app.getLedgerMaster().failedSave(seq, ledger->info().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
-        app.pendingSaves().erase(seq);
+        app.pendingSaves().finishWork(seq);
         return false;
     }
 
@@ -1098,7 +1106,7 @@ static bool saveValidatedLedger (
 
     // Clients can now trust the database for
     // information about this ledger sequence.
-    app.pendingSaves().erase(seq);
+    app.pendingSaves().finishWork(seq);
     return true;
 }
 
@@ -1110,18 +1118,28 @@ bool pendSaveValidated (Application& app,
 {
     if (! app.getHashRouter ().setFlags (ledger->info().hash, SF_SAVED))
     {
+        // We have tried to save this ledger recently
+
         JLOG (app.journal ("Ledger").debug) << "Double pend save for "
             << ledger->info().seq;
-        return true;
+
+        if (! isSynchronous ||
+            ! app.pendingSaves().pending (ledger->info().seq))
+        {
+            // Either we don't need it to be finished
+            // or it is finished
+            return true;
+        }
     }
 
     assert (ledger->isImmutable ());
 
-    if (! app.pendingSaves().insert (ledger->info().seq))
+    if (! app.pendingSaves().shouldWork (ledger->info().seq, isSynchronous))
     {
         JLOG (app.journal ("Ledger").debug)
             << "Pend save with seq in pending saves "
             << ledger->info().seq;
+
         return true;
     }
 

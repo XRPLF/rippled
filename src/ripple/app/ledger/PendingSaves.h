@@ -21,8 +21,9 @@
 #define RIPPLE_APP_PENDINGSAVES_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
-#include <boost/container/flat_set.hpp>
+#include <map>
 #include <mutex>
+#include <condition_variable>
 
 namespace ripple {
 
@@ -36,49 +37,111 @@ class PendingSaves
 {
 private:
     std::mutex mutable mutex_;
-    boost::container::flat_set<LedgerIndex> set_;
+    std::map <LedgerIndex, bool> map_;
+    std::condition_variable await_;
 
 public:
-    /** Add a ledger to the list.
 
-        This is called when the ledger is built but before
-        we have updated the SQLite indexes. Clients querying
-        the indexes will not see results from this ledger.
+    /** Start working on a ledger
 
-        @return `true` If the ledger indexes was not
-                already in the list.
+        This is called prior to updating the SQLite indexes.
+
+        @return 'true' if work should be done
     */
     bool
-    insert (LedgerIndex seq)
+    startWork (LedgerIndex seq)
     {
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        return set_.insert(seq).second;
+        std::lock_guard <std::mutex> lock(mutex_);
+
+        auto it = map_.find (seq);
+
+        if ((it == map_.end()) || it->second)
+        {
+            // Work done or another thread is doing it
+            return false;
+        }
+
+        it->second = true;
+        return true;
     }
 
-    /** Remove a ledger from the list.
+    /** Finish working on a ledger
 
-        This is called after the ledger has been fully saved,
-        indicating that the SQLite indexes will produce correct
-        results in response to client requests.
+        This is called after updating the SQLite indexes.
+        The tracking of the work in progress is removed and
+        threads awaiting completion are notified.
     */
     void
-    erase (LedgerIndex seq)
+    finishWork (LedgerIndex seq)
     {
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        set_.erase(seq);
+        std::lock_guard <std::mutex> lock(mutex_);
+
+        map_.erase (seq);
+        await_.notify_all();
     }
 
-    /** Returns a copy of the current set. */
-    auto
-    getSnapshot() const ->
-        decltype(set_)
+    /** Return `true` if a ledger is in the progress of being saved. */
+    bool
+    pending (LedgerIndex seq)
     {
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        return set_;
+        std::lock_guard <std::mutex> lock(mutex_);
+        return map_.find(seq) != map_.end();
     }
+
+    /** Check if a ledger should be dispatched
+
+        Called to determine whether work should be done or
+        dispatched. If work is already in progress and the
+        call is synchronous, wait for work to be completed.
+
+        @return 'true' if work should be done or dispatched
+    */
+    bool
+    shouldWork (LedgerIndex seq, bool isSynchronous)
+    {
+        std::unique_lock <std::mutex> lock(mutex_);
+        do
+        {
+            auto it = map_.find (seq);
+
+            if (it == map_.end())
+            {
+                map_.emplace(seq, false);
+                return true;
+            }
+
+            if (! isSynchronous)
+            {
+                // Already dispatched
+                return false;
+            }
+
+            if (! it->second)
+            {
+                // Scheduled, but not dispatched
+                return true;
+            }
+
+            // Already in progress, just need to wait
+            await_.wait (lock);
+
+        } while (true);
+    }
+
+    /** Get a snapshot of the pending saves
+
+        Each entry in the returned map corresponds to a ledger
+        that is in progress or dispatched. The boolean indicates
+        whether work is currently in progress.
+    */
+    std::map <LedgerIndex, bool>
+    getSnapshot () const
+    {
+        std::lock_guard <std::mutex> lock(mutex_);
+
+        return map_;
+    }
+
 };
 
 }

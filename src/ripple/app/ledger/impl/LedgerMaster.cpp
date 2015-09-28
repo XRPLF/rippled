@@ -480,12 +480,12 @@ public:
             // Best effort for remaining exclusions
             for(auto v : pendingSaves)
             {
-                if ((v >= minVal) && (v <= maxVal))
+                if ((v.first >= minVal) && (v.first <= maxVal))
                 {
-                    if (v > ((minVal + maxVal) / 2))
-                        maxVal = v - 1;
+                    if (v.first > ((minVal + maxVal) / 2))
+                        maxVal = v.first - 1;
                     else
-                        minVal = v + 1;
+                        minVal = v.first + 1;
                 }
             }
 
