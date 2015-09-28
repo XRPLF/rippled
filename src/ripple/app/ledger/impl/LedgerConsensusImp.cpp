@@ -1023,7 +1023,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << "Report: TxSt = " << set->getHash ()
         << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
-    // Put failed transactions into a deterministic order
+    // Put transactions into a deterministic, but unpredictable, order
     CanonicalTXSet retriableTxs (set->getHash ());
 
     // Build the new last closed ledger
@@ -1872,6 +1872,11 @@ void applyTransactions (
     CanonicalTXSet& retriableTxs,
     ApplyFlags flags)
 {
+
+    // Switch to new transaction ordering on
+    // October 27, 2015 at 11:00AM PDT
+    bool const newTxOrder = checkLedger->info().closeTime > 499284000;
+
     auto j = app.journal ("LedgerConsensus");
     if (set)
     {
@@ -1895,11 +1900,15 @@ void applyTransactions (
 
             if (txn)
             {
-                if (applyTransaction(app, view, txn, true, flags, j) ==
+                if (newTxOrder)
+                {
+                    // All transactions execute in canonical order
+                    retriableTxs.insert (txn);
+                }
+                else if (applyTransaction(app, view, txn, true, flags, j) ==
                     LedgerConsensusImp::resultRetry)
                 {
-                    // On failure, stash the failed transaction for
-                    // later retry.
+                    // Failures are retried in canonical order
                     retriableTxs.insert (txn);
                 }
             }

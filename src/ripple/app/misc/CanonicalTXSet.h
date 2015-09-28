@@ -76,17 +76,17 @@ public:
     using const_iterator = std::map <Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
-    explicit CanonicalTXSet (LedgerHash const& lastClosedLedgerHash)
-        : mSetHash (lastClosedLedgerHash)
+    explicit CanonicalTXSet (LedgerHash const& saltHash)
+        : mSetHash (saltHash)
     {
     }
 
     void insert (std::shared_ptr<STTx const> const& txn);
 
     // VFALCO TODO remove this function
-    void reset (LedgerHash const& newLastClosedLedgerHash)
+    void reset (LedgerHash const& saltHash)
     {
-        mSetHash = newLastClosedLedgerHash;
+        mSetHash = saltHash;
 
         mMap.clear ();
     }
