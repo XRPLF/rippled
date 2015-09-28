@@ -270,8 +270,6 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         }
     }
 
-    HTTPClient::initializeSSLContext(*this);
-
     // Update default values
     load ();
     {
@@ -290,6 +288,8 @@ void Config::setup (std::string const& strConf, bool bQuiet)
             boost::str (boost::format ("Can not create %s") % dataDir));
 
     legacy ("database_path", boost::filesystem::absolute (dataDir).string ());
+
+    HTTPClient::initializeSSLContext(*this);
 }
 
 void Config::load ()
