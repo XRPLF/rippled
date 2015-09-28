@@ -282,7 +282,7 @@ int run (int argc, char** argv)
     ("conf", po::value<std::string> (), "Specify the configuration file.")
     ("rpc", "Perform rpc command (default).")
     ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
-    ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
+    ("rpc_port", po::value <std::uint16_t> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
     ("shutdowntest", po::value <std::string> ()->implicit_value (""), "Perform shutdown tests.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
@@ -438,9 +438,9 @@ int run (int argc, char** argv)
     {
         try
         {
-            config->rpc_ip =
+            config->rpc_ip.emplace (
                 boost::asio::ip::address_v4::from_string(
-                    vm["rpc_ip"].as<std::string>());
+                    vm["rpc_ip"].as<std::string>()));
         }
         catch(...)
         {
@@ -456,7 +456,8 @@ int run (int argc, char** argv)
     {
         try
         {
-            config->rpc_port = vm["rpc_port"].as<std::uint16_t>();
+            config->rpc_port.emplace (
+                vm["rpc_port"].as<std::uint16_t>());
 
             if (*config->rpc_port == 0)
                 throw std::domain_error ("");
