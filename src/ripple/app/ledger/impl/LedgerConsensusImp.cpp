@@ -479,9 +479,15 @@ void LedgerConsensusImp::mapCompleteInternal (
         else
             assert (false); // We don't have our own position?!
     }
-    else
+    else if (!mOurPosition)
+        JLOG (j_.debug)
+            << "Not creating disputes: no position yet.";
+    else if (mOurPosition->isBowOut ())
         JLOG (j_.warning)
-            << "Not ready to create disputes";
+            << "Not creating disputes: not participating.";
+    else
+        JLOG (j_.debug)
+            << "Not creating disputes: identical position.";
 
     mAcquired[hash] = map;
 
@@ -993,8 +999,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     // If we don't have a close time, then we just agree to disagree
     bool const closeTimeCorrect = (closeTime != 0);
 
-    // Switch to new semantics on Sep 30, 2015 at 11:00:00am PDT
-    if (mPreviousLedger->info().closeTime > 497296800)
+    // Switch to new semantics on Oct 27, 2015 at 11:00:00am PDT
+    if (mPreviousLedger->info().closeTime > 499284000)
     {
         // Ledger close times should increase strictly monotonically
         if (closeTime <= mPreviousLedger->info().closeTime)
