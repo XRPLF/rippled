@@ -24,6 +24,7 @@
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/impl/Manifest.h>
+#include <ripple/overlay/impl/TrafficCount.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
@@ -111,6 +112,7 @@ private:
     ServerHandler& serverHandler_;
     Resource::Manager& m_resourceManager;
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
+    TrafficCount m_traffic;
     hash_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> m_peers;
     hash_map<RippleAddress, std::weak_ptr<PeerImp>> m_publicKeyMap;
@@ -266,6 +268,12 @@ public:
     static
     std::string
     makePrefix (std::uint32_t id);
+
+    void
+    reportTraffic (
+        TrafficCount::category cat,
+        bool isInbound,
+        int bytes);
 
 private:
     std::shared_ptr<HTTP::Writer>

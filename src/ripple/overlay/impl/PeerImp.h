@@ -403,7 +403,8 @@ public:
 
     error_code
     onMessageBegin (std::uint16_t type,
-        std::shared_ptr <::google::protobuf::Message> const& m);
+        std::shared_ptr <::google::protobuf::Message> const& m,
+        std::size_t size);
 
     void
     onMessageEnd (std::uint16_t type,

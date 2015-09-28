@@ -3309,6 +3309,12 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\TMHello.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\TrafficCount.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\TrafficCount.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>

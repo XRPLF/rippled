@@ -2624,6 +2624,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\TMHello.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\TrafficCount.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\TrafficCount.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\ZeroCopyStream.h">

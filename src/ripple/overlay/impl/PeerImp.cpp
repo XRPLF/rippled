@@ -192,6 +192,10 @@ PeerImp::send (Message::pointer const& m)
     if(detaching_)
         return;
 
+    overlay_.reportTraffic (
+        static_cast<TrafficCount::category>(m->getCategory()),
+        false, static_cast<int>(m->getBuffer().size()));
+
     auto sendq_size = send_queue_.size();
 
     if (sendq_size < Tuning::targetSendQueue)
@@ -813,11 +817,14 @@ PeerImp::onMessageUnknown (std::uint16_t type)
 
 PeerImp::error_code
 PeerImp::onMessageBegin (std::uint16_t type,
-    std::shared_ptr <::google::protobuf::Message> const& m)
+    std::shared_ptr <::google::protobuf::Message> const& m,
+    std::size_t size)
 {
     load_event_ = app_.getJobQueue ().getLoadEventAP (
         jtPEER, protocolMessageName(type));
     fee_ = Resource::feeLightPeer;
+    overlay_.reportTraffic (TrafficCount::categorize (*m, type, true),
+        true, static_cast<int>(size));
     return error_code{};
 }
 

@@ -32,6 +32,7 @@
 #include <ripple/protocol/STExchange.h>
 #include <beast/ByteOrder.h>
 #include <beast/crypto/base64.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/http/rfc2616.h>
 #include <beast/utility/ci_char_traits.h>
 #include <beast/utility/WrappedSink.h>
@@ -588,6 +589,28 @@ OverlayImpl::onChildrenStopped ()
 void
 OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
 {
+    beast::PropertyStream::Set set ("traffic", stream);
+    auto stats = m_traffic.getCounts();
+    for (auto& i : stats)
+    {
+        if (! i.second.messagesIn && ! i.second.messagesOut)
+            continue;
+
+        beast::PropertyStream::Map item (set);
+        item["category"] = i.first;
+        item["bytes_in"] =
+            beast::lexicalCast<std::string>
+                (i.second.bytesIn.load());
+        item["messages_in"] =
+            beast::lexicalCast<std::string>
+                (i.second.messagesIn.load());
+        item["bytes_out"] =
+            beast::lexicalCast<std::string>
+                (i.second.bytesOut.load());
+        item["messages_out"] =
+            beast::lexicalCast<std::string>
+                (i.second.messagesOut.load());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -709,6 +732,15 @@ OverlayImpl::onManifests (
             continue;
         }
     }
+}
+
+void
+OverlayImpl::reportTraffic (
+    TrafficCount::category cat,
+    bool isInbound,
+    int number)
+{
+    m_traffic.addCount (cat, isInbound, number);
 }
 
 std::size_t
