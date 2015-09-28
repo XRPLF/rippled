@@ -78,7 +78,8 @@ invoke (int type, Buffers const& buffers,
     if (! m->ParseFromZeroCopyStream(&stream))
         return boost::system::errc::make_error_code(
             boost::system::errc::invalid_argument);
-    auto ec = handler.onMessageBegin (type, m);
+    auto ec = handler.onMessageBegin (type, m,
+       Message::kHeaderBytes + Message::size (buffers));
     if (! ec)
     {
         handler.onMessage (m);

@@ -275,7 +275,7 @@ JSS ( paths_computed );             // out: PathRequest, RipplePathFind
 JSS ( peer );                       // in: AccountLines
 JSS ( peer_authorized );            // out: AccountLines
 JSS ( peer_id );                    // out: LedgerProposal
-JSS ( peers );                      // out: InboundLedger, handlers/Peers
+JSS ( peers );                      // out: InboundLedger, handlers/Peers, Overlay
 JSS ( port );                       // in: Connect
 JSS ( previous_ledger );            // out: LedgerPropose
 JSS ( proof );                      // in: BookOffers
@@ -344,6 +344,7 @@ JSS ( taker_pays );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_pays_funded );          // out: NetworkOPs
 JSS ( threshold );                  // in: Blacklist
 JSS ( timeouts );                   // out: InboundLedger
+JSS ( traffic );                    // out: Overlay
 JSS ( totalCoins );                 // out: LedgerToJson
 JSS ( total_coins );                // out: LedgerToJson
 JSS ( transTreeHash );              // out: ledger/Ledger.cpp

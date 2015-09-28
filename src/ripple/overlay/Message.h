@@ -63,6 +63,13 @@ public:
         return mBuffer;
     }
 
+    /** Get the traffic category */
+    int
+    getCategory () const
+    {
+        return mCategory;
+    }
+
     /** Determine bytewise equality. */
     bool operator == (Message const& other) const;
 
@@ -148,10 +155,10 @@ private:
     void encodeHeader (unsigned size, int type);
 
     std::vector <uint8_t> mBuffer;
+
+    int mCategory;
 };
 
 }
 
 #endif
-
-
