@@ -31,6 +31,7 @@
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
 #include <beast/utility/PropertyStream.h>
+#include <mutex>
 
 #include "ripple.pb.h"
 
@@ -63,10 +64,6 @@ public:
     using callback = std::function <void (Ledger::ref)>;
 
 public:
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::unique_lock <LockType>;
-    using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
-
     virtual ~LedgerMaster () = default;
 
     virtual LedgerIndex getCurrentLedgerIndex () = 0;
@@ -75,7 +72,7 @@ public:
     virtual bool isCompatible (Ledger::pointer,
         beast::Journal::Stream, const char* reason) = 0;
 
-    virtual LockType& peekMutex () = 0;
+    virtual std::recursive_mutex& peekMutex () = 0;
 
     // The current ledger is the ledger we believe new transactions should go in
     virtual std::shared_ptr<ReadView const> getCurrentLedger () = 0;

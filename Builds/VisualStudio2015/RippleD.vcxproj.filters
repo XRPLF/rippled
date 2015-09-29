@@ -2616,9 +2616,6 @@
     <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\BasicTypes.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Blob.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>

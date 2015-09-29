@@ -43,6 +43,7 @@
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
 #include <fstream>
+#include <mutex>
 
 namespace ripple {
 
@@ -205,13 +206,8 @@ private:
 private:
     Application& app_;
 
-    typedef RippleMutex FetchLockType;
-    typedef std::lock_guard <FetchLockType> ScopedFetchLockType;
-    FetchLockType mFetchLock;
-
-    typedef RippleRecursiveMutex UNLLockType;
-    typedef std::lock_guard <UNLLockType> ScopedUNLLockType;
-    UNLLockType mUNLLock;
+    std::mutex mFetchLock;
+    std::recursive_mutex mUNLLock;
 
     // VFALCO TODO Replace ptime with beast::Time
     // Misc persistent information
@@ -485,14 +481,14 @@ void UniqueNodeListImp::start()
 
 void UniqueNodeListImp::insertEphemeralKey (PublicKey pk, std::string comment)
 {
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
 
     ephemeralValidatorKeys_.insert (std::make_pair(std::move(pk), std::move(comment)));
 }
 
 void UniqueNodeListImp::deleteEphemeralKey (PublicKey const& pk)
 {
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
 
     ephemeralValidatorKeys_.erase (pk);
 }
@@ -596,7 +592,7 @@ void UniqueNodeListImp::nodeRemovePublic (RippleAddress const& naNodePublic)
     // YYY Only dirty on successful delete.
     fetchDirty ();
 
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
     mUNL.erase (naNodePublic.humanNodePublic ());
 }
 
@@ -646,7 +642,7 @@ bool UniqueNodeListImp::nodeInUNL (RippleAddress const& naNodePublic)
     auto const& blob = naNodePublic.getNodePublic();
     PublicKey const pk (Slice(blob.data(), blob.size()));
 
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
 
     if (ephemeralValidatorKeys_.find (pk) != ephemeralValidatorKeys_.end())
     {
@@ -660,7 +656,7 @@ bool UniqueNodeListImp::nodeInUNL (RippleAddress const& naNodePublic)
 
 bool UniqueNodeListImp::nodeInCluster (RippleAddress const& naNodePublic)
 {
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
     return m_clusterNodes.end () != m_clusterNodes.find (naNodePublic);
 }
 
@@ -668,7 +664,7 @@ bool UniqueNodeListImp::nodeInCluster (RippleAddress const& naNodePublic)
 
 bool UniqueNodeListImp::nodeInCluster (RippleAddress const& naNodePublic, std::string& name)
 {
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
     std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
 
     if (it == m_clusterNodes.end ())
@@ -682,7 +678,7 @@ bool UniqueNodeListImp::nodeInCluster (RippleAddress const& naNodePublic, std::s
 
 bool UniqueNodeListImp::nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus)
 {
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
     return m_clusterNodes[naNodePublic].update(cnsStatus);
 }
 
@@ -693,7 +689,7 @@ UniqueNodeListImp::getClusterStatus()
 {
     std::map<RippleAddress, ClusterNodeStatus> ret;
     {
-        ScopedUNLLockType sl (mUNLLock);
+        std::lock_guard <std::recursive_mutex> sl (mUNLLock);
         ret = m_clusterNodes;
     }
     return ret;
@@ -707,7 +703,7 @@ std::uint32_t UniqueNodeListImp::getClusterFee()
 
     std::vector<std::uint32_t> fees;
     {
-        ScopedUNLLockType sl (mUNLLock);
+        std::lock_guard <std::recursive_mutex> sl (mUNLLock);
         {
             for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
                 end = m_clusterNodes.end(); it != end; ++it)
@@ -728,7 +724,7 @@ std::uint32_t UniqueNodeListImp::getClusterFee()
 
 void UniqueNodeListImp::addClusterStatus (Json::Value& obj)
 {
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
     if (m_clusterNodes.size() > 1) // nodes other than us
     {
         auto const now = app_.timeKeeper().now().time_since_epoch().count();
@@ -925,7 +921,7 @@ Json::Value UniqueNodeListImp::getUnlJson()
         ret.append (node);
     }
 
-    ScopedUNLLockType sl (mUNLLock);
+    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
 
     for (auto const& key : ephemeralValidatorKeys_)
     {
@@ -1038,7 +1034,7 @@ void UniqueNodeListImp::trustedLoad()
     }
 
     auto db = app_.getWalletDB ().checkoutDb ();
-    ScopedUNLLockType slUNL (mUNLLock);
+    std::lock_guard <std::recursive_mutex> slUNL (mUNLLock);
 
     mUNL.clear ();
 
@@ -1414,7 +1410,7 @@ void UniqueNodeListImp::scoreCompute()
     }
 
     {
-        ScopedUNLLockType sl (mUNLLock);
+        std::lock_guard <std::recursive_mutex> sl (mUNLLock);
 
         // XXX Should limit to scores above a certain minimum and limit to a certain number.
         mUNL.swap (usUNL);
@@ -1647,7 +1643,7 @@ void UniqueNodeListImp::fetchNext()
     bool    bFull;
 
     {
-        ScopedFetchLockType sl (mFetchLock);
+        std::lock_guard <std::mutex> sl (mFetchLock);
 
         bFull = (mFetchActive == NODE_FETCH_JOBS);
     }
@@ -1685,7 +1681,7 @@ void UniqueNodeListImp::fetchNext()
 
         if (!strDomain.empty ())
         {
-            ScopedFetchLockType sl (mFetchLock);
+            std::lock_guard <std::mutex> sl (mFetchLock);
 
             bFull = (mFetchActive == NODE_FETCH_JOBS);
 
@@ -1761,7 +1757,7 @@ void UniqueNodeListImp::fetchDirty()
 void UniqueNodeListImp::fetchFinish()
 {
     {
-        ScopedFetchLockType sl (mFetchLock);
+        std::lock_guard <std::mutex> sl (mFetchLock);
         mFetchActive--;
     }
 

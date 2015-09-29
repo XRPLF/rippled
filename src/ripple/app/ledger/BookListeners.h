@@ -22,6 +22,7 @@
 
 #include <ripple/net/InfoSub.h>
 #include <memory>
+#include <mutex>
 
 namespace ripple {
 
@@ -38,9 +39,7 @@ public:
     void publish (Json::Value const& jvObj);
 
 private:
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::recursive_mutex mLock;
 
     hash_map<std::uint64_t, InfoSub::wptr> mListeners;
 };

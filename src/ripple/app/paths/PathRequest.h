@@ -28,6 +28,7 @@
 #include <ripple/protocol/types.h>
 #include <boost/optional.hpp>
 #include <map>
+#include <mutex>
 #include <set>
 
 namespace ripple {
@@ -91,6 +92,8 @@ public:
     bool hasCompletion ();
 
 private:
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+
     bool isValid (RippleLineCache::ref crCache);
     void setValid ();
     void resetLevel (int level);
@@ -105,9 +108,7 @@ private:
     Application& app_;
     beast::Journal m_journal;
 
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::recursive_mutex mLock;
 
     PathRequests& mOwner;
 
@@ -128,7 +129,7 @@ private:
 
     bool convert_all_;
 
-    LockType mIndexLock;
+    std::recursive_mutex mIndexLock;
     LedgerIndex mLastIndex;
     bool mInProgress;
 

@@ -65,14 +65,13 @@ class LedgerMasterImp
     : public LedgerMaster
 {
 public:
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    using ScopedUnlockType = beast::GenericScopedUnlock <std::recursive_mutex>;
 
     Application& app_;
     beast::Journal m_journal;
 
-    LockType m_mutex;
+    std::recursive_mutex m_mutex;
 
     // The ledger that most recently closed.
     LedgerHolder mClosedLedger;
@@ -99,7 +98,7 @@ public:
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData;
 
-    LockType mCompleteLock;
+    std::recursive_mutex mCompleteLock;
     RangeSet mCompleteLedgers;
 
     std::unique_ptr <LedgerCleaner> mLedgerCleaner;
@@ -1289,7 +1288,7 @@ public:
         }
     }
 
-    LockType& peekMutex () override
+    std::recursive_mutex& peekMutex () override
     {
         return m_mutex;
     }

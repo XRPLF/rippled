@@ -20,7 +20,6 @@
 #ifndef RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
 #define RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
 
-#include <ripple/basics/BasicTypes.h>
 #include <ripple/json/json_value.h>
 #include <cstdint>
 #include <utility>
