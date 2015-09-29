@@ -70,6 +70,7 @@
 #include <boost/optional.hpp>
 #include <tuple>
 #include <condition_variable>
+#include <mutex>
 
 namespace ripple {
 
@@ -426,8 +427,7 @@ private:
     using subRpcMapType = hash_map<std::string, InfoSub::pointer>;
 
     // XXX Split into more locks.
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
 
     Application& app_;
     clock_type& m_clock;
@@ -435,7 +435,7 @@ private:
 
     std::unique_ptr <LocalTxs> m_localTX;
 
-    LockType mSubLock;
+    std::recursive_mutex mSubLock;
 
     std::atomic<OperatingMode> mMode;
 

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_CORE_JOB_H_INCLUDED
 #define RIPPLE_CORE_JOB_H_INCLUDED
 
-#include <ripple/basics/BasicTypes.h>
 #include <ripple/core/LoadMonitor.h>
 
 namespace ripple {

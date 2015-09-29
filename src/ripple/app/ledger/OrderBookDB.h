@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/BookListeners.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/OrderBook.h>
+#include <mutex>
 
 namespace ripple {
 
@@ -73,9 +74,7 @@ private:
     // does an order book to XRP exist
     hash_set <Issue> mXRPBooks;
 
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::recursive_mutex mLock;
 
     using BookToListenersMap = hash_map <Book, BookListeners::pointer>;
 

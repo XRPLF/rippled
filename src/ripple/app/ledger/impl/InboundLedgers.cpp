@@ -29,6 +29,7 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/container/aged_map.h>
+#include <mutex>
 
 namespace ripple {
 
@@ -415,13 +416,12 @@ public:
 private:
     clock_type& m_clock;
 
+    using ScopedLockType = std::unique_lock <std::recursive_mutex>;
+    std::recursive_mutex mLock;
+
     using MapType = hash_map <uint256, InboundLedger::pointer>;
-
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::unique_lock <LockType>;
-    LockType mLock;
-
     MapType mLedgers;
+
     beast::aged_map <uint256, std::uint32_t> mRecentFailures;
 
     beast::insight::Counter mCounter;

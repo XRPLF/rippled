@@ -37,7 +37,7 @@ RippleLineCache::getRippleLines (AccountID const& accountID)
 {
     AccountKey key (accountID, hasher_ (accountID));
 
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
 
     auto it = mRLMap.emplace (key, RippleStateVector ());
 

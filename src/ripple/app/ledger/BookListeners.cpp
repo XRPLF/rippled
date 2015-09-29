@@ -26,13 +26,13 @@ namespace ripple {
 
 void BookListeners::addSubscriber (InfoSub::ref sub)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::recursive_mutex> sl (mLock);
     mListeners[sub->getSeq ()] = sub;
 }
 
 void BookListeners::removeSubscriber (std::uint64_t seq)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::recursive_mutex> sl (mLock);
     mListeners.erase (seq);
 }
 
@@ -40,7 +40,7 @@ void BookListeners::publish (Json::Value const& jvObj)
 {
     std::string sObj = to_string (jvObj);
 
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::recursive_mutex> sl (mLock);
     auto it = mListeners.cbegin ();
 
     while (it != mListeners.cend ())

@@ -1877,8 +1877,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\BasicTypes.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Blob.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Buffer.h">
