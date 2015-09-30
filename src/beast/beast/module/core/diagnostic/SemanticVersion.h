@@ -23,8 +23,6 @@
 #include <vector>
 #include <string>
 
-#include <beast/utility/noexcept.h>
-
 namespace beast {
 
 /** A Semantic Version number.

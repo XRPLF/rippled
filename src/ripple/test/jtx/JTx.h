@@ -50,36 +50,10 @@ struct JTx
     std::function<void(Env&, JTx&)> signer;
 
     JTx() = default;
-
-#if defined(_MSC_VER) && _MSC_VER <= 1800
-    JTx(JTx&& other)
-        : jv(std::move(other.jv))
-        , requires(std::move(other.requires))
-        , ter(std::move(other.ter))
-        , fill_fee(std::move(other.fill_fee))
-        , fill_seq(std::move(other.fill_seq))
-        , fill_sig(std::move(other.fill_sig))
-        , stx(std::move(other.stx))
-        , signer(std::move(other.signer))
-        , props_(std::move(other.props_))
-    {
-    }
-
-    JTx& operator=(JTx&& other) noexcept
-    {
-        jv = std::move(other.jv);
-        requires = std::move(other.requires);
-        ter = std::move(other.ter);
-        fill_fee = std::move(other.fill_fee);
-        fill_seq = std::move(other.fill_seq);
-        fill_sig = std::move(other.fill_sig);
-        stx = std::move(other.stx);
-        signer = std::move(other.signer);
-        props_ = std::move(other.props_);
-
-        return *this;
-    }
-#endif
+    JTx (JTx const&) = default;
+    JTx& operator=(JTx const&) = default;
+    JTx(JTx&&) = default;
+    JTx& operator=(JTx&&) = default;
 
     JTx (Json::Value&& jv_)
         : jv(std::move(jv_))
@@ -184,21 +158,8 @@ private:
             return *this;
         }
 
-    #if defined(_MSC_VER) && _MSC_VER <= 1800
-        prop_list(prop_list&& other)
-            : list(std::move(other.list))
-        {
-        }
-
-        prop_list& operator=(prop_list&& other)
-        {
-            list = std::move(other.list);
-            return *this;
-        }
-    #else
         prop_list(prop_list&& src) = default;
         prop_list& operator=(prop_list&& src) = default;
-    #endif
 
         std::vector<std::unique_ptr<
             basic_prop>> list;

@@ -24,7 +24,6 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/SField.h>
-#include <beast/utility/noexcept.h>
 #include <ostream>
 #include <stdexcept>
 

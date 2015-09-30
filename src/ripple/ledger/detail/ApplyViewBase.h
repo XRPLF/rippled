@@ -39,19 +39,8 @@ public:
     ApplyViewBase& operator= (ApplyViewBase&&) = delete;
     ApplyViewBase& operator= (ApplyViewBase const&) = delete;
 
-#ifdef _MSC_VER
-    ApplyViewBase (ApplyViewBase&& other)
-        : ApplyView (std::move(other))
-        , RawView (std::move(other))
-        , flags_ (std::move(other.flags_))
-        , base_ (std::move(other.base_))
-        , items_ (std::move(other.items_))
-        , dropsDestroyed_ (std::move(other.dropsDestroyed_))
-    {
-    }
-#else
+
     ApplyViewBase (ApplyViewBase&&) = default;
-#endif
 
     ApplyViewBase(
         ReadView const* base, ApplyFlags flags);

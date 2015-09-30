@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_RATE_H_INCLUDED
 
 #include <ripple/protocol/STAmount.h>
-#include <beast/utility/noexcept.h>
 #include <boost/operators.hpp>
 #include <cassert>
 #include <cstdint>

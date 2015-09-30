@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/utility/static_initializer.h>
 #include <ripple/protocol/TxFormats.h>
 
 namespace ripple {
@@ -139,9 +138,8 @@ void TxFormats::addCommonFields (Item& item)
 TxFormats const&
 TxFormats::getInstance ()
 {
-    static beast::static_initializer<
-        TxFormats> instance;
-    return *instance;
+    static TxFormats const instance;
+    return instance;
 }
 
 } // ripple

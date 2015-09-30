@@ -28,7 +28,6 @@
 #include <beast/utility/tests/bassert.test.cpp>
 #include <beast/utility/tests/empty_base_optimization.test.cpp>
 #include <beast/utility/tests/Journal.test.cpp>
-#include <beast/utility/tests/static_initializer.test.cpp>
 #include <beast/utility/tests/tagged_integer.test.cpp>
 #include <beast/utility/tests/weak_fn.test.cpp>
 #include <beast/utility/tests/Zero.test.cpp>

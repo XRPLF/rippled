@@ -20,7 +20,6 @@
 #include <beast/http/basic_parser.h>
 #include <beast/http/impl/joyent_parser.h>
 #include <beast/http/rfc2616.h>
-#include <beast/utility/noexcept.h>
 #include <boost/system/error_code.hpp>
 
 namespace beast {

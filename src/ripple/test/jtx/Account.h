@@ -23,7 +23,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
-#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace ripple {
@@ -46,14 +45,8 @@ public:
     Account() = default;
     Account (Account const&) = default;
     Account& operator= (Account const&) = default;
-
-#ifdef _MSC_VER
-    Account (Account&&);
-    Account& operator= (Account&&);
-#else
     Account (Account&&) = default;
     Account& operator= (Account&&) = default;
-#endif
 
     /** Create an account from a key pair. */
     Account (std::string name,

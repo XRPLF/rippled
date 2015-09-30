@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
 
 #include <beast/hash/hash_append.h>
-#include <beast/utility/noexcept.h>
 #include <cstdint>
 
 namespace ripple {

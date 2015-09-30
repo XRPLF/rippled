@@ -23,7 +23,6 @@
 #include <ripple/protocol/impl/secp256k1.h>
 #include <ripple/basics/contract.h>
 #include <beast/ByteOrder.h>
-#include <beast/utility/static_initializer.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <ed25519-donna/ed25519.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>

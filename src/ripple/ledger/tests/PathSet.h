@@ -55,20 +55,9 @@ public:
     Path () = default;
     Path (Path const&) = default;
     Path& operator=(Path const&) = default;
-
-#ifdef _MSC_VER
-    Path (Path&& rhs) : path (std::move (rhs.path))
-    {
-    }
-    Path& operator=(Path&& rhs)
-    {
-        path = std::move (rhs.path);
-        return *this;
-    }
-#else
     Path (Path&&) = default;
     Path& operator=(Path&&) = default;
-#endif
+
     template <class First, class... Rest>
     explicit Path (First&& first, Rest&&... rest)
     {
@@ -118,20 +107,9 @@ public:
     PathSet () = default;
     PathSet (PathSet const&) = default;
     PathSet& operator=(PathSet const&) = default;
-
-#ifdef _MSC_VER
-    PathSet (PathSet&& rhs) : paths (std::move (rhs.paths))
-    {
-    }
-    PathSet& operator=(PathSet&& rhs)
-    {
-        paths = std::move (rhs.paths);
-        return *this;
-    }
-#else
     PathSet (PathSet&&) = default;
     PathSet& operator=(PathSet&&) = default;
-#endif
+
     template <class First, class... Rest>
     explicit PathSet (First&& first, Rest&&... rest)
     {

@@ -43,16 +43,7 @@ public:
     ApplyViewImpl& operator= (ApplyViewImpl&&) = delete;
     ApplyViewImpl& operator= (ApplyViewImpl const&) = delete;
 
-#ifdef _MSC_VER
-    ApplyViewImpl (ApplyViewImpl&& other)
-        : ApplyViewBase (std::move(other))
-        , deliver_ (std::move(other.deliver_))
-    {
-    }
-#else
     ApplyViewImpl (ApplyViewImpl&&) = default;
-#endif
-
     ApplyViewImpl(
         ReadView const* base, ApplyFlags flags);
 
