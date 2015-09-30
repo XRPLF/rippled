@@ -48,7 +48,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { tecNO_LINE_REDUNDANT,     "tecNO_LINE_REDUNDANT",     "Can't set non-existent line to default."                       },
         { tecPATH_DRY,              "tecPATH_DRY",              "Path could not send partial amount."                           },
         { tecPATH_PARTIAL,          "tecPATH_PARTIAL",          "Path could not send full amount."                              },
-        { tecNO_ALTERNATIVE_KEY,    "tecNO_ALTERNATIVE_KEY",    "The operation would remove the last way to sign a transaction."},
+        { tecNO_ALTERNATIVE_KEY,    "tecNO_ALTERNATIVE_KEY",    "The operation would remove the ability to sign transactions with the account."},
         { tecNO_REGULAR_KEY,        "tecNO_REGULAR_KEY",        "Regular key is not set."                                       },
         { tecOVERSIZE,              "tecOVERSIZE",              "Object exceeded serialization limits."                         },
 
