@@ -17,6 +17,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/PendingSaves.h>
+#include <beast/unit_test/suite.h>
 
 namespace ripple {
 namespace test {
