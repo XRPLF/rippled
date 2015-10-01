@@ -42,7 +42,7 @@ class TxQ_test : public TestSuite
         std::uint64_t expectedMinFeeLevel,
         std::uint64_t expectedMedFeeLevel)
     {
-        auto metrics = env.app().getTxQ().getMetrics(*env.open());
+        auto metrics = env.app().getTxQ().getMetrics(*env.current());
         expect(metrics.referenceFeeLevel == 256, "referenceFeeLevel");
         expect(metrics.txCount == expectedCount, "txCount");
         expect(metrics.txQMaxSize == expectedMaxCount, "txQMaxSize");
@@ -62,24 +62,10 @@ class TxQ_test : public TestSuite
     close(jtx::Env& env, size_t expectedTxSetSize, bool timeLeap = false)
     {
         {
-            auto const view = env.open();
+            auto const view = env.current();
             expect(view->txCount() == expectedTxSetSize, "TxSet size mismatch");
-            // Update fee computations.
-            // Note implementing this way assumes that everything
-            // in the open ledger _will_ make it into the closed
-            // ledger, but for metrics that's probably good enough.
-            env.app().getTxQ().processValidatedLedger(
-                env.app(), *view, timeLeap, tapENABLE_TESTING);
         }
-
-        env.close(
-            [&](OpenView& view, beast::Journal j)
-            {
-                // Stuff the ledger with transactions from the queue.
-                return env.app().getTxQ().accept(env.app(), view,
-                    tapENABLE_TESTING);
-            }
-            );
+        env.close();
     }
 
     void
@@ -92,7 +78,7 @@ class TxQ_test : public TestSuite
         bool didApply;
         TER ter;
 
-        env.openLedger.modify(
+        env.app().openLedger().modify(
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter, didApply) =
@@ -108,7 +94,7 @@ class TxQ_test : public TestSuite
     }
 
     static
-    std::unique_ptr<Config const>
+    std::unique_ptr<Config>
     makeConfig()
     {
         auto p = std::make_unique<Config>();
@@ -118,7 +104,7 @@ class TxQ_test : public TestSuite
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "125");
-        return std::move(p);
+        return p;
     }
 
 public:
@@ -142,7 +128,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expectEquals(env.open()->fees().base, 10);
+        expectEquals(env.current()->fees().base, 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256, 500);
 
@@ -164,7 +150,7 @@ public:
         auto openLedgerFee = 
             [&]()
             {
-                return fee(txq.openLedgerFee(*env.open()));
+                return fee(txq.openLedgerFee(*env.current()));
             };
         // Alice's next transaction -
         // fails because the item in the TxQ hasn't applied.
@@ -339,7 +325,7 @@ public:
         // we can be sure that there's one in the queue when the
         // test ends and the TxQ is destructed.
 
-        auto metrics = txq.getMetrics(*env.open());
+        auto metrics = txq.getMetrics(*env.current());
         expect(metrics.txCount == 0, "txCount");
         auto txnsNeeded = metrics.txPerLedger - metrics.txInLedger;
 

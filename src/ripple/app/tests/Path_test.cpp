@@ -141,7 +141,7 @@ find_paths(jtx::Env& env,
             boost::optional<STAmount> const& saSendMax = boost::none)
 {
     static int const level = 8;
-    auto const& view = env.open ();
+    auto const& view = env.current();
     auto cache = std::make_shared<RippleLineCache>(view);
     auto currencies = accountSourceCurrencies(src, cache, true);
     auto jvSrcCurrencies = Json::Value(Json::arrayValue);

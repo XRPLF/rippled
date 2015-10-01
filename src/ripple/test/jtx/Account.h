@@ -23,6 +23,8 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
+#include <beast/hash/uhash.h>
+#include <unordered_map>
 #include <string>
 
 namespace ripple {
@@ -35,22 +37,17 @@ class IOU;
 class Account
 {
 private:
-    std::string name_;
-    PublicKey pk_;
-    SecretKey sk_;
-    AccountID id_;
-    std::string human_; // base58 public key string
-
+    // Tag for access to private contr
+    struct privateCtorTag{};
 public:
+    /** The master account. */
+    static Account const master;
+
     Account() = default;
+    Account (Account&&) = default;
     Account (Account const&) = default;
     Account& operator= (Account const&) = default;
-    Account (Account&&) = default;
     Account& operator= (Account&&) = default;
-
-    /** Create an account from a key pair. */
-    Account (std::string name,
-        std::pair<PublicKey, SecretKey> const& keys);
 
     /** Create an account from a simple string name. */
     /** @{ */
@@ -62,6 +59,13 @@ public:
         : Account(std::string(name), type)
     {
     }
+
+    // This constructor needs to be public so `std::pair` can use it when emplacing
+    // into the cache. However, it is logically `private`. This is enforced with the
+    // `privateTag` parameter.
+    Account (std::string name,
+             std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag);
+
     /** @} */
 
     /** Return the name */
@@ -115,6 +119,21 @@ public:
     /** Returns an IOU for the specified gateway currency. */
     IOU
     operator[](std::string const& s) const;
+
+private:
+    static std::unordered_map<
+        std::pair<std::string, KeyType>,
+            Account, beast::uhash<>> cache_;
+
+
+    // Return the account from the cache & add it to the cache if needed
+    static Account fromCache(std::string name, KeyType type);
+
+    std::string name_;
+    PublicKey pk_;
+    SecretKey sk_;
+    AccountID id_;
+    std::string human_; // base58 public key string
 };
 
 inline

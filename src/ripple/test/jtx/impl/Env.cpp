@@ -29,10 +29,12 @@
 #include <ripple/test/jtx/sig.h>
 #include <ripple/test/jtx/utility.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
-#include <ripple/app/paths/Pathfinder.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -50,6 +52,29 @@
 namespace ripple {
 namespace test {
 
+void
+setupConfigForUnitTests (Config& config)
+{
+    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
+    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
+
+    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
+    config.legacy("database_path", "DummyForUnitTests");
+
+    config.RUN_STANDALONE = true;
+    config["server"].append("port_peer");
+    config["port_peer"].set("ip", "127.0.0.1");
+    config["port_peer"].set("port", "8080");
+    config["port_peer"].set("protocol", "peer");
+    config["server"].append("port_admin");
+    config["port_admin"].set("ip", "127.0.0.1");
+    config["port_admin"].set("port", "8081");
+    config["port_admin"].set("protocol", "http");
+    config["port_admin"].set("admin", "127.0.0.1");
+}
+
+//------------------------------------------------------------------------------
+
 namespace jtx {
 
 Env::AppBundle::AppBundle(Application* app_)
@@ -57,90 +82,45 @@ Env::AppBundle::AppBundle(Application* app_)
 {
 }
 
-Env::AppBundle::AppBundle(std::unique_ptr<Config const> config)
+Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
 {
     auto logs = std::make_unique<Logs>();
-    owned = make_Application(
-        std::move(config), std::move(logs));
+    auto timeKeeper_ =
+        std::make_unique<ManualTimeKeeper>();
+    timeKeeper = timeKeeper_.get();
+    owned = make_Application(std::move(config),
+        std::move(logs), std::move(timeKeeper_));
     app = owned.get();
+    app->setup();
+    timeKeeper->set(
+        app->getLedgerMaster().getClosedLedger()->info().closeTime);
+    thread = std::thread(
+        [&](){ app->run(); });
+}
+
+Env::AppBundle::~AppBundle()
+{
+    app->signalStop();
+    thread.join();
 }
 
 //------------------------------------------------------------------------------
 
-static
-std::unique_ptr<Config const>
-makeConfig()
-{
-    auto p = std::make_unique<Config>();
-    setupConfigForUnitTests(*p);
-    return std::unique_ptr<Config const>(p.release());
-}
-
-// VFALCO Could wrap the log in a Journal here
-Env::Env(beast::unit_test::suite& test_,
-    std::unique_ptr<Config const> config)
-    : test (test_)
-    , master ("master", generateKeyPair(
-        KeyType::secp256k1,
-            generateSeed("masterpassphrase")))
-    , bundle_ (std::move(config))
-    , closed_ (std::make_shared<Ledger>(
-        create_genesis, app().config(), app().family()))
-    , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
-    , openLedger (closed_, cachedSLEs_, journal)
-{
-    memoize(master);
-    Pathfinder::initPathTable();
-}
-
-Env::Env(beast::unit_test::suite& test_)
-    : Env(test_, makeConfig())
-{
-}
-
-std::shared_ptr<OpenView const>
-Env::open() const
-{
-    return openLedger.current();
-}
-
 std::shared_ptr<ReadView const>
-Env::closed() const
+Env::closed()
 {
-    return closed_;
+    return app().getLedgerMaster().getClosedLedger();
 }
 
 void
-Env::close(NetClock::time_point const& closeTime,
-    OpenLedger::modify_type const& f)
+Env::close(NetClock::time_point closeTime)
 {
-    clock.set(closeTime);
-    // VFALCO TODO Fix the Ledger constructor
-    auto next = std::make_shared<Ledger>(
-        open_ledger, *closed_,
-        app().timeKeeper().closeTime());
-    next->setClosed();
-    std::vector<std::shared_ptr<STTx const>> txs;
-    auto cur = openLedger.current();
-    for (auto iter = cur->txs.begin();
-            iter != cur->txs.end(); ++iter)
-        txs.push_back(iter->first);
-    OrderedTxs retries(uint256{});
-    {
-        OpenView accum(&*next);
-        OpenLedger::apply(app(), accum, *closed_,
-            txs, retries, applyFlags(), journal);
-        accum.apply(*next);
-    }
-    // To ensure that the close time is exact and not rounded, we don't
-    // claim to have reached consensus on what it should be.
-    next->setAccepted(closeTime, ledgerPossibleTimeResolutions[0],
-                      false, app().config());
-    OrderedTxs locals({});
-    openLedger.accept(app(), next->rules(), next,
-        locals, false, retries, applyFlags(), "", f);
-    closed_ = next;
-    cachedSLEs_.expire();
+    // Round up to next distinguishable value
+    closeTime += closed()->info().closeTimeResolution - 1s;
+    bundle_.timeKeeper->set(closeTime);
+    app().getOPs().acceptLedger();
+    bundle_.timeKeeper->set(
+        closed()->info().closeTime);
 }
 
 void
@@ -219,7 +199,7 @@ Env::le (Account const& account) const
 std::shared_ptr<SLE const>
 Env::le (Keylet const& k) const
 {
-    return open()->read(k);
+    return current()->read(k);
 }
 
 void
@@ -232,7 +212,7 @@ Env::fund (bool setDefaultRipple,
     {
         // VFALCO NOTE Is the fee formula correct?
         apply(pay(master, account, amount +
-            drops(open()->fees().base)),
+            drops(current()->fees().base)),
                 jtx::seq(jtx::autofill),
                     fee(jtx::autofill),
                         sig(jtx::autofill));
@@ -263,7 +243,7 @@ Env::trust (STAmount const& amount,
             fee(jtx::autofill),
                 sig(jtx::autofill));
     apply(pay(master, account,
-        drops(open()->fees().base)),
+        drops(current()->fees().base)),
             jtx::seq(jtx::autofill),
                 fee(jtx::autofill),
                     sig(jtx::autofill));
@@ -277,7 +257,7 @@ Env::submit (JTx const& jt)
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
-        openLedger.modify(
+        app().openLedger().modify(
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter_, didApply) = ripple::apply(
@@ -357,9 +337,9 @@ Env::autofill (JTx& jt)
 {
     auto& jv = jt.jv;
     if(jt.fill_fee)
-        jtx::fill_fee(jv, *open());
+        jtx::fill_fee(jv, *current());
     if(jt.fill_seq)
-        jtx::fill_seq(jv, *open());
+        jtx::fill_seq(jv, *current());
     // Must come last
     try
     {

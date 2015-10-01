@@ -514,15 +514,20 @@ initAuthenticated (boost::asio::ssl::context& context,
 std::shared_ptr<boost::asio::ssl::context>
 make_SSLContext()
 {
-    std::shared_ptr<boost::asio::ssl::context> context =
-        std::make_shared<boost::asio::ssl::context> (
-            boost::asio::ssl::context::sslv23);
-    // By default, allow anonymous DH.
-    openssl::detail::initAnonymous (
-        *context, "ALL:!LOW:!EXP:!MD5:@STRENGTH");
-    // VFALCO NOTE, It seems the WebSocket context never has
-    // set_verify_mode called, for either setting of WEBSOCKET_SECURE
-    context->set_verify_mode (boost::asio::ssl::verify_none);
+    static auto const context =
+        []()
+        {
+            auto const context = std::make_shared<
+                boost::asio::ssl::context>(
+                    boost::asio::ssl::context::sslv23);
+            // By default, allow anonymous DH.
+            openssl::detail::initAnonymous(
+                *context, "ALL:!LOW:!EXP:!MD5:@STRENGTH");
+            // VFALCO NOTE, It seems the WebSocket context never has
+            // set_verify_mode called, for either setting of WEBSOCKET_SECURE
+            context->set_verify_mode(boost::asio::ssl::verify_none);
+            return context;
+        }();
     return context;
 }
 

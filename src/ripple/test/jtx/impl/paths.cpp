@@ -37,7 +37,7 @@ paths::operator()(Env& env, JTx& jt) const
     auto const amount = amountFromJson(
         sfAmount, jv[jss::Amount]);
     Pathfinder pf (
-        std::make_shared<RippleLineCache>(env.open()),
+        std::make_shared<RippleLineCache>(env.current()),
             from, to, in_.currency, in_.account,
                 amount, boost::none, env.app());
     if (! pf.findPaths(depth_))
