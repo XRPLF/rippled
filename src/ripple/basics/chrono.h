@@ -55,10 +55,6 @@ public:
     static bool const is_steady = false;
 };
 
-/** A manual NetClock for unit tests. */
-using TestNetClock =
-    beast::manual_clock<NetClock>;
-
 /** A clock for measuring elapsed time.
 
     The epoch is unspecified.

@@ -516,14 +516,14 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        auto seq = env.open()->seq();
+        auto seq = env.current()->seq();
         expect(seq == env.closed()->seq() + 1);
         env.close();
         expect(env.closed()->seq() == seq);
-        expect(env.open()->seq() == seq + 1);
+        expect(env.current()->seq() == seq + 1);
         env.close();
         expect(env.closed()->seq() == seq + 1);
-        expect(env.open()->seq() == seq + 2);
+        expect(env.current()->seq() == seq + 2);
     }
 
     void
@@ -568,7 +568,7 @@ public:
         Env env(*this);
 
         env.fund(XRP(10000), "alice");
-        auto const baseFee = env.open()->fees().base;
+        auto const baseFee = env.current()->fees().base;
         std::uint32_t const aliceSeq = env.seq ("alice");
         
         // Sign jsonNoop.

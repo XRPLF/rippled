@@ -120,7 +120,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         STAmount const toDebit (USD_gw1 (20));
         {
             // accountSend, no deferredCredits
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -139,7 +139,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         {
             // rippleCredit, no deferredCredits
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
 
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
@@ -158,7 +158,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         {
             // accountSend, w/ deferredCredits
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
             PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
@@ -178,7 +178,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         {
             // rippleCredit, w/ deferredCredits
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
             PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
@@ -193,7 +193,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         {
             // redeemIOU, w/ deferredCredits
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
             PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
@@ -208,7 +208,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         {
             // issueIOU, w/ deferredCredits
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
             PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();
@@ -223,7 +223,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         {
             // accountSend, w/ deferredCredits and stacked views
-            ApplyViewImpl av (&*env.open(), tapNONE);
+            ApplyViewImpl av (&*env.current(), tapNONE);
             PaymentSandbox pv (&av);
 
             auto const iss = USD_gw1.issue ();

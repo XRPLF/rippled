@@ -148,7 +148,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
             auto const c = cond("receipt");
             // syntax
@@ -171,7 +171,7 @@ struct SusPay_test : public beast::unit_test::suite
             Env env(*this);
             auto const alice = Account("alice");
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), alice, "bob");
             auto const c = cond("receipt");
             auto const seq = env.seq(alice);
@@ -192,7 +192,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
             auto const c = cond("receipt");
             // VFALCO Should we enforce this?
@@ -224,7 +224,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
             env(lockup("alice", "alice", XRP(1000), T(S{1})));
@@ -246,7 +246,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
             auto const seq = env.seq("alice");
@@ -272,7 +272,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
             auto const seq = env.seq("alice");
@@ -289,7 +289,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
             auto const c = cond("receipt");
@@ -308,7 +308,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
             auto const seq = env.seq("alice");
@@ -320,7 +320,7 @@ struct SusPay_test : public beast::unit_test::suite
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
-                { return env.clock.now() + d; };
+                { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const p = from_hex_text<uint128>(
                 "0102030405060708090A0B0C0D0E0F");
@@ -340,7 +340,7 @@ struct SusPay_test : public beast::unit_test::suite
         using S = seconds;
         Env env(*this);
         auto T = [&env](NetClock::duration const& d)
-            { return env.clock.now() + d; };
+            { return env.now() + d; };
         env.fund(XRP(5000), "alice", "bob", "carol");
         auto const c = cond("receipt");
         env(condpay("alice", "carol", XRP(1000), c.first, T(S{1})));

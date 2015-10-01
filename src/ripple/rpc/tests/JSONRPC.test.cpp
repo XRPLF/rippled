@@ -1658,7 +1658,7 @@ public:
         env(pay(g, env.master, USD(50)));
         env.close();
 
-        auto const ledger = env.open();
+        auto const ledger = env.current();
 
         ProcessTransactionFn processTxn = fakeProcessTransaction;
 

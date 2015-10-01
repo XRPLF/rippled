@@ -183,8 +183,8 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(env.openLedger);
-        auto const open = env.open();
+        wipe(env.app().openLedger());
+        auto const open = env.current();
         ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, boost::none);
         v.insert(sle(1));
@@ -214,8 +214,8 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(env.openLedger);
-        auto const open = env.open();
+        wipe(env.app().openLedger());
+        auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.insert(sle(1));
         v0.insert(sle(2));
@@ -278,8 +278,8 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(env.openLedger);
-        auto const open = env.open();
+        wipe(env.app().openLedger());
+        auto const open = env.current();
         ApplyViewImpl v0 (&*open, tapNONE);
         v0.rawInsert(sle(1, 1));
         v0.rawInsert(sle(2, 2));
@@ -345,8 +345,8 @@ class View_test
         using namespace std::chrono;
         {
             Env env(*this);
-            wipe(env.openLedger);
-            auto const open = env.open();
+            wipe(env.app().openLedger());
+            auto const open = env.current();
             OpenView v0(open.get());
             expect(v0.seq() != 98);
             expect(v0.seq() == open->seq());
@@ -556,9 +556,9 @@ class View_test
         // Make sure OpenLedger::empty works
         {
             Env env(*this);
-            expect(env.openLedger.empty());
+            expect(env.app().openLedger().empty());
             env.fund(XRP(10000), Account("test"));
-            expect(!env.openLedger.empty());
+            expect(! env.app().openLedger().empty());
         }
     }
 
