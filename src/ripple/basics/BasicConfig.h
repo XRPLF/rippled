@@ -175,11 +175,20 @@ public:
         If the section does not exist, an empty section is returned.
     */
     /** @{ */
+    Section&
+    section (std::string const& name);
+
     Section const&
     section (std::string const& name) const;
 
     Section const&
     operator[] (std::string const& name) const
+    {
+        return section(name);
+    }
+
+    Section&
+    operator[] (std::string const& name)
     {
         return section(name);
     }

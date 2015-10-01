@@ -90,8 +90,18 @@ public:
     Application ();
 
     virtual ~Application () = default;
-    virtual Config const& config() const = 0;
+
+    virtual void setup() = 0;
+    virtual void run() = 0;
+    virtual bool isShutdown () = 0;
+    virtual void signalStop () = 0;
+
+    //
+    // ---
+    //
+
     virtual Logs& logs() = 0;
+    virtual Config const& config() const = 0;
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual Family&                 family() = 0;
@@ -138,12 +148,6 @@ public:
     //        NOTE This will be replaced by class Validators
     //
     virtual DatabaseCon& getWalletDB () = 0;
-
-    virtual bool isShutdown () = 0;
-    virtual bool running () = 0;
-    virtual void setup () = 0;
-    virtual void run () = 0;
-    virtual void signalStop () = 0;
 };
 
 std::unique_ptr <Application>
@@ -151,8 +155,9 @@ make_Application(
     std::unique_ptr<Config const> config,
     std::unique_ptr<Logs> logs);
 
-// DEPRECATED
-extern Application& getApp ();
+extern
+void
+setupConfigForUnitTests (Config& config);
 
 }
 

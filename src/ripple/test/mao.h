@@ -17,44 +17,11 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/test/jtx/Account.h>
-#include <ripple/test/jtx/amount.h>
-#include <ripple/protocol/types.h>
+#ifndef RIPPLE_TEST_MAO_H_INCLUDED
+#define RIPPLE_TEST_MAO_H_INCLUDED
 
-namespace ripple {
-namespace test {
-namespace jtx {
+// Convenience header that includes everything
 
-Account::Account(std::string name,
-        std::pair<PublicKey, SecretKey> const& keys)
-    : name_(std::move(name))
-    , pk_ (keys.first)
-    , sk_ (keys.second)
-    , id_ (calcAccountID(pk_))
-    , human_ (toBase58(id_))
-{
-}
+#include <ripple/test/mao/Net.h>
 
-Account::Account (std::string name, KeyType type)
-    : name_(std::move(name))
-{
-    auto const keys = generateKeyPair(
-        type, generateSeed(name_));
-    pk_ = keys.first;
-    sk_ = keys.second;
-    id_ = calcAccountID(pk_);
-    human_ = toBase58(id_);
-}
-
-IOU
-Account::operator[](std::string const& s) const
-{
-    auto const currency = to_currency(s);
-    assert(currency != noCurrency());
-    return IOU(*this, currency);
-}
-
-} // jtx
-} // test
-} // ripple
+#endif
