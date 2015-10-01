@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -135,7 +136,8 @@ private:
         Application* app;
         std::unique_ptr<Logs> logs;
         std::unique_ptr<Application> owned;
-        
+        ManualTimeKeeper* timeKeeper;
+
         AppBundle (std::unique_ptr<Config const> config);
         AppBundle (Application* app_);
     };

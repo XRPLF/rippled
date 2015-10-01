@@ -3633,6 +3633,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\test\jtx.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Account.h">
@@ -3798,6 +3802,8 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\txflags.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\utility.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\ManualTimeKeeper.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\mao\impl\Net.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>

@@ -60,8 +60,11 @@ Env::AppBundle::AppBundle(Application* app_)
 Env::AppBundle::AppBundle(std::unique_ptr<Config const> config)
 {
     auto logs = std::make_unique<Logs>();
-    owned = make_Application(
-        std::move(config), std::move(logs));
+    auto timeKeeper_ =
+        std::make_unique<ManualTimeKeeper>();
+    timeKeeper = timeKeeper_.get();
+    owned = make_Application(std::move(config),
+        std::move(logs), std::move(timeKeeper_));
     app = owned.get();
 }
 
