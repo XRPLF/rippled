@@ -172,13 +172,32 @@ public:
         env.close();
         expect (env.seq(alice) == aliceSeq);
 
-        // Multisign, but leave a nonempty sfSigners.  Should fail.
+        // Multisign, but leave a nonempty sfSigningPubKey.  Should fail.
         {
             aliceSeq = env.seq (alice);
             Json::Value multiSig =
                 env.json (noop (alice), msig(bogie), fee(2 * baseFee));
-
             env (env.jt (multiSig), ter (temINVALID));
+            env.close();
+            expect (env.seq(alice) == aliceSeq);
+        }
+        // Attach both Signers and a TxnSignature with an empty sfPubKey.
+        // Should fail.
+        {
+            aliceSeq = env.seq (alice);
+            Json::Value multiSig = env.json (noop (alice),
+                fee(2 * baseFee), seq(aliceSeq), sig(alice), msig(bogie));
+            JTx jt = env.jt (multiSig);
+            jt.fill_fee = false;
+            jt.fill_seq = false;
+            jt.fill_sig = false;
+            jt.jv["SigningPubKey"] = "";
+
+            auto noSigPubKey = std::make_unique<STTx>(*(jt.stx));
+            noSigPubKey->setFieldVL (sfSigningPubKey, Blob());
+            jt.stx.reset (noSigPubKey.release());
+
+            env (jt, ter (temINVALID));
             env.close();
             expect (env.seq(alice) == aliceSeq);
         }

@@ -665,7 +665,7 @@ R"({
 "Secret does not match account.",
 "Secret does not match account.",
 "",
-"Missing field 'Signers'."}},
+"Missing field 'tx_json.Signers'."}},
 
 { "Missing 'Account' in sign_for.",
 R"({
@@ -831,21 +831,21 @@ R"({
 { "Minimal submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -878,20 +878,20 @@ R"({
 { "Missing sequence in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -905,20 +905,20 @@ R"({
 { "Missing SigningPubKey in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "Sequence": 0,
         "TransactionType": "Payment"
     }
@@ -932,21 +932,21 @@ R"({
 { "Non-empty SigningPubKey in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8",
         "TransactionType": "Payment"
     }
@@ -960,20 +960,20 @@ R"({
 { "Missing TransactionType in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "Sequence": 0,
         "SigningPubKey": "",
     }
@@ -987,20 +987,20 @@ R"({
 { "Missing Account in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1014,21 +1014,21 @@ R"({
 { "Malformed Account in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "NotAnAccount",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1042,21 +1042,21 @@ R"({
 { "Account not in ledger in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1070,20 +1070,20 @@ R"({
 { "Missing Fee in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1097,21 +1097,21 @@ R"({
 { "Non-numeric Fee in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50.1,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1125,20 +1125,20 @@ R"({
 { "Missing Amount in submit_multisigned Payment.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50000000,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1152,21 +1152,21 @@ R"({
 { "Invalid Amount in submit_multisigned Payment.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "NotANumber",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1181,21 +1181,21 @@ R"({
 R"({
     "command": "submit_multisigned",
     "build_path": 1,
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1209,20 +1209,20 @@ R"({
 { "Missing Destination in submit_multisigned Payment.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1236,21 +1236,21 @@ R"({
 { "Malformed Destination in submit_multisigned Payment.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "NotADestination",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1278,22 +1278,22 @@ R"({
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Missing field 'Signers'."}},
+"Missing field 'tx_json.Signers'."}},
 
 { "Signers not an array in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": {
-        "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-        "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-        "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-    },
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": {
+            "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+            "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+            "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+        },
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1302,19 +1302,19 @@ R"({
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Expected Signers to be an array."}},
+"Field 'tx_json.Signers' is not a JSON array."}},
 
 { "Empty Signers array in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1323,33 +1323,33 @@ R"({
 "Missing field 'secret'.",
 "Missing field 'secret'.",
 "Missing field 'account'.",
-"Signers array may not be empty."}},
+"tx_json.Signers array may not be empty."}},
 
 { "Duplicate Signer in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        },
-        {
-            "Signer": {
-                "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            },
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }
@@ -1363,21 +1363,21 @@ R"({
 { "Signer is tx_json Account in submit_multisigned.",
 R"({
     "command": "submit_multisigned",
-    "Signers": [
-        {
-            "Signer": {
-                "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-                "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
-                "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
-            }
-        }
-    ],
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "Fee": 50,
         "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
         "SigningPubKey": "",
         "TransactionType": "Payment"
     }

@@ -305,6 +305,11 @@ STTx::checkMultiSign () const
     if (!isFieldPresent (sfSigners))
         return false;
 
+    // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
+    // being present would indicate that the transaction is signed both ways.
+    if (isFieldPresent (sfTxnSignature))
+        return false;
+
     STArray const& signers {getFieldArray (sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
