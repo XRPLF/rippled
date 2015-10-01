@@ -48,7 +48,7 @@ owned_count_helper(Env& env,
             std::uint32_t value)
 {
     env.test.expect(owned_count_of(
-        *env.open(), id, type) == value);
+        *env.current(), id, type) == value);
 }
 
 } // detail

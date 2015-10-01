@@ -98,18 +98,6 @@ Env::Env(beast::unit_test::suite& test_)
 {
 }
 
-std::shared_ptr<OpenView const>
-Env::open() const
-{
-    return openLedger_.current();
-}
-
-std::shared_ptr<ReadView const>
-Env::closed() const
-{
-    return closed_;
-}
-
 void
 Env::close(NetClock::time_point const& closeTime,
     OpenLedger::modify_type const& f)
@@ -121,7 +109,7 @@ Env::close(NetClock::time_point const& closeTime,
         app().timeKeeper().closeTime());
     next->setClosed();
     std::vector<std::shared_ptr<STTx const>> txs;
-    auto cur = openLedger_.current();
+    auto cur = openLedger().current();
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
         txs.push_back(iter->first);
@@ -139,7 +127,7 @@ Env::close(NetClock::time_point const& closeTime,
             closeTime.time_since_epoch ()).count (),
         ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
-    openLedger_.accept(app(), next->rules(), next,
+    openLedger().accept(app(), next->rules(), next,
         locals, false, retries, applyFlags(), "", f);
     closed_ = next;
     cachedSLEs_.expire();
@@ -152,7 +140,7 @@ Env::memoize (Account const& account)
 }
 
 Account const&
-Env::lookup (AccountID const& id) const
+Env::lookup (AccountID const& id)
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())
@@ -162,7 +150,7 @@ Env::lookup (AccountID const& id) const
 }
 
 Account const&
-Env::lookup (std::string const& base58ID) const
+Env::lookup (std::string const& base58ID)
 {
     auto const account =
         parseBase58<AccountID>(base58ID);
@@ -173,7 +161,7 @@ Env::lookup (std::string const& base58ID) const
 }
 
 PrettyAmount
-Env::balance (Account const& account) const
+Env::balance (Account const& account)
 {
     auto const sle = le(account);
     if (! sle)
@@ -185,7 +173,7 @@ Env::balance (Account const& account) const
 
 PrettyAmount
 Env::balance (Account const& account,
-    Issue const& issue) const
+    Issue const& issue)
 {
     if (isXRP(issue.currency))
         return balance(account);
@@ -203,7 +191,7 @@ Env::balance (Account const& account,
 }
 
 std::uint32_t
-Env::seq (Account const& account) const
+Env::seq (Account const& account)
 {
     auto const sle = le(account);
     if (! sle)
@@ -213,15 +201,15 @@ Env::seq (Account const& account) const
 }
 
 std::shared_ptr<SLE const>
-Env::le (Account const& account) const
+Env::le (Account const& account)
 {
     return le(keylet::account(account.id()));
 }
 
 std::shared_ptr<SLE const>
-Env::le (Keylet const& k) const
+Env::le (Keylet const& k)
 {
-    return open()->read(k);
+    return current()->read(k);
 }
 
 void
@@ -234,7 +222,7 @@ Env::fund (bool setDefaultRipple,
     {
         // VFALCO NOTE Is the fee formula correct?
         apply(pay(master, account, amount +
-            drops(open()->fees().base)),
+            drops(current()->fees().base)),
                 jtx::seq(jtx::autofill),
                     fee(jtx::autofill),
                         sig(jtx::autofill));
@@ -265,7 +253,7 @@ Env::trust (STAmount const& amount,
             fee(jtx::autofill),
                 sig(jtx::autofill));
     apply(pay(master, account,
-        drops(open()->fees().base)),
+        drops(current()->fees().base)),
             jtx::seq(jtx::autofill),
                 fee(jtx::autofill),
                     sig(jtx::autofill));
@@ -279,7 +267,7 @@ Env::submit (JTx const& jt)
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
-        openLedger_.modify(
+        openLedger().modify(
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter_, didApply) = ripple::apply(
@@ -359,9 +347,9 @@ Env::autofill (JTx& jt)
 {
     auto& jv = jt.jv;
     if(jt.fill_fee)
-        jtx::fill_fee(jv, *open());
+        jtx::fill_fee(jv, *current());
     if(jt.fill_seq)
-        jtx::fill_seq(jv, *open());
+        jtx::fill_seq(jv, *current());
     // Must come last
     try
     {
@@ -405,7 +393,7 @@ Env::st (JTx const& jt)
 }
 
 ApplyFlags
-Env::applyFlags() const
+Env::applyFlags()
 {
     ApplyFlags flags = tapNONE;
     if (testing_)

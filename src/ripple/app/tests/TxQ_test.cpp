@@ -42,7 +42,7 @@ class TxQ_test : public TestSuite
         std::uint64_t expectedMinFeeLevel,
         std::uint64_t expectedMedFeeLevel)
     {
-        auto metrics = env.app().getTxQ().getMetrics(*env.open());
+        auto metrics = env.app().getTxQ().getMetrics(*env.current());
         expect(metrics.referenceFeeLevel == 256, "referenceFeeLevel");
         expect(metrics.txCount == expectedCount, "txCount");
         expect(metrics.txQMaxSize == expectedMaxCount, "txQMaxSize");
@@ -62,7 +62,7 @@ class TxQ_test : public TestSuite
     close(jtx::Env& env, size_t expectedTxSetSize, bool timeLeap = false)
     {
         {
-            auto const view = env.open();
+            auto const view = env.current();
             expect(view->txCount() == expectedTxSetSize, "TxSet size mismatch");
             // Update fee computations.
             // Note implementing this way assumes that everything
@@ -142,7 +142,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expectEquals(env.open()->fees().base, 10);
+        expectEquals(env.current()->fees().base, 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256, 500);
 
@@ -164,7 +164,7 @@ public:
         auto openLedgerFee = 
             [&]()
             {
-                return fee(txq.openLedgerFee(*env.open()));
+                return fee(txq.openLedgerFee(*env.current()));
             };
         // Alice's next transaction -
         // fails because the item in the TxQ hasn't applied.
@@ -339,7 +339,7 @@ public:
         // we can be sure that there's one in the queue when the
         // test ends and the TxQ is destructed.
 
-        auto metrics = txq.getMetrics(*env.open());
+        auto metrics = txq.getMetrics(*env.current());
         expect(metrics.txCount == 0, "txCount");
         auto txnsNeeded = metrics.txPerLedger - metrics.txInLedger;
 
