@@ -183,7 +183,7 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(env.openLedger);
+        wipe(env.openLedger());
         auto const open = env.open();
         ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, boost::none);
@@ -214,7 +214,7 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(env.openLedger);
+        wipe(env.openLedger());
         auto const open = env.open();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.insert(sle(1));
@@ -278,7 +278,7 @@ class View_test
     {
         using namespace jtx;
         Env env(*this);
-        wipe(env.openLedger);
+        wipe(env.openLedger());
         auto const open = env.open();
         ApplyViewImpl v0 (&*open, tapNONE);
         v0.rawInsert(sle(1, 1));
@@ -344,7 +344,7 @@ class View_test
         using namespace jtx;
         {
             Env env(*this);
-            wipe(env.openLedger);
+            wipe(env.openLedger());
             auto const open = env.open();
             OpenView v0(open.get());
             expect(v0.seq() != 98);
@@ -555,9 +555,9 @@ class View_test
         // Make sure OpenLedger::empty works
         {
             Env env(*this);
-            expect(env.openLedger.empty());
+            expect(env.openLedger().empty());
             env.fund(XRP(10000), Account("test"));
-            expect(!env.openLedger.empty());
+            expect(! env.openLedger().empty());
         }
     }
 

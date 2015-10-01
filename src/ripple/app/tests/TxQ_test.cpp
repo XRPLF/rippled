@@ -92,7 +92,7 @@ class TxQ_test : public TestSuite
         bool didApply;
         TER ter;
 
-        env.openLedger.modify(
+        env.openLedger().modify(
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter, didApply) =

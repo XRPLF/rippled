@@ -144,11 +144,9 @@ private:
     std::shared_ptr<Ledger const> closed_;
     CachedSLEs cachedSLEs_;
     LogSquelcher logSquelcher_;
+    OpenLedger openLedger_;
 
 public:
-    // Careful with this
-    OpenLedger openLedger;
-
     Env() = delete;
     Env (Env const&) = delete;
     Env& operator= (Env const&) = delete;
@@ -173,6 +171,13 @@ public:
     */
     std::shared_ptr<OpenView const>
     open() const;
+
+    // Careful with this
+    OpenLedger&
+    openLedger()
+    {
+        return openLedger_;
+    }
 
     /** Returns the last closed ledger.
 

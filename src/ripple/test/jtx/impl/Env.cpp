@@ -87,7 +87,7 @@ Env::Env(beast::unit_test::suite& test_,
     , closed_ (std::make_shared<Ledger>(
         create_genesis, app().config(), app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
-    , openLedger (closed_, cachedSLEs_, journal)
+    , openLedger_ (closed_, cachedSLEs_, journal)
 {
     memoize(master);
     Pathfinder::initPathTable();
@@ -101,7 +101,7 @@ Env::Env(beast::unit_test::suite& test_)
 std::shared_ptr<OpenView const>
 Env::open() const
 {
-    return openLedger.current();
+    return openLedger_.current();
 }
 
 std::shared_ptr<ReadView const>
@@ -121,7 +121,7 @@ Env::close(NetClock::time_point const& closeTime,
         app().timeKeeper().closeTime());
     next->setClosed();
     std::vector<std::shared_ptr<STTx const>> txs;
-    auto cur = openLedger.current();
+    auto cur = openLedger_.current();
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
         txs.push_back(iter->first);
@@ -139,7 +139,7 @@ Env::close(NetClock::time_point const& closeTime,
             closeTime.time_since_epoch ()).count (),
         ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
-    openLedger.accept(app(), next->rules(), next,
+    openLedger_.accept(app(), next->rules(), next,
         locals, false, retries, applyFlags(), "", f);
     closed_ = next;
     cachedSLEs_.expire();
@@ -279,7 +279,7 @@ Env::submit (JTx const& jt)
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
-        openLedger.modify(
+        openLedger_.modify(
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter_, didApply) = ripple::apply(
