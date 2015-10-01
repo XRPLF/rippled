@@ -168,8 +168,9 @@ SusPayCreate::doApply()
                            weeks{1}).time_since_epoch().count();
     if (ctx_.tx[~sfDigest])
     {
-        if (! ctx_.tx[~sfCancelAfter] ||
-                maxExpire <= ctx_.tx[sfCancelAfter])
+        if (! ctx_.tx[~sfCancelAfter])
+            return tecNO_PERMISSION;
+        if (maxExpire <= ctx_.tx[sfCancelAfter])
             return tecNO_PERMISSION;
     }
     else

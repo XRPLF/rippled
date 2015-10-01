@@ -412,6 +412,9 @@
     <Filter Include="ripple\test">
       <UniqueIdentifier>{B25F5854-84AE-1CBD-DFFC-6515DD055652}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\test\impl">
+      <UniqueIdentifier>{CF7F0C3F-3D61-7764-BA8B-5FF38018425C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\test\jtx">
       <UniqueIdentifier>{A21A3B94-5C44-3746-4F10-6FF8FF990CE3}</UniqueIdentifier>
     </Filter>
@@ -4284,6 +4287,9 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\test\jtx.h">
       <Filter>ripple\test</Filter>
     </ClInclude>
@@ -4457,6 +4463,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\utility.h">
       <Filter>ripple\test\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\ManualTimeKeeper.h">
+      <Filter>ripple\test</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\mao\impl\Net.cpp">
       <Filter>ripple\test\mao\impl</Filter>

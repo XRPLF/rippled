@@ -48,3 +48,4 @@
 #include <ripple/test/mao/impl/Net.cpp>
 #include <ripple/test/mao/impl/Net_test.cpp>
 
+#include <ripple/test/impl/ManualTimeKeeper.cpp>

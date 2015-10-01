@@ -52,8 +52,7 @@ sign (Json::Value& jv,
     ss.add32 (HashPrefix::txSign);
     parse(jv).add(ss);
     auto const sig = ripple::sign(
-        *publicKeyType(account.pk().slice()),
-            account.sk(), ss.slice());
+        account.pk(), account.sk(), ss.slice());
     jv[jss::TxnSignature] =
         strHex(Slice{ sig.data(), sig.size() });
 }
