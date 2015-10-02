@@ -554,9 +554,18 @@ def config_env(toolchain, variant, env):
             '_CRT_SECURE_NO_WARNINGS',
             'WIN32_CONSOLE',
             ])
+        if variant == 'debug':
+            env.Append(LIBS=[
+                'VC/static/ssleay32MTd.lib',
+                'VC/static/libeay32MTd.lib',
+                ])
+        else:
+            env.Append(LIBS=[
+                'VC/static/ssleay32MT.lib',
+                'VC/static/libeay32MT.lib',
+                ])
         env.Append(LIBS=[
-            'ssleay32.lib',
-            'libeay32.lib',
+            'legacy_stdio_definitions.lib',
             'Shlwapi.lib',
             'kernel32.lib',
             'user32.lib',
