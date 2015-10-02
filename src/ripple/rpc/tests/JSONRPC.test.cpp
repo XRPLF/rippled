@@ -98,7 +98,7 @@ R"({
 {
 "",
 "",
-"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "Pass in Sequence and Fee with minimal payment.",
@@ -118,7 +118,7 @@ R"({
 {
 "",
 "",
-"Missing field 'tx_json.SigningPubKey'.",
+"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "Add 'fee_mult_max' field.",
@@ -138,7 +138,7 @@ R"({
 {
 "",
 "",
-"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "fee_mult_max is ignored if 'Fee' is present.",
@@ -159,7 +159,7 @@ R"({
 {
 "",
 "",
-"Missing field 'tx_json.SigningPubKey'.",
+"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "Invalid 'fee_mult_max' field.",
@@ -179,7 +179,7 @@ R"({
 {
 "Invalid field 'fee_mult_max', not a number.",
 "Invalid field 'fee_mult_max', not a number.",
-"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "Invalid value for 'fee_mult_max' field.",
@@ -199,7 +199,7 @@ R"({
 {
 "Fee of 10 exceeds the requested tx limit of 0",
 "Fee of 10 exceeds the requested tx limit of 0",
-"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "Missing 'Amount'.",
@@ -587,7 +587,7 @@ R"({
 {
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'.",
+"Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "Valid transaction if 'offline' is true.",
@@ -608,7 +608,7 @@ R"({
 {
 "",
 "",
-"Missing field 'tx_json.SigningPubKey'.",
+"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "'offline' and 'build_path' are mutually exclusive.",
@@ -630,7 +630,7 @@ R"({
 {
 "Field 'build_path' not allowed in this context.",
 "Field 'build_path' not allowed in this context.",
-"Missing field 'tx_json.SigningPubKey'.",
+"Field 'build_path' not allowed in this context.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
 { "A 'Flags' field may be specified.",
@@ -833,7 +833,7 @@ R"({
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'."}},
 
-{ "Missing 'SigningPubKey' in sign_for.",
+{ "Missing 'SigningPubKey' in sign_for is automatically filled in.",
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -850,8 +850,118 @@ R"({
 {
 "Secret does not match account.",
 "Secret does not match account.",
-"Missing field 'tx_json.SigningPubKey'.",
+"",
 "Missing field 'tx_json.SigningPubKey'."}},
+
+{ "In sign_for, an account may not sign for itself.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee": 50,
+        "Sequence": 0,
+        "TransactionType": "Payment"
+    }
+})",
+{
+"",
+"",
+"A Signer may not be the transaction's Account (rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
+"Missing field 'tx_json.SigningPubKey'."}},
+
+{ "Cannot put duplicate accounts in Signers array",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+{
+"Secret does not match account.",
+"Secret does not match account.",
+"Duplicate Signers:Signer:Account entries (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
+""}},
+
+{ "Correctly append to pre-established Signers array",
+R"({
+    "command": "doesnt_matter",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ADB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+{
+"Secret does not match account.",
+"Secret does not match account.",
+"",
+""}},
+
+{ "Append to pre-established Signers array with bad signature",
+R"({
+    "command": "doesnt_matter",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Account" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount" : "1000000000",
+        "Destination" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Fee" : "50",
+        "Sequence" : 0,
+        "Signers" : [
+            {
+                "Signer" : {
+                    "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature" : "304502210080EB23E78A841DDC5E3A4F10DE6EAF052207D6B519BF8954467ACB221B3F349002202CA458E8D4E4DE7176D27A91628545E7B295A5DFC8ADF0B5CD3E279B6FA02998"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "TransactionType" : "Payment"
+    }
+})",
+{
+"Secret does not match account.",
+"Secret does not match account.",
+"Invalid signature.",
+"Invalid signature."}},
 
 { "Non-empty 'SigningPubKey' in sign_for.",
 R"({
