@@ -177,7 +177,7 @@ void PathRequests::insertPathRequest (PathRequest::pointer const& req)
     std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
     while (it != mRequests.end ())
     {
-        PathRequest::pointer r = it->lock ();
+        auto r = it->lock ();
         if (r && !r->isNew ())
             break; // This request has been handled, we come before it
 
