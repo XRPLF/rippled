@@ -257,7 +257,9 @@ void OrderBookDB::processTxn (
                         auto data = dynamic_cast<const STObject*> (
                             node.peekAtPField (*field));
 
-                        if (data)
+                        if (data &&
+                            data->isFieldPresent (sfTakerPays) &&
+                            data->isFieldPresent (sfTakerGets))
                         {
                             // determine the OrderBook
                             auto listeners = getBookListeners (

@@ -670,7 +670,7 @@ public:
     {
         // A new ledger has been accepted as part of the trusted chain
         JLOG (m_journal.debug) << "Ledger " << ledger->info().seq
-                                         << "accepted :" << ledger->getHash ();
+                               << " accepted :" << ledger->getHash ();
         assert (ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
