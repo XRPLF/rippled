@@ -29,7 +29,6 @@ Dir::Dir(ReadView const& view,
     : view_(&view)
     , root_(key)
     , sle_(view_->read(root_))
-
 {
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);
@@ -77,7 +76,10 @@ Dir::find(uint256 const& page_key, uint256 const& sle_key) const
     {
         it.sle_ = view_->read(it.page_);
         if (it.sle_ == nullptr)
-            return end();
+        {
+            it.page_ = root_;
+            return it;
+        }
         it.indexes_ = &it.sle_->getFieldV256(sfIndexes);
     }
 
@@ -88,23 +90,6 @@ Dir::find(uint256 const& page_key, uint256 const& sle_key) const
 
     it.index_ = *it.it_;
     return it;
-}
-
-const_iterator&
-const_iterator::operator=(const_iterator const& other)
-{
-    if (this != &other)
-    {
-        view_ = other.view_;
-        root_ = other.root_;
-        page_ = other.page_;
-        index_ = other.index_;
-        cache_ = other.cache_;
-        sle_ = other.sle_;
-        indexes_ = other.indexes_;
-        it_ = other.it_;
-    }
-    return *this;
 }
 
 bool
@@ -120,7 +105,7 @@ const_iterator::operator==(const_iterator const& other) const
 const_iterator::reference
 const_iterator::operator*() const
 {
-    assert(index_ != beast::zero);
+    assert(index_ != zero);
     if (! cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -129,7 +114,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    assert(index_ != beast::zero);
+    assert(index_ != zero);
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -141,7 +126,7 @@ const_iterator::operator++()
         if (next == 0)
         {
             page_.key = root_.key;
-            index_ = beast::zero;
+            index_ = zero;
         }
         else
         {
@@ -151,7 +136,7 @@ const_iterator::operator++()
             indexes_ = &sle_->getFieldV256(sfIndexes);
             if (indexes_->empty())
             {
-                index_ = beast::zero;
+                index_ = zero;
             }
             else
             {
@@ -168,7 +153,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    assert(index_ != beast::zero);
+    assert(index_ != zero);
     const_iterator tmp(*this);
     ++(*this);
     return tmp;
