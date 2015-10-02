@@ -347,7 +347,7 @@ ServerHandlerImp::processRequest (
 
     // Provide the JSON-RPC method as the field "command" in the request.
     params[jss::command] = strMethod;
-    JLOG (m_journal.trace) 
+    JLOG (m_journal.trace)
         << "doRpcCommand:" << strMethod << ":" << params;
 
     auto const start (std::chrono::high_resolution_clock::now ());
