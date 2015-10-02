@@ -50,7 +50,13 @@ public:
 
     Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
     {
-        return m_logic.newInboundEndpoint (address);
+        return newInboundEndpoint (address, HTTP::Port());
+    }
+
+    Consumer newInboundEndpoint (beast::IP::Endpoint const& address,
+        HTTP::Port const& port)
+    {
+        return m_logic.newInboundEndpoint (address, port);
     }
 
     Consumer newOutboundEndpoint (beast::IP::Endpoint const& address)

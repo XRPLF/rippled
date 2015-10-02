@@ -134,7 +134,8 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
     beast::IP::Endpoint const& remoteAddress,
     boost::asio::io_service& io_service)
         : InfoSub (source, // usage
-                   resourceManager.newInboundEndpoint (remoteAddress))
+                   resourceManager.newInboundEndpoint (remoteAddress,
+                   handler.port()))
         , app_(app)
         , m_port (handler.port ())
         , m_resourceManager (resourceManager)
