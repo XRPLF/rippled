@@ -27,6 +27,8 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/server/Port.h>
+#include <ripple/server/Role.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/Insight.h>
 #include <beast/threads/SharedData.h>
@@ -112,7 +114,14 @@ public:
 
     Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
     {
-        if (isWhitelisted (address))
+        return newInboundEndpoint (address, HTTP::Port());
+    }
+
+    Consumer newInboundEndpoint (beast::IP::Endpoint const& address,
+        HTTP::Port const& port)
+    {
+        if (requestRole (Role::GUEST, port, Json::Value(), address) ==
+                Role::ADMIN)
             return newAdminEndpoint (to_string (address));
 
         Entry* entry (nullptr);
@@ -146,7 +155,14 @@ public:
 
     Consumer newOutboundEndpoint (beast::IP::Endpoint const& address)
     {
-        if (isWhitelisted (address))
+        return newOutboundEndpoint (address, HTTP::Port());
+    }
+
+    Consumer newOutboundEndpoint (beast::IP::Endpoint const& address,
+        HTTP::Port const& port)
+    {
+        if (requestRole (Role::GUEST, port, Json::Value(), address) ==
+                Role::ADMIN)
             return newAdminEndpoint (to_string (address));
 
         Entry* entry (nullptr);
@@ -369,14 +385,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    bool isWhitelisted (beast::IP::Endpoint const& address)
-    {
-        if (! is_public (address))
-            return true;
-
-        return false;
-    }
 
     // Called periodically to expire entries and groom the table.
     //

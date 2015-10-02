@@ -23,6 +23,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/Gossip.h>
+#include <ripple/server/Port.h>
 #include <beast/insight/Collector.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
@@ -42,6 +43,8 @@ public:
 
     /** Create a new endpoint keyed by inbound IP address. */
     virtual Consumer newInboundEndpoint (beast::IP::Endpoint const& address) = 0;
+    virtual Consumer newInboundEndpoint (beast::IP::Endpoint const& address,
+        HTTP::Port const& port) = 0;
 
     /** Create a new endpoint keyed by outbound IP address and port. */
     virtual Consumer newOutboundEndpoint (beast::IP::Endpoint const& address) = 0;
