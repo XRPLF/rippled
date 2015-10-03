@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/IOUAmount.h>
 
 namespace ripple {
 
@@ -38,6 +39,13 @@ STAmount creditLimit (
     AccountID const& issuer,
     Currency const& currency);
 
+IOUAmount
+creditLimit2 (
+    ReadView const& v,
+    AccountID const& acc,
+    AccountID const& iss,
+    Currency const& cur);
+
 /** Returns the amount of IOUs issued by issuer that are held by an account
     @param ledger the ledger to check against.
     @param account the account of interest.
@@ -49,6 +57,13 @@ STAmount creditBalance (
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency);
+
+IOUAmount
+creditBalance2 (
+    ReadView const& v,
+    AccountID const& acc,
+    AccountID const& iss,
+    Currency const& cur);
 
 } // ripple
 

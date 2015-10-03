@@ -23,6 +23,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -132,6 +133,27 @@ std::string
 to_string (XRPAmount const& amount)
 {
     return std::to_string (amount.drops ());
+}
+
+inline
+XRPAmount
+mulRatio (
+    XRPAmount const& amt,
+    std::uint32_t num,
+    std::uint32_t den,
+    bool roundUp)
+{
+    using namespace boost::multiprecision;
+    int128_t const den128 (den);
+    int128_t const num128 (num);
+    int128_t const amt128 (amt.drops ());
+    auto const m = int128_t (amt.drops ()) * num;
+    auto r = m / den;
+    if (roundUp && r >= 0 && (m % den))
+        r += 1;
+    if (r > std::numeric_limits<std::int64_t>::max ())
+        throw std::overflow_error ("XRP mulRatio overflow");
+    return XRPAmount (r.convert_to<std::int64_t> ());
 }
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */

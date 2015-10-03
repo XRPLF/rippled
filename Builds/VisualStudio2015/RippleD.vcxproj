@@ -2748,6 +2748,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\AccountID.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\AmountSpec.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Book.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\BuildInfo.h">
