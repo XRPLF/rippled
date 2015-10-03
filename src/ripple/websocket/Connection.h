@@ -34,6 +34,7 @@
 #include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Port.h>
+#include <ripple/server/Role.h>
 #include <ripple/json/to_string.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Yield.h>
@@ -133,8 +134,8 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
     connection_ptr const& cpConnection,
     beast::IP::Endpoint const& remoteAddress,
     boost::asio::io_service& io_service)
-        : InfoSub (source, // usage
-                   resourceManager.newInboundEndpoint (remoteAddress))
+        : InfoSub (source, requestInboundEndpoint (
+            resourceManager, remoteAddress, handler.port()))
         , app_(app)
         , m_port (handler.port ())
         , m_resourceManager (resourceManager)
