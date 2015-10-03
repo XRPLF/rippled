@@ -20,23 +20,24 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/IOUAmount.h>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <algorithm>
+#include <numeric>
 #include <iterator>
 #include <stdexcept>
 
 namespace ripple {
 
+/* The range for the mantissa when normalized */
+static std::int64_t const minMantissa = 1000000000000000ull;
+static std::int64_t const maxMantissa = 9999999999999999ull;
+/* The range for the exponent when normalized */
+static int const minExponent = -96;
+static int const maxExponent = 80;
+
 void
 IOUAmount::normalize ()
 {
-    /* The range for the exponent when normalized */
-    static int const minExponent = -96;
-    static int const maxExponent = 80;
-
-    /* The range for the mantissa when normalized */
-    static std::int64_t const minMantissa = 1000000000000000ull;
-    static std::int64_t const maxMantissa = 9999999999999999ull;
-
     if (mantissa_ == 0)
     {
         *this = zero;
@@ -243,5 +244,97 @@ to_string (IOUAmount const& amount)
 
     return ret;
 }
+
+IOUAmount
+mulRatio (
+    IOUAmount const& amt,
+    std::uint32_t num,
+    std::uint32_t den,
+    bool roundUp)
+{
+    using namespace boost::multiprecision;
+
+    static std::vector<uint128_t> const logTable = []
+    {
+        std::vector<uint128_t> result;
+        result.reserve (30);  // 2^96 is largest intermediate result size
+        uint128_t cur (1);
+        for (int i = 0; i < 30; ++i)
+        {
+            result.push_back (cur);
+            cur *= 10;
+        };
+        return result;
+    }();
+    // Note: Returns -1 for v == 0
+    static auto log10Floor = [](uint128_t const& v)
+    {
+        auto const l = std::lower_bound (logTable.begin (), logTable.end (), v);
+        int index = std::distance (logTable.begin (), l);
+        if (*l != v)
+            --index;
+        return index;
+    };
+    static auto log10Ceil = [](uint128_t const& v)
+    {
+        auto const l = std::lower_bound (logTable.begin (), logTable.end (), v);
+        return int(std::distance (logTable.begin (), l));
+    };
+    static auto const fl64 =
+        log10Floor (std::numeric_limits<std::int64_t>::max ());
+    bool const neg = amt.mantissa () < 0;
+    uint128_t const den128 (den);
+    uint128_t const mul =
+        uint128_t (neg ? -amt.mantissa () : amt.mantissa ()) * uint128_t (num);
+    auto low = mul / den128;
+    uint128_t rem (mul - low * den128);
+
+    int exponent = amt.exponent ();
+
+    if (rem)
+    {
+        auto const roomToGrow = fl64 - log10Ceil (low);
+        if (roomToGrow > 0)
+        {
+            exponent -= roomToGrow;
+            low *= logTable[roomToGrow];
+            rem *= logTable[roomToGrow];
+        }
+        auto const addRem = rem / den128;
+        low += addRem;
+        rem = rem - addRem * den128;
+    }
+
+    bool hasRem = bool(rem);
+    auto const mustShrink = log10Ceil (low) - fl64;
+    if (mustShrink > 0)
+    {
+        uint128_t const sav (low);
+        exponent += mustShrink;
+        low /= logTable[mustShrink];
+        if (!hasRem && roundUp)
+            hasRem = bool(sav - low * logTable[mustShrink]);
+    }
+
+    std::int64_t mantissa = low.convert_to<std::int64_t> ();
+
+    // normalize before rounding
+    if (neg)
+        mantissa *= -1;
+
+    IOUAmount result (mantissa, exponent);
+
+    if (roundUp && hasRem && !neg)
+    {
+        if (!result)
+        {
+            return IOUAmount (minMantissa, minExponent);
+        }
+        return IOUAmount (result.mantissa() + 1, result.exponent());
+    }
+
+    return result;
+}
+
 
 }

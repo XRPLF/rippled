@@ -3099,6 +3099,9 @@
     <ClInclude Include="..\..\src\ripple\protocol\AccountID.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\AmountSpec.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Book.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
