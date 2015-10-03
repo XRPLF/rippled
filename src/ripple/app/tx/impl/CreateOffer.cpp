@@ -498,7 +498,7 @@ CreateOffer::direct_cross (
     while (have_offer)
     {
         bool direct_consumed = false;
-        auto const& offer (offers.tip());
+        auto& offer (offers.tip());
 
         // We are done with crossing as soon as we cross the quality boundary
         if (taker.reject (offer.quality()))

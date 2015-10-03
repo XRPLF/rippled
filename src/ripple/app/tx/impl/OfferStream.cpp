@@ -23,7 +23,8 @@
 
 namespace ripple {
 
-OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
+template<class TIn, class TOut>
+TOfferStreamBase<TIn, TOut>::TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
     Book const& book, NetClock::time_point when,
         StepCounter& counter, beast::Journal journal)
     : j_ (journal)
@@ -38,8 +39,9 @@ OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
 
 // Handle the case where a directory item with no corresponding ledger entry
 // is found. This shouldn't happen but if it does we clean it up.
+template<class TIn, class TOut>
 void
-OfferStream::erase (ApplyView& view)
+TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
 {
     // NIKB NOTE This should be using ApplyView::dirDelete, which would
     //           correctly remove the directory if its the last entry.
@@ -75,8 +77,48 @@ OfferStream::erase (ApplyView& view)
         " removed from directory " << tip_.dir();
 }
 
+static
+STAmount accountFundsHelper (ReadView const& view,
+    AccountID const& id,
+    STAmount const& saDefault,
+    Issue const& issue,
+    FreezeHandling freezeHandling,
+    beast::Journal j)
+{
+    return accountFunds (view, id, saDefault, freezeHandling, j);
+}
+
+static
+IOUAmount accountFundsHelper (ReadView const& view,
+    AccountID const& id,
+    IOUAmount const& amtDefault,
+    Issue const& issue,
+    FreezeHandling freezeHandling,
+    beast::Journal j)
+{
+    if (issue.account == id)
+        // self funded
+        return amtDefault;
+
+    return toAmount<IOUAmount> (
+        accountHolds (view, id, issue.currency, issue.account, freezeHandling, j));
+}
+
+static
+XRPAmount accountFundsHelper (ReadView const& view,
+    AccountID const& id,
+    XRPAmount const& amtDefault,
+    Issue const& issue,
+    FreezeHandling freezeHandling,
+    beast::Journal j)
+{
+    return toAmount<XRPAmount> (
+        accountHolds (view, id, issue.currency, issue.account, freezeHandling, j));
+}
+
+template<class TIn, class TOut>
 bool
-OfferStream::step (Logs& l)
+TOfferStreamBase<TIn, TOut>::step (Logs& l)
 {
     // Modifying the order or logic of these
     // operations causes a protocol breaking change.
@@ -84,6 +126,7 @@ OfferStream::step (Logs& l)
     auto viewJ = l.journal ("View");
     for(;;)
     {
+        ownerFunds_ = boost::none;
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
         if (! tip_.step(l))
@@ -111,43 +154,41 @@ OfferStream::step (Logs& l)
         {
             JLOG(j_.trace) <<
                 "Removing expired offer " << entry->getIndex();
-            offerDelete (cancelView_,
-                cancelView_.peek(keylet::offer(entry->key())), viewJ);
+                permRmOffer (entry, viewJ);
             continue;
         }
 
-        offer_ = Offer (entry, tip_.quality());
+        offer_ = TOffer<TIn, TOut> (entry, tip_.quality());
 
-        Amounts const amount (offer_.amount());
+        auto const amount (offer_.amount());
 
         // Remove if either amount is zero
         if (amount.empty())
         {
             JLOG(j_.warning) <<
                 "Removing bad offer " << entry->getIndex();
-            offerDelete (cancelView_,
-                cancelView_.peek(keylet::offer(entry->key())), viewJ);
-            offer_ = Offer{};
+            permRmOffer (entry, viewJ);
+            offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
         // Calculate owner funds
-        auto const owner_funds = accountFunds(view_,
-            offer_.owner(), amount.out, fhZERO_IF_FROZEN, viewJ);
+        ownerFunds_ = accountFundsHelper (view_, offer_.owner (), amount.out,
+            offer_.issueOut (), fhZERO_IF_FROZEN, viewJ);
 
         // Check for unfunded offer
-        if (owner_funds <= zero)
+        if (*ownerFunds_ <= zero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = accountFunds(cancelView_,
-                offer_.owner(), amount.out, fhZERO_IF_FROZEN, viewJ);
+            auto const original_funds =
+                accountFundsHelper (cancelView_, offer_.owner (), amount.out,
+                    offer_.issueOut (), fhZERO_IF_FROZEN, viewJ);
 
-            if (original_funds == owner_funds)
+            if (original_funds == *ownerFunds_)
             {
-                offerDelete (cancelView_, cancelView_.peek(
-                    keylet::offer(entry->key())), viewJ);
+                permRmOffer (entry, viewJ);
                 JLOG(j_.trace) <<
                     "Removing unfunded offer " << entry->getIndex();
             }
@@ -156,7 +197,7 @@ OfferStream::step (Logs& l)
                 JLOG(j_.trace) <<
                     "Removing became unfunded offer " << entry->getIndex();
             }
-            offer_ = Offer{};
+            offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
@@ -166,4 +207,26 @@ OfferStream::step (Logs& l)
     return true;
 }
 
+void
+OfferStream::permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j)
+{
+    offerDelete (cancelView_,
+                 cancelView_.peek(keylet::offer(sle->key())), j);
+}
+
+template<class TIn, class TOut>
+void FlowOfferStream<TIn, TOut>::permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal)
+{
+    toRemove_.push_back (sle->key());
+}
+
+template class FlowOfferStream<STAmount, STAmount>;
+template class FlowOfferStream<IOUAmount, IOUAmount>;
+template class FlowOfferStream<XRPAmount, IOUAmount>;
+template class FlowOfferStream<IOUAmount, XRPAmount>;
+
+template class TOfferStreamBase<STAmount, STAmount>;
+template class TOfferStreamBase<IOUAmount, IOUAmount>;
+template class TOfferStreamBase<XRPAmount, IOUAmount>;
+template class TOfferStreamBase<IOUAmount, XRPAmount>;
 }
