@@ -562,7 +562,7 @@ Taker::Taker (CrossType cross_type, ApplyView& view,
 }
 
 void
-Taker::consume_offer (Offer const& offer, Amounts const& order)
+Taker::consume_offer (Offer& offer, Amounts const& order)
 {
     if (order.in < zero)
         Throw<std::logic_error> ("flow with negative input.");
@@ -655,7 +655,7 @@ TER Taker::issueIOU (
 
 // Performs funds transfers to fill the given offer and adjusts offer.
 TER
-Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
+Taker::fill (BasicTaker::Flow const& flow, Offer& offer)
 {
     // adjust offer
     consume_offer (offer, flow.order);
@@ -708,8 +708,8 @@ Taker::fill (BasicTaker::Flow const& flow, Offer const& offer)
 // Performs bridged funds transfers to fill the given offers and adjusts offers.
 TER
 Taker::fill (
-    BasicTaker::Flow const& flow1, Offer const& leg1,
-    BasicTaker::Flow const& flow2, Offer const& leg2)
+    BasicTaker::Flow const& flow1, Offer& leg1,
+    BasicTaker::Flow const& flow2, Offer& leg2)
 {
     // Adjust offers accordingly
     consume_offer (leg1, flow1.order);
@@ -751,7 +751,7 @@ Taker::fill (
 }
 
 TER
-Taker::cross (Offer const& offer)
+Taker::cross (Offer& offer)
 {
     // In direct crossings, at least one leg must not be XRP.
     if (isXRP (offer.amount ().in) && isXRP (offer.amount ().out))
@@ -764,7 +764,7 @@ Taker::cross (Offer const& offer)
 }
 
 TER
-Taker::cross (Offer const& leg1, Offer const& leg2)
+Taker::cross (Offer& leg1, Offer& leg2)
 {
     // In bridged crossings, XRP must can't be the input to the first leg
     // or the output of the second leg.
