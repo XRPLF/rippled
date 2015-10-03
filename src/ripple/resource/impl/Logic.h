@@ -112,9 +112,6 @@ public:
 
     Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
     {
-        if (isWhitelisted (address))
-            return newAdminEndpoint (to_string (address));
-
         Entry* entry (nullptr);
 
         {
@@ -146,9 +143,6 @@ public:
 
     Consumer newOutboundEndpoint (beast::IP::Endpoint const& address)
     {
-        if (isWhitelisted (address))
-            return newAdminEndpoint (to_string (address));
-
         Entry* entry (nullptr);
 
         {
@@ -369,14 +363,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    bool isWhitelisted (beast::IP::Endpoint const& address)
-    {
-        if (! is_public (address))
-            return true;
-
-        return false;
-    }
 
     // Called periodically to expire entries and groom the table.
     //
