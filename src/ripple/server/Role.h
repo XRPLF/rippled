@@ -22,6 +22,7 @@
 
 #include <ripple/server/Port.h>
 #include <ripple/json/json_value.h>
+#include <ripple/resource/ResourceManager.h>
 #include <beast/net/IPEndpoint.h>
 #include <vector>
 
@@ -46,6 +47,11 @@ enum class Role
 Role
 requestRole (Role const& required, HTTP::Port const& port,
     Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp);
+
+Resource::Consumer
+requestInboundEndpoint (Resource::Manager& manager,
+    beast::IP::Endpoint const& remoteAddress,
+        HTTP::Port const& port);
 
 } // ripple
 
