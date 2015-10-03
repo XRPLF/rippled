@@ -312,6 +312,15 @@ amountFromJson (SField const& name, Json::Value const& v);
 bool
 amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource);
 
+// IOUAmount and XRPAmount define toSTAmount, defining this
+// trivial conversion here makes writing generic code easier
+inline
+STAmount const&
+toSTAmount (STAmount const& a)
+{
+    return a;
+}
+
 //------------------------------------------------------------------------------
 //
 // Observers

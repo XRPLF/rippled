@@ -140,6 +140,13 @@ public:
 std::string
 to_string (IOUAmount const& amount);
 
+IOUAmount
+mulRatio (
+    IOUAmount const& amt,
+    std::uint32_t num,
+    std::uint32_t den,
+    bool roundUp);
+
 }
 
 #endif
