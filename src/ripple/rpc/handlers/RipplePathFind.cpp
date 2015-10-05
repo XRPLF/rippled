@@ -23,7 +23,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/paths/AccountCurrencies.h>
-#include <ripple/app/paths/FindPaths.h>
 #include <ripple/app/paths/PathRequest.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/paths/RippleCalc.h>
@@ -47,6 +46,8 @@
 #include <ripple/server/Role.h>
 
 namespace ripple {
+
+static unsigned int const max_paths = 4;
 
 static
 Json::Value
@@ -246,9 +247,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
         auto contextPaths = context.params.isMember(jss::paths) ?
             boost::optional<Json::Value>(context.params[jss::paths]) :
                 boost::optional<Json::Value>(boost::none);
-        auto pathFindResult = ripplePathFind(cache, raSrc, raDst, saDstAmount,
-            jvSrcCurrencies, contextPaths, level, saSendMax, convert_all,
-                context.app);
+        auto pathFindResult = ripplePathFind(
+            cache, raSrc, raDst, (convert_all ? STAmount(saDstAmount.issue(),
+                STAmount::cMaxValue, STAmount::cMaxOffset) : saDstAmount),
+                    jvSrcCurrencies, contextPaths, level, saSendMax,
+                        convert_all, context.app);
         if (!pathFindResult.first)
             return pathFindResult.second;
 
@@ -262,26 +265,35 @@ Json::Value doRipplePathFind (RPC::Context& context)
     return jvResult;
 }
 
+std::unique_ptr<Pathfinder> const&
+getPathFinder(RippleLineCache::ref cache, AccountID const& raSrc,
+    AccountID const& raDst, boost::optional<STAmount> saSendMax,
+        hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
+            Currency const& currency, STAmount const& dst_amount,
+                int const level, Application& app)
+{
+    auto i = currency_map.find(currency);
+    if (i != currency_map.end())
+        return i->second;
+    auto pathfinder = std::make_unique<Pathfinder>(cache, raSrc, raDst,
+        currency, boost::none, dst_amount, saSendMax, app);
+    if (pathfinder->findPaths(level))
+        pathfinder->computePathRanks(max_paths);
+    else
+        pathfinder.reset();  // It's a bad request - clear it.
+    return currency_map[currency] = std::move(pathfinder);
+}
+
 std::pair<bool, Json::Value>
 ripplePathFind (RippleLineCache::pointer const& cache,
   AccountID const& raSrc, AccountID const& raDst,
     STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies,
         boost::optional<Json::Value> const& contextPaths,
-            int const& level, boost::optional<STAmount> saSendMax,
+            int const level, boost::optional<STAmount> saSendMax,
                 bool convert_all, Application& app)
 {
-    auto const sa = STAmount(saDstAmount.issue(),
-        STAmount::cMaxValue, STAmount::cMaxOffset);
-    FindPaths fp(
-        cache,
-        raSrc,
-        raDst,
-        convert_all ? sa : saDstAmount,
-        saSendMax,
-        level,
-        4); // max paths
-
     Json::Value jvArray(Json::arrayValue);
+    hash_map<Currency, std::unique_ptr<Pathfinder>> currency_map;
 
     auto j = app.journal ("RPCHandler");
 
@@ -350,118 +362,111 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             STParsedJSONObject paths("pathSet", pathSet);
             if (! paths.object)
                 return std::make_pair(false, paths.error);
-            else
-            {
-                spsComputed = paths.object->getFieldPathSet(sfPaths);
-                JLOG (j.trace) << "ripple_path_find: Paths: " <<
-                    spsComputed.getJson(0);
-            }
+
+            spsComputed = paths.object->getFieldPathSet(sfPaths);
+            JLOG (j.trace) << "ripple_path_find: Paths: " <<
+                spsComputed.getJson(0);
+        }
+
+        auto& pathfinder = getPathFinder(cache, raSrc, raDst, saSendMax,
+            currency_map, issue.currency, saDstAmount, level, app);
+        if (! pathfinder)
+        {
+            JLOG (j.warning) << "ripple_path_find: No paths found.";
+            continue;
         }
 
         STPath fullLiquidityPath;
-        auto result = fp.findPathsForIssue(
-            issue,
-            spsComputed,
-            fullLiquidityPath,
-            app);
-        if (! result)
+        auto ps = pathfinder->getBestPaths(max_paths,
+            fullLiquidityPath, spsComputed, issue.account);
+        auto& issuer =
+            isXRP(uSrcIssuerID) ?
+            isXRP(uSrcCurrencyID) ? // Default to source account.
+            xrpAccount() :
+            (raSrc)
+            : uSrcIssuerID;            // Use specifed issuer.
+        STAmount saMaxAmount = saSendMax.value_or(
+            STAmount({uSrcCurrencyID, issuer}, 1u, 0, true));
+
+        boost::optional<PaymentSandbox> sandbox;
+        sandbox.emplace(&*cache->getLedger(), tapNONE);
+        assert(sandbox->open());
+
+        path::RippleCalc::Input rcInput;
+        if (convert_all)
+            rcInput.partialPaymentAllowed = true;
+
+        auto rc = path::RippleCalc::rippleCalculate(
+            *sandbox,
+            saMaxAmount,    // --> Amount to send is unlimited
+                            //     to get an estimate.
+            saDstAmount,    // --> Amount to deliver.
+            raDst,          // --> Account to deliver to.
+            raSrc,          // --> Account sending from.
+            ps,             // --> Path set.
+            app.logs(),
+            &rcInput);
+
+        JLOG(j.warning)
+            << "ripple_path_find:"
+            << " saMaxAmount=" << saMaxAmount
+            << " saDstAmount=" << saDstAmount
+            << " saMaxAmountAct=" << rc.actualAmountIn
+            << " saDstAmountAct=" << rc.actualAmountOut;
+
+        if (! convert_all &&
+            ! fullLiquidityPath.empty() &&
+            (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
-            JLOG (j.warning)
-                << "ripple_path_find: No paths found.";
+            auto jpr = app.journal("PathRequest");
+            JLOG(jpr.debug)
+                << "Trying with an extra path element";
+            ps.push_back(fullLiquidityPath);
+            sandbox.emplace(&*cache->getLedger(), tapNONE);
+            assert(sandbox->open());
+            rc = path::RippleCalc::rippleCalculate(
+                *sandbox,
+                saMaxAmount,    // --> Amount to send is unlimited
+                                //     to get an estimate.
+                saDstAmount,    // --> Amount to deliver.
+                raDst,          // --> Account to deliver to.
+                raSrc,          // --> Account sending from.
+                ps,             // --> Path set.
+                app.logs());
+            JLOG(jpr.debug)
+                << "Extra path element gives "
+                << transHuman(rc.result());
+        }
+
+        if (rc.result() == tesSUCCESS)
+        {
+            Json::Value jvEntry(Json::objectValue);
+
+            STPathSet   spsCanonical;
+
+            // Reuse the expanded as it would need to be calcuated
+            // anyway to produce the canonical.  (At least unless we
+            // make a direct canonical.)
+
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(0);
+            jvEntry[jss::paths_canonical] = Json::arrayValue;
+            jvEntry[jss::paths_computed] = ps.getJson(0);
+
+            if (convert_all)
+                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(0);
+
+            jvArray.append(jvEntry);
         }
         else
         {
-            auto& issuer =
-                isXRP(uSrcIssuerID) ?
-                isXRP(uSrcCurrencyID) ? // Default to source account.
-                xrpAccount() :
-                (raSrc)
-                : uSrcIssuerID;            // Use specifed issuer.
-            STAmount saMaxAmount = saSendMax.value_or(
-                STAmount({uSrcCurrencyID, issuer}, 1u, 0, true));
-
-            boost::optional<PaymentSandbox> sandbox;
-            sandbox.emplace(&*cache->getLedger(), tapNONE);
-            assert(sandbox->open());
-
-            path::RippleCalc::Input rcInput;
-            if (convert_all)
-                rcInput.partialPaymentAllowed = true;
-
-            auto rc = path::RippleCalc::rippleCalculate(
-                *sandbox,
-                saMaxAmount,                    // --> Amount to send is unlimited
-                                                //     to get an estimate.
-                convert_all ? sa : saDstAmount, // --> Amount to deliver.
-                raDst,                          // --> Account to deliver to.
-                raSrc,                          // --> Account sending from.
-                *result,                        // --> Path set.
-                app.logs (),
-                &rcInput);
-
-            JLOG (j.warning)
-                << "ripple_path_find:"
-                << " saMaxAmount=" << saMaxAmount
-                << " saDstAmount=" << saDstAmount
-                << " saMaxAmountAct=" << rc.actualAmountIn
-                << " saDstAmountAct=" << rc.actualAmountOut;
-
-            if (! convert_all &&
-                ! fullLiquidityPath.empty() &&
-                (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
-            {
-                auto jpr = app.journal ("PathRequest");
-                JLOG (jpr.debug)
-                    << "Trying with an extra path element";
-                result->push_back(fullLiquidityPath);
-                sandbox.emplace(&*cache->getLedger(), tapNONE);
-                assert(sandbox->open());
-                rc = path::RippleCalc::rippleCalculate(
-                    *sandbox,
-                    saMaxAmount,            // --> Amount to send is unlimited
-                                            //     to get an estimate.
-                    saDstAmount,            // --> Amount to deliver.
-                    raDst,                  // --> Account to deliver to.
-                    raSrc,                  // --> Account sending from.
-                    *result,               // --> Path set.
-                    app.logs ());
-                JLOG (jpr.debug)
-                    << "Extra path element gives "
-                    << transHuman(rc.result());
-            }
-
-            if (rc.result() == tesSUCCESS)
-            {
-                Json::Value jvEntry(Json::objectValue);
-
-                STPathSet   spsCanonical;
-
-                // Reuse the expanded as it would need to be calcuated
-                // anyway to produce the canonical.  (At least unless we
-                // make a direct canonical.)
-
-                jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(0);
-                jvEntry[jss::paths_canonical] = Json::arrayValue;
-                jvEntry[jss::paths_computed] = result->getJson(0);
-
-                if (convert_all)
-                    jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(0);
-
-                jvArray.append(jvEntry);
-            }
-            else
-            {
-                std::string strToken;
-                std::string strHuman;
-
-                transResultInfo(rc.result(), strToken, strHuman);
-
-                JLOG (j.debug)
-                    << "ripple_path_find: "
-                    << strToken << " "
-                    << strHuman << " "
-                    << spsComputed.getJson(0);
-            }
+            std::string strToken;
+            std::string strHuman;
+            transResultInfo(rc.result(), strToken, strHuman);
+            JLOG (j.debug)
+                << "ripple_path_find: "
+                << strToken << " "
+                << strHuman << " "
+                << spsComputed.getJson(0);
         }
     }
 

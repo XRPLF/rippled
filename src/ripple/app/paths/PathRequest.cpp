@@ -312,8 +312,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
         return PFR_PJ_INVALID;
     }
 
-    convert_all_ =
-        saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
+    convert_all_ = saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
 
     if ((saDstAmount.getCurrency ().isZero () &&
             saDstAmount.getIssuer ().isNonZero ()) ||
@@ -447,97 +446,155 @@ void PathRequest::resetLevel (int l)
         iLastLevel = l;
 }
 
-bool
-PathRequest::findPaths (
-    RippleLineCache::ref cache,
-        FindPaths& fp, Issue const& issue,
-            Json::Value& jvArray)
+std::unique_ptr<Pathfinder> const&
+PathRequest::getPathFinder(RippleLineCache::ref cache,
+    hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
+        Currency const& currency, STAmount const& dst_amount,
+            int const level)
 {
-    STPath fullLiquidityPath;
-    auto result = fp.findPathsForIssue(issue,
-        mContext[issue], fullLiquidityPath, app_);
-    if (! result)
+    auto i = currency_map.find(currency);
+    if (i != currency_map.end())
+        return i->second;
+    auto pathfinder = std::make_unique<Pathfinder>(
+        cache, *raSrcAccount, *raDstAccount, currency,
+            boost::none, dst_amount, saSendMax, app_);
+    if (pathfinder->findPaths(level))
+        pathfinder->computePathRanks(max_paths_);
+    else
+        pathfinder.reset();  // It's a bad request - clear it.
+    return currency_map[currency] = std::move(pathfinder);
+}
+
+void
+PathRequest::findPaths (RippleLineCache::ref cache, int const level,
+    Json::Value& jvArray)
+{
+    auto sourceCurrencies = sciSourceCurrencies;
+    if (sourceCurrencies.empty ())
     {
-        m_journal.debug << iIdentifier << " No paths found";
-        return false;
-    }
-    mContext[issue] = *result;
-
-    boost::optional<PaymentSandbox> sandbox;
-    sandbox.emplace(&*cache->getLedger(), tapNONE);
-
-    auto& sourceAccount = ! isXRP(issue.account)
-        ? issue.account
-        : isXRP(issue.currency)
-        ? xrpAccount()
-        : *raSrcAccount;
-
-    STAmount saMaxAmount = saSendMax.value_or(
-        STAmount({issue.currency, sourceAccount}, 1u, 0, true));
-
-    m_journal.debug << iIdentifier
-        << " Paths found, calling rippleCalc";
-
-    path::RippleCalc::Input rcInput;
-    if (convert_all_)
-        rcInput.partialPaymentAllowed = true;
-
-    auto rc = path::RippleCalc::rippleCalculate(
-        *sandbox, saMaxAmount,
-        convert_all_ ? STAmount(saDstAmount.issue(), STAmount::cMaxValue,
-            STAmount::cMaxOffset) : saDstAmount,
-        *raDstAccount, *raSrcAccount, *result,
-        app_.logs (), &rcInput);
-
-    if (! convert_all_ &&
-        ! fullLiquidityPath.empty() &&
-        (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
-    {
-        m_journal.debug << iIdentifier
-            << " Trying with an extra path element";
-        result->push_back(fullLiquidityPath);
-        sandbox.emplace(&*cache->getLedger(), tapNONE);
-
-        rc = path::RippleCalc::rippleCalculate(
-            *sandbox, saMaxAmount, saDstAmount,
-                *raDstAccount, *raSrcAccount, *result, app_.logs ());
-        if (rc.result() != tesSUCCESS)
+        auto usCurrencies =
+            accountSourceCurrencies(*raSrcAccount, cache, true);
+        bool sameAccount = *raSrcAccount == *raDstAccount;
+        for (auto const& c : usCurrencies)
         {
-            m_journal.warning << iIdentifier
-                << " Failed with covering path "
-                << transHuman(rc.result());
+            if (!sameAccount || (c != saDstAmount.getCurrency()))
+            {
+                sourceCurrencies.insert(
+                    {c, c.isZero() ? xrpAccount() : *raSrcAccount});
+            }
+        }
+    }
+
+    auto const dst_amount = convert_all_ ?
+        STAmount(saDstAmount.issue(), STAmount::cMaxValue, STAmount::cMaxOffset)
+            : saDstAmount;
+    hash_map<Currency, std::unique_ptr<Pathfinder>> currency_map;
+    for (auto const& issue : sourceCurrencies)
+    {
+        JLOG(m_journal.debug)
+            << iIdentifier
+            << " Trying to find paths: "
+            << STAmount(issue, 1).getFullText();
+
+        auto& pathfinder = getPathFinder(cache, currency_map,
+            issue.currency, dst_amount, level);
+        if (! pathfinder)
+        {
+            assert(false);
+            m_journal.debug << iIdentifier << " No paths found";
+            continue;
+        }
+
+        STPath fullLiquidityPath;
+        auto ps = pathfinder->getBestPaths(max_paths_,
+            fullLiquidityPath, mContext[issue], issue.account);
+        mContext[issue] = ps;
+
+        auto& sourceAccount = ! isXRP(issue.account)
+            ? issue.account
+            : isXRP(issue.currency)
+            ? xrpAccount()
+            : *raSrcAccount;
+        STAmount saMaxAmount = saSendMax.value_or(
+            STAmount({issue.currency, sourceAccount}, 1u, 0, true));
+
+        m_journal.debug << iIdentifier
+            << " Paths found, calling rippleCalc";
+
+        path::RippleCalc::Input rcInput;
+        if (convert_all_)
+            rcInput.partialPaymentAllowed = true;
+        auto sandbox = std::make_unique<PaymentSandbox>
+            (&*cache->getLedger(), tapNONE);
+        auto rc = path::RippleCalc::rippleCalculate(
+            *sandbox,
+            saMaxAmount,    // --> Amount to send is unlimited
+                            //     to get an estimate.
+            dst_amount,     // --> Amount to deliver.
+            *raDstAccount,  // --> Account to deliver to.
+            *raSrcAccount,  // --> Account sending from.
+            ps,             // --> Path set.
+            app_.logs(),
+            &rcInput);
+
+        if (! convert_all_ &&
+            ! fullLiquidityPath.empty() &&
+            (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
+        {
+            m_journal.debug << iIdentifier
+                << " Trying with an extra path element";
+
+            ps.push_back(fullLiquidityPath);
+            sandbox = std::make_unique<PaymentSandbox>
+                (&*cache->getLedger(), tapNONE);
+            rc = path::RippleCalc::rippleCalculate(
+                *sandbox,
+                saMaxAmount,    // --> Amount to send is unlimited
+                                //     to get an estimate.
+                dst_amount,     // --> Amount to deliver.
+                *raDstAccount,  // --> Account to deliver to.
+                *raSrcAccount,  // --> Account sending from.
+                ps,             // --> Path set.
+                app_.logs());
+
+            if (rc.result() != tesSUCCESS)
+            {
+                m_journal.warning << iIdentifier
+                    << " Failed with covering path "
+                    << transHuman(rc.result());
+            }
+            else
+            {
+                m_journal.debug << iIdentifier
+                    << " Extra path element gives "
+                    << transHuman(rc.result());
+            }
+        }
+
+        if (rc.result () == tesSUCCESS)
+        {
+            Json::Value jvEntry (Json::objectValue);
+            rc.actualAmountIn.setIssuer (sourceAccount);
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
+            jvEntry[jss::paths_computed] = ps.getJson(0);
+
+            if (convert_all_)
+                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(0);
+
+            if (hasCompletion ())
+            {
+                // Old ripple_path_find API requires this
+                jvEntry[jss::paths_canonical] = Json::arrayValue;
+            }
+
+            jvArray.append (jvEntry);
         }
         else
         {
-            m_journal.debug << iIdentifier
-                << " Extra path element gives "
+            m_journal.debug << iIdentifier << " rippleCalc returns "
                 << transHuman(rc.result());
         }
     }
-
-    if (rc.result () == tesSUCCESS)
-    {
-        Json::Value jvEntry (Json::objectValue);
-        rc.actualAmountIn.setIssuer (sourceAccount);
-        jvEntry[jss::source_amount] = rc.actualAmountIn.getJson (0);
-        jvEntry[jss::paths_computed] = result->getJson(0);
-
-        if (convert_all_)
-            jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(0);
-
-        if (hasCompletion ())
-        {
-            // Old ripple_path_find API requires this
-            jvEntry[jss::paths_canonical] = Json::arrayValue;
-        }
-
-        jvArray.append (jvEntry);
-        return true;
-    }
-
-    m_journal.debug << iIdentifier << " rippleCalc returns "
-        << transHuman (rc.result ());
-    return false;
 }
 
 Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
@@ -549,25 +606,6 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     if (!isValid (cache))
         return jvStatus;
     jvStatus = Json::objectValue;
-
-    auto sourceCurrencies = sciSourceCurrencies;
-
-    if (sourceCurrencies.empty ())
-    {
-        auto usCurrencies =
-                accountSourceCurrencies (*raSrcAccount, cache, true);
-        bool sameAccount = *raSrcAccount == *raDstAccount;
-        for (auto const& c: usCurrencies)
-        {
-            if (!sameAccount || (c != saDstAmount.getCurrency ()))
-            {
-                if (c.isZero ())
-                    sourceCurrencies.insert ({c, xrpAccount()});
-                else
-                    sourceCurrencies.insert ({c, *raSrcAccount});
-            }
-        }
-    }
 
     if (hasCompletion ())
     {
@@ -622,29 +660,10 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     m_journal.debug << iIdentifier << " processing at level " << iLevel;
 
-    bool found = false;
     Json::Value jvArray = Json::arrayValue;
-    FindPaths fp (
-        cache,
-        *raSrcAccount,
-        *raDstAccount,
-        convert_all_ ? STAmount(saDstAmount.issue(), STAmount::cMaxValue,
-            STAmount::cMaxOffset) : saDstAmount,
-        saSendMax,
-        iLevel,
-        4);  // iMaxPaths
-    for (auto const& i: sourceCurrencies)
-    {
-        JLOG(m_journal.debug)
-            << iIdentifier
-            << " Trying to find paths: "
-            << STAmount(i, 1).getFullText();
-        if (findPaths(cache, fp, i, jvArray))
-            found = true;
-    }
-
+    findPaths(cache, iLevel, jvArray);
+    bLastSuccess = jvArray.size();
     iLastLevel = iLevel;
-    bLastSuccess = found;
 
     if (fast && ptQuickReply.is_not_a_date_time())
     {
