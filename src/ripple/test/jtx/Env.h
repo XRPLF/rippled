@@ -346,6 +346,12 @@ public:
     void
     submit (JTx const& jt);
 
+    /** Check expected postconditions
+        of JTx submission.
+    */
+    void
+    postconditions(JTx const& jt, TER ter, bool didApply);
+
     /** Apply funclets and submit. */
     /** @{ */
     template <class JsonValue, class... FN>

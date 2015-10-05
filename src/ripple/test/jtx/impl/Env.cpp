@@ -290,9 +290,15 @@ Env::submit (JTx const& jt)
         ter_ = temMALFORMED;
         didApply = false;
     }
-    if (jt.ter && ! test.expect(ter_ == *jt.ter,
-        "apply: " + transToken(ter_) +
-            " (" + transHuman(ter_) + ")"))
+    return postconditions(jt, ter_, didApply);
+}
+
+void
+Env::postconditions(JTx const& jt, TER ter, bool didApply)
+{
+    if (jt.ter && ! test.expect(ter == *jt.ter,
+        "apply: " + transToken(ter) +
+            " (" + transHuman(ter) + ")"))
     {
         test.log << pretty(jt.jv);
         // Don't check postconditions if
