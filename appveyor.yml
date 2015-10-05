@@ -6,8 +6,7 @@ environment:
   # that it's a small download. We also use appveyor's free cache, avoiding fees
   # downloading from S3 each time. 
   # TODO: script to create this package.
-  RIPPLED_DEPS_URL: https://github.com/ximinez/Downloads/blob/vs2015/appveyor/rippled_deps15.01.zip?raw=true
-    # https://ripple.github.io/Downloads/appveyor/rippled_deps15.01.zip
+  RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/rippled_deps15.01.zip
 
   # Other dependencies we just download each time.
   PIP_URL: https://bootstrap.pypa.io/get-pip.py
