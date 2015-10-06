@@ -76,15 +76,8 @@ public:
     template <class = void>
     message();
 
-#if defined(_MSC_VER) && _MSC_VER <= 1800
-    message (message&& other);
-    message& operator= (message&& other);
-
-#else
     message (message&& other) = default;
     message& operator= (message&& other) = default;
-
-#endif
 
     // Memberspace
     beast::http::headers headers;
@@ -219,38 +212,6 @@ message::message()
     , upgrade_ (false)
 {
 }
-
-#if defined(_MSC_VER) && _MSC_VER <= 1800
-inline
-message::message (message&& other)
-    : request_ (other.request_)
-    , method_ (std::move(other.method_))
-    , url_ (std::move(other.url_))
-    , status_ (other.status_)
-    , reason_ (std::move(other.reason_))
-    , version_ (other.version_)
-    , keep_alive_ (other.keep_alive_)
-    , upgrade_ (other.upgrade_)
-    , headers (std::move(other.headers))
-{
-}
-
-inline
-message&
-message::operator= (message&& other)
-{
-    request_ = other.request_;
-    method_ = std::move(other.method_);
-    url_ = std::move(other.url_);
-    status_ = other.status_;
-    reason_ = std::move(other.reason_);
-    version_ = other.version_;
-    keep_alive_ = other.keep_alive_;
-    upgrade_ = other.upgrade_;
-    headers = std::move(other.headers);
-    return *this;
-}
-#endif
 
 //------------------------------------------------------------------------------
 
