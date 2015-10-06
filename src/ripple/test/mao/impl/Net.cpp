@@ -17,17 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_BASICTYPES_H_INCLUDED
-#define RIPPLE_BASICS_BASICTYPES_H_INCLUDED
-
-#include <mutex>
+#include <BeastConfig.h>
+#include <ripple/test/mao/Net.h>
 
 namespace ripple {
+namespace test {
+namespace mao {
 
-// VFALCO DEPRECATED
-using RippleMutex = std::mutex;
-using RippleRecursiveMutex = std::recursive_mutex;
 
+
+} // mao
+} // test
 } // ripple
-
-#endif

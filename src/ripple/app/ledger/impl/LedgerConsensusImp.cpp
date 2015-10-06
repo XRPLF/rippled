@@ -1178,10 +1178,9 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     {
         // Build new open ledger
-
         auto lock = beast::make_lock(
             app_.getMasterMutex(), std::defer_lock);
-        LedgerMaster::ScopedLockType sl (
+        auto sl = beast::make_lock(
             ledgerMaster_.peekMutex (), std::defer_lock);
         std::lock(lock, sl);
 

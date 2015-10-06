@@ -25,6 +25,7 @@
 #include <ripple/basics/hardened_hash.h>
 #include <cstddef>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 namespace ripple {
@@ -49,9 +50,7 @@ public:
     getRippleLines (AccountID const& accountID);
 
 private:
-    using LockType = RippleMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::mutex mLock;
 
     ripple::hardened_hash<> hasher_;
     std::shared_ptr <ReadView const> mLedger;

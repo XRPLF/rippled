@@ -862,7 +862,7 @@ STParsedJSONObject::STParsedJSONObject (
     Json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    object = std::move (parseObject (name, json, sfGeneric, 0, error));
+    object = parseObject (name, json, sfGeneric, 0, error);
 }
 
 //------------------------------------------------------------------------------

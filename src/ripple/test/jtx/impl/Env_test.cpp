@@ -360,7 +360,7 @@ public:
             { { "bob", 1 }, { "carol", 2 } }));
         env(noop("alice"));
 
-        auto const baseFee = env.config.FEE_DEFAULT;
+        auto const baseFee = env.app().config().FEE_DEFAULT;
         env(noop("alice"), msig("bob"), fee(2 * baseFee));
         env(noop("alice"), msig("carol"), fee(2 * baseFee));
         env(noop("alice"), msig("bob", "carol"), fee(3 * baseFee));

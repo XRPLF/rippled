@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/basics/CountedObject.h>
+#include <mutex>
 #include <set>
 
 namespace ripple {
@@ -160,7 +161,7 @@ private:
     std::set <uint256> mRecentNodes;
 
     // Data we have received from peers
-    PeerSet::LockType mReceivedDataLock;
+    std::recursive_mutex mReceivedDataLock;
     std::vector <PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
 

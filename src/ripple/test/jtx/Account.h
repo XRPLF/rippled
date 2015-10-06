@@ -47,13 +47,8 @@ public:
     Account (Account const&) = default;
     Account& operator= (Account const&) = default;
 
-#ifdef _MSC_VER
-    Account (Account&&);
-    Account& operator= (Account&&);
-#else
     Account (Account&&) = default;
     Account& operator= (Account&&) = default;
-#endif
 
     /** Create an account from a key pair. */
     Account (std::string name,

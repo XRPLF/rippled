@@ -28,6 +28,7 @@
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/resource/Fees.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <mutex>
 
 namespace ripple {
 
@@ -277,9 +278,8 @@ private:
 
     using MapType = hash_map <uint256, InboundTransactionSet>;
 
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::unique_lock <LockType>;
-    LockType mLock;
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    std::recursive_mutex mLock;
 
     MapType m_map;
     std::uint32_t m_seq;

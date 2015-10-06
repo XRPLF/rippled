@@ -757,9 +757,7 @@ Ledger::peek (Keylet const& k) const
         return nullptr;
     // VFALCO TODO Eliminate "immutable" runtime property
     sle->setImmutable();
-    // need move otherwise makes a copy
-    // because return type is different
-    return std::move(sle);
+    return sle;
 }
 
 //------------------------------------------------------------------------------

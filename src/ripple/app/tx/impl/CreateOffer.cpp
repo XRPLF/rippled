@@ -131,7 +131,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
 }
 
 TER
-CreateOffer::checkAcceptAsset(IssueRef issue) const
+CreateOffer::checkAcceptAsset(Issue const& issue) const
 {
     // Only valid for custom currencies
     assert (!isXRP (issue.currency));

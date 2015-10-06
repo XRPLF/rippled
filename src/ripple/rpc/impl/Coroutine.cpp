@@ -52,8 +52,10 @@ void runOnCoroutineImpl(std::shared_ptr<Pull> pull)
 
 void runOnCoroutine(Coroutine const& coroutine)
 {
-    auto pullFunction = [coroutine] (Push& push) {
-        Suspend suspend = [&push] (CoroutineType const& cbc) {
+    auto pullFunction = [coroutine] (Push& push)
+    {
+        Suspend suspend = [&push] (CoroutineType const& cbc)
+        {
             if (push)
                 push (cbc);
         };

@@ -110,7 +110,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MTd.lib;VC/static/ssleay32MTd.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -147,7 +147,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MTd.lib;VC/static/ssleay32MTd.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -182,7 +182,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MT.lib;VC/static/ssleay32MT.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -217,7 +217,7 @@
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;user32.lib;uuid.lib;VC/static/libeay32MT.lib;VC/static/ssleay32MT.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
@@ -1877,8 +1877,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\BasicTypes.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Blob.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Buffer.h">
@@ -2751,6 +2749,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Book.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\BuildInfo.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2784,6 +2786,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\IOUAmount.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Issue.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3761,6 +3767,16 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\txflags.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\utility.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\test\mao\impl\Net.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\mao\impl\Net_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\test\mao\Net.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>

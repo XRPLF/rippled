@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
+#include <mutex>
+
 namespace ripple {
 
 // Can std::atomic<std::shared_ptr>> make this lock free?
@@ -29,9 +31,6 @@ namespace ripple {
 class LedgerHolder
 {
 public:
-    using LockType = RippleMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-
     // Update the held ledger
     void set (Ledger::pointer ledger)
     {
@@ -40,8 +39,7 @@ public:
            ledger = std::make_shared <Ledger> (*ledger, false);
 
         {
-            ScopedLockType sl (m_lock);
-
+            std::lock_guard <std::mutex> sl (m_lock);
             m_heldLedger = ledger;
         }
     }
@@ -49,8 +47,7 @@ public:
     // Return the (immutable) held ledger
     Ledger::pointer get ()
     {
-        ScopedLockType sl (m_lock);
-
+        std::lock_guard <std::mutex> sl (m_lock);
         return m_heldLedger;
     }
 
@@ -61,19 +58,15 @@ public:
         return ret ? std::make_shared <Ledger> (*ret, true) : ret;
     }
 
-
     bool empty ()
     {
-        ScopedLockType sl (m_lock);
-
+        std::lock_guard <std::mutex> sl (m_lock);
         return m_heldLedger == nullptr;
     }
 
 private:
-
-    LockType m_lock;
+    std::mutex m_lock;
     Ledger::pointer m_heldLedger;
-
 };
 
 } // ripple

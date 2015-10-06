@@ -65,14 +65,13 @@ class LedgerMasterImp
     : public LedgerMaster
 {
 public:
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    using ScopedUnlockType = beast::GenericScopedUnlock <std::recursive_mutex>;
 
     Application& app_;
     beast::Journal m_journal;
 
-    LockType m_mutex;
+    std::recursive_mutex m_mutex;
 
     // The ledger that most recently closed.
     LedgerHolder mClosedLedger;
@@ -86,7 +85,7 @@ public:
     // The last ledger we did pathfinding against.
     Ledger::pointer mPathLedger;
 
-    // The last ledger we handled fetching    history
+    // The last ledger we handled fetching history
     Ledger::pointer mHistLedger;
 
     // Fully validated ledger, whether or not we have the ledger resident.
@@ -99,7 +98,7 @@ public:
     // A set of transactions to replay during the next close
     std::unique_ptr<LedgerReplay> replayData;
 
-    LockType mCompleteLock;
+    std::recursive_mutex mCompleteLock;
     RangeSet mCompleteLedgers;
 
     std::unique_ptr <LedgerCleaner> mLedgerCleaner;
@@ -670,7 +669,7 @@ public:
     {
         // A new ledger has been accepted as part of the trusted chain
         JLOG (m_journal.debug) << "Ledger " << ledger->info().seq
-                                         << "accepted :" << ledger->getHash ();
+                               << " accepted :" << ledger->getHash ();
         assert (ledger->stateMap().getHash ().isNonZero ());
 
         ledger->setValidated();
@@ -972,6 +971,8 @@ public:
                 << "Consensus triggered check of ledger";
             checkAccept (maxLedger, maxSeq);
         }
+
+        mLedgerHistory.builtLedger (ledger);
     }
 
     void advanceThread()
@@ -1287,7 +1288,7 @@ public:
         }
     }
 
-    LockType& peekMutex () override
+    std::recursive_mutex& peekMutex () override
     {
         return m_mutex;
     }

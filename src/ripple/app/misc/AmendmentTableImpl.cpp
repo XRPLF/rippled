@@ -28,6 +28,7 @@
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
 #include <algorithm>
+#include <mutex>
 
 namespace ripple {
 /** Track the list of "amendments"
@@ -43,9 +44,7 @@ protected:
     using amendmentMap_t = hash_map<uint256, AmendmentState>;
     using amendmentList_t = hash_set<uint256>;
 
-    using LockType = RippleMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType mLock;
+    std::mutex mLock;
 
     amendmentMap_t m_amendmentMap;
     std::uint32_t m_lastUpdateSeq;
@@ -213,7 +212,7 @@ AmendmentTableImpl::getExisting (uint256 const& amendmentHash)
 uint256
 AmendmentTableImpl::get (std::string const& name)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
 
     for (auto const& e : m_amendmentMap)
     {
@@ -237,7 +236,7 @@ AmendmentTableImpl::addKnown (AmendmentName const& name)
         throw std::runtime_error (errorMsg);
     }
 
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState& amendment = getCreate (name.id ());
 
     if (!name.friendlyName ().empty ())
@@ -250,7 +249,7 @@ AmendmentTableImpl::addKnown (AmendmentName const& name)
 bool
 AmendmentTableImpl::veto (uint256 const& amendment)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState& s = getCreate (amendment);
 
     if (s.mVetoed)
@@ -263,7 +262,7 @@ AmendmentTableImpl::veto (uint256 const& amendment)
 bool
 AmendmentTableImpl::unVeto (uint256 const& amendment)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState* s = getExisting (amendment);
 
     if (!s || !s->mVetoed)
@@ -276,7 +275,7 @@ AmendmentTableImpl::unVeto (uint256 const& amendment)
 bool
 AmendmentTableImpl::enable (uint256 const& amendment)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState& s = getCreate (amendment);
 
     if (s.mEnabled)
@@ -289,7 +288,7 @@ AmendmentTableImpl::enable (uint256 const& amendment)
 bool
 AmendmentTableImpl::disable (uint256 const& amendment)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState* s = getExisting (amendment);
 
     if (!s || !s->mEnabled)
@@ -302,7 +301,7 @@ AmendmentTableImpl::disable (uint256 const& amendment)
 bool
 AmendmentTableImpl::isEnabled (uint256 const& amendment)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState* s = getExisting (amendment);
     return s && s->mEnabled;
 }
@@ -310,7 +309,7 @@ AmendmentTableImpl::isEnabled (uint256 const& amendment)
 bool
 AmendmentTableImpl::isSupported (uint256 const& amendment)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     AmendmentState* s = getExisting (amendment);
     return s && s->mSupported;
 }
@@ -319,7 +318,7 @@ AmendmentTableImpl::amendmentList_t
 AmendmentTableImpl::getVetoed ()
 {
     amendmentList_t ret;
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     for (auto const& e : m_amendmentMap)
     {
         if (e.second.mVetoed)
@@ -332,7 +331,7 @@ AmendmentTableImpl::amendmentList_t
 AmendmentTableImpl::getEnabled ()
 {
     amendmentList_t ret;
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     for (auto const& e : m_amendmentMap)
     {
         if (e.second.mEnabled)
@@ -345,7 +344,7 @@ AmendmentTableImpl::amendmentList_t
 AmendmentTableImpl::getDesired (enabledAmendments_t const& enabled)
 {
     amendmentList_t ret;
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
 
     for (auto const& e : m_amendmentMap)
     {
@@ -360,7 +359,7 @@ AmendmentTableImpl::getDesired (enabledAmendments_t const& enabled)
 void
 AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     for (auto& e : m_amendmentMap)
     {
         e.second.mEnabled = false;
@@ -374,7 +373,7 @@ AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
 void
 AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
     for (auto &e : m_amendmentMap)
     {
         e.second.mSupported = false;
@@ -443,7 +442,7 @@ AmendmentTableImpl::doVoting (
     std::map <uint256, std::uint32_t> actions;
 
     {
-        ScopedLockType sl (mLock);
+        std::lock_guard <std::mutex> sl (mLock);
 
         // process all amendments we know of
         for (auto const& entry : m_amendmentMap)
@@ -486,7 +485,7 @@ AmendmentTableImpl::doVoting (
 bool
 AmendmentTableImpl::needValidatedLedger (LedgerIndex ledgerSeq)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
 
     // Is there a ledger in which an amendment could have been enabled
     // between these two ledger sequences?
@@ -498,7 +497,7 @@ void
 AmendmentTableImpl::doValidatedLedger (LedgerIndex ledgerSeq,
     enabledAmendments_t enabled)
 {
-    ScopedLockType sl (mLock);
+    std::lock_guard <std::mutex> sl (mLock);
 
     for (auto& e : m_amendmentMap)
         e.second.mEnabled = (enabled.count (e.first) != 0);
@@ -509,7 +508,7 @@ AmendmentTableImpl::getJson (int)
 {
     Json::Value ret(Json::objectValue);
     {
-        ScopedLockType sl(mLock);
+        std::lock_guard <std::mutex> sl(mLock);
         for (auto const& e : m_amendmentMap)
         {
             setJson (ret[to_string (e.first)] = Json::objectValue, e.second);
@@ -536,7 +535,7 @@ AmendmentTableImpl::getJson (uint256 const& amendmentID)
     Json::Value& jAmendment = (ret[to_string (amendmentID)] = Json::objectValue);
 
     {
-        ScopedLockType sl(mLock);
+        std::lock_guard <std::mutex> sl(mLock);
 
         AmendmentState& amendmentState = getCreate (amendmentID);
         setJson (jAmendment, amendmentState);

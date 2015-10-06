@@ -1,10 +1,10 @@
 %define rippled_branch %(echo $RIPPLED_BRANCH)
 Name:           rippled
 # Version must be limited to MAJOR.MINOR.PATCH
-Version:        0.30.0
+Version:        0.30.1
 # Release should include either the build or hotfix number (ex: hf1%{?dist} or b2%{?dist})
 # If there is no b# or hf#, then use 1%{?dist}
-Release:        rc1%{?dist}
+Release:        b1%{?dist}
 Summary:        Ripple peer-to-peer network daemon
 
 Group:          Applications/Internet

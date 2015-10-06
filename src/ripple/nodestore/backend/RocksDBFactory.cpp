@@ -196,7 +196,7 @@ public:
     }
 
     std::string
-    getName()
+    getName() override
     {
         return m_name;
     }
@@ -204,7 +204,7 @@ public:
     //--------------------------------------------------------------------------
 
     Status
-    fetch (void const* key, std::shared_ptr<NodeObject>* pObject)
+    fetch (void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
         pObject->reset ();
 
@@ -267,13 +267,13 @@ public:
     }
 
     void
-    store (std::shared_ptr<NodeObject> const& object)
+    store (std::shared_ptr<NodeObject> const& object) override
     {
         m_batch.store (object);
     }
 
     void
-    storeBatch (Batch const& batch)
+    storeBatch (Batch const& batch) override
     {
         rocksdb::WriteBatch wb;
 
@@ -299,7 +299,7 @@ public:
     }
 
     void
-    for_each (std::function <void(std::shared_ptr<NodeObject>)> f)
+    for_each (std::function <void(std::shared_ptr<NodeObject>)> f) override
     {
         rocksdb::ReadOptions const options;
 
@@ -336,7 +336,7 @@ public:
     }
 
     int
-    getWriteLoad ()
+    getWriteLoad () override
     {
         return m_batch.getWriteLoad ();
     }
@@ -350,7 +350,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    writeBatch (Batch const& batch)
+    writeBatch (Batch const& batch) override
     {
         storeBatch (batch);
     }

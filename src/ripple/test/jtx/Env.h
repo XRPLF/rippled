@@ -29,6 +29,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
@@ -126,13 +127,21 @@ public:
 
     beast::Journal const journal;
 
-    /** Configuration used. */
-    Config const config;
-
     /** The master account. */
     Account const master;
 
 private:
+    struct AppBundle
+    {
+        Application* app;
+        std::unique_ptr<Logs> logs;
+        std::unique_ptr<Application> owned;
+        
+        AppBundle (std::unique_ptr<Config const> config);
+        AppBundle (Application* app_);
+    };
+
+    AppBundle bundle_;
     std::shared_ptr<Ledger const> closed_;
     CachedSLEs cachedSLEs_;
     LogSquelcher logSquelcher_;
@@ -150,7 +159,7 @@ public:
     Application&
     app()
     {
-        return getApp();
+        return *bundle_.app;
     }
 
     /** Returns the open ledger.

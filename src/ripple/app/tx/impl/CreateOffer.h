@@ -61,7 +61,7 @@ public:
 private:
     /** Determine if we are authorized to hold the asset we want to get */
     TER
-    checkAcceptAsset(IssueRef issue) const;
+    checkAcceptAsset(Issue const& issue) const;
 
     bool
     dry_offer (ApplyView& view, Offer const& offer);

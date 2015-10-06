@@ -113,8 +113,6 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
 
             if (remove)
             {
-                PathRequest::pointer pRequest = wRequest.lock ();
-
                 ScopedLockType sl (mLock);
 
                 // Remove any dangling weak pointers or weak pointers that refer to this path request.
@@ -179,8 +177,8 @@ void PathRequests::insertPathRequest (PathRequest::pointer const& req)
     std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
     while (it != mRequests.end ())
     {
-        PathRequest::pointer req = it->lock ();
-        if (req && !req->isNew ())
+        PathRequest::pointer r = it->lock ();
+        if (r && !r->isNew ())
             break; // This request has been handled, we come before it
 
         // This is a newer request, we come after it

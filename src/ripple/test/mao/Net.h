@@ -17,42 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_ROLE_H_INCLUDED
-#define RIPPLE_SERVER_ROLE_H_INCLUDED
+#ifndef RIPPLE_TEST_MAO_H_INCLUDED
+#define RIPPLE_TEST_MAO_H_INCLUDED
 
-#include <ripple/server/Port.h>
-#include <ripple/json/json_value.h>
-#include <ripple/resource/ResourceManager.h>
-#include <beast/net/IPEndpoint.h>
-#include <vector>
+#include <ripple/app/main/Application.h>
 
 namespace ripple {
+namespace test {
+namespace mao {
 
-/** Indicates the level of administrative permission to grant. */
-enum class Role
+class Net
 {
-    GUEST,
-    USER,
-    ADMIN,
-    FORBID
+private:
+public:
 };
 
-/** Return the allowed privilege role.
-    jsonRPC must meet the requirements of the JSON-RPC
-    specification. It must be of type Object, containing the key params
-    which is an array with at least one object. Inside this object
-    are the optional keys 'admin_user' and 'admin_password' used to
-    validate the credentials.
-*/
-Role
-requestRole (Role const& required, HTTP::Port const& port,
-    Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp);
-
-Resource::Consumer
-requestInboundEndpoint (Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress,
-        HTTP::Port const& port);
-
+} // mao
+} // test
 } // ripple
 
 #endif

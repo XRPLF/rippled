@@ -792,7 +792,7 @@ Json::Value transactionSignFor (
     {
         Json::Value err = checkMultiSignFields (jvRequest);
         if (RPC::contains_error (err))
-            return std::move (err);
+            return err;
     }
 
     // Add and amend fields based on the transaction type.
@@ -880,7 +880,7 @@ Json::Value transactionSubmitMultiSigned (
     {
         Json::Value err = checkMultiSignFields (jvRequest);
         if (RPC::contains_error (err))
-            return std::move (err);
+            return err;
     }
 
     Json::Value& tx_json (jvRequest ["tx_json"]);
@@ -913,7 +913,7 @@ Json::Value transactionSubmitMultiSigned (
             jvRequest, role, false, app.config(), app.getFeeTrack(), ledger);
 
         if (RPC::contains_error(err))
-            return std::move (err);
+            return err;
 
         err = checkPayment (
             jvRequest,
@@ -925,7 +925,7 @@ Json::Value transactionSubmitMultiSigned (
             false);
 
         if (RPC::contains_error(err))
-            return std::move (err);
+            return err;
     }
 
     // Grind through the JSON in tx_json to produce a STTx
@@ -989,44 +989,35 @@ Json::Value transactionSubmitMultiSigned (
         }
     }
 
-    // Check Signers for valid entries.
-    STArray signers;
-    {
-        // Verify that the Signers field is present and an array.
-        char const* signersArrayName {sfSigners.getJsonName ().c_str ()};
-        if (! jvRequest.isMember (signersArrayName))
-            return RPC::missing_field_error (signersArrayName);
+    // Verify that the Signers field is present.
+    if (! stpTrans->isFieldPresent (sfSigners))
+        return RPC::missing_field_error ("tx_json.Signers");
 
-        Json::Value& signersValue (
-            jvRequest [signersArrayName]);
-
-        if (! signersValue.isArray ())
-        {
-            std::ostringstream err;
-            err << "Expected "
-                << signersArrayName << " to be an array.";
-            return RPC::make_param_error (err.str ());
-        }
-
-        // Convert signers into SerializedTypes.
-        STParsedJSONArray parsedSigners (signersArrayName, signersValue);
-
-        if (!parsedSigners.array)
-        {
-            Json::Value jvResult;
-            jvResult ["error"] = parsedSigners.error ["error"];
-            jvResult ["error_code"] = parsedSigners.error ["error_code"];
-            jvResult ["error_message"] = parsedSigners.error ["error_message"];
-            return jvResult;
-        }
-        signers = std::move (parsedSigners.array.get());
-    }
+    // If the Signers field is present the SField guarantees it to be an array.
+    // Get a reference to the Signers array so we can verify and sort it.
+    auto& signers = stpTrans->peekFieldArray (sfSigners);
 
     if (signers.empty ())
-        return RPC::make_param_error ("Signers array may not be empty.");
+        return RPC::make_param_error("tx_json.Signers array may not be empty.");
+
+    // the Signers array may only contain Signer objects.
+    if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj)
+        {
+            return (
+                // A Signer object always contains these fields and no others.
+                obj.isFieldPresent (sfAccount) &&
+                obj.isFieldPresent (sfSigningPubKey) &&
+                obj.isFieldPresent (sfTxnSignature) &&
+                obj.getCount() == 3);
+        }) != signers.end())
+    {
+        return RPC::make_param_error (
+            "Signers array may only contain Signer entries.");
+    }
 
     // Signers must be sorted by Account.
-    signers.sort ([] (STObject const& a, STObject const& b)
+    std::sort (signers.begin(), signers.end(),
+        [](STObject const& a, STObject const& b)
     {
         return (a.getAccountID (sfAccount) < b.getAccountID (sfAccount));
     });
@@ -1060,9 +1051,6 @@ Json::Value transactionSubmitMultiSigned (
             << toBase58(srcAddressID) << ").";
         return RPC::make_param_error(err.str ());
     }
-
-    // Insert signers into the transaction.
-    stpTrans->setFieldArray (sfSigners, std::move(signers));
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =

@@ -66,4 +66,15 @@ requestRole (Role const& required, HTTP::Port const& port,
     return role;
 }
 
+Resource::Consumer
+requestInboundEndpoint (Resource::Manager& manager,
+    beast::IP::Endpoint const& remoteAddress,
+        HTTP::Port const& port)
+{
+    if (requestRole (Role::GUEST, port, Json::Value(), remoteAddress) ==
+            Role::ADMIN)
+        return manager.newAdminEndpoint (to_string (remoteAddress));
+    return manager.newInboundEndpoint(remoteAddress);
+}
+
 }

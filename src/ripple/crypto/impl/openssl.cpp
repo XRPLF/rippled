@@ -153,3 +153,12 @@ void serialize_ec_point (ec_point const& point, std::uint8_t* ptr)
 
 } // openssl
 } // ripple
+
+#include <stdio.h>
+#ifdef _MSC_VER
+FILE _iob[] = {*stdin, *stdout, *stderr};
+extern "C" FILE * __cdecl __iob_func(void)
+{
+    return _iob;
+}
+#endif

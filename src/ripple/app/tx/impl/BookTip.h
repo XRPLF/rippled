@@ -49,7 +49,7 @@ private:
 
 public:
     /** Create the iterator. */
-    BookTip (ApplyView& view, BookRef book);
+    BookTip (ApplyView& view, Book const& book);
 
     uint256 const&
     dir() const noexcept

@@ -25,13 +25,14 @@
 #include <ripple/app/paths/RippleLineCache.h>
 #include <ripple/core/Job.h>
 #include <atomic>
+#include <mutex>
 
 namespace ripple {
 
 class PathRequests
 {
 public:
-    PathRequests (Application& app, 
+    PathRequests (Application& app,
             beast::Journal journal, beast::insight::Collector::ptr const& collector)
         : app_ (app)
         , mJournal (journal)
@@ -85,9 +86,8 @@ private:
 
     std::atomic<int>                 mLastIdentifier;
 
-    using LockType       = RippleRecursiveMutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-    LockType                         mLock;
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    std::recursive_mutex mLock;
 
 };
 

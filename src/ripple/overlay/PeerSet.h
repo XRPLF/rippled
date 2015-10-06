@@ -27,6 +27,7 @@
 #include <beast/chrono/abstract_clock.h>
 #include <beast/utility/Journal.h>
 #include <boost/asio/deadline_timer.hpp>
+#include <mutex>
 
 namespace ripple {
 
@@ -117,9 +118,7 @@ private:
     static void timerJobEntry (std::shared_ptr<PeerSet>);
 
 protected:
-    // VFALCO TODO try to make some of these private
-    using LockType = RippleRecursiveMutex;
-    using ScopedLockType = std::unique_lock <LockType>;
+    using ScopedLockType = std::unique_lock <std::recursive_mutex>;
 
     PeerSet (Application& app, uint256 const& hash, int interval, bool txnData,
         clock_type& clock, beast::Journal journal);
@@ -161,7 +160,7 @@ protected:
     beast::Journal m_journal;
     clock_type& m_clock;
 
-    LockType mLock;
+    std::recursive_mutex mLock;
 
     uint256 mHash;
     int mTimerInterval;
