@@ -92,27 +92,8 @@ struct Manifest
 
     Manifest(std::string s, PublicKey pk, PublicKey spk, std::uint32_t seq);
 
-#ifdef _MSC_VER
-    Manifest(Manifest&& other)
-      : serialized(std::move(other.serialized))
-      , masterKey(std::move(other.masterKey))
-      , signingKey(std::move(other.signingKey))
-      , sequence(other.sequence)
-    {
-    }
-
-    Manifest& operator=(Manifest&& other)
-    {
-        serialized = std::move(other.serialized);
-        masterKey = std::move(other.masterKey);
-        signingKey = std::move(other.signingKey);
-        sequence = other.sequence;
-        return *this;
-    }
-#else
     Manifest(Manifest&& other) = default;
     Manifest& operator=(Manifest&& other) = default;
-#endif
 
     bool verify () const;
     uint256 hash () const;
@@ -149,22 +130,9 @@ private:
     struct MappedType
     {
         MappedType() = default;
-#ifdef _MSC_VER
-        MappedType(MappedType&& rhs)
-            :comment (std::move (rhs.comment))
-            , m (std::move (rhs.m))
-        {
-        }
-        MappedType& operator=(MappedType&& rhs)
-        {
-            comment = std::move (rhs.comment);
-            m = std::move (rhs.m);
-            return *this;
-        }
-#else
         MappedType(MappedType&&) = default;
         MappedType& operator=(MappedType&&) = default;
-#endif
+
         MappedType(std::string comment,
                    std::string serialized,
                    PublicKey pk, PublicKey spk, std::uint32_t seq)

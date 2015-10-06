@@ -165,8 +165,8 @@ Handler handlerArray[] {
 } // namespace
 
 const Handler* getHandler(std::string const& name) {
-    static beast::static_initializer<HandlerTable> const handlers(handlerArray);
-    return handlers->getHandler(name);
+    static HandlerTable const handlers(handlerArray);
+    return handlers.getHandler(name);
 }
 
 } // RPC

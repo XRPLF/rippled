@@ -36,18 +36,10 @@ public:
 
     RawStateTable() = default;
     RawStateTable (RawStateTable const&) = default;
+    RawStateTable (RawStateTable&&) = default;
+
     RawStateTable& operator= (RawStateTable&&) = delete;
     RawStateTable& operator= (RawStateTable const&) = delete;
-
-#ifdef _MSC_VER
-    RawStateTable (RawStateTable&& other)
-        : items_ (std::move(other.items_))
-        , dropsDestroyed_ (std::move(other.dropsDestroyed_))
-    {
-    }
-#else
-    RawStateTable (RawStateTable&&) = default;
-#endif
 
     void
     apply (RawView& to) const;

@@ -20,6 +20,7 @@
 #include <beast/module/core/diagnostic/FatalError.h>
 
 #include <atomic>
+#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <mutex>
@@ -27,49 +28,38 @@
 namespace beast {
 
 //------------------------------------------------------------------------------
+[[noreturn]]
 void
-FatalError (char const* message, char const* file, int line)
+FatalError (
+    char const* message,
+    char const* file,
+    int line) noexcept
 {
-    static std::atomic <int> error_count (0);
-    static std::recursive_mutex gate;
+    static std::mutex gate;
 
     // We only allow one thread to report a fatal error. Other threads that
     // encounter fatal errors while we are reporting get blocked here.
-    std::lock_guard<std::recursive_mutex> lock(gate);
+    std::lock_guard<std::mutex> lock(gate);
 
-    // If we encounter a recursive fatal error, then we want to terminate
-    // unconditionally.
-    if (error_count++ != 0)
-        return std::terminate ();
+    std::cerr << "An error has occurred. The application will terminate.\n";
 
-    // We protect this entire block of code since writing to cerr might trigger
-    // exceptions.
-    try
+    if (message != nullptr && message [0] != 0)
+        std::cerr << "Message: " << message << '\n';
+
+    if (file != nullptr && file [0] != 0)
+        std::cerr << "   File: " << file << ":" << line << '\n';
+
+    auto const backtrace = getStackBacktrace ();
+
+    if (!backtrace.empty ())
     {
-        std::cerr << "An error has occurred. The application will terminate.\n";
+        std::cerr << "  Stack:" << std::endl;
 
-        if (message != nullptr && message [0] != 0)
-            std::cerr << "Message: " << message << '\n';
-
-        if (file != nullptr && file [0] != 0)
-            std::cerr << "   File: " << file << ":" << line << '\n';
-
-        auto const backtrace = getStackBacktrace ();
-
-        if (!backtrace.empty ())
-        {
-            std::cerr << "  Stack:" << std::endl;
-
-            for (auto const& frame : backtrace)
-                std::cerr << "    " << frame << '\n';
-        }
-    }
-    catch (...)
-    {
-        // nothing we can do - just fall through and terminate
+        for (auto const& frame : backtrace)
+            std::cerr << "    " << frame << '\n';
     }
 
-    return std::terminate ();
+    std::abort ();
 }
 
 } // beast

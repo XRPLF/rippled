@@ -24,7 +24,6 @@
 #include <beast/crypto/ripemd.h>
 #include <beast/crypto/sha2.h>
 #include <beast/hash/endian.h>
-#include <beast/utility/noexcept.h>
 #include <algorithm>
 #include <array>
 

@@ -257,8 +257,7 @@ SField::SField (SerializedTypeID tid, int fv, const char* fn,
     , fieldMeta (meta)
     , fieldNum (++num)
     , signingField (signing)
-    , rawJsonName (getName ())
-    , jsonName (rawJsonName.c_str ())
+    , jsonName (getName ())
 {
 }
 
@@ -269,8 +268,7 @@ SField::SField (int fc)
     , fieldMeta (sMD_Never)
     , fieldNum (++num)
     , signingField (IsSigning::yes)
-    , rawJsonName (getName ())
-    , jsonName (rawJsonName.c_str ())
+    , jsonName (getName ())
 {
 }
 
@@ -278,15 +276,15 @@ SField::SField (int fc)
 // This is naturally done with no extra expense
 // from getField(int code).
 SField::SField (SerializedTypeID tid, int fv)
-        : fieldCode (field_code (tid, fv)), fieldType (tid), fieldValue (fv),
-          fieldMeta (sMD_Default),
-          fieldNum (++num),
-          signingField (IsSigning::yes),
-          jsonName (nullptr)
+        : fieldCode (field_code (tid, fv))
+        , fieldType (tid)
+        , fieldValue (fv)
+        , fieldMeta (sMD_Default)
+        , fieldNum (++num)
+        , signingField (IsSigning::yes)
 {
     fieldName = std::to_string (tid) + '/' + std::to_string (fv);
-    rawJsonName = getName ();
-    jsonName = Json::StaticString (rawJsonName.c_str ());
+    jsonName = getName ();
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
 }
 

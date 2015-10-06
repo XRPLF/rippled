@@ -35,9 +35,6 @@ namespace ripple {
 namespace detail {
 
 void
-accessViolation();
-
-void
 throwException(
     std::exception_ptr ep);
 
@@ -54,9 +51,10 @@ Throw (Args&&... args)
 }
 
 /** Called when faulty logic causes a broken invariant. */
+[[noreturn]]
 void
 LogicError (
-    std::string const& how);
+    std::string const& how) noexcept;
 
 /** Called to throw an exception. */
 #ifndef THROW

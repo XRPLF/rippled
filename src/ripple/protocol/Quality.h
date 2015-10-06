@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
 #include <ripple/protocol/STAmount.h>
-#include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <ostream>
 
