@@ -972,6 +972,8 @@ public:
                 << "Consensus triggered check of ledger";
             checkAccept (maxLedger, maxSeq);
         }
+
+        mLedgerHistory.builtLedger (ledger);
     }
 
     void advanceThread()
