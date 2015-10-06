@@ -86,7 +86,7 @@ public:
     // The last ledger we did pathfinding against.
     Ledger::pointer mPathLedger;
 
-    // The last ledger we handled fetching    history
+    // The last ledger we handled fetching history
     Ledger::pointer mHistLedger;
 
     // Fully validated ledger, whether or not we have the ledger resident.
@@ -972,6 +972,8 @@ public:
                 << "Consensus triggered check of ledger";
             checkAccept (maxLedger, maxSeq);
         }
+
+        mLedgerHistory.builtLedger (ledger);
     }
 
     void advanceThread()
