@@ -111,7 +111,7 @@ public:
             non-modifiable snapshot of the open ledger
             at the time of the call.
     */
-    std::shared_ptr<ReadView const>
+    std::shared_ptr<OpenView const>
     current() const;
 
     /** Modify the open ledger

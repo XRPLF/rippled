@@ -44,7 +44,7 @@ OpenLedger::empty() const
     return current_->txCount() == 0;
 }
 
-std::shared_ptr<ReadView const>
+std::shared_ptr<OpenView const>
 OpenLedger::current() const
 {
     std::lock_guard<
