@@ -91,7 +91,7 @@ Env::Env (beast::unit_test::suite& test_)
     Pathfinder::initPathTable();
 }
 
-std::shared_ptr<ReadView const>
+std::shared_ptr<OpenView const>
 Env::open() const
 {
     return openLedger.current();

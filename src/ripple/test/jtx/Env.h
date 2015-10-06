@@ -169,7 +169,7 @@ public:
         will not be visible.
 
     */
-    std::shared_ptr<ReadView const>
+    std::shared_ptr<OpenView const>
     open() const;
 
     /** Returns the last closed ledger.
