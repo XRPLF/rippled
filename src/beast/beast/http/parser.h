@@ -66,13 +66,7 @@ public:
         message_.get().request(request);
     }
 
-#if defined(_MSC_VER) && _MSC_VER <= 1800
-    parser& operator= (parser&& other);
-
-#else
     parser& operator= (parser&& other) = default;
-
-#endif
 
 private:
     template <class = void>
@@ -141,18 +135,6 @@ private:
 };
 
 //------------------------------------------------------------------------------
-
-#if defined(_MSC_VER) && _MSC_VER <= 1800
-inline
-parser&
-parser::operator= (parser&& other)
-{
-    basic_parser::operator= (std::move(other));
-    message_ = std::move (other.message_);
-    return *this;
-}
-#endif
-
 template <class>
 void
 parser::do_start()

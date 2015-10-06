@@ -29,7 +29,6 @@
 #include <ripple/protocol/tokens.h>
 #include <ripple/protocol/UInt160.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/utility/noexcept.h>
 
 namespace ripple {
 

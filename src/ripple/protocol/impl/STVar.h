@@ -29,7 +29,6 @@
 #include <typeinfo>
 
 #include <beast/streams/debug_ostream.h>
-#include <beast/utility/static_initializer.h>
 #include <mutex>
 #include <unordered_map>
 

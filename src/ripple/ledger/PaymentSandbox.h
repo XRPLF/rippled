@@ -96,16 +96,7 @@ public:
     PaymentSandbox& operator= (PaymentSandbox&&) = delete;
     PaymentSandbox& operator= (PaymentSandbox const&) = delete;
 
-#ifdef _MSC_VER
-    PaymentSandbox (PaymentSandbox&& other)
-        : ApplyViewBase (std::move(other))
-        , tab_ (std::move(other.tab_))
-        , ps_ (std::move(other.ps_))
-    {
-    }
-#else
     PaymentSandbox (PaymentSandbox&&) = default;
-#endif
 
     PaymentSandbox (ReadView const* base, ApplyFlags flags)
         : ApplyViewBase (base, flags)

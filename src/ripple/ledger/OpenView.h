@@ -67,21 +67,7 @@ public:
     OpenView& operator= (OpenView&&) = delete;
     OpenView& operator= (OpenView const&) = delete;
 
-#ifdef _MSC_VER
-    OpenView (OpenView&& other)
-        : ReadView (std::move(other))
-        , TxsRawView (std::move(other))
-        , rules_ (std::move(other.rules_))
-        , txs_ (std::move(other.txs_))
-        , info_ (std::move(other.info_))
-        , base_ (std::move(other.base_))
-        , items_ (std::move(other.items_))
-        , hold_ (std::move(other.hold_))
-    {
-    }
-#else
     OpenView (OpenView&&) = default;
-#endif
 
     /** Construct a shallow copy.
 

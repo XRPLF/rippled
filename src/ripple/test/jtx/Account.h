@@ -23,7 +23,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/crypto/KeyType.h>
-#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace ripple {
@@ -46,7 +45,6 @@ public:
     Account() = default;
     Account (Account const&) = default;
     Account& operator= (Account const&) = default;
-
     Account (Account&&) = default;
     Account& operator= (Account&&) = default;
 

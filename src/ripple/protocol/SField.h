@@ -144,26 +144,11 @@ public:
     int                     fieldMeta;
     int                     fieldNum;
     IsSigning const         signingField;
-    std::string             rawJsonName;
-    Json::StaticString      jsonName;
+    std::string             jsonName;
 
     SField(SField const&) = delete;
     SField& operator=(SField const&) = delete;
-#ifndef _MSC_VER
     SField(SField&&) = default;
-#else  // remove this when VS gets defaulted move members
-    SField(SField&& sf)
-        : fieldCode (std::move(sf.fieldCode))
-        , fieldType (std::move(sf.fieldType))
-        , fieldValue (std::move(sf.fieldValue))
-        , fieldName (std::move(sf.fieldName))
-        , fieldMeta (std::move(sf.fieldMeta))
-        , fieldNum (std::move(sf.fieldNum))
-        , signingField (std::move(sf.signingField))
-        , rawJsonName (std::move(sf.rawJsonName))
-        , jsonName (rawJsonName.c_str ())
-    {}
-#endif
 
 protected:
     // These constructors can only be called from FieldNames.cpp
@@ -191,7 +176,7 @@ public:
         return !fieldName.empty ();
     }
 
-    Json::StaticString const& getJsonName () const
+    std::string const& getJsonName () const
     {
         return jsonName;
     }

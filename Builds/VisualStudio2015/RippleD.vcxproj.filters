@@ -1698,13 +1698,7 @@
     <ClInclude Include="..\..\src\beast\beast\utility\meta.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
@@ -1717,9 +1711,6 @@
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
-      <Filter>beast\utility\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\static_initializer.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\tagged_integer.test.cpp">

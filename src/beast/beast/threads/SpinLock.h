@@ -25,7 +25,6 @@
 #define BEAST_THREADS_SPINLOCK_H_INCLUDED
 
 #include <beast/threads/UnlockGuard.h>
-#include <beast/utility/noexcept.h>
 #include <atomic>
 #include <cassert>
 #include <mutex>

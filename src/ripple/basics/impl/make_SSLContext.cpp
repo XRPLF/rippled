@@ -22,7 +22,6 @@
 #include <ripple/basics/chrono.h>
 #include <beast/container/aged_unordered_set.h>
 #include <beast/module/core/diagnostic/FatalError.h>
-#include <beast/utility/static_initializer.h>
 #include <cstdint>
 #include <sstream>
 #include <stdexcept>
@@ -323,9 +322,7 @@ disallowRenegotiation (SSL const* ssl, bool isNew)
     // Do not allow a connection to renegotiate
     // more than once every 4 minutes
 
-    static beast::static_initializer <StaticData> static_data;
-
-    auto& sd (static_data.get ());
+    static StaticData sd;
     std::lock_guard <std::mutex> lock (sd.lock);
     auto const expired (sd.set.clock().now() - std::chrono::minutes(4));
 

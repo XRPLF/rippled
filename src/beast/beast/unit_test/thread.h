@@ -20,7 +20,6 @@
 #ifndef BEAST_UNIT_TEST_THREAD_H_INCLUDED
 #define BEAST_UNIT_TEST_THREAD_H_INCLUDED
 
-#include <beast/utility/noexcept.h>
 #include <beast/unit_test/suite.h>
 #include <functional>
 #include <thread>

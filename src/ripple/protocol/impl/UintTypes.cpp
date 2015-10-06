@@ -23,7 +23,6 @@
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/types.h>
-#include <beast/utility/static_initializer.h>
 
 namespace ripple {
 
@@ -43,10 +42,10 @@ std::string to_string(Currency const& currency)
     if (currency == noCurrency())
         return "1";
 
-    static beast::static_initializer<Currency> const sIsoBits (
+    static Currency const sIsoBits (
         from_hex_text<Currency>("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF"));
 
-    if ((currency & *sIsoBits).isZero ())
+    if ((currency & sIsoBits).isZero ())
     {
         // The offset of the 3 character ISO code in the currency descriptor
         int const isoOffset = 12;

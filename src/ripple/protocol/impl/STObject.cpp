@@ -37,8 +37,8 @@ STObject::~STObject()
 {
 #if 0
     // Turn this on to get a histogram on exit
-    static beast::static_initializer<Log> log;
-    (*log)(v_.size());
+    static Log log;
+    log(v_.size());
 #endif
 }
 
