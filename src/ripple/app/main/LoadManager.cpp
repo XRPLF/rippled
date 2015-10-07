@@ -25,6 +25,9 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/to_string.h>
 #include <beast/threads/Thread.h>
+#include <memory>
+#include <mutex>
+#include <thread>
 
 namespace ripple {
 

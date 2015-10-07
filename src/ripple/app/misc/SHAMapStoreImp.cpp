@@ -24,9 +24,9 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>
-#include <beast/cxx14/memory.h> // <memory>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
+#include <memory>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,

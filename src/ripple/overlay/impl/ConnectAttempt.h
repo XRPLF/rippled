@@ -39,9 +39,9 @@
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <beast/cxx14/memory.h> // <memory>
 #include <chrono>
 #include <functional>
+#include <memory>
 
 namespace ripple {
 

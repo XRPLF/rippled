@@ -26,9 +26,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/container/aged_map.h>
+#include <memory>
 #include <mutex>
 
 namespace ripple {

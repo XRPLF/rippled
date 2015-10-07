@@ -21,7 +21,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/core/impl/SNTPClock.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 
 namespace ripple {

@@ -22,7 +22,7 @@
 
 #include <ripple/protocol/SField.h>
 #include <boost/range.hpp>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

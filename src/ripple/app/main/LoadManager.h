@@ -21,9 +21,9 @@
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
 #include <beast/threads/Stoppable.h>
-#include <beast/cxx14/memory.h> // <memory>
-#include <thread>
+#include <memory>
 #include <mutex>
+#include <thread>
 
 namespace ripple {
 

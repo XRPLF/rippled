@@ -22,7 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

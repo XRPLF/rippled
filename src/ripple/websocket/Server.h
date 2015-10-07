@@ -23,6 +23,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/websocket/WebSocket.h>
 #include <beast/threads/Thread.h>
+#include <memory>
 #include <thread>
 
 namespace ripple {

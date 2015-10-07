@@ -28,7 +28,7 @@
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/strand.hpp>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 /** ChosenValidators (formerly known as UNL)
 

@@ -23,11 +23,11 @@
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ostream>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <string>
 #include <typeinfo>
 #include <utility>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 namespace ripple {
 
 // VFALCO TODO fix this restriction on copy assignment.

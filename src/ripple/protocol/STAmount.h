@@ -26,7 +26,7 @@
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

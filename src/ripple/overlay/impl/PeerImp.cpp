@@ -46,7 +46,7 @@
 #include <boost/asio/io_service.hpp>
 #include <algorithm>
 #include <functional>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <sstream>
 
 namespace ripple {

@@ -21,7 +21,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/basics/Log.h>
-#include <beast/cxx14/memory.h>  // <memory>
+#include <memory>
 
 namespace ripple {
 

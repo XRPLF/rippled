@@ -27,7 +27,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/resource/Fees.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 
 namespace ripple {

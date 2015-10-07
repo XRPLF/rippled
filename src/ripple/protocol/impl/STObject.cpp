@@ -29,7 +29,7 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <beast/module/core/text/LexicalCast.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

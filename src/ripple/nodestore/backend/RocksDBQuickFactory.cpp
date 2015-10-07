@@ -30,7 +30,7 @@
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <beast/threads/Thread.h>
 #include <atomic>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 namespace NodeStore {

@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/CollectorManager.h>
-#include <beast/cxx14/memory.h>
+#include <memory>
 
 namespace ripple {
 

@@ -41,7 +41,7 @@
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 

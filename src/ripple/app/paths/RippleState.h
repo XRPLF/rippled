@@ -24,7 +24,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <cstdint>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory> // <memory>
 
 namespace ripple {
 

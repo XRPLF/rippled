@@ -21,7 +21,7 @@
 #define RIPPLE_TEST_JTX_PROP_H_INCLUDED
 
 #include <ripple/test/jtx/Env.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 namespace test {

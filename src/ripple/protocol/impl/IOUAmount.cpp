@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <algorithm>
-#include <beast/cxx14/iterator.h>
+#include <iterator>
 #include <stdexcept>
 
 namespace ripple {

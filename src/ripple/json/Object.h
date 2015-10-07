@@ -21,7 +21,7 @@
 #define RIPPLE_JSON_OBJECT_H_INCLUDED
 
 #include <ripple/json/Writer.h>
-#include <beast/cxx14/memory.h>
+#include <memory>
 
 namespace Json {
 

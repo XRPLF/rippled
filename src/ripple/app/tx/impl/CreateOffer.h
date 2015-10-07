@@ -27,9 +27,9 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
-#include <beast/cxx14/memory.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/WrappedSink.h>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 

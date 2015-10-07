@@ -41,10 +41,9 @@
 #include <ripple/protocol/STTx.h>
 #include <beast/is_call_possible.h>
 #include <beast/unit_test/suite.h>
-#include <beast/cxx14/type_traits.h> // <type_traits>
-#include <beast/cxx14/utility.h> // <utility>
 #include <functional>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <unordered_map>
 

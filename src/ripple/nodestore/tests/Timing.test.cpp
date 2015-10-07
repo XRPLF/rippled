@@ -37,7 +37,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <thread>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <utility>
 
 #ifndef NODESTORE_TIMING_DO_VERIFY

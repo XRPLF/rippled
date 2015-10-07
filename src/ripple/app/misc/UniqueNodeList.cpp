@@ -36,13 +36,13 @@
 #include <ripple/net/HTTPClient.h>
 #include <ripple/protocol/JsonFields.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <boost/algorithm/string.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
 #include <fstream>
+#include <memory>
 #include <mutex>
 
 namespace ripple {

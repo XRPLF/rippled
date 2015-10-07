@@ -22,13 +22,13 @@
 
 #include <beast/hash/hash_append.h>
 #include <beast/hash/xxhasher.h>
-#include <beast/cxx14/utility.h> // <utility>
-#include <beast/cxx14/type_traits.h> // <type_traits>
 
 #include <cstdint>
 #include <functional>
 #include <mutex>
+#include <utility>
 #include <random>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 

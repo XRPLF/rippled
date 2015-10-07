@@ -23,7 +23,7 @@
 #include <cassert>
 #include <cstring>
 #include <memory>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <utility>
 #include <vector>
 

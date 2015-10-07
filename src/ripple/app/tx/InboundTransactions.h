@@ -23,8 +23,8 @@
 #include <ripple/overlay/Peer.h>
 #include <ripple/shamap/SHAMap.h>
 #include <beast/chrono/abstract_clock.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
+#include <memory>
 
 namespace ripple {
 
