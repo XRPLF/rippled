@@ -1078,10 +1078,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
             p_journal_.trace << "No new transactions until synchronized";
         else
         {
-            std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue ().addJob (
                 jtTRANSACTION, "recvTransaction->checkTransaction",
-                [weak, flags, checkSignature, stx] (Job&) {
+                [weak = std::weak_ptr<PeerImp>(shared_from_this()),
+                flags, checkSignature, stx] (Job&) {
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags,
                             checkSignature, stx);
