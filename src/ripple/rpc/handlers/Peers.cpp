@@ -19,7 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/main/LocalCredentials.h>
+#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/core/TimeKeeper.h>
+#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
@@ -36,7 +39,32 @@ Json::Value doPeers (RPC::Context& context)
         auto lock = beast::make_lock(context.app.getMasterMutex());
 
         jvResult[jss::peers] = context.app.overlay ().json ();
-        context.app.getUNL().addClusterStatus(jvResult);
+
+        auto const now = context.app.timeKeeper().now().time_since_epoch().count();
+        auto const self = context.app.getLocalCredentials().getNodePublic();
+
+        Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
+        std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
+
+        context.app.cluster().for_each ([&cluster, now, ref, &self]
+            (ClusterNode const& node)
+            {
+                if (node.identity() == self)
+                    return;
+
+                Json::Value& json = cluster[node.identity().humanNodePublic()];
+
+                if (!node.name().empty())
+                    json[jss::tag] = node.name();
+
+                if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))
+                    json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
+
+                if (node.getReportTime())
+                    json[jss::age] = (node.getReportTime() >= now)
+                        ? 0
+                        : (now - node.getReportTime());
+            });
     }
 
     return jvResult;

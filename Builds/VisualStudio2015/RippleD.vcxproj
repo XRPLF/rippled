@@ -2582,8 +2582,14 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\ClusterNodeStatus.h">
+    <ClInclude Include="..\..\src\ripple\overlay\Cluster.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\ClusterNode.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\Cluster.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\overlay\impl\ConnectAttempt.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -2648,6 +2654,10 @@
     </ClInclude>
     <None Include="..\..\src\ripple\overlay\README.md">
     </None>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\cluster_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\overlay\tests\manifest_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>

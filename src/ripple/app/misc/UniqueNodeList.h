@@ -21,7 +21,6 @@
 #define RIPPLE_APP_PEERS_UNIQUENODELIST_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <beast/threads/Stoppable.h>
@@ -69,12 +68,6 @@ public:
     virtual void nodeScore () = 0;
 
     virtual bool nodeInUNL (RippleAddress const& naNodePublic) = 0;
-    virtual bool nodeInCluster (RippleAddress const& naNodePublic) = 0;
-    virtual bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name) = 0;
-    virtual bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus) = 0;
-    virtual std::map<RippleAddress, ClusterNodeStatus> getClusterStatus () = 0;
-    virtual std::uint32_t getClusterFee () = 0;
-    virtual void addClusterStatus (Json::Value&) = 0;
 
     virtual void nodeBootstrap () = 0;
     virtual bool nodeLoad (boost::filesystem::path pConfig) = 0;

@@ -24,6 +24,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/JsonWriter.h>
+#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerImp.h>
@@ -252,12 +253,9 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     if(! success)
         return handoff;
 
-    std::string name;
-    bool const cluster = app_.getUNL().nodeInCluster(
-        publicKey, name);
-
     auto const result = m_peerFinder->activate (slot,
-        publicKey.toPublicKey(), cluster);
+        publicKey.toPublicKey(),
+        static_cast<bool>(app_.cluster().member(publicKey)));
     if (result != PeerFinder::Result::success)
     {
         m_peerFinder->on_closed(slot);

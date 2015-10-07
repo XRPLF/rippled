@@ -55,7 +55,8 @@
 #include <ripple/crypto/RandomNumbers.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
-#include <ripple/overlay/ClusterNodeStatus.h>
+#include <ripple/overlay/ClusterNode.h>
+#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
@@ -669,28 +670,31 @@ void NetworkOPsImp::processHeartbeatTimer ()
 
 void NetworkOPsImp::processClusterTimer ()
 {
-    bool synced = (m_ledgerMaster.getValidatedLedgerAge() <= 240);
-    ClusterNodeStatus us("", synced ? app_.getFeeTrack().getLocalFee() : 0,
-                         app_.timeKeeper().now().time_since_epoch().count());
-    auto& unl = app_.getUNL();
-    if (!unl.nodeUpdate(app_.getLocalCredentials().getNodePublic(), us))
+    bool const update = app_.cluster().update(
+        app_.getLocalCredentials().getNodePublic(),
+        "",
+        (m_ledgerMaster.getValidatedLedgerAge() <= 240)
+            ? app_.getFeeTrack().getLocalFee()
+            : 0,
+        app_.timeKeeper().now().time_since_epoch().count());
+
+    if (!update)
     {
-        m_journal.debug << "To soon to send cluster update";
+        m_journal.debug << "Too soon to send cluster update";
         return;
     }
 
-    auto nodes = unl.getClusterStatus();
-
     protocol::TMCluster cluster;
-    for (auto& it: nodes)
-    {
-        protocol::TMClusterNode& node = *cluster.add_clusternodes();
-        node.set_publickey(it.first.humanNodePublic());
-        node.set_reporttime(it.second.getReportTime());
-        node.set_nodeload(it.second.getLoadFee());
-        if (!it.second.getName().empty())
-            node.set_nodename(it.second.getName());
-    }
+    app_.cluster().for_each(
+        [&cluster](ClusterNode const& node)
+        {
+            protocol::TMClusterNode& n = *cluster.add_clusternodes();
+            n.set_publickey(node.identity().humanNodePublic());
+            n.set_reporttime(node.getReportTime());
+            n.set_nodeload(node.getLoadFee());
+            if (!node.name().empty())
+                n.set_nodename(node.name());
+        });
 
     Resource::Gossip gossip = app_.getResourceManager().exportConsumers();
     for (auto& item: gossip.items)

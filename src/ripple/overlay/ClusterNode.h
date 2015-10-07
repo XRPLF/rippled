@@ -20,59 +20,54 @@
 #ifndef RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 #define RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 
+#include <ripple/protocol/RippleAddress.h>
 #include <cstdint>
 #include <string>
 
 namespace ripple {
 
-class ClusterNodeStatus
+class ClusterNode
 {
 public:
+    ClusterNode() = delete;
 
-    ClusterNodeStatus() : mLoadFee(0), mReportTime(0)
-    { ; }
+    ClusterNode(
+            RippleAddress const& identity,
+            std::string const& name,
+            std::uint32_t fee = 0,
+            std::uint32_t rtime = 0)
+        : identity_ (identity)
+        , name_(name)
+        , mLoadFee(fee)
+        , mReportTime(rtime)
+    { }
 
-    explicit ClusterNodeStatus(std::string const& name) :
-            mNodeName(name), mLoadFee(0), mReportTime(0)
-    { ; }
-
-    ClusterNodeStatus(
-        std::string const& name, std::uint32_t fee, std::uint32_t rtime) :
-        mNodeName(name),
-        mLoadFee(fee),
-        mReportTime(rtime)
-    { ; }
-
-    std::string const& getName()
+    std::string const& name() const
     {
-        return mNodeName;
+        return name_;
     }
 
-    std::uint32_t getLoadFee()
+    std::uint32_t getLoadFee() const
     {
         return mLoadFee;
     }
 
-    std::uint32_t getReportTime()
+    std::uint32_t getReportTime() const
     {
         return mReportTime;
     }
 
-    bool update(ClusterNodeStatus const& status)
+    RippleAddress const&
+    identity () const
     {
-        if (status.mReportTime <= mReportTime)
-            return false;
-        mLoadFee = status.mLoadFee;
-        mReportTime = status.mReportTime;
-        if (mNodeName.empty() || !status.mNodeName.empty())
-            mNodeName = status.mNodeName;
-        return true;
+        return identity_;
     }
 
 private:
-    std::string       mNodeName;
-    std::uint32_t     mLoadFee;
-    std::uint32_t     mReportTime;
+    RippleAddress identity_;
+    std::string name_;
+    std::uint32_t mLoadFee = 0;
+    std::uint32_t mReportTime = 0;
 };
 
 } // ripple

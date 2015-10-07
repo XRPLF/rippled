@@ -27,7 +27,6 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
@@ -38,6 +37,8 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/server/ServerHandler.h>
+#include <ripple/overlay/Cluster.h>
+#include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/JsonFields.h>
 #include <beast/module/core/diagnostic/SemanticVersion.h>
@@ -613,10 +614,13 @@ void PeerImp::doAccept()
         "Protocol: " << to_string(protocol);
     if(journal_.info) journal_.info <<
         "Public Key: " << publicKey_.humanNodePublic();
-    bool const cluster = app_.getUNL().nodeInCluster(publicKey_, name_);
-    if (cluster)
+
+    if (auto member = app_.cluster().member(publicKey_))
+    {
+        name_ = *member;
         if (journal_.info) journal_.info <<
             "Cluster name: " << name_;
+    }
 
     overlay_.activate(shared_from_this());
 
@@ -912,12 +916,12 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
         std::string name;
         if (node.has_nodename())
             name = node.nodename();
-        ClusterNodeStatus s(name, node.nodeload(), node.reporttime());
 
-        RippleAddress nodePub;
-        nodePub.setNodePublic(node.publickey());
-
-        app_.getUNL().nodeUpdate(nodePub, s);
+        app_.cluster().update(
+            RippleAddress::createNodePublic(node.publickey()),
+            name,
+            node.nodeload(),
+            node.reporttime());
     }
 
     int loadSources = m->loadsources().size();
@@ -937,7 +941,31 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
         overlay_.resourceManager().importConsumers (name_, gossip);
     }
 
-    app_.getFeeTrack().setClusterFee(app_.getUNL().getClusterFee());
+    // Calculate the cluster fee:
+    auto const thresh = app_.timeKeeper().now().time_since_epoch().count() - 90;
+    std::uint32_t clusterFee = 0;
+
+    std::vector<std::uint32_t> fees;
+    fees.reserve (app_.cluster().size());
+
+    app_.cluster().for_each(
+        [&fees,thresh](ClusterNode const& status)
+        {
+            if (status.getReportTime() >= thresh)
+                fees.push_back (status.getLoadFee ());
+        });
+
+    if (!fees.empty())
+    {
+        auto const index = fees.size() / 2;
+        std::nth_element (
+            fees.begin(),
+            fees.begin () + index,
+            fees.end());
+        clusterFee = fees[index];
+    }
+
+    app_.getFeeTrack().setClusterFee(clusterFee);
 }
 
 void

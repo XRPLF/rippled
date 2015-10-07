@@ -74,7 +74,7 @@ JSS ( accounts_proposed );          // in: Subscribe, Unsubscribe
 JSS ( action );
 JSS ( address );                    // out: PeerImp
 JSS ( affected );                   // out: AcceptedLedgerTx
-JSS ( age );                        // out: UniqueNodeList, NetworkOPs
+JSS ( age );                        // out: UniqueNodeList, NetworkOPs, Peers
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( asks );                       // out: Subscribe
@@ -154,6 +154,7 @@ JSS ( fail_hard );                  // in: Sign, Submit
 JSS ( failed );                     // out: InboundLedger
 JSS ( feature );                    // in: Feature
 JSS ( features );                   // out: Feature
+JSS ( fee );                        // out: NetworkOPs, Peers
 JSS ( fee_base );                   // out: NetworkOPs
 JSS ( fee_mult_max );               // in: TransactionSign
 JSS ( fee_ref );                    // out: NetworkOPs
@@ -351,6 +352,7 @@ JSS ( subcommand );                 // in: PathFind
 JSS ( success );                    // rpc
 JSS ( supported );                  // out: AmendmentTableImpl
 JSS ( system_time_offset );         // out: NetworkOPs
+JSS ( tag );                        // out: Peers
 JSS ( taker );                      // in: Subscribe, BookOffers
 JSS ( taker_gets );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_gets_funded );          // out: NetworkOPs

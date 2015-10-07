@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
@@ -417,15 +418,13 @@ ConnectAttempt::processResponse (beast::http::message const& m,
     if(journal_.info) journal_.info <<
         "Protocol: " << to_string(protocol);
 
-    std::string name;
-    bool const clusterNode =
-        app_.getUNL().nodeInCluster(publicKey, name);
-    if (clusterNode)
+    auto member = app_.cluster().member(publicKey);
+    if (member)
         if (journal_.info) journal_.info <<
-            "Cluster name: " << name;
+            "Cluster name: " << *member;
 
     auto const result = overlay_.peerFinder().activate (slot_,
-        publicKey.toPublicKey(), clusterNode);
+        publicKey.toPublicKey(), static_cast<bool>(member));
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 
