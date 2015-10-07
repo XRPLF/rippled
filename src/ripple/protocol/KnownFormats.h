@@ -21,7 +21,7 @@
 #define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 
 #include <ripple/protocol/SOTemplate.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

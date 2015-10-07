@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <sstream>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace ripple {
 

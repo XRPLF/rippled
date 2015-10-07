@@ -24,7 +24,7 @@
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/Sandbox.h>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace ripple {
 namespace test {

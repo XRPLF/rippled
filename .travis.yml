@@ -25,9 +25,9 @@ packages: &gcc5_pkgs
   # Provides a backtrace if the unittests crash
   - gdb
 
-packages: &gcc48_pkgs
-  - gcc-4.8
-  - g++-4.8
+packages: &clang36_pkgs
+  - clang-3.6
+  - g++-5
   - python-software-properties
   - protobuf-compiler
   - libprotobuf-dev
@@ -51,23 +51,15 @@ matrix:
       addons: *ao_gcc5
 
     - compiler: clang
-      env: GCC_VER=4.8 TARGET=debug
-      addons: &ao_gcc48
+      env: GCC_VER=5 TARGET=debug CLANG_VER=3.6
+      addons: &ao_clang36
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: *gcc48_pkgs
+          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
+          packages: *clang36_pkgs
 
     - compiler: clang
-      env: GCC_VER=4.8 TARGET=debug.nounity
-      addons: *ao_gcc48
-
-    - compiler: gcc
-      env: GCC_VER=4.8 TARGET=debug
-      addons: *ao_gcc48
-
-    - compiler: gcc
-      env: GCC_VER=4.8 TARGET=debug.nounity
-      addons: *ao_gcc48
+      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.6
+      addons: *ao_clang36
 
 cache:
   directories:

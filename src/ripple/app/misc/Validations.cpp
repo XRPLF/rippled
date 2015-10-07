@@ -30,7 +30,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/TimeKeeper.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 #include <thread>
 

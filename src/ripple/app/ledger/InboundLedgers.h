@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Stoppable.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

@@ -29,7 +29,7 @@
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
 #include <memory>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <functional>

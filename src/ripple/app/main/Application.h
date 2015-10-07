@@ -25,7 +25,7 @@
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/core/Config.h>
 #include <beast/utility/PropertyStream.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 
 namespace boost { namespace asio { class io_service; } }

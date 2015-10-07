@@ -26,9 +26,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/Sandbox.h>
-#include <beast/cxx14/memory.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/WrappedSink.h>
+#include <memory>
 #include <stdexcept>
 
 namespace ripple {

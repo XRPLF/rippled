@@ -22,7 +22,7 @@
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/protocol/STAmount.h>
 #include <cstdint>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

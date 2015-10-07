@@ -22,7 +22,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>  // JLOG
 #include <beast/threads/Thread.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 namespace Resource {

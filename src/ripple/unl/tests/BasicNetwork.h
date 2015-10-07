@@ -31,12 +31,12 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <deque>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <cassert>
 #include <cstdint>
 #include <iomanip>
 #include <random>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 

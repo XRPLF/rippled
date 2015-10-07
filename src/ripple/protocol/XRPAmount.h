@@ -25,7 +25,7 @@
 #include <boost/operators.hpp>
 #include <cstdint>
 #include <string>
-#include <beast/cxx14/type_traits.h>
+#include <type_traits>
 
 using beast::zero;
 

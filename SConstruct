@@ -61,6 +61,10 @@ The following environment variables modify the build environment:
       Path to the boost directory.
     OPENSSL_ROOT
       Path to the openssl directory.
+    PROTOBUF_DIR
+      Path to the protobuf directory. This is usually only needed when
+      the installed protobuf library uses a different ABI than clang
+      (as with ubuntu 15.10).
 
 The following extra options may be used:
     --ninja         Generate a `build.ninja` build file for the specified target
@@ -76,9 +80,7 @@ GCC 5 support: There is transitional support for user-installed gcc 5. Setting
     user builds C++ dependencies themselves - such as boost - they must either be
     built with gcc 4 or with the preprocessor flag `_GLIBCXX_USE_CXX11_ABI` set to
     zero. When linux distros upgrade to gcc 5, the transitional support will be
-    removed. To enable C++-14 support, define the environment variable `RIPPLED_USE_CPP_14`
-    to one. This is also transitional and will be removed when we permanently enable C++ 14
-    support.
+    removed.
 
 '''
 #
@@ -114,29 +116,35 @@ AddOption('--ninja', dest='ninja', action='store_true',
           help='generate ninja build file build.ninja')
 
 def parse_time(t):
-    return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
+    l = len(t.split())
+    if l==5:
+        return time.strptime(t, '%a %b %d %H:%M:%S %Y')
+    elif l==3:
+        return time.strptime(t, '%d %b %Y')
+    else:
+        return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
 
-CHECK_PLATFORMS = 'Debian', 'Ubuntu'
-CHECK_COMMAND = 'openssl version -a'
-CHECK_LINE = 'built on: '
-BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
-OPENSSL_ERROR = ('Your openSSL was built on %s; '
-                 'rippled needs a version built on or after %s.')
 UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
-USE_CPP_14 = os.getenv('RIPPLED_USE_CPP_14')
 
 def check_openssl():
-    if Beast.system.platform in CHECK_PLATFORMS:
-        for line in subprocess.check_output(CHECK_COMMAND.split()).splitlines():
-            if line.startswith(CHECK_LINE):
-                line = line[len(CHECK_LINE):]
-                if parse_time(line) < parse_time(BUILD_TIME):
-                    raise Exception(OPENSSL_ERROR % (line, BUILD_TIME))
-                else:
-                    break
-        else:
-            raise Exception("Didn't find any '%s' line in '$ %s'" %
-                            (CHECK_LINE, CHECK_COMMAND))
+    if Beast.system.platform not in ['Debian', 'Ubuntu']:
+        return
+    line = subprocess.check_output('openssl version -b'.split()).strip()
+    check_line = 'built on: '
+    if not line.startswith(check_line):
+        raise Exception("Didn't find any '%s' line in '$ %s'" %
+                        (check_line, 'openssl version -b'))
+    d = line[len(check_line):]
+    if 'date unspecified' in d:
+        words = subprocess.check_output('openssl version'.split()).split()
+        if len(words)!=5:
+            raise Exception("Didn't find version date in '$ openssl version'")
+        d = ' '.join(words[-3:])
+    build_time = 'Mon Apr  7 20:33:19 UTC 2014'
+    if parse_time(d) < parse_time(build_time):
+        raise Exception('Your openSSL was built on %s; '
+                        'rippled needs a version built on or after %s.'
+                        % (line, build_time))
 
 
 def set_implicit_cache():
@@ -287,16 +295,7 @@ def config_base(env):
         ,{'HAVE_USLEEP' : '1'}
         ,{'SOCI_CXX_C11' : '1'}
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
-        ])
-
-    if USE_CPP_14:
-        env.Append(CPPDEFINES=[
-            '-DBEAST_NO_CXX14_COMPATIBILITY',
-            '-DBEAST_NO_CXX14_INTEGER_SEQUENCE',
-            '-DBEAST_NO_CXX14_MAKE_UNIQUE',
-            '-DBEAST_NO_CXX14_EQUAL',
-            '-DBOOST_NO_AUTO_PTR',
-            '-DBEAST_NO_CXX14_MAKE_REVERSE_ITERATOR',
+        ,'-DBOOST_NO_AUTO_PTR'
         ])
 
     try:
@@ -305,6 +304,12 @@ def config_base(env):
             os.path.join(BOOST_ROOT, 'stage', 'lib'),
             ])
         env['BOOST_ROOT'] = BOOST_ROOT
+    except KeyError:
+        pass
+
+    try:
+        protobuf_dir = os.environ['PROTOBUF_DIR']
+        env.Append(LIBPATH=[protobuf_dir])
     except KeyError:
         pass
 
@@ -335,14 +340,16 @@ def config_base(env):
         env.Append(CPPPATH=[os.path.join(profile_jemalloc, 'include')])
         env.Append(LINKFLAGS=['-Wl,-rpath,' + os.path.join(profile_jemalloc, 'lib')])
 
-def gccStdLibDir():
-    try:
-        for l in subprocess.check_output(['gcc', '-v'], stderr=subprocess.STDOUT).split():
-            if l.startswith('--prefix'):
-                return l.split('=')[1] + '/lib64'
-    except:
-        pass
-    raise SCons.UserError('Could not find gccStdLibDir')
+def add_static_libs(env, libs):
+    if not 'HASSTATICLIBS' in env:
+        env['HASSTATICLIBS'] = True
+        env['STATICLIBS'] = ''
+        env.Replace(LINKCOM=env['LINKCOM'] + " -Wl,-Bstatic $STATICLIBS")
+    c = env['STATICLIBS']
+    if c == None: c = ''
+    for f in libs:
+        c += ' -l' + f 
+    env['STATICLIBS'] = c
 
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
@@ -362,8 +369,11 @@ def config_env(toolchain, variant, env):
 
     if toolchain in Split('clang gcc'):
         if Beast.system.linux:
-            env.ParseConfig('pkg-config --static --cflags --libs openssl')
-            env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+            add_static_libs(env, ['protobuf', 'ssl', 'crypto'])
+            env.Append(LIBS=['dl', 'pthread', 'z'])
+            env.Append(LINKFLAGS=['-pthread'])
+            # env.ParseConfig('pkg-config --static --cflags --libs openssl')
+            # env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
         env.Prepend(CFLAGS=['-Wall'])
         env.Prepend(CXXFLAGS=['-Wall'])
@@ -396,7 +406,7 @@ def config_env(toolchain, variant, env):
 
         env.Append(CXXFLAGS=[
             '-frtti',
-            '-std=c++14' if USE_CPP_14 else '-std=c++11',
+            '-std=c++14',
             '-Wno-invalid-offsetof'])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
@@ -415,6 +425,9 @@ def config_env(toolchain, variant, env):
                 '-Wno-unused-function',
                 ])
         else:
+            env.Append(LINKFLAGS=[
+                '-static-libstdc++',
+            ])
             if toolchain == 'gcc':
                 if os.getenv('RIPPLED_OLD_GCC_ABI'):
                     gcc_ver = ''
@@ -429,7 +442,6 @@ def config_env(toolchain, variant, env):
                         env.Append(CPPDEFINES={
                             '-D_GLIBCXX_USE_CXX11_ABI' : 0
                         })
-                        env.Append(LINKFLAGS=['-Wl,-rpath,' + gccStdLibDir()])
 
                 env.Append(CCFLAGS=[
                     '-Wno-unused-but-set-variable',
@@ -446,17 +458,16 @@ def config_env(toolchain, variant, env):
             'boost_system',
             'boost_thread'
         ]
-        # We prefer static libraries for boost
-        if env.get('BOOST_ROOT'):
-            static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
-                           l in boost_libs]
-            if all(os.path.exists(f) for f in static_libs):
-                boost_libs = [File(f) for f in static_libs]
-
-        env.Append(LIBS=boost_libs)
         env.Append(LIBS=['dl'])
 
         if Beast.system.osx:
+            # We prefer static libraries for boost
+            if env.get('BOOST_ROOT'):
+                static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
+                               l in boost_libs]
+                if all(os.path.exists(f) for f in static_libs):
+                    boost_libs = [File(f) for f in static_libs]
+            env.Append(LIBS=boost_libs)
             env.Append(LIBS=[
                 'crypto',
                 'protobuf',
@@ -467,6 +478,7 @@ def config_env(toolchain, variant, env):
                 'Foundation'
                 ])
         else:
+            add_static_libs(env, boost_libs)
             env.Append(LIBS=['rt'])
 
         if variant == 'release':

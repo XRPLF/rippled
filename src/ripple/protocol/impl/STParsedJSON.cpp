@@ -35,7 +35,7 @@
 #include <ripple/protocol/impl/STVar.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <cassert>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

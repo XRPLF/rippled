@@ -28,7 +28,7 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/basics/Blob.h>
 #include <boost/optional.hpp>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>

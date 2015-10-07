@@ -29,8 +29,8 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
-#include <beast/cxx14/iterator.h> // <iterator>
-#include <beast/cxx14/memory.h> // <memory>
+#include <iterator>
+#include <memory>
 #include <iostream>
 
 namespace ripple {

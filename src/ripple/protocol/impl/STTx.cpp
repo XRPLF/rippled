@@ -32,9 +32,9 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
 #include <beast/unit_test/suite.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <boost/format.hpp>
 #include <array>
+#include <memory>
 #include <utility>
 
 namespace ripple {

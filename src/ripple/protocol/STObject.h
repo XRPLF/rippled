@@ -31,7 +31,7 @@
 #include <boost/optional.hpp>
 #include <cassert>
 #include <stdexcept>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <utility>
 
 #include <beast/streams/debug_ostream.h>

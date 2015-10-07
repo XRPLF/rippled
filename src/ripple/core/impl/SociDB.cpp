@@ -22,7 +22,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/core/Config.h>
-#include <beast/cxx14/memory.h>  // <memory>
+#include <memory>
 #include <soci/sqlite3/soci-sqlite3.h>
 #include <boost/filesystem.hpp>
 

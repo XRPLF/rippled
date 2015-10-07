@@ -29,8 +29,8 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <type_traits>
 #include <vector>
-#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 

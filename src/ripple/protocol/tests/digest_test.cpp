@@ -47,7 +47,7 @@ class digest_test : public beast::unit_test::suite
             {
                 Hasher h;
                 h (x.data (), x.size ());
-                auto r = static_cast<typename Hasher::result_type>(h);
+                (void) static_cast<typename Hasher::result_type>(h);
             }
         }
 
@@ -61,7 +61,7 @@ class digest_test : public beast::unit_test::suite
             {
                 Hasher h;
                 h (x.data (), x.size ());
-                auto r = static_cast<typename Hasher::result_type>(h);
+                (void) static_cast<typename Hasher::result_type>(h);
             }
 
             auto const d = high_resolution_clock::now () - start;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include=".">
@@ -858,39 +858,9 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
-<<<<<<< HEAD
-    <ClInclude Include="..\..\src\beast\beast\cxx14\algorithm.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\config.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\cxx14\cxx14.unity.cpp">
-      <Filter>beast\cxx14</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\functional.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\iterator.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\memory.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\cxx14\tests\integer_sequence.test.cpp">
-      <Filter>beast\cxx14\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-=======
-    <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
->>>>>>> eb8aa75... Workaround for is_constructable with std::pair
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
       <Filter>beast\hash</Filter>
     </ClInclude>
