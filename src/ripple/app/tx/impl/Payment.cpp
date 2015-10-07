@@ -207,8 +207,6 @@ Payment::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const id = ctx.tx[sfAccount];
-
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;

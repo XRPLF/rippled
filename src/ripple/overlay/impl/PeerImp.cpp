@@ -1733,9 +1733,11 @@ PeerImp::checkTransaction (int flags,
             if (valid.first != Validity::Valid)
             {
                 if (!valid.second.empty())
+                {
                     JLOG(p_journal_.trace) <<
                         "Exception checking transaction: " <<
                             valid.second;
+                }
 
                 // Probably not necessary to set SF_BAD, but doesn't hurt.
                 app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
