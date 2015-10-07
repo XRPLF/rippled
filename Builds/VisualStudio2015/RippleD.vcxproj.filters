@@ -3255,9 +3255,15 @@
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\ClusterNodeStatus.h">
+    <ClInclude Include="..\..\src\ripple\overlay\Cluster.h">
       <Filter>ripple\overlay</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\ClusterNode.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\Cluster.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\overlay\impl\ConnectAttempt.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
@@ -3330,6 +3336,9 @@
     <None Include="..\..\src\ripple\overlay\README.md">
       <Filter>ripple\overlay</Filter>
     </None>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\cluster_test.cpp">
+      <Filter>ripple\overlay\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\overlay\tests\manifest_test.cpp">
       <Filter>ripple\overlay\tests</Filter>
     </ClCompile>

@@ -22,7 +22,6 @@
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
@@ -228,8 +227,6 @@ private:
     boost::posix_time::ptime        mtpFetchNext;       // Time of to start next fetch.
     beast::DeadlineTimer m_fetchTimer;                  // Timer to start fetching.
 
-    std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
-
     std::string node_file_name_;
     std::string node_file_path_;
 
@@ -270,17 +267,6 @@ public:
     void nodeScore();
 
     bool nodeInUNL (RippleAddress const& naNodePublic);
-
-    bool nodeInCluster (RippleAddress const& naNodePublic);
-    bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name);
-
-    bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus);
-
-    std::map<RippleAddress, ClusterNodeStatus> getClusterStatus();
-
-    std::uint32_t getClusterFee();
-
-    void addClusterStatus (Json::Value& obj);
 
     void nodeBootstrap();
 
@@ -654,105 +640,6 @@ bool UniqueNodeListImp::nodeInUNL (RippleAddress const& naNodePublic)
 
 //--------------------------------------------------------------------------
 
-bool UniqueNodeListImp::nodeInCluster (RippleAddress const& naNodePublic)
-{
-    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
-    return m_clusterNodes.end () != m_clusterNodes.find (naNodePublic);
-}
-
-//--------------------------------------------------------------------------
-
-bool UniqueNodeListImp::nodeInCluster (RippleAddress const& naNodePublic, std::string& name)
-{
-    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
-    std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
-
-    if (it == m_clusterNodes.end ())
-        return false;
-
-    name = it->second.getName();
-    return true;
-}
-
-//--------------------------------------------------------------------------
-
-bool UniqueNodeListImp::nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus)
-{
-    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
-    return m_clusterNodes[naNodePublic].update(cnsStatus);
-}
-
-//--------------------------------------------------------------------------
-
-std::map<RippleAddress, ClusterNodeStatus>
-UniqueNodeListImp::getClusterStatus()
-{
-    std::map<RippleAddress, ClusterNodeStatus> ret;
-    {
-        std::lock_guard <std::recursive_mutex> sl (mUNLLock);
-        ret = m_clusterNodes;
-    }
-    return ret;
-}
-
-//--------------------------------------------------------------------------
-
-std::uint32_t UniqueNodeListImp::getClusterFee()
-{
-    auto const thresh = app_.timeKeeper().now().time_since_epoch().count() - 90;
-
-    std::vector<std::uint32_t> fees;
-    {
-        std::lock_guard <std::recursive_mutex> sl (mUNLLock);
-        {
-            for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
-                end = m_clusterNodes.end(); it != end; ++it)
-            {
-                if (it->second.getReportTime() >= thresh)
-                    fees.push_back(it->second.getLoadFee());
-            }
-        }
-    }
-
-    if (fees.empty())
-        return 0;
-    std::sort (fees.begin(), fees.end());
-    return fees[fees.size() / 2];
-}
-
-//--------------------------------------------------------------------------
-
-void UniqueNodeListImp::addClusterStatus (Json::Value& obj)
-{
-    std::lock_guard <std::recursive_mutex> sl (mUNLLock);
-    if (m_clusterNodes.size() > 1) // nodes other than us
-    {
-        auto const now = app_.timeKeeper().now().time_since_epoch().count();
-        std::uint32_t ref   = app_.getFeeTrack().getLoadBase();
-        Json::Value& nodes = (obj[jss::cluster] = Json::objectValue);
-
-        for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
-            end = m_clusterNodes.end(); it != end; ++it)
-        {
-            if (it->first != app_.getLocalCredentials().getNodePublic())
-            {
-                Json::Value& node = nodes[it->first.humanNodePublic()];
-
-                if (!it->second.getName().empty())
-                    node["tag"] = it->second.getName();
-
-                if ((it->second.getLoadFee() != ref) && (it->second.getLoadFee() != 0))
-                    node["fee"] = static_cast<double>(it->second.getLoadFee()) / ref;
-
-                if (it->second.getReportTime() != 0)
-                    node["age"] = (it->second.getReportTime() >= now) ? 0 : (now - it->second.getReportTime());
-            }
-        }
-    }
-}
-
-//--------------------------------------------------------------------------
-
 void UniqueNodeListImp::nodeBootstrap()
 {
     int         iDomains    = 0;
@@ -1017,22 +904,6 @@ bool UniqueNodeListImp::miscSave()
 
 void UniqueNodeListImp::trustedLoad()
 {
-    boost::regex rNode ("\\`\\s*(\\S+)[\\s]*(.*)\\'");
-    for (auto const& c : app_.config().CLUSTER_NODES)
-    {
-        boost::smatch match;
-
-        if (boost::regex_match (c, match, rNode))
-        {
-            RippleAddress a = RippleAddress::createNodePublic (match[1]);
-
-            if (a.isValid ())
-                m_clusterNodes.insert (std::make_pair (a, ClusterNodeStatus(match[2])));
-        }
-        else
-            JLOG (j_.warning) << "Entry in cluster list invalid: '" << c << "'";
-    }
-
     auto db = app_.getWalletDB ().checkoutDb ();
     std::lock_guard <std::recursive_mutex> slUNL (mUNLLock);
 

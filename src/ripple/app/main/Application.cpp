@@ -59,6 +59,7 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
+#include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/SecretKey.h>
@@ -320,6 +321,7 @@ public:
     std::unique_ptr <InboundTransactions> m_inboundTransactions;
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
+    std::unique_ptr <Cluster> cluster_;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
@@ -660,6 +662,11 @@ public:
         return *m_deprecatedUNL;
     }
 
+    Cluster& cluster () override
+    {
+        return *cluster_;
+    }
+
     SHAMapStore& getSHAMapStore () override
     {
         return *m_shaMapStore;
@@ -981,6 +988,8 @@ void ApplicationImp::setup()
     }
 
     m_orderBookDB.setup (getLedgerMaster ().getCurrentLedger ());
+
+    cluster_ = make_Cluster (config (), logs_->journal("Overlay"));
 
     // Begin validation and ip maintenance.
     //

@@ -64,6 +64,7 @@ class TimeKeeper;
 class TransactionMaster;
 class TxQ;
 class Validations;
+class Cluster;
 
 class DatabaseCon;
 class SHAMapStore;
@@ -117,6 +118,7 @@ public:
     virtual Overlay&                overlay () = 0;
     virtual TxQ&                    getTxQ() = 0;
     virtual UniqueNodeList&         getUNL () = 0;
+    virtual Cluster&                cluster () = 0;
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
