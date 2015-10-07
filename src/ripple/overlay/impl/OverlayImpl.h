@@ -271,7 +271,7 @@ public:
 
     void
     reportTraffic (
-        TrafficCount::Category cat,
+        TrafficCount::category cat,
         bool isInbound,
         int bytes);
 

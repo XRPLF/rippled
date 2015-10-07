@@ -193,7 +193,7 @@ PeerImp::send (Message::pointer const& m)
         return;
 
     overlay_.reportTraffic (
-        static_cast<TrafficCount::Category>(m->getCategory()),
+        static_cast<TrafficCount::category>(m->getCategory()),
         false, static_cast<int>(m->getBuffer().size()));
 
     auto sendq_size = send_queue_.size();

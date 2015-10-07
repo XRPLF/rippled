@@ -35,7 +35,7 @@ public:
         std::atomic <unsigned long>,
         std::atomic <unsigned long> >;
 
-    enum class Category
+    enum class category
     {
         CT_base,           // basic peer overhead, must be first
         CT_overlay,        // overlay management
@@ -49,28 +49,28 @@ public:
         CT_unknown         // must be last
     };
 
-    static const char* getName (Category c);
+    static const char* getName (category c);
 
-    static Category categorize (
+    static category categorize (
         ::google::protobuf::Message const& message,
         int type, bool inbound);
 
-    void addCount (Category cat, bool inbound, int number)
+    void addCount (category cat, bool inbound, int number)
     {
         if (inbound)
-            _counts[cat].first += number;
+            counts_[cat].first += number;
         else
-            _counts[cat].second += number;
+            counts_[cat].second += number;
     }
 
     TrafficCount()
     {
-        for (Category i = Category::CT_base;
-            i <= Category::CT_unknown;
-            i = static_cast<Category>(static_cast<int>(i) + 1))
+        for (category i = category::CT_base;
+            i <= category::CT_unknown;
+            i = static_cast<category>(static_cast<int>(i) + 1))
         {
-            _counts[i].first.store (0l);
-            _counts[i].second.store (0l);
+            counts_[i].first.store (0l);
+            counts_[i].second.store (0l);
         }
     }
 
@@ -81,11 +81,11 @@ public:
             std::pair <unsigned long, unsigned long>>
                 ret;
 
-        for (auto& i : _counts)
+        for (auto& i : counts_)
         {
-            ret.emplace (getName(i.first),
-                std::pair <unsigned long, unsigned long>
-                    (i.second.first.load(),
+            ret.emplace (getName (i.first),
+                std::make_pair (
+                    i.second.first.load(),
                     i.second.second.load()));
         }
 
@@ -94,7 +94,7 @@ public:
 
     protected:
 
-    std::map <Category, Count_t> _counts;
+    std::map <category, Count_t> counts_;
 };
 
 }

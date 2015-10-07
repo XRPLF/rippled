@@ -728,7 +728,7 @@ OverlayImpl::onManifests (
 
 void
 OverlayImpl::reportTraffic (
-    TrafficCount::Category cat,
+    TrafficCount::category cat,
     bool isInbound,
     int number)
 {

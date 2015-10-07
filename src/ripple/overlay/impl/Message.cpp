@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/overlay/Message.h>
+#include <ripple/overlay/impl/TrafficCount.h>
 #include <cstdint>
 
 namespace ripple {

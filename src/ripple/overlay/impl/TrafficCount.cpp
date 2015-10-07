@@ -22,29 +22,29 @@
 
 namespace ripple {
 
-const char* TrafficCount::getName (Category c)
+const char* TrafficCount::getName (category c)
 {
     switch (c)
     {
-        case Category::CT_base:
+        case category::CT_base:
             return "overhead";
-        case Category::CT_overlay:
+        case category::CT_overlay:
             return "overlay";
-        case Category::CT_transaction:
+        case category::CT_transaction:
             return "transactions";
-        case Category::CT_proposal:
+        case category::CT_proposal:
             return "proposals";
-        case Category::CT_validation:
+        case category::CT_validation:
             return "validations";
-        case Category::CT_get_ledger:
+        case category::CT_get_ledger:
             return "ledger_get";
-        case Category::CT_share_ledger:
+        case category::CT_share_ledger:
             return "ledger_share";
-        case Category::CT_get_trans:
+        case category::CT_get_trans:
             return "transaction_set_get";
-        case Category::CT_share_trans:
+        case category::CT_share_trans:
             return "transaction_set_share";
-        case Category::CT_unknown:
+        case category::CT_unknown:
             assert (false);
             return "unknown";
         default:
@@ -53,7 +53,7 @@ const char* TrafficCount::getName (Category c)
     }
 }
 
-TrafficCount::Category TrafficCount::categorize (
+TrafficCount::category TrafficCount::categorize (
     ::google::protobuf::Message const& message,
     int type, bool inbound)
 {
@@ -61,26 +61,26 @@ TrafficCount::Category TrafficCount::categorize (
             (type == protocol::mtPING) ||
             (type == protocol::mtCLUSTER) ||
             (type == protocol::mtSTATUS_CHANGE))
-        return TrafficCount::Category::CT_base;
+        return TrafficCount::category::CT_base;
 
     if ((type == protocol::mtMANIFESTS) ||
             (type == protocol::mtENDPOINTS) ||
             (type == protocol::mtPEERS) ||
             (type == protocol::mtGET_PEERS))
-        return TrafficCount::Category::CT_overlay;
+        return TrafficCount::category::CT_overlay;
 
     if (type == protocol::mtTRANSACTION)
-        return TrafficCount::Category::CT_transaction;
+        return TrafficCount::category::CT_transaction;
 
     if (type == protocol::mtVALIDATION)
-        return TrafficCount::Category::CT_validation;
+        return TrafficCount::category::CT_validation;
 
     if (type == protocol::mtPROPOSE_LEDGER)
-        return TrafficCount::Category::CT_proposal;
+        return TrafficCount::category::CT_proposal;
 
     if (type == protocol::mtHAVE_SET)
-        return inbound ? TrafficCount::Category::CT_get_trans :
-            TrafficCount::Category::CT_share_trans;
+        return inbound ? TrafficCount::category::CT_get_trans :
+            TrafficCount::category::CT_share_trans;
 
     {
         auto msg = dynamic_cast
@@ -90,11 +90,11 @@ TrafficCount::Category TrafficCount::categorize (
             // We have received ledger data
             if (msg->type() == protocol::liTS_CANDIDATE)
                 return (inbound && !msg->has_requestcookie()) ?
-                    TrafficCount::Category::CT_get_trans :
-                    TrafficCount::Category::CT_share_trans;
+                    TrafficCount::category::CT_get_trans :
+                    TrafficCount::category::CT_share_trans;
             return (inbound && !msg->has_requestcookie()) ?
-                TrafficCount::Category::CT_get_ledger :
-                TrafficCount::Category::CT_share_ledger;
+                TrafficCount::category::CT_get_ledger :
+                TrafficCount::category::CT_share_ledger;
         }
     }
 
@@ -106,11 +106,11 @@ TrafficCount::Category TrafficCount::categorize (
         {
             if (msg->itype() == protocol::liTS_CANDIDATE)
                 return (inbound || msg->has_requestcookie()) ?
-                    TrafficCount::Category::CT_share_trans :
-                    TrafficCount::Category::CT_get_trans;
+                    TrafficCount::category::CT_share_trans :
+                    TrafficCount::category::CT_get_trans;
             return (inbound || msg->has_requestcookie()) ?
-                TrafficCount::Category::CT_share_ledger :
-                TrafficCount::Category::CT_get_ledger;
+                TrafficCount::category::CT_share_ledger :
+                TrafficCount::category::CT_get_ledger;
         }
     }
 
@@ -123,13 +123,13 @@ TrafficCount::Category TrafficCount::categorize (
             // inbound queries and outbound responses are sharing
             // outbound queries and inbound responses are getting
             return (msg->query() == inbound) ?
-                TrafficCount::Category::CT_share_ledger :
-                TrafficCount::Category::CT_get_ledger;
+                TrafficCount::category::CT_share_ledger :
+                TrafficCount::category::CT_get_ledger;
         }
     }
 
     assert (false);
-    return TrafficCount::Category::CT_unknown;
+    return TrafficCount::category::CT_unknown;
 }
 
 } // ripple
