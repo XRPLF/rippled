@@ -378,13 +378,8 @@ public:
                 for (auto const& it : mHeldTransactions)
                 {
                     ApplyFlags flags = tapNONE;
-                    if (app_.getHashRouter().addSuppressionFlags (
-                            it.first.getTXID (), SF_SIGGOOD))
-                        flags = flags | tapNO_CHECK_SIGN;
-
                     auto const result = apply(app_, view,
-                        *it.second, flags, app_.getHashRouter(
-                            ).sigVerify(), app_.config(), j);
+                        *it.second, flags, j);
                     if (result.second)
                         any = true;
                 }

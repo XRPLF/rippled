@@ -506,7 +506,8 @@ transactionPreProcessImpl (
 
 static
 std::pair <Json::Value, Transaction::pointer>
-transactionConstructImpl (STTx::pointer stpTrans, Application& app)
+transactionConstructImpl (STTx::pointer stpTrans,
+    Rules const& rules, Application& app)
 {
     std::pair <Json::Value, Transaction::pointer> ret;
 
@@ -514,8 +515,8 @@ transactionConstructImpl (STTx::pointer stpTrans, Application& app)
     Transaction::pointer tpTrans;
     {
         std::string reason;
-        tpTrans = std::make_shared<Transaction>(stpTrans, Validate::NO,
-            directSigVerify, reason, app);
+        tpTrans = std::make_shared<Transaction>(
+            stpTrans, reason, app);
         if (tpTrans->getStatus () != NEW)
         {
             ret.first = RPC::make_error (rpcINTERNAL,
@@ -534,7 +535,7 @@ transactionConstructImpl (STTx::pointer stpTrans, Application& app)
             tpTrans->getSTransaction ()->add (s);
 
             Transaction::pointer tpTransNew =
-                Transaction::sharedTransaction(s.getData(), Validate::YES, app);
+                Transaction::sharedTransaction(s.getData(), rules, app);
 
             if (tpTransNew && (
                 !tpTransNew->getSTransaction ()->isEquivalent (
@@ -673,7 +674,8 @@ Json::Value transactionSign (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second, app);
+        transactionConstructImpl (preprocResult.second,
+            ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
@@ -707,7 +709,8 @@ Json::Value transactionSubmit (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second, app);
+        transactionConstructImpl (preprocResult.second,
+            ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
@@ -825,7 +828,8 @@ Json::Value transactionSignFor (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second, app);
+        transactionConstructImpl (preprocResult.second,
+            ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
@@ -1052,7 +1056,8 @@ Json::Value transactionSubmitMultiSigned (
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (stpTrans, app);
+        transactionConstructImpl (stpTrans,
+            ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;

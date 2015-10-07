@@ -44,6 +44,7 @@
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
@@ -1117,8 +1118,8 @@ ApplicationImp::startGenesisLedger()
     next->setClosed ();
     next->setImmutable (*config_);
     m_networkOPs->setLastCloseTime (next->info().closeTime);
-    openLedger_.emplace(next, *config_,
-        cachedSLEs_, logs_->journal("OpenLedger"));
+    openLedger_.emplace(next, cachedSLEs_,
+        logs_->journal("OpenLedger"));
     m_ledgerMaster->switchLCL (next);
 }
 
@@ -1372,8 +1373,8 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->switchLCL (loadLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
-        openLedger_.emplace(loadLedger, *config_,
-            cachedSLEs_, logs_->journal("OpenLedger"));
+        openLedger_.emplace(loadLedger, cachedSLEs_,
+            logs_->journal("OpenLedger"));
 
         if (replay)
         {
@@ -1395,7 +1396,8 @@ bool ApplicationImp::loadOldLedger (
                 auto s = std::make_shared <Serializer> ();
                 txPair.first->add(*s);
 
-                getHashRouter().setFlags (txID, SF_SIGGOOD);
+                forceValidity(getHashRouter(),
+                    txID, Validity::SigGoodOnly);
 
                 replayData->txns_.emplace (txIndex, txPair.first);
 

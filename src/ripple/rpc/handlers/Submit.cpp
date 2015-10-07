@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/tx/apply.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
@@ -80,10 +81,23 @@ Json::Value doSubmit (RPC::Context& context)
         return jvResult;
     }
 
+    {
+        auto validity = checkValidity(context.app.getHashRouter(),
+            *stpTrans, context.ledgerMaster.getCurrentLedger()->rules(),
+                context.app.config());
+        if (validity.first != Validity::Valid)
+        {
+            jvResult[jss::error] = "invalidTransaction";
+            jvResult[jss::error_exception] = "fails local checks: " + validity.second;
+
+            return jvResult;
+        }
+    }
+
     Transaction::pointer            tpTrans;
     std::string reason;
-    tpTrans = std::make_shared<Transaction> (stpTrans, Validate::YES,
-        context.app.getHashRouter().sigVerify(), reason, context.app);
+    tpTrans = std::make_shared<Transaction> (
+        stpTrans, reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {
         jvResult[jss::error]            = "invalidTransaction";

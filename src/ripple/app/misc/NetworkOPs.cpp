@@ -654,52 +654,47 @@ void NetworkOPsImp::submitTransaction (STTx::pointer iTrans)
     SerialIter sit (s.slice());
     auto trans = std::make_shared<STTx> (std::ref (sit));
 
-    uint256 suppress = trans->getTransactionID ();
-    int flags;
+    auto const txid = trans->getTransactionID ();
+    auto const flags = app_.getHashRouter().getFlags(txid);
 
-    if (app_.getHashRouter ().addSuppressionPeer (suppress, 0, flags) &&
-        ((flags & SF_RETRY) != 0))
+    if ((flags & SF_RETRY) != 0)
     {
-        m_journal.warning << "Redundant transactions submitted";
+        JLOG(m_journal.warning) << "Redundant transactions submitted";
         return;
     }
 
     if ((flags & SF_BAD) != 0)
     {
-        m_journal.warning << "Submitted transaction cached bad";
+        JLOG(m_journal.warning) << "Submitted transaction cached bad";
+        return;
+    }
+
+    try
+    {
+        auto const validity = checkValidity(
+            app_.getHashRouter(), *trans,
+                m_ledgerMaster.getValidatedRules(),
+                    app_.config());
+
+        if (validity.first != Validity::Valid)
+        {
+            JLOG(m_journal.warning) <<
+                "Submitted transaction invalid: " <<
+                validity.second;
+            return;
+        }
+    }
+    catch (...)
+    {
+        JLOG(m_journal.warning) << "Exception checking transaction" << txid;
+
         return;
     }
 
     std::string reason;
 
-    if ((flags & SF_SIGGOOD) == 0)
-    {
-        try
-        {
-            // Tell the call to checkSign() whether multisign is enabled.
-            if (!passesLocalChecks (*trans, reason) ||
-                !trans->checkSign (m_ledgerMaster.getValidatedRules().enabled(
-                    featureMultiSign, app_.config().features)))
-            {
-                m_journal.warning << "Submitted transaction " <<
-                    (reason.empty () ? "has bad signature" : "error: " + reason);
-                app_.getHashRouter ().setFlags (suppress, SF_BAD);
-                return;
-            }
-
-            app_.getHashRouter ().setFlags (suppress, SF_SIGGOOD);
-        }
-        catch (...)
-        {
-            m_journal.warning << "Exception checking transaction " << suppress
-                << (reason.empty () ? "" : ". error: " + reason);
-
-            return;
-        }
-    }
-
     auto tx = std::make_shared<Transaction> (
-        trans, Validate::NO, directSigVerify, reason, app_);
+        trans, reason, app_);
 
     m_job_queue.addJob (jtTRANSACTION, "submitTxn", [this, tx] (Job&) {
         auto t = tx;
@@ -711,7 +706,7 @@ void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
         bool bAdmin, bool bLocal, FailHard failType)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
-    int newFlags = app_.getHashRouter ().getFlags (transaction->getID ());
+    auto const newFlags = app_.getHashRouter ().getFlags (transaction->getID ());
 
     if ((newFlags & SF_BAD) != 0)
     {
@@ -721,22 +716,27 @@ void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
         return;
     }
 
-    if ((newFlags & SF_SIGGOOD) == 0)
+    // NOTE eahennis - I think this check is redundant,
+    // but I'm not 100% sure yet.
+    // If so, only cost is looking up HashRouter flags.
+    auto const view = m_ledgerMaster.getCurrentLedger();
+    auto const validity = checkValidity(
+        app_.getHashRouter(),
+            *transaction->getSTransaction(),
+                view->rules(), app_.config());
+    assert(validity.first == Validity::Valid);
+
+    // Not concerned with local checks at this point.
+    if (validity.first == Validity::SigBad)
     {
-        // signature not checked
-        std::string reason;
-
-        if (! transaction->checkSign (reason, directSigVerify))
-        {
-            m_journal.info << "Transaction has bad signature: " << reason;
-            transaction->setStatus (INVALID);
-            transaction->setResult (temBAD_SIGNATURE);
-            app_.getHashRouter ().setFlags (transaction->getID (), SF_BAD);
-            return;
-        }
+        m_journal.info << "Transaction has bad signature: " <<
+            validity.second;
+        transaction->setStatus(INVALID);
+        transaction->setResult(temBAD_SIGNATURE);
+        app_.getHashRouter().setFlags(transaction->getID(),
+            SF_BAD);
+        return;
     }
-
-    app_.getHashRouter ().setFlags (transaction->getID (), SF_SIGGOOD);
 
     // canonicalize can change our pointer
     app_.getMasterTransaction ().canonicalize (&transaction);
@@ -835,6 +835,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             for (TransactionStatus& e : transactions)
             {
                 ApplyFlags flags = tapNONE;
+                // All code paths to this point are gated by validity checks.
                 flags = flags | tapNO_CHECK_SIGN;
                 if (e.admin)
                     flags = flags | tapADMIN;
@@ -843,10 +844,8 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 app_.openLedger().modify(
                     [&](OpenView& view, beast::Journal j)
                     {
-                        auto const result = ripple::apply(app_,
-                            view, *e.transaction->getSTransaction(), flags,
-                                app_.getHashRouter().sigVerify(),
-                                    app_.config(), j);
+                        auto const result = ripple::apply(app_, view,
+                            *e.transaction->getSTransaction(), flags, j);
                         e.result = result.first;
                         e.applied = result.second;
                         return result.second;
@@ -1672,7 +1671,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
                 txnMeta.clear ();
 
             auto txn = Transaction::transactionFromSQL (
-                ledgerSeq, status, rawTxn, Validate::NO, app_);
+                ledgerSeq, status, rawTxn, app_);
 
             if (txnMeta.empty ())
             { // Work around a bug that could leave the metadata missing
@@ -1685,9 +1684,10 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
                     pendSaveValidated(app_, ledger, false, false);
             }
 
-            ret.emplace_back (txn, std::make_shared<TxMeta> (
-                txn->getID (), txn->getLedger (), txnMeta,
-                app_.journal ("TxMeta")));
+            if (txn)
+                ret.emplace_back (txn, std::make_shared<TxMeta> (
+                    txn->getID (), txn->getLedger (), txnMeta,
+                        app_.journal("TxMeta")));
         }
     }
 

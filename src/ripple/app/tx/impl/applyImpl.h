@@ -35,9 +35,9 @@ validity constraints that do not require a ledger.
 other things, the TER code.
 */
 PreflightResult
-preflight(Rules const& rules, STTx const& tx,
-    ApplyFlags flags, SigVerify verify,
-    Config const& config, beast::Journal j);
+preflight(Application& app, Rules const& rules,
+    STTx const& tx, ApplyFlags flags,
+        beast::Journal j);
 
 /** Gate a transaction based on static ledger information.
 

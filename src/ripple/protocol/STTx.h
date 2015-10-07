@@ -139,14 +139,6 @@ private:
 
 bool passesLocalChecks (STObject const& st, std::string&);
 
-using SigVerify = std::function < bool(STTx const&, std::function<bool(STTx const&)>) > ;
-
-inline
-bool directSigVerify(STTx const& tx, std::function<bool(STTx const&)> sigCheck)
-{
-    return sigCheck(tx);
-}
-
 } // ripple
 
 #endif
