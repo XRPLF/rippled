@@ -2157,7 +2157,9 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             (std::min(packet.querydepth(), 3u)) :
             (isHighLatency() ? 2 : 1);
 
-    for (int i = 0; i < packet.nodeids ().size (); ++i)
+    for (int i = 0;
+            (i < packet.nodeids().size() &&
+            (reply.nodes().size() < Tuning::maxReplyNodes)); ++i)
     {
         SHAMapNodeID mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
 
@@ -2248,10 +2250,17 @@ PeerImp::getScore (bool haveItem) const
 
    // Score for being very likely to have the thing we are
    // look for
+   // Should be roughly spRandom
    static const int spHaveItem =   10000;
 
    // Score reduction for each millisecond of latency
-   static const int spLatency  =     100;
+   // Should be roughly spRandom divided by
+   // the maximum reasonable latency
+   static const int spLatency  =      30;
+
+   // Penalty for unknown latency
+   // Should be roughly spRandom
+   static const int spNoLatency =   8000;
 
    int score = rand() % spRandom;
 
@@ -2266,6 +2275,8 @@ PeerImp::getScore (bool haveItem) const
    }
    if (latency != std::chrono::milliseconds (-1))
        score -= latency.count() * spLatency;
+   else
+       score -= spNoLatency;
 
    return score;
 }

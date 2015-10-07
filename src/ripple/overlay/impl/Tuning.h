@@ -46,9 +46,13 @@ enum
         consider it insane */
     insaneLedgerLimit   =  128,
 
+    /** The maximum number of ledger entries in a single
+        reply */
+    maxReplyNodes       = 8192,
+
     /** How many milliseconds to consider high latency
         on a peer connection */
-    peerHighLatency     =  120,
+    peerHighLatency     =  250,
 
     /** How often we check connections (seconds) */
     checkSeconds        =   10,

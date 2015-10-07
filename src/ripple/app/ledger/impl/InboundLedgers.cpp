@@ -144,7 +144,6 @@ public:
     */
     // means "We got some data from an inbound ledger"
 
-    // VFALCO TODO Why is hash passed by value?
     // VFALCO TODO Remove the dependency on the Peer object.
     /** We received a TMLedgerData from a peer.
     */

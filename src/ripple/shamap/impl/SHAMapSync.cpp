@@ -207,7 +207,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                                  !static_cast<SHAMapInnerNode*>(d)->isFullBelow(generation))
                         {
                             stack.push (std::make_tuple (node, nodeID,
-                                          firstChild, currentChild, fullBelow));
+                                  firstChild, currentChild, fullBelow));
 
                             // Switch to processing the child node
                             node = static_cast<SHAMapInnerNode*>(d);

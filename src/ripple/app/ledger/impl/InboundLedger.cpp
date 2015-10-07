@@ -55,6 +55,15 @@ enum
 
     // How many nodes to consider a fetch "small"
     ,fetchSmallNodes = 32
+
+    // Number of nodes to find initially
+    ,missingNodesFind = 256
+
+    // Number of nodes to request for a reply
+    ,reqNodesReply = 128
+
+    // Number of nodes to request blindly
+    ,reqNodes = 8
 };
 
 InboundLedger::InboundLedger (
@@ -111,7 +120,15 @@ InboundLedger::~InboundLedger ()
         if (entry.second->type () == protocol::liAS_NODE)
             app_.getInboundLedgers().gotStaleData(entry.second);
     }
-
+    if (! isDone())
+    {
+        JLOG (m_journal.debug) <<
+            "Acquire " << mHash << " abort " <<
+            ((getTimeouts () == 0) ? std::string() :
+                (std::string ("timeouts:") +
+                to_string (getTimeouts ()) + " ")) <<
+            mStats.get ();
+    }
 }
 
 void InboundLedger::init (ScopedLockType& collectionLock)
@@ -291,7 +308,6 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
     {
         checkLocal();
 
-        mAggressive = true;
         mByHash = true;
 
         std::size_t pc = getPeerCount ();
@@ -304,10 +320,10 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         // otherwise, we need to trigger before we add
         // so each peer gets triggered once
         if (mReason != fcHISTORY)
-            trigger (Peer::ptr ());
+            trigger (Peer::ptr (), TriggerReason::trTimeout);
         addPeers ();
         if (mReason == fcHISTORY)
-            trigger (Peer::ptr ());
+            trigger (Peer::ptr (), TriggerReason::trTimeout);
     }
 }
 
@@ -350,8 +366,13 @@ void InboundLedger::done ()
     mSignaled = true;
     touch ();
 
-    if (m_journal.trace) m_journal.trace <<
-        "Done acquiring ledger " << mHash;
+    JLOG (m_journal.debug) <<
+        "Acquire " << mHash <<
+        (isFailed () ? " fail " : " ") <<
+        ((getTimeouts () == 0) ? std::string() :
+            (std::string ("timeouts:") +
+            to_string (getTimeouts ()) + " ")) <<
+        mStats.get ();
 
     assert (isComplete () || isFailed ());
 
@@ -391,7 +412,7 @@ bool InboundLedger::addOnComplete (
 
 /** Request more nodes, perhaps from a specific peer
 */
-void InboundLedger::trigger (Peer::ptr const& peer)
+void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
 {
     ScopedLockType sl (mLock);
 
@@ -515,9 +536,16 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     if (mLedger)
         tmGL.set_ledgerseq (mLedger->info().seq);
 
-    // If the peer has high latency, query extra deep
-    if (peer && peer->isHighLatency ())
+    if (reason != TriggerReason::trReply)
+    {
+        // If we're querying blind, don't query deep
+        tmGL.set_querydepth (0);
+    }
+    else if (peer && peer->isHighLatency ())
+    {
+        // If the peer has high latency, query extra deep
         tmGL.set_querydepth (2);
+    }
     else
         tmGL.set_querydepth (1);
 
@@ -546,15 +574,14 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         {
             std::vector<SHAMapNodeID> nodeIDs;
             std::vector<uint256> nodeHashes;
-            // VFALCO Why 256? Make this a constant
-            nodeIDs.reserve (256);
-            nodeHashes.reserve (256);
+            nodeIDs.reserve (missingNodesFind);
+            nodeHashes.reserve (missingNodesFind);
             AccountStateSF filter(app_);
 
             // Release the lock while we process the large state map
             sl.unlock();
             mLedger->stateMap().getMissingNodes (
-                nodeIDs, nodeHashes, 256, &filter);
+                nodeIDs, nodeHashes, missingNodesFind, &filter);
             sl.lock();
 
             // Make sure nothing happened while we released the lock
@@ -574,9 +601,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 }
                 else
                 {
-                    // VFALCO Why 128? Make this a constant
-                    if (!mAggressive)
-                        filterNodes (nodeIDs, nodeHashes, 128, !isProgress ());
+                    filterNodes (nodeIDs, nodeHashes, reason);
 
                     if (!nodeIDs.empty ())
                     {
@@ -631,11 +656,11 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         {
             std::vector<SHAMapNodeID> nodeIDs;
             std::vector<uint256> nodeHashes;
-            nodeIDs.reserve (256);
-            nodeHashes.reserve (256);
+            nodeIDs.reserve (missingNodesFind);
+            nodeHashes.reserve (missingNodesFind);
             TransactionStateSF filter(app_);
             mLedger->txMap().getMissingNodes (
-                nodeIDs, nodeHashes, 256, &filter);
+                nodeIDs, nodeHashes, missingNodesFind, &filter);
 
             if (nodeIDs.empty ())
             {
@@ -651,8 +676,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
             }
             else
             {
-                if (!mAggressive)
-                    filterNodes (nodeIDs, nodeHashes, 128, !isProgress ());
+                filterNodes (nodeIDs, nodeHashes, reason);
 
                 if (!nodeIDs.empty ())
                 {
@@ -687,10 +711,15 @@ void InboundLedger::trigger (Peer::ptr const& peer)
 }
 
 void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
-    std::vector<uint256>& nodeHashes, int max, bool aggressive)
+    std::vector<uint256>& nodeHashes, TriggerReason reason)
 {
     // ask for new nodes in preference to ones we've already asked for
     assert (nodeIDs.size () == nodeHashes.size ());
+
+    int const max = (reason == TriggerReason::trReply) ?
+        reqNodesReply : reqNodes;
+    bool const aggressive =
+        (reason == TriggerReason::trTimeout);
 
     std::vector<bool> duplicates;
     duplicates.reserve (nodeIDs.size ());
@@ -711,7 +740,9 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
     if (dupCount == nodeIDs.size ())
     {
         // all duplicates
-        if (!aggressive)
+        // we don't want to send any query at all
+        // except on a timeout, where we need to query everyone
+        if (! aggressive)
         {
             nodeIDs.clear ();
             nodeHashes.clear ();
@@ -735,7 +766,8 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
                     nodeHashes[insertPoint] = nodeHashes[i];
                 }
 
-                ++insertPoint;
+                if (++insertPoint >= max)
+                    break;
             }
 
         if (m_journal.trace) m_journal.trace <<
@@ -790,8 +822,6 @@ bool InboundLedger::takeHeader (std::string const& data)
     s.addRaw (data.data(), data.size());
     app_.getNodeStore ().store (
         hotLEDGER, std::move (s.modData ()), mHash);
-
-    progress ();
 
     if (mLedger->info().txHash.isZero ())
         mHaveTransactions = true;
@@ -859,7 +889,6 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
         }
     }
 
-    progress ();
     return true;
 }
 
@@ -934,7 +963,6 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         }
     }
 
-    progress ();
     return true;
 }
 
@@ -952,7 +980,6 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
     if (!mHaveHeader)
     {
         assert(false);
-        san.incInvalid();
         return false;
     }
 
@@ -976,7 +1003,6 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
     if (!mHaveHeader)
     {
         assert(false);
-        san.incInvalid();
         return false;
     }
 
@@ -1030,6 +1056,9 @@ bool InboundLedger::gotData (std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> data)
 {
     ScopedLockType sl (mReceivedDataLock);
+
+    if (isDone ())
+        return false;
 
     mReceivedData.push_back (PeerDataPairType (peer, data));
 
@@ -1093,12 +1122,10 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
                 "Included TX root invalid";
         }
 
-        if (!san.isInvalid ())
+        if (san.isUseful ())
             progress ();
-        else
-            if (m_journal.debug) m_journal.debug <<
-                "Peer sends invalid base data";
 
+        mStats += san;
         return san.getGood ();
     }
 
@@ -1136,28 +1163,26 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
                 node.nodedata ().end ()));
         }
 
-        SHAMapAddNode ret;
+        SHAMapAddNode san;
 
         if (packet.type () == protocol::liTX_NODE)
         {
-            takeTxNode (nodeIDs, nodeData, ret);
+            takeTxNode (nodeIDs, nodeData, san);
             if (m_journal.debug) m_journal.debug <<
-                "Ledger TX node stats: " << ret.get();
+                "Ledger TX node stats: " << san.get();
         }
         else
         {
-            takeAsNode (nodeIDs, nodeData, ret);
+            takeAsNode (nodeIDs, nodeData, san);
             if (m_journal.debug) m_journal.debug <<
-                "Ledger AS node stats: " << ret.get();
+                "Ledger AS node stats: " << san.get();
         }
 
-        if (!ret.isInvalid ())
+        if (san.isUseful ())
             progress ();
-        else
-            if (m_journal.debug) m_journal.debug <<
-                "Peer sends invalid node data";
 
-        return ret.getGood ();
+        mStats += san;
+        return san.getGood ();
     }
 
     return -1;
@@ -1196,8 +1221,8 @@ void InboundLedger::runData ()
                 int count = processData (peer, *(entry.second));
                 if (count > chosenPeerCount)
                 {
-                    chosenPeer = peer;
                     chosenPeerCount = count;
+                    chosenPeer = std::move (peer);
                 }
             }
         }
@@ -1205,7 +1230,7 @@ void InboundLedger::runData ()
     } while (1);
 
     if (chosenPeer)
-        trigger (chosenPeer);
+        trigger (chosenPeer, TriggerReason::trReply);
 }
 
 Json::Value InboundLedger::getJson (int)

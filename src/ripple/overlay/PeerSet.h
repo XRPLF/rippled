@@ -81,7 +81,6 @@ public:
     void progress ()
     {
         mProgress = true;
-        mAggressive = false;
     }
 
     void touch ()
@@ -167,7 +166,6 @@ protected:
     int mTimeouts;
     bool mComplete;
     bool mFailed;
-    bool mAggressive;
     bool mTxnData;
     clock_type::time_point mLastAction;
     bool mProgress;

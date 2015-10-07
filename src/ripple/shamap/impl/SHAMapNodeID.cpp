@@ -61,7 +61,7 @@ SHAMapNodeID::SHAMapNodeID (int depth, uint256 const& hash)
     : mNodeID (hash), mDepth (depth)
 {
     assert ((depth >= 0) && (depth < 65));
-    mNodeID &= Masks(depth);
+    assert (mNodeID == (mNodeID & Masks(depth)));
 }
 
 SHAMapNodeID::SHAMapNodeID (void const* ptr, int len)
