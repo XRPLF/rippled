@@ -206,8 +206,9 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                         else if (d->isInner() &&
                                  !static_cast<SHAMapInnerNode*>(d)->isFullBelow(generation))
                         {
-                            stack.push (std::make_tuple (node, nodeID,
-                                          firstChild, currentChild, fullBelow));
+                            if (currentChild < 16)
+                                stack.push (std::make_tuple (node, nodeID,
+                                      firstChild, currentChild, fullBelow));
 
                             // Switch to processing the child node
                             node = static_cast<SHAMapInnerNode*>(d);

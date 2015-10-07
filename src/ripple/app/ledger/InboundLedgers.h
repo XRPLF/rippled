@@ -49,7 +49,6 @@ public:
 
     virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
 
-    // VFALCO TODO Why is hash passed by value?
     // VFALCO TODO Remove the dependency on the Peer object.
     //
     virtual bool gotLedgerData (LedgerHash const& ledgerHash,

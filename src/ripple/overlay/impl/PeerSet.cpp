@@ -45,7 +45,6 @@ PeerSet::PeerSet (Application& app, uint256 const& hash, int interval, bool txnD
     , mTimeouts (0)
     , mComplete (false)
     , mFailed (false)
-    , mAggressive (false)
     , mTxnData (txnData)
     , mProgress (false)
     , mTimer (app_.getIOService ())
