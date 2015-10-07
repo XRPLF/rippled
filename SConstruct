@@ -76,9 +76,7 @@ GCC 5 support: There is transitional support for user-installed gcc 5. Setting
     user builds C++ dependencies themselves - such as boost - they must either be
     built with gcc 4 or with the preprocessor flag `_GLIBCXX_USE_CXX11_ABI` set to
     zero. When linux distros upgrade to gcc 5, the transitional support will be
-    removed. To enable C++-14 support, define the environment variable `RIPPLED_USE_CPP_14`
-    to one. This is also transitional and will be removed when we permanently enable C++ 14
-    support.
+    removed.
 
 '''
 #
@@ -123,7 +121,6 @@ BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
 OPENSSL_ERROR = ('Your openSSL was built on %s; '
                  'rippled needs a version built on or after %s.')
 UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
-USE_CPP_14 = os.getenv('RIPPLED_USE_CPP_14')
 
 def check_openssl():
     if Beast.system.platform in CHECK_PLATFORMS:
@@ -287,16 +284,12 @@ def config_base(env):
         ,{'HAVE_USLEEP' : '1'}
         ,{'SOCI_CXX_C11' : '1'}
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
-        ])
-
-    if USE_CPP_14:
-        env.Append(CPPDEFINES=[
-            '-DBEAST_NO_CXX14_COMPATIBILITY',
-            '-DBEAST_NO_CXX14_INTEGER_SEQUENCE',
-            '-DBEAST_NO_CXX14_MAKE_UNIQUE',
-            '-DBEAST_NO_CXX14_EQUAL',
-            '-DBOOST_NO_AUTO_PTR',
-            '-DBEAST_NO_CXX14_MAKE_REVERSE_ITERATOR',
+        ,'-DBEAST_NO_CXX14_COMPATIBILITY'
+        ,'-DBEAST_NO_CXX14_INTEGER_SEQUENCE'
+        ,'-DBEAST_NO_CXX14_MAKE_UNIQUE'
+        ,'-DBEAST_NO_CXX14_EQUAL'
+        ,'-DBOOST_NO_AUTO_PTR'
+        ,'-DBEAST_NO_CXX14_MAKE_REVERSE_ITERATOR'
         ])
 
     try:
@@ -396,7 +389,7 @@ def config_env(toolchain, variant, env):
 
         env.Append(CXXFLAGS=[
             '-frtti',
-            '-std=c++14' if USE_CPP_14 else '-std=c++11',
+            '-std=c++14',
             '-Wno-invalid-offsetof'])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
