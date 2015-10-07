@@ -39,7 +39,7 @@
 #include <cstdint>
 #include <cstddef>
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 #include <sys/uio.h>
 #endif
 

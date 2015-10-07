@@ -27,6 +27,7 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 namespace ripple {
 

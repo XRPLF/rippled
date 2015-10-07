@@ -25,10 +25,10 @@
 #ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
-#include <ripple/basics/ByteOrder.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/hardened_hash.h>
+#include <beast/ByteOrder.h>
 #include <beast/utility/Zero.h>
 #include <boost/functional/hash.hpp>
 #include <functional>
@@ -206,7 +206,7 @@ public:
             std::uint64_t ul;
         };
         // Put in least significant bits.
-        ul = htobe64 (uHost);
+        ul = beast::ByteOrder::bigEndianInt64 (&uHost);
         pn[WIDTH-2] = u[0];
         pn[WIDTH-1] = u[1];
         return *this;
@@ -236,10 +236,8 @@ public:
         return *this;
     }
 
-    // be32toh and htobe32 are macros that somehow cause shadowing
-    // warnings in this header file, so we hide them...
-    static uint32_t bigendToHost (uint32_t x) { return be32toh(x); }
-    static uint32_t hostToBigend (uint32_t x) { return htobe32(x); }
+    static uint32_t bigendToHost (uint32_t x) { return beast::ByteOrder::isBigEndian() ? beast::ByteOrder::bigEndianInt(&x) : beast::ByteOrder::swapIfBigEndian(x); }
+    static uint32_t hostToBigend (uint32_t x) { return beast::ByteOrder::bigEndianInt(&x); }
 
     base_uint& operator++ ()
     {

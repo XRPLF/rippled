@@ -297,7 +297,7 @@ void Config::load ()
     if (!QUIET)
         std::cerr << "Loading: " << CONFIG_FILE << "\n";
 
-    std::ifstream ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
+    boost::filesystem::ifstream ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
 
     if (!ifsConfig)
     {
