@@ -28,8 +28,8 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
-#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace beast {
 

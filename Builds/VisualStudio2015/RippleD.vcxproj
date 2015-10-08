@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
     <ProjectGuid>{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}</ProjectGuid>
@@ -380,25 +380,7 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\algorithm.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\config.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\cxx14\cxx14.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\functional.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\iterator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\memory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\cxx14\tests\integer_sequence.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
     </ClInclude>

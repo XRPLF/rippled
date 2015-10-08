@@ -25,15 +25,17 @@
 #include <beast/container/aged_container.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/utility/empty_base_optimization.h>
+#include <beast/utility/empty_base_optimization.h>
+#include <beast/cxx14/type_traits.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/version.hpp>
-#include <beast/cxx14/algorithm.h> // <algorithm>
+#include <algorithm>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <utility>
 
 namespace beast {

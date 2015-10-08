@@ -25,7 +25,7 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/optional.hpp>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <string>
 
 namespace beast {
