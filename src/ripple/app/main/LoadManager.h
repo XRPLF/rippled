@@ -20,11 +20,14 @@
 #ifndef RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <thread>
+#include <mutex>
 
 namespace ripple {
+
+class Application;
 
 /** Manages load sources.
 
@@ -39,15 +42,28 @@ namespace ripple {
 */
 class LoadManager : public beast::Stoppable
 {
-protected:
-    explicit LoadManager (Stoppable& parent);
+public:
+    // It would be better if the LoadManager constructor could be private
+    // with std::make_unique as a friend.  But Visual Studio can't currently
+    // swallow the following friend declaration (Microsoft (R) C/C++
+    // Optimizing Compiler Version 19.00.23026 for x64).  So we make the
+    // constructor public.
+//  template<class T, class... Args>
+//  friend std::unique_ptr<T> std::make_unique (Args&&... args);
+
+    // Should only be constructible by std::make_unique.
+    LoadManager (Application& app, Stoppable& parent, beast::Journal journal);
 
 public:
+    LoadManager () = delete;
+    LoadManager (LoadManager const&) = delete;
+    LoadManager& operator=(LoadManager const&) = delete;
+
     /** Destroy the manager.
 
         The destructor returns only after the thread has stopped.
     */
-    virtual ~LoadManager () = default;
+    ~LoadManager ();
 
     /** Turn on deadlock detection.
 
@@ -57,23 +73,46 @@ public:
 
         @see resetDeadlockDetector
     */
-    // VFALCO NOTE it seems that the deadlock detector has an "armed" state to prevent it
-    //             from going off during program startup if there's a lengthy initialization
-    //             operation taking place?
+    // VFALCO NOTE it seems that the deadlock detector has an "armed" state
+    //             to prevent it from going off during program startup if
+    //             there's a lengthy initialization operation taking place?
     //
-    virtual void activateDeadlockDetector () = 0;
+    void activateDeadlockDetector ();
 
     /** Reset the deadlock detection timer.
 
         A dedicated thread monitors the deadlock timer, and if too much
         time passes it will produce log warnings.
     */
-    virtual void resetDeadlockDetector () = 0;
+    void resetDeadlockDetector ();
+
+    //--------------------------------------------------------------------------
+
+    // Stoppable members
+    void onPrepare () override;
+
+    void onStart () override;
+
+    void onStop () override;
+
+private:
+    void run ();
+
+private:
+    Application& app_;
+    beast::Journal journal_;
+
+    std::thread thread_;
+    std::mutex mutex_;          // Guards deadLock_, armed_, and stop_.
+
+    int deadLock_;              // Detect server deadlocks.
+    bool armed_;
+    bool stop_;
 };
 
 std::unique_ptr<LoadManager>
-make_LoadManager (Application& app,
-    beast::Stoppable& parent, beast::Journal journal);
+make_LoadManager (
+    Application& app, beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple
 
