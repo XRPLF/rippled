@@ -31,9 +31,30 @@ class TrafficCount
 {
 
 public:
-    using Count_t = std::pair<
-        std::atomic <unsigned long>,
-        std::atomic <unsigned long> >;
+
+    using count_t = std::atomic <unsigned long>;
+
+    class TrafficStats
+    {
+        public:
+
+        count_t bytesIn;
+        count_t bytesOut;
+        count_t messagesIn;
+        count_t messagesOut;
+
+        TrafficStats() : bytesIn(0), bytesOut(0),
+            messagesIn(0), messagesOut(0)
+        { ; }
+
+        TrafficStats(const TrafficStats& ts)
+            : bytesIn (ts.bytesIn.load())
+            , bytesOut (ts.bytesOut.load())
+            , messagesIn (ts.messagesIn.load())
+            , messagesOut (ts.messagesOut.load())
+        { ; }
+    };
+
 
     enum class category
     {
@@ -58,9 +79,15 @@ public:
     void addCount (category cat, bool inbound, int number)
     {
         if (inbound)
-            counts_[cat].first += number;
+        {
+            counts_[cat].bytesIn += number;
+            ++counts_[cat].messagesIn;
+        }
         else
-            counts_[cat].second += number;
+        {
+            counts_[cat].bytesOut += number;
+            ++counts_[cat].messagesOut;
+        }
     }
 
     TrafficCount()
@@ -69,24 +96,20 @@ public:
             i <= category::CT_unknown;
             i = static_cast<category>(static_cast<int>(i) + 1))
         {
-            counts_[i].first.store (0l);
-            counts_[i].second.store (0l);
+            counts_[i];
         }
     }
 
-    std::map <std::string, std::pair <unsigned long, unsigned long>>
+    std::map <std::string, TrafficStats>
     getCounts () const
     {
-        std::map <std::string,
-            std::pair <unsigned long, unsigned long>>
-                ret;
+        std::map <std::string, TrafficStats> ret;
 
         for (auto& i : counts_)
         {
-            ret.emplace (getName (i.first),
-                std::make_pair (
-                    i.second.first.load(),
-                    i.second.second.load()));
+            ret.emplace (std::piecewise_construct,
+                std::forward_as_tuple (getName (i.first)),
+                std::forward_as_tuple (i.second));
         }
 
         return ret;
@@ -94,7 +117,7 @@ public:
 
     protected:
 
-    std::map <category, Count_t> counts_;
+    std::map <category, TrafficStats> counts_;
 };
 
 }

@@ -593,15 +593,23 @@ OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
     auto stats = m_traffic.getCounts();
     for (auto& i : stats)
     {
-        if (! i.second.first && ! i.second.second)
+        if (! i.second.messagesIn && ! i.second.messagesOut)
             continue;
 
         beast::PropertyStream::Map item (set);
         item["category"] = i.first;
         item["bytes_in"] =
-            beast::lexicalCast<std::string>(i.second.first);
+            beast::lexicalCast<std::string>
+                (i.second.bytesIn.load());
+        item["messages_in"] =
+            beast::lexicalCast<std::string>
+                (i.second.messagesIn.load());
         item["bytes_out"] =
-            beast::lexicalCast<std::string>(i.second.second);
+            beast::lexicalCast<std::string>
+                (i.second.bytesOut.load());
+        item["messages_out"] =
+            beast::lexicalCast<std::string>
+                (i.second.messagesOut.load());
     }
 }
 
