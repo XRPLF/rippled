@@ -62,6 +62,7 @@ enum error_code_i
     rpcACT_NOT_FOUND,
     rpcINSUF_FUNDS,
     rpcLGR_NOT_FOUND,
+    rpcLGR_NOT_VALIDATED,
     rpcMASTER_DISABLED,
     rpcNO_ACCOUNT,
     rpcNO_PATH,

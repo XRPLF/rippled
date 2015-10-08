@@ -77,6 +77,7 @@ public:
         add (rpcLGR_IDXS_INVALID,      "lgrIdxsInvalid",    "Ledger indexes invalid.");
         add (rpcLGR_IDX_MALFORMED,     "lgrIdxMalformed",   "Ledger index malformed.");
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
+        add (rpcLGR_NOT_VALIDATED,     "lgrNotValidated",   "Ledger not validated.");
         add (rpcLOAD_FAILED,           "loadFailed",        "Load failed");
         add (rpcMASTER_DISABLED,       "masterDisabled",    "Master key is disabled.");
         add (rpcNOT_ENABLED,           "notEnabled",        "Not enabled in configuration.");

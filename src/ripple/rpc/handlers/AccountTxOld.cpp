@@ -119,6 +119,13 @@ Json::Value doAccountTxOld (RPC::Context& context)
         if (!ledger)
             return ret;
 
+        if (! ret[jss::validated].asBool() ||
+            (ledger->info().seq > uValidatedMax) ||
+            (ledger->info().seq < uValidatedMin))
+        {
+            return rpcError (rpcLGR_NOT_VALIDATED);
+        }
+
         uLedgerMin = uLedgerMax = ledger->info().seq;
     }
 

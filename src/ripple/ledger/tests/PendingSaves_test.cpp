@@ -2,11 +2,9 @@
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -18,24 +16,46 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/PendingSaves.h>
+#include <beast/unit_test/suite.h>
 
-#include <ripple/ledger/impl/ApplyStateTable.cpp>
-#include <ripple/ledger/impl/ApplyViewBase.cpp>
-#include <ripple/ledger/impl/ApplyViewImpl.cpp>
-#include <ripple/ledger/impl/BookDirs.cpp>
-#include <ripple/ledger/impl/CachedSLEs.cpp>
-#include <ripple/ledger/impl/CachedView.cpp>
-#include <ripple/ledger/impl/Directory.cpp>
-#include <ripple/ledger/impl/OpenView.cpp>
-#include <ripple/ledger/impl/PaymentSandbox.cpp>
-#include <ripple/ledger/impl/RawStateTable.cpp>
-#include <ripple/ledger/impl/ReadView.cpp>
-#include <ripple/ledger/impl/TxMeta.cpp>
-#include <ripple/ledger/impl/View.cpp>
+namespace ripple {
+namespace test {
 
-#include <ripple/ledger/tests/BookDirs_test.cpp>
-#include <ripple/ledger/tests/Directory_test.cpp>
-#include <ripple/ledger/tests/PaymentSandbox_test.cpp>
-#include <ripple/ledger/tests/SkipList_test.cpp>
-#include <ripple/ledger/tests/View_test.cpp>
-#include <ripple/ledger/tests/PendingSaves_test.cpp>
+struct PendingSaves_test : public beast::unit_test::suite
+{
+    void testSaves()
+    {
+        PendingSaves ps;
+
+        // Basic test
+        expect (!ps.pending (0));
+        expect (!ps.startWork(0));
+        expect (ps.shouldWork (0, true));
+        expect (ps.startWork (0));
+        expect (ps.pending (0));
+        expect (! ps.shouldWork (0, false));
+        ps.finishWork(0);
+        expect (!ps.pending (0));
+
+        // Test work stealing
+        expect (ps.shouldWork (0, false));
+        expect (ps.pending (0));
+        expect (ps.shouldWork (0, true));
+        expect (ps.pending (0));
+        expect (ps.startWork (0));
+        expect (!ps.startWork (0));
+        ps.finishWork(0);
+        expect (! ps.pending (0));
+    }
+
+    void run() override
+    {
+        testSaves();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(PendingSaves,ledger,ripple);
+
+} // test
+} // ripple
