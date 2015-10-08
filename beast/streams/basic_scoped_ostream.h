@@ -20,7 +20,7 @@
 #ifndef BEAST_STREAMS_BASIC_SCOPED_OSTREAM_H_INCLUDED
 #define BEAST_STREAMS_BASIC_SCOPED_OSTREAM_H_INCLUDED
 
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 #include <functional>
 #include <memory>

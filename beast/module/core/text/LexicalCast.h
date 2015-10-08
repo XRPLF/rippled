@@ -28,7 +28,7 @@
 #include <iterator>
 #include <limits>
 #include <string>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 

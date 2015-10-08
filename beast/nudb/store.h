@@ -45,7 +45,7 @@
 #include <cstring>
 #include <exception>
 #include <limits>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <string>

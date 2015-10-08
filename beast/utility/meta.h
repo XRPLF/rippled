@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_META_H_INCLUDED
 #define BEAST_UTILITY_META_H_INCLUDED
 
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace beast {
 

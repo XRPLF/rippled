@@ -28,7 +28,7 @@
 #include <cassert>
 #include <memory>
 #include <exception>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <string>
 #include <utility>
 

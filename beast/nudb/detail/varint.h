@@ -23,7 +23,7 @@
 #include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
 #include <beast/nudb/detail/stream.h>
 #include <cstdint>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace beast {
 namespace nudb {

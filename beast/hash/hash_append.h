@@ -36,8 +36,8 @@
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
-#include <beast/cxx14/type_traits.h> // <type_traits>
-#include <beast/cxx14/utility.h> // <utility>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace beast {
