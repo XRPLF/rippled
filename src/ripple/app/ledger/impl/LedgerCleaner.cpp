@@ -29,6 +29,7 @@
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <mutex>
 #include <thread>
 
 namespace ripple {
@@ -52,38 +53,24 @@ class LedgerCleanerImp
     , public beast::Thread
 {
 public:
-    struct State
-    {
-        State()
-            : minRange (0)
-            , maxRange (0)
-            , checkNodes (false)
-            , fixTxns (false)
-            , failures (0)
-        {
-        }
-
-        // The lowest ledger in the range we're checking.
-        LedgerIndex  minRange;
-
-        // The highest ledger in the range we're checking
-        LedgerIndex  maxRange;
-
-        // Check all state/transaction nodes
-        bool checkNodes;
-
-        // Rewrite SQL databases
-        bool fixTxns;
-
-        // Number of errors encountered since last success
-        int failures;
-    };
-
-    using SharedState = beast::SharedData <State>;
-
     Application& app_;
-    SharedState m_state;
     beast::Journal m_journal;
+    std::mutex lock_;
+
+    // The lowest ledger in the range we're checking.
+    LedgerIndex  minRange_ = 0;
+
+    // The highest ledger in the range we're checking
+    LedgerIndex  maxRange_ = 0;
+
+    // Check all state/transaction nodes
+    bool checkNodes_ = false;
+
+    // Rewrite SQL databases
+    bool fixTxns_ = false;
+
+    // Number of errors encountered since last success
+    int failures_ = 0;
 
     //--------------------------------------------------------------------------
 
@@ -133,19 +120,19 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        SharedState::Access state (m_state);
+        std::lock_guard<std::mutex> _(lock_);
 
-        if (state->maxRange == 0)
+        if (maxRange_ == 0)
             map["status"] = "idle";
         else
         {
             map["status"] = "running";
-            map["min_ledger"] = state->minRange;
-            map["max_ledger"] = state->maxRange;
-            map["check_nodes"] = state->checkNodes ? "true" : "false";
-            map["fix_txns"] = state->fixTxns ? "true" : "false";
-            if (state->failures > 0)
-                map["fail_counts"] = state->failures;
+            map["min_ledger"] = minRange_;
+            map["max_ledger"] = maxRange_;
+            map["check_nodes"] = checkNodes_ ? "true" : "false";
+            map["fix_txns"] = fixTxns_ ? "true" : "false";
+            if (failures_ > 0)
+                map["fail_counts"] = failures_;
         }
     }
 
@@ -162,13 +149,13 @@ public:
         app_.getLedgerMaster().getFullValidatedRange (minRange, maxRange);
 
         {
-            SharedState::Access state (m_state);
+            std::lock_guard<std::mutex> _(lock_);
 
-            state->maxRange = maxRange;
-            state->minRange = minRange;
-            state->checkNodes = false;
-            state->fixTxns = false;
-            state->failures = 0;
+            maxRange_ = maxRange;
+            minRange_ = minRange;
+            checkNodes_ = false;
+            fixTxns_ = false;
+            failures_ = 0;
 
             /*
             JSON Parameters:
@@ -203,29 +190,29 @@ public:
             // Quick way to fix a single ledger
             if (params.isMember(jss::ledger))
             {
-                state->maxRange = params[jss::ledger].asUInt();
-                state->minRange = params[jss::ledger].asUInt();
-                state->fixTxns = true;
-                state->checkNodes = true;
+                maxRange_ = params[jss::ledger].asUInt();
+                minRange_ = params[jss::ledger].asUInt();
+                fixTxns_ = true;
+                checkNodes_ = true;
             }
 
             if (params.isMember(jss::max_ledger))
-                 state->maxRange = params[jss::max_ledger].asUInt();
+                 maxRange_ = params[jss::max_ledger].asUInt();
 
             if (params.isMember(jss::min_ledger))
-                state->minRange = params[jss::min_ledger].asUInt();
+                minRange_ = params[jss::min_ledger].asUInt();
 
             if (params.isMember(jss::full))
-                state->fixTxns = state->checkNodes = params[jss::full].asBool();
+                fixTxns_ = checkNodes_ = params[jss::full].asBool();
 
             if (params.isMember(jss::fix_txns))
-                state->fixTxns = params[jss::fix_txns].asBool();
+                fixTxns_ = params[jss::fix_txns].asBool();
 
             if (params.isMember(jss::check_nodes))
-                state->checkNodes = params[jss::check_nodes].asBool();
+                checkNodes_ = params[jss::check_nodes].asBool();
 
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
-                state->minRange = state->maxRange = 0;
+                minRange_ = maxRange_ = 0;
         }
 
         notify();
@@ -411,16 +398,16 @@ public:
             }
 
             {
-                SharedState::Access state (m_state);
-                if ((state->minRange > state->maxRange) ||
-                    (state->maxRange == 0) || (state->minRange == 0))
+                std::lock_guard<std::mutex> _(lock_);
+                if ((minRange_ > maxRange_) ||
+                    (maxRange_ == 0) || (minRange_ == 0))
                 {
-                    state->minRange = state->maxRange = 0;
+                    minRange_ = maxRange_ = 0;
                     return;
                 }
-                ledgerIndex = state->maxRange;
-                doNodes = state->checkNodes;
-                doTxns = state->fixTxns;
+                ledgerIndex = maxRange_;
+                doNodes = checkNodes_;
+                doTxns = fixTxns_;
             }
 
             ledgerHash = getHash(ledgerIndex, goodLedger);
@@ -441,8 +428,8 @@ public:
             if (fail)
             {
                 {
-                    SharedState::Access state (m_state);
-                    ++state->failures;
+                    std::lock_guard<std::mutex> _(lock_);
+                    ++failures_;
                 }
                 // Wait for acquiring to catch up to us
                 std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -450,12 +437,12 @@ public:
             else
             {
                 {
-                    SharedState::Access state (m_state);
-                    if (ledgerIndex == state->minRange)
-                        ++state->minRange;
-                    if (ledgerIndex == state->maxRange)
-                        --state->maxRange;
-                    state->failures = 0;
+                    std::lock_guard<std::mutex> _(lock_);
+                    if (ledgerIndex == minRange_)
+                        ++minRange_;
+                    if (ledgerIndex == maxRange_)
+                        --maxRange_;
+                    failures_ = 0;
                 }
                 // Reduce I/O pressure and wait for acquiring to catch up to us
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
