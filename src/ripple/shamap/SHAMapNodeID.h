@@ -117,7 +117,8 @@ SHAMapNodeID
 SHAMapNodeID::getParentNodeID () const
 {
     assert (mDepth);
-    return SHAMapNodeID (mDepth - 1, mNodeID);
+    return SHAMapNodeID (mDepth - 1,
+        mNodeID & Masks (mDepth - 1));
 }
 
 inline
