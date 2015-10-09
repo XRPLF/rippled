@@ -139,6 +139,7 @@ JSS ( dir_index );                  // out: DirectoryEntryIterator
 JSS ( dir_root );                   // out: DirectoryEntryIterator
 JSS ( directory );                  // in: LedgerEntry
 JSS ( drops );                      // out: TxQ
+JSS ( duration_us );                // out: NetworkOPs
 JSS ( enabled );                    // out: AmendmentTable
 JSS ( engine_result );              // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_code );         // out: NetworkOPs, TransactionSign, Submit
@@ -339,6 +340,7 @@ JSS ( source_currencies );          // in: PathRequest, RipplePathFind
 JSS ( stand_alone );                // out: NetworkOPs
 JSS ( start );                      // in: TxHistory
 JSS ( state );                      // out: Logic.h, ServerState, LedgerData
+JSS ( state_accounting );           // out: NetworkOPs
 JSS ( state_now );                  // in: Subscribe
 JSS ( status );                     // error
 JSS ( stop );                       // in: LedgerCleaner
@@ -365,6 +367,7 @@ JSS ( transaction );                // in: Tx
 JSS ( transaction_hash );           // out: LedgerProposal, LedgerToJson
 JSS ( transactions );               // out: LedgerToJson,
                                     // in: AccountTx*, Unsubscribe
+JSS ( transitions );                // out: NetworkOPs
 JSS ( treenode_cache_size );        // out: GetCounts
 JSS ( treenode_track_size );        // out: GetCounts
 JSS ( tx );                         // out: STTx, AccountTx*

@@ -84,6 +84,7 @@ class NetworkOPsImp final
     /**
      * Transaction with input flags and results to be applied in batches.
      */
+
     class TransactionStatus
     {
     public:
@@ -116,6 +117,61 @@ class NetworkOPsImp final
         running,
     };
 
+    static std::array<char const*, 5> const states_;
+
+    /**
+     * State accounting records two attributes for each possible server state:
+     * 1) Amount of time spent in each state (in microseconds). This value is
+     *    updated upon each state transition.
+     * 2) Number of transitions to each state.
+     *
+     * This data can be polled through server_info and represented by
+     * monitoring systems similarly to how bandwidth, CPU, and other
+     * counter-based metrics are managed.
+     *
+     * State accounting is more accurate than periodic sampling of server
+     * state. With periodic sampling, it is very likely that state transitions
+     * are missed, and accuracy of time spent in each state is very rough.
+     */
+    class StateAccounting
+    {
+        struct Counters
+        {
+            std::uint32_t transitions = 0;
+            std::chrono::microseconds dur = std::chrono::microseconds (0);
+        };
+
+        OperatingMode mode_ = omDISCONNECTED;
+        std::array<Counters, 5> counters_;
+        mutable std::mutex mutex_;
+        std::chrono::system_clock::time_point start_ =
+            std::chrono::system_clock::now();
+        static std::array<Json::StaticString const, 5> const states_;
+        static Json::StaticString const transitions_;
+        static Json::StaticString const dur_;
+
+    public:
+        explicit StateAccounting ()
+        {
+            counters_[omDISCONNECTED].transitions = 1;
+        }
+
+        /**
+         * Record state transition. Update duration spent in previous
+         * state.
+         *
+         * @param om New state.
+         */
+        void mode (OperatingMode om);
+
+        /**
+         * Output state counters in JSON format.
+         *
+         * @return JSON object.
+         */
+        Json::Value json() const;
+    };
+
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
@@ -141,6 +197,7 @@ public:
         , m_job_queue (job_queue)
         , m_standalone (standalone)
         , m_network_quorum (start_valid ? 0 : network_quorum)
+        , accounting_ ()
     {
     }
 
@@ -486,7 +543,34 @@ private:
     std::mutex mMutex;
     DispatchState mDispatchState = DispatchState::none;
     std::vector <TransactionStatus> mTransactions;
+
+    StateAccounting accounting_;
 };
+
+//------------------------------------------------------------------------------
+
+static std::array<char const*, 5> const stateNames {{
+    "disconnected",
+    "connected",
+    "syncing",
+    "tracking",
+    "full"}};
+
+static_assert (NetworkOPs::omDISCONNECTED == 0, "");
+static_assert (NetworkOPs::omCONNECTED == 1, "");
+static_assert (NetworkOPs::omSYNCING == 2, "");
+static_assert (NetworkOPs::omTRACKING == 3, "");
+static_assert (NetworkOPs::omFULL == 4, "");
+
+std::array<char const*, 5> const NetworkOPsImp::states_ = stateNames;
+
+std::array<Json::StaticString const, 5> const
+NetworkOPsImp::StateAccounting::states_ = {{
+    Json::StaticString(stateNames[0]),
+    Json::StaticString(stateNames[1]),
+    Json::StaticString(stateNames[2]),
+    Json::StaticString(stateNames[3]),
+    Json::StaticString(stateNames[4])}};
 
 //------------------------------------------------------------------------------
 std::string
@@ -626,15 +710,6 @@ void NetworkOPsImp::processClusterTimer ()
 
 std::string NetworkOPsImp::strOperatingMode () const
 {
-    static char const* paStatusToken [] =
-    {
-        "disconnected",
-        "connected",
-        "syncing",
-        "tracking",
-        "full"
-    };
-
     if (mMode == omFULL)
     {
         if (mConsensus->isProposing ())
@@ -644,7 +719,7 @@ std::string NetworkOPsImp::strOperatingMode () const
             return "validating";
     }
 
-    return paStatusToken[mMode];
+    return states_[mMode];
 }
 
 void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans)
@@ -1594,6 +1669,8 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
     mMode = om;
 
+    accounting_.mode (om);
+
     m_journal.info << "STATE->" << strOperatingMode ();
     pubServer ();
 }
@@ -2043,6 +2120,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         else if (lpPublished->info().seq != lpClosed->info().seq)
             info[jss::published_ledger] = lpPublished->info().seq;
     }
+
+    info[jss::state_accounting] = accounting_.json();
 
     return info;
 }
@@ -2990,6 +3069,49 @@ NetworkOPs::NetworkOPs (Stoppable& parent)
 
 NetworkOPs::~NetworkOPs ()
 {
+}
+
+//------------------------------------------------------------------------------
+
+
+void NetworkOPsImp::StateAccounting::mode (OperatingMode om)
+{
+    auto now = std::chrono::system_clock::now();
+
+    std::lock_guard<std::mutex> lock (mutex_);
+    ++counters_[om].transitions;
+    counters_[mode_].dur += std::chrono::duration_cast<
+        std::chrono::microseconds>(now - start_);
+
+    mode_ = om;
+    start_ = now;
+}
+
+Json::Value NetworkOPsImp::StateAccounting::json() const
+{
+    std::unique_lock<std::mutex> lock (mutex_);
+
+    auto counters = counters_;
+    auto const start = start_;
+    auto const mode = mode_;
+
+    lock.unlock();
+
+    counters[mode].dur += std::chrono::duration_cast<
+        std::chrono::microseconds>(std::chrono::system_clock::now() - start);
+
+    Json::Value ret = Json::objectValue;
+
+    for (std::underlying_type_t<OperatingMode> i = omDISCONNECTED;
+        i <= omFULL; ++i)
+    {
+        ret[states_[i]] = Json::objectValue;
+        auto& state = ret[states_[i]];
+        state[jss::transitions] = counters[i].transitions;
+        state[jss::duration_us] = std::to_string (counters[i].dur.count());
+    }
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
