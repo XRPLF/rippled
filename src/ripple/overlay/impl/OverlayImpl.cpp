@@ -201,11 +201,15 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     auto const slot = m_peerFinder->new_inbound_slot (
         beast::IPAddressConversion::from_asio(local_endpoint),
             beast::IPAddressConversion::from_asio(remote_endpoint));
-
     if (slot == nullptr)
     {
-        // self-connect, close
+        if (journal.debug) journal.debug <<
+            "Peer " << remote_endpoint <<
+            " redirected, duplicate or self-connect";
         handoff.moved = false;
+        handoff.response = makeRedirectResponse(slot, request,
+            remote_endpoint.address());
+        handoff.keep_alive = request.keep_alive();
         return handoff;
     }
 
@@ -313,6 +317,7 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     beast::http::message const& request, address_type remote_address)
 {
     Json::Value json(Json::objectValue);
+    if (slot)
     {
         auto const result = m_peerFinder->redirect(slot);
         Json::Value& ips = (json["peer-ips"] = Json::arrayValue);
