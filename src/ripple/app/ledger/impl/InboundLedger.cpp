@@ -122,7 +122,7 @@ InboundLedger::~InboundLedger ()
     }
     if (! isDone())
     {
-        if (m_journal.debug) m_journal.debug <<
+        JLOG (m_journal.debug) <<
             "Acquire " << mHash << " abort " <<
             ((getTimeouts () == 0) ? std::string() :
                 (std::string ("timeouts:") +
@@ -366,7 +366,7 @@ void InboundLedger::done ()
     mSignaled = true;
     touch ();
 
-    if (m_journal.debug) m_journal.debug <<
+    JLOG (m_journal.debug) <<
         "Acquire " << mHash <<
         (isFailed () ? " fail " : " ") <<
         ((getTimeouts () == 0) ? std::string() :
