@@ -93,8 +93,8 @@ public:
     // VFALCO TODO Make this the Listener / Observer pattern
     bool addOnComplete (std::function<void (InboundLedger::pointer)>);
 
-    enum class triggerReason { trAdded, trReply, trTimeout };
-    void trigger (Peer::ptr const&, triggerReason);
+    enum class TriggerReason { trAdded, trReply, trTimeout };
+    void trigger (Peer::ptr const&, TriggerReason);
 
     bool tryLocal ();
     void addPeers ();
@@ -111,7 +111,7 @@ public:
     // VFALCO TODO Replace uint256 with something semanticallyh meaningful
     void filterNodes (
         std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& nodeHashes,
-        triggerReason reason);
+        TriggerReason reason);
 
     /** Return a Json::objectValue. */
     Json::Value getJson (int);
@@ -127,7 +127,7 @@ private:
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
         if (mReason != fcHISTORY)
-            trigger (peer, triggerReason::trAdded);
+            trigger (peer, TriggerReason::trAdded);
     }
 
     std::weak_ptr <PeerSet> pmDowncast ();

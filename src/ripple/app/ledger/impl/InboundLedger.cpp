@@ -320,10 +320,10 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         // otherwise, we need to trigger before we add
         // so each peer gets triggered once
         if (mReason != fcHISTORY)
-            trigger (Peer::ptr (), triggerReason::trTimeout);
+            trigger (Peer::ptr (), TriggerReason::trTimeout);
         addPeers ();
         if (mReason == fcHISTORY)
-            trigger (Peer::ptr (), triggerReason::trTimeout);
+            trigger (Peer::ptr (), TriggerReason::trTimeout);
     }
 }
 
@@ -412,7 +412,7 @@ bool InboundLedger::addOnComplete (
 
 /** Request more nodes, perhaps from a specific peer
 */
-void InboundLedger::trigger (Peer::ptr const& peer, triggerReason reason)
+void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
 {
     ScopedLockType sl (mLock);
 
@@ -536,7 +536,7 @@ void InboundLedger::trigger (Peer::ptr const& peer, triggerReason reason)
     if (mLedger)
         tmGL.set_ledgerseq (mLedger->info().seq);
 
-    if (reason != triggerReason::trReply)
+    if (reason != TriggerReason::trReply)
     {
         // If we're querying blind, don't query deep
         tmGL.set_querydepth (0);
@@ -711,15 +711,15 @@ void InboundLedger::trigger (Peer::ptr const& peer, triggerReason reason)
 }
 
 void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
-    std::vector<uint256>& nodeHashes, triggerReason reason)
+    std::vector<uint256>& nodeHashes, TriggerReason reason)
 {
     // ask for new nodes in preference to ones we've already asked for
     assert (nodeIDs.size () == nodeHashes.size ());
 
-    int const max = (reason == triggerReason::trReply) ?
+    int const max = (reason == TriggerReason::trReply) ?
         reqNodesReply : reqNodes;
     bool const aggressive =
-        (reason == triggerReason::trTimeout);
+        (reason == TriggerReason::trTimeout);
 
     std::vector<bool> duplicates;
     duplicates.reserve (nodeIDs.size ());
@@ -1230,7 +1230,7 @@ void InboundLedger::runData ()
     } while (1);
 
     if (chosenPeer)
-        trigger (chosenPeer, triggerReason::trReply);
+        trigger (chosenPeer, TriggerReason::trReply);
 }
 
 Json::Value InboundLedger::getJson (int)
