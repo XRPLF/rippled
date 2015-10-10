@@ -298,6 +298,9 @@ public:
         if (!nodeLedger)
         {
             m_journal.debug << "Ledger " << ledgerIndex << " not available";
+            app_.getLedgerMaster().clearLedger (ledgerIndex);
+            app_.getInboundLedgers().acquire(
+                ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
             return false;
         }
 
@@ -322,6 +325,7 @@ public:
         if (doNodes && !nodeLedger->walkLedger(app_.journal ("Ledger")))
         {
             m_journal.debug << "Ledger " << ledgerIndex << " is missing nodes";
+            app_.getLedgerMaster().clearLedger (ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
             return false;
