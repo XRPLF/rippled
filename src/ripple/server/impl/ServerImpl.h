@@ -24,7 +24,6 @@
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
 #include <beast/intrusive/List.h>
-#include <beast/threads/SharedData.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
 #include <boost/intrusive/list.hpp>
