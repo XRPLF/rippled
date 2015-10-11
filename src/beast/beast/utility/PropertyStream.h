@@ -21,9 +21,9 @@
 #define BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 
 #include <beast/intrusive/List.h>
-#include <beast/threads/SharedData.h>
 
 #include <cstdint>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -274,31 +274,11 @@ public:
 class PropertyStream::Source
 {
 private:
-    struct State
-    {
-        explicit State (Source* source)
-            : item (source)
-            , parent (nullptr)
-            { }
-
-        Item item;
-        Source* parent;
-        List <Item> children;
-    };
-
-    using SharedState = SharedData <State>;
-
     std::string const m_name;
-    SharedState m_state;
-
-    //--------------------------------------------------------------------------
-
-    void remove    (SharedState::Access& state,
-                    SharedState::Access& childState);
-
-    void removeAll (SharedState::Access& state);
-
-    void write     (SharedState::Access& state, PropertyStream& stream);
+    std::recursive_mutex lock_;
+    Item item_;
+    Source* parent_;
+    List <Item> children_;
 
 public:
     explicit Source (std::string const& name);
@@ -326,7 +306,7 @@ public:
     /** Remove a child source from this Source. */
     void remove (Source& child);
 
-    /** Remove all child sources of this Source. */
+    /** Remove all child sources from this Source. */
     void removeAll ();
 
     /** Write only this Source to the stream. */
