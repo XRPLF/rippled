@@ -173,16 +173,17 @@ PropertyStream const& PropertyStream::Set::stream() const
 
 PropertyStream::Source::Source (std::string const& name)
     : m_name (name)
-    , m_state (this)
+    , item_ (this)
+    , parent_ (nullptr)
 {
 }
 
 PropertyStream::Source::~Source ()
 {
-    SharedState::Access state (m_state);
-    if (state->parent != nullptr)
-        state->parent->remove (*this);
-    removeAll (state);
+    std::lock_guard<std::recursive_mutex> _(lock_);
+    if (parent_ != nullptr)
+        parent_->remove (*this);
+    removeAll ();
 }
 
 std::string const& PropertyStream::Source::name () const
@@ -192,37 +193,35 @@ std::string const& PropertyStream::Source::name () const
 
 void PropertyStream::Source::add (Source& source)
 {
-    SharedState::Access state (m_state);
-    SharedState::Access childState (source.m_state);
-    bassert (childState->parent == nullptr);
-    state->children.push_back (childState->item);
-    childState->parent = this;
+    std::lock(lock_, source.lock_);
+    std::lock_guard<std::recursive_mutex> lk1(lock_, std::adopt_lock);
+    std::lock_guard<std::recursive_mutex> lk2(source.lock_, std::adopt_lock);
+
+    bassert (source.parent_ == nullptr);
+    children_.push_back (source.item_);
+    source.parent_ = this;
 }
 
 void PropertyStream::Source::remove (Source& child)
 {
-    SharedState::Access state (m_state);
-    SharedState::Access childState (child.m_state);
-    remove (state, childState);
+    std::lock(lock_, child.lock_);
+    std::lock_guard<std::recursive_mutex> lk1(lock_, std::adopt_lock);
+    std::lock_guard<std::recursive_mutex> lk2(child.lock_, std::adopt_lock);
+
+    bassert (child.parent_ == this);
+    children_.erase (
+        children_.iterator_to (
+            child.item_));
+    child.parent_ = nullptr;
 }
 
 void PropertyStream::Source::removeAll ()
 {
-    SharedState::Access state (m_state);
-    removeAll (state);
-}
-
-//------------------------------------------------------------------------------
-
-void PropertyStream::Source::write (
-    SharedState::Access& state, PropertyStream &stream)
-{
-    for (List <Item>::iterator iter (state->children.begin());
-        iter != state->children.end(); ++iter)
+    std::lock_guard<std::recursive_mutex> _(lock_);
+    for (auto iter = children_.begin(); iter != children_.end(); )
     {
-        Source& source (iter->source());
-        Map map (source.name(), stream);
-        source.write (stream);
+        std::lock_guard<std::recursive_mutex> _cl((*iter)->lock_);
+        remove (*(*iter));
     }
 }
 
@@ -239,14 +238,10 @@ void PropertyStream::Source::write (PropertyStream& stream)
     Map map (m_name, stream);
     onWrite (map);
 
-    SharedState::Access state (m_state);
+    std::lock_guard<std::recursive_mutex> _(lock_);
 
-    for (List <Item>::iterator iter (state->children.begin());
-        iter != state->children.end(); ++iter)
-    {
-        Source& source (iter->source());
-        source.write (stream);
-    }
+    for (auto& child : children_)
+        child.source().write (stream);
 }
 
 void PropertyStream::Source::write (PropertyStream& stream, std::string const& path)
@@ -330,8 +325,9 @@ PropertyStream::Source* PropertyStream::Source::find_one_deep (std::string const
     Source* found = find_one (name);
     if (found != nullptr)
         return found;
-    SharedState::Access state (this->m_state);
-    for (auto& s : state->children)
+
+    std::lock_guard<std::recursive_mutex> _(lock_);
+    for (auto& s : children_)
     {
         found = s.source().find_one_deep (name);
         if (found != nullptr)
@@ -360,8 +356,8 @@ PropertyStream::Source* PropertyStream::Source::find_path (std::string path)
 // If no immediate children match, then return nullptr
 PropertyStream::Source* PropertyStream::Source::find_one (std::string const& name)
 {
-    SharedState::Access state (this->m_state);
-    for (auto& s : state->children)
+    std::lock_guard<std::recursive_mutex> _(lock_);
+    for (auto& s : children_)
     {
         if (s.source().m_name == name)
             return &s.source();
@@ -371,28 +367,6 @@ PropertyStream::Source* PropertyStream::Source::find_one (std::string const& nam
 
 void PropertyStream::Source::onWrite (Map&)
 {
-}
-
-//------------------------------------------------------------------------------
-
-void PropertyStream::Source::remove (
-    SharedState::Access& state, SharedState::Access& childState)
-{
-    bassert (childState->parent == this);
-    state->children.erase (
-        state->children.iterator_to (
-            childState->item));
-    childState->parent = nullptr;
-}
-
-void PropertyStream::Source::removeAll (SharedState::Access& state)
-{
-    for (List <Item>::iterator iter (state->children.begin());
-        iter != state->children.end();)
-    {
-        SharedState::Access childState ((*iter)->m_state);
-        remove (state, childState);
-    }
 }
 
 //------------------------------------------------------------------------------

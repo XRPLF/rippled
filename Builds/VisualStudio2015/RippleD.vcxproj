@@ -957,8 +957,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SharedData.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\SharedLockGuard.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\SharedMutexAdapter.h">

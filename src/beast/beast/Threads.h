@@ -24,7 +24,6 @@
 #include <beast/threads/TryLockGuard.h>
 #include <beast/threads/SharedLockGuard.h>
 #include <beast/threads/SharedMutexAdapter.h>
-#include <beast/threads/SharedData.h>
 #include <beast/threads/SpinLock.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/Thread.h>
