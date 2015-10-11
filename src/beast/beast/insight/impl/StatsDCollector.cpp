@@ -421,8 +421,8 @@ public:
 
         std::lock_guard<std::recursive_mutex> _(metricsLock_);
 
-        for (auto& iter : metrics_)
-            iter.do_process();
+        for (auto& m : metrics_)
+            m.do_process();
 
         send_buffers ();
 

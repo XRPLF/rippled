@@ -418,6 +418,7 @@ public:
 
     void erase (Table::iterator iter)
     {
+        std::lock_guard<std::recursive_mutex> _(lock_);
         Entry& entry (iter->second);
         assert (entry.refcount == 0);
         inactive_.erase (
