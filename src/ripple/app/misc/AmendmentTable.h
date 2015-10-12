@@ -26,77 +26,32 @@
 
 namespace ripple {
 
-/** The status of all amendments requested in a given window. */
-class AmendmentSet
-{
-public:
-    std::uint32_t mCloseTime;
-    int mTrustedValidations;       // number of trusted validations
-    int mThreshold;                // number of votes needed
-    hash_map<uint256, int> mVotes; // yes votes by amendment
-
-    AmendmentSet (std::uint32_t ct) :
-        mCloseTime (ct), mTrustedValidations (0), mThreshold (0)
-    {
-        ;
-    }
-
-    void addVoter ()
-    {
-        ++mTrustedValidations;
-    }
-
-    void addVote (uint256 const& amendment)
-    {
-        ++mVotes[amendment];
-    }
-
-    int count (uint256 const& amendment)
-    {
-        auto const& it = mVotes.find (amendment);
-        return (it == mVotes.end()) ? 0 : it->second;
-    }
-};
-
 /** 256-bit Id and human friendly name of an amendment.
 */
 class AmendmentName final
 {
 private:
-    uint256 mId;
-    // Keep the hex string around for error reporting
-    std::string mHexString;
-    std::string mFriendlyName;
-    bool mValid{false};
+    uint256 id_;
+    std::string name_;
 
 public:
     AmendmentName () = default;
     AmendmentName (AmendmentName const& rhs) = default;
-    // AmendmentName (AmendmentName&& rhs) = default; // MSVS not supported
-    AmendmentName (uint256 const& id, std::string friendlyName)
-        : mId (id), mFriendlyName (std::move (friendlyName)), mValid (true)
+    AmendmentName (AmendmentName&& rhs) = default;
+    AmendmentName (uint256 const& id, std::string name)
+        : id_ (id)
+        , name_ (std::move (name))
     {
     }
-    AmendmentName (std::string id, std::string friendlyName)
-        : mHexString (std::move (id)), mFriendlyName (std::move (friendlyName))
-    {
-        mValid = mId.SetHex (mHexString);
-    }
-    bool valid () const
-    {
-        return mValid;
-    }
+
     uint256 const& id () const
     {
-        return mId;
+        return id_;
     }
-    std::string const& hexString () const
+
+    std::string const& name () const
     {
-        return mHexString;
-    }
-    std::string const& friendlyName () const
-    {
-        return mFriendlyName;
+        return name_;
     }
 };
 
@@ -107,10 +62,10 @@ public:
 class AmendmentState
 {
 public:
-    bool mVetoed{false};  // We don't want this amendment enabled
-    bool mEnabled{false};
-    bool mSupported{false};
-    bool mDefault{false};  // Include in genesis ledger
+    bool mVetoed = false;     // We don't want this amendment enabled
+    bool mEnabled = false;
+    bool mSupported = false;
+    bool mDefault = false;    // Included in genesis ledger
 
     std::string mFriendlyName;
 

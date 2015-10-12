@@ -343,7 +343,8 @@ JSS ( taker_gets );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_gets_funded );          // out: NetworkOPs
 JSS ( taker_pays );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_pays_funded );          // out: NetworkOPs
-JSS ( threshold );                  // in: Blacklist
+JSS ( threshold );                  // in: Blacklist,
+                                    // out: AmendmentTableImpl
 JSS ( timeouts );                   // out: InboundLedger
 JSS ( totalCoins );                 // out: LedgerToJson
 JSS ( total_coins );                // out: LedgerToJson

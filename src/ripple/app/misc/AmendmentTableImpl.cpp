@@ -31,29 +31,71 @@
 #include <mutex>
 
 namespace ripple {
+
+/** The status of all amendments requested in a given window. */
+struct AmendmentSet
+{
+    std::uint32_t mCloseTime;
+
+    // number of trusted validations
+    int mTrustedValidations = 0;
+
+    // number of votes needed
+    int mThreshold = 0;
+
+    // How many yes votes each amendment received
+    hash_map<uint256, int> mVotes;
+
+    AmendmentSet (std::uint32_t ct)
+        : mCloseTime (ct)
+    {
+    }
+
+    void addVoter ()
+    {
+        ++mTrustedValidations;
+    }
+
+    void addVote (uint256 const& amendment)
+    {
+        ++mVotes[amendment];
+    }
+
+    int count (uint256 const& amendment)
+    {
+        auto const& it = mVotes.find (amendment);
+        return (it == mVotes.end()) ? 0 : it->second;
+    }
+};
+
 /** Track the list of "amendments"
 
    An "amendment" is an option that can affect transaction processing rules.
    Amendments are proposed and then adopted or rejected by the network. An
    Amendment is uniquely identified by its AmendmentID, a 256-bit key.
 */
-
 class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
-    using amendmentMap_t = hash_map<uint256, AmendmentState>;
     using amendmentList_t = hash_set<uint256>;
 
     std::mutex mLock;
 
-    amendmentMap_t m_amendmentMap;
+    hash_map<uint256, AmendmentState> amendmentMap_;
     std::uint32_t m_lastUpdateSeq;
 
-    std::chrono::seconds m_majorityTime; // Seconds an amendment must hold a majority
-    int mMajorityFraction;  // 256 = 100%
+    // Time that an amendment must hold a majority for
+    std::chrono::seconds m_majorityTime;
+
+    // The amount of support that an amendment must receive
+    // 0 = 0% and 256 = 100%
+    int mMajorityFraction;
+
     beast::Journal m_journal;
 
-    AmendmentSet m_lastVote;
+    // The results of the last voting round - may be empty if
+    // we haven't participated in one yet.
+    std::unique_ptr <AmendmentSet> lastVote_;
 
     AmendmentState& getCreate (uint256 const& amendment);
     AmendmentState* getExisting (uint256 const& amendment);
@@ -68,8 +110,8 @@ public:
         , m_majorityTime (majorityTime)
         , mMajorityFraction (majorityFraction)
         , m_journal (journal)
-        , m_lastVote (0)
     {
+        assert (mMajorityFraction != 0);
     }
 
     void addInitial (Section const& section) override;
@@ -101,10 +143,11 @@ public:
         enabledAmendments_t enabled) override;
 
     std::vector <uint256>
-        doValidation (enabledAmendments_t const& enabledAmendments)
-            override;
+    doValidation (enabledAmendments_t const& enabledAmendments) override;
 
-    std::map <uint256, std::uint32_t> doVoting (std::uint32_t closeTime,
+    std::map <uint256, std::uint32_t>
+    doVoting (
+        std::uint32_t closeTime,
         enabledAmendments_t const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
         ValidationSet const& validations) override;
@@ -123,41 +166,33 @@ std::vector<AmendmentName> const preEnabledAmendments;
 
 /** Amendments that this server supports, but doesn't enable by default */
 std::vector<AmendmentName> const supportedAmendments;
-}
 
-void
-parseSection (std::vector<AmendmentName>& names, Section const& section)
+std::vector<AmendmentName>
+parseSection (Section const& section)
 {
+    std::vector<AmendmentName> names;
     int const numExpectedToks = 2;
     for (auto const& line : section.lines ())
     {
         boost::tokenizer<> tokenizer (line);
-        std::vector<std::string> tokens (tokenizer.begin (),
-                                         tokenizer.end ());
-        if (tokens.size () != numExpectedToks)
-        {
-            std::string const errorMsg =
-                (boost::format (
-                     "The %1% section in the config file expects %2% "
-                     "items. Found %3%. Line was: %4%") %
-                 SECTION_AMENDMENTS % numExpectedToks % tokens.size () %
-                 line).str ();
-            throw std::runtime_error (errorMsg);
-        }
+        std::vector<std::string> tokens (tokenizer.begin (), tokenizer.end ());
 
-        names.emplace_back (std::move (tokens[0]), std::move (tokens[1]));
-        if (!names.back ().valid ())
-        {
-            std::string const errorMsg =
-                (boost::format (
-                     "%1% is not a valid hash. Expected a hex "
-                     "number. In config setcion: %2%. Line was: "
-                     "%3%") %
-                 names.back ().hexString () % SECTION_AMENDMENTS %
-                 line).str ();
-            throw std::runtime_error (errorMsg);
-        }
+        if (tokens.size () != numExpectedToks)
+            throw std::runtime_error (
+                "Invalid entry in [" + section.name () + "]");
+
+        uint256 id;
+        if (!id.SetHexExact (tokens[0]))
+            throw std::runtime_error (
+                "Invalid amendment '" + to_string (names.back ().id ()) +
+                "' in [" + section.name () + "]");
+
+        names.emplace_back (id, tokens[1]);
     }
+
+    return names;
+}
+
 }
 
 void
@@ -168,21 +203,11 @@ AmendmentTableImpl::addInitial (Section const& section)
 
     for (auto const& a : detail::preEnabledAmendments)
     {
-        if (!a.valid ())
-        {
-            std::string const errorMsg =
-                (boost::format (
-                     "preEnabledAmendments contains an invalid hash (expected "
-                     "a hex number). Value was: %1%") %
-                 a.hexString ()).str ();
-            throw std::runtime_error (errorMsg);
-        }
+        addKnown (a);
+        enable (a.id ());
     }
 
-    std::vector<AmendmentName> toAdd (detail::preEnabledAmendments);
-    parseSection (toAdd, section);
-
-    for (auto const& a : toAdd)
+    for (auto const& a : detail::parseSection (section))
     {
         addKnown (a);
         enable (a.id ());
@@ -191,9 +216,8 @@ AmendmentTableImpl::addInitial (Section const& section)
 
 void AmendmentTableImpl::addVetos (Section const& section)
 {
-    std::vector<AmendmentName> names;
-    parseSection (names, section);
-    for (auto const& n : names)
+    std::lock_guard <std::mutex> sl (mLock);
+    for (auto const& n : detail::parseSection (section))
     {
         // Unknown amendments are effectively vetoed already
         auto const a = getExisting (n.id ());
@@ -206,11 +230,11 @@ AmendmentState&
 AmendmentTableImpl::getCreate (uint256 const& amendmentHash)
 {
     // call with the mutex held
-    auto iter (m_amendmentMap.find (amendmentHash));
+    auto iter (amendmentMap_.find (amendmentHash));
 
-    if (iter == m_amendmentMap.end())
+    if (iter == amendmentMap_.end())
     {
-        AmendmentState& amendment = m_amendmentMap[amendmentHash];
+        AmendmentState& amendment = amendmentMap_[amendmentHash];
         return amendment;
     }
 
@@ -221,9 +245,9 @@ AmendmentState*
 AmendmentTableImpl::getExisting (uint256 const& amendmentHash)
 {
     // call with the mutex held
-    auto iter (m_amendmentMap.find (amendmentHash));
+    auto iter (amendmentMap_.find (amendmentHash));
 
-    if (iter == m_amendmentMap.end())
+    if (iter == amendmentMap_.end())
         return nullptr;
 
     return & (iter->second);
@@ -234,7 +258,7 @@ AmendmentTableImpl::get (std::string const& name)
 {
     std::lock_guard <std::mutex> sl (mLock);
 
-    for (auto const& e : m_amendmentMap)
+    for (auto const& e : amendmentMap_)
     {
         if (name == e.second.mFriendlyName)
             return e.first;
@@ -246,21 +270,11 @@ AmendmentTableImpl::get (std::string const& name)
 void
 AmendmentTableImpl::addKnown (AmendmentName const& name)
 {
-    if (!name.valid ())
-    {
-        std::string const errorMsg =
-            (boost::format (
-                 "addKnown was given an invalid hash (expected a hex number). "
-                 "Value was: %1%") %
-             name.hexString ()).str ();
-        throw std::runtime_error (errorMsg);
-    }
-
     std::lock_guard <std::mutex> sl (mLock);
     AmendmentState& amendment = getCreate (name.id ());
 
-    if (!name.friendlyName ().empty ())
-        amendment.setFriendlyName (name.friendlyName ());
+    if (!name.name ().empty ())
+        amendment.setFriendlyName (name.name ());
 
     amendment.mVetoed = false;
     amendment.mSupported = true;
@@ -339,7 +353,7 @@ AmendmentTableImpl::getVetoed ()
 {
     amendmentList_t ret;
     std::lock_guard <std::mutex> sl (mLock);
-    for (auto const& e : m_amendmentMap)
+    for (auto const& e : amendmentMap_)
     {
         if (e.second.mVetoed)
             ret.insert (e.first);
@@ -352,7 +366,7 @@ AmendmentTableImpl::getEnabled ()
 {
     amendmentList_t ret;
     std::lock_guard <std::mutex> sl (mLock);
-    for (auto const& e : m_amendmentMap)
+    for (auto const& e : amendmentMap_)
     {
         if (e.second.mEnabled)
             ret.insert (e.first);
@@ -366,7 +380,7 @@ AmendmentTableImpl::getDesired (enabledAmendments_t const& enabled)
     amendmentList_t ret;
     std::lock_guard <std::mutex> sl (mLock);
 
-    for (auto const& e : m_amendmentMap)
+    for (auto const& e : amendmentMap_)
     {
         if (e.second.mSupported && ! e.second.mVetoed &&
             (enabled.count (e.first) == 0))
@@ -380,13 +394,13 @@ void
 AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
 {
     std::lock_guard <std::mutex> sl (mLock);
-    for (auto& e : m_amendmentMap)
+    for (auto& e : amendmentMap_)
     {
         e.second.mEnabled = false;
     }
     for (auto const& e : amendments)
     {
-        m_amendmentMap[e].mEnabled = true;
+        amendmentMap_[e].mEnabled = true;
     }
 }
 
@@ -394,13 +408,13 @@ void
 AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
 {
     std::lock_guard <std::mutex> sl (mLock);
-    for (auto &e : m_amendmentMap)
+    for (auto &e : amendmentMap_)
     {
         e.second.mSupported = false;
     }
     for (auto const& e : amendments)
     {
-        m_amendmentMap[e].mSupported = true;
+        amendmentMap_[e].mSupported = true;
     }
 }
 
@@ -408,14 +422,10 @@ std::vector <uint256>
 AmendmentTableImpl::doValidation (
     enabledAmendments_t const& enabledAmendments)
 {
-    auto lAmendments = getDesired (enabledAmendments);
-
-    if (lAmendments.empty())
-        return {};
-
-    std::vector <uint256> amendments (lAmendments.begin(), lAmendments.end());
+    std::vector <uint256> amendments;
+    for (auto const& id : getDesired (enabledAmendments))
+        amendments.emplace_back (id);
     std::sort (amendments.begin (), amendments.end ());
-
     return amendments;
 }
 
@@ -429,7 +439,7 @@ AmendmentTableImpl::doVoting (
     // LCL must be flag ledger
     //assert((lastClosedLedger->info().seq % 256) == 0);
 
-    AmendmentSet amendmentSet (closeTime);
+    auto vote = std::make_unique <AmendmentSet> (closeTime);
 
     // process validations for ledger before flag ledger
     for (auto const& entry : valSet)
@@ -438,23 +448,21 @@ AmendmentTableImpl::doVoting (
 
         if (val.isTrusted ())
         {
-            amendmentSet.addVoter ();
+            vote->addVoter ();
             if (val.isFieldPresent (sfAmendments))
             {
-                for (auto const& amendment : val.getFieldV256 (sfAmendments))
-                {
-                    amendmentSet.addVote (amendment);
-                }
+                auto const amendments = val.getFieldV256 (sfAmendments);
+                for (auto const& a : amendments)
+                    vote->addVote (a);
             }
         }
     }
-    amendmentSet.mThreshold =
-        (amendmentSet.mTrustedValidations * mMajorityFraction + 255) / 256;
 
-    if (m_journal.trace)
-        m_journal.trace <<
-            amendmentSet.mTrustedValidations << " trusted validations, threshold is "
-            << amendmentSet.mThreshold;
+    vote->mThreshold = (vote->mTrustedValidations * mMajorityFraction) / 256;
+
+    JLOG (m_journal.trace) <<
+        "Validation threshold is: " << vote->mThreshold <<
+        ", received " << vote->mTrustedValidations;
 
     // Map of amendments to the action to be taken
     // for each one. The action is the value of the
@@ -465,10 +473,10 @@ AmendmentTableImpl::doVoting (
         std::lock_guard <std::mutex> sl (mLock);
 
         // process all amendments we know of
-        for (auto const& entry : m_amendmentMap)
+        for (auto const& entry : amendmentMap_)
         {
-            bool const hasValMajority = amendmentSet.count (entry.first) >=
-                amendmentSet.mThreshold;
+            bool const hasValMajority =
+                (vote->count (entry.first) >= vote->mThreshold);
 
             std::uint32_t majorityTime = 0;
             auto const it = majorityAmendments.find (entry.first);
@@ -499,8 +507,8 @@ AmendmentTableImpl::doVoting (
             }
         }
 
-        // Stash last vote for reporting
-        m_lastVote = std::move (amendmentSet);
+        // Stash for reporting
+        lastVote_ = std::move(vote);
     }
 
     return actions;
@@ -523,23 +531,8 @@ AmendmentTableImpl::doValidatedLedger (LedgerIndex ledgerSeq,
 {
     std::lock_guard <std::mutex> sl (mLock);
 
-    for (auto& e : m_amendmentMap)
+    for (auto& e : amendmentMap_)
         e.second.mEnabled = (enabled.count (e.first) != 0);
-}
-
-Json::Value
-AmendmentTableImpl::getJson (int)
-{
-    Json::Value ret(Json::objectValue);
-    {
-        std::lock_guard <std::mutex> sl(mLock);
-        for (auto const& e : m_amendmentMap)
-        {
-            setJson (ret[to_string (e.first)] = Json::objectValue,
-                e.first, e.second);
-        }
-    }
-    return ret;
 }
 
 void
@@ -552,21 +545,37 @@ AmendmentTableImpl::setJson (Json::Value& v, const uint256& id, const AmendmentS
     v[jss::vetoed] = fs.mVetoed;
     v[jss::enabled] = fs.mEnabled;
 
-    if (!fs.mEnabled)
+    if (!fs.mEnabled && lastVote_)
     {
         int votesTotal = 0, votesNeeded = 0, votesFor = 0;
         {
-            votesTotal = m_lastVote.mTrustedValidations;
-            votesNeeded = m_lastVote.mThreshold;
-            auto j = m_lastVote.mVotes.find (id);
-            if (j != m_lastVote.mVotes.end ())
+            votesTotal = lastVote_->mTrustedValidations;
+            votesNeeded = lastVote_->mThreshold;
+            auto j = lastVote_->mVotes.find (id);
+            if (j != lastVote_->mVotes.end ())
                 votesFor = j->second;
         }
-        if (votesTotal != 0)
+        if (votesTotal != 0 && votesNeeded != 0)
         {
             v[jss::vote] = votesFor * 256 / votesNeeded;
+            v[jss::threshold] = votesNeeded;
         }
     }
+}
+
+Json::Value
+AmendmentTableImpl::getJson (int)
+{
+    Json::Value ret(Json::objectValue);
+    {
+        std::lock_guard <std::mutex> sl(mLock);
+        for (auto const& e : amendmentMap_)
+        {
+            setJson (ret[to_string (e.first)] = Json::objectValue,
+                e.first, e.second);
+        }
+    }
+    return ret;
 }
 
 Json::Value
