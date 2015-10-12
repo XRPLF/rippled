@@ -20,7 +20,7 @@
 #ifndef BEAST_CXX14_CONFIG_H_INCLUDED
 #define BEAST_CXX14_CONFIG_H_INCLUDED
 
-#include <ciso646>  // detect libc++ verison
+#include <ciso646>  // detect libc++ version
 
 // Sets C++14 compatibility configuration macros based on build environment
 
