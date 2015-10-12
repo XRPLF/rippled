@@ -53,16 +53,7 @@ public:
     ~ManagerImp () override
     {
         run_.store (false);
-        try
-        {
-            thread_.join();
-        }
-        catch (std::exception ex)
-        {
-            // Swallow the exception in a destructor.
-            JLOG(journal_.warning) << "std::exception in Resource::~Manager.  "
-                << ex.what();
-        }
+        thread_.join();
     }
 
     Consumer newInboundEndpoint (beast::IP::Endpoint const& address) override
