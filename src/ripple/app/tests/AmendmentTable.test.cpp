@@ -33,9 +33,6 @@ namespace ripple
 
 class AmendmentTable_test final : public beast::unit_test::suite
 {
-public:
-    using StringPairVec = std::vector<std::pair<std::string, std::string>>;
-
 private:
     // 204/256 about 80% (we round down because the implementation rounds up)
     static int const majorityFraction{204};
@@ -84,8 +81,6 @@ private:
         return section;
     }
 
-    // Create the amendments by string pairs instead of AmendmentNames
-    // as this helps test the AmendmentNames class
     std::vector<std::string> const m_amendmentSet1;
     std::vector<std::string> const m_amendmentSet2;
     std::vector<std::string> const m_amendmentSet3;
@@ -103,7 +98,7 @@ public:
         testcase ("get");
         auto table = makeTable (2);
         for (auto const& a : m_amendmentSet1)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a );
         for (auto const& a : m_amendmentSet1)
             expect (table->get (a) == amendmentId (a));
         for (auto const& a : m_amendmentSet2)
@@ -115,7 +110,7 @@ public:
         testcase ("addKnown");
         auto table = makeTable (2);
         for (auto const& a : m_amendmentSet1)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a );
         for (auto const& a : m_amendmentSet1)
         {
             auto const id = amendmentId (a);
@@ -155,7 +150,7 @@ public:
         testcase ("addKnown");
         auto table = makeTable (2);
         for (auto const& a : m_amendmentSet1)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a);
         table->addInitial (makeSection (m_amendmentSet2));
         for (auto const& a : m_amendmentSet1)
         {
@@ -282,11 +277,11 @@ public:
         auto table = makeTable (2);
 
         for (auto const& a : m_amendmentSet1)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a);
         for (auto const& a : m_amendmentSet2)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a);
         for (auto const& a : m_amendmentSet3)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a);
 
         // Enable some amendments, verify they are enabled
         std::set<uint256> enabled;
@@ -535,7 +530,7 @@ public:
 
         auto table (makeTable (2));
         for (auto const& a : m_amendmentSet1)
-            table->addKnown ({ amendmentId (a), a });
+            table->addKnown (amendmentId (a), a);
 
         auto const validators = makeValidators (10);
         std::vector <std::pair <uint256, int>> votes;
@@ -603,7 +598,7 @@ public:
         auto table (makeTable (2));
 
         auto const testAmendment = amendmentId (m_amendmentSet1[0]);
-        table->addKnown({ testAmendment, m_amendmentSet1[0] });
+        table->addKnown(testAmendment, m_amendmentSet1[0]);
 
         auto const validators = makeValidators (16);
 
@@ -662,7 +657,7 @@ public:
         auto table (makeTable (8));
 
         auto const testAmendment = amendmentId (m_amendmentSet1[0]);
-        table->addKnown({ testAmendment, m_amendmentSet1[0] });
+        table->addKnown(testAmendment, m_amendmentSet1[0]);
 
         auto const validators = makeValidators (16);
 

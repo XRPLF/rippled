@@ -118,7 +118,7 @@ public:
 
     void addVetos (Section const& section) override;
 
-    void addKnown (AmendmentName const& name) override;
+    void addKnown (uint256 const& amendment, std::string name) override;
 
     uint256 get (std::string const& name) override;
 
@@ -162,15 +162,23 @@ public:
 namespace detail
 {
 /** Amendments that this server supports and enables by default */
-std::vector<AmendmentName> const preEnabledAmendments;
+std::vector<std::pair<uint256, std::string>>
+preEnabledAmendments ()
+{
+    return {};
+}
 
 /** Amendments that this server supports, but doesn't enable by default */
-std::vector<AmendmentName> const supportedAmendments;
+std::vector<std::pair<uint256, std::string>>
+supportedAmendments ()
+{
+    return {};
+}
 
-std::vector<AmendmentName>
+std::vector<std::pair<uint256, std::string>>
 parseSection (Section const& section)
 {
-    std::vector<AmendmentName> names;
+    std::vector<std::pair<uint256, std::string>> names;
     int const numExpectedToks = 2;
     for (auto const& line : section.lines ())
     {
@@ -184,10 +192,10 @@ parseSection (Section const& section)
         uint256 id;
         if (!id.SetHexExact (tokens[0]))
             throw std::runtime_error (
-                "Invalid amendment '" + to_string (names.back ().id ()) +
+                "Invalid amendment '" + tokens[0] +
                 "' in [" + section.name () + "]");
 
-        names.emplace_back (id, tokens[1]);
+        names.push_back (std::make_pair (id, tokens[1]));
     }
 
     return names;
@@ -198,19 +206,19 @@ parseSection (Section const& section)
 void
 AmendmentTableImpl::addInitial (Section const& section)
 {
-    for (auto const& a : detail::supportedAmendments)
-        addKnown (a);
+    for (auto const& a : detail::supportedAmendments ())
+        addKnown (a.first, a.second);
 
-    for (auto const& a : detail::preEnabledAmendments)
+    for (auto const& a : detail::preEnabledAmendments ())
     {
-        addKnown (a);
-        enable (a.id ());
+        addKnown (a.first, a.second);
+        enable (a.first);
     }
 
     for (auto const& a : detail::parseSection (section))
     {
-        addKnown (a);
-        enable (a.id ());
+        addKnown (a.first, a.second);
+        enable (a.first);
     }
 }
 
@@ -220,7 +228,7 @@ void AmendmentTableImpl::addVetos (Section const& section)
     for (auto const& n : detail::parseSection (section))
     {
         // Unknown amendments are effectively vetoed already
-        auto const a = getExisting (n.id ());
+        auto const a = getExisting (n.first);
         if (a)
             a->mVetoed = true;
     }
@@ -268,16 +276,16 @@ AmendmentTableImpl::get (std::string const& name)
 }
 
 void
-AmendmentTableImpl::addKnown (AmendmentName const& name)
+AmendmentTableImpl::addKnown (uint256 const& id, std::string name)
 {
     std::lock_guard <std::mutex> sl (mLock);
-    AmendmentState& amendment = getCreate (name.id ());
+    AmendmentState& s = getCreate (id);
 
-    if (!name.name ().empty ())
-        amendment.setFriendlyName (name.name ());
+    if (!name.empty ())
+        s.setFriendlyName (name);
 
-    amendment.mVetoed = false;
-    amendment.mSupported = true;
+    s.mVetoed = false;
+    s.mSupported = true;
 }
 
 bool

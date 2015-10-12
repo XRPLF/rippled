@@ -26,35 +26,6 @@
 
 namespace ripple {
 
-/** 256-bit Id and human friendly name of an amendment.
-*/
-class AmendmentName final
-{
-private:
-    uint256 id_;
-    std::string name_;
-
-public:
-    AmendmentName () = default;
-    AmendmentName (AmendmentName const& rhs) = default;
-    AmendmentName (AmendmentName&& rhs) = default;
-    AmendmentName (uint256 const& id, std::string name)
-        : id_ (id)
-        , name_ (std::move (name))
-    {
-    }
-
-    uint256 const& id () const
-    {
-        return id_;
-    }
-
-    std::string const& name () const
-    {
-        return name_;
-    }
-};
-
 /** Current state of an amendment.
     Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
@@ -141,7 +112,7 @@ public:
 
         @throw will throw if the name parameter is not valid
     */
-    virtual void addKnown (AmendmentName const& name) = 0;
+    virtual void addKnown (uint256 const& id, std::string name) = 0;
 
     virtual uint256 get (std::string const& name) = 0;
 
