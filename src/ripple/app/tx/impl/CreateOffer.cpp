@@ -648,11 +648,6 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
 
-    auto const& uPaysIssuerID = saTakerPays.getIssuer ();
-    auto const& uPaysCurrency = saTakerPays.getCurrency ();
-
-    auto const& uGetsIssuerID = saTakerGets.getIssuer ();
-
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
     // FIXME understand why we use SequenceNext instead of current transaction
@@ -876,8 +871,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
             std::bind (
                 &qualityDirDescriber, std::placeholders::_1,
                 std::placeholders::_2, saTakerPays.getCurrency (),
-                uPaysIssuerID, saTakerGets.getCurrency (),
-                uGetsIssuerID, uRate, std::ref(ctx_.app)),
+                saTakerPays.getIssuer (), saTakerGets.getCurrency (),
+                saTakerGets.getIssuer (), uRate, std::ref(ctx_.app)),
             viewJ);
     }
 

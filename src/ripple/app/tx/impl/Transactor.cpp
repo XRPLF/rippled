@@ -660,10 +660,7 @@ Transactor::operator()()
 
         auto const txnAcct = view().peek(
             keylet::account(ctx_.tx.getAccountID(sfAccount)));
-
-        std::uint32_t t_seq = ctx_.tx.getSequence ();
-        std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
-
+        auto const t_seq = ctx_.tx.getSequence ();
         auto const balance = txnAcct->getFieldAmount (sfBalance).xrp ();
 
         // balance should have already been
