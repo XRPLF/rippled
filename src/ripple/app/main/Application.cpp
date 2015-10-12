@@ -931,6 +931,9 @@ void ApplicationImp::setup()
 
     m_amendmentTable->addInitial (
         config_->section (SECTION_AMENDMENTS));
+    m_amendmentTable->addVetos (
+        config_->section (SECTION_VETO_AMENDMENTS));
+
     Pathfinder::initPathTable();
 
     m_ledgerMaster->setMinValidations (

@@ -33,6 +33,7 @@
 #include <ripple/protocol/types.h>
 #include <ripple/server/ServerHandler.h>
 #include <beast/module/core/text/LexicalCast.h>
+#include <beast/utility/ci_char_traits.h>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
 #include <iostream>
@@ -404,16 +405,28 @@ private:
         return rpcError (rpcNO_EVENTS);
     }
 
-    // feature [<feature>] [true|false]
+    // feature [<feature>] [accept|reject]
     Json::Value parseFeature (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
         if (jvParams.size () > 0)
-            jvRequest[jss::feature]    = jvParams[0u].asString ();
+            jvRequest[jss::feature] = jvParams[0u].asString ();
 
         if (jvParams.size () > 1)
-            jvRequest[jss::vote]       = beast::lexicalCastThrow <bool> (jvParams[1u].asString ());
+        {
+            auto const action = jvParams[1u].asString ();
+
+            // This may look reversed, but it's intentional: jss::vetoed
+            // determines whether an amendment is vetoed - so "reject" means
+            // that jss::vetoed is true.
+            if (beast::ci_equal(action, "reject"))
+                jvRequest[jss::vetoed] = Json::Value (true);
+            else if (beast::ci_equal(action, "accept"))
+                jvRequest[jss::vetoed] = Json::Value (false);
+            else
+                return rpcError (rpcINVALID_PARAMS);
+        }
 
         return jvRequest;
     }

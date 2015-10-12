@@ -26,78 +26,6 @@
 
 namespace ripple {
 
-/** The status of all amendments requested in a given window. */
-class AmendmentSet
-{
-public:
-    std::uint32_t mCloseTime;
-    int mTrustedValidations;                    // number of trusted validations
-    hash_map<uint256, int> mVotes; // yes votes by amendment
-
-    AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
-    {
-        ;
-    }
-
-    void addVoter ()
-    {
-        ++mTrustedValidations;
-    }
-
-    void addVote (uint256 const& amendment)
-    {
-        ++mVotes[amendment];
-    }
-
-    int count (uint256 const& amendment)
-    {
-        auto const& it = mVotes.find (amendment);
-        return (it == mVotes.end()) ? 0 : it->second;
-    }
-};
-
-/** 256-bit Id and human friendly name of an amendment.
-*/
-class AmendmentName final
-{
-private:
-    uint256 mId;
-    // Keep the hex string around for error reporting
-    std::string mHexString;
-    std::string mFriendlyName;
-    bool mValid{false};
-
-public:
-    AmendmentName () = default;
-    AmendmentName (AmendmentName const& rhs) = default;
-    // AmendmentName (AmendmentName&& rhs) = default; // MSVS not supported
-    AmendmentName (uint256 const& id, std::string friendlyName)
-        : mId (id), mFriendlyName (std::move (friendlyName)), mValid (true)
-    {
-    }
-    AmendmentName (std::string id, std::string friendlyName)
-        : mHexString (std::move (id)), mFriendlyName (std::move (friendlyName))
-    {
-        mValid = mId.SetHex (mHexString);
-    }
-    bool valid () const
-    {
-        return mValid;
-    }
-    uint256 const& id () const
-    {
-        return mId;
-    }
-    std::string const& hexString () const
-    {
-        return mHexString;
-    }
-    std::string const& friendlyName () const
-    {
-        return mFriendlyName;
-    }
-};
-
 /** Current state of an amendment.
     Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
@@ -105,10 +33,10 @@ public:
 class AmendmentState
 {
 public:
-    bool mVetoed{false};  // We don't want this amendment enabled
-    bool mEnabled{false};
-    bool mSupported{false};
-    bool mDefault{false};  // Include in genesis ledger
+    bool mVetoed = false;     // We don't want this amendment enabled
+    bool mEnabled = false;
+    bool mSupported = false;
+    bool mDefault = false;    // Included in genesis ledger
 
     std::string mFriendlyName;
 
@@ -175,11 +103,16 @@ public:
      */
     virtual void addInitial (Section const& section) = 0;
 
+    /**
+      @param section the config section of initial vetos
+     */
+    virtual void addVetos (Section const& section) = 0;
+
     /** Add an amendment to the AmendmentTable
 
         @throw will throw if the name parameter is not valid
     */
-    virtual void addKnown (AmendmentName const& name) = 0;
+    virtual void addKnown (uint256 const& id, std::string name) = 0;
 
     virtual uint256 get (std::string const& name) = 0;
 

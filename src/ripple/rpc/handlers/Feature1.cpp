@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -28,12 +29,31 @@
 
 namespace ripple {
 
+
+// {
+//   feature : <feature>
+//   vetoed : true/false
+// }
 Json::Value doFeature (RPC::Context& context)
 {
+
+    // Get majority amendment status
+    majorityAmendments_t majorities;
+    {
+        auto valLedger = context.ledgerMaster.getValidatedLedger();
+        if (valLedger)
+            majorities = getMajorityAmendments (*valLedger);
+    }
+
     if (!context.params.isMember (jss::feature))
     {
         Json::Value jvReply = Json::objectValue;
         jvReply[jss::features] = context.app.getAmendmentTable ().getJson(0);
+
+        for (auto const& m : majorities)
+            jvReply[jss::features][to_string(m.first)][jss::majority]
+                = m.second;
+
         return jvReply;
     }
 
@@ -49,11 +69,21 @@ Json::Value doFeature (RPC::Context& context)
             return rpcError (rpcBAD_FEATURE);
     }
 
-    if (!context.params.isMember (jss::vote))
-        return context.app.getAmendmentTable ().getJson(uFeature);
+    if (context.params.isMember (jss::vetoed))
+    {
+        if (context.params[jss::vetoed].asBool ())
+            context.app.getAmendmentTable().veto (uFeature);
+        else
+            context.app.getAmendmentTable().unVeto(uFeature);
+    }
 
-    // WRITEME
-    return rpcError (rpcNOT_SUPPORTED);
+    Json::Value jvReply = context.app.getAmendmentTable ().getJson(uFeature);
+
+    auto m = majorities.find (uFeature);
+    if (m != majorities.end())
+        jvReply [jss::majority] = m->second;
+
+    return jvReply;
 }
 
 

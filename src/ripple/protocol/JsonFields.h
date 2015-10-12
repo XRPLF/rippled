@@ -224,6 +224,7 @@ JSS ( load_factor_net );            // out: NetworkOPs
 JSS ( load_fee );                   // out: LoadFeeTrackImp
 JSS ( local );                      // out: resource/Logic.h
 JSS ( local_txs );                  // out: GetCounts
+JSS ( majority );                   // out: RPC feature
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData
@@ -342,7 +343,8 @@ JSS ( taker_gets );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_gets_funded );          // out: NetworkOPs
 JSS ( taker_pays );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_pays_funded );          // out: NetworkOPs
-JSS ( threshold );                  // in: Blacklist
+JSS ( threshold );                  // in: Blacklist,
+                                    // out: AmendmentTableImpl
 JSS ( timeouts );                   // out: InboundLedger
 JSS ( totalCoins );                 // out: LedgerToJson
 JSS ( total_coins );                // out: LedgerToJson
