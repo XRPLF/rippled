@@ -3726,6 +3726,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\tests\BuildInfo.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\digest_test.cpp">
+      <Filter>ripple\protocol\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\InnerObjectFormats.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>

@@ -173,7 +173,7 @@
 
 // Uses OpenSSL instead of alternatives
 #ifndef RIPPLE_USE_OPENSSL
-#define RIPPLE_USE_OPENSSL 0
+#define RIPPLE_USE_OPENSSL 1
 #endif
 
 #endif

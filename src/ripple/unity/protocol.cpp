@@ -64,6 +64,7 @@
 
 
 #include <ripple/protocol/tests/BuildInfo.test.cpp>
+#include <ripple/protocol/tests/digest_test.cpp>
 #include <ripple/protocol/tests/InnerObjectFormats.test.cpp>
 #include <ripple/protocol/tests/IOUAmount.test.cpp>
 #include <ripple/protocol/tests/Issue.test.cpp>
