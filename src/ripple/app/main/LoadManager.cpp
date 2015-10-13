@@ -53,10 +53,6 @@ LoadManager::~LoadManager ()
         JLOG(journal_.warning) << "std::exception in ~LoadManager.  "
             << ex.what();
     }
-    catch (...)
-    {
-        JLOG(journal_.warning) << "Exception thrown in ~LoadManager.";
-    }
 }
 
 //------------------------------------------------------------------------------
