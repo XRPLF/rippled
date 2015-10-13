@@ -95,7 +95,7 @@ void Server <WebSocket02>::listen()
 {
     try
     {
-        m_endpoint->listen (desc_.port.ip, desc_.port.port);
+        endpoint_->listen (desc_.port.ip, desc_.port.port);
     }
     catch (std::exception const& e)
     {
@@ -106,7 +106,7 @@ void Server <WebSocket02>::listen()
             // https://github.com/zaphoyd/websocketpp/issues/98
             try
             {
-                m_endpoint->get_io_service ().run ();
+                endpoint_->get_io_service ().run ();
                 break;
             }
             catch (std::exception const& e)

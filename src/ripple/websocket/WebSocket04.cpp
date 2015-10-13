@@ -138,9 +138,9 @@ boost::asio::io_service::strand& WebSocket04::getStrand (Connection& con)
 template <>
 void Server <WebSocket04>::listen()
 {
-    m_endpoint->listen (desc_.port.ip, desc_.port.port);
-    m_endpoint->start_accept();
-    auto c = m_endpoint->get_io_service ().run ();
+    endpoint_->listen (desc_.port.ip, desc_.port.port);
+    endpoint_->start_accept();
+    auto c = endpoint_->get_io_service ().run ();
     JLOG (j_.warning)
             << "Server run with: '" << c;
 
