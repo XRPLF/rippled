@@ -115,12 +115,13 @@ ApplyStateTable::apply (OpenView& to,
     auto const sTx =
         std::make_shared<Serializer>();
     tx.add(*sTx);
+    auto const id = tx.getTransactionID ();
     std::shared_ptr<Serializer> sMeta;
     if (to.closed())
     {
         TxMeta meta(j);
         // VFALCO Shouldn't TxMeta ctor do this?
-        meta.init (tx.getTransactionID(), to.seq());
+        meta.init (id, to.seq());
         if (deliver)
             meta.setDeliveredAmount(*deliver);
         Mods newMod;
@@ -250,9 +251,7 @@ ApplyStateTable::apply (OpenView& to,
         JLOG(j.trace) <<
             "metadata " << meta.getJson (0);
     }
-    to.rawTxInsert(
-        tx.getTransactionID(),
-            sTx, sMeta);
+    to.rawTxInsert(id, sTx, sMeta);
     apply(to);
 }
 
