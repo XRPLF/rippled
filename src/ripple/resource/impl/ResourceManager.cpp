@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/basics/Log.h>  // JLOG
 #include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -30,7 +29,7 @@ namespace Resource {
 class ManagerImp : public Manager
 {
 private:
-    beast::Journal journal_;
+    beast::Journal j_;
     Logic logic_;
     std::thread thread_;
     std::atomic<bool> run_;
@@ -38,7 +37,7 @@ private:
 public:
     ManagerImp (beast::insight::Collector::ptr const& collector,
         beast::Journal journal)
-        : journal_ (journal)
+        : j_ (journal)
         , logic_ (collector, stopwatch(), journal)
         , thread_ ()
         , run_ (true)
