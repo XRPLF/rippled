@@ -39,12 +39,13 @@ class ApplyContext
 public:
     explicit
     ApplyContext (Application& app, OpenView& base,
-        STTx const& tx, TER preclaimResult,
+        STTx const& tx, uint256 const& id, TER preclaimResult,
             std::uint64_t baseFee, ApplyFlags flags,
                     beast::Journal = {});
 
     Application& app;
     STTx const& tx;
+    uint256 const id;
     TER const preclaimResult;
     std::uint64_t const baseFee;
     beast::Journal const journal;

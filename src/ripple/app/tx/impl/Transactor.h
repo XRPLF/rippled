@@ -32,13 +32,14 @@ struct PreflightContext
 public:
     Application& app;
     STTx const& tx;
+    uint256 const id;
     Rules const& rules;
     ApplyFlags flags;
     beast::Journal j;
 
     PreflightContext(Application& app_, STTx const& tx_,
-        Rules const& rules_, ApplyFlags flags_,
-            beast::Journal j_);
+        uint256 const& id_, Rules const& rules_,
+            ApplyFlags flags_, beast::Journal j_);
 };
 
 struct PreflightResult
@@ -63,16 +64,18 @@ public:
     ReadView const& view;
     TER preflightResult;
     STTx const& tx;
+    uint256 const id;
     ApplyFlags flags;
     beast::Journal j;
 
     PreclaimContext(Application& app_, ReadView const& view_,
-        TER preflightResult_, STTx const& tx_,
+        TER preflightResult_, STTx const& tx_, uint256 const& id_,
             ApplyFlags flags_, beast::Journal j_ = {})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
         , tx(tx_)
+        , id(id_)
         , flags(flags_)
         , j(j_)
     {

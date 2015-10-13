@@ -37,7 +37,7 @@ namespace ripple {
 TER
 preflight0(PreflightContext const& ctx)
 {
-    auto const txID = ctx.tx.getTransactionID();
+    auto const txID = ctx.id;
 
     if (txID == beast::zero)
     {
@@ -242,7 +242,7 @@ Transactor::checkSeq (PreclaimContext const& ctx)
             return terPRE_SEQ;
         }
 
-        if (ctx.view.txExists(ctx.tx.getTransactionID ()))
+        if (ctx.view.txExists(ctx.id))
             return tefALREADY;
 
         JLOG(ctx.j.trace) << "applyTransaction: has past sequence number " <<
@@ -272,7 +272,7 @@ Transactor::setSeq ()
     sle->setFieldU32 (sfSequence, t_seq + 1);
 
     if (sle->isFieldPresent (sfAccountTxnID))
-        sle->setFieldH256 (sfAccountTxnID, ctx_.tx.getTransactionID ());
+        sle->setFieldH256 (sfAccountTxnID, ctx_.id);
 }
 
 // check stuff before you bother to lock the ledger
@@ -588,7 +588,7 @@ Transactor::operator()()
     JLOG(j_.trace) <<
         "applyTransaction>";
 
-    auto const txID = ctx_.tx.getTransactionID ();
+    auto const txID = ctx_.id;
 
 #ifdef BEAST_DEBUG
     {
