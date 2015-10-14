@@ -4,6 +4,7 @@
 
 We do not recommend Windows for rippled production use at this time. Currently, the Ubuntu
 platform has received the highest level of quality assurance, testing, and support.
+Additionally, 32-bit Windows versions are not supported.
 
 ## Prerequisites
 
@@ -11,27 +12,27 @@ To clone the source code repository, create branches for inspection or modificat
 build rippled under Visual Studio, and run the unit tests you will need these
 software components:
 
-* [Visual Studio 2015](https://www.visualstudio.com/)
-* [Git for Windows](http://git-scm.com/)
-* [Google Protocol Buffers Compiler](https://code.google.com/p/protobuf/source/checkout)
+* [Visual Studio 2015](README.md#install-visual-studio-2015)
+* [Git for Windows](README.md#install-git-for-windows)
+* [Google Protocol Buffers Compiler](README.md#install-google-protocol-buffers-compiler)
+* (Optional) [Python and Scons](README.md#optional-install-python-and-scons)
 * [OpenSSL Library](README.md#install-openssl)
-  * [ActivePerl](https://www.activestate.com/activeperl/downloads)
-    (Recommended to build OpenSSL.)
-* [Boost 1.59 library](http://www.boost.org/users/download/)
-* [Node.js](http://nodejs.org/download/)
-
-Any version of Visual Studio 2015 may be used, including the Visual Studio Community
-Edition which is available under a free license.
+* [Boost 1.59 library](README.md#build-boost)
+* [Node.js](README.md#install-nodejs)
 
 ## Install Software
 
 ### Install Visual Studio 2015
 
-If not already installed on your system, download your choice of installers from the
+If not already installed on your system, download your choice of installer from the
 [Visual Studio 2015 Download](https://www.visualstudio.com/downloads/download-visual-studio-vs)
-page, run the installer, and follow the directions.
-The **Visual Studio 2015 Community** edition is available for free, while paid editions
-may be used for an free initial trial period.
+page, run the installer, and follow the directions. You may need to choose a "Custom"
+installation and ensure that "Visual C++" is selected under "Programming Languages".
+
+Any version of Visual Studio 2015 may be used to build rippled.
+The **Visual Studio 2015 Community** edition is available free of charge (see
+[the product page](https://www.visualstudio.com/products/visual-studio-community-vs)
+for licensing details), while paid editions may be used for an free initial trial period.
 
 ### Install Git for Windows
 
@@ -45,7 +46,7 @@ Use of the bash shell under Windows is mandatory for running the unit tests.
 
 * NOTE: To gain full featured access to the
   [git-subtree](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/)
-  functionality used in the rippled repository we suggest Git version 1.8.3.2 or later.
+  functionality used in the rippled repository we suggest Git version 2.6.2 or later.
 
 ### Install Google Protocol Buffers Compiler
 
@@ -61,48 +62,51 @@ precompiled Windows executable from the
 Either way, once you have the required version of **protoc.exe**, copy it into
 a folder in your command line `%PATH%`.
 
-* **NOTE:** If you use an older version of the compiler, the build will fail with
-  errors related to a mismatch of the version of protocol buffer headers versus
-  the compiler.
-  
-### Install ActivePerl
+* **NOTE:** If you use an older version of the compiler, the build will
+  fail with errors related to a mismatch of the version of protocol
+  buffer headers versus the compiler.
 
-If not already installed on your system, download your choice of installers from the
-[Activeperl Download](https://www.activestate.com/activeperl/downloads)
-page, run the installer, and follow the directions.
+### (Optional) Install Python and Scons
+
+[Python](https://www.python.org/downloads/) and
+[Scons](http://scons.org/download.php) are not required to build
+rippled with Visual Studio, but can be used to build from the
+command line and in scripts, and are required to properly update
+the `RippleD.vcxproj` file.
+
+If you wish to build with scons, a version after 2.3.5 is required
+for Visual Studio 2015 support.
 
 ## Configure Dependencies
 
 ### Install OpenSSL
 
-1. Download OpenSSL *v1.0.2d or higher* source https://www.openssl.org/source/
-2. Unpack the source archive into a temporary folder.
-3. Open `cmd.exe`. Change the the folder where you unpacked OpenSSL.
-4. Build the 64-bit libraries: (
-  [Reference 1](http://developer.covenanteyes.com/building-openssl-for-visual-studio/),
-  [Reference 2](http://www.p-nand-q.com/programming/windows/building_openssl_with_visual_studio_2013.html))
+[Download OpenSSL.](http://slproweb.com/products/Win32OpenSSL.html)
+There will be four variants available:
 
-    ```powershell
-    "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"
-    "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-     
-    perl Configure VC-WIN64A --prefix=C:\lib\openssl-VC-64
-    ms\do_win64a
-    nmake -f ms\nt.mak
-    nmake -f ms\nt.mak install
-    
-    copy tmp32\lib.pdb C:\lib\openssl-VC-64\lib\
-    ```
-5. Optionally, delete the temporary folder.
+1. 64-bit. Use this if you are running 64-bit windows. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d".
+2. 64-bit light - Don't use this. It is missing files needed to build rippled. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d Light"
 
-* NOTE: Since rippled links statically to OpenSSL, it does not matter where the OpenSSL
-  .DLL files are placed, or what version they are. rippled does not use or require any
-  external .DLL files to run other than the standard operating system ones.
+Run the installer, and choose an appropriate location for your OpenSSL
+installation. In this guide we use **C:\lib\OpenSSL-Win64** as the
+destination location.
+
+You may be informed on running the installer that "Visual C++ 2008
+Redistributables" must first be installed first. If so, download it
+from the [same page](http://slproweb.com/products/Win32OpenSSL.html),
+again making sure to get the correct 32-/64-bit variant.
+
+* NOTE: Since rippled links statically to OpenSSL, it does not matter
+  where the OpenSSL .DLL files are placed, or what version they are.
+  rippled does not use or require any external .DLL files to run
+  other than the standard operating system ones.
 
 ### Build Boost
 
-After downloading boost and unpacking it, open a **Developer Command Prompt** for
-Visual Studio, change to the directory containing boost, then bootstrap the build tools:
+After [downloading boost](http://www.boost.org/users/download/) and
+unpacking it, open a **Developer Command Prompt** for
+Visual Studio, change to the directory containing boost, then
+bootstrap the build tools:
 
 ```powershell
 cd C:\lib\boost_1_59_0
@@ -158,10 +162,9 @@ git checkout master
 
 Open the solution file located at **Builds/Visual Studio 2015/ripple.sln**
 and select the "View->Other Windows->Property Manager" to bring up the Property Manager.
-Expand the *debug | x64* section (or similar section on 32-windows) and
+Expand the *debug | x64* section and
 double click the *Microsoft.Cpp.x64.user* property sheet to bring up the
-*Property Pages* dialog (these sections will be called *Win32* instead of
-*x64* on 32-bit windows). These are global properties applied to all
+*Property Pages* dialog. These are global properties applied to all
 64-bit build targets:
 
 ![Visual Studio 2015 Global Properties](images/VS2015x64Properties.png)
@@ -179,8 +182,8 @@ of building the boost libraries:
 
 Follow the same procedure for adding the `Additional Include Directories`
 and `Additional Library Directories` required for OpenSSL. In our example
-these directories are **C:\lib\openssl-VC-64\include** and
-**C:\lib\openssl-VC-64\lib** respectively.
+these directories are **C:\lib\OpenSSL-Win64\include** and
+**C:\lib\OpenSSL-Win64\lib** respectively.
 
 # Setup Environment
 
@@ -234,11 +237,26 @@ and then choose the **Build->Build Solution** menu item.
 
 # Unit Tests (Recommended)
 
+## Internal
+
+The internal rippled unit tests are written in C++ and are part
+of the rippled executable.
+
+From a Windows console, run the unit tests:
+
+```
+./build/msvc.debug/rippled.exe --unittest
+```
+
+Substitute the correct path to the executable to test different builds.
+
+## External
+
 The external rippled unit tests are written in Javascript using Node.js,
 and utilize the mocha unit test framework. To run the unit tests, it
 will be necessary to perform the following steps:
 
-## Install Node.js
+### Install Node.js
 
 [Install Node.js](http://nodejs.org/download/). We recommend the Windows
 installer (**.msi** file) as it takes care of updating the *PATH* environment
@@ -246,7 +264,7 @@ variable so that scripts can find the command. On Windows systems,
 **Node.js** comes with **npm**. A separate installation of **npm**
 is not necessary.
 
-## Create node_modules
+### Create node_modules
 
 Open a windows console. From the root of your local rippled repository
 directory, invoke **npm** to bring in the necessary components:
@@ -263,7 +281,7 @@ Error: ENOENT, stat 'C:\Users\username\AppData\Roaming\npm'
 
 simply create the indicated folder and try again.
 
-## Create a test config.js
+### Create a test config.js
 
 From a *bash* shell (installed with Git for Windows), copy the
 example configuration file into the appropriate location:
@@ -284,7 +302,7 @@ exports.default_server_config = {
 Also in **test/config.js**, change any occurrences of the
 IP address *0.0.0.0* to *127.0.0.1*.
 
-## Run Tests
+### Run Tests
 
 From a windows console, run the unit tests:
 
@@ -303,7 +321,7 @@ node_modules/mocha/bin/mocha test/account_tx-test.js
   facility is usually slightly behind the develop branch of the
   authoritative ripple-lib repository. Therefore, some tests might fail.
 
-## Development ripple-lib
+### Development ripple-lib
 
 To use the latest branch of **ripple-lib** during the unit tests,
 first clone the repository in a new location outside of your rippled
