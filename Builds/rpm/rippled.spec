@@ -4,7 +4,7 @@ Name:           rippled
 Version:        0.30.1
 # Release should include either the build or hotfix number (ex: hf1%{?dist} or b2%{?dist})
 # If there is no b# or hf#, then use 1%{?dist}
-Release:        b1%{?dist}
+Release:        b2%{?dist}
 Summary:        Ripple peer-to-peer network daemon
 
 Group:          Applications/Internet
