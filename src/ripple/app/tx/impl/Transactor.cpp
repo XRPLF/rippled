@@ -37,9 +37,7 @@ namespace ripple {
 TER
 preflight0(PreflightContext const& ctx)
 {
-    auto const txID = ctx.id;
-
-    if (txID == beast::zero)
+    if (ctx.id == beast::zero)
     {
         JLOG(ctx.j.warning) <<
             "applyTransaction: transaction id may not be zero";
