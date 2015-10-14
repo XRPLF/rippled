@@ -251,7 +251,7 @@ preflight (Application& app, Rules const& rules,
     STTx const& tx, ApplyFlags flags,
         beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx,
+    PreflightContext const pfctx(app, tx, tx.getTransactionID(),
         rules, flags, j);
     try
     {
@@ -282,13 +282,15 @@ preclaim (PreflightResult const& preflightResult,
             preflightResult.ctx.tx, preflightResult.ctx.flags,
                 preflightResult.ctx.j);
         ctx.emplace(app, view, secondFlight.ter, secondFlight.ctx.tx,
-            secondFlight.ctx.flags, secondFlight.ctx.j);
+            secondFlight.ctx.tid, secondFlight.ctx.flags,
+                secondFlight.ctx.j);
     }
     else
     {
         ctx.emplace(
             app, view, preflightResult.ter, preflightResult.ctx.tx,
-                preflightResult.ctx.flags, preflightResult.ctx.j);
+                preflightResult.ctx.tid, preflightResult.ctx.flags,
+                    preflightResult.ctx.j);
     }
     try
     {
@@ -318,17 +320,17 @@ doApply(PreclaimResult const& preclaimResult,
     {
         // Logic error from the caller. Don't have enough
         // info to recover.
-        return{ tefEXCEPTION, false };
+        return { tefEXCEPTION, false };
     }
     try
     {
         if (preclaimResult.ter != tesSUCCESS
                 && !isTecClaim(preclaimResult.ter))
-            return{ preclaimResult.ter, false };
+            return { preclaimResult.ter, false };
         ApplyContext ctx(app, view,
-            preclaimResult.ctx.tx, preclaimResult.ter,
-            preclaimResult.baseFee, preclaimResult.ctx.flags,
-            preclaimResult.ctx.j);
+            preclaimResult.ctx.tx, preclaimResult.ctx.tid,
+            preclaimResult.ter, preclaimResult.baseFee,
+            preclaimResult.ctx.flags, preclaimResult.ctx.j);
         return invoke_apply(ctx);
     }
     catch (std::exception const& e)

@@ -28,11 +28,12 @@
 namespace ripple {
 
 ApplyContext::ApplyContext(Application& app_,
-    OpenView& base, STTx const& tx_, TER preclaimResult_,
-        std::uint64_t baseFee_, ApplyFlags flags,
-            beast::Journal journal_)
+    OpenView& base, STTx const& tx_, TxID const& tid_,
+        TER preclaimResult_, std::uint64_t baseFee_,
+            ApplyFlags flags, beast::Journal journal_)
     : app(app_)
     , tx(tx_)
+    , tid(tid_)
     , preclaimResult(preclaimResult_)
     , baseFee(baseFee_)
     , journal(journal_)
