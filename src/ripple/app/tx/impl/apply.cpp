@@ -282,14 +282,14 @@ preclaim (PreflightResult const& preflightResult,
             preflightResult.ctx.tx, preflightResult.ctx.flags,
                 preflightResult.ctx.j);
         ctx.emplace(app, view, secondFlight.ter, secondFlight.ctx.tx,
-            secondFlight.ctx.id, secondFlight.ctx.flags,
+            secondFlight.ctx.tid, secondFlight.ctx.flags,
                 secondFlight.ctx.j);
     }
     else
     {
         ctx.emplace(
             app, view, preflightResult.ter, preflightResult.ctx.tx,
-                preflightResult.ctx.id, preflightResult.ctx.flags,
+                preflightResult.ctx.tid, preflightResult.ctx.flags,
                     preflightResult.ctx.j);
     }
     try
@@ -328,7 +328,7 @@ doApply(PreclaimResult const& preclaimResult,
                 && !isTecClaim(preclaimResult.ter))
             return { preclaimResult.ter, false };
         ApplyContext ctx(app, view,
-            preclaimResult.ctx.tx, preclaimResult.ctx.id,
+            preclaimResult.ctx.tx, preclaimResult.ctx.tid,
             preclaimResult.ter, preclaimResult.baseFee,
             preclaimResult.ctx.flags, preclaimResult.ctx.j);
         return invoke_apply(ctx);

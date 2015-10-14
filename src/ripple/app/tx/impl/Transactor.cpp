@@ -37,7 +37,7 @@ namespace ripple {
 TER
 preflight0(PreflightContext const& ctx)
 {
-    if (ctx.id == beast::zero)
+    if (ctx.tid == beast::zero)
     {
         JLOG(ctx.j.warning) <<
             "applyTransaction: transaction id may not be zero";
@@ -110,10 +110,11 @@ calculateFee(Application& app, std::uint64_t const baseFee,
 //------------------------------------------------------------------------------
 
 PreflightContext::PreflightContext(Application& app_, STTx const& tx_,
-    Rules const& rules_, ApplyFlags flags_,
+    TxID const& tid_, Rules const& rules_, ApplyFlags flags_,
         beast::Journal j_)
     : app(app_)
     , tx(tx_)
+    , tid(tid_)
     , rules(rules_)
     , flags(flags_)
     , j(j_)
@@ -240,7 +241,7 @@ Transactor::checkSeq (PreclaimContext const& ctx)
             return terPRE_SEQ;
         }
 
-        if (ctx.view.txExists(ctx.id))
+        if (ctx.view.txExists(ctx.tid))
             return tefALREADY;
 
         JLOG(ctx.j.trace) << "applyTransaction: has past sequence number " <<
@@ -270,7 +271,7 @@ Transactor::setSeq ()
     sle->setFieldU32 (sfSequence, t_seq + 1);
 
     if (sle->isFieldPresent (sfAccountTxnID))
-        sle->setFieldH256 (sfAccountTxnID, ctx_.id);
+        sle->setFieldH256 (sfAccountTxnID, ctx_.tid);
 }
 
 // check stuff before you bother to lock the ledger
@@ -586,8 +587,6 @@ Transactor::operator()()
     JLOG(j_.trace) <<
         "applyTransaction>";
 
-    auto const txID = ctx_.id;
-
 #ifdef BEAST_DEBUG
     {
         Serializer ser;
@@ -638,7 +637,7 @@ Transactor::operator()()
     {
         // only claim the transaction fee
         JLOG(j_.debug) <<
-            "Reprocessing tx " << txID << " to only claim fee";
+            "Reprocessing tx " << ctx_.tid << " to only claim fee";
 
         std::vector<uint256> removedOffers;
         if (terResult == tecOVERSIZE)
@@ -692,7 +691,7 @@ Transactor::operator()()
     }
     else if (!didApply)
     {
-        JLOG(j_.debug) << "Not applying transaction " << txID;
+        JLOG(j_.debug) << "Not applying transaction " << ctx_.tid;
     }
 
     if (didApply)
