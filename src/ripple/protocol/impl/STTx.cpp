@@ -27,6 +27,7 @@
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/types.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -34,6 +35,7 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/format.hpp>
 #include <array>
+#include <utility>
 
 namespace ripple {
 
@@ -74,6 +76,8 @@ STTx::STTx (STObject&& object)
             "Transaction not legal for format";
         throw std::runtime_error ("transaction not valid");
     }
+
+    tid_ = getHash(HashPrefix::transactionID);
 }
 
 STTx::STTx (SerialIter& sit)
@@ -106,6 +110,8 @@ STTx::STTx (SerialIter& sit)
             "Transaction not legal for format";
         throw std::runtime_error ("transaction not valid");
     }
+
+    tid_ = getHash(HashPrefix::transactionID);
 }
 
 std::string
@@ -161,7 +167,10 @@ STTx::getSigningHash () const
 uint256
 STTx::getTransactionID () const
 {
-    return getHash (HashPrefix::transactionID);
+    assert(tid_);
+    if (! tid_)
+        LogicError("digest is undefined");
+    return *tid_;
 }
 
 Blob STTx::getSignature () const
@@ -180,6 +189,7 @@ void STTx::sign (RippleAddress const& private_key)
 {
     Blob const signature = private_key.accountPrivateSign (getSigningData (*this));
     setFieldVL (sfTxnSignature, signature);
+    tid_ = getHash(HashPrefix::transactionID);
 }
 
 bool STTx::checkSign(bool allowMultiSign) const
@@ -497,6 +507,15 @@ bool passesLocalChecks (STObject const& st, std::string& reason)
     }
 
     return true;
+}
+
+std::shared_ptr<STTx const>
+sterilize (STTx const& stx)
+{
+    Serializer s;
+    stx.add(s);
+    SerialIter sit(s.slice());
+    return std::make_shared<STTx const>(std::ref(sit));
 }
 
 } // ripple

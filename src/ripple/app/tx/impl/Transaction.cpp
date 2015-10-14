@@ -31,7 +31,7 @@
 
 namespace ripple {
 
-Transaction::Transaction (STTx::ref stx,
+Transaction::Transaction (std::shared_ptr<STTx const> const& stx,
     std::string& reason, Application& app)
     noexcept
     : mTransaction (stx)
@@ -62,7 +62,7 @@ Transaction::pointer Transaction::sharedTransaction (
     try
     {
         SerialIter sit (makeSlice(vucTransaction));
-        auto txn = std::make_shared<STTx>(sit);
+        auto txn = std::make_shared<STTx const>(sit);
         std::string reason;
         auto result = std::make_shared<Transaction> (
             txn, reason, app);
@@ -125,7 +125,7 @@ Transaction::pointer Transaction::transactionFromSQL (
         rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
 
     SerialIter it (makeSlice(rawTxn));
-    auto txn = std::make_shared<STTx> (it);
+    auto txn = std::make_shared<STTx const> (it);
     std::string reason;
     auto tr = std::make_shared<Transaction> (
         txn, reason, app);

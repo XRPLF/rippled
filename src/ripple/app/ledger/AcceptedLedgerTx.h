@@ -62,7 +62,7 @@ public:
         Logs&);
     AcceptedLedgerTx (
         std::shared_ptr<ReadView const> const&,
-        STTx::ref,
+        std::shared_ptr<STTx const> const&,
         TER,
         AccountIDCache const&,
         Logs&);

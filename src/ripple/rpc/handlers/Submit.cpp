@@ -67,11 +67,11 @@ Json::Value doSubmit (RPC::Context& context)
 
     SerialIter sitTrans (makeSlice(ret.first));
 
-    STTx::pointer stpTrans;
+    std::shared_ptr<STTx const> stpTrans;
 
     try
     {
-        stpTrans = std::make_shared<STTx> (std::ref (sitTrans));
+        stpTrans = std::make_shared<STTx const> (std::ref (sitTrans));
     }
     catch (std::exception& e)
     {

@@ -36,7 +36,7 @@ public:
     virtual ~LocalTxs () = default;
 
     // Add a new local transaction
-    virtual void push_back (LedgerIndex index, STTx::ref txn) = 0;
+    virtual void push_back (LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
 
     // Return the set of local transactions to a new open ledger
     virtual CanonicalTXSet getTxSet () = 0;

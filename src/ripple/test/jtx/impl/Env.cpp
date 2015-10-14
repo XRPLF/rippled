@@ -270,15 +270,14 @@ void
 Env::submit (JTx const& jt)
 {
     bool didApply;
-    auto const& stx = jt.stx;
-    if (stx)
+    if (jt.stx)
     {
-        txid_ = stx->getTransactionID();
+        txid_ = jt.stx->getTransactionID();
         openLedger.modify(
             [&](OpenView& view, beast::Journal j)
             {
                 std::tie(ter_, didApply) = ripple::apply(
-                    app(), view, *stx, applyFlags(),
+                    app(), view, *jt.stx, applyFlags(),
                         beast::Journal{});
                 return didApply;
             });
@@ -385,8 +384,7 @@ Env::st (JTx const& jt)
 
     try
     {
-        return std::make_shared<STTx>(
-            std::move(*obj));
+        return sterilize(STTx{std::move(*obj)});
     }
     catch(...)
     {

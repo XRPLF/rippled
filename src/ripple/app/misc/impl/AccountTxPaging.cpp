@@ -40,7 +40,7 @@ convertBlobsToTxResult (
     Application& app)
 {
     SerialIter it (makeSlice(rawTxn));
-    STTx::pointer txn = std::make_shared<STTx> (it);
+    auto txn = std::make_shared<STTx const> (it);
     std::string reason;
 
     auto tr = std::make_shared<Transaction> (txn, reason, app);

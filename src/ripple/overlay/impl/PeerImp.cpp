@@ -1031,7 +1031,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 
     try
     {
-        auto stx = std::make_shared<STTx>(sit);
+        auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID ();
 
         int flags;
@@ -1716,7 +1716,7 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
 
 void
 PeerImp::checkTransaction (int flags,
-    bool checkSignature, STTx::pointer stx)
+    bool checkSignature, std::shared_ptr<STTx const> const& stx)
 {
     // VFALCO TODO Rewrite to not use exceptions
     try
