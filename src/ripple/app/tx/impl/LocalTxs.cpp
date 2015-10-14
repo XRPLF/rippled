@@ -59,7 +59,7 @@ public:
     // get into a fully-validated ledger.
     static int const holdLedgers = 5;
 
-    LocalTx (LedgerIndex index, STTx::ref txn)
+    LocalTx (LedgerIndex index, std::shared_ptr<STTx const> const& txn)
         : m_txn (txn)
         , m_expire (index + holdLedgers)
         , m_id (txn->getTransactionID ())
@@ -85,7 +85,7 @@ public:
         return i > m_expire;
     }
 
-    STTx::ref getTX () const
+    std::shared_ptr<STTx const> const& getTX () const
     {
         return m_txn;
     }
@@ -97,7 +97,7 @@ public:
 
 private:
 
-    STTx::pointer m_txn;
+    std::shared_ptr<STTx const> m_txn;
     LedgerIndex                    m_expire;
     uint256                        m_id;
     AccountID                      m_account;
@@ -113,7 +113,7 @@ public:
     LocalTxsImp() = default;
 
     // Add a new transaction to the set of local transactions
-    void push_back (LedgerIndex index, STTx::ref txn) override
+    void push_back (LedgerIndex index, std::shared_ptr<STTx const> const& txn) override
     {
         std::lock_guard <std::mutex> lock (m_lock);
 

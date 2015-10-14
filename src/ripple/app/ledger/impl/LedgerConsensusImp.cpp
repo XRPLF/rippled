@@ -1164,7 +1164,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                     << " not get in";
                 SerialIter sit (it.second->peekTransaction().slice());
 
-                auto txn = std::make_shared<STTx>(sit);
+                auto txn = std::make_shared<STTx const>(sit);
 
                 retriableTxs.insert (txn);
 

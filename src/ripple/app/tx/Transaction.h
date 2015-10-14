@@ -64,7 +64,7 @@ public:
 
 public:
     Transaction (
-        STTx::ref, std::string&, Application&) noexcept;
+        std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
     static
     Transaction::pointer
@@ -90,7 +90,7 @@ public:
     TransStatus
     sqlTransactionStatus(boost::optional<std::string> const& status);
 
-    STTx::ref getSTransaction ()
+    std::shared_ptr<STTx const> const& getSTransaction ()
     {
         return mTransaction;
     }
@@ -170,7 +170,7 @@ private:
     TER             mResult = temUNCERTAIN;
     bool            mApplying = false;
 
-    STTx::pointer   mTransaction;
+    std::shared_ptr<STTx const>   mTransaction;
     Application&    mApp;
     beast::Journal  j_;
 };

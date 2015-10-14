@@ -110,7 +110,7 @@ public:
     //
 
     // must complete immediately
-    virtual void submitTransaction (STTx::pointer) = 0;
+    virtual void submitTransaction (std::shared_ptr<STTx const> const&) = 0;
 
     /**
      * Process transactions as they arrive from the network or which are
@@ -229,7 +229,7 @@ public:
     virtual void pubLedger (Ledger::ref lpAccepted) = 0;
     virtual void pubProposedTransaction (
         std::shared_ptr<ReadView const> const& lpCurrent,
-        STTx::ref stTxn, TER terResult) = 0;
+        std::shared_ptr<STTx const> const& stTxn, TER terResult) = 0;
 };
 
 //------------------------------------------------------------------------------

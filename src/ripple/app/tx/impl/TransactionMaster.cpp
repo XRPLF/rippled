@@ -60,11 +60,12 @@ Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkD
     return txn;
 }
 
-STTx::pointer TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
+std::shared_ptr<STTx const>
+TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
         SHAMapTreeNode::TNType type,
         bool checkDisk, std::uint32_t uCommitLedger)
 {
-    STTx::pointer  txn;
+    std::shared_ptr<STTx const>  txn;
     auto iTx = fetch (item->key(), false);
 
     if (!iTx)
@@ -73,12 +74,12 @@ STTx::pointer TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
         if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         {
             SerialIter sit (item->slice());
-            txn = std::make_shared<STTx> (std::ref (sit));
+            txn = std::make_shared<STTx const> (std::ref (sit));
         }
         else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
         {
             auto blob = SerialIter{item->data(), item->size()}.getVL();
-            txn = std::make_shared<STTx>(SerialIter{blob.data(), blob.size()});
+            txn = std::make_shared<STTx const>(SerialIter{blob.data(), blob.size()});
         }
     }
     else

@@ -54,7 +54,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (
 
 AcceptedLedgerTx::AcceptedLedgerTx (
     std::shared_ptr<ReadView const> const& ledger,
-    STTx::ref txn,
+    std::shared_ptr<STTx const> const& txn,
     TER result,
     AccountIDCache const& accountCache,
     Logs& logs)

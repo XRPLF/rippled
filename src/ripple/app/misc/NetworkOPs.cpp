@@ -155,7 +155,7 @@ public:
     //
 
     // Must complete immediately.
-    void submitTransaction (STTx::pointer) override;
+    void submitTransaction (std::shared_ptr<STTx const> const&) override;
 
     void processTransaction (
         Transaction::pointer& transaction,
@@ -339,7 +339,7 @@ public:
     void pubLedger (Ledger::ref lpAccepted) override;
     void pubProposedTransaction (
         std::shared_ptr<ReadView const> const& lpCurrent,
-        STTx::ref stTxn, TER terResult) override;
+        std::shared_ptr<STTx const> const& stTxn, TER terResult) override;
 
     //--------------------------------------------------------------------------
     //
@@ -639,7 +639,7 @@ std::string NetworkOPsImp::strOperatingMode () const
     return paStatusToken[mMode];
 }
 
-void NetworkOPsImp::submitTransaction (STTx::pointer iTrans)
+void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans)
 {
     if (isNeedNetworkLedger ())
     {
@@ -648,11 +648,7 @@ void NetworkOPsImp::submitTransaction (STTx::pointer iTrans)
     }
 
     // this is an asynchronous interface
-    Serializer s;
-    iTrans->add (s);
-
-    SerialIter sit (s.slice());
-    auto trans = std::make_shared<STTx> (std::ref (sit));
+    auto const trans = sterilize(*iTrans);
 
     auto const txid = trans->getTransactionID ();
     auto const flags = app_.getHashRouter().getFlags(txid);
@@ -2005,7 +2001,7 @@ Json::Value NetworkOPsImp::getLedgerFetchInfo ()
 
 void NetworkOPsImp::pubProposedTransaction (
     std::shared_ptr<ReadView const> const& lpCurrent,
-    STTx::ref stTxn, TER terResult)
+    std::shared_ptr<STTx const> const& stTxn, TER terResult)
 {
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 

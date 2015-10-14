@@ -57,7 +57,7 @@ void ConsensusTransSetSF::gotNode (
             // skip prefix
             Serializer s (nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit (s.slice());
-            STTx::pointer stx = std::make_shared<STTx> (std::ref (sit));
+            auto stx = std::make_shared<STTx const> (std::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
             auto const pap = &app_;
             app_.getJobQueue ().addJob (

@@ -24,6 +24,7 @@
 #include <ripple/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
 #include <boost/logic/tribool.hpp>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -41,9 +42,6 @@ class STTx final
 {
 public:
     static char const* getCountedObjectName () { return "STTx"; }
-
-    using pointer = std::shared_ptr<STTx>;
-    using ref     = const std::shared_ptr<STTx>&;
 
     static std::size_t const minMultiSigners = 1;
     static std::size_t const maxMultiSigners = 8;
@@ -134,10 +132,21 @@ private:
     bool checkSingleSign () const;
     bool checkMultiSign () const;
 
+    boost::optional<uint256> tid_;
     TxType tx_type_;
 };
 
 bool passesLocalChecks (STObject const& st, std::string&);
+
+/** Sterilize a transaction.
+
+    The transaction is serialized and then deserialized,
+    ensuring that all equivalent transactions are in canonical
+    form. This also ensures that program metadata such as
+    the transaction's digest, are all computed.
+*/
+std::shared_ptr<STTx const>
+sterilize (STTx const& stx);
 
 } // ripple
 
