@@ -653,12 +653,11 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 
             // Tell the ledger acquire system that we need the consensus ledger
             mAcquiringLedger = mPrevLedgerHash;
-            auto& previousHash = mPrevLedgerHash;
             app_.getJobQueue().addJob (
                 jtADVANCE, "getConsensusLedger",
-                [&] (Job&) {
+                [=] (Job&) {
                     app_.getInboundLedgers().acquire(
-                        previousHash, 0, InboundLedger::fcCONSENSUS);
+                        mAcquiringLedger, 0, InboundLedger::fcCONSENSUS);
                 });
 
             mHaveCorrectLCL = false;
