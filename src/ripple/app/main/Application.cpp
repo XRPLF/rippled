@@ -30,6 +30,8 @@
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
+#include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
@@ -43,8 +45,6 @@
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/misc/UniqueNodeList.h>
-#include <ripple/app/tx/InboundTransactions.h>
-#include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ResolverAsio.h>

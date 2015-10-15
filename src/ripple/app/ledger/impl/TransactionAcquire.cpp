@@ -18,12 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/impl/TransactionAcquire.h>
 #include <ripple/app/ledger/ConsensusTransSetSF.h>
 #include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/TransactionAcquire.h>
-#include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/overlay/Overlay.h>
 #include <beast/utility/make_lock.h>
 #include <memory>

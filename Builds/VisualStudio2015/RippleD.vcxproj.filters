@@ -2097,6 +2097,9 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedgers.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundTransactions.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
@@ -2118,13 +2121,28 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerToJson.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LocalTxs.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\OpenLedger.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\TransactionAcquire.cpp">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\ledger\impl\TransactionAcquire.h">
+      <Filter>ripple\app\ledger\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\impl\TransactionMaster.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\InboundLedgers.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\InboundTransactions.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\Ledger.cpp">
@@ -2160,6 +2178,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LocalTxs.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\OpenLedger.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
@@ -2170,6 +2191,9 @@
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\PendingSaves.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\TransactionMaster.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\TransactionStateSF.cpp">
@@ -2256,6 +2280,9 @@
     <ClInclude Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.h">
       <Filter>ripple\app\misc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\Transaction.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\TxQ.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
@@ -2275,6 +2302,9 @@
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\Transaction.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
@@ -2502,12 +2532,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\CreateTicket.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\InboundTransactions.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\LocalTxs.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Offer.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
@@ -2565,35 +2589,11 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Taker.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\Transaction.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionAcquire.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\TransactionMaster.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Transactor.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Transactor.h">
       <Filter>ripple\app\tx\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\InboundTransactions.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\LocalTxs.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\Transaction.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\TransactionAcquire.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\TransactionMaster.h">
-      <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">
       <Filter>ripple\basics</Filter>

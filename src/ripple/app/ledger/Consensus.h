@@ -22,15 +22,16 @@
 
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/tx/InboundTransactions.h>
-#include <ripple/app/tx/LocalTxs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 
 #include <memory>
 
 namespace ripple {
+
+class LocalTxs;
 
 /** Implements the consensus process and provides inter-round state. */
 class Consensus

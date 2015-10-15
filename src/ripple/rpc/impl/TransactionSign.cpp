@@ -21,6 +21,7 @@
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/tx/apply.h>              // Validity::Valid
 #include <ripple/basics/Log.h>

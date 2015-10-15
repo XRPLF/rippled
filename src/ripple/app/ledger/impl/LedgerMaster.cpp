@@ -32,6 +32,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/paths/PathRequests.h>
@@ -315,7 +316,8 @@ public:
         mPubLedgerSeq = l->info().seq;
     }
 
-    void addHeldTransaction (Transaction::ref transaction) override
+    void addHeldTransaction (
+        std::shared_ptr<Transaction> const& transaction) override
     {
         // returns true if transaction was added
         ScopedLockType ml (m_mutex);

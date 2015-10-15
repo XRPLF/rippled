@@ -29,18 +29,20 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
+#include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Time.h>
 #include <ripple/protocol/digest.h>
@@ -85,7 +87,7 @@ class NetworkOPsImp final
     class TransactionStatus
     {
     public:
-        Transaction::pointer transaction;
+        std::shared_ptr<Transaction> transaction;
         bool admin;
         bool local;
         FailHard failType;
@@ -93,7 +95,7 @@ class NetworkOPsImp final
         TER result;
 
         TransactionStatus (
-                Transaction::pointer t,
+                std::shared_ptr<Transaction> t,
                 bool a,
                 bool l,
                 FailHard f)
@@ -159,7 +161,7 @@ public:
     void submitTransaction (std::shared_ptr<STTx const> const&) override;
 
     void processTransaction (
-        Transaction::pointer& transaction,
+        std::shared_ptr<Transaction>& transaction,
         bool bAdmin, bool bLocal, FailHard failType) override;
 
     /**
@@ -170,7 +172,7 @@ public:
      * @param bAdmin Whether an administrative client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
      */
-    void doTransactionSync (Transaction::pointer transaction,
+    void doTransactionSync (std::shared_ptr<Transaction> transaction,
         bool bAdmin, FailHard failType);
 
     /**
@@ -182,7 +184,7 @@ public:
      * @param bAdmin Whether an administrative client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
      */
-    void doTransactionAsync (Transaction::pointer transaction,
+    void doTransactionAsync (std::shared_ptr<Transaction> transaction,
         bool bAdmin, FailHard failtype);
 
     /**
@@ -699,7 +701,7 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
     });
 }
 
-void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
+void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transaction,
         bool bAdmin, bool bLocal, FailHard failType)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
@@ -744,7 +746,7 @@ void NetworkOPsImp::processTransaction (Transaction::pointer& transaction,
         doTransactionAsync (transaction, bAdmin, failType);
 }
 
-void NetworkOPsImp::doTransactionAsync (Transaction::pointer transaction,
+void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction,
         bool bAdmin, FailHard failType)
 {
     std::lock_guard<std::mutex> lock (mMutex);
@@ -764,7 +766,7 @@ void NetworkOPsImp::doTransactionAsync (Transaction::pointer transaction,
     }
 }
 
-void NetworkOPsImp::doTransactionSync (Transaction::pointer transaction,
+void NetworkOPsImp::doTransactionSync (std::shared_ptr<Transaction> transaction,
         bool bAdmin, FailHard failType)
 {
     std::unique_lock<std::mutex> lock (mMutex);

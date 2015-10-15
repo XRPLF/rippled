@@ -29,6 +29,7 @@ namespace ripple {
 // Forward declarations
 class Application;
 class LoadFeeTrack;
+class Transaction;
 
 namespace RPC {
 
@@ -63,12 +64,12 @@ Json::Value checkFee (
 
 // Return a std::function<> that calls NetworkOPs::processTransaction.
 using ProcessTransactionFn =
-    std::function<void (Transaction::pointer& transaction,
+    std::function<void (std::shared_ptr<Transaction>& transaction,
         bool bAdmin, bool bLocal, NetworkOPs::FailHard failType)>;
 
 inline ProcessTransactionFn getProcessTxnFn (NetworkOPs& netOPs)
 {
-    return [&netOPs](Transaction::pointer& transaction,
+    return [&netOPs](std::shared_ptr<Transaction>& transaction,
         bool bAdmin, bool bLocal, NetworkOPs::FailHard failType)
     {
         netOPs.processTransaction(transaction, bAdmin, bLocal, failType);

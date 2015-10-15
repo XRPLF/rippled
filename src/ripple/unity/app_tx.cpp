@@ -27,8 +27,6 @@
 #include <ripple/app/tx/impl/Change.cpp>
 #include <ripple/app/tx/impl/CreateOffer.cpp>
 #include <ripple/app/tx/impl/CreateTicket.cpp>
-#include <ripple/app/tx/impl/InboundTransactions.cpp>
-#include <ripple/app/tx/impl/LocalTxs.cpp>
 #include <ripple/app/tx/impl/OfferStream.cpp>
 #include <ripple/app/tx/impl/Payment.cpp>
 #include <ripple/app/tx/impl/SetAccount.cpp>
@@ -38,8 +36,5 @@
 #include <ripple/app/tx/impl/SignerEntries.cpp>
 #include <ripple/app/tx/impl/SusPay.cpp>
 #include <ripple/app/tx/impl/Taker.cpp>
-#include <ripple/app/tx/impl/TransactionMaster.cpp>
-#include <ripple/app/tx/impl/Transaction.cpp>
 #include <ripple/app/tx/impl/ApplyContext.cpp>
-#include <ripple/app/tx/impl/TransactionAcquire.cpp>
 #include <ripple/app/tx/impl/Transactor.cpp>

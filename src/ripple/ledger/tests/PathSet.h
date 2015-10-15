@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/tx/impl/BookTip.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/test/jtx.h>

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/LocalTxs.h>
+#include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/Indexes.h>
 
