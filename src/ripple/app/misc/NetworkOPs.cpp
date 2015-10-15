@@ -832,25 +832,25 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             std::lock_guard <std::recursive_mutex> lock (
                 m_ledgerMaster.peekMutex());
 
-            for (TransactionStatus& e : transactions)
+            app_.openLedger().modify(
+                [&](OpenView& view, beast::Journal j)
             {
-                ApplyFlags flags = tapNONE;
-                // All code paths to this point are gated by validity checks.
-                flags = flags | tapNO_CHECK_SIGN;
-                if (e.admin)
-                    flags = flags | tapADMIN;
+                bool changed = false;
+                for (TransactionStatus& e : transactions)
+                {
+                    // we check before addingto the batch
+                    ApplyFlags flags = tapNO_CHECK_SIGN;
+                    if (e.admin)
+                        flags = flags | tapADMIN;
 
-                // VFALCO Should do the loop inside modify()
-                app_.openLedger().modify(
-                    [&](OpenView& view, beast::Journal j)
-                    {
-                        auto const result = ripple::apply(app_, view,
-                            *e.transaction->getSTransaction(), flags, j);
-                        e.result = result.first;
-                        e.applied = result.second;
-                        return result.second;
-                    });
-            }
+                    auto const result = ripple::apply(app_, view,
+                        *e.transaction->getSTransaction(), flags, j);
+                    e.result = result.first;
+                    e.applied = result.second;
+                    changed = changed || result.second;
+                }
+                return changed;
+            });
         }
 
         auto newOL = app_.openLedger().current();
