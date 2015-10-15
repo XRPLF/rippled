@@ -38,6 +38,7 @@
 namespace ripple {
 
 class Peer;
+class Transaction;
 
 struct LedgerReplay
 {
@@ -136,7 +137,7 @@ public:
     virtual uint256 getLedgerHash(
         std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
-    virtual void addHeldTransaction (Transaction::ref trans) = 0;
+    virtual void addHeldTransaction (std::shared_ptr<Transaction> const& trans) = 0;
     virtual void fixMismatch (Ledger::ref ledger) = 0;
 
     virtual bool haveLedger (std::uint32_t seq) = 0;

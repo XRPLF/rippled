@@ -22,11 +22,10 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
-#include <ripple/app/tx/InboundTransactions.h>
-#include <ripple/app/tx/LocalTxs.h>
 #include <ripple/json/json_value.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/RippleLedgerHash.h>

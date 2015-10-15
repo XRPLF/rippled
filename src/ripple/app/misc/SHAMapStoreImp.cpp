@@ -21,6 +21,7 @@
 
 #include <ripple/app/misc/SHAMapStoreImp.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>

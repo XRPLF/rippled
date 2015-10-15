@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_TRANSACTIONACQUIRE_H_INCLUDED
-#define RIPPLE_APP_TX_TRANSACTIONACQUIRE_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
+#define RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
 #include <ripple/overlay/PeerSet.h>

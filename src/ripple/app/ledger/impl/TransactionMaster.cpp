@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/app/ledger/TransactionMaster.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/protocol/STTx.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 
@@ -34,7 +36,7 @@ TransactionMaster::TransactionMaster (Application& app)
 
 bool TransactionMaster::inLedger (uint256 const& hash, std::uint32_t ledger)
 {
-    Transaction::pointer txn = mCache.fetch (hash);
+    auto txn = mCache.fetch (hash);
 
     if (!txn)
         return false;
@@ -43,9 +45,10 @@ bool TransactionMaster::inLedger (uint256 const& hash, std::uint32_t ledger)
     return true;
 }
 
-Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkDisk)
+std::shared_ptr<Transaction>
+TransactionMaster::fetch (uint256 const& txnID, bool checkDisk)
 {
-    Transaction::pointer txn = mCache.fetch (txnID);
+    auto txn = mCache.fetch (txnID);
 
     if (!checkDisk || txn)
         return txn;
@@ -62,7 +65,7 @@ Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkD
 
 std::shared_ptr<STTx const>
 TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
-        SHAMapTreeNode::TNType type,
+    SHAMapTreeNode::TNType type,
         bool checkDisk, std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const>  txn;
@@ -94,12 +97,12 @@ TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
 }
 
 void
-TransactionMaster::canonicalize(Transaction::pointer* pTransaction)
+TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 {
     uint256 const tid = (*pTransaction)->getID();
     if (tid != zero)
     {
-        Transaction::pointer txn(*pTransaction);
+        auto txn = *pTransaction;
         // VFALCO NOTE canonicalize can change the value of txn!
         mCache.canonicalize(tid, txn);
         *pTransaction = txn;

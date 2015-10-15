@@ -65,7 +65,6 @@ Json::Value doTransactionEntry (RPC::Context& context)
         }
         else
         {
-            Transaction::pointer        tpTrans;
             TxMeta::pointer tmTrans;
 
             auto tx = lpLedger->txRead (uTransID);

@@ -19,9 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/ConsensusTransSetSF.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/TransactionMaster.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/core/JobQueue.h>

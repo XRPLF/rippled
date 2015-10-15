@@ -40,6 +40,7 @@ namespace ripple {
 
 class Peer;
 class LedgerMaster;
+class Transaction;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -121,7 +122,7 @@ public:
      * @param bLocal Client submission.
      * @param failType fail_hard setting from transaction submission.
      */
-    virtual void processTransaction (Transaction::pointer& transaction,
+    virtual void processTransaction (std::shared_ptr<Transaction>& transaction,
         bool bAdmin, bool bLocal, FailHard failType) = 0;
 
     //--------------------------------------------------------------------------
@@ -198,7 +199,7 @@ public:
     virtual std::size_t getLocalTxCount () = 0;
 
     // client information retrieval functions
-    using AccountTx  = std::pair<Transaction::pointer, TxMeta::pointer>;
+    using AccountTx  = std::pair<std::shared_ptr<Transaction>, TxMeta::pointer>;
     using AccountTxs = std::vector<AccountTx>;
 
     virtual AccountTxs getAccountTxs (

@@ -21,7 +21,6 @@
 #define RIPPLE_RPC_IMPL_UTILITIES_H_INCLUDED
 
 #include <ripple/ledger/TxMeta.h>
-#include <ripple/app/tx/Transaction.h>
 #include <ripple/rpc/impl/Tuning.h>
 
 namespace Json {
@@ -29,6 +28,8 @@ class Value;
 }
 
 namespace ripple {
+
+class Transaction;
 
 namespace RPC {
 
@@ -38,7 +39,7 @@ void
 addPaymentDeliveredAmount (
     Json::Value&,
     Context&,
-    Transaction::pointer,
+    std::shared_ptr<Transaction>,
     TxMeta::pointer);
 
 /** Inject JSON describing ledger entry

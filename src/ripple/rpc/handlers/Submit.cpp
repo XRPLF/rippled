@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -94,9 +95,8 @@ Json::Value doSubmit (RPC::Context& context)
         }
     }
 
-    Transaction::pointer            tpTrans;
     std::string reason;
-    tpTrans = std::make_shared<Transaction> (
+    auto tpTrans = std::make_shared<Transaction> (
         stpTrans, reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {

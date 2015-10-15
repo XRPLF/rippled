@@ -21,8 +21,8 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/app/tx/Transaction.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/types.h>
 #include <boost/format.hpp>

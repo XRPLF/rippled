@@ -17,16 +17,17 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_TRANSACTIONMASTER_H_INCLUDED
-#define RIPPLE_APP_TX_TRANSACTIONMASTER_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_TRANSACTIONMASTER_H_INCLUDED
 
-#include <ripple/app/tx/Transaction.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 
 namespace ripple {
 
 class Application;
+class Transaction;
+class STTx;
 
 // Tracks all transactions in memory
 
@@ -37,18 +38,18 @@ public:
     TransactionMaster (TransactionMaster const&) = delete;
     TransactionMaster& operator= (TransactionMaster const&) = delete;
 
-    Transaction::pointer
+    std::shared_ptr<Transaction>
     fetch (uint256 const& , bool checkDisk);
 
     std::shared_ptr<STTx const>
     fetch (std::shared_ptr<SHAMapItem> const& item,
-        SHAMapTreeNode:: TNType type,
-            bool checkDisk, std::uint32_t uCommitLedger);
+        SHAMapTreeNode::TNType type, bool checkDisk,
+            std::uint32_t uCommitLedger);
 
     // return value: true = we had the transaction already
     bool inLedger (uint256 const& hash, std::uint32_t ledger);
 
-    void canonicalize (Transaction::pointer* pTransaction);
+    void canonicalize (std::shared_ptr<Transaction>* pTransaction);
 
     void sweep (void);
 

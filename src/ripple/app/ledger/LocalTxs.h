@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_LOCALTXS_H_INCLUDED
-#define RIPPLE_APP_TX_LOCALTXS_H_INCLUDED
+#ifndef RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
+#define RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
