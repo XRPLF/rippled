@@ -23,14 +23,15 @@ software components:
 
 ### Install Visual Studio 2015
 
-If not already installed on your system, download your choice of installers from the
+If not already installed on your system, download your choice of installer from the
 [Visual Studio 2015 Download](https://www.visualstudio.com/downloads/download-visual-studio-vs)
-page, run the installer, and follow the directions.
-The **Visual Studio 2015 Community** edition is available for free, while paid editions
-may be used for an free initial trial period.
+page, run the installer, and follow the directions. You may need to choose a "Custom"
+installation and ensure that "Visual C++" is selected under "Programming Languages".
 
-Any version of Visual Studio 2015 may be used, including the Visual Studio Community
-Edition which is available under a free license.
+Any version of Visual Studio 2015 may be used to build rippled.
+The **Visual Studio 2015 Community** edition is available free of charge (see
+[the product page](https://www.visualstudio.com/products/visual-studio-community-vs)
+for licensing details), while paid editions may be used for an free initial trial period.
 
 ### Install Git for Windows
 
