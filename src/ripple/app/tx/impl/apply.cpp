@@ -88,20 +88,20 @@ invoke_calculateBaseFee(PreclaimContext const& ctx)
 {
     switch (ctx.tx.getTxnType())
     {
-    case ttACCOUNT_SET:     return invoke_calculateBaseFee<SetAccount>(ctx);
-    case ttOFFER_CANCEL:    return invoke_calculateBaseFee<CancelOffer>(ctx);
-    case ttOFFER_CREATE:    return invoke_calculateBaseFee<CreateOffer>(ctx);
-    case ttPAYMENT:         return invoke_calculateBaseFee<Payment>(ctx);
-    case ttSUSPAY_CREATE:   return invoke_calculateBaseFee<SusPayCreate>(ctx);
-    case ttSUSPAY_FINISH:   return invoke_calculateBaseFee<SusPayFinish>(ctx);
-    case ttSUSPAY_CANCEL:   return invoke_calculateBaseFee<SusPayCancel>(ctx);
-    case ttREGULAR_KEY_SET: return invoke_calculateBaseFee<SetRegularKey>(ctx);
-    case ttSIGNER_LIST_SET: return invoke_calculateBaseFee<SetSignerList>(ctx);
-    case ttTICKET_CANCEL:   return invoke_calculateBaseFee<CancelTicket>(ctx);
-    case ttTICKET_CREATE:   return invoke_calculateBaseFee<CreateTicket>(ctx);
-    case ttTRUST_SET:       return invoke_calculateBaseFee<SetTrust>(ctx);
+    case ttACCOUNT_SET:     return SetAccount::calculateBaseFee(ctx);
+    case ttOFFER_CANCEL:    return CancelOffer::calculateBaseFee(ctx);
+    case ttOFFER_CREATE:    return CreateOffer::calculateBaseFee(ctx);
+    case ttPAYMENT:         return Payment::calculateBaseFee(ctx);
+    case ttSUSPAY_CREATE:   return SusPayCreate::calculateBaseFee(ctx);
+    case ttSUSPAY_FINISH:   return SusPayFinish::calculateBaseFee(ctx);
+    case ttSUSPAY_CANCEL:   return SusPayCancel::calculateBaseFee(ctx);
+    case ttREGULAR_KEY_SET: return SetRegularKey::calculateBaseFee(ctx);
+    case ttSIGNER_LIST_SET: return SetSignerList::calculateBaseFee(ctx);
+    case ttTICKET_CANCEL:   return CancelTicket::calculateBaseFee(ctx);
+    case ttTICKET_CREATE:   return CreateTicket::calculateBaseFee(ctx);
+    case ttTRUST_SET:       return SetTrust::calculateBaseFee(ctx);
     case ttAMENDMENT:
-    case ttFEE:             return invoke_calculateBaseFee<Change>(ctx);
+    case ttFEE:             return Change::calculateBaseFee(ctx);
     default:
         assert(false);
         return 0;

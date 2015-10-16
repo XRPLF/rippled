@@ -94,7 +94,7 @@ private:
 
 public:
     CandidateTxn(std::shared_ptr<STTx const> const&,
-        TxID const& txID, std::uint64_t const& feeLevel,
+        TxID const& txID, std::uint64_t feeLevel,
             ApplyFlags const flags,
                 PreflightResult const& pfresult);
 
@@ -136,7 +136,7 @@ private:
 
 public:
     explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
-    TxQAccount(const AccountID& account);
+    explicit TxQAccount(const AccountID& account);
 
     int
     getTxnCount() const
@@ -244,7 +244,7 @@ public:
 
 CandidateTxn::CandidateTxn(
     std::shared_ptr<STTx const> const& txn,
-        TxID const& txID, std::uint64_t const& feeLevel,
+        TxID const& txID, std::uint64_t feeLevel,
             ApplyFlags const flags,
                 PreflightResult const& pfresult)
     : txn_(txn)

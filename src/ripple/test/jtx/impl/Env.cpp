@@ -77,7 +77,7 @@ makeConfig()
 
 // VFALCO Could wrap the log in a Journal here
 Env::Env(beast::unit_test::suite& test_,
-    std::unique_ptr<Config const>&& config)
+    std::unique_ptr<Config const> config)
     : test (test_)
     , master ("master", generateKeyPair(
         KeyType::secp256k1,
@@ -93,7 +93,7 @@ Env::Env(beast::unit_test::suite& test_,
 }
 
 Env::Env(beast::unit_test::suite& test_)
-    : Env(test_, std::move(makeConfig()))
+    : Env(test_, makeConfig())
 {
 }
 

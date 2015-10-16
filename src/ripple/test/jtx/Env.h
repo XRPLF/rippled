@@ -155,7 +155,7 @@ public:
     Env& operator= (Env const&) = delete;
 
     Env (beast::unit_test::suite& test_,
-        std::unique_ptr<Config const>&& config);
+        std::unique_ptr<Config const> config);
     Env (beast::unit_test::suite& test_);
 
     Application&

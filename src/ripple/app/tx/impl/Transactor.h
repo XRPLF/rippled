@@ -32,7 +32,7 @@ struct PreflightContext
 public:
     Application& app;
     STTx const& tx;
-    Rules rules;
+    Rules const rules;
     ApplyFlags flags;
     beast::Journal j;
 

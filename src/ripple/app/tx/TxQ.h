@@ -72,8 +72,8 @@ public:
         std::uint64_t expFeeLevel;        // Estimated fee level to get in next ledger
     };
 
-    static TER constexpr txnResultHeld() { return terQUEUED; }
-    static TER constexpr txnResultLowFee() { return telINSUF_FEE_P; }
+    static constexpr TER txnResultHeld() { return terQUEUED; }
+    static constexpr TER txnResultLowFee() { return telINSUF_FEE_P; }
 
     virtual ~TxQ() = default;
 
