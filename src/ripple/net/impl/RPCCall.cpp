@@ -675,18 +675,16 @@ private:
     // submit_multisigned <json>
     Json::Value parseSubmitMultiSigned (Json::Value const& jvParams)
     {
-        Json::Value     jvRequest;
-        Json::Reader    reader;
-        bool const      bOffline    = 2 == jvParams.size () && jvParams[1u].asString () == "offline";
-
-        if ((1 == jvParams.size () || bOffline)
-            && reader.parse (jvParams[0u].asString (), jvRequest))
+        if (1 == jvParams.size ())
         {
-            // Multisigned.
-            if (bOffline)
-                jvRequest["offline"]    = true;
-
-            return jvRequest;
+            Json::Value     txJSON;
+            Json::Reader    reader;
+            if (reader.parse (jvParams[0u].asString (), txJSON))
+            {
+                Json::Value jvRequest;
+                jvRequest[jss::tx_json] = txJSON;
+                return jvRequest;
+            }
         }
 
         return rpcError (rpcINVALID_PARAMS);
