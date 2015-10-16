@@ -26,6 +26,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <boost/intrusive/set.hpp>
+#include <boost/algorithm/clamp.hpp>
 #include <limits>
 
 namespace ripple {
@@ -52,20 +53,20 @@ getFeeLevelPaid(
     std::uint64_t refTxnCostDrops)
 {
     // Compute the minimum XRP fee the transaction could pay
-    auto required_fee_units = getRequiredFeeLevel(tx.getTxnType());
+    auto requiredFeeUnits = getRequiredFeeLevel(tx.getTxnType());
 
-    if (required_fee_units == 0 ||
+    if (requiredFeeUnits == 0 ||
         refTxnCostDrops == 0)
         // If nothing is required, or the cost is 0,
         // the level is effectively infinite.
         return std::numeric_limits<std::uint64_t>::max();
 
     // TODO: getRequiredFeeLevel(ttREFERENCE)?
-    auto reference_fee_units =
+    auto referenceFeeUnits =
         ripple::getRequiredFeeLevel(ttACCOUNT_SET);
     return mulDivNoThrow(tx[sfFee].xrp().drops(),
-        baseRefLevel * reference_fee_units,
-            refTxnCostDrops * required_fee_units);
+        baseRefLevel * referenceFeeUnits,
+            refTxnCostDrops * requiredFeeUnits);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -74,7 +75,7 @@ class CandidateTxn
 {
     friend class TxQImpl;
 
-protected:
+private:
     // Used by the TxQ::FeeHook and TxQ::FeeMultiSet below
     // to put each candidate object into more than one
     // set without copies, pointers, etc.
@@ -90,6 +91,10 @@ private:
     boost::optional<LedgerIndex> lastValid_;
     TxSeq const sequence_;
     ApplyFlags const flags_;
+    // pfresult_ is never allowed to be empty. The
+    // boost::optional is leveraged to allow `emplace`d
+    // construction and replacement without a copy
+    // assignment operation.
     boost::optional<PreflightResult const> pfresult_;
 
 public:
@@ -129,8 +134,8 @@ class TxQAccount
 
 private:
 
-    AccountID                  account_;
-    uint64_t                   totalFees_;
+    AccountID const account_;
+    uint64_t totalFees_;
     // Sequence number will be used as the key.
     std::map <TxSeq, CandidateTxn> transactions_;
 
@@ -138,7 +143,7 @@ public:
     explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
     explicit TxQAccount(const AccountID& account);
 
-    int
+    std::size_t
     getTxnCount() const
     {
         return transactions_.size();
@@ -167,7 +172,7 @@ private:
 
     // Limit of the txnsExpected value after a
     // time leap.
-    std::size_t targetTxnCount_;
+    std::size_t const targetTxnCount_;
     // Minimum value of txnsExpected.
     std::size_t minimumTxnCount_;
     // Number of transactions expected per ledger.
@@ -175,7 +180,7 @@ private:
     // before escalation kicks in.
     std::size_t txnsExpected_;
     // Minimum value of escalationMultiplier.
-    std::uint32_t minimumMultiplier_;
+    std::uint32_t const minimumMultiplier_;
     // Based on the median fee of the LCL. Used
     // when fee escalation kicks in.
     std::uint32_t escalationMultiplier_;
@@ -280,7 +285,7 @@ TxQAccount::addCandidate(CandidateTxn&& txn)
     totalFees_ += fee;
     auto sequence = txn.getSequence();
 
-    auto result = transactions_.emplace(std::make_pair(sequence, std::move(txn)));
+    auto result = transactions_.emplace(sequence, std::move(txn));
     assert(result.second);
     assert(&result.first->second != &txn);
 
@@ -306,6 +311,16 @@ FeeMetrics::updateFeeMetrics(Application& app,
     ReadView const& view, bool timeLeap)
 {
     std::vector<uint64_t> feeLevels;
+    std::size_t txnsExpected;
+    std::size_t mimimumTx;
+    std::uint32_t escalationMultiplier;
+    {
+        std::lock_guard <std::mutex> sl(lock_);
+        feeLevels.reserve(txnsExpected_);
+        txnsExpected = txnsExpected_;
+        mimimumTx = minimumTxnCount_;
+        escalationMultiplier = escalationMultiplier_;
+    }
     for (auto const& tx : view.txs)
     {
         auto const baseFee = calculateBaseFee(app, view,
@@ -316,36 +331,33 @@ FeeMetrics::updateFeeMetrics(Application& app,
     std::sort(feeLevels.begin(), feeLevels.end());
     auto const size = feeLevels.size();
 
-    std::lock_guard <std::mutex> sl(lock_);
-
     JLOG(j_.debug) << "Ledger " << view.info().seq <<
         " has " << size << " transactions. " <<
         "Ledgers are processing " <<
         (timeLeap ? "slowly" : "as expected") <<
         ". Expected transactions is currently " <<
-        txnsExpected_ << " and multiplier is " <<
-        escalationMultiplier_;
+        txnsExpected << " and multiplier is " <<
+        escalationMultiplier;
 
     if (timeLeap)
     {
         // Ledgers are taking to long to process,
         // so clamp down on limits.
-        txnsExpected_ = std::min(std::max(
-            feeLevels.size(), minimumTxnCount_),
-            targetTxnCount_ - 1);
+        txnsExpected = boost::algorithm::clamp(feeLevels.size(),
+            mimimumTx, targetTxnCount_ - 1);
     }
-    else if (feeLevels.size() > txnsExpected_ ||
+    else if (feeLevels.size() > txnsExpected ||
         feeLevels.size() > targetTxnCount_)
     {
         // Ledgers are processing in a timely manner,
         // so keep the limit high, but don't let it
         // grow without bound.
-        txnsExpected_ = feeLevels.size();
+        txnsExpected = feeLevels.size();
     }
 
     if (feeLevels.empty())
     {
-        escalationMultiplier_ = minimumMultiplier_;
+        escalationMultiplier = minimumMultiplier_;
     }
     else
     {
@@ -353,14 +365,18 @@ FeeMetrics::updateFeeMetrics(Application& app,
         // evaluates to the middle element; for an even
         // number of elements, it will add the two elements
         // on either side of the "middle" and average them.
-        escalationMultiplier_ = (feeLevels[size / 2] +
+        escalationMultiplier = (feeLevels[size / 2] +
             feeLevels[(size - 1) / 2] + 1) / 2;
-        escalationMultiplier_ = std::max(escalationMultiplier_,
+        escalationMultiplier = std::max(escalationMultiplier,
             minimumMultiplier_);
     }
     JLOG(j_.debug) << "Expected transactions updated to " <<
-        txnsExpected_ << " and multiplier updated to " <<
-        escalationMultiplier_;
+        txnsExpected << " and multiplier updated to " <<
+        escalationMultiplier;
+
+    std::lock_guard <std::mutex> sl(lock_);
+    txnsExpected_ = txnsExpected;
+    escalationMultiplier_ = escalationMultiplier;
 
     return size;
 }
@@ -373,10 +389,15 @@ FeeMetrics::scaleFeeLevel(OpenView const& view) const
     // Transactions in the open ledger so far
     auto const current = view.txCount();
 
-    std::lock_guard <std::mutex> sl(lock_);
+    std::size_t target;
+    std::uint32_t multiplier;
+    {
+        std::lock_guard <std::mutex> sl(lock_);
 
-    // Target number of transactions allowed
-    auto const target = txnsExpected_;
+        // Target number of transactions allowed
+        target = txnsExpected_;
+        multiplier = escalationMultiplier_;
+    }
 
     // Once the open ledger bypasses the target,
     // escalate the fee quickly.
@@ -384,8 +405,7 @@ FeeMetrics::scaleFeeLevel(OpenView const& view) const
     {
         // Compute escalated fee level
         fee = mulDivNoThrow(fee, current * current *
-            escalationMultiplier_,
-            target * target);
+            multiplier, target * target);
     }
 
     return fee;
@@ -451,14 +471,12 @@ private:
         < CandidateTxn, FeeHook,
         boost::intrusive::compare <GreaterFee> >;
 
-    using AccountSet = std::map < AccountID, TxQAccount >;
-
     Setup const setup_;
     beast::Journal j_;
 
     FeeMetrics feeMetrics_;
     FeeMultiSet byFee_;
-    AccountSet byAccount_;
+    std::map <AccountID, TxQAccount> byAccount_;
     boost::optional<size_t> maxSize_;
 
     // Most queue operations are done under the master lock,
@@ -708,7 +726,7 @@ TxQImpl::apply(Application& app, OpenView& view,
         // Create a new TxQAccount object and add the byAccount lookup.
         bool created;
         std::tie(accountIter, created) = byAccount_.emplace(
-            std::make_pair(account, TxQAccount(tx)));
+            account, TxQAccount(tx));
         (void)created;
         assert(created);
         op = "new";
