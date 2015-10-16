@@ -39,6 +39,8 @@ public:
     PreflightContext(Application& app_, STTx const& tx_,
         Rules const& rules_, ApplyFlags flags_,
             beast::Journal j_);
+
+    PreflightContext& operator=(PreflightContext const&) = delete;
 };
 
 struct PreflightResult
@@ -53,6 +55,8 @@ public:
         , ter(ter_)
     {
     }
+
+    PreflightResult& operator=(PreflightResult const&) = delete;
 };
 
 /** State information when determining if a tx is likely to claim a fee. */
@@ -77,6 +81,8 @@ public:
         , j(j_)
     {
     }
+
+    PreclaimContext& operator=(PreclaimContext const&) = delete;
 };
 
 struct PreclaimResult
@@ -102,6 +108,8 @@ public:
         : PreclaimResult(ctx_, result.first, result.second)
     {
     }
+
+    PreclaimResult& operator=(PreclaimResult const&) = delete;
 };
 
 class Transactor

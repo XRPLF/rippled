@@ -69,19 +69,6 @@ invoke_preflight (PreflightContext const& ctx)
     }
 }
 
-/*
-invoke_calculateBaseFee<T> uses name hiding to accomplish
-compile-time polymorphism of (presumably) static
-class functions for Transactor and derived classes.
-*/
-template<class T>
-static
-std::uint64_t
-invoke_calculateBaseFee(PreclaimContext const& ctx)
-{
-    return T::calculateBaseFee(ctx);
-}
-
 static
 std::uint64_t
 invoke_calculateBaseFee(PreclaimContext const& ctx)
