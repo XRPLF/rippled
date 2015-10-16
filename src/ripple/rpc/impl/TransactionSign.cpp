@@ -22,12 +22,14 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/Pathfinder.h>
+#include <ripple/app/tx/apply.h>              // Validity::Valid
 #include <ripple/basics/Log.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/impl/KeypairForSignature.h>
@@ -113,7 +115,7 @@ static error_code_i acctMatchesPubKey (
         return rpcBAD_SECRET;
     }
 
-    // If we *can* get to the accountRoot, check for MASTER_DISABLED
+    // If we *can* get to the accountRoot, check for MASTER_DISABLED.
     auto const& sle = *accountState;
     if (isMasterKey)
     {
@@ -299,12 +301,12 @@ checkTxJsonFields (
 struct transactionPreProcessResult
 {
     Json::Value const first;
-    std::shared_ptr<STTx const> const second;
+    std::shared_ptr<STTx> const second;
 
     transactionPreProcessResult () = delete;
     transactionPreProcessResult (transactionPreProcessResult const&) = delete;
     transactionPreProcessResult (transactionPreProcessResult&& rhs)
-    : first (std::move (rhs.first))    // VS2013 won't default this
+    : first (std::move (rhs.first))    // VS2013 won't default this.
     , second (std::move (rhs.second))
     { }
 
@@ -318,7 +320,7 @@ struct transactionPreProcessResult
     , second ()
     { }
 
-    transactionPreProcessResult (std::shared_ptr<STTx const>&& st)
+    transactionPreProcessResult (std::shared_ptr<STTx>&& st)
     : first ()
     , second (std::move (st))
     { }
@@ -386,7 +388,7 @@ transactionPreProcessImpl (
         Json::Value err = checkFee (
             params,
             role,
-            signingArgs.editFields(),
+            verify && signingArgs.editFields(),
             app.config(),
             app.getFeeTrack(),
             ledger);
@@ -401,7 +403,7 @@ transactionPreProcessImpl (
             role,
             app,
             ledger,
-            signingArgs.editFields());
+            verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
             return std::move (err);
@@ -427,6 +429,10 @@ transactionPreProcessImpl (
             tx_json[jss::Flags] = tfFullyCanonicalSig;
     }
 
+    // If multisigning then we need to return the public key.
+    if (signingArgs.isMultiSigning())
+        signingArgs.setPublicKey (keypair.publicKey);
+
     if (verify)
     {
         if (! sle)
@@ -437,12 +443,9 @@ transactionPreProcessImpl (
             << "verify: " << toBase58(calcAccountID(keypair.publicKey))
             << " : " << toBase58(srcAddressID);
 
-        // If multisigning then we need to return the public key.
-        if (signingArgs.isMultiSigning())
-        {
-            signingArgs.setPublicKey (keypair.publicKey);
-        }
-        else
+        // Don't do this test if multisigning since the account and secret
+        // probably don't belong together in that case.
+        if (!signingArgs.isMultiSigning())
         {
             // Make sure the account and secret belong together.
             error_code_i const err =
@@ -507,11 +510,11 @@ transactionPreProcessImpl (
 static
 std::pair <Json::Value, Transaction::pointer>
 transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
-    Rules const& rules, Application& app)
+    Rules const& rules, Application& app, ApplyFlags flags)
 {
     std::pair <Json::Value, Transaction::pointer> ret;
 
-    // Turn the passed in STTx into a Transaction
+    // Turn the passed in STTx into a Transaction.
     Transaction::pointer tpTrans;
     {
         std::string reason;
@@ -533,17 +536,32 @@ transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
         {
             Serializer s;
             tpTrans->getSTransaction ()->add (s);
+            Blob transBlob = s.getData ();
+            SerialIter sit {makeSlice(transBlob)};
 
-            Transaction::pointer tpTransNew =
-                Transaction::sharedTransaction(s.getData(), rules, app);
-
-            if (tpTransNew && (
-                !tpTransNew->getSTransaction ()->isEquivalent (
-                    *tpTrans->getSTransaction ())))
+            // Check the signature if that's called for.
+            auto sttxNew = std::make_shared<STTx const> (sit);
+            if (checkValidity(app.getHashRouter(),
+                *sttxNew, rules, app.config(), flags).first != Validity::Valid)
             {
-                tpTransNew.reset ();
+                ret.first = RPC::make_error (rpcINTERNAL,
+                    "Invalid signature.");
+                return ret;
             }
-            tpTrans = std::move (tpTransNew);
+
+            std::string reason;
+            auto tpTransNew =
+                std::make_shared<Transaction> (sttxNew, reason, app);
+
+            if (tpTransNew)
+            {
+                if (!tpTransNew->getSTransaction()->isEquivalent (
+                        *tpTrans->getSTransaction()))
+                {
+                    tpTransNew.reset ();
+                }
+                tpTrans = std::move (tpTransNew);
+            }
         }
     }
     catch (std::exception&)
@@ -656,7 +674,8 @@ Json::Value transactionSign (
     Role role,
     int validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> ledger,
+    ApplyFlags flags)
 {
     using namespace detail;
 
@@ -674,8 +693,8 @@ Json::Value transactionSign (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second,
-            ledger->rules(), app);
+        transactionConstructImpl (
+            preprocResult.second, ledger->rules(), app, flags);
 
     if (!txn.second)
         return txn.first;
@@ -691,7 +710,8 @@ Json::Value transactionSubmit (
     int validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    ApplyFlags flags)
 {
     using namespace detail;
 
@@ -709,8 +729,8 @@ Json::Value transactionSubmit (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second,
-            ledger->rules(), app);
+        transactionConstructImpl (
+            preprocResult.second, ledger->rules(), app, flags);
 
     if (!txn.second)
         return txn.first;
@@ -735,7 +755,7 @@ namespace detail
 {
 // There are a some field checks shared by transactionSignFor
 // and transactionSubmitMultiSigned.  Gather them together here.
-Json::Value checkMultiSignFields (Json::Value const& jvRequest)
+static Json::Value checkMultiSignFields (Json::Value const& jvRequest)
 {
    if (! jvRequest.isMember (jss::tx_json))
         return RPC::missing_field_error (jss::tx_json);
@@ -748,14 +768,62 @@ Json::Value checkMultiSignFields (Json::Value const& jvRequest)
     if (!tx_json.isMember (jss::Sequence))
         return RPC::missing_field_error ("tx_json.Sequence");
 
-    if (!tx_json.isMember ("SigningPubKey"))
+    if (!tx_json.isMember (sfSigningPubKey.getJsonName()))
         return RPC::missing_field_error ("tx_json.SigningPubKey");
 
-    if (!tx_json["SigningPubKey"].asString().empty())
+    if (!tx_json[sfSigningPubKey.getJsonName()].asString().empty())
         return RPC::make_error (rpcINVALID_PARAMS,
             "When multi-signing 'tx_json.SigningPubKey' must be empty.");
 
     return Json::Value ();
+}
+
+// Sort and validate an stSigners array.
+//
+// Returns a null Json::Value if there are no errors.
+static Json::Value sortAndValidateSigners (
+    STArray& signers, AccountID const& signingForID)
+{
+    if (signers.empty ())
+        return RPC::make_param_error ("Signers array may not be empty.");
+
+    // Signers must be sorted by Account.
+    std::sort (signers.begin(), signers.end(),
+        [](STObject const& a, STObject const& b)
+    {
+        return (a[sfAccount] < b[sfAccount]);
+    });
+
+    // Signers may not contain any duplicates.
+    auto const dupIter = std::adjacent_find (
+        signers.begin(), signers.end(),
+        [] (STObject const& a, STObject const& b)
+        {
+            return (a[sfAccount] == b[sfAccount]);
+        });
+
+    if (dupIter != signers.end())
+    {
+        std::ostringstream err;
+        err << "Duplicate Signers:Signer:Account entries ("
+            << toBase58((*dupIter)[sfAccount])
+            << ") are not allowed.";
+        return RPC::make_param_error(err.str ());
+    }
+
+    // An account may not sign for itself.
+    if (signers.end() != std::find_if (signers.begin(), signers.end(),
+        [&signingForID](STObject const& elem)
+        {
+            return elem[sfAccount] == signingForID;
+        }))
+    {
+        std::ostringstream err;
+        err << "A Signer may not be the transaction's Account ("
+            << toBase58(signingForID) << ").";
+        return RPC::make_param_error(err.str ());
+    }
+    return {};
 }
 
 } // detail
@@ -767,7 +835,8 @@ Json::Value transactionSignFor (
     Role role,
     int validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> ledger,
+    ApplyFlags flags)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSignFor: " << jvRequest;
@@ -785,6 +854,17 @@ Json::Value transactionSignFor (
     {
         return RPC::make_error (rpcSRC_ACT_MALFORMED,
             RPC::invalid_field_message (accountField));
+    }
+
+    // If the tx_json.SigningPubKey field is missing, insert an empty one.
+    // RIPD-1036.
+   if (! jvRequest.isMember (jss::tx_json))
+        return RPC::missing_field_error (jss::tx_json);
+
+    {
+        Json::Value& tx_json (jvRequest [jss::tx_json]);
+        if (!tx_json.isMember (sfSigningPubKey.getJsonName()))
+            tx_json[sfSigningPubKey.getJsonName()] = "";
     }
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
@@ -813,7 +893,6 @@ Json::Value transactionSignFor (
     if (!preprocResult.second)
         return preprocResult.first;
 
-    // Make sure the multiSignAddrID can legitimately multi-sign.
     {
         // Make sure the account and secret belong together.
         std::shared_ptr<SLE const> sle = cachedRead(*ledger,
@@ -826,40 +905,37 @@ Json::Value transactionSignFor (
             return rpcError (err);
     }
 
+    // Inject the newly generated signature into tx_json.Signers.
+    auto& sttx = preprocResult.second;
+    {
+        // Make the signer object that we'll inject.
+        STObject signer (sfSigner);
+        signer[sfAccount] = *signerAccountID;
+        signer.setFieldVL (sfTxnSignature, multiSignature);
+        signer.setFieldVL (sfSigningPubKey, multiSignPubKey.getAccountPublic());
+
+        // If there is not yet a Signers array, make one.
+        if (!sttx->isFieldPresent (sfSigners))
+            sttx->setFieldArray (sfSigners, {});
+
+        auto& signers = sttx->peekFieldArray (sfSigners);
+        signers.emplace_back (std::move (signer));
+
+        // The array must be sorted and validated.
+        auto err = sortAndValidateSigners (signers, (*sttx)[sfAccount]);
+        if (RPC::contains_error (err))
+            return std::move (err);
+    }
+
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (preprocResult.second,
-            ledger->rules(), app);
+        transactionConstructImpl (
+            sttx, ledger->rules(), app, flags);
 
     if (!txn.second)
         return txn.first;
 
-    Json::Value json = transactionFormatResultImpl (txn.second);
-    if (RPC::contains_error (json))
-        return json;
-
-    // Finally, do what we were called for: return a Signers array.  Build
-    // a Signer object to insert into the Signers array.
-    Json::Value signer (Json::objectValue);
-
-    signer[sfAccount.getJsonName ()] = toBase58 (*signerAccountID);
-
-    signer[sfSigningPubKey.getJsonName ()] =
-        strHex (multiSignPubKey.getAccountPublic ());
-
-    signer[sfTxnSignature.getJsonName ()] = strHex (multiSignature);
-
-    // Give the Signer an object name and put it in the Signers array.
-    Json::Value nameSigner (Json::objectValue);
-    nameSigner[sfSigner.getJsonName ()] = std::move (signer);
-
-    Json::Value signers (Json::arrayValue);
-    signers.append (std::move (nameSigner));
-
-    // Inject the Signers into the json.
-    json[sfSigners.getName ()] = std::move(signers);
-
-    return json;
+    return transactionFormatResultImpl (txn.second);
 }
 
 /** Returns a Json::objectValue. */
@@ -870,7 +946,8 @@ Json::Value transactionSubmitMultiSigned (
     int validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction)
+    ProcessTransactionFn const& processTransaction,
+    ApplyFlags flags)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug)
@@ -930,7 +1007,7 @@ Json::Value transactionSubmitMultiSigned (
             return err;
     }
 
-    // Grind through the JSON in tx_json to produce a STTx
+    // Grind through the JSON in tx_json to produce a STTx.
     std::shared_ptr<STTx> stpTrans;
     {
         STParsedJSONObject parsedTx_json ("tx_json", tx_json);
@@ -1002,7 +1079,7 @@ Json::Value transactionSubmitMultiSigned (
     if (signers.empty ())
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
-    // the Signers array may only contain Signer objects.
+    // The Signers array may only contain Signer objects.
     if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj)
         {
             return (
@@ -1017,47 +1094,14 @@ Json::Value transactionSubmitMultiSigned (
             "Signers array may only contain Signer entries.");
     }
 
-    // Signers must be sorted by Account.
-    std::sort (signers.begin(), signers.end(),
-        [](STObject const& a, STObject const& b)
-    {
-        return (a.getAccountID (sfAccount) < b.getAccountID (sfAccount));
-    });
-
-    // Signers may not contain any duplicates.
-    auto const dupIter = std::adjacent_find (
-        signers.begin(), signers.end(),
-        [] (STObject const& a, STObject const& b)
-        {
-            return (a.getAccountID (sfAccount) == b.getAccountID (sfAccount));
-        });
-
-    if (dupIter != signers.end())
-    {
-        std::ostringstream err;
-        err << "Duplicate Signers:Signer:Account entries ("
-            << toBase58(dupIter->getAccountID(sfAccount))
-            << ") are not allowed.";
-        return RPC::make_param_error(err.str ());
-    }
-
-    // An account may not sign for itself.
-    if (signers.end() != std::find_if (signers.begin(), signers.end(),
-        [&srcAddressID](STObject const& elem)
-        {
-            return elem.getAccountID (sfAccount) == srcAddressID;
-        }))
-    {
-        std::ostringstream err;
-        err << "A Signer may not be the transaction's Account ("
-            << toBase58(srcAddressID) << ").";
-        return RPC::make_param_error(err.str ());
-    }
+    // The array must be sorted and validated.
+    auto err = sortAndValidateSigners (signers, srcAddressID);
+    if (RPC::contains_error (err))
+        return std::move (err);
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (stpTrans,
-            ledger->rules(), app);
+        transactionConstructImpl (stpTrans, ledger->rules(), app, flags);
 
     if (!txn.second)
         return txn.first;

@@ -22,6 +22,7 @@
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/server/Role.h>
+#include <ripple/ledger/ApplyView.h>
 
 namespace ripple {
 
@@ -81,7 +82,8 @@ Json::Value transactionSign (
     Role role,
     int validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger);
+    std::shared_ptr<ReadView const> ledger,
+    ApplyFlags flags = tapNONE);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSubmit (
@@ -91,7 +93,8 @@ Json::Value transactionSubmit (
     int validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction);
+    ProcessTransactionFn const& processTransaction,
+    ApplyFlags flags = tapNONE);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSignFor (
@@ -100,7 +103,8 @@ Json::Value transactionSignFor (
     Role role,
     int validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger);
+    std::shared_ptr<ReadView const> ledger,
+    ApplyFlags flags = tapNONE);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSubmitMultiSigned (
@@ -110,7 +114,8 @@ Json::Value transactionSubmitMultiSigned (
     int validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction);
+    ProcessTransactionFn const& processTransaction,
+    ApplyFlags flags = tapNONE);
 
 } // RPC
 } // ripple
