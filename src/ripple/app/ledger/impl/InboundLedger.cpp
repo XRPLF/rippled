@@ -53,9 +53,6 @@ enum
     // how many timeouts before we get aggressive
     ,ledgerBecomeAggressiveThreshold = 6
 
-    // How many nodes to consider a fetch "small"
-    ,fetchSmallNodes = 32
-
     // Number of nodes to find initially
     ,missingNodesFind = 256
 
@@ -610,11 +607,6 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                         {
                             * (tmGL.add_nodeids ()) = id.getRawString ();
                         }
-
-                        // If we're not querying for a lot of entries,
-                        // query extra deep
-                        if (nodeIDs.size() <= fetchSmallNodes)
-                            tmGL.set_querydepth (tmGL.querydepth() + 1);
 
                         if (m_journal.trace) m_journal.trace <<
                             "Sending AS node " << nodeIDs.size () <<
