@@ -422,6 +422,7 @@ public:
         : setup_(setup)
         , j_(j)
         , feeMetrics_(setup.standAlone, j)
+        , maxSize_(boost::none)
     {
     }
 
@@ -910,7 +911,7 @@ TxQImpl::getMetrics(OpenView const& view) const
     result.medFeeLevel = feeMetrics_.getEscalationMultiplier();
     result.expFeeLevel = feeMetrics_.scaleFeeLevel(view);
 
-    return std::move(result);
+    return result;
 }
 
 Json::Value

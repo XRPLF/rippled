@@ -126,7 +126,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, std::move(makeConfig()));
+        Env env(*this, makeConfig());
 
         auto& txq = env.app().getTxQ();
         txq.setMinimumTx(3);
