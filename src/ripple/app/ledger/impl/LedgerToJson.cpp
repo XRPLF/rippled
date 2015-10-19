@@ -88,15 +88,10 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
-    RPC::CountedYield count (
-        fill.yieldStrategy.transactionYieldCount, fill.yield);
-
     try
     {
         for (auto& i: fill.ledger.txs)
         {
-            count.yield();
-
             if (! bExpanded)
             {
                 txns.append(to_string(i.first->getTransactionID()));
@@ -128,15 +123,11 @@ void fillJsonState(Object& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
     auto&& array = Json::setArray (json, jss::accountState);
-    RPC::CountedYield count (
-        fill.yieldStrategy.accountYieldCount, fill.yield);
-
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
     for(auto const& sle : ledger.sles)
     {
-        count.yield();
         if (binary)
         {
             auto&& obj = appendObject(array);

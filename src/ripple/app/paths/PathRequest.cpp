@@ -232,6 +232,15 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
     return true;
 }
 
+/*  If this is a normal path request, we want to run it once "fast" now
+    to give preliminary results.
+
+    If this is a legacy path request, we are only going to run it once,
+    and we can't run it in full now, so we don't want to run it at all.
+
+    If there's an error, we need to be sure to return it to the caller
+    in all cases.
+*/
 Json::Value PathRequest::doCreate (
     RippleLineCache::ref& cache,
     Json::Value const& value,
@@ -242,8 +251,8 @@ Json::Value PathRequest::doCreate (
     if (parseJson (value) != PFR_PJ_INVALID)
     {
         valid = isValid (cache);
-        if (! hasCompletion())
-            status = valid ? doUpdate(cache, true) : jvStatus;
+        status = valid && ! hasCompletion()
+            ? doUpdate(cache, true) : jvStatus;
     }
     else
     {

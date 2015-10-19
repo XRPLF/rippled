@@ -406,8 +406,9 @@ public:
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
-        , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
-            m_nodeStoreScheduler, logs_->journal("JobQueue"), *logs_))
+        , m_jobQueue (std::make_unique<JobQueue>(
+            m_collectorManager->group ("jobq"), m_nodeStoreScheduler,
+            logs_->journal("JobQueue"), *logs_))
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue

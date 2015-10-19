@@ -26,10 +26,8 @@
 
 #include <ripple/rpc/RPCHandler.h>
 
-#include <ripple/rpc/impl/Coroutine.cpp>
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
-#include <ripple/rpc/impl/Yield.cpp>
 #include <ripple/rpc/impl/Utilities.cpp>
 
 #include <ripple/rpc/handlers/Handlers.h>
@@ -106,8 +104,6 @@
 #include <ripple/rpc/impl/TransactionSign.cpp>
 #include <ripple/rpc/impl/RPCVersion.cpp>
 
-#include <ripple/rpc/tests/Coroutine.test.cpp>
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
 #include <ripple/rpc/tests/KeyGeneration.test.cpp>
 #include <ripple/rpc/tests/Status.test.cpp>
-#include <ripple/rpc/tests/Yield.test.cpp>

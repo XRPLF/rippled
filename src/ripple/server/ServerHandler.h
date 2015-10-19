@@ -23,7 +23,6 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/server/Port.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/rpc/Yield.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 #include <boost/asio/ip/address.hpp>
@@ -67,7 +66,6 @@ public:
         };
 
         overlay_t overlay;
-        RPC::YieldStrategy yieldStrategy;
 
         void
         makeContexts();

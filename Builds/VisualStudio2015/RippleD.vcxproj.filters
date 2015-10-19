@@ -2799,6 +2799,12 @@
     <ClInclude Include="..\..\src\ripple\core\Job.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\JobCoro.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
+    <None Include="..\..\src\ripple\core\JobCoro.ipp">
+      <Filter>ripple\core</Filter>
+    </None>
     <ClInclude Include="..\..\src\ripple\core\JobQueue.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
@@ -2824,6 +2830,9 @@
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">
+      <Filter>ripple\core\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\tests\Coroutine.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\LoadFeeTrack.test.cpp">
@@ -3843,9 +3852,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\Context.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
-      <Filter>ripple\rpc</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrenciesHandler.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
@@ -4053,9 +4059,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\Accounts.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.cpp">
-      <Filter>ripple\rpc\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
@@ -4116,9 +4119,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\Utilities.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield.cpp">
-      <Filter>ripple\rpc\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
@@ -4134,9 +4134,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\tests\Coroutine.test.cpp">
-      <Filter>ripple\rpc\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JSONRPC.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
@@ -4148,12 +4145,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
       <Filter>ripple\rpc\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\tests\Yield.test.cpp">
-      <Filter>ripple\rpc\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\Yield.h">
-      <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handler.h">
       <Filter>ripple\server</Filter>

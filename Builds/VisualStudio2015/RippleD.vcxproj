@@ -2090,6 +2090,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\JobCoro.h">
+    </ClInclude>
+    <None Include="..\..\src\ripple\core\JobCoro.ipp">
+    </None>
     <ClInclude Include="..\..\src\ripple\core\JobQueue.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\JobTypeData.h">
@@ -2107,6 +2111,12 @@
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\tests\Coroutine.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3153,8 +3163,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\Context.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\Coroutine.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrenciesHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3419,10 +3427,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Accounts.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Coroutine.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3485,10 +3489,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Utilities.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
@@ -3499,10 +3499,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\tests\Coroutine.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JSONRPC.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3516,12 +3512,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\tests\Yield.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\Yield.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handler.h">
     </ClInclude>

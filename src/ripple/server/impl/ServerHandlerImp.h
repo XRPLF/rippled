@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
 
 #include <ripple/core/Job.h>
+#include <ripple/core/JobCoro.h>
 #include <ripple/json/Output.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
@@ -57,7 +58,6 @@ public:
 
 private:
     using Output = Json::Output;
-    using Suspend = RPC::Suspend;
 
     void
     setup (Setup const& setup, beast::Journal journal) override;
@@ -109,11 +109,13 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    processSession (std::shared_ptr<HTTP::Session> const&, Suspend const&);
+    processSession (std::shared_ptr<HTTP::Session> const&,
+        std::shared_ptr<JobCoro> jobCoro);
 
     void
     processRequest (HTTP::Port const& port, std::string const& request,
-        beast::IP::Endpoint const& remoteIPAddress, Output&&, Suspend const&);
+        beast::IP::Endpoint const& remoteIPAddress, Output&&,
+            std::shared_ptr<JobCoro> jobCoro);
 
     //
     // PropertyStream

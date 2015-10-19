@@ -32,7 +32,6 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <beast/crypto/base64.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -179,17 +178,11 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
         return;
     }
 
-    auto detach = session.detach();
-
-    // We can copy `this` because ServerHandlerImp is a long-lasting singleton.
-    auto job = [this, detach] (Job&) {
-        RPC::runOnCoroutine(
-            setup_.yieldStrategy.useCoroutines,
-            [this, detach] (RPC::Suspend const& suspend) {
-                processSession(detach, suspend);
-            });
-    };
-    m_jobQueue.addJob(jtCLIENT, "RPC-Client", job);
+    m_jobQueue.postCoro(jtCLIENT, "RPC-Client",
+        [this, detach = session.detach()](std::shared_ptr<JobCoro> jc)
+        {
+            processSession(detach, jc);
+        });
 }
 
 void
@@ -208,15 +201,11 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 
 // Run as a couroutine.
 void
-ServerHandlerImp::processSession (
-    std::shared_ptr<HTTP::Session> const& session, Suspend const& suspend)
+ServerHandlerImp::processSession (std::shared_ptr<HTTP::Session> const& session,
+    std::shared_ptr<JobCoro> jobCoro)
 {
-    processRequest (
-        session->port(),
-        to_string (session->body()),
-        session->remoteAddress().at_port (0),
-        makeOutput (*session),
-        suspend);
+    processRequest (session->port(), to_string (session->body()),
+        session->remoteAddress().at_port (0), makeOutput (*session), jobCoro);
 
     if (session->request().keep_alive())
         session->complete();
@@ -225,12 +214,9 @@ ServerHandlerImp::processSession (
 }
 
 void
-ServerHandlerImp::processRequest (
-    HTTP::Port const& port,
-    std::string const& request,
-    beast::IP::Endpoint const& remoteIPAddress,
-    Output&& output,
-    Suspend const& suspend)
+ServerHandlerImp::processRequest (HTTP::Port const& port,
+    std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
+        Output&& output, std::shared_ptr<JobCoro> jobCoro)
 {
     auto rpcJ = app_.journal ("RPC");
     // Move off the webserver thread onto the JobQueue.
@@ -352,39 +338,28 @@ ServerHandlerImp::processRequest (
 
     auto const start (std::chrono::high_resolution_clock::now ());
 
-    RPC::Context context {
-        m_journal, params, app_, loadType, m_networkOPs, app_.getLedgerMaster(), role,
-        {app_, suspend, "RPC-Coroutine"}};
+    RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
+        app_.getLedgerMaster(), role, jobCoro};
+    Json::Value result;
+    RPC::doCommand (context, result);
 
-    std::string response;
-
-    if (setup_.yieldStrategy.streaming == RPC::YieldStrategy::Streaming::yes)
+    // Always report "status".  On an error report the request as received.
+    if (result.isMember (jss::error))
     {
-        executeRPC (context, response, setup_.yieldStrategy);
+        result[jss::status] = jss::error;
+        result[jss::request] = params;
+        JLOG (m_journal.debug)  <<
+            "rpcError: " << result [jss::error] <<
+            ": " << result [jss::error_message];
     }
     else
     {
-        Json::Value result;
-        RPC::doCommand (context, result, setup_.yieldStrategy);
-
-        // Always report "status".  On an error report the request as received.
-        if (result.isMember (jss::error))
-        {
-            result[jss::status] = jss::error;
-            result[jss::request] = params;
-            JLOG (m_journal.debug)  <<
-                "rpcError: " << result [jss::error] <<
-                ": " << result [jss::error_message];
-        }
-        else
-        {
-            result[jss::status]  = jss::success;
-        }
-
-        Json::Value reply (Json::objectValue);
-        reply[jss::result] = std::move (result);
-        response = to_string (reply);
+        result[jss::status]  = jss::success;
     }
+
+    Json::Value reply (Json::objectValue);
+    reply[jss::result] = std::move (result);
+    auto response = to_string (reply);
 
     rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
         std::chrono::duration_cast <std::chrono::milliseconds> (
@@ -747,7 +722,6 @@ setup_ServerHandler(BasicConfig const& config, std::ostream& log)
 {
     ServerHandler::Setup setup;
     setup.ports = detail::parse_Ports(config, log);
-    setup.yieldStrategy = RPC::makeYieldStrategy(config);
 
     detail::setup_Client(setup);
     detail::setup_Overlay(setup);
