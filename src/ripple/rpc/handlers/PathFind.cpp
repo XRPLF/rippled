@@ -32,6 +32,9 @@ namespace ripple {
 
 Json::Value doPathFind (RPC::Context& context)
 {
+    if (context.app.config().PATH_SEARCH_MAX == 0)
+        return rpcError (rpcNOT_SUPPORTED);
+
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember (jss::subcommand) ||

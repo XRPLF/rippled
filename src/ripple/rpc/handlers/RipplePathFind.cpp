@@ -70,6 +70,9 @@ buildSrcCurrencies(AccountID const& account,
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
 {
+    if (context.app.config().PATH_SEARCH_MAX == 0)
+        return rpcError (rpcNOT_SUPPORTED);
+
     RPC::LegacyPathFind lpf (context.role == Role::ADMIN, context.app);
     if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
