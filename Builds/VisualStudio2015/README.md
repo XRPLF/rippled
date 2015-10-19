@@ -4,6 +4,7 @@
 
 We do not recommend Windows for rippled production use at this time. Currently, the Ubuntu
 platform has received the highest level of quality assurance, testing, and support.
+Additionally, 32-bit Windows versions are not supported.
 
 ## Prerequisites
 
@@ -83,10 +84,8 @@ for Visual Studio 2015 support.
 [Download OpenSSL.](http://slproweb.com/products/Win32OpenSSL.html)
 There will be four variants available:
 
-1. 32-bit. Use this if you are running 32-bit windows. As of this writing, the link is called: "Win32 OpenSSL v1.0.2d".
-2. 64-bit. Use this if you are running 64-bit windows. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d".
-3. 32-bit light - Don't use this. It is missing files needed to build rippled. As of this writing, the link is called: "Win32 OpenSSL v1.0.2d Light"
-4. 64-bit light - Don't use this. It is missing files needed to build rippled. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d Light"
+1. 64-bit. Use this if you are running 64-bit windows. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d".
+2. 64-bit light - Don't use this. It is missing files needed to build rippled. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d Light"
 
 Run the installer, and choose an appropriate location for your OpenSSL
 installation. In this guide we use **C:\lib\OpenSSL-Win64** as the
@@ -163,10 +162,9 @@ git checkout master
 
 Open the solution file located at **Builds/Visual Studio 2015/ripple.sln**
 and select the "View->Other Windows->Property Manager" to bring up the Property Manager.
-Expand the *debug | x64* section (or similar section on 32-bit windows) and
+Expand the *debug | x64* section and
 double click the *Microsoft.Cpp.x64.user* property sheet to bring up the
-*Property Pages* dialog (these sections will be called *Win32* instead of
-*x64* on 32-bit windows). These are global properties applied to all
+*Property Pages* dialog. These are global properties applied to all
 64-bit build targets:
 
 ![Visual Studio 2015 Global Properties](images/VS2015x64Properties.png)
