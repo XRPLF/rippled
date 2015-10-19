@@ -83,6 +83,9 @@ Json::Value doUnsubscribe (RPC::Context& context)
                 else if (streamName == "validations")
                     context.netOps.unsubValidations (ispSub->getSeq ());
 
+                else if (streamName == "peer_status")
+                    context.netOps.unsubPeerStatus (ispSub->getSeq ());
+
                 else
                     jvResult[jss::error] = "Unknown stream: " + streamName;
             }
