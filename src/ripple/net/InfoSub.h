@@ -101,6 +101,10 @@ public:
         virtual bool subValidations (ref ispListener) = 0;
         virtual bool unsubValidations (std::uint64_t uListener) = 0;
 
+        virtual bool subPeerStatus (ref ispListener) = 0;
+        virtual bool unsubPeerStatus (std::uint64_t uListener) = 0;
+        virtual void pubPeerStatus (std::function<Json::Value(void)> const&) = 0;
+
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.

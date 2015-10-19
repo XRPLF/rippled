@@ -382,6 +382,10 @@ public:
     bool subValidations (InfoSub::ref ispListener) override;
     bool unsubValidations (std::uint64_t uListener) override;
 
+    bool subPeerStatus (InfoSub::ref ispListener) override;
+    bool unsubPeerStatus (std::uint64_t uListener) override;
+    void pubPeerStatus (std::function<Json::Value(void)> const&) override;
+
     InfoSub::pointer findRpcSub (std::string const& strUrl) override;
     InfoSub::pointer addRpcSub (
         std::string const& strUrl, InfoSub::ref) override;
@@ -464,6 +468,7 @@ private:
     SubMapType mSubTransactions;      // All accepted transactions.
     SubMapType mSubRTTransactions;    // All proposed and accepted transactions.
     SubMapType mSubValidations;       // Received validations.
+    SubMapType mSubPeerStatus;        // peer status changes
 
     std::uint32_t mLastLoadBase;
     std::uint32_t mLastLoadFactor;
@@ -1540,6 +1545,33 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
     }
 }
 
+void NetworkOPsImp::pubPeerStatus (
+    std::function<Json::Value(void)> const& func)
+{
+    ScopedLockType sl (mSubLock);
+
+    if (!mSubPeerStatus.empty ())
+    {
+        Json::Value jvObj (func());
+
+        jvObj [jss::type]                  = "peerStatusChange";
+
+        for (auto i = mSubPeerStatus.begin (); i != mSubPeerStatus.end (); )
+        {
+            InfoSub::pointer p = i->second.lock ();
+
+            if (p)
+            {
+                p->send (jvObj, true);
+                ++i;
+            }
+            else
+            {
+                i = mSubValidations.erase (i);
+            }
+        }
+    }
+}
 
 void NetworkOPsImp::setMode (OperatingMode om)
 {
@@ -2538,6 +2570,20 @@ bool NetworkOPsImp::unsubValidations (std::uint64_t uSeq)
 {
     ScopedLockType sl (mSubLock);
     return mSubValidations.erase (uSeq);
+}
+
+// <-- bool: true=added, false=already there
+bool NetworkOPsImp::subPeerStatus (InfoSub::ref isrListener)
+{
+    ScopedLockType sl (mSubLock);
+    return mSubPeerStatus.emplace (isrListener->getSeq (), isrListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPsImp::unsubPeerStatus (std::uint64_t uSeq)
+{
+    ScopedLockType sl (mSubLock);
+    return mSubPeerStatus.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)

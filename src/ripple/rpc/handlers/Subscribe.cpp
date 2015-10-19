@@ -143,6 +143,13 @@ Json::Value doSubscribe (RPC::Context& context)
                 {
                     context.netOps.subValidations (ispSub);
                 }
+                else if (streamName == "peer_status")
+                {
+                    if (context.role != Role::ADMIN)
+                        jvResult[jss::error] = "noPermission";
+                    else
+                        context.netOps.subPeerStatus (ispSub);
+                }
                 else
                 {
                     jvResult[jss::error]   = "unknownStream";
