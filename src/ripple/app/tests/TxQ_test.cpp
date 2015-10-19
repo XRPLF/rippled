@@ -139,16 +139,8 @@ public:
         auto fred = Account("fred");
         auto gwen = Account("gwen");
         auto hank = Account("hank");
-        env.memoize(alice);
-        env.memoize(bob);
-        env.memoize(charlie);
-        env.memoize(daria);
-        env.memoize(elmo);
-        env.memoize(fred);
-        env.memoize(gwen);
-        env.memoize(hank);
 
-        auto queued = ter(TxQ::txnResultHeld());
+        auto queued = ter(terQUEUED);
 
         expectEquals(env.open()->fees().base, 10);
 
@@ -166,7 +158,7 @@ public:
         // Alice - Alice is already in the queue, so can't hold.
         submit(env,
             env.jt(noop(alice), seq(env.seq(alice) + 1),
-                ter(TxQ::txnResultLowFee())));
+                ter(telINSUF_FEE_P)));
         checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
 
         auto openLedgerFee = 
@@ -241,7 +233,7 @@ public:
         // Hank sees his txn  got held and bumps the fee,
         // but doesn't even bump it enough to requeue
         submit(env,
-            env.jt(noop(hank), fee(11), ter(TxQ::txnResultLowFee())));
+            env.jt(noop(hank), fee(11), ter(telINSUF_FEE_P)));
         checkMetrics(env, 2, 12, 7, 6, 256, lastMedian);
 
         // Hank sees his txn got held and bumps the fee,
@@ -321,7 +313,7 @@ public:
         // Try to add another transaction with the default (low) fee,
         // it should fail because the queue is full.
         submit(env,
-            env.jt(noop(charlie), ter(TxQ::txnResultLowFee())));
+            env.jt(noop(charlie), ter(telINSUF_FEE_P)));
 
         // Add another transaction, with a higher fee,
         // Not high enough to get into the ledger, but high

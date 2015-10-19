@@ -641,7 +641,7 @@ TxQImpl::apply(Application& app, OpenView& view,
                     transactionID <<
                     " in favor of queued " <<
                     existingCandidate->txID_;
-                return { txnResultLowFee(), false };
+                return { telINSUF_FEE_P, false };
             }
         }
     }
@@ -691,7 +691,7 @@ TxQImpl::apply(Application& app, OpenView& view,
             transactionID <<
             " can not be held";
         return { feeLevelPaid >= requiredFeeLevel ?
-            terPRE_SEQ : txnResultLowFee(), false };
+            terPRE_SEQ : telINSUF_FEE_P, false };
     }
 
     // It's pretty unlikely that the queue will be "overfilled",
@@ -715,7 +715,7 @@ TxQImpl::apply(Application& app, OpenView& view,
             JLOG(j_.warning) << "Queue is full, and transaction " <<
                 transactionID <<
                 " fee is lower than end item";
-            return { txnResultLowFee(), false };
+            return { telINSUF_FEE_P, false };
         }
     }
 
@@ -740,7 +740,7 @@ TxQImpl::apply(Application& app, OpenView& view,
         " from " << op << " account " << candidate.account_ <<
         " to queue.";
 
-    return { txnResultHeld(), false };
+    return { terQUEUED, false };
 }
 
 void
@@ -841,7 +841,7 @@ TxQImpl::accept(Application& app,
 
             // If the rules or flags change, preflight again
             assert(candidateIter->pfresult_);
-            if (!candidateIter->pfresult_->ctx.rules.unchanged(view.rules()) ||
+            if (candidateIter->pfresult_->ctx.rules != view.rules() ||
                 candidateIter->pfresult_->ctx.flags != candidateIter->flags_)
             {
                 candidateIter->pfresult_.emplace(

@@ -67,6 +67,10 @@ preclaim(PreflightResult const& preflightResult,
 
     No validation is done or implied by this function.
 
+    Caller is responsible for handling any exceptions.
+    Since none should be thrown, that will usually
+    mean terminating.
+
     @return The base fee.
 */
 std::uint64_t

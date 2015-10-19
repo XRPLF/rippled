@@ -302,7 +302,7 @@ preclaim (PreflightResult const& preflightResult,
     Application& app, OpenView const& view)
 {
     boost::optional<PreclaimContext const> ctx;
-    if (!preflightResult.ctx.rules.unchanged(view.rules()))
+    if (preflightResult.ctx.rules != view.rules())
     {
         auto secondFlight = preflight(app, view.rules(),
             preflightResult.ctx.tx, preflightResult.ctx.flags,
@@ -343,22 +343,8 @@ calculateBaseFee(Application& app, ReadView const& view,
     PreclaimContext const ctx(
             app, view, tesSUCCESS, tx,
             tapNONE, j);
-    try
-    {
-        return invoke_calculateBaseFee(ctx);
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j.fatal) <<
-            "calculateBaseFee: " << e.what();
-        return 0;
-    }
-    catch (...)
-    {
-        JLOG(j.fatal) <<
-            "calculateBaseFee: <unknown exception>";
-        return 0;
-    }
+
+    return invoke_calculateBaseFee(ctx);
 }
 
 std::pair<TER, bool>

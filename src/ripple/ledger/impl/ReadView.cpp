@@ -107,19 +107,9 @@ Rules::changed (DigestAwareReadView const& ledger) const
 }
 
 bool
-Rules::unchanged(Rules const& other) const
-{
-    if (!impl_ && !other.impl_)
-        return true;
-    if (!impl_ || !other.impl_)
-        return false;
-    return *impl_ == *other.impl_;
-}
-
-bool
 Rules::operator== (Rules const& other) const
 {
-#if 0
+#if 1
     if (! impl_ && ! other.impl_)
         return true;
     if (! impl_ || ! other.impl_)
