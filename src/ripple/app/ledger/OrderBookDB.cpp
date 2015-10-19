@@ -66,6 +66,10 @@ void OrderBookDB::setup(
         mSeq = seq;
     }
 
+    if (app_.config().PATH_SEARCH_MAX == 0)
+    {
+        // nothing to do
+    }
     if (app_.config().RUN_STANDALONE)
         update(ledger);
     else
@@ -83,6 +87,12 @@ void OrderBookDB::update(
     hash_set< Issue > XRPBooks;
 
     JLOG (j_.debug) << "OrderBookDB::update>";
+
+    if (app_.config().PATH_SEARCH_MAX == 0)
+    {
+        // pathfinding has been disabled
+        return;
+    }
 
     // walk through the entire ledger looking for orderbook entries
     int books = 0;
