@@ -74,47 +74,10 @@ uint256 LedgerProposal::getSigningHash () const
         mCurrentHash);
 }
 
-struct HashStream
-{
-    static beast::endian const endian =
-        beast::endian::big;
-
-    std::vector<std::uint8_t> v;
-
-    std::uint8_t const*
-    data() const
-    {
-        return v.data();
-    }
-
-    std::size_t
-    size() const
-    {
-        return v.size();
-    }
-
-    void
-    operator()(void const* data,
-        std::size_t size) noexcept
-    {
-        auto const p = reinterpret_cast<
-            std::uint8_t const*>(data);
-        v.insert(v.end(), p, p + size);
-    }
-};
-
 bool LedgerProposal::checkSign (std::string const& signature) const
 {
-    auto const valid = mPublicKey.verifyNodePublic(
+    return mPublicKey.verifyNodePublic(
         getSigningHash(), signature, ECDSA::not_strict);
-
-    HashStream h;
-    hash_append(h);
-    assert(valid == (publicKey_.verify(
-        Slice(h.data(), h.size()),
-            makeSlice(signature), false)));
-
-    return valid;
 }
 
 bool LedgerProposal::changePosition (
