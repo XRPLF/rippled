@@ -73,10 +73,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError (rpcNOT_SUPPORTED);
 
-    RPC::LegacyPathFind lpf (context.role == Role::ADMIN, context.app);
-    if (!lpf.isOk ())
-        return rpcError (rpcTOO_BUSY);
-
     context.loadType = Resource::feeHighBurdenRPC;
 
     AccountID raSrc;
@@ -86,8 +82,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (true || // TODO MPORTILLA temp fix to disable broken websocket coroutines
-        context.app.config().RUN_STANDALONE ||
+    if (context.app.config().RUN_STANDALONE ||
         context.params.isMember(jss::ledger) ||
         context.params.isMember(jss::ledger_index) ||
         context.params.isMember(jss::ledger_hash))
@@ -105,28 +100,27 @@ Json::Value doRipplePathFind (RPC::Context& context)
             return rpcError (rpcNO_NETWORK);
         }
 
+        PathRequest::pointer request;
         context.loadType = Resource::feeHighBurdenRPC;
         lpLedger = context.ledgerMaster.getClosedLedger();
 
-        PathRequest::pointer request;
-        context.suspend.suspend(
-            [&request, &context, &jvResult, &lpLedger]
-            (RPC::Callback const& callback)
-        {
-            jvResult = context.app.getPathRequests().makeLegacyPathRequest (
-                request, callback, lpLedger, context.params);
-            assert(callback);
-            if (! request && callback)
-                callback();
-        });
-
+        jvResult = context.app.getPathRequests().makeLegacyPathRequest (
+            request, std::bind(&JobCoro::post, context.jobCoro),
+                lpLedger, context.params);
         if (request)
+        {
+            context.jobCoro->yield();
             jvResult = request->doStatus (context.params);
+        }
 
         return jvResult;
     }
 
-    if (!context.params.isMember (jss::source_account))
+    RPC::LegacyPathFind lpf (context.role == Role::ADMIN, context.app);
+    if (! lpf.isOk ())
+        return rpcError (rpcTOO_BUSY);
+
+    if (! context.params.isMember (jss::source_account))
     {
         jvResult = rpcError (rpcSRC_ACT_MISSING);
     }

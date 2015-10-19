@@ -29,5 +29,6 @@
 #include <ripple/core/impl/SNTPClock.cpp>
 #include <ripple/core/impl/TimeKeeper.cpp>
 
-#include <ripple/core/tests/LoadFeeTrack.test.cpp>
 #include <ripple/core/tests/Config.test.cpp>
+#include <ripple/core/tests/Coroutine.test.cpp>
+#include <ripple/core/tests/LoadFeeTrack.test.cpp>

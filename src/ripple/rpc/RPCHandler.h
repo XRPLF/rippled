@@ -29,13 +29,12 @@ namespace ripple {
 namespace RPC {
 
 struct Context;
-struct YieldStrategy;
 
 /** Execute an RPC command and store the results in a Json::Value. */
-Status doCommand (RPC::Context&, Json::Value&, YieldStrategy const& s = {});
+Status doCommand (RPC::Context&, Json::Value&);
 
 /** Execute an RPC command and store the results in an std::string. */
-void executeRPC (RPC::Context&, std::string&, YieldStrategy const& s = {});
+void executeRPC (RPC::Context&, std::string&);
 
 Role roleRequired (std::string const& method );
 

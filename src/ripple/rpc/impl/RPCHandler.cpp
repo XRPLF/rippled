@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/Yield.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/app/main/Application.h>
@@ -222,7 +221,7 @@ void getResult (
 } // namespace
 
 Status doCommand (
-    RPC::Context& context, Json::Value& result, YieldStrategy const&)
+    RPC::Context& context, Json::Value& result)
 {
     boost::optional <Handler const&> handler;
     if (auto error = fillHandler (context, handler))
@@ -239,7 +238,7 @@ Status doCommand (
 
 /** Execute an RPC command and store the results in a string. */
 void executeRPC (
-    RPC::Context& context, std::string& output, YieldStrategy const& strategy)
+    RPC::Context& context, std::string& output)
 {
     boost::optional <Handler const&> handler;
     if (auto error = fillHandler (context, handler))
@@ -257,10 +256,7 @@ void executeRPC (
     {
         auto object = Json::Value (Json::objectValue);
         getResult (context, method, object, handler->name_);
-        if (strategy.streaming == YieldStrategy::Streaming::yes)
-            output = jsonAsString (object);
-        else
-            output = to_string (object);
+        output = to_string (object);
     }
     else
     {

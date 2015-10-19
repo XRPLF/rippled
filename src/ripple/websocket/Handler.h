@@ -378,8 +378,8 @@ public:
             message_job("more", cpClient);
     }
 
-    bool do_message (Job& job, const connection_ptr& cpClient,
-                     const wsc_ptr& conn, const message_ptr& mpMessage)
+    bool do_message (Job& job, const connection_ptr cpClient,
+                     wsc_ptr conn, const message_ptr& mpMessage)
     {
         Json::Value jvRequest;
         Json::Reader jrReader;
@@ -425,37 +425,23 @@ public:
                     job.rename ("WSClient::" + jCmd.asString());
             }
 
-            auto const start = std::chrono::high_resolution_clock::now ();
-
-            struct HandlerCoroutineData
-            {
-                Json::Value jvRequest;
-                std::string buffer;
-                wsc_ptr conn;
-            };
-
-            auto data = std::make_shared<HandlerCoroutineData>();
-            data->jvRequest = std::move(jvRequest);
-            data->conn = conn;
-
-            auto j = app_.journal ("RPCHandler");
-            auto coroutine = [data, j] (RPC::Suspend const& suspend) {
-                data->buffer = to_string(
-                    data->conn->invokeCommand(
-                        data->jvRequest, suspend));
-            };
-            static auto const disableWebsocketsCoroutines = true;
-            auto useCoroutines = disableWebsocketsCoroutines ?
-                    RPC::UseCoroutines::no : RPC::useCoroutines(desc_.config);
-            runOnCoroutine(useCoroutines, coroutine);
-
-            rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
-                std::chrono::duration_cast <std::chrono::milliseconds> (
-                    std::chrono::high_resolution_clock::now () - start)));
-            ++rpc_requests_;
-            rpc_size_.notify (static_cast <beast::insight::Event::value_type>
-                (data->buffer.size()));
-            send (cpClient, data->buffer, false);
+            app_.getJobQueue().postCoro(jtCLIENT, "WSClient",
+                [this, conn, cpClient, jvRequest = std::move(jvRequest)]
+                (std::shared_ptr<JobCoro> jc)
+                {
+                    using namespace std::chrono;
+                    auto const start = high_resolution_clock::now();
+                    auto buffer = to_string(conn->invokeCommand(jvRequest, jc));
+                    rpc_time_.notify (
+                        static_cast <beast::insight::Event::value_type> (
+                            duration_cast <milliseconds> (
+                                high_resolution_clock::now () - start)));
+                    ++rpc_requests_;
+                    rpc_size_.notify (
+                        static_cast <beast::insight::Event::value_type>
+                            (buffer.size()));
+                    send (cpClient, buffer, false);
+                });
         }
 
         return true;

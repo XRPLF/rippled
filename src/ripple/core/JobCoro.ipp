@@ -17,25 +17,48 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_COROUTINE_H_INCLUDED
-#define RIPPLE_RPC_COROUTINE_H_INCLUDED
-
-#include <ripple/rpc/Yield.h>
+#ifndef RIPPLE_CORE_JOBCOROINL_H_INCLUDED
+#define RIPPLE_CORE_JOBCOROINL_H_INCLUDED
 
 namespace ripple {
-namespace RPC {
 
-/** Coroutine is a function that is given to the coroutine scheduler which
-    later gets called with a Suspend.  A Coroutine can't be empty. */
-using Coroutine = std::function <void (Suspend const&)>;
+template <class F>
+JobCoro::JobCoro (detail::JobCoro_create_t, JobQueue& jq, JobType type,
+    std::string const& name, F&& f)
+    : jq_(jq)
+    , type_(type)
+    , name_(name)
+    , coro_(
+        [this, fn = std::forward<F>(f)]
+        (boost::coroutines::asymmetric_coroutine<void>::push_type& do_yield)
+        {
+            yield_ = &do_yield;
+            (*yield_)();
+            fn(shared_from_this());
+        }, boost::coroutines::attributes (1024 * 1024))
+{
+}
 
-/** Run as a coroutine. */
-void runOnCoroutine(Coroutine const&);
+inline
+void
+JobCoro::yield () const
+{
+    (*yield_)();
+}
 
-/** Run as coroutine if UseCoroutines::yes, otherwise run immediately. */
-void runOnCoroutine(UseCoroutines, Coroutine const&);
+inline
+void
+JobCoro::post ()
+{
+    // sp keeps 'this' alive
+    jq_.addJob(type_, name_,
+        [this, sp = shared_from_this()](Job&)
+        {
+            std::lock_guard<std::mutex> lock (mutex_);
+            coro_();
+        });
+}
 
-} // RPC
 } // ripple
 
 #endif

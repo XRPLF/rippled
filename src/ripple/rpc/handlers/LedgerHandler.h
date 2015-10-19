@@ -29,7 +29,6 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
-#include <ripple/rpc/Yield.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/server/Role.h>
 
@@ -87,22 +86,21 @@ private:
 template <class Object>
 void LedgerHandler::writeResult (Object& value)
 {
-    auto& yield = context_.suspend.yield;
     if (ledger_)
     {
         Json::copyFrom (value, result_);
-        addJson (value, {*ledger_, options_, yield});
+        addJson (value, {*ledger_, options_});
     }
     else
     {
         auto& master = context_.app.getLedgerMaster ();
         {
             auto&& closed = Json::addObject (value, jss::closed);
-            addJson (closed, {*master.getClosedLedger(), 0, yield});
+            addJson (closed, {*master.getClosedLedger(), 0});
         }
         {
             auto&& open = Json::addObject (value, jss::open);
-            addJson (open, {*master.getCurrentLedger(), 0, yield});
+            addJson (open, {*master.getCurrentLedger(), 0});
         }
     }
 }

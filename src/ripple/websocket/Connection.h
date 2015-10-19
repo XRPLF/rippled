@@ -24,6 +24,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
+#include <ripple/core/JobCoro.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
@@ -31,13 +32,11 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
-#include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Port.h>
 #include <ripple/server/Role.h>
 #include <ripple/json/to_string.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/Yield.h>
 #include <ripple/server/Role.h>
 #include <ripple/websocket/WebSocket.h>
 
@@ -97,7 +96,8 @@ public:
     message_ptr getMessage ();
     bool checkMessage ();
     void returnMessage (message_ptr const&);
-    Json::Value invokeCommand (Json::Value const& jvRequest, RPC::Suspend const&);
+    Json::Value invokeCommand (Json::Value const& jvRequest,
+        std::shared_ptr<JobCoro> jobCoro);
 
     // Generically implemented per version.
     void setPingTimer ();
@@ -240,7 +240,7 @@ void ConnectionImpl <WebSocket>::returnMessage (message_ptr const& ptr)
 
 template <class WebSocket>
 Json::Value ConnectionImpl <WebSocket>::invokeCommand (
-    Json::Value const& jvRequest, RPC::Suspend const& suspend)
+    Json::Value const& jvRequest, std::shared_ptr<JobCoro> jobCoro)
 {
     if (getConsumer().disconnect ())
     {
@@ -281,10 +281,9 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     }
     else
     {
-        RPC::Context context {
-            app_.journal ("RPCHandler"), jvRequest, app_, loadType, m_netOPs, app_.getLedgerMaster(),
-            role, {app_, suspend, "WSClient::command"},
-            this->shared_from_this ()};
+        RPC::Context context {app_.journal ("RPCHandler"), jvRequest,
+            app_, loadType, m_netOPs, app_.getLedgerMaster(), role,
+                jobCoro, this->shared_from_this ()};
         RPC::doCommand (context, jvResult[jss::result]);
     }
 
