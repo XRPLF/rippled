@@ -17,57 +17,55 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_WEBSOCKET_WSDOORBASE_H
-#define RIPPLED_RIPPLE_WEBSOCKET_WSDOORBASE_H
+#ifndef RIPPLE_WEBSOCKET_SERVER_H_INCLUDED
+#define RIPPLE_WEBSOCKET_SERVER_H_INCLUDED
 
 #include <ripple/basics/Log.h>
 #include <ripple/websocket/WebSocket.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Thread.h>
+#include <thread>
 
 namespace ripple {
 namespace websocket {
 
 template <class WebSocket>
-class Server
-    : public beast::Stoppable
-    , protected beast::Thread
+class Server : public beast::Stoppable
 {
 private:
-    // TODO: why is this recursive?
-    using LockType = std::recursive_mutex;
-    using ScopedLockType = std::lock_guard <LockType>;
-
     ServerDescription desc_;
-    LockType m_endpointLock;
+    std::recursive_mutex endpointMutex_;  // TODO: why is this recursive?
+    std::thread thread_;
     beast::Journal j_;
-    typename WebSocket::EndpointPtr m_endpoint;
+    typename WebSocket::EndpointPtr endpoint_;
 
 public:
     Server (ServerDescription const& desc)
-       : beast::Stoppable (WebSocket::versionName(), desc.source)
-        , Thread ("websocket")
+        : beast::Stoppable (WebSocket::versionName(), desc.source)
         , desc_(desc)
-       , j_ (desc.app.journal ("WebSocket"))
+        , j_ (desc.app.journal ("WebSocket"))
     {
-        startThread ();
     }
 
     ~Server ()
     {
-        stopThread ();
+        assert (!thread_.joinable());
+
+        if (thread_.joinable())
+            LogicError ("WebSocket::Server::onStop not called.");
     }
 
 private:
-    void run () override
+    void run ()
     {
+        beast::Thread::setCurrentThreadName ("WebSocket");
+
         JLOG (j_.warning)
             << "Websocket: creating endpoint " << desc_.port;
 
-        auto handler = WebSocket::makeHandler (desc_);
         {
-            ScopedLockType lock (m_endpointLock);
-            m_endpoint = WebSocket::makeEndpoint (std::move (handler));
+            auto handler = WebSocket::makeHandler (desc_);
+            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            endpoint_ = WebSocket::makeEndpoint (std::move (handler));
         }
 
         JLOG (j_.warning)
@@ -75,8 +73,8 @@ private:
 
         listen();
         {
-            ScopedLockType lock (m_endpointLock);
-            m_endpoint.reset();
+            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            endpoint_.reset();
         }
 
         JLOG (j_.warning)
@@ -87,6 +85,11 @@ private:
             << "Websocket: stopped on " << desc_.port;
     }
 
+    void onStart () override
+    {
+        thread_ = std::thread {&Server<WebSocket>::run, this};
+    }
+
     void onStop () override
     {
         JLOG (j_.warning)
@@ -94,13 +97,14 @@ private:
 
         typename WebSocket::EndpointPtr endpoint;
         {
-            ScopedLockType lock (m_endpointLock);
-            endpoint = m_endpoint;
+            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            endpoint = endpoint_;
         }
 
         if (endpoint)
             endpoint->stop ();
-        signalThreadShouldExit ();
+
+        thread_.join();
     }
 
     void listen();
