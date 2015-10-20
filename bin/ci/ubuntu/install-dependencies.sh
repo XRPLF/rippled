@@ -17,10 +17,10 @@ done
 export PATH=$PWD/bin:$PATH
 
 # What versions are we ACTUALLY running?
-if [ -x $HOME/bin/g++]; then
+if [ -x $HOME/bin/g++ ]; then
     $HOME/bin/g++ -v
 fi
-if [ -x $HOME/bin/clang]; then
+if [ -x $HOME/bin/clang ]; then
     $HOME/bin/clang -v
 fi
 # Avoid `spurious errors` caused by ~/.npm permission issues
