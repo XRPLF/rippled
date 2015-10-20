@@ -518,8 +518,8 @@ int main (int argc, char** argv)
                             (__GNUC_MINOR__ * 100) +
                             __GNUC_PATCHLEVEL__;
 
-    static_assert (gccver >= 40801,
-        "GCC version 4.8.1 or later is required to compile rippled.");
+    static_assert (gccver >= 50100,
+        "GCC version 5.1.0 or later is required to compile rippled.");
 #endif
 
     static_assert (BOOST_VERSION >= 105700,

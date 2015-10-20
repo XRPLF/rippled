@@ -71,16 +71,15 @@ The following extra options may be used:
                     (see: https://martine.github.io/ninja/). Only gcc and clang targets
                      are supported.
 
-GCC 5 support: There is transitional support for user-installed gcc 5. Setting
-    the environment variable: `RIPPLED_OLD_GCC_ABI` to one enables the transitional
-    support. Due to an ABI change between gcc 4 and gcc 5, it is assumed all
-    libraries are built with the old, gcc 4 ABI. Since no linux distro has upgraded
-    to gcc 5, this allows us to use the package manager to install rippled
-    dependencies and to easily switch between gcc 4 and gcc 5. It also means if the
-    user builds C++ dependencies themselves - such as boost - they must either be
-    built with gcc 4 or with the preprocessor flag `_GLIBCXX_USE_CXX11_ABI` set to
-    zero. When linux distros upgrade to gcc 5, the transitional support will be
-    removed.
+    --static        On linux, link protobuf, openssl, libc++, and boost statically
+
+GCC 5: If the gcc toolchain is used, gcc version 5 or better is required. On
+    linux distros that ship with gcc 4 (ubuntu < 15.10), rippled will force gcc
+    to use gcc4's ABI (there was an ABI change between versions). This allows us
+    to use the package manager to install rippled dependencies. It also means if
+    the user builds C++ dependencies themselves - such as boost - they must
+    either be built with gcc 4 or with the preprocessor flag
+    `_GLIBCXX_USE_CXX11_ABI` set to zero.
 
 '''
 #
@@ -115,6 +114,9 @@ import scons_to_ninja
 AddOption('--ninja', dest='ninja', action='store_true',
           help='generate ninja build file build.ninja')
 
+AddOption('--static', dest='static', action='store_true',
+          help='On linux, link protobuf, openssl, libc++, and boost statically')
+
 def parse_time(t):
     l = len(t.split())
     if l==5:
@@ -125,6 +127,17 @@ def parse_time(t):
         return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
 
 UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
+
+def memoize(function):
+  memo = {}
+  def wrapper(*args):
+    if args in memo:
+      return memo[args]
+    else:
+      rv = function(*args)
+      memo[args] = rv
+      return rv
+  return wrapper
 
 def check_openssl():
     if Beast.system.platform not in ['Debian', 'Ubuntu']:
@@ -277,6 +290,35 @@ def print_coms(target, source, env):
 def is_debug_variant(variant):
   return variant in ('debug', 'coverage')
 
+@memoize
+def is_ubuntu():
+    try:
+        return "Ubuntu" == subprocess.check_output(['lsb_release', '-si'],
+                                                   stderr=subprocess.STDOUT).strip()
+    except:
+        return False
+
+@memoize
+def use_gcc4_abi(gcc_cmd):
+    if os.getenv('RIPPLED_OLD_GCC_ABI'):
+        return True
+    gcc_ver = ''
+    ubuntu_ver = None
+    try:
+        gcc_ver = subprocess.check_output([gcc_cmd, '-dumpversion'],
+                                        stderr=subprocess.STDOUT).strip()
+
+        if is_ubuntu():
+            ubuntu_ver = float(
+                subprocess.check_output(['lsb_release', '-sr'],
+                    stderr=subprocess.STDOUT).strip())
+    except:
+        print("Unable to determine gcc version. Assuming native ABI.")
+        return False
+    if ubuntu_ver and ubuntu_ver < 15.1 and gcc_ver.startswith('5'):
+        return True
+    return False
+
 #-------------------------------------------------------------------------------
 
 # Set construction variables for the base environment
@@ -351,6 +393,31 @@ def add_static_libs(env, libs):
         c += ' -l' + f 
     env['STATICLIBS'] = c
 
+def get_libs(lib, static):
+    '''Returns a tuple of lists. The first element is the static libs,
+       the second element is the dynamic libs
+    '''
+    always_dynamic = ['dl', 'pthread', 'z', # for ubuntu
+                      'gssapi_krb5', 'krb5', 'com_err', 'k5crypto', # for fedora
+                      ]
+    try:
+        cmd = ['pkg-config', '--static', '--libs', lib]
+        libs = subprocess.check_output(cmd,
+                                       stderr=subprocess.STDOUT).strip()
+        all_libs = [l[2:] for l in libs.split() if l.startswith('-l')]
+        if not static:
+            return ([], all_libs)
+        static_libs = []
+        dynamic_libs = []
+        for l in all_libs:
+            if l in always_dynamic:
+                dynamic_libs.append(l)
+            else:
+                static_libs.append(l)
+        return (static_libs, dynamic_libs)
+    except:
+        raise Exception('pkg-config failed for ' + lib)
+
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
     if is_debug_variant(variant):
@@ -367,13 +434,19 @@ def config_env(toolchain, variant, env):
                 env['BOOST_ROOT'],
                 ])
 
+    if should_link_static() and not Beast.system.linux:
+        raise Exception("Static linking is only implemented for linux.")
+
     if toolchain in Split('clang gcc'):
         if Beast.system.linux:
-            add_static_libs(env, ['protobuf', 'ssl', 'crypto'])
-            env.Append(LIBS=['dl', 'pthread', 'z'])
-            env.Append(LINKFLAGS=['-pthread'])
-            # env.ParseConfig('pkg-config --static --cflags --libs openssl')
-            # env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+            link_static = should_link_static()
+            for l in ['openssl', 'protobuf']:
+                static, dynamic = get_libs(l, link_static) 
+                if static:
+                    add_static_libs(env, static)
+                if dynamic:
+                    env.Append(LIBS=dynamic)
+                env.ParseConfig('pkg-config --static --cflags ' + l)
 
         env.Prepend(CFLAGS=['-Wall'])
         env.Prepend(CXXFLAGS=['-Wall'])
@@ -425,23 +498,15 @@ def config_env(toolchain, variant, env):
                 '-Wno-unused-function',
                 ])
         else:
-            env.Append(LINKFLAGS=[
-                '-static-libstdc++',
-            ])
+            if should_link_static():
+                env.Append(LINKFLAGS=[
+                    '-static-libstdc++',
+                ])
             if toolchain == 'gcc':
-                if os.getenv('RIPPLED_OLD_GCC_ABI'):
-                    gcc_ver = ''
-                    try:
-                        gcc_ver = subprocess.check_output(['gcc', '-dumpversion'],
-                                                        stderr=subprocess.STDOUT).strip()
-                    except:
-                        pass
-                    if gcc_ver.startswith('5'):
-                        # remove rpath and CXX11_ABI flag when distro uses
-                        # non-user installed gcc 5
-                        env.Append(CPPDEFINES={
-                            '-D_GLIBCXX_USE_CXX11_ABI' : 0
-                        })
+                if use_gcc4_abi(env['CC'] if 'CC' in env else 'gcc'):
+                    env.Append(CPPDEFINES={
+                        '-D_GLIBCXX_USE_CXX11_ABI' : 0
+                    })
 
                 env.Append(CCFLAGS=[
                     '-Wno-unused-but-set-variable',
@@ -460,7 +525,9 @@ def config_env(toolchain, variant, env):
         ]
         env.Append(LIBS=['dl'])
 
-        if Beast.system.osx:
+        if should_link_static():
+            add_static_libs(env, boost_libs)
+        else:
             # We prefer static libraries for boost
             if env.get('BOOST_ROOT'):
                 static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
@@ -468,6 +535,8 @@ def config_env(toolchain, variant, env):
                 if all(os.path.exists(f) for f in static_libs):
                     boost_libs = [File(f) for f in static_libs]
             env.Append(LIBS=boost_libs)
+
+        if Beast.system.osx:
             env.Append(LIBS=[
                 'crypto',
                 'protobuf',
@@ -478,7 +547,6 @@ def config_env(toolchain, variant, env):
                 'Foundation'
                 ])
         else:
-            add_static_libs(env, boost_libs)
             env.Append(LIBS=['rt'])
 
         if variant == 'release':
@@ -887,6 +955,13 @@ def should_prepare_targets(style, toolchain, variant):
     for t in COMMAND_LINE_TARGETS:
         if should_prepare_target(t, style, toolchain, variant):
             return True
+
+def should_link_static():
+    """
+    Return True if libraries should be linked statically
+
+    """
+    return GetOption('static')
 
 def should_build_ninja(style, toolchain, variant):
     """
