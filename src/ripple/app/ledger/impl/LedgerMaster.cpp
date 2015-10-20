@@ -26,13 +26,13 @@
 #include <ripple/app/ledger/PendingSaves.h>
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/app/tx/TxQ.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/SHAMapStore.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/basics/Log.h>

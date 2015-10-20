@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/tx/TxQ.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/protocol/ErrorCodes.h>

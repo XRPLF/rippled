@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/tx/TxQ.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/basics/Log.h>

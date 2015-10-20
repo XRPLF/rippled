@@ -30,10 +30,10 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/app/tx/TxQ.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>

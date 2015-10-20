@@ -2283,6 +2283,9 @@
     <ClInclude Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.h">
       <Filter>ripple\app\misc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\TxQ.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2299,6 +2302,9 @@
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
@@ -2472,6 +2478,9 @@
     <ClInclude Include="..\..\src\ripple\app\tx\apply.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\tx\applySteps.h">
+      <Filter>ripple\app\tx</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\apply.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2481,9 +2490,9 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\ApplyContext.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\impl\applyImpl.h">
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\applySteps.cpp">
       <Filter>ripple\app\tx\impl</Filter>
-    </ClInclude>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\BookTip.cpp">
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
@@ -2598,9 +2607,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\impl\Transactor.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\impl\TxQImpl.cpp">
-      <Filter>ripple\app\tx\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\InboundTransactions.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
@@ -2614,9 +2620,6 @@
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMaster.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\tx\TxQ.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\base_uint.h">

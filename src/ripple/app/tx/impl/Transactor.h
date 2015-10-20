@@ -43,22 +43,6 @@ public:
     PreflightContext& operator=(PreflightContext const&) = delete;
 };
 
-struct PreflightResult
-{
-public:
-    PreflightContext const ctx;
-    TER const ter;
-
-    PreflightResult(PreflightContext const& ctx_,
-        TER ter_)
-        : ctx(ctx_)
-        , ter(ter_)
-    {
-    }
-
-    PreflightResult& operator=(PreflightResult const&) = delete;
-};
-
 /** State information when determining if a tx is likely to claim a fee. */
 struct PreclaimContext
 {
@@ -83,33 +67,6 @@ public:
     }
 
     PreclaimContext& operator=(PreclaimContext const&) = delete;
-};
-
-struct PreclaimResult
-{
-public:
-    PreclaimContext const ctx;
-    TER const ter;
-    std::uint64_t const baseFee;
-    bool const likelyToClaimFee;
-
-    PreclaimResult(PreclaimContext const& ctx_,
-        TER ter_, std::uint64_t const& baseFee_)
-        : ctx(ctx_)
-        , ter(ter_)
-        , baseFee(baseFee_)
-        , likelyToClaimFee(ter == tesSUCCESS
-            || isTecClaim(ter))
-    {
-    }
-
-    PreclaimResult(PreclaimContext const& ctx_,
-        std::pair<TER, std::uint64_t> const& result)
-        : PreclaimResult(ctx_, result.first, result.second)
-    {
-    }
-
-    PreclaimResult& operator=(PreclaimResult const&) = delete;
 };
 
 class Transactor
