@@ -52,9 +52,6 @@
     <Filter Include="beast\cxx14">
       <UniqueIdentifier>{A3DFF000-1717-AE18-DD13-75DC3A36F594}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\cxx14\tests">
-      <UniqueIdentifier>{96F8CA0B-80D3-8AEA-EE13-B39EE1CF91B0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\hash">
       <UniqueIdentifier>{FE3C8FFD-FEE1-BDEA-DE7F-24A8DEDCAD20}</UniqueIdentifier>
     </Filter>
@@ -861,31 +858,7 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\algorithm.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\config.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\cxx14\cxx14.unity.cpp">
-      <Filter>beast\cxx14</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\functional.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\iterator.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\memory.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\cxx14\tests\integer_sequence.test.cpp">
-      <Filter>beast\cxx14\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
-      <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">

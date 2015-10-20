@@ -20,9 +20,9 @@
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/protocol/types.h>
 #include <ripple/test/jtx.h>
-#include <beast/cxx14/memory.h>  // <memory>
 #include <beast/unit_test/suite.h>
 #include <cstdlib>
+#include <memory>
 #include <vector>
 
 namespace ripple {

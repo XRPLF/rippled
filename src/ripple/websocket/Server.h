@@ -22,8 +22,8 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/websocket/WebSocket.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Thread.h>
+#include <memory>
 
 namespace ripple {
 namespace websocket {

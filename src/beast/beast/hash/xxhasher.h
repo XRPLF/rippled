@@ -28,7 +28,7 @@
 
 #include <beast/hash/endian.h>
 #include <beast/hash/impl/xxhash.h>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <cstddef>
 
 namespace beast {

@@ -21,7 +21,7 @@
 #include <ripple/protocol/STBase.h>
 #include <boost/checked_delete.hpp>
 #include <cassert>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

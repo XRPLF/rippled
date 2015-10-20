@@ -47,7 +47,7 @@
 #include <ripple/resource/Fees.h>
 #include <algorithm>
 #include <cassert>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <vector>
 
 namespace ripple {

@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/Quality.h>
 #include <beast/unit_test/suite.h>
-#include <beast/cxx14/type_traits.h>
+#include <type_traits>
 
 namespace ripple {
 

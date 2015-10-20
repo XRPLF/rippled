@@ -21,7 +21,6 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/cxx14/memory.h>
 #include <beast/module/asio/AsyncObject.h>
 #include <beast/threads/WaitableEvent.h>
 #include <boost/asio.hpp>
@@ -29,6 +28,7 @@
 #include <cassert>
 #include <deque>
 #include <locale>
+#include <memory>
 
 namespace ripple {
 

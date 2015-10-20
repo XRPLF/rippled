@@ -29,7 +29,7 @@
 #include <cmath>
 #include <deque>
 #include <map>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <mutex>
 #include <thread>
 

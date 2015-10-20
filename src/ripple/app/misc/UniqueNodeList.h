@@ -24,9 +24,9 @@
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/RippleAddress.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
 #include <boost/filesystem.hpp>
+#include <memory> // <memory>
 
 namespace ripple {
 

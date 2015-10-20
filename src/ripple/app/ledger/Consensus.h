@@ -28,7 +28,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace ripple {
 

@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 
 namespace beast {
 

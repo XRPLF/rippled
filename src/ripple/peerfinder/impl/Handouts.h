@@ -25,7 +25,7 @@
 #include <beast/container/aged_set.h>
 #include <cassert>
 #include <iterator>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace ripple {
 namespace PeerFinder {

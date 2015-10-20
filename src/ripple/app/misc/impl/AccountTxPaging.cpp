@@ -25,8 +25,8 @@
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/types.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <boost/format.hpp>
+#include <memory>
 
 namespace ripple {
 

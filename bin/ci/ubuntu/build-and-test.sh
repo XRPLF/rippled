@@ -25,10 +25,15 @@ if [[ $TARGET == "coverage" ]]; then
   # We pass along -p to keep path segments so as to avoid collisions
   codecov --gcov-args=-p --gcov-source-match='^src/(ripple|beast)'
 else
-  # Run unittests (under gdb)
-  cat $__dirname/unittests.gdb | gdb \
-      --return-child-result \
-      --args $RIPPLED_PATH --unittest
+  if [[ $CC == "clang" ]]; then
+    # gdb segfaults with a clang build
+    $RIPPLED_PATH --unittest
+  else
+    # Run unittests (under gdb)
+    cat $__dirname/unittests.gdb | gdb \
+        --return-child-result \
+        --args $RIPPLED_PATH --unittest
+  fi
 fi
 
 # Run NPM tests

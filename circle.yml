@@ -3,16 +3,16 @@ machine:
     - docker
 dependencies:
   pre:
-    - sudo apt-add-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.4 main'
+    - sudo apt-add-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.6 main'
     - sudo apt-add-repository -y ppa:ubuntu-toolchain-r/test
     - sudo add-apt-repository -y ppa:afrank/boost
     - wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
     - sudo apt-get update -qq
     - sudo apt-get purge -qq libboost1.48-dev
     - sudo apt-get install -qq libboost1.57-all-dev
-    - sudo apt-get install -qq clang-3.4 gcc-4.8 libobjc-4.8-dev libgcc-4.8-dev libstdc++-4.8-dev libclang1-3.4 libgcc1 libgomp1 libstdc++6 scons protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
-    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 99 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
-    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.4 99 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-3.4
+    - sudo apt-get install -qq clang-3.6 gcc-5 libobjc-5-dev libgcc-5-dev libstdc++-5-dev libclang1-3.6 libgcc1 libgomp1 libstdc++6 scons protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 99 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.6 99 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-3.6
     - gcc --version
     - clang --version
 test:
@@ -24,7 +24,9 @@ test:
       echo "run" >> script.gdb
       echo "backtrace full" >> script.gdb 
       # gdb --help
-    - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args build/clang.debug/rippled --unittest
+    # gdb segfaults
+    # - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args build/clang.debug/rippled --unittest
+    - build/clang.debug/rippled --unittest
     - npm install
     # Use build/(gcc|clang).debug/rippled
     - |

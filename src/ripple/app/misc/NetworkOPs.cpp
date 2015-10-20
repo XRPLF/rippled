@@ -65,12 +65,12 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <beast/utility/make_lock.h>
 #include <boost/optional.hpp>
-#include <tuple>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
+#include <tuple>
 
 namespace ripple {
 

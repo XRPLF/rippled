@@ -22,7 +22,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/STValidation.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <memory>
 #include <vector>
 
 namespace ripple {

@@ -26,8 +26,8 @@
 #include <ripple/rpc/Yield.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <boost/asio/ip/address.hpp>
+#include <memory>
 #include <vector>
 
 namespace ripple {

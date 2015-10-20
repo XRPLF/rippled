@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/digest.h>
-#include <beast/cxx14/type_traits.h> // <type_traits.h>
+#include <type_traits>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 

@@ -45,8 +45,6 @@
 #include <beast/threads/Threads.unity.cpp>
 #include <beast/utility/Utility.unity.cpp>
 
-#include <beast/cxx14/cxx14.unity.cpp>
-
 #include <beast/unit_test/define_print.cpp>
 
 #endif
