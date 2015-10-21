@@ -1288,7 +1288,7 @@ void NetworkOPsImp::switchLastClosedLedger (
             rules.emplace();
         app_.openLedger().accept(app_, *rules,
             newLCL, OrderedTxs({}), false, retries,
-                tapNONE, app_.getHashRouter(), "jump",
+                tapNONE, "jump",
                     [&](OpenView& view, beast::Journal j)
                     {
                         // Stuff the ledger with transactions from the queue.

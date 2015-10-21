@@ -76,7 +76,7 @@ OpenLedger::accept(Application& app, Rules const& rules,
     std::shared_ptr<Ledger const> const& ledger,
         OrderedTxs const& locals, bool retriesFirst,
             OrderedTxs& retries, ApplyFlags flags,
-                HashRouter& router, std::string const& suffix,
+                std::string const& suffix,
                     modify_type const& f)
 {
     JLOG(j_.trace) <<
@@ -89,7 +89,7 @@ OpenLedger::accept(Application& app, Rules const& rules,
             std::vector<std::shared_ptr<
                 STTx const>>;
         apply (app, *next, *ledger, empty{},
-            retries, flags, router, j_);
+            retries, flags, j_);
     }
     // Block calls to modify, otherwise
     // new tx going into the open ledger
@@ -107,7 +107,7 @@ OpenLedger::accept(Application& app, Rules const& rules,
             {
                 return p.first;
             }),
-                retries, flags, router, j_);
+                retries, flags, j_);
     // Apply local tx
     for (auto const& item : locals)
         ripple::apply(app, *next,
@@ -137,7 +137,7 @@ auto
 OpenLedger::apply_one (Application& app, OpenView& view,
     std::shared_ptr<STTx const> const& tx,
         bool retry, ApplyFlags flags,
-            HashRouter& router,beast::Journal j) -> Result
+            beast::Journal j) -> Result
 {
     if (retry)
         flags = flags | tapRETRY;

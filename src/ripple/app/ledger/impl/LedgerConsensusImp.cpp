@@ -1205,7 +1205,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             rules.emplace();
         app_.openLedger().accept(app_, *rules,
             newLCL, localTx, anyDisputes, retriableTxs, tapNONE,
-                app_.getHashRouter(), "consensus",
+                "consensus",
                     [&](OpenView& view, beast::Journal j)
                     {
                         // Stuff the ledger with transactions from the queue.
