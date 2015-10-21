@@ -72,8 +72,9 @@ exports.servers = {
                            'admin = 127.0.0.1',
                            'protocol = ws'),
 
-    'node_db': lines('type=memory',
-                     'path=integration')
+    'node_db': lines('type=memory', 'path=integration'),
+
+    features: lines('MultiSign')
   },
 
   'uniport_tests' : {
