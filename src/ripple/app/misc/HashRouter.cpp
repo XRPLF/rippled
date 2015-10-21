@@ -30,7 +30,7 @@ HashRouter::emplace (uint256 const& key)
 
     if (iter != mSuppressionMap.end ())
     {
-        //mSuppressionMap.touch(iter);
+        mSuppressionMap.touch(iter);
         return std::make_pair(
             std::ref(iter->second), false);
     }

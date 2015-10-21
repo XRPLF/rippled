@@ -50,53 +50,59 @@ class HashRouter_test : public beast::unit_test::suite
 
         ++stopwatch;
 
-        // Expiration is triggered by insertion, so
-        // key1 will be expired after the second
+        // Expiration is triggered by insertion,
+        // and timestamps are updated on access,
+        // so key1 will be expired after the second
         // call to setFlags.
         // t=1
         router.setFlags(key2, 9999);
         expect(router.getFlags(key1) == 12345);
         expect(router.getFlags(key2) == 9999);
-        // key1 : 0
+        // key1 : 1
         // key2 : 1
         // key3 : null
 
         ++stopwatch;
-
         // t=2
+        expect(router.getFlags(key2) == 9999);
+        // key1 : 1
+        // key2 : 2
+        // key3 : null
+
+        ++stopwatch;
+        // t=3
         router.setFlags(key3, 2222);
         expect(router.getFlags(key1) == 0);
         expect(router.getFlags(key2) == 9999);
         expect(router.getFlags(key3) == 2222);
-        // key1 : 2
-        // key2 : 1
-        // key3 : 2
+        // key1 : 3
+        // key2 : 3
+        // key3 : 3
 
         ++stopwatch;
-
-        // t=3
+        // t=4
         // No insertion, no expiration
         router.setFlags(key1, 7654);
         expect(router.getFlags(key1) == 7654);
         expect(router.getFlags(key2) == 9999);
         expect(router.getFlags(key3) == 2222);
-        // key1 : 2
-        // key2 : 1
-        // key3 : 2
+        // key1 : 4
+        // key2 : 4
+        // key3 : 4
 
         ++stopwatch;
         ++stopwatch;
 
-        // t=5
+        // t=6
         router.setFlags(key4, 7890);
         expect(router.getFlags(key1) == 0);
         expect(router.getFlags(key2) == 0);
         expect(router.getFlags(key3) == 0);
         expect(router.getFlags(key4) == 7890);
-        // key1 : 5
-        // key2 : 5
-        // key3 : 5
-        // key4 : 5
+        // key1 : 6
+        // key2 : 6
+        // key3 : 6
+        // key4 : 6
     }
 
     void testSuppression()
