@@ -46,7 +46,7 @@ Use of the bash shell under Windows is mandatory for running the unit tests.
 
 * NOTE: To gain full featured access to the
   [git-subtree](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/)
-  functionality used in the rippled repository we suggest Git version 1.8.3.2 or later.
+  functionality used in the rippled repository we suggest Git version 2.6.2 or later.
 
 ### Install Google Protocol Buffers Compiler
 
