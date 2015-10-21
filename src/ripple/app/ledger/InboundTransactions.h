@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_INBOUNDTRANSACTIONS_H
-#define RIPPLE_INBOUNDTRANSACTIONS_H
+#ifndef RIPPLE_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
+#define RIPPLE_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
 
 #include <ripple/overlay/Peer.h>
 #include <ripple/shamap/SHAMap.h>
@@ -27,6 +27,8 @@
 #include <memory>
 
 namespace ripple {
+
+class Application;
 
 /** Manages the acquisition and lifetime of transaction sets.
 */

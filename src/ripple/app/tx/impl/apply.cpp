@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/applyImpl.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
@@ -33,6 +32,7 @@
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/app/tx/impl/SusPay.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/protocol/Feature.h>
 
 namespace ripple {

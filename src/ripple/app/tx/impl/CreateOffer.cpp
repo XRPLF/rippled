@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
-#include <ripple/app/tx/impl/OfferStream.h>
-#include <ripple/app/tx/impl/Taker.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/protocol/st.h>
 #include <ripple/basics/Log.h>

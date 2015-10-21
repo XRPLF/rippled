@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionStateSF.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
 

@@ -23,7 +23,6 @@
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/ledger/View.h>
 #include <ripple/ledger/CachedView.h>
-#include <ripple/app/tx/Transaction.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/protocol/Indexes.h>

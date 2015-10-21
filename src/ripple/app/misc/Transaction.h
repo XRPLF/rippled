@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_TRANSACTION_H_INCLUDED
-#define RIPPLE_APP_TX_TRANSACTION_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
+#define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>

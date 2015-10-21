@@ -23,11 +23,12 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/overlay/ClusterNodeStatus.h>
 #include <ripple/app/misc/UniqueNodeList.h>
-#include <ripple/app/tx/InboundTransactions.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>

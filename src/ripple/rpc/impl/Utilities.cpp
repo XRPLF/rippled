@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/Utilities.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -32,7 +33,7 @@ void
 addPaymentDeliveredAmount (
     Json::Value& meta,
     RPC::Context& context,
-    Transaction::pointer transaction,
+    std::shared_ptr<Transaction> transaction,
     TxMeta::pointer transactionMeta)
 {
     // We only want to add a "delivered_amount" field if the transaction

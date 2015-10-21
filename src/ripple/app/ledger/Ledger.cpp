@@ -26,10 +26,10 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/PendingSaves.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/TransactionMaster.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
