@@ -129,7 +129,6 @@ Env::close(NetClock::time_point const& closeTime,
         OpenView accum(&*next);
         OpenLedger::apply(app(), accum, *closed_,
             txs, retries, applyFlags(), journal);
-
         accum.apply(*next);
     }
     // To ensure that the close time is exact and not rounded, we don't

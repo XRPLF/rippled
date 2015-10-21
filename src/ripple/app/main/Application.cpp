@@ -456,7 +456,7 @@ public:
         , mFeeTrack (std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , mHashRouter (std::make_unique<HashRouter>(
-            HashRouter::getDefaultHoldTime ()))
+            stopwatch(), HashRouter::getDefaultHoldTime ()))
 
         , mValidations (make_Validations (*this))
 

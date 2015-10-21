@@ -21,11 +21,10 @@
 #define RIPPLE_APP_MISC_HASHROUTER_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <cstdint>
-#include <functional>
-#include <set>
+#include <beast/container/aged_unordered_map.h>
 
 namespace ripple {
 
@@ -116,16 +115,16 @@ private:
     };
 
 public:
-    // VFALCO NOTE this preferred alternative to default parameters makes
-    //         behavior clear.
-    //
-    static inline int getDefaultHoldTime ()
+    static inline std::chrono::seconds getDefaultHoldTime ()
     {
-        return 300;
+        using namespace std::chrono;
+
+        return 300s;
     }
 
-    explicit HashRouter (int entryHoldTimeInSeconds)
-        : mHoldTime (entryHoldTimeInSeconds)
+    HashRouter (Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
+        : mSuppressionMap(clock)
+        , mHoldTime (entryHoldTimeInSeconds)
     {
     }
 
@@ -135,22 +134,22 @@ public:
 
     // VFALCO TODO Replace "Supression" terminology with something more
     // semantically meaningful.
-    void addSuppression(uint256 const& index);
+    void addSuppression(uint256 const& key);
 
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer);
+    bool addSuppressionPeer (uint256 const& key, PeerShortID peer);
 
-    bool addSuppressionPeer (uint256 const& index, PeerShortID peer,
+    bool addSuppressionPeer (uint256 const& key, PeerShortID peer,
                              int& flags);
 
     /** Set the flags on a hash.
 
         @return `true` if the flags were changed. `false` if unchanged.
     */
-    bool setFlags (uint256 const& index, int flags);
+    bool setFlags (uint256 const& key, int flags);
 
-    int getFlags (uint256 const& index);
+    int getFlags (uint256 const& key);
 
-    bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag);
+    bool swapSet (uint256 const& key, std::set<PeerShortID>& peers, int flag);
 
 private:
     // pair.second indicates whether the entry was created
@@ -159,12 +158,10 @@ private:
     std::mutex mutable mMutex;
 
     // Stores all suppressed hashes and their expiration time
-    hash_map <uint256, Entry> mSuppressionMap;
+    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type,
+        hardened_hash<strong_hash>> mSuppressionMap;
 
-    // Stores all expiration times and the hashes indexed for them
-    std::map< int, std::list<uint256> > mSuppressionTimes;
-
-    int const mHoldTime;
+    std::chrono::seconds const mHoldTime;
 };
 
 } // ripple
