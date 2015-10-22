@@ -263,13 +263,13 @@ public:
         // Check for duplicate connection
         if (is_public (remote_endpoint))
         {
-            auto const iter = connectedAddresses_.find (
+            auto const count = connectedAddresses_.count (
                 remote_endpoint.address());
-            if (iter != connectedAddresses_.end())
+            if (count > config_.ipLimit)
             {
                 if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
                     "Logic dropping inbound " << remote_endpoint <<
-                    " as duplicate";
+                    " because of ip limits.";
                 return SlotImp::ptr();
             }
         }

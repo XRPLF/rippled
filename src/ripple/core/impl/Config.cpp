@@ -371,11 +371,12 @@ void Config::loadFromString (std::string const& fileContents)
     (void) getSingleSection (secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE, j_);
 
     std::string strTemp;
+
     if (getSingleSection (secConfig, SECTION_PEER_PRIVATE, strTemp, j_))
         PEER_PRIVATE        = beast::lexicalCastThrow <bool> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_PEERS_MAX, strTemp, j_))
-        PEERS_MAX           = beast::lexicalCastThrow <int> (strTemp);
+        PEERS_MAX = std::max (0, beast::lexicalCastThrow <int> (strTemp));
 
     if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp, j_))
     {

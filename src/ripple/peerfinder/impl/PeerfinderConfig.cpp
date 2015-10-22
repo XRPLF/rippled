@@ -30,6 +30,7 @@ Config::Config()
     , wantIncoming (true)
     , autoConnect (true)
     , listeningPort (0)
+    , ipLimit (0)
 {
 }
 
@@ -45,6 +46,25 @@ void Config::applyTuning ()
     if (maxPeers < Tuning::minOutCount)
         maxPeers = Tuning::minOutCount;
     outPeers = calcOutPeers ();
+
+    auto const inPeers = maxPeers - outPeers;
+
+    if (ipLimit == 0)
+    {
+        // Unless a limit is explicitly set, we allow between
+        // 2 and 5 connections from non RFC-1918 "private"
+        // IP addresses.
+        ipLimit = 2;
+
+        if (inPeers > Tuning::defaultMaxPeers)
+            ipLimit += std::min(5,
+                static_cast<int>(inPeers / Tuning::defaultMaxPeers));
+    }
+
+    // We don't allow a single IP to consume all incoming slots,
+    // unless we only have one incoming slot available.
+    ipLimit = std::max(1,
+        std::min(ipLimit, static_cast<int>(inPeers / 2)));
 }
 
 void Config::onWrite (beast::PropertyStream::Map &map)
@@ -55,6 +75,7 @@ void Config::onWrite (beast::PropertyStream::Map &map)
     map ["auto_connect"]    = autoConnect;
     map ["port"]            = listeningPort;
     map ["features"]        = features;
+    map ["ip_limit"]        = ipLimit;
 }
 
 }

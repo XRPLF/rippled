@@ -73,6 +73,9 @@ struct Config
     /** The set of features we advertise. */
     std::string features;
 
+    /** Limit how many incoming connections we allow per IP */
+    int ipLimit;
+
     //--------------------------------------------------------------------------
 
     /** Create a configuration with default values. */
