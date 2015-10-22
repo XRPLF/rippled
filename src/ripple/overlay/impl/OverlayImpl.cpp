@@ -506,6 +506,7 @@ OverlayImpl::onPrepare()
         !app_.config().PEER_PRIVATE;
     config.listeningPort = port;
     config.features = "";
+    config.ipLimit = setup_.ipLimit;
 
     // Enforce business rules
     config.applyTuning();
@@ -1053,6 +1054,10 @@ setup_Overlay (BasicConfig const& config)
     auto const& section = config.section("overlay");
     setup.context = make_SSLContext();
     setup.expire = get<bool>(section, "expire", false);
+
+    set (setup.ipLimit, "ip_limit", section);
+    if (setup.ipLimit < 0)
+        throw std::runtime_error ("Configured IP limit is invalid");
 
     std::string ip;
     set (ip, "public_ip", section);

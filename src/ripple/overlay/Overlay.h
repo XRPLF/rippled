@@ -70,6 +70,7 @@ public:
         std::shared_ptr<boost::asio::ssl::context> context;
         bool expire = false;
         beast::IP::Address public_ip;
+        int ipLimit = 0;
     };
 
     using PeerSequence = std::vector <Peer::ptr>;

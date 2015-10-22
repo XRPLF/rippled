@@ -208,7 +208,7 @@ public:
 
     // Peer networking parameters
     bool                        PEER_PRIVATE = false;           // True to ask peers not to relay current IP.
-    unsigned int                PEERS_MAX = 0;
+    int                         PEERS_MAX = 0;
 
     int                         WEBSOCKET_PING_FREQ = 5 * 60;
 
