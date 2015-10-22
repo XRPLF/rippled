@@ -128,7 +128,7 @@ private:
     clock_type::time_point insaneTime_;
     bool detaching_ = false;
     // Node public key of peer.
-    RippleAddress publicKey_;
+    PublicKey publicKey_;
     std::string name_;
     uint256 sharedValue_;
 
@@ -172,7 +172,7 @@ public:
     /** Create an active incoming peer from an established ssl connection. */
     PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
         PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
-            protocol::TMHello const& hello, RippleAddress const& publicKey,
+            protocol::TMHello const& hello, PublicKey const& publicKey,
                 Resource::Consumer consumer,
                     std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
                         OverlayImpl& overlay);
@@ -183,8 +183,8 @@ public:
     PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
             beast::http::message&& response, Resource::Consumer usage,
-                protocol::TMHello&& hello,
-                    RippleAddress const& legacyPublicKey, id_t id,
+                protocol::TMHello const& hello,
+                    PublicKey const& publicKey, id_t id,
                         OverlayImpl& overlay);
 
     virtual
@@ -270,7 +270,7 @@ public:
     void
     checkSanity (std::uint32_t seq1, std::uint32_t seq2);
 
-    RippleAddress const&
+    PublicKey const&
     getNodePublic () const override
     {
         return publicKey_;
@@ -477,8 +477,8 @@ template <class Buffers>
 PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
         beast::http::message&& response, Resource::Consumer usage,
-            protocol::TMHello&& hello,
-                RippleAddress const& legacyPublicKey, id_t id,
+            protocol::TMHello const& hello,
+                PublicKey const& publicKey, id_t id,
                     OverlayImpl& overlay)
     : Child (overlay)
     , app_ (app)
@@ -498,9 +498,9 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , state_ (State::active)
     , sanity_ (Sanity::unknown)
     , insaneTime_ (clock_type::now())
-    , publicKey_ (legacyPublicKey)
+    , publicKey_ (publicKey)
     , creationTime_ (clock_type::now())
-    , hello_ (std::move(hello))
+    , hello_ (hello)
     , usage_ (usage)
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))

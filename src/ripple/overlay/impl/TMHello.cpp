@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/protocol/digest.h>
@@ -49,8 +48,8 @@ namespace ripple {
     @return `true` if successful, `false` otherwise.
 */
 static
-bool
-hashLastMessage (SSL const* ssl, unsigned char* hash,
+boost::optional<base_uint<512>>
+hashLastMessage (SSL const* ssl,
     size_t (*get)(const SSL *, void *buf, size_t))
 {
     enum
@@ -58,50 +57,42 @@ hashLastMessage (SSL const* ssl, unsigned char* hash,
         sslMinimumFinishedLength = 12
     };
     unsigned char buf[1024];
-    std::memset(hash, 0, 64);
     size_t len = get (ssl, buf, sizeof (buf));
     if(len < sslMinimumFinishedLength)
-        return false;
-    SHA512 (buf, len, hash);
-    return true;
+        return boost::none;
+    base_uint<512> cookie;
+    SHA512 (buf, len, cookie.data());
+    return cookie;
 }
 
-std::pair<uint256, bool>
+boost::optional<uint256>
 makeSharedValue (SSL* ssl, beast::Journal journal)
 {
-    std::pair<uint256, bool> result = { {}, false };
-
-    unsigned char sha1[64];
-    unsigned char sha2[64];
-
-    if (!hashLastMessage(ssl, sha1, SSL_get_finished))
+    auto const cookie1 = hashLastMessage(ssl, SSL_get_finished);
+    if (!cookie1)
     {
         journal.error << "Cookie generation: local setup not complete";
-        return result;
+        return boost::none;
     }
 
-    if (!hashLastMessage(ssl, sha2, SSL_get_peer_finished))
+    auto const cookie2 = hashLastMessage(ssl, SSL_get_peer_finished);
+    if (!cookie2)
     {
         journal.error << "Cookie generation: peer setup not complete";
-        return result;
+        return boost::none;
     }
 
-    // If both messages hash to the same value (i.e. match) something is
-    // wrong. This would cause the resulting cookie to be 0.
-    if (memcmp (sha1, sha2, sizeof (sha1)) == 0)
+    auto const result = (*cookie1 ^ *cookie2);
+
+    // Both messages hash to the same value and the cookie
+    // is 0. Don't allow this.
+    if (result == zero)
     {
         journal.error << "Cookie generation: identical finished messages";
-        return result;
+        return boost::none;
     }
 
-    for (size_t i = 0; i < sizeof (sha1); ++i)
-        sha1[i] ^= sha2[i];
-
-    // Finally, derive the actual cookie for the values that
-    // we have calculated.
-    result.first = sha512Half(Slice(sha1, sizeof(sha1)));
-    result.second = true;
-    return result;
+    return sha512Half (Slice (result.data(), result.size()));
 }
 
 protocol::TMHello
@@ -113,17 +104,20 @@ buildHello (
 {
     protocol::TMHello h;
 
-    Blob vchSig;
-    app.getLocalCredentials ().getNodePrivate ().signNodePrivate (
-        sharedValue, vchSig);
+    auto const sig = signDigest (
+        app.nodeIdentity().first,
+        app.nodeIdentity().second,
+        sharedValue);
 
     h.set_protoversion (to_packed (BuildInfo::getCurrentProtocol()));
     h.set_protoversionmin (to_packed (BuildInfo::getMinimumProtocol()));
     h.set_fullversion (BuildInfo::getFullVersionString ());
     h.set_nettime (app.timeKeeper().now().time_since_epoch().count());
-    h.set_nodepublic (app.getLocalCredentials ().getNodePublic (
-        ).humanNodePublic ());
-    h.set_nodeproof (&vchSig[0], vchSig.size ());
+    h.set_nodepublic (
+        toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            app.nodeIdentity().first));
+    h.set_nodeproof (sig.data(), sig.size());
     // h.set_ipv4port (portNumber); // ignored now
     h.set_testnet (false);
 
@@ -227,24 +221,23 @@ parse_ProtocolVersions (std::string const& s)
     return result;
 }
 
-std::pair<protocol::TMHello, bool>
+boost::optional<protocol::TMHello>
 parseHello (beast::http::message const& m, beast::Journal journal)
 {
     auto const& h = m.headers;
-    std::pair<protocol::TMHello, bool> result = { {}, false };
-    protocol::TMHello& hello = result.first;
 
     // protocol version in TMHello is obsolete,
     // it is supplanted by the values in the headers.
+    protocol::TMHello hello;
 
     {
         // Required
         auto const iter = h.find ("Upgrade");
         if (iter == h.end())
-            return result;
+            return boost::none;
         auto const versions = parse_ProtocolVersions(iter->second);
         if (versions.empty())
-            return result;
+            return boost::none;
         hello.set_protoversion(
             (static_cast<std::uint32_t>(versions.back().first) << 16) |
             (static_cast<std::uint32_t>(versions.back().second)));
@@ -257,11 +250,11 @@ parseHello (beast::http::message const& m, beast::Journal journal)
         // Required
         auto const iter = h.find ("Public-Key");
         if (iter == h.end())
-            return result;
-        RippleAddress addr;
-        addr.setNodePublic (iter->second);
-        if (! addr.isValid())
-            return result;
+            return boost::none;
+        auto const pk = parseBase58<PublicKey>(
+            TokenType::TOKEN_NODE_PUBLIC, iter->second);
+        if (!pk)
+            return boost::none;
         hello.set_nodepublic (iter->second);
     }
 
@@ -269,7 +262,7 @@ parseHello (beast::http::message const& m, beast::Journal journal)
         // Required
         auto const iter = h.find ("Session-Signature");
         if (iter == h.end())
-            return result;
+            return boost::none;
         // TODO Security Review
         hello.set_nodeproof (beast::base64_decode (iter->second));
     }
@@ -287,7 +280,7 @@ parseHello (beast::http::message const& m, beast::Journal journal)
         {
             std::uint64_t nettime;
             if (! beast::lexicalCastChecked(nettime, iter->second))
-                return result;
+                return boost::none;
             hello.set_nettime (nettime);
         }
     }
@@ -298,7 +291,7 @@ parseHello (beast::http::message const& m, beast::Journal journal)
         {
             LedgerIndex ledgerIndex;
             if (! beast::lexicalCastChecked(ledgerIndex, iter->second))
-                return result;
+                return boost::none;
             hello.set_ledgerindex (ledgerIndex);
         }
     }
@@ -324,7 +317,7 @@ parseHello (beast::http::message const& m, beast::Journal journal)
             std::tie (address, valid) =
                 beast::IP::Address::from_string (iter->second);
             if (!valid)
-                return result;
+                return boost::none;
             if (address.is_v4())
                 hello.set_local_ip(address.to_v4().value);
         }
@@ -339,17 +332,16 @@ parseHello (beast::http::message const& m, beast::Journal journal)
             std::tie (address, valid) =
                 beast::IP::Address::from_string (iter->second);
             if (!valid)
-                return result;
+                return boost::none;
             if (address.is_v4())
                 hello.set_remote_ip(address.to_v4().value);
         }
     }
 
-    result.second = true;
-    return result;
+    return hello;
 }
 
-std::pair<RippleAddress, bool>
+boost::optional<PublicKey>
 verifyHello (protocol::TMHello const& h,
     uint256 const& sharedValue,
     beast::IP::Address public_ip,
@@ -357,63 +349,69 @@ verifyHello (protocol::TMHello const& h,
     beast::Journal journal,
     Application& app)
 {
-    std::pair<RippleAddress, bool> result = { {}, false };
-    auto const ourTime = app.timeKeeper().now().time_since_epoch().count();
-    std::uint32_t const minTime = ourTime - clockToleranceDeltaSeconds;
-    std::uint32_t const maxTime = ourTime + clockToleranceDeltaSeconds;
-
-#ifdef BEAST_DEBUG
     if (h.has_nettime ())
     {
-        std::int64_t to = ourTime;
-        to -= h.nettime ();
-        journal.debug <<
-            "Connect: time offset " << to;
-    }
-#endif
+        auto const ourTime = app.timeKeeper().now().time_since_epoch().count();
+        auto const minTime = ourTime - clockToleranceDeltaSeconds;
+        auto const maxTime = ourTime + clockToleranceDeltaSeconds;
 
-    auto const protocol = BuildInfo::make_protocol(h.protoversion());
-
-    if (h.has_nettime () &&
-        ((h.nettime () < minTime) || (h.nettime () > maxTime)))
-    {
         if (h.nettime () > maxTime)
         {
             journal.info <<
                 "Clock for is off by +" << h.nettime() - ourTime;
+            return boost::none;
         }
-        else if (h.nettime () < minTime)
+
+        if (h.nettime () < minTime)
         {
             journal.info <<
                 "Clock is off by -" << ourTime - h.nettime();
+            return boost::none;
         }
+
+        journal.trace <<
+            "Connect: time offset " <<
+            static_cast<std::int64_t>(ourTime) - h.nettime();
     }
-    else if (h.protoversionmin () > to_packed (
-        BuildInfo::getCurrentProtocol()))
+
+    if (h.protoversionmin () > to_packed (BuildInfo::getCurrentProtocol()))
     {
         journal.info <<
             "Hello: Disconnect: Protocol mismatch [" <<
-            "Peer expects " << to_string (protocol) <<
-            " and we run " << to_string (BuildInfo::getCurrentProtocol()) << "]";
+            "Peer expects " << to_string (
+                BuildInfo::make_protocol(h.protoversion())) <<
+            " and we run " << to_string (
+                BuildInfo::getCurrentProtocol()) << "]";
+        return boost::none;
     }
-    else if (! result.first.setNodePublic (h.nodepublic()))
+
+    auto const publicKey = parseBase58<PublicKey>(
+        TokenType::TOKEN_NODE_PUBLIC, h.nodepublic());
+
+    if (! publicKey)
     {
         journal.info <<
             "Hello: Disconnect: Bad node public key.";
+        return boost::none;
     }
-    else if (result.first == app.getLocalCredentials().getNodePublic())
+
+    if (*publicKey == app.nodeIdentity().first)
     {
         journal.info <<
             "Hello: Disconnect: Self connection.";
+        return boost::none;
     }
-    else if (! result.first.verifyNodePublic (
-        sharedValue, h.nodeproof (), ECDSA::not_strict))
+
+    if (! verifyDigest (*publicKey, sharedValue,
+        makeSlice (h.nodeproof()), false))
     {
         // Unable to verify they have private key for claimed public key.
         journal.info <<
             "Hello: Disconnect: Failed to verify session.";
+        return boost::none;
     }
-    else if (h.has_local_ip () &&
+
+    if (h.has_local_ip () &&
         is_public (remote) &&
         remote.is_v4 () &&
         (remote.to_v4().value != h.local_ip ()))
@@ -425,8 +423,10 @@ verifyHello (protocol::TMHello const& h,
             beast::IP::to_string (remote.to_v4())
             << " not " <<
             beast::IP::to_string (beast::IP::AddressV4 (h.local_ip()));
+        return boost::none;
     }
-    else if (h.has_remote_ip() && is_public (remote) &&
+
+    if (h.has_remote_ip() && is_public (remote) &&
         (public_ip != beast::IP::Address()) &&
         (h.remote_ip() != public_ip.to_v4().value))
     {
@@ -437,13 +437,10 @@ verifyHello (protocol::TMHello const& h,
             beast::IP::to_string (public_ip.to_v4())
             << " not " <<
             beast::IP::to_string (beast::IP::AddressV4 (h.remote_ip()));
+        return boost::none;
     }
-    else
-    {
-        // Successful connection.
-        result.second = true;
-    }
-    return result;
+
+    return publicKey;
 }
 
 }

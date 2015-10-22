@@ -25,6 +25,8 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
 
@@ -378,13 +380,15 @@ public:
         }
     }
 
-    std::vector <RippleAddress> makeValidators (int num)
+    std::vector <PublicKey> makeValidators (int num)
     {
-        std::vector <RippleAddress> ret;
+        std::vector <PublicKey> ret;
         ret.reserve (num);
         for (int i = 0; i < num; ++i)
-            ret.push_back (RippleAddress::createNodePublic (
-                RippleAddress::createSeedRandom ()));
+        {
+            ret.push_back (
+                randomKeyPair(KeyType::secp256k1).first);
+        }
         return ret;
     }
 
@@ -397,7 +401,7 @@ public:
     void doRound
         ( AmendmentTable& table
         , weeks week
-        , std::vector <RippleAddress> const& validators
+        , std::vector <PublicKey> const& validators
         , std::vector <std::pair <uint256, int> > const& votes
         , std::vector <uint256>& ourVotes
         , enabledAmendments_t& enabled
@@ -442,7 +446,7 @@ public:
                 v->setFieldV256 (sfAmendments, field);
 
             v->setTrusted();
-            validations [val.getNodeID()] = v;
+            validations [calcNodeID(val)] = v;
         }
 
         ourVotes = table.doValidation (enabled);

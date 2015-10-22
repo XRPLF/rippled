@@ -22,13 +22,14 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/http/message.h>
 #include <beast/utility/Journal.h>
 #include <utility>
 
 #include <boost/asio/ssl.hpp>
+#include <boost/optional.hpp>
 
 #include "ripple.pb.h"
 
@@ -47,7 +48,7 @@ enum
     If the shared value generation fails, the link MUST be dropped.
     @return A pair. Second will be false if shared value generation failed.
 */
-std::pair<uint256, bool>
+boost::optional<uint256>
 makeSharedValue (SSL* ssl, beast::Journal journal);
 
 /** Build a TMHello protocol message. */
@@ -61,16 +62,18 @@ void
 appendHello (beast::http::message& m, protocol::TMHello const& hello);
 
 /** Parse HTTP headers into TMHello protocol message.
-    @return A pair. Second will be false if the parsing failed.
+    @return A protocol message on success; an empty optional
+            if the parsing failed.
 */
-std::pair<protocol::TMHello, bool>
+boost::optional<protocol::TMHello>
 parseHello (beast::http::message const& m, beast::Journal journal);
 
 /** Validate and store the public key in the TMHello.
     This includes signature verification on the shared value.
-    @return A pair. Second will be false if the check failed.
+    @return The remote end public key on success; an empty
+            optional if the check failed.
 */
-std::pair<RippleAddress, bool>
+boost::optional<PublicKey>
 verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
     beast::IP::Address public_ip,
     beast::IP::Endpoint remote,

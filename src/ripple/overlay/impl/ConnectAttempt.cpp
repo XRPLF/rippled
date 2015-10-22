@@ -209,18 +209,16 @@ ConnectAttempt::onHandshake (error_code ec)
             beast::IPAddressConversion::from_asio (local_endpoint)))
         return fail("Duplicate connection");
 
-    bool success;
-    uint256 sharedValue;
-    std::tie(sharedValue, success) = makeSharedValue(
+    auto sharedValue = makeSharedValue(
         stream_.native_handle(), journal_);
-    if (! success)
+    if (! sharedValue)
         return close(); // makeSharedValue logs
 
     beast::http::message req = makeRequest(
         ! overlay_.peerFinder().config().peerPrivate,
             remote_endpoint_.address());
     auto const hello = buildHello (
-        sharedValue,
+        *sharedValue,
         overlay_.setup().public_ip,
         beast::IPAddressConversion::from_asio(remote_endpoint_),
         app_);
@@ -390,48 +388,48 @@ ConnectAttempt::processResponse (beast::http::message const& m,
         return close();
     }
 
-    bool success;
-    protocol::TMHello hello;
-    std::tie(hello, success) = parseHello (response_, journal_);
-    if(! success)
+    auto hello = parseHello (response_, journal_);
+    if(! hello)
         return fail("processResponse: Bad TMHello");
 
-    uint256 sharedValue;
-    std::tie(sharedValue, success) = makeSharedValue(
+    auto sharedValue = makeSharedValue(
         ssl_bundle_->stream.native_handle(), journal_);
-    if(! success)
+    if(! sharedValue)
         return close(); // makeSharedValue logs
 
-    RippleAddress publicKey;
-    std::tie(publicKey, success) = verifyHello (hello,
-        sharedValue,
+    auto publicKey = verifyHello (*hello,
+        *sharedValue,
         overlay_.setup().public_ip,
         beast::IPAddressConversion::from_asio(remote_endpoint_),
         journal_, app_);
-    if(! success)
+    if(! publicKey)
         return close(); // verifyHello logs
     if(journal_.info) journal_.info <<
-        "Public Key: " << publicKey.humanNodePublic();
+        "Public Key: " << toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            *publicKey);
 
     auto const protocol =
-        BuildInfo::make_protocol(hello.protoversion());
+        BuildInfo::make_protocol(hello->protoversion());
     if(journal_.info) journal_.info <<
         "Protocol: " << to_string(protocol);
 
-    auto member = app_.cluster().member(publicKey);
+    auto member = app_.cluster().member(*publicKey);
     if (member)
+    {
         if (journal_.info) journal_.info <<
             "Cluster name: " << *member;
+    }
 
     auto const result = overlay_.peerFinder().activate (slot_,
-        publicKey.toPublicKey(), static_cast<bool>(member));
+        *publicKey, static_cast<bool>(member));
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 
     auto const peer = std::make_shared<PeerImp>(app_,
         std::move(ssl_bundle_), read_buf_.data(),
             std::move(slot_), std::move(response_),
-                usage_, std::move(hello), publicKey, id_, overlay_);
+                usage_, *hello, *publicKey, id_, overlay_);
 
     overlay_.add_active (peer);
 }

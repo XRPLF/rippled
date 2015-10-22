@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 
-#include <ripple/protocol/RipplePublicKey.h>
+#include <ripple/protocol/PublicKey.h>
 #include <beast/net/IPEndpoint.h>
 #include <boost/optional.hpp>
 #include <memory>
@@ -73,7 +73,7 @@ public:
     /** The peer's public key, when known.
         The public key is established when the handshake is complete.
     */
-    virtual boost::optional <RipplePublicKey> const& public_key () const = 0;
+    virtual boost::optional <PublicKey> const& public_key () const = 0;
 };
 
 }

@@ -23,7 +23,7 @@
 #include <ripple/overlay/Message.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
 #include <beast/net/IPEndpoint.h>
 
 namespace ripple {
@@ -86,7 +86,7 @@ public:
     getScore (bool) const = 0;
 
     virtual
-    RippleAddress const&
+    PublicKey const&
     getNodePublic() const = 0;
 
     virtual

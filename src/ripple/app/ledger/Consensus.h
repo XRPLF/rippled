@@ -89,7 +89,7 @@ public:
     void
     storeProposal (
         LedgerProposal::ref proposal,
-        RippleAddress const& peerPublic) = 0;
+        NodeID const& nodeID) = 0;
 };
 
 std::unique_ptr<Consensus>

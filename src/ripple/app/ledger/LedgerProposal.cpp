@@ -33,25 +33,23 @@ LedgerProposal::LedgerProposal (
         std::uint32_t seq,
         uint256 const& tx,
         NetClock::time_point closeTime,
-        RippleAddress const& publicKey,
-        PublicKey const& pk,
+        PublicKey const& publicKey,
+        NodeID const& nodeID,
         uint256 const& suppression)
     : mPreviousLedger (pLgr)
     , mCurrentHash (tx)
     , mSuppression (suppression)
     , mCloseTime (closeTime)
     , mProposeSeq (seq)
-    , mPublicKey (publicKey)
-    , publicKey_ (pk)
+    , publicKey_ (publicKey)
+    , mPeerID (nodeID)
+    , mTime (std::chrono::steady_clock::now ())
 {
-    mPeerID = mPublicKey.getNodeID ();
-    mTime = std::chrono::steady_clock::now ();
 }
 
 // Used to construct local proposals
 // CAUTION: publicKey_ not set
 LedgerProposal::LedgerProposal (
-        RippleAddress const& publicKey,
         uint256 const& prevLgr,
         uint256 const& position,
         NetClock::time_point closeTime)
@@ -59,12 +57,8 @@ LedgerProposal::LedgerProposal (
     , mCurrentHash (position)
     , mCloseTime (closeTime)
     , mProposeSeq (seqJoin)
-    , mPublicKey (publicKey)
+    , mTime (std::chrono::steady_clock::now ())
 {
-    if (mPublicKey.isValid ())
-        mPeerID = mPublicKey.getNodeID ();
-
-    mTime = std::chrono::steady_clock::now ();
 }
 
 uint256 LedgerProposal::getSigningHash () const
@@ -79,8 +73,11 @@ uint256 LedgerProposal::getSigningHash () const
 
 bool LedgerProposal::checkSign () const
 {
-    return mPublicKey.verifyNodePublic(
-        getSigningHash(), signature_, ECDSA::not_strict);
+    return verifyDigest (
+        publicKey_,
+        getSigningHash(),
+        signature_,
+        false);
 }
 
 bool LedgerProposal::changePosition (
@@ -103,14 +100,6 @@ void LedgerProposal::bowOut ()
     mProposeSeq     = seqLeave;
 }
 
-Blob const& LedgerProposal::sign (RippleAddress const& privateKey)
-{
-    privateKey.signNodePrivate (getSigningHash (), signature_);
-    mSuppression = proposalUniqueId (mCurrentHash, mPreviousLedger, mProposeSeq,
-        mCloseTime, mPublicKey.getNodePublic (), signature_);
-    return signature_;
-}
-
 Json::Value LedgerProposal::getJson () const
 {
     Json::Value ret = Json::objectValue;
@@ -124,8 +113,10 @@ Json::Value LedgerProposal::getJson () const
 
     ret[jss::close_time] = mCloseTime.time_since_epoch().count();
 
-    if (mPublicKey.isValid ())
-        ret[jss::peer_id] = mPublicKey.humanNodePublic ();
+    if (publicKey_.size())
+        ret[jss::peer_id] =  toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            publicKey_);
 
     return ret;
 }
@@ -135,16 +126,15 @@ uint256 proposalUniqueId (
     uint256 const& previousLedger,
     std::uint32_t proposeSeq,
     NetClock::time_point closeTime,
-    Blob const& pubKey,
-    Blob const& signature)
+    Slice const& publicKey,
+    Slice const& signature)
 {
-
     Serializer s (512);
     s.add256 (proposeHash);
     s.add256 (previousLedger);
     s.add32 (proposeSeq);
     s.add32 (closeTime.time_since_epoch().count());
-    s.addVL (pubKey);
+    s.addVL (publicKey);
     s.addVL (signature);
 
     return s.getSHA512Half ();

@@ -155,16 +155,16 @@ getEnvVar (char const* name)
 void Config::setup (std::string const& strConf, bool bQuiet)
 {
     boost::filesystem::path dataDir;
-    boost::system::error_code   ec;
-    std::string                 strDbPath, strConfFile;
+    boost::system::error_code ec;
+    std::string strDbPath, strConfFile;
 
-    //
     // Determine the config and data directories.
-    // If the config file is found in the current working directory, use the current working directory as the config directory and
-    // that with "db" as the data directory.
-    //
+    // If the config file is found in the current working
+    // directory, use the current working directory as the
+    // config directory and that with "db" as the data
+    // directory.
 
-    QUIET       = bQuiet;
+    QUIET = bQuiet;
 
     strDbPath = databaseDirName;
 
@@ -363,24 +363,19 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_VALIDATION_SEED, strTemp, j_))
     {
-        VALIDATION_SEED.setSeedGeneric (strTemp);
-
-        if (VALIDATION_SEED.isValid ())
-        {
-            VALIDATION_PUB = RippleAddress::createNodePublic (VALIDATION_SEED);
-            VALIDATION_PRIV = RippleAddress::createNodePrivate (VALIDATION_SEED);
-        }
+        auto const seed = parseBase58<Seed>(strTemp);
+        if (!seed)
+            throw std::runtime_error (
+                "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
+        VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
+        VALIDATION_PUB = derivePublicKey (KeyType::secp256k1, VALIDATION_PRIV);
     }
 
-    if (getSingleSection (secConfig, SECTION_NODE_SEED, strTemp, j_))
+    if (getSingleSection (secConfig, SECTION_NODE_SEED, NODE_SEED, j_))
     {
-        NODE_SEED.setSeedGeneric (strTemp);
-
-        if (NODE_SEED.isValid ())
-        {
-            NODE_PUB = RippleAddress::createNodePublic (NODE_SEED);
-            NODE_PRIV = RippleAddress::createNodePrivate (NODE_SEED);
-        }
+        if (!parseBase58<Seed>(NODE_SEED))
+            throw std::runtime_error (
+                "Invalid seed specified in [" SECTION_NODE_SEED "]");
     }
 
     if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
@@ -433,10 +428,12 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_PATH_SEARCH_MAX, strTemp, j_))
         PATH_SEARCH_MAX     = beast::lexicalCastThrow <int> (strTemp);
 
-    // If a file was explicitly specified, then warn if the path is malformed
-    // or the file does not exist or is not a file.
-    // If no path was specified, then look for validators.txt in the same path
-    // as the config file - don't complain if we can't find it.
+    // If a file was explicitly specified, then warn if the
+    // path is malformed or if the file does not exist or is
+    // not a file.
+    // If no path was specified, then look for validators.txt
+    // in the same path as the config file but don't complain
+    // if we can't find it.
     boost::filesystem::path validatorsFile;
 
     if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))
@@ -592,16 +589,6 @@ boost::filesystem::path Config::getDebugLogFile () const
     }
 
     return log_file;
-}
-
-beast::File Config::getModuleDatabasePath () const
-{
-    boost::filesystem::path dbPath (legacy ("database_path"));
-
-    beast::String const s (dbPath.native ().c_str ());
-    if (s.isNotEmpty ())
-        return beast::File (s);
-    return beast::File::nonexistent ();
 }
 
 } // ripple

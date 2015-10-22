@@ -181,7 +181,7 @@ public:
 
     Result
     activate (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster) override
+        PublicKey const& key, bool cluster) override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         return m_logic.activate (impl, key, cluster);

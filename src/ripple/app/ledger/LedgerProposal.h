@@ -25,7 +25,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/SecretKey.h>
 #include <beast/hash/hash_append.h>
 #include <chrono>
 #include <cstdint>
@@ -55,14 +55,12 @@ public:
         std::uint32_t proposeSeq,
         uint256 const& propose,
         NetClock::time_point closeTime,
-        RippleAddress const& publicKey,
-        PublicKey const& pk,
+        PublicKey const& publicKey,
+        NodeID const& nodeID,
         uint256 const& suppress);
 
-    // Our own proposal: the publicKey, if set, indicates we are a validating
-    // node but does not indicate if we're validating in this consensus round.
+    // Our own proposal:
     LedgerProposal (
-        RippleAddress const& publicKey,
         uint256 const& prevLedger,
         uint256 const& position,
         NetClock::time_point closeTime);
@@ -82,9 +80,9 @@ public:
     {
         return mPreviousLedger;
     }
-    RippleAddress const& getPublicKey () const
+    PublicKey const& getPublicKey () const
     {
-        return mPublicKey;
+        return publicKey_;
     }
     uint256 const& getSuppressionID () const
     {
@@ -99,14 +97,12 @@ public:
         return mCloseTime;
     }
 
-    Blob const& sign (RippleAddress const& privateKey);
-
-    void setSignature (Blob sig)
+    void setSignature (Buffer&& sig)
     {
-        signature_ = sig;
+        signature_ = std::move(sig);
     }
 
-    Blob const& getSignature () const
+    Slice getSignature () const
     {
         return signature_;
     }
@@ -151,10 +147,9 @@ private:
     NetClock::time_point mCloseTime;
     std::uint32_t mProposeSeq;
 
-    NodeID          mPeerID;
-    RippleAddress   mPublicKey;
-    PublicKey       publicKey_;
-    Blob            signature_;
+    PublicKey publicKey_;
+    NodeID mPeerID;
+    Buffer signature_;
 
     std::chrono::steady_clock::time_point mTime;
 };
@@ -163,18 +158,18 @@ private:
 
     The identifier is based on all the fields that contribute to the signature,
     as well as the signature itself. The "last closed ledger" field may be
-    omitted, but the signer will compute the signature as if this
-    field was present. Recipients of the proposal will inject the last closed
-    ledger in order to validate the signature. If the last closed ledger is left
-    out, then it is considered as all zeroes for the purposes of signing.
+    omitted, but the signer will compute the signature as if this field was
+    present. Recipients of the proposal will inject the last closed ledger in
+    order to validate the signature. If the last closed ledger is left out, then
+    it is considered as all zeroes for the purposes of signing.
 */
 uint256 proposalUniqueId (
         uint256 const& proposeHash,
         uint256 const& previousLedger,
         std::uint32_t proposeSeq,
         NetClock::time_point closeTime,
-        Blob const& pubKey,
-        Blob const& signature);
+        Slice const& publicKey,
+        Slice const& signature);
 
 } // ripple
 

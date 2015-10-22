@@ -25,7 +25,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/overlay/ClusterNode.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
 #include <beast/hash/uhash.h>
 #include <beast/utility/Journal.h>
 #include <functional>
@@ -54,14 +54,14 @@ private:
         bool
         operator() (
             ClusterNode const& lhs,
-            RippleAddress const& rhs) const
+            PublicKey const& rhs) const
         {
             return lhs.identity() < rhs;
         }
 
         bool
         operator() (
-            RippleAddress const& lhs,
+            PublicKey const& lhs,
             ClusterNode const& rhs) const
         {
             return lhs < rhs.identity();
@@ -81,7 +81,7 @@ public:
                 node (which may be an empty string).
     */
     boost::optional<std::string>
-    member (RippleAddress const& node) const;
+    member (PublicKey const& node) const;
 
     /** The number of nodes in the cluster list. */
     std::size_t
@@ -94,7 +94,7 @@ public:
     */
     bool
     update (
-        RippleAddress const& identity,
+        PublicKey const& identity,
         std::string name,
         std::uint32_t loadFee = 0,
         NetClock::time_point reportTime = NetClock::time_point{});

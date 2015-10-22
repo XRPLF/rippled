@@ -19,6 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/Slice.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <beast/unit_test/suite.h>
 
@@ -119,9 +122,10 @@ public:
             c.listeningPort = 1024;
             logic.config(c);
         }
+
+        PublicKey const pk (randomKeyPair(KeyType::secp256k1).first);
         std::size_t n = 0;
-        std::array<std::uint8_t, 33> key;
-        key.fill(0);
+
         for (std::size_t i = 0; i < seconds; ++i)
         {
             auto const list = logic.autoconnect();
@@ -133,7 +137,6 @@ public:
                         beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
                 std::string s = ".";
-                RipplePublicKey pk (key.begin(), key.end());
                 if (! expect (logic.activate(slot, pk, false) ==
                         PeerFinder::Result::success, "activate"))
                     return;

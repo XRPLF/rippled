@@ -76,13 +76,23 @@ bool CanonicalTXSet::Key::operator>= (Key const& rhs)const
 
 void CanonicalTXSet::insert (std::shared_ptr<STTx const> const& txn)
 {
-    uint256 effectiveAccount = mSetHash;
+    auto const& accountId = txn->getAccountID(sfAccount);
 
-    effectiveAccount ^= to256 (txn->getAccountID(sfAccount));
+    uint256 effectiveAccount = beast::zero;
+    memcpy (
+        effectiveAccount.begin (),
+        accountId.begin (),
+        accountId.size ());
 
-    mMap.insert (std::make_pair (
-                     Key (effectiveAccount, txn->getSequence (), txn->getTransactionID ()),
-                     txn));
+    effectiveAccount ^= mSetHash;
+
+    mMap.insert (
+        std::make_pair (
+            Key (
+                effectiveAccount,
+                txn->getSequence (),
+                txn->getTransactionID ()),
+            txn));
 }
 
 CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)

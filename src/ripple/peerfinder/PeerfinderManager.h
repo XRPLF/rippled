@@ -226,7 +226,7 @@ public:
     virtual
     Result
     activate (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster) = 0;
+        PublicKey const& key, bool cluster) = 0;
 
     /** Returns a set of endpoints suitable for redirection. */
     virtual

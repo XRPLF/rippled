@@ -585,11 +585,9 @@ private:
         if (bPeer && iCursor >= 2)
             strPeer = jvParams[iCursor].asString ();
 
-        RippleAddress   raAddress;
-
-        if (! raAddress.setAccountPublic (strIdent) &&
+        if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strIdent) &&
             ! parseBase58<AccountID>(strIdent) &&
-                ! raAddress.setSeedGeneric (strIdent))
+            ! parseGenericSeed(strIdent))
             return rpcError (rpcACT_MALFORMED);
 
         // Get info on account.
@@ -602,11 +600,9 @@ private:
 
         if (!strPeer.empty ())
         {
-            RippleAddress   raPeer;
-
-            if (! raPeer.setAccountPublic (strPeer) &&
+            if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strPeer) &&
                 ! parseBase58<AccountID>(strPeer) &&
-                    ! raPeer.setSeedGeneric (strPeer))
+                ! parseGenericSeed (strPeer))
                 return rpcError (rpcACT_MALFORMED);
 
             jvRequest["peer"]   = strPeer;
@@ -729,8 +725,6 @@ private:
     {
         std::string strNode     = jvParams[0u].asString ();
         std::string strComment  = (jvParams.size () == 2) ? jvParams[1u].asString () : "";
-
-        RippleAddress   naNodePublic;
 
         if (strNode.length ())
         {

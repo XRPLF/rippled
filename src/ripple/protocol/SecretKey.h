@@ -24,44 +24,11 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/crypto/KeyType.h> // move to protocol/
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/Seed.h>
 #include <ripple/protocol/tokens.h>
 #include <array>
 
 namespace ripple {
-
-/** Seeds are used to generate deterministic secret keys. */
-class Seed
-{
-private:
-    std::array<uint8_t, 16> buf_;
-
-public:
-    Seed() = default;
-    Seed (Seed const&) = default;
-    Seed& operator= (Seed const&) = default;
-
-    /** Destroy the seed.
-
-        The buffer will first be securely erased.
-    */
-    ~Seed();
-
-    Seed (Slice const& slice);
-
-    std::uint8_t const*
-    data() const
-    {
-        return buf_.data();
-    }
-
-    std::size_t
-    size() const
-    {
-        return buf_.size();
-    }
-};
-
-//------------------------------------------------------------------------------
 
 /** A secret key. */
 class SecretKey
@@ -93,24 +60,42 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Create a seed using secure random numbers. */
-Seed
-randomSeed();
+/** Produces a sequence of secp256k1 key pairs. */
+class Generator
+{
+private:
+    Blob gen_; // VFALCO compile time size?
 
-/** Generate a seed deterministically.
+public:
+    explicit
+    Generator (Seed const& seed);
 
-    The algorithm is specific to Ripple:
+    /** Generate the nth key pair.
 
-        The seed is calculated as the first 128 bits
-        of the SHA512-Half of the string text excluding
-        any terminating null.
+        The seed is required to produce the private key.
+    */
+    std::pair<PublicKey, SecretKey>
+    operator()(Seed const& seed, std::size_t ordinal) const;
 
-    @note Unlike createSeedGeneric, this does not
-          attempt to interpret the string as hex
-          or other formats.
-*/
-Seed
-generateSeed (std::string const& passPhrase);
+    /** Generate the nth public key. */
+    PublicKey
+    operator()(std::size_t ordinal) const;
+};
+
+//------------------------------------------------------------------------------
+
+/** Parse a secret key */
+template <>
+boost::optional<SecretKey>
+parseBase58 (TokenType type, std::string const& s);
+
+inline
+std::string
+toBase58 (TokenType type, SecretKey const& sk)
+{
+    return base58EncodeToken(
+        type, sk.data(), sk.size());
+}
 
 /** Create a secret key using secure random numbers. */
 SecretKey
@@ -118,7 +103,7 @@ randomSecretKey();
 
 /** Generate a new secret key deterministically. */
 SecretKey
-generateSecretKey (Seed const& seed);
+generateSecretKey (KeyType type, Seed const& seed);
 
 /** Derive the public key from a secret key. */
 PublicKey
@@ -139,11 +124,28 @@ generateKeyPair (KeyType type, Seed const& seed);
 std::pair<PublicKey, SecretKey>
 randomKeyPair (KeyType type);
 
-/** Generate a signature for a message.
+/** Generate a signature for a message digest.
+    This can only be used with secp256k1 since Ed25519's
+    security properties come, in part, from how the message
+    is hashed.
+*/
+/** @{ */
+Buffer
+signDigest (PublicKey const& pk, SecretKey const& sk,
+    uint256 const& digest);
 
-    The algorithm is specific to Ripple:
-        secp256k1 signatures are computed
-        on the SHA512-Half of the message.
+inline
+Buffer
+signDigest (KeyType type, SecretKey const& sk,
+    uint256 const& digest)
+{
+    return signDigest (derivePublicKey(type, sk), sk, digest);
+}
+/** @} */
+
+/** Generate a signature for a message.
+    With secp256k1 signatures, the data is first hashed with
+    SHA512-Half, and the resulting digest is signed.
 */
 /** @{ */
 Buffer
@@ -155,8 +157,7 @@ Buffer
 sign (KeyType type, SecretKey const& sk,
     Slice const& message)
 {
-    return sign (derivePublicKey(type, sk),
-        sk, message);
+    return sign (derivePublicKey(type, sk), sk, message);
 }
 /** @} */
 

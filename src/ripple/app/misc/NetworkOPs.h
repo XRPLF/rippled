@@ -153,7 +153,7 @@ public:
     // ledger proposal/close functions
     virtual void processTrustedProposal (LedgerProposal::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
-            RippleAddress const& nodePublic) = 0;
+            NodeID const& node) = 0;
 
     virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;

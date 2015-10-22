@@ -25,36 +25,22 @@
 
 namespace ripple {
 
-static
-PublicKey
-asPublicKey(RippleAddress const& raPublicKey)
-{
-    auto const& blob = raPublicKey.getNodePublic();
-
-    if (blob.empty())
-        LogicError ("Can't convert invalid RippleAddress to PublicKey");
-
-    return PublicKey(Slice(blob.data(), blob.size()));
-}
-
 ValidatorList::ValidatorList (beast::Journal j)
     : j_ (j)
 {
 }
 
 boost::optional<std::string>
-ValidatorList::member (RippleAddress const& identity) const
+ValidatorList::member (PublicKey const& identity) const
 {
     std::lock_guard <std::mutex> sl (mutex_);
 
-    auto const publicKey = asPublicKey (identity);
-
-    auto ret = ephemeral_.find (publicKey);
+    auto ret = ephemeral_.find (identity);
 
     if (ret != ephemeral_.end())
         return ret->second;
 
-    ret = permanent_.find (publicKey);
+    ret = permanent_.find (identity);
 
     if (ret != permanent_.end())
         return ret->second;
@@ -63,7 +49,7 @@ ValidatorList::member (RippleAddress const& identity) const
 }
 
 bool
-ValidatorList::trusted (RippleAddress const& identity) const
+ValidatorList::trusted (PublicKey const& identity) const
 {
     return static_cast<bool> (member(identity));
 }
@@ -96,30 +82,28 @@ ValidatorList::removeEphemeralKey (
 
 bool
 ValidatorList::insertPermanentKey (
-    RippleAddress const& identity,
+    PublicKey const& identity,
     std::string const& comment)
 {
     std::lock_guard <std::mutex> sl (mutex_);
 
-    auto const publicKey = asPublicKey (identity);
-
-    if (ephemeral_.find (publicKey) != ephemeral_.end())
+    if (ephemeral_.find (identity) != ephemeral_.end())
     {
         JLOG (j_.error) <<
-            toBase58 (TokenType::TOKEN_NODE_PUBLIC, publicKey) <<
+            toBase58 (TokenType::TOKEN_NODE_PUBLIC, identity) <<
             ": permanent key exists in ephemeral table!";
         return false;
     }
 
-    return permanent_.emplace (publicKey, comment).second;
+    return permanent_.emplace (identity, comment).second;
 }
 
 bool
 ValidatorList::removePermanentKey (
-    RippleAddress const& identity)
+    PublicKey const& identity)
 {
     std::lock_guard <std::mutex> sl (mutex_);
-    return permanent_.erase (asPublicKey (identity));
+    return permanent_.erase (identity);
 }
 
 std::size_t
@@ -186,16 +170,14 @@ ValidatorList::load (
             return false;
         }
 
-        auto const ra = RippleAddress::createNodePublic (match[1]);
-
-        if (trusted (ra))
+        if (trusted (*id))
         {
             JLOG (j_.warning) <<
                 "Duplicate node identity: " << match[1];
             continue;
         }
 
-        if (insertPermanentKey(ra, trim_whitespace (match[2])))
+        if (insertPermanentKey(*id, trim_whitespace (match[2])))
             ++count;
     }
 

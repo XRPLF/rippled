@@ -26,6 +26,9 @@
 #include <ripple/rpc/Context.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+#include <algorithm>
+#include <iterator>
+#include <string>
 
 namespace ripple {
 namespace RPC {

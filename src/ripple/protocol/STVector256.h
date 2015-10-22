@@ -23,7 +23,6 @@
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/STBase.h>
-#include <ripple/protocol/RippleAddress.h>
 
 namespace ripple {
 

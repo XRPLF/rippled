@@ -21,8 +21,9 @@
 #include <ripple/basics/contract.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/crypto/Base58.h>
 #include <ripple/overlay/impl/Manifest.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
 #include <beast/http/rfc2616.h>
 #include <stdexcept>

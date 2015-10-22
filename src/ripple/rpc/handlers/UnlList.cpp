@@ -39,11 +39,11 @@ Json::Value doUnlList (RPC::Context& context)
         {
             Json::Value node (Json::objectValue);
 
-            node["publicKey"] = toBase58(
+            node[jss::pubkey_validator] = toBase58(
                 TokenType::TOKEN_NODE_PUBLIC, publicKey);
-            node["ephemeral"] = ephemeral;
+            node[jss::ephemeral] = ephemeral;
             if (!comment.empty())
-                node["comment"] = comment;
+                node[jss::comment] = comment;
 
             unl.append (node);
         });

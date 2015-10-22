@@ -24,7 +24,6 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/protocol/UInt160.h>
 #include <beast/module/core/maths/Random.h>
 #include <beast/unit_test/suite.h>
 #include <functional>

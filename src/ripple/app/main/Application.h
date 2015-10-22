@@ -44,7 +44,6 @@ class Family;
 class HashRouter;
 class Logs;
 class LoadFeeTrack;
-class LocalCredentials;
 class JobQueue;
 class InboundLedgers;
 class InboundTransactions;
@@ -129,7 +128,11 @@ public:
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
-    virtual LocalCredentials&       getLocalCredentials () = 0;
+
+    virtual
+    std::pair<PublicKey, SecretKey> const&
+    nodeIdentity () = 0;
+
     virtual Resource::Manager&      getResourceManager () = 0;
     virtual PathRequests&           getPathRequests () = 0;
     virtual SHAMapStore&            getSHAMapStore () = 0;

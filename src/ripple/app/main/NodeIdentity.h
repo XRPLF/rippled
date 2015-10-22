@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,18 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_SIGNATUREKEYPAIR_H_INCLUDED
-#define RIPPLE_RPC_SIGNATUREKEYPAIR_H_INCLUDED
+#ifndef RIPPLE_APP_MAIN_NODEIDENTITY_H_INCLUDED
+#define RIPPLE_APP_MAIN_NODEIDENTITY_H_INCLUDED
 
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
+#include <utility>
 
 namespace ripple {
-namespace RPC {
 
-KeyPair keypairForSignature (Json::Value const& params, Json::Value& error);
+/** The cryptographic credentials identifying this server instance. */
+std::pair<PublicKey, SecretKey>
+loadNodeIdentity (Application& app);
 
-} // RPC
 } // ripple
 
 #endif

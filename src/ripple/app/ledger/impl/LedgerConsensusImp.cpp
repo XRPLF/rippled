@@ -228,10 +228,7 @@ LedgerConsensusImp::LedgerConsensusImp (
     , state_ (State::open)
     , mCloseTime {}
     , mValPublic (app_.config().VALIDATION_PUB)
-    , mValPrivate (app_.config().VALIDATION_PRIV)
-    , mProposing (false)
-    , mValidating (false)
-    , mHaveCorrectLCL (true)
+    , mValSecret (app_.config().VALIDATION_PRIV)
     , mConsensusFail (false)
     , mCurrentMSeconds (0)
     , mClosePercent (0)
@@ -1056,7 +1053,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             app_.getAmendmentTable ().doValidation (newLCL, *v);
         }
 
-        auto const signingHash = v->sign (mValPrivate);
+        auto const signingHash = v->sign (mValSecret);
         v->setTrusted ();
         // suppress it if we receive it - FIXME: wrong suppression
         app_.getHashRouter ().addSuppression (signingHash);
@@ -1322,11 +1319,16 @@ void LedgerConsensusImp::propose ()
     prop.set_proposeseq (mOurPosition->getProposeSeq ());
     prop.set_closetime(mOurPosition->getCloseTime().time_since_epoch().count());
 
-    Blob const pubKey = mValPublic.getNodePublic ();
-    prop.set_nodepubkey (&pubKey[0], pubKey.size ());
+    prop.set_nodepubkey (mValPublic.data(), mValPublic.size());
 
-    Blob const& sig = mOurPosition->sign (mValPrivate);
-    prop.set_signature (&sig[0], sig.size ());
+    mOurPosition->setSignature (
+        signDigest (
+            mValPublic,
+            mValSecret,
+            mOurPosition->getSigningHash()));
+
+    auto sig = mOurPosition->getSignature();
+    prop.set_signature (sig.data(), sig.size());
 
     app_.overlay().send(prop);
 }
@@ -1415,8 +1417,8 @@ void LedgerConsensusImp::takeInitialPosition (
     JLOG (j_.info) << "initial position " << txSet;
     mapCompleteInternal (txSet, initialSet, false);
 
-    mOurPosition = std::make_shared<LedgerProposal>
-        (mValPublic, initialLedger->info().parentHash, txSet, mCloseTime);
+    mOurPosition = std::make_shared<LedgerProposal> (
+        initialLedger->info().parentHash, txSet, mCloseTime);
 
     for (auto& it : mDisputes)
     {
@@ -1665,11 +1667,11 @@ void LedgerConsensusImp::playbackProposals ()
                 prop.set_previousledger (
                     proposal->getPrevLedger().begin(), 256 / 8);
 
-                auto const pubKey = proposal->getPublicKey().getNodePublic ();
-                prop.set_nodepubkey (&pubKey[0], pubKey.size());
+                auto const pk = proposal->getPublicKey().slice();
+                prop.set_nodepubkey (pk.data(), pk.size());
 
-                auto const& signature = proposal->getSignature();
-                prop.set_signature (&signature[0], signature.size());
+                auto const sig = proposal->getSignature();
+                prop.set_signature (sig.data(), sig.size());
 
                 app_.overlay().relay (
                     prop, proposal->getSuppressionID ());
@@ -1693,8 +1695,7 @@ void LedgerConsensusImp::checkOurValidation ()
 {
     // This only covers some cases - Fix for the case where we can't ever
     // acquire the consensus ledger
-    if (!mHaveCorrectLCL || !mValPublic.isSet ()
-        || !mValPrivate.isSet ()
+    if (!mHaveCorrectLCL || !mValPublic.size ()
         || app_.getOPs ().isNeedNetworkLedger ())
     {
         return;
@@ -1718,7 +1719,7 @@ void LedgerConsensusImp::checkOurValidation ()
         mValPublic, false);
     addLoad(v);
     v->setTrusted ();
-    auto const signingHash = v->sign (mValPrivate);
+    auto const signingHash = v->sign (mValSecret);
         // FIXME: wrong supression
     app_.getHashRouter ().addSuppression (signingHash);
     app_.getValidations ().addValidation (v, "localMissing");
@@ -1799,8 +1800,7 @@ void LedgerConsensusImp::startRound (
         getCloseAgree (mPreviousLedger->info()),
         mPreviousLedger->info().seq + 1);
 
-    if (mValPublic.isSet () && mValPrivate.isSet ()
-        && !app_.getOPs ().isNeedNetworkLedger ())
+    if (mValPublic.size () && !app_.getOPs ().isNeedNetworkLedger ())
     {
         // If the validation keys were set, and if we need a ledger,
         // then we want to validate, and possibly propose a ledger.
@@ -1830,7 +1830,6 @@ void LedgerConsensusImp::startRound (
 
         if (!mHaveCorrectLCL)
         {
-            //          mProposing = mValidating = false;
             JLOG (j_.info)
                 << "Entering consensus with: "
                 << mPreviousLedger->getHash ();
@@ -1839,9 +1838,11 @@ void LedgerConsensusImp::startRound (
         }
     }
     else
+    {
         // update the network status table as to whether we're
         // proposing/validating
         consensus_.setProposing (mProposing, mValidating);
+    }
 
     playbackProposals ();
     if (mPeerPositions.size() > (mPreviousProposers / 2))
