@@ -106,6 +106,7 @@ public:
     int addZeros (size_t uBytes);
 
     int addVL (Blob const& vector);
+    int addVL (Slice const& slice);
     int addVL (const void* ptr, int len);
 
     // disassemble functions

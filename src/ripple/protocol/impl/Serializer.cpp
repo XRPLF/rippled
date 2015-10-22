@@ -242,6 +242,14 @@ int Serializer::addVL (Blob const& vector)
     return ret;
 }
 
+int Serializer::addVL (Slice const& slice)
+{
+    int ret = addEncoded (slice.size());
+    if (slice.size())
+        addRaw (slice.data(), slice.size());
+    return ret;
+}
+
 int Serializer::addVL (const void* ptr, int len)
 {
     int ret = addEncoded (len);

@@ -25,6 +25,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 
@@ -41,18 +42,23 @@ Json::Value doUnlAdd (RPC::Context& context)
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);
 
-    RippleAddress raNodePublic;
-    if (raNodePublic.setNodePublic (context.params[jss::node].asString ()))
-    {
-        context.app.validators().insertPermanentKey (
-            raNodePublic,
-            context.params.isMember (jss::comment)
-                ? context.params[jss::comment].asString ()
-                : "");
-        return RPC::makeObjectValue ("adding node by public key");
-    }
+    auto const id = parseBase58<PublicKey>(
+        TokenType::TOKEN_NODE_PUBLIC,
+        context.params[jss::node].asString ());
 
-    return rpcError (rpcINVALID_PARAMS);
+    if (!id)
+        return rpcError (rpcINVALID_PARAMS);
+
+    auto const added = context.app.validators().insertPermanentKey (
+        *id,
+        context.params.isMember (jss::comment)
+            ? context.params[jss::comment].asString ()
+            : "");
+
+    Json::Value ret (Json::objectValue);
+    ret[jss::pubkey_validator] = context.params[jss::node];
+    ret[jss::status] = added ? "added" : "already present";
+    return ret;
 }
 
 } // ripple

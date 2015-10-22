@@ -21,6 +21,7 @@
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STAccount.h>
@@ -165,10 +166,18 @@ Blob STTx::getSignature () const
     }
 }
 
-void STTx::sign (RippleAddress const& private_key)
+void STTx::sign (
+    PublicKey const& publicKey,
+    SecretKey const& secretKey)
 {
-    Blob const signature = private_key.accountPrivateSign (getSigningData (*this));
-    setFieldVL (sfTxnSignature, signature);
+    auto const data = getSigningData (*this);
+
+    auto const sig = ripple::sign (
+        publicKey,
+        secretKey,
+        makeSlice(data));
+
+    setFieldVL (sfTxnSignature, sig);
     tid_ = getHash(HashPrefix::transactionID);
 }
 
@@ -261,25 +270,30 @@ STTx::checkSingleSign () const
     if (isFieldPresent (sfSigners))
         return false;
 
-    bool ret = false;
+    bool validSig = false;
     try
     {
-        ECDSA const fullyCanonical = (getFlags() & tfFullyCanonicalSig)
-            ? ECDSA::strict
-            : ECDSA::not_strict;
+        bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig);
+        auto const spk = getFieldVL (sfSigningPubKey);
 
-        RippleAddress n;
-        n.setAccountPublic (getFieldVL (sfSigningPubKey));
+        if (publicKeyType (makeSlice(spk)))
+        {
+            Blob const signature = getFieldVL (sfTxnSignature);
+            Blob const data = getSigningData (*this);
 
-        ret = n.accountPublicVerify (getSigningData (*this),
-            getFieldVL (sfTxnSignature), fullyCanonical);
+            validSig = verify (
+                PublicKey (makeSlice(spk)),
+                makeSlice(data),
+                makeSlice(signature),
+                fullyCanonical);
+        }
     }
     catch (std::exception const&)
     {
         // Assume it was a signature failure.
-        ret = false;
+        validSig = false;
     }
-    return ret;
+    return validSig;
 }
 
 bool
@@ -310,9 +324,7 @@ STTx::checkMultiSign () const
     auto const txnAccountID = getAccountID (sfAccount);
 
     // Determine whether signatures must be full canonical.
-    ECDSA const fullyCanonical = (getFlags() & tfFullyCanonicalSig)
-        ? ECDSA::strict
-        : ECDSA::not_strict;
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig);
 
     // Signers must be in sorted order by AccountID.
     AccountID lastAccountID (beast::zero);
@@ -339,14 +351,19 @@ STTx::checkMultiSign () const
             Serializer s = dataStart;
             finishMultiSigningData (accountID, s);
 
-            RippleAddress const pubKey =
-                RippleAddress::createAccountPublic (
-                    signer.getFieldVL (sfSigningPubKey));
+            auto spk = signer.getFieldVL (sfSigningPubKey);
 
-            Blob const signature = signer.getFieldVL (sfTxnSignature);
+            if (publicKeyType (makeSlice(spk)))
+            {
+                Blob const signature =
+                    signer.getFieldVL (sfTxnSignature);
 
-            validSig = pubKey.accountPublicVerify (
-                s.getData(), signature, fullyCanonical);
+                validSig = verify (
+                    PublicKey (makeSlice(spk)),
+                    s.slice(),
+                    makeSlice(signature),
+                    fullyCanonical);
+            }
         }
         catch (std::exception const&)
         {

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_STTX_H_INCLUDED
 #define RIPPLE_PROTOCOL_STTX_H_INCLUDED
 
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
@@ -121,7 +123,9 @@ public:
     Json::Value getJson (int options) const override;
     Json::Value getJson (int options, bool binary) const;
 
-    void sign (RippleAddress const& private_key);
+    void sign (
+        PublicKey const& publicKey,
+        SecretKey const& secretKey);
 
     bool checkSign(bool allowMultiSign) const;
 

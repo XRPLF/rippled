@@ -989,8 +989,8 @@ public:
             kh.buckets = 0;
         }
         kh.modulus = ceil_pow2(kh.buckets);
-        verify(dh);
-        verify<hash_type>(dh, kh);
+        beast::nudb::detail::verify(dh);
+        beast::nudb::detail::verify<hash_type>(dh, kh);
         write(df, dh);
         write(kf, kh);
     }

@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/protocol/SecretKey.h>
 
 namespace ripple {
 namespace tests {
@@ -29,29 +31,18 @@ class ValidatorList_test : public ripple::TestSuite
 private:
     static
     PublicKey
-    asPublicKey(RippleAddress const& raPublicKey)
-    {
-        auto const& blob = raPublicKey.getNodePublic();
-
-        if (blob.empty())
-            LogicError ("Can't convert invalid RippleAddress to PublicKey");
-
-        return PublicKey(Slice(blob.data(), blob.size()));
-    }
-
-    static
-    RippleAddress
     randomNode ()
     {
-        return RippleAddress::createNodePublic (
-            RippleAddress::createSeedRandom ());
+        return derivePublicKey (
+            KeyType::secp256k1,
+            randomSecretKey());
     }
 
     static
     bool
     isPresent (
-        std::vector<RippleAddress> container,
-        RippleAddress const& item)
+        std::vector<PublicKey> container,
+        PublicKey const& item)
     {
         auto found = std::find (
             std::begin (container),
@@ -68,10 +59,24 @@ private:
 
         auto validators = std::make_unique <ValidatorList> (beast::Journal ());
 
-        std::vector<RippleAddress> network;
+        std::vector<PublicKey> network;
 
         while (network.size () != 8)
             network.push_back (randomNode());
+
+        auto format = [](
+            PublicKey const &publicKey,
+            char const* comment = nullptr)
+        {
+            auto ret = toBase58(
+                TokenType::TOKEN_NODE_PUBLIC,
+                publicKey);
+
+            if (comment)
+                ret += comment;
+
+            return ret;
+        };
 
         Section s1;
 
@@ -80,14 +85,14 @@ private:
         expect (validators->size() == 0);
 
         // Correct configuration
-        s1.append (network[0].humanNodePublic());
-        s1.append (network[1].humanNodePublic() + " Comment");
-        s1.append (network[2].humanNodePublic() + " Multi Word Comment");
-        s1.append (network[3].humanNodePublic() + "    Leading Whitespace");
-        s1.append (network[4].humanNodePublic() + " Trailing Whitespace    ");
-        s1.append (network[5].humanNodePublic() + "    Leading & Trailing Whitespace    ");
-        s1.append (network[6].humanNodePublic() + "    Leading, Trailing & Internal    Whitespace    ");
-        s1.append (network[7].humanNodePublic() + "    ");
+        s1.append (format (network[0]));
+        s1.append (format (network[1]) + " Comment");
+        s1.append (format (network[2]) + " Multi Word Comment");
+        s1.append (format (network[3]) + "    Leading Whitespace");
+        s1.append (format (network[4]) + " Trailing Whitespace    ");
+        s1.append (format (network[5]) + "    Leading & Trailing Whitespace    ");
+        s1.append (format (network[6]) + "    Leading, Trailing & Internal    Whitespace    ");
+        s1.append (format (network[7]) + "    ");
 
         expect (validators->load (s1));
 
@@ -97,41 +102,35 @@ private:
         // Incorrect configurations:
         Section s2;
         s2.append ("NotAPublicKey");
-
         expect (!validators->load (s2));
 
         Section s3;
-        s3.append ("@" + network[0].humanNodePublic());
+        s3.append (format (network[0], "!"));
         expect (!validators->load (s3));
 
         Section s4;
-        s4.append (network[0].humanNodePublic() + "!");
+        s4.append (format (network[0], "!  Comment"));
         expect (!validators->load (s4));
-
-        Section s5;
-        s5.append (network[0].humanNodePublic() + "!  Comment");
-        expect (!validators->load (s5));
 
         // Check if we properly terminate when we encounter
         // a malformed or unparseable entry:
-        auto const badNode = randomNode();
-        auto const goodNode = randomNode ();
+        auto const node1 = randomNode();
+        auto const node2 = randomNode ();
 
-        Section s6;
-        s6.append (badNode.humanNodePublic() + "XXX");
-        s6.append (goodNode.humanNodePublic());
-
-        expect (!validators->load (s6));
-        expect (!validators->trusted (badNode));
-        expect (!validators->trusted (goodNode));
+        Section s5;
+        s5.append (format (node1, "XXX"));
+        s5.append (format (node2));
+        expect (!validators->load (s5));
+        expect (!validators->trusted (node1));
+        expect (!validators->trusted (node2));
     }
 
     void
     testMembership ()
     {
         // The servers on the permanentValidators
-        std::vector<RippleAddress> permanentValidators;
-        std::vector<RippleAddress> ephemeralValidators;
+        std::vector<PublicKey> permanentValidators;
+        std::vector<PublicKey> ephemeralValidators;
 
         while (permanentValidators.size () != 64)
             permanentValidators.push_back (randomNode());
@@ -154,14 +153,14 @@ private:
         {
             testcase ("Membership: Non-Empty, Some Present, Some Not Present");
 
-            std::vector<RippleAddress> p (
+            std::vector<PublicKey> p (
                 permanentValidators.begin (),
                 permanentValidators.begin () + 16);
 
             while (p.size () != 32)
                 p.push_back (randomNode());
 
-            std::vector<RippleAddress> e (
+            std::vector<PublicKey> e (
                 ephemeralValidators.begin (),
                 ephemeralValidators.begin () + 16);
 
@@ -171,10 +170,10 @@ private:
             auto vl = std::make_unique <ValidatorList> (beast::Journal ());
 
             for (auto const& v : p)
-                vl->insertPermanentKey (v, v.ToString());
+                vl->insertPermanentKey (v, "");
 
             for (auto const& v : e)
-                vl->insertEphemeralKey (asPublicKey (v), v.ToString());
+                vl->insertEphemeralKey (v, "");
 
             for (auto const& v : p)
                 expect (vl->trusted (v));
@@ -214,14 +213,14 @@ private:
             expect (member->compare("Permanent") == 0);
         }
         // Inserting the same key as ephemeral fails:
-        expect (!vl->insertEphemeralKey (asPublicKey(v), "Ephemeral"));
+        expect (!vl->insertEphemeralKey (v, "Ephemeral"));
         {
             auto member = vl->member (v);
             expect (static_cast<bool>(member));
             expect (member->compare("Permanent") == 0);
         }
         // Removing the key as ephemeral fails:
-        expect (!vl->removeEphemeralKey (asPublicKey(v)));
+        expect (!vl->removeEphemeralKey (v));
         {
             auto member = vl->member (v);
             expect (static_cast<bool>(member));
@@ -232,14 +231,14 @@ private:
         expect (!static_cast<bool>(vl->trusted (v)));
 
         // Insert an ephemeral validator key
-        expect (vl->insertEphemeralKey (asPublicKey(v), "Ephemeral"));
+        expect (vl->insertEphemeralKey (v, "Ephemeral"));
         {
             auto member = vl->member (v);
             expect (static_cast<bool>(member));
             expect (member->compare("Ephemeral") == 0);
         }
         // Inserting the same ephemeral key fails
-        expect (!vl->insertEphemeralKey (asPublicKey(v), ""));
+        expect (!vl->insertEphemeralKey (v, ""));
         {
             auto member = vl->member (v);
             expect (static_cast<bool>(member));
@@ -260,7 +259,7 @@ private:
             expect (member->compare("Ephemeral") == 0);
         }
         // Deleting the key as ephemeral succeeds:
-        expect (vl->removeEphemeralKey (asPublicKey(v)));
+        expect (vl->removeEphemeralKey (v));
         expect (!vl->trusted(v));
     }
 

@@ -34,22 +34,25 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/impl/KeypairForSignature.h>
+#include <ripple/rpc/KeypairForSignature.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <algorithm>
+#include <iterator>
 
 namespace ripple {
 namespace RPC {
 namespace detail {
 
-// A local class used to pass extra parameters used when returning a
+// Used to pass extra parameters used when returning a
 // a SigningFor object.
 class SigningForParams
 {
 private:
     AccountID const* const multiSigningAcctID_;
-    RippleAddress* const multiSignPublicKey_;
-    Blob* const multiSignature_;
+    PublicKey* const multiSignPublicKey_;
+    Buffer* const multiSignature_;
+
 public:
     explicit SigningForParams ()
     : multiSigningAcctID_ (nullptr)
@@ -61,8 +64,8 @@ public:
 
     SigningForParams (
         AccountID const& multiSigningAcctID,
-        RippleAddress& multiSignPublicKey,
-        Blob& multiSignature)
+        PublicKey& multiSignPublicKey,
+        Buffer& multiSignature)
     : multiSigningAcctID_ (&multiSigningAcctID)
     , multiSignPublicKey_ (&multiSignPublicKey)
     , multiSignature_ (&multiSignature)
@@ -87,12 +90,12 @@ public:
         return *multiSigningAcctID_;
     }
 
-    void setPublicKey (RippleAddress const& multiSignPublicKey)
+    void setPublicKey (PublicKey const& multiSignPublicKey)
     {
         *multiSignPublicKey_ = multiSignPublicKey;
     }
 
-    void moveMultiSignature (Blob&& multiSignature)
+    void moveMultiSignature (Buffer&& multiSignature)
     {
         *multiSignature_ = std::move (multiSignature);
     }
@@ -103,9 +106,9 @@ public:
 static error_code_i acctMatchesPubKey (
     std::shared_ptr<SLE const> accountState,
     AccountID const& accountID,
-    RippleAddress const& publicKey)
+    PublicKey const& publicKey)
 {
-    AccountID const publicKeyAcctID = calcAccountID(publicKey);
+    auto const publicKeyAcctID = calcAccountID(publicKey);
     bool const isMasterKey = publicKeyAcctID == accountID;
 
     // If we can't get the accountRoot, but the accountIDs match, that's
@@ -230,9 +233,9 @@ static Json::Value checkPayment(
 
 // Validate (but don't modify) the contents of the tx_json.
 //
-// Returns a pair<Json::Value, AccountID>.  The Json::Value is non-empty
-// and contains as error if there was an error.  The returned RippleAddress
-// is the "Account" addressID if there was no error.
+// Returns a pair<Json::Value, AccountID>.  The Json::Value will contain error
+// information if there was an error. On success, the account ID is returned
+// and the Json::Value will be empty.
 //
 // This code does not check the "Sequence" field, since the expectations
 // for that field are particularly context sensitive.
@@ -293,7 +296,7 @@ checkTxJsonFields (
 
     // It's all good.  Return the AccountID.
     ret.second = *srcAddressID;
-   return ret;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -340,13 +343,10 @@ transactionPreProcessImpl (
 {
     auto j = app.journal ("RPCHandler");
 
-    KeyPair keypair;
-    {
-        Json::Value jvResult;
-        keypair = keypairForSignature (params, jvResult);
-        if (contains_error (jvResult))
-            return std::move (jvResult);
-    }
+    Json::Value jvResult;
+    auto const keypair = keypairForSignature (params, jvResult);
+    if (contains_error (jvResult))
+        return std::move (jvResult);
 
     bool const verify = !(params.isMember (jss::offline)
                           && params[jss::offline].asBool());
@@ -433,7 +433,7 @@ transactionPreProcessImpl (
 
     // If multisigning then we need to return the public key.
     if (signingArgs.isMultiSigning())
-        signingArgs.setPublicKey (keypair.publicKey);
+        signingArgs.setPublicKey (keypair.first);
 
     if (verify)
     {
@@ -442,7 +442,7 @@ transactionPreProcessImpl (
             return rpcError (rpcSRC_ACT_NOT_FOUND);
 
         JLOG (j.trace)
-            << "verify: " << toBase58(calcAccountID(keypair.publicKey))
+            << "verify: " << toBase58(calcAccountID(keypair.first))
             << " : " << toBase58(srcAddressID);
 
         // Don't do this test if multisigning since the account and secret
@@ -450,8 +450,8 @@ transactionPreProcessImpl (
         if (!signingArgs.isMultiSigning())
         {
             // Make sure the account and secret belong together.
-            error_code_i const err =
-                acctMatchesPubKey (sle, srcAddressID, keypair.publicKey);
+            auto const err = acctMatchesPubKey (
+                sle, srcAddressID, keypair.first);
 
             if (err != rpcSUCCESS)
                 return rpcError (err);
@@ -472,16 +472,14 @@ transactionPreProcessImpl (
     try
     {
         // If we're generating a multi-signature the SigningPubKey must be
-        // empty:
-        //  o If we're multi-signing, use an empty blob for the signingPubKey
-        //  o Otherwise use the master account's public key.
-        Blob emptyBlob;
-        Blob const& signingPubKey = signingArgs.isMultiSigning() ?
-            emptyBlob : keypair.publicKey.getAccountPublic();
+        // empty, otherwise it must be the master account's public key.
+        parsed.object->setFieldVL (sfSigningPubKey,
+            signingArgs.isMultiSigning()
+                ? Slice (nullptr, 0)
+                : keypair.first.slice());
 
-        parsed.object->setFieldVL (sfSigningPubKey, signingPubKey);
-
-        stpTrans = std::make_shared<STTx> (std::move (parsed.object.get()));
+        stpTrans = std::make_shared<STTx> (
+            std::move (parsed.object.get()));
     }
     catch (std::exception&)
     {
@@ -496,14 +494,19 @@ transactionPreProcessImpl (
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning ())
     {
-        Serializer s =
-            buildMultiSigningData (*stpTrans, signingArgs.getSigner ());
-        Blob multiSignature = keypair.secretKey.accountPrivateSign(s.getData());
-        signingArgs.moveMultiSignature (std::move (multiSignature));
+        Serializer s = buildMultiSigningData (*stpTrans,
+            signingArgs.getSigner ());
+
+        auto multisig = ripple::sign (
+            keypair.first,
+            keypair.second,
+            s.slice());
+
+        signingArgs.moveMultiSignature (std::move (multisig));
     }
     else
     {
-        stpTrans->sign (keypair.secretKey);
+        stpTrans->sign (keypair.first, keypair.second);
     }
 
     return transactionPreProcessResult {std::move (stpTrans)};
@@ -896,8 +899,8 @@ Json::Value transactionSignFor (
     }
 
     // Add and amend fields based on the transaction type.
-    Blob multiSignature;
-    RippleAddress multiSignPubKey;
+    Buffer multiSignature;
+    PublicKey multiSignPubKey;
     SigningForParams signForParams(
         *signerAccountID, multiSignPubKey, multiSignature);
 
@@ -914,11 +917,13 @@ Json::Value transactionSignFor (
 
     {
         // Make sure the account and secret belong together.
-        std::shared_ptr<SLE const> sle = cachedRead(*ledger,
-            keylet::account(*signerAccountID).key, ltACCOUNT_ROOT);
-
-        error_code_i const err =
-            acctMatchesPubKey (sle, *signerAccountID, multiSignPubKey);
+        auto const err = acctMatchesPubKey (
+            cachedRead(
+                *ledger,
+                keylet::account(*signerAccountID).key,
+                ltACCOUNT_ROOT),
+            *signerAccountID,
+            multiSignPubKey);
 
         if (err != rpcSUCCESS)
             return rpcError (err);
@@ -931,7 +936,7 @@ Json::Value transactionSignFor (
         STObject signer (sfSigner);
         signer[sfAccount] = *signerAccountID;
         signer.setFieldVL (sfTxnSignature, multiSignature);
-        signer.setFieldVL (sfSigningPubKey, multiSignPubKey.getAccountPublic());
+        signer.setFieldVL (sfSigningPubKey, multiSignPubKey.slice());
 
         // If there is not yet a Signers array, make one.
         if (!sttx->isFieldPresent (sfSigners))

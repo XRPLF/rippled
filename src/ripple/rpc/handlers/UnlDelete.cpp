@@ -23,6 +23,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <beast/utility/make_lock.h>
@@ -39,14 +40,20 @@ Json::Value doUnlDelete (RPC::Context& context)
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);
 
-    RippleAddress raNodePublic;
-    if (raNodePublic.setNodePublic (context.params[jss::node].asString ()))
-    {
-        context.app.validators().removePermanentKey (raNodePublic);
-        return RPC::makeObjectValue ("removing node by public key");
-    }
+    auto const id = parseBase58<PublicKey>(
+        TokenType::TOKEN_NODE_PUBLIC,
+        context.params[jss::node].asString ());
 
-    return rpcError (rpcINVALID_PARAMS);
+    if (!id)
+        return rpcError (rpcINVALID_PARAMS);
+
+    auto const removed =
+        context.app.validators().removePermanentKey (*id);
+
+    Json::Value ret (Json::objectValue);
+    ret[jss::pubkey_validator] = context.params[jss::node];
+    ret[jss::status] = removed ? "removed" : "not present";
+    return ret;
 }
 
 } // ripple

@@ -20,7 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STObject.h>
 #include <cstdint>
 #include <memory>
@@ -49,8 +50,11 @@ public:
     STValidation (SerialIter & sit, bool checkSignature = true);
 
     // Does not sign the validation
-    STValidation (uint256 const& ledgerHash, NetClock::time_point signTime,
-                          const RippleAddress & raPub, bool isFull);
+    STValidation (
+        uint256 const& ledgerHash,
+        NetClock::time_point signTime,
+        PublicKey const& raPub,
+        bool isFull);
 
     STBase*
     copy (std::size_t n, void* buf) const override
@@ -68,7 +72,7 @@ public:
     NetClock::time_point getSignTime ()  const;
     NetClock::time_point getSeenTime ()  const;
     std::uint32_t   getFlags ()          const;
-    RippleAddress   getSignerPublic ()   const;
+    PublicKey       getSignerPublic ()   const;
     NodeID          getNodeID ()         const
     {
         return mNodeID;
@@ -94,7 +98,7 @@ public:
     Blob    getSignature ()              const;
 
     // Signs the validation and returns the signing hash
-    uint256 sign (const RippleAddress & raPrivate);
+    uint256 sign (SecretKey const& secretKey);
 
     // The validation this replaced
     uint256 const& getPreviousHash ()

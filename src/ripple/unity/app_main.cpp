@@ -23,7 +23,7 @@
 #include <ripple/app/main/Application.cpp>
 #include <ripple/app/main/CollectorManager.cpp>
 #include <ripple/app/main/Main.cpp>
+#include <ripple/app/main/NodeIdentity.cpp>
 #include <ripple/app/main/NodeStoreScheduler.cpp>
 #include <ripple/app/main/DBInit.cpp>
 #include <ripple/app/main/LoadManager.cpp>
-#include <ripple/app/main/LocalCredentials.cpp>

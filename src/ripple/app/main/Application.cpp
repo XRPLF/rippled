@@ -34,7 +34,7 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/app/main/LoadManager.h>
-#include <ripple/app/main/LocalCredentials.h>
+#include <ripple/app/main/NodeIdentity.h>
 #include <ripple/app/main/NodeStoreScheduler.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
@@ -308,7 +308,7 @@ public:
     std::unique_ptr <CollectorManager> m_collectorManager;
     detail::AppFamily family_;
     CachedSLEs cachedSLEs_;
-    LocalCredentials m_localCredentials;
+    std::pair<PublicKey, SecretKey> nodeIdentity_;
 
     std::unique_ptr <Resource::Manager> m_resourceManager;
 
@@ -396,8 +396,6 @@ public:
         , family_ (*this, *m_nodeStore, *m_collectorManager)
 
         , cachedSLEs_ (std::chrono::minutes(1), stopwatch())
-
-        , m_localCredentials (*this)
 
         , m_resourceManager (Resource::make_Manager (
             m_collectorManager->collector(), logs_->journal("Resource")))
@@ -548,9 +546,10 @@ public:
         return *m_jobQueue;
     }
 
-    LocalCredentials& getLocalCredentials () override
+    std::pair<PublicKey, SecretKey> const&
+    nodeIdentity () override
     {
-        return m_localCredentials ;
+        return nodeIdentity_;
     }
 
     NetworkOPs& getOPs () override
@@ -1004,6 +1003,8 @@ void ApplicationImp::setup()
 
     m_orderBookDB.setup (getLedgerMaster ().getCurrentLedger ());
 
+    nodeIdentity_ = loadNodeIdentity (*this);
+
     if (!cluster_->load (config().section(SECTION_CLUSTER_NODES)))
     {
         m_journal.fatal << "Invalid entry in cluster configuration.";
@@ -1018,8 +1019,6 @@ void ApplicationImp::setup()
 
     if (validators_->size () == 0 && !config_->RUN_STANDALONE)
         m_journal.warning << "No validators are configured.";
-
-    m_localCredentials.start ();
 
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
     m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));

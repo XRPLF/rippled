@@ -35,7 +35,7 @@
     Motivation:
 
     To protect the integrity of the shared ledger data structure, Validators
-    independently sign LedgerHash objects with their RipplePublicKey. These
+    independently sign LedgerHash objects with their public key. These
     signed Validations are propagated through the peer to peer network so
     that other nodes may inspect them. Every peer and client on the network
     gains confidence in a ledger and its associated chain of previous ledgers

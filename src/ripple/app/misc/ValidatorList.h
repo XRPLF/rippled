@@ -54,12 +54,12 @@ public:
     */
     boost::optional<std::string>
     member (
-        RippleAddress const& identity) const;
+        PublicKey const& identity) const;
 
     /** Determines whether a node is in the UNL */
     bool
     trusted (
-        RippleAddress const& identity) const;
+        PublicKey const& identity) const;
 
     /** Insert a short-term validator key published in a manifest. */
     bool
@@ -75,13 +75,13 @@ public:
     /** Insert a long-term validator key. */
     bool
     insertPermanentKey (
-        RippleAddress const& identity,
+        PublicKey const& identity,
         std::string const& comment);
 
     /** Remove a long-term validator key. */
     bool
     removePermanentKey (
-        RippleAddress const& identity);
+        PublicKey const& identity);
 
     /** The number of installed permanent and ephemeral keys */
     std::size_t

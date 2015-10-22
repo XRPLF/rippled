@@ -23,6 +23,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/strHex.h>
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -157,6 +158,17 @@ Stream& operator<<(Stream& s, Slice const& v)
 {
     s << strHex(v.data(), v.size());
     return s;
+}
+
+template <class T, std::size_t N>
+std::enable_if_t<
+    std::is_same<T, char>::value ||
+        std::is_same<T, unsigned char>::value,
+    Slice
+>
+makeSlice (std::array<T, N> const& a)
+{
+    return Slice(a.data(), a.size());
 }
 
 template <class T, class Alloc>

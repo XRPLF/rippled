@@ -23,7 +23,8 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
-#include <ripple/protocol/RippleAddress.h> // VFALCO Breaks levelization
+#include <ripple/protocol/PublicKey.h> // NIKB Breaks levelization (TEMP)
+#include <ripple/protocol/SecretKey.h> // NIKB Breaks levelization (TEMP)
 #include <ripple/json/json_value.h>
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>
@@ -98,19 +99,10 @@ private:
     beast::Journal j_;
 
 public:
-    //--------------------------------------------------------------------------
-    /** Returns the location were databases should be located
-        The location may be a file, in which case databases should be placed in
-        the file, or it may be a directory, in which cases databases should be
-        stored in a file named after the module (e.g. "peerfinder.sqlite") that
-        is inside that directory.
-    */
-    beast::File getModuleDatabasePath () const;
-
     bool doImport = false;
-    bool                        QUIET = false;          // Minimize logging verbosity.
-    bool                        SILENT = false;         // No output to console after startup.
-    bool                        ELB_SUPPORT = false;
+    bool QUIET = false;          // Minimize logging verbosity.
+    bool SILENT = false;         // No output to console after startup.
+    bool ELB_SUPPORT = false;
 
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
     std::vector<std::string>    IPS_FIXED;              // Fixed Peer IPs from rippled.cfg.
@@ -166,14 +158,11 @@ public:
     int                         PATH_SEARCH_MAX = 10;
 
     // Validation
-    RippleAddress               VALIDATION_SEED;
-    RippleAddress               VALIDATION_PUB;
-    RippleAddress               VALIDATION_PRIV;
+    PublicKey                   VALIDATION_PUB;
+    SecretKey                   VALIDATION_PRIV;
 
-    // Node
-    RippleAddress               NODE_SEED;
-    RippleAddress               NODE_PUB;
-    RippleAddress               NODE_PRIV;
+    // Node Identity
+    std::string                 NODE_SEED;
 
     std::uint64_t                      FEE_DEFAULT = 10;
     std::uint64_t                      FEE_ACCOUNT_RESERVE = 200*SYSTEM_CURRENCY_PARTS;

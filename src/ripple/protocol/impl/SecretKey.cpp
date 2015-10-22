@@ -31,22 +31,6 @@
 
 namespace ripple {
 
-Seed::~Seed()
-{
-    beast::secure_erase(
-        buf_.data(), buf_.size());
-}
-
-Seed::Seed (Slice const& slice)
-{
-    if (slice.size() != buf_.size())
-        LogicError("Seed::Seed: invalid size");
-    std::memcpy(buf_.data(),
-        slice.data(), buf_.size());
-}
-
-//------------------------------------------------------------------------------
-
 SecretKey::~SecretKey()
 {
     beast::secure_erase(buf_, sizeof(buf_));
@@ -61,50 +45,55 @@ SecretKey::SecretKey (Slice const& slice)
 
 //------------------------------------------------------------------------------
 
-/** Produces a sequence of secp256k1 key pairs. */
-class Generator
+Generator::Generator (Seed const& seed)
 {
-private:
-    Blob gen_; // VFALCO compile time size?
+    uint128 ui;
+    std::memcpy(ui.data(),
+        seed.data(), seed.size());
+    gen_ = generateRootDeterministicPublicKey(ui);
+}
 
-public:
-    explicit
-    Generator (Seed const& seed)
-    {
-        uint128 ui;
-        std::memcpy(ui.data(),
-            seed.data(), seed.size());
-        gen_ = generateRootDeterministicPublicKey(ui);
-    }
+std::pair<PublicKey, SecretKey>
+Generator::operator()(Seed const& seed, std::size_t ordinal) const
+{
+    uint128 ui;
+    std::memcpy(ui.data(), seed.data(), seed.size());
+    auto gsk = generatePrivateDeterministicKey(gen_, ui, ordinal);
+    auto gpk = generatePublicDeterministicKey(gen_, ordinal);
+    SecretKey const sk(Slice{ gsk.data(), gsk.size() });
+    PublicKey const pk(Slice{ gpk.data(), gpk.size() });
+    beast::secure_erase(ui.data(), ui.size());
+    beast::secure_erase(gsk.data(), gsk.size());
+    return { pk, sk };
+}
 
-    /** Generate the nth key pair.
-
-        The seed is required to produce the private key.
-    */
-    std::pair<PublicKey, SecretKey>
-    operator()(Seed const& seed, std::size_t ordinal) const
-    {
-        uint128 ui;
-        std::memcpy(ui.data(), seed.data(), seed.size());
-        auto gsk = generatePrivateDeterministicKey(gen_, ui, ordinal);
-        auto gpk = generatePublicDeterministicKey(gen_, ordinal);
-        SecretKey const sk(Slice{ gsk.data(), gsk.size() });
-        PublicKey const pk(Slice{ gpk.data(), gpk.size() });
-        beast::secure_erase(ui.data(), ui.size());
-        beast::secure_erase(gsk.data(), gsk.size());
-        return { pk, sk };
-    }
-
-    /** Generate the nth public key. */
-    PublicKey
-    operator()(std::size_t ordinal) const
-    {
-        auto gpk = generatePublicDeterministicKey(gen_, ordinal);
-        return PublicKey(Slice{ gpk.data(), gpk.size() });
-    }
-};
+PublicKey
+Generator::operator()(std::size_t ordinal) const
+{
+    auto gpk = generatePublicDeterministicKey(gen_, ordinal);
+    return PublicKey(Slice{ gpk.data(), gpk.size() });
+}
 
 //------------------------------------------------------------------------------
+
+Buffer
+signDigest (PublicKey const& pk, SecretKey const& sk,
+    uint256 const& digest)
+{
+    if (publicKeyType(pk.slice()) != KeyType::secp256k1)
+        LogicError("sign: secp256k1 required for digest signing");
+
+    int siglen = 72;
+    unsigned char sig[72];
+    auto const result = secp256k1_ecdsa_sign(
+        secp256k1Context(),
+            digest.data(), sig, &siglen,
+                sk.data(), secp256k1_nonce_function_rfc6979,
+                    nullptr);
+    if (result != 1)
+        LogicError("sign: secp256k1_ecdsa_sign failed");
+    return Buffer(sig, siglen);
+}
 
 Buffer
 sign (PublicKey const& pk,
@@ -147,29 +136,6 @@ sign (PublicKey const& pk,
     }
 }
 
-Seed
-randomSeed()
-{
-    std::uint8_t buf[16];
-    beast::rngfill(
-        buf,
-        sizeof(buf),
-        crypto_prng());
-    Seed seed(Slice{ buf, sizeof(buf) });
-    beast::secure_erase(buf, sizeof(buf));
-    return seed;
-}
-
-Seed
-generateSeed (std::string const& passPhrase)
-{
-    sha512_half_hasher_s h;
-    h(passPhrase.data(), passPhrase.size());
-    auto const digest =
-        sha512_half_hasher::result_type(h);
-    return Seed({ digest.data(), 16 });
-}
-
 SecretKey
 randomSecretKey()
 {
@@ -185,16 +151,27 @@ randomSecretKey()
 
 // VFALCO TODO Rewrite all this without using OpenSSL
 //             or calling into GenerateDetermisticKey
-
 SecretKey
-generateSecretKey (Seed const& seed)
+generateSecretKey (KeyType type, Seed const& seed)
 {
-    uint128 ps;
-    std::memcpy(ps.data(),
-        seed.data(), seed.size());
-    auto const upk =
-        generateRootDeterministicPrivateKey(ps);
-    return SecretKey(Slice{ upk.data(), upk.size() });
+    if (type == KeyType::ed25519)
+    {
+        auto const key = sha512Half_s(Slice(
+            seed.data(), seed.size()));
+        return SecretKey(Slice{ key.data(), key.size() });
+    }
+
+    if (type == KeyType::secp256k1)
+    {
+        uint128 ps;
+        std::memcpy(ps.data(),
+            seed.data(), seed.size());
+        auto const upk =
+            generateRootDeterministicPrivateKey(ps);
+        return SecretKey(Slice{ upk.data(), upk.size() });
+    }
+
+    LogicError ("generateSecretKey: unknown key type");
 }
 
 PublicKey
@@ -240,7 +217,7 @@ generateKeyPair (KeyType type, Seed const& seed)
     default:
     case KeyType::ed25519:
     {
-        auto const sk = generateSecretKey(seed);
+        auto const sk = generateSecretKey(type, seed);
         return { derivePublicKey(type, sk), sk };
     }
     }
@@ -251,6 +228,18 @@ randomKeyPair (KeyType type)
 {
     auto const sk = randomSecretKey();
     return { derivePublicKey(type, sk), sk };
+}
+
+template <>
+boost::optional<SecretKey>
+parseBase58 (TokenType type, std::string const& s)
+{
+    auto const result = decodeBase58Token(s, type);
+    if (result.empty())
+        return boost::none;
+    if (result.size() != 32)
+        return boost::none;
+    return SecretKey(makeSlice(result));
 }
 
 } // ripple

@@ -34,7 +34,6 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
-#include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
@@ -284,7 +283,7 @@ public:
     void processTrustedProposal (
         LedgerProposal::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
-        RippleAddress const &nodePublic) override;
+        NodeID const &node) override;
 
     bool recvValidation (
         STValidation::ref val, std::string const& source) override;
@@ -585,12 +584,19 @@ NetworkOPsImp::getHostId (bool forAdmin)
     if (forAdmin)
         return beast::getComputerName ();
 
-    // For non-admin uses we hash the node ID into a single RFC1751 word:
-    // (this could be cached instead of recalculated every time)
-    Blob const& addr (app_.getLocalCredentials ().getNodePublic ().
-            getNodePublic ());
+    // For non-admin uses hash the node public key into a
+    // single RFC1751 word:
+    static std::string const shroudedHostId =
+        [this]()
+        {
+            auto const& id = app_.nodeIdentity();
 
-    return RFC1751::getWordFromBlob (addr.data (), addr.size ());
+            return RFC1751::getWordFromBlob (
+                id.first.data (),
+                id.first.size ());
+        }();
+
+    return shroudedHostId;
 }
 
 void NetworkOPsImp::setStateTimer ()
@@ -673,7 +679,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
 void NetworkOPsImp::processClusterTimer ()
 {
     bool const update = app_.cluster().update(
-        app_.getLocalCredentials().getNodePublic(),
+        app_.nodeIdentity().first,
         "",
         (m_ledgerMaster.getValidatedLedgerAge() <= 4min)
             ? app_.getFeeTrack().getLocalFee()
@@ -691,8 +697,11 @@ void NetworkOPsImp::processClusterTimer ()
         [&cluster](ClusterNode const& node)
         {
             protocol::TMClusterNode& n = *cluster.add_clusternodes();
-            n.set_publickey(node.identity().humanNodePublic());
-            n.set_reporttime(node.getReportTime().time_since_epoch().count());
+            n.set_publickey(toBase58 (
+                TokenType::TOKEN_NODE_PUBLIC,
+                node.identity()));
+            n.set_reporttime(
+                node.getReportTime().time_since_epoch().count());
             n.set_nodeload(node.getLoadFee());
             if (!node.name().empty())
                 n.set_nodename(node.name());
@@ -1237,11 +1246,10 @@ bool NetworkOPsImp::checkLastClosedLedger (
     if (mMode >= omTRACKING)
     {
         ++ourVC.nodesUsing;
-        auto ourAddress =
-                app_.getLocalCredentials ().getNodePublic ().getNodeID ();
-
-        if (ourAddress > ourVC.highNodeUsing)
-            ourVC.highNodeUsing = ourAddress;
+        auto const ourNodeID = calcNodeID(
+            app_.nodeIdentity().first);
+        if (ourNodeID > ourVC.highNodeUsing)
+            ourVC.highNodeUsing = ourNodeID;
     }
 
     for (auto& peer: peerList)
@@ -1253,11 +1261,10 @@ bool NetworkOPsImp::checkLastClosedLedger (
             try
             {
                 auto& vc = ledgers[peerLedger];
-
-                if (vc.nodesUsing == 0 ||
-                    peer->getNodePublic ().getNodeID () > vc.highNodeUsing)
+                auto const nodeId = calcNodeID(peer->getNodePublic ());
+                if (vc.nodesUsing == 0 || nodeId > vc.highNodeUsing)
                 {
-                    vc.highNodeUsing = peer->getNodePublic ().getNodeID ();
+                    vc.highNodeUsing = nodeId;
                 }
 
                 ++vc.nodesUsing;
@@ -1448,10 +1455,11 @@ uint256 NetworkOPsImp::getConsensusLCL ()
 
 void NetworkOPsImp::processTrustedProposal (
     LedgerProposal::pointer proposal,
-    std::shared_ptr<protocol::TMProposeSet> set, const RippleAddress& nodePublic)
+    std::shared_ptr<protocol::TMProposeSet> set,
+    NodeID const& node)
 {
     {
-        mConsensus->storeProposal (proposal, nodePublic);
+        mConsensus->storeProposal (proposal, node);
 
         if (mLedgerConsensus->peerPosition (proposal))
             app_.overlay().relay(*set, proposal->getSuppressionID());
@@ -1545,7 +1553,9 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         Json::Value jvObj (Json::objectValue);
 
         jvObj [jss::type]                  = "validationReceived";
-        jvObj [jss::validation_public_key] = val->getSignerPublic ().humanNodePublic ();
+        jvObj [jss::validation_public_key] = toBase58(
+            TokenType::TOKEN_NODE_PUBLIC,
+            val->getSignerPublic());
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
 
@@ -1914,10 +1924,11 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     if (admin)
     {
-        if (app_.config().VALIDATION_PUB.isValid ())
+        if (app_.config().VALIDATION_PUB.size ())
         {
-            info[jss::pubkey_validator] =
-                    app_.config().VALIDATION_PUB.humanNodePublic ();
+            info[jss::pubkey_validator] = toBase58 (
+                TokenType::TOKEN_NODE_PUBLIC,
+                app_.config().VALIDATION_PUB);
         }
         else
         {
@@ -1925,9 +1936,9 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         }
     }
 
-    info[jss::pubkey_node] =
-            app_.getLocalCredentials ().getNodePublic ().humanNodePublic ();
-
+    info[jss::pubkey_node] = toBase58 (
+        TokenType::TOKEN_NODE_PUBLIC,
+        app_.nodeIdentity().first);
 
     info[jss::complete_ledgers] =
             app_.getLedgerMaster ().getCompleteLedgers ();
@@ -2540,8 +2551,9 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     jvResult[jss::load_base]       = app_.getFeeTrack ().getLoadBase ();
     jvResult[jss::load_factor]     = app_.getFeeTrack ().getLoadFactor ();
     jvResult [jss::hostid]         = getHostId (admin);
-    jvResult[jss::pubkey_node]     = app_.getLocalCredentials ().
-        getNodePublic ().humanNodePublic ();
+    jvResult[jss::pubkey_node]     = toBase58 (
+        TokenType::TOKEN_NODE_PUBLIC,
+        app_.nodeIdentity().first);
 
     ScopedLockType sl (mSubLock);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;

@@ -26,7 +26,6 @@
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/regex.hpp>
 #include <memory.h>
@@ -39,7 +38,7 @@ Cluster::Cluster (beast::Journal j)
 }
 
 boost::optional<std::string>
-Cluster::member (RippleAddress const& identity) const
+Cluster::member (PublicKey const& identity) const
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -53,12 +52,13 @@ std::size_t
 Cluster::size() const
 {
     std::lock_guard<std::mutex> lock(mutex_);
+
     return nodes_.size();
 }
 
 bool
 Cluster::update (
-    RippleAddress const& identity,
+    PublicKey const& identity,
     std::string name,
     std::uint32_t loadFee,
     NetClock::time_point reportTime)
@@ -120,23 +120,24 @@ Cluster::load (Section const& nodes)
             return false;
         }
 
-        auto const nid = RippleAddress::createNodePublic (match[1]);
+        auto const id = parseBase58<PublicKey>(
+            TokenType::TOKEN_NODE_PUBLIC, match[1]);
 
-        if (!nid.isValid())
+        if (!id)
         {
             JLOG (j_.error) <<
                 "Invalid node identity: " << match[1];
             return false;
         }
 
-        if (member (nid))
+        if (member (*id))
         {
             JLOG (j_.warning) <<
                 "Duplicate node identity: " << match[1];
             continue;
         }
 
-        update(nid, trim_whitespace(match[2]));
+        update(*id, trim_whitespace(match[2]));
     }
 
     return true;

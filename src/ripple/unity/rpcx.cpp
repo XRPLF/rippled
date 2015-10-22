@@ -90,7 +90,6 @@
 #include <ripple/rpc/handlers/WalletSeed.cpp>
 
 #include <ripple/rpc/impl/AccountFromString.cpp>
-#include <ripple/rpc/impl/Accounts.cpp>
 #include <ripple/rpc/impl/GetAccountObjects.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/KeypairForSignature.cpp>

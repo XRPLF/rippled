@@ -318,7 +318,8 @@ private:
 
     Ledger::pointer mPreviousLedger;
     LedgerProposal::pointer mOurPosition;
-    RippleAddress mValPublic, mValPrivate;
+    PublicKey mValPublic;
+    SecretKey mValSecret;
     bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
 
     std::chrono::milliseconds mCurrentMSeconds;

@@ -21,8 +21,10 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/RippleState.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/AccountFromString.h>
@@ -89,38 +91,39 @@ Json::Value doGatewayBalances (RPC::Context& context)
         Json::Value const& hw = params["hotwallet"];
         bool valid = true;
 
-        auto addHotWallet = [&valid, &hotWallets](Json::Value const& j)
+        auto addHotWallet = [&hotWallets](Json::Value const& j)
         {
             if (j.isString())
             {
-                RippleAddress ra;
-                if (ra.setAccountPublic (j.asString ()))
+                auto const pk = parseBase58<PublicKey>(
+                    TokenType::TOKEN_ACCOUNT_PUBLIC,
+                    j.asString ());
+                if (pk)
                 {
-                    hotWallets.insert(calcAccountID(ra));
+                    hotWallets.insert(calcAccountID(*pk));
+                    return true;
                 }
-                else
+
+                auto const id = parseBase58<AccountID>(j.asString());
+
+                if (id)
                 {
-                    auto const a =parseBase58<AccountID>(j.asString());
-                    if (! a)
-                        valid = false;
-                    else
-                      hotWallets.insert(*a);
+                    hotWallets.insert(*id);
+                    return true;
                 }
             }
-            else
-            {
-                valid = false;
-            }
+
+            return false;
         };
 
         if (hw.isArray())
         {
             for (unsigned i = 0; i < hw.size(); ++i)
-                addHotWallet (hw[i]);
+                valid &= addHotWallet (hw[i]);
         }
         else if (hw.isString())
         {
-            addHotWallet (hw);
+            valid &= addHotWallet (hw);
         }
         else
         {

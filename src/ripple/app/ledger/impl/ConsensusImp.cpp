@@ -142,11 +142,11 @@ ConsensusImp::setLastCloseTime (NetClock::time_point t)
 void
 ConsensusImp::storeProposal (
     LedgerProposal::ref proposal,
-    RippleAddress const& peerPublic)
+    NodeID const& nodeID)
 {
     std::lock_guard <std::mutex> _(lock_);
 
-    auto& props = storedProposals_[peerPublic.getNodeID ()];
+    auto& props = storedProposals_[nodeID];
 
     if (props.size () >= 10)
         props.pop_front ();

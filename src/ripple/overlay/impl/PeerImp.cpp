@@ -60,7 +60,7 @@ namespace ripple {
 
 PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
     PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
-        protocol::TMHello const& hello, RippleAddress const& publicKey,
+        protocol::TMHello const& hello, PublicKey const& publicKey,
             Resource::Consumer consumer,
                 std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
                     OverlayImpl& overlay)
@@ -100,8 +100,7 @@ PeerImp::~PeerImp ()
             name_ << " left cluster";
     if (state_ == State::active)
     {
-        assert(publicKey_.isSet());
-        assert(publicKey_.isValid());
+        assert(publicKey_.size() != 0);
         overlay_.onPeerDeactivate(id_, publicKey_);
     }
     overlay_.peerFinder().on_closed (slot_);
@@ -262,7 +261,8 @@ PeerImp::json()
 {
     Json::Value ret (Json::objectValue);
 
-    ret[jss::public_key]   = publicKey_.ToString ();
+    ret[jss::public_key]   = toBase58 (
+        TokenType::TOKEN_NODE_PUBLIC, publicKey_);
     ret[jss::address]      = remote_address_.to_string();
 
     if (m_inbound)
@@ -598,28 +598,27 @@ void PeerImp::doAccept()
     if(journal_.debug) journal_.debug <<
         "doAccept: " << remote_address_;
 
-    bool success;
-    uint256 sharedValue;
-    std::tie(sharedValue, success) = makeSharedValue(
+    auto sharedValue = makeSharedValue(
         ssl_bundle_->stream.native_handle(), journal_);
     // This shouldn't fail since we already computed
     // the shared value successfully in OverlayImpl
-    if(! success)
+    if(! sharedValue)
         return fail("makeSharedValue: Unexpected failure");
 
     // TODO Apply headers to connection state.
 
     auto resp = makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
-            http_message_, remote_address_, sharedValue);
+            http_message_, remote_address_, *sharedValue);
     beast::http::write (write_buffer_, resp);
 
     auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
     if(journal_.info) journal_.info <<
         "Protocol: " << to_string(protocol);
     if(journal_.info) journal_.info <<
-        "Public Key: " << publicKey_.humanNodePublic();
-
+        "Public Key: " << toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            publicKey_);
     if (auto member = app_.cluster().member(publicKey_))
     {
         name_ = *member;
@@ -922,11 +921,23 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
         if (node.has_nodename())
             name = node.nodename();
 
-        app_.cluster().update(
-            RippleAddress::createNodePublic(node.publickey()),
-            name,
-            node.nodeload(),
-            NetClock::time_point{NetClock::duration{node.reporttime()}});
+        auto const publicKey = parseBase58<PublicKey>(
+            TokenType::TOKEN_NODE_PUBLIC, node.publickey());
+
+        // NIKB NOTE We should drop the peer immediately if
+        // they send us a public key we can't parse
+        if (publicKey)
+        {
+            auto const reportTime =
+                NetClock::time_point{
+                    NetClock::duration{node.reporttime()}};
+
+            app_.cluster().update(
+                *publicKey,
+                name,
+                node.nodeload(),
+                reportTime);
+        }
     }
 
     int loadSources = m->loadsources().size();
@@ -1100,7 +1111,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
                 flags |= SF_TRUSTED;
             }
 
-            if (! app_.config().VALIDATION_PRIV.isSet())
+            if (! app_.config().VALIDATION_PUB.size())
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
@@ -1240,15 +1251,17 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         return;
     }
 
+    PublicKey const publicKey (makeSlice(set.nodepubkey()));
+    NetClock::time_point const closeTime { NetClock::duration{set.closetime()} };
+    Buffer signature (set.signature().data(), set.signature ().size());
+
     uint256 proposeHash, prevLedger;
     memcpy (proposeHash.begin (), set.currenttxhash ().data (), 32);
     memcpy (prevLedger.begin (), set.previousledger ().data (), 32);
 
     uint256 suppression = proposalUniqueId (
         proposeHash, prevLedger, set.proposeseq(),
-        NetClock::time_point{NetClock::duration{set.closetime()}},
-        Blob(set.nodepubkey ().begin (), set.nodepubkey ().end ()),
-        Blob(set.signature ().begin (), set.signature ().end ()));
+        closeTime, publicKey.slice(), signature);
 
     if (! app_.getHashRouter ().addSuppressionPeer (suppression, id_))
     {
@@ -1256,16 +1269,14 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         return;
     }
 
-    RippleAddress signerPublic = RippleAddress::createNodePublic (
-        strCopy (set.nodepubkey ()));
-
-    if (signerPublic == app_.config().VALIDATION_PUB)
+    if (app_.config().VALIDATION_PUB.size() &&
+        publicKey == app_.config().VALIDATION_PUB)
     {
         p_journal_.trace << "Proposal: self";
         return;
     }
 
-    auto const isTrusted = app_.validators().trusted (signerPublic);
+    auto const isTrusted = app_.validators().trusted (publicKey);
 
     if (!isTrusted)
     {
@@ -1286,11 +1297,9 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         "Proposal: " << (isTrusted ? "trusted" : "UNTRUSTED");
 
     auto proposal = std::make_shared<LedgerProposal> (
-        prevLedger, set.proposeseq (), proposeHash,
-        NetClock::time_point{NetClock::duration{set.closetime()}},
-            signerPublic, PublicKey(makeSlice(set.nodepubkey())),
-                suppression);
-    proposal->setSignature (Blob (set.signature().begin(), set.signature().end()));
+        prevLedger, set.proposeseq (), proposeHash, closeTime,
+        publicKey, calcNodeID(publicKey), suppression);
+    proposal->setSignature (std::move(signature));
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue ().addJob (
@@ -1596,6 +1605,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic ());
+
         if (!isTrusted && (sanity_.load () == Sanity::insane))
         {
             p_journal_.debug <<
@@ -1920,7 +1930,7 @@ PeerImp::checkPropose (Job& job,
     if (isTrusted)
     {
         app_.getOPs ().processTrustedProposal (
-            proposal, packet, publicKey_);
+            proposal, packet, calcNodeID (publicKey_));
     }
     else
     {

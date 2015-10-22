@@ -22,6 +22,8 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/AccountID.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/AccountFromString.h>
 
@@ -31,11 +33,16 @@ namespace RPC {
 boost::optional <AccountID> accountFromStringStrict (std::string const& account)
 {
     boost::optional <AccountID> result;
-    RippleAddress naAccount;
-    if (naAccount.setAccountPublic (account))
-        result = calcAccountID (naAccount);
+
+    auto const publicKey = parseBase58<PublicKey> (
+        TokenType::TOKEN_ACCOUNT_PUBLIC,
+        account);
+
+    if (publicKey)
+        result = calcAccountID (*publicKey);
     else
         result = parseBase58<AccountID> (account);
+
     return result;
 }
 
@@ -54,23 +61,18 @@ Json::Value accountFromString (
         return rpcError (id ? rpcACT_BITCOIN : rpcACT_MALFORMED);
     }
 
-    RippleAddress   naSeed;
+    // We allow the use of the seeds which is poor practice
+    // and merely for debugging convenience.
+    auto const seed = parseGenericSeed (strIdent);
 
-    // Otherwise, it must be a seed.
-    if (!naSeed.setSeedGeneric (strIdent))
+    if (!seed)
         return rpcError (rpcBAD_SEED);
 
-    // We allow the use of the seeds to access #0.
-    // This is poor practice and merely for debugging convenience.
+    auto const keypair = generateKeyPair (
+        KeyType::secp256k1,
+        *seed);
 
-    auto naGenerator = RippleAddress::createGeneratorPublic (naSeed);
-
-    // Generator maps don't exist.  Assume it is a master
-    // generator.
-
-    RippleAddress naAccount;
-    naAccount.setAccountPublic (naGenerator, 0);
-    result = calcAccountID (naAccount);
+    result = calcAccountID (keypair.first);
     return Json::objectValue;
 }
 

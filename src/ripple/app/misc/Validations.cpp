@@ -86,7 +86,7 @@ public:
 private:
     bool addValidation (STValidation::ref val, std::string const& source) override
     {
-        RippleAddress signer = val->getSignerPublic ();
+        auto signer = val->getSignerPublic ();
         bool isCurrent = current (val);
 
         if (!val->isTrusted() && app_.validators().trusted (signer))
@@ -94,15 +94,16 @@ private:
 
         if (!val->isTrusted ())
         {
-            JLOG (j_.debug) << "Node " << signer.humanNodePublic ()
-                            << " not in UNL st="
-                            << val->getSignTime().time_since_epoch().count()
-                            << ", hash=" << val->getLedgerHash ()
-                            << ", shash=" << val->getSigningHash () << " src=" << source;
+            JLOG (j_.trace) <<
+                "Node " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, signer) <<
+                " not in UNL st=" << val->getSignTime().time_since_epoch().count() <<
+                ", hash=" << val->getLedgerHash () <<
+                ", shash=" << val->getSigningHash () <<
+                " src=" << source;
         }
 
         auto hash = val->getLedgerHash ();
-        auto node = signer.getNodeID ();
+        auto node = val->getNodeID ();
 
         if (val->isTrusted () && isCurrent)
         {
@@ -138,9 +139,11 @@ private:
             }
         }
 
-        JLOG (j_.debug) << "Val for " << hash << " from " << signer.humanNodePublic ()
-            << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/")
-            << (isCurrent ? "current" : "stale");
+        JLOG (j_.debug) <<
+            "Val for " << hash <<
+            " from " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, signer) <<
+            " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") <<
+            (isCurrent ? "current" : "stale");
 
         if (val->isTrusted () && isCurrent)
         {
@@ -482,7 +485,9 @@ private:
                         it->add (s);
                         *db << boost::str (
                             insVal % to_string (it->getLedgerHash ()) %
-                            it->getSignerPublic ().humanNodePublic () %
+                            toBase58(
+                                TokenType::TOKEN_NODE_PUBLIC,
+                                it->getSignerPublic ()) %
                             it->getSignTime().time_since_epoch().count() %
                             sqlEscape (s.peekData ()));
                     }

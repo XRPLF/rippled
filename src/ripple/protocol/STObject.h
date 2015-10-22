@@ -23,6 +23,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
@@ -520,6 +521,7 @@ public:
     void setFieldH128 (SField const& field, uint128 const&);
     void setFieldH256 (SField const& field, uint256 const& );
     void setFieldVL (SField const& field, Blob const&);
+    void setFieldVL (SField const& field, Slice const&);
 
     void setAccountID (SField const& field, AccountID const&);
 

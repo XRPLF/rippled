@@ -22,6 +22,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Seed.h>
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
@@ -31,33 +32,23 @@ namespace ripple {
 // }
 Json::Value doWalletSeed (RPC::Context& context)
 {
-    RippleAddress   seed;
+    boost::optional<Seed> seed;
+
     bool bSecret = context.params.isMember (jss::secret);
 
-    if (bSecret && !seed.setSeedGeneric (context.params[jss::secret].asString ()))
-    {
-        return rpcError (rpcBAD_SEED);
-    }
+    if (bSecret)
+        seed = parseGenericSeed (context.params[jss::secret].asString ());
     else
-    {
-        RippleAddress   raAccount;
+        seed = randomSeed ();
 
-        if (!bSecret)
-        {
-            seed.setSeedRandom ();
-        }
+    if (!seed)
+        return rpcError (rpcBAD_SEED);
 
-        RippleAddress raGenerator = RippleAddress::createGeneratorPublic (seed);
-
-        raAccount.setAccountPublic (raGenerator, 0);
-
-        Json::Value obj (Json::objectValue);
-
-        obj[jss::seed]     = seed.humanSeed ();
-        obj[jss::key]      = seed.humanSeed1751 ();
-        obj[jss::deprecated] = "Use wallet_propose instead";
-
-        return obj;
-    }
+    Json::Value obj (Json::objectValue);
+    obj[jss::seed]     = toBase58(*seed);
+    obj[jss::key]      = seedAs1751(*seed);
+    obj[jss::deprecated] = "Use wallet_propose instead";
+    return obj;
 }
+
 } // ripple

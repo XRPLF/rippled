@@ -30,18 +30,20 @@ SetRegularKey::calculateBaseFee (
     PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
-    auto const pk =
-        RippleAddress::createAccountPublic(
-            ctx.tx.getSigningPubKey());
+    auto const spk = ctx.tx.getSigningPubKey();
 
-    auto const sle = ctx.view.read(
-        keylet::account(id));
-    if ( sle
-            && (! (sle->getFlags () & lsfPasswordSpent))
-            && (calcAccountID(pk) == id))
+    if (publicKeyType (makeSlice (spk)))
     {
-        // flag is armed and they signed with the right account
-        return 0;
+        if (calcAccountID(PublicKey (makeSlice(spk))) == id)
+        {
+            auto const sle = ctx.view.read(keylet::account(id));
+
+            if (sle && (! (sle->getFlags () & lsfPasswordSpent)))
+            {
+                // flag is armed and they signed with the right account
+                return 0;
+            }
+        }
     }
 
     return Transactor::calculateBaseFee (ctx);

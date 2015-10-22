@@ -110,32 +110,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::generator))
     {
-        RippleAddress   naGeneratorID;
-
-        if (!context.params[jss::generator].isObject ())
-        {
-            uNodeIndex.SetHex (context.params[jss::generator].asString ());
-        }
-        else if (!context.params[jss::generator].isMember (jss::regular_seed))
-        {
-            jvResult[jss::error]   = "malformedRequest";
-        }
-        else if (!naGeneratorID.setSeedGeneric (
-            context.params[jss::generator][jss::regular_seed].asString ()))
-        {
-            jvResult[jss::error]   = "malformedAddress";
-        }
-        else
-        {
-            // VFALCO Can we remove this?
-            RippleAddress na0Public;      // To find the generator's index.
-            RippleAddress naGenerator
-                    = RippleAddress::createGeneratorPublic (naGeneratorID);
-
-            na0Public.setAccountPublic (naGenerator, 0);
-
-            uNodeIndex  = getGeneratorIndex (calcAccountID(na0Public));
-        }
+        jvResult[jss::error]   = "deprecatedFeature";
     }
     else if (context.params.isMember (jss::offer))
     {
@@ -162,8 +137,6 @@ Json::Value doLedgerEntry (RPC::Context& context)
     }
     else if (context.params.isMember (jss::ripple_state))
     {
-        RippleAddress   naA;
-        RippleAddress   naB;
         Currency         uCurrency;
         Json::Value     jvRippleState   = context.params[jss::ripple_state];
 

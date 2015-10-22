@@ -45,10 +45,9 @@ verify (STObject const& st,
     Serializer ss;
     ss.add32(prefix);
     st.addWithoutSigningFields(ss);
-    return pk.verify(
+    return verify(pk,
         Slice(ss.data(), ss.size()),
-            Slice(sig->data(), sig->size()),
-                true);
+            Slice(sig->data(), sig->size()));
 }
 
 // Questions regarding buildMultiSigningData:
