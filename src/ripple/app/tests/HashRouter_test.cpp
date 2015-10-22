@@ -36,70 +36,31 @@ class HashRouter_test : public beast::unit_test::suite
         uint256 const key1(1);
         uint256 const key2(2);
         uint256 const key3(3);
-        uint256 const key4(4);
-        expect(key1 != key2 &&
-            key2 != key3 &&
-            key3 != key4);
 
         // t=0
-        router.setFlags(key1, 12345);
-        expect(router.getFlags(key1) == 12345);
+        router.setFlags(key1, 11111);
+        expect(router.getFlags(key1) == 11111);
+        router.setFlags(key2, 22222);
+        expect(router.getFlags(key2) == 22222);
         // key1 : 0
-        // key2 : null
-        // key3 : null
+        // key2 : 0
+        // key3: null
 
         ++stopwatch;
 
         // Because we are accessing key1 here, it
-        // will NOT be expired after the second
-        // call to setFlags.
-        // t=1
-        router.setFlags(key2, 9999);
-        expect(router.getFlags(key1) == 12345);
-        expect(router.getFlags(key2) == 9999);
+        // will NOT be expired for another two ticks
+        expect(router.getFlags(key1) == 11111);
         // key1 : 1
-        // key2 : 1
-        // key3 : null
-
-        ++stopwatch;
-
-        // t=2
-        router.setFlags(key3, 2222);
-        expect(router.getFlags(key1) == 12345);
-        expect(router.getFlags(key2) == 9999);
-        expect(router.getFlags(key3) == 2222);
-        // key1 : 2
-        // key2 : 2
-        // key3 : 2
+        // key2 : 0
+        // key3 null
 
         ++stopwatch;
 
         // t=3
-        // No insertion, no expiration
-        router.setFlags(key1, 7654);
-        expect(router.getFlags(key1) == (7654 | 12345));
-        expect(router.getFlags(key2) == 9999);
-        expect(router.getFlags(key3) == 2222);
-        // key1 : 3
-        // key2 : 3
-        // key3 : 3
-
-        ++stopwatch;
-        ++stopwatch;
-
-        // Expiration is triggered by insertion,
-        // so all the old entries will expire
-        // after this call to setFlags.
-        // t=5
-        router.setFlags(key4, 7890);
-        expect(router.getFlags(key1) == 0);
+        router.setFlags(key3,33333); // force expiration
+        expect(router.getFlags(key1) == 11111);
         expect(router.getFlags(key2) == 0);
-        expect(router.getFlags(key3) == 0);
-        expect(router.getFlags(key4) == 7890);
-        // key1 : 5
-        // key2 : 5
-        // key3 : 5
-        // key4 : 5
     }
 
     void
