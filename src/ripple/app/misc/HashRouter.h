@@ -125,8 +125,8 @@ public:
     }
 
     explicit HashRouter (Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
-        : mHoldTime (entryHoldTimeInSeconds)
-        , mSuppressionMap(clock)
+        : mSuppressionMap(clock)
+        , mHoldTime (entryHoldTimeInSeconds)
     {
     }
 
