@@ -36,7 +36,7 @@ HashRouter::emplace (uint256 const& key)
     }
 
     // See if any supressions need to be expired
-    beast::expire(mSuppressionMap,
+    expire(mSuppressionMap,
         mHoldTime);
 
     return std::make_pair(std::ref(

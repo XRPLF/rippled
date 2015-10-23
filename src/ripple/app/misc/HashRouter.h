@@ -54,7 +54,6 @@ class HashRouter
 public:
     // The type here *MUST* match the type of Peer::id_t
     using PeerShortID = std::uint32_t;
-    using clock_type = Stopwatch::clock_type;
 
 private:
     /** An entry in the routing table.
@@ -160,7 +159,7 @@ private:
     std::mutex mutable mMutex;
 
     // Stores all suppressed hashes and their expiration time
-    beast::aged_unordered_map<uint256, Entry, clock_type,
+    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type,
         hardened_hash<strong_hash>> mSuppressionMap;
 
     std::chrono::seconds const mHoldTime;
