@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
-#include <ripple/basics/UptimeTimer.h>
+#include <ripple/basics/chrono.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
@@ -28,9 +28,46 @@ namespace test {
 class HashRouter_test : public beast::unit_test::suite
 {
     void
+    testNonExpiration()
+    {
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, std::chrono::seconds(2));
+
+        uint256 const key1(1);
+        uint256 const key2(2);
+        uint256 const key3(3);
+
+        // t=0
+        router.setFlags(key1, 11111);
+        expect(router.getFlags(key1) == 11111);
+        router.setFlags(key2, 22222);
+        expect(router.getFlags(key2) == 22222);
+        // key1 : 0
+        // key2 : 0
+        // key3: null
+
+        ++stopwatch;
+
+        // Because we are accessing key1 here, it
+        // will NOT be expired for another two ticks
+        expect(router.getFlags(key1) == 11111);
+        // key1 : 1
+        // key2 : 0
+        // key3 null
+
+        ++stopwatch;
+
+        // t=3
+        router.setFlags(key3,33333); // force expiration
+        expect(router.getFlags(key1) == 11111);
+        expect(router.getFlags(key2) == 0);
+    }
+
+    void
     testExpiration()
     {
-        HashRouter router(2);
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, std::chrono::seconds(2));
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -47,61 +84,68 @@ class HashRouter_test : public beast::unit_test::suite
         // key2 : null
         // key3 : null
 
-        UptimeTimer::getInstance().incrementElapsedTime();
+        ++stopwatch;
 
-        // Expiration is triggered by insertion, so
-        // key1 will be expired after the second
+        // Expiration is triggered by insertion,
+        // and timestamps are updated on access,
+        // so key1 will be expired after the second
         // call to setFlags.
         // t=1
         router.setFlags(key2, 9999);
         expect(router.getFlags(key1) == 12345);
         expect(router.getFlags(key2) == 9999);
-        // key1 : 0
+        // key1 : 1
         // key2 : 1
         // key3 : null
 
-        UptimeTimer::getInstance().incrementElapsedTime();
-
+        ++stopwatch;
         // t=2
+        expect(router.getFlags(key2) == 9999);
+        // key1 : 1
+        // key2 : 2
+        // key3 : null
+
+        ++stopwatch;
+        // t=3
         router.setFlags(key3, 2222);
         expect(router.getFlags(key1) == 0);
         expect(router.getFlags(key2) == 9999);
         expect(router.getFlags(key3) == 2222);
-        // key1 : 2
-        // key2 : 1
-        // key3 : 2
+        // key1 : 3
+        // key2 : 3
+        // key3 : 3
 
-        UptimeTimer::getInstance().incrementElapsedTime();
-
-        // t=3
+        ++stopwatch;
+        // t=4
         // No insertion, no expiration
         router.setFlags(key1, 7654);
         expect(router.getFlags(key1) == 7654);
         expect(router.getFlags(key2) == 9999);
         expect(router.getFlags(key3) == 2222);
-        // key1 : 2
-        // key2 : 1
-        // key3 : 2
+        // key1 : 4
+        // key2 : 4
+        // key3 : 4
 
-        UptimeTimer::getInstance().incrementElapsedTime();
-        UptimeTimer::getInstance().incrementElapsedTime();
+        ++stopwatch;
+        ++stopwatch;
 
-        // t=5
+        // t=6
         router.setFlags(key4, 7890);
         expect(router.getFlags(key1) == 0);
         expect(router.getFlags(key2) == 0);
         expect(router.getFlags(key3) == 0);
         expect(router.getFlags(key4) == 7890);
-        // key1 : 5
-        // key2 : 5
-        // key3 : 5
-        // key4 : 5
+        // key1 : 6
+        // key2 : 6
+        // key3 : 6
+        // key4 : 6
     }
 
     void testSuppression()
     {
         // Normal HashRouter
-        HashRouter router(2);
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, std::chrono::seconds(2));
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -117,7 +161,7 @@ class HashRouter_test : public beast::unit_test::suite
         expect(router.addSuppressionPeer(key3, 20, flags));
         expect(flags == 0);
 
-        UptimeTimer::getInstance().incrementElapsedTime();
+        ++stopwatch;
 
         expect(!router.addSuppressionPeer(key1, 2));
         expect(!router.addSuppressionPeer(key2, 3));
@@ -129,7 +173,8 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testSetFlags()
     {
-        HashRouter router(2);
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, std::chrono::seconds(2));
 
         uint256 const key1(1);
         expect(router.setFlags(key1, 10));
@@ -140,7 +185,8 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testSwapSet()
     {
-        HashRouter router(2);
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, std::chrono::seconds(2));
 
         uint256 const key1(1);
 
@@ -171,14 +217,11 @@ public:
     void
     run()
     {
-        UptimeTimer::getInstance().beginManualUpdates();
-
+        testNonExpiration();
         testExpiration();
         testSuppression();
         testSetFlags();
         testSwapSet();
-
-        UptimeTimer::getInstance().endManualUpdates();
     }
 };
 

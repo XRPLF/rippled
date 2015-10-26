@@ -19,85 +19,73 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
-#include <ripple/basics/UptimeTimer.h>
-#include <map>
-#include <mutex>
 
 namespace ripple {
 
 auto
-HashRouter::emplace (uint256 const& index)
+HashRouter::emplace (uint256 const& key)
     -> std::pair<Entry&, bool>
 {
-    auto fit = mSuppressionMap.find (index);
+    auto iter = mSuppressionMap.find (key);
 
-    if (fit != mSuppressionMap.end ())
+    if (iter != mSuppressionMap.end ())
     {
+        mSuppressionMap.touch(iter);
         return std::make_pair(
-            std::ref(fit->second), false);
+            std::ref(iter->second), false);
     }
-
-    int elapsed = UptimeTimer::getInstance ().getElapsedSeconds ();
-    int expireCutoff = elapsed - mHoldTime;
 
     // See if any supressions need to be expired
-    auto it = mSuppressionTimes.begin ();
+    expire(mSuppressionMap,
+        mHoldTime);
 
-    while ((it != mSuppressionTimes.end ()) && (it->first <= expireCutoff))
-    {
-        for(auto const& lit : it->second)
-            mSuppressionMap.erase (lit);
-        it = mSuppressionTimes.erase (it);
-    }
-
-    mSuppressionTimes[elapsed].push_back (index);
     return std::make_pair(std::ref(
         mSuppressionMap.emplace (
-            index, Entry ()).first->second),
+            key, Entry ()).first->second),
                 true);
 }
 
-void HashRouter::addSuppression (uint256 const& index)
+void HashRouter::addSuppression (uint256 const& key)
 {
     std::lock_guard <std::mutex> lock (mMutex);
 
-    emplace (index);
+    emplace (key);
 }
 
-bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer)
+bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer)
 {
     std::lock_guard <std::mutex> lock (mMutex);
 
-    auto result = emplace(index);
+    auto result = emplace(key);
     result.first.addPeer(peer);
     return result.second;
 }
 
-bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags)
+bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& flags)
 {
     std::lock_guard <std::mutex> lock (mMutex);
 
-    auto result = emplace(index);
+    auto result = emplace(key);
     auto& s = result.first;
     s.addPeer (peer);
     flags = s.getFlags ();
     return result.second;
 }
 
-int HashRouter::getFlags (uint256 const& index)
+int HashRouter::getFlags (uint256 const& key)
 {
     std::lock_guard <std::mutex> lock (mMutex);
 
-    return emplace(index).first.getFlags ();
+    return emplace(key).first.getFlags ();
 }
 
-bool HashRouter::setFlags (uint256 const& index, int flags)
+bool HashRouter::setFlags (uint256 const& key, int flags)
 {
     assert (flags != 0);
 
     std::lock_guard <std::mutex> lock (mMutex);
 
-    auto& s = emplace(index).first;
+    auto& s = emplace(key).first;
 
     if ((s.getFlags () & flags) == flags)
         return false;
@@ -106,11 +94,11 @@ bool HashRouter::setFlags (uint256 const& index, int flags)
     return true;
 }
 
-bool HashRouter::swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag)
+bool HashRouter::swapSet (uint256 const& key, std::set<PeerShortID>& peers, int flag)
 {
     std::lock_guard <std::mutex> lock (mMutex);
 
-    auto& s = emplace(index).first;
+    auto& s = emplace(key).first;
 
     if ((s.getFlags () & flag) == flag)
         return false;

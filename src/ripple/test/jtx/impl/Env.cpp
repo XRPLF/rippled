@@ -117,12 +117,11 @@ Env::close(NetClock::time_point const& closeTime)
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
         txs.push_back(iter->first);
-    auto router = std::make_unique<HashRouter>(60);
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);
         OpenLedger::apply(app(), accum, *closed_,
-            txs, retries, applyFlags(), *router,
+            txs, retries, applyFlags(), app().getHashRouter(),
                 journal);
         accum.apply(*next);
     }
@@ -134,7 +133,7 @@ Env::close(NetClock::time_point const& closeTime)
         ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
     openLedger.accept(app(), next->rules(), next,
-        locals, false, retries, applyFlags(), *router);
+        locals, false, retries, applyFlags(), app().getHashRouter());
     closed_ = next;
     cachedSLEs_.expire();
 }
