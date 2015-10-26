@@ -115,15 +115,14 @@ private:
     };
 
 public:
-    // VFALCO NOTE this preferred alternative to default parameters makes
-    //         behavior clear.
-    //
     static inline std::chrono::seconds getDefaultHoldTime ()
     {
-        return std::chrono::seconds(300);
+        using namespace std::chrono;
+
+        return 300s;
     }
 
-    explicit HashRouter (Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
+    HashRouter (Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
         : mSuppressionMap(clock)
         , mHoldTime (entryHoldTimeInSeconds)
     {
