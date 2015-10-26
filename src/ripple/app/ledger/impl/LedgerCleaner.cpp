@@ -18,19 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/impl/LedgerCleaner.h>
-#include <ripple/app/main/Application.h>
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Thread.h>
-#include <memory>
-#include <mutex>
-#include <thread>
 
 namespace ripple {
 
@@ -48,14 +41,24 @@ Cleans up the ledger. Specifically, resolves these issues:
 
 */
 
-class LedgerCleanerImp
-    : public LedgerCleaner
-    , public beast::Thread
+class LedgerCleanerImp : public LedgerCleaner
 {
-public:
     Application& app_;
-    beast::Journal m_journal;
-    std::mutex lock_;
+    beast::Journal j_;
+    mutable std::mutex mutex_;
+
+    mutable std::condition_variable wakeup_;
+
+    std::thread thread_;
+
+    enum class State : char {
+        notReady = 0,
+        startCleaning,
+        cleaning,
+        stoppedCleaning,
+        shouldExit
+    };
+    State state_ = State::notReady;
 
     // The lowest ledger in the range we're checking.
     LedgerIndex  minRange_ = 0;
@@ -73,21 +76,23 @@ public:
     int failures_ = 0;
 
     //--------------------------------------------------------------------------
-
+public:
     LedgerCleanerImp (
         Application& app,
         Stoppable& stoppable,
         beast::Journal journal)
         : LedgerCleaner (stoppable)
-        , Thread ("LedgerCleaner")
         , app_ (app)
-        , m_journal (journal)
+        , j_ (journal)
     {
     }
 
-    ~LedgerCleanerImp ()
+    ~LedgerCleanerImp () override
     {
-        stopThread ();
+        assert (!thread_.joinable());
+
+        if (thread_.joinable())
+            LogicError ("LedgerCleanerImp::onStop not called.");
     }
 
     //--------------------------------------------------------------------------
@@ -96,20 +101,24 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onPrepare ()
+    void onPrepare () override
     {
     }
 
-    void onStart ()
+    void onStart () override
     {
-        startThread();
+        thread_ = std::thread {&LedgerCleanerImp::run, this};
     }
 
-    void onStop ()
+    void onStop () override
     {
-        m_journal.info << "Stopping";
-        signalThreadShouldExit();
-        notify();
+        JLOG (j_.info) << "Stopping";
+        {
+            std::lock_guard<std::mutex> lock (mutex_);
+            state_ = State::shouldExit;
+            wakeup_.notify_one();
+        }
+        thread_.join();
     }
 
     //--------------------------------------------------------------------------
@@ -118,9 +127,9 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (beast::PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map) override
     {
-        std::lock_guard<std::mutex> _(lock_);
+        std::lock_guard<std::mutex> lock (mutex_);
 
         if (maxRange_ == 0)
             map["status"] = "idle";
@@ -142,14 +151,14 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void doClean (Json::Value const& params)
+    void doClean (Json::Value const& params) override
     {
         LedgerIndex minRange;
         LedgerIndex maxRange;
         app_.getLedgerMaster().getFullValidatedRange (minRange, maxRange);
 
         {
-            std::lock_guard<std::mutex> _(lock_);
+            std::lock_guard<std::mutex> lock (mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -213,9 +222,10 @@ public:
 
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
-        }
 
-        notify();
+            state_ = State::startCleaning;
+            wakeup_.notify_one();
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -223,25 +233,43 @@ public:
     // LedgerCleanerImp
     //
     //--------------------------------------------------------------------------
+private:
+    // Don't call this method if you already have mutex_ locked!
+    State lockAndGetState () const
+    {
+        std::lock_guard<std::mutex> lock (mutex_);
+        return state_;
+    }
 
     void init ()
     {
-        m_journal.debug << "Initializing";
+        JLOG (j_.debug) << "Initializing";
     }
 
     void run ()
     {
-        m_journal.debug << "Started";
+        beast::Thread::setCurrentThreadName ("LedgerCleaner");
+        JLOG (j_.debug) << "Started";
 
-        init ();
+        init();
 
-        while (! this->threadShouldExit())
+        while (true)
         {
-            this->wait ();
-            if (! this->threadShouldExit())
-            {
+            std::unique_lock<std::mutex> lock (mutex_);
+            wakeup_.wait(lock, [this]()
+                {
+                    return (
+                        state_ == State::startCleaning ||
+                        state_ == State::shouldExit);
+                });
+            State const state = state_;
+            lock.unlock();
+
+            if (state == State::shouldExit)
+                break;
+
+            if (state == State::startCleaning)
                 doLedgerCleaner();
-            }
         }
 
         stopped();
@@ -253,11 +281,11 @@ public:
         boost::optional<LedgerHash> hash;
         try
         {
-            hash = hashOfSeq(*ledger, index, m_journal);
+            hash = hashOfSeq(*ledger, index, j_);
         }
         catch (SHAMapMissingNode &)
         {
-            m_journal.warning <<
+            JLOG (j_.warning) <<
                 "Node missing from ledger " << ledger->info().seq;
             app_.getInboundLedgers().acquire (
                 ledger->getHash(), ledger->info().seq,
@@ -284,7 +312,7 @@ public:
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
         if (!nodeLedger)
         {
-            m_journal.debug << "Ledger " << ledgerIndex << " not available";
+            JLOG (j_.debug) << "Ledger " << ledgerIndex << " not available";
             app_.getLedgerMaster().clearLedger (ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
@@ -297,21 +325,21 @@ public:
             (dbLedger->info().parentHash != nodeLedger->info().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
-            m_journal.debug <<
+            JLOG (j_.debug) <<
                 "Ledger " << ledgerIndex << " mismatches SQL DB";
             doTxns = true;
         }
 
         if(! app_.getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
         {
-            m_journal.debug << "ledger " << ledgerIndex
+            JLOG (j_.debug) << "ledger " << ledgerIndex
                             << " had wrong entry in history";
             doTxns = true;
         }
 
         if (doNodes && !nodeLedger->walkLedger(app_.journal ("Ledger")))
         {
-            m_journal.debug << "Ledger " << ledgerIndex << " is missing nodes";
+            JLOG (j_.debug) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger (ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
@@ -320,7 +348,7 @@ public:
 
         if (doTxns && !pendSaveValidated(app_, nodeLedger, true, false))
         {
-            m_journal.debug << "Failed to save ledger " << ledgerIndex;
+            JLOG (j_.debug) << "Failed to save ledger " << ledgerIndex;
             return false;
         }
 
@@ -343,7 +371,7 @@ public:
             referenceLedger = app_.getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
             {
-                m_journal.warning << "No validated ledger";
+                JLOG (j_.warning) << "No validated ledger";
                 return ledgerHash; // Nothing we can do. No validated ledger.
             }
         }
@@ -376,7 +404,7 @@ public:
             }
         }
         else
-            m_journal.warning << "Validated ledger is prior to target ledger";
+            JLOG (j_.warning) << "Validated ledger is prior to target ledger";
 
         return ledgerHash;
     }
@@ -384,9 +412,17 @@ public:
     /** Run the ledger cleaner. */
     void doLedgerCleaner()
     {
+        // Update our state.
+        {
+            std::lock_guard<std::mutex> lock (mutex_);
+            if (state_ == State::shouldExit)
+                return;
+            state_ = State::cleaning;
+        }
+
         Ledger::pointer goodLedger;
 
-        while (! this->threadShouldExit())
+        while (lockAndGetState() != State::shouldExit)
         {
             LedgerIndex ledgerIndex;
             LedgerHash ledgerHash;
@@ -395,18 +431,19 @@ public:
 
             while (app_.getFeeTrack().isLoadedLocal())
             {
-                m_journal.debug << "Waiting for load to subside";
+                JLOG (j_.debug) << "Waiting for load to subside";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
-                if (this->threadShouldExit ())
+                if (lockAndGetState() == State::shouldExit)
                     return;
             }
 
             {
-                std::lock_guard<std::mutex> _(lock_);
+                std::lock_guard<std::mutex> lock (mutex_);
                 if ((minRange_ > maxRange_) ||
                     (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
+                    state_ = State::stoppedCleaning;
                     return;
                 }
                 ledgerIndex = maxRange_;
@@ -419,20 +456,20 @@ public:
             bool fail = false;
             if (ledgerHash.isZero())
             {
-                m_journal.info << "Unable to get hash for ledger "
+                JLOG (j_.info) << "Unable to get hash for ledger "
                                << ledgerIndex;
                 fail = true;
             }
             else if (!doLedger(ledgerIndex, ledgerHash, doNodes, doTxns))
             {
-                m_journal.info << "Failed to process ledger " << ledgerIndex;
+                JLOG (j_.info) << "Failed to process ledger " << ledgerIndex;
                 fail = true;
             }
 
             if (fail)
             {
                 {
-                    std::lock_guard<std::mutex> _(lock_);
+                    std::lock_guard<std::mutex> lock (mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -441,7 +478,7 @@ public:
             else
             {
                 {
-                    std::lock_guard<std::mutex> _(lock_);
+                    std::lock_guard<std::mutex> lock (mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)
