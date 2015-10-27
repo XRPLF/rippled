@@ -38,7 +38,7 @@ getRequiredFeeLevel(TxType txType)
     if ((txType == ttAMENDMENT) || (txType == ttFEE))
         return 0;
 
-    // For now, all valid non-pseudo transactions cost 256 fee units
+    // For now, all valid non-pseudo transactions have a level of 256.
     // This code can be changed to support variable transaction fees
     return 256;
 }
@@ -51,20 +51,20 @@ getFeeLevelPaid(
     std::uint64_t refTxnCostDrops)
 {
     // Compute the minimum XRP fee the transaction could pay
-    auto requiredFeeUnits = getRequiredFeeLevel(tx.getTxnType());
+    auto requiredFee = getRequiredFeeLevel(tx.getTxnType());
 
-    if (requiredFeeUnits == 0 ||
+    if (requiredFee == 0 ||
         refTxnCostDrops == 0)
         // If nothing is required, or the cost is 0,
         // the level is effectively infinite.
         return std::numeric_limits<std::uint64_t>::max();
 
     // TODO: getRequiredFeeLevel(ttREFERENCE)?
-    auto referenceFeeUnits =
+    auto referenceFee =
         ripple::getRequiredFeeLevel(ttACCOUNT_SET);
     return mulDivNoThrow(tx[sfFee].xrp().drops(),
-        baseRefLevel * referenceFeeUnits,
-            refTxnCostDrops * requiredFeeUnits);
+        baseRefLevel * referenceFee,
+            refTxnCostDrops * requiredFee);
 }
 
 //////////////////////////////////////////////////////////////////////////
