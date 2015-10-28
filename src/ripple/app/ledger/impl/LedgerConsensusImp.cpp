@@ -30,6 +30,7 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/TransactionAcquire.h>
 #include <ripple/app/tx/apply.h>
@@ -1055,6 +1056,10 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             applyTransactions (app_, set.get(), accum,
                 newLCL, retriableTxs, tapNONE);
         }
+        // Update fee computations.
+        app_.getTxQ().processValidatedLedger(app_, accum,
+            mCurrentMSeconds > 5000);
+
         accum.apply(*newLCL);
     }
 
@@ -1064,13 +1069,15 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     newLCL->updateSkipList ();
 
-    int asf = newLCL->stateMap().flushDirty (
-        hotACCOUNT_NODE, newLCL->info().seq);
-    int tmf = newLCL->txMap().flushDirty (
-        hotTRANSACTION_NODE, newLCL->info().seq);
-    JLOG (j_.debug) << "Flushed " <<
-        asf << " accounts and " <<
-        tmf << " transaction nodes";
+    {
+        int asf = newLCL->stateMap().flushDirty (
+            hotACCOUNT_NODE, newLCL->info().seq);
+        int tmf = newLCL->txMap().flushDirty (
+            hotTRANSACTION_NODE, newLCL->info().seq);
+        JLOG (j_.debug) << "Flushed " <<
+            asf << " accounts and " <<
+            tmf << " transaction nodes";
+    }
 
     // Accept ledger
     newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect, app_.config());
@@ -1140,45 +1147,45 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt (newLCL);
 
-    // Apply disputed transactions that didn't get in
-    //
-    // The first crack of transactions to get into the new
-    // open ledger goes to transactions proposed by a validator
-    // we trust but not included in the consensus set.
-    //
-    // These are done first because they are the most likely
-    // to receive agreement during consensus. They are also
-    // ordered logically "sooner" than transactions not mentioned
-    // in the previous consensus round.
-    //
-    bool anyDisputes = false;
-    for (auto& it : mDisputes)
     {
-        if (!it.second->getOurVote ())
+        // Apply disputed transactions that didn't get in
+        //
+        // The first crack of transactions to get into the new
+        // open ledger goes to transactions proposed by a validator
+        // we trust but not included in the consensus set.
+        //
+        // These are done first because they are the most likely
+        // to receive agreement during consensus. They are also
+        // ordered logically "sooner" than transactions not mentioned
+        // in the previous consensus round.
+        //
+        bool anyDisputes = false;
+        for (auto& it : mDisputes)
         {
-            // we voted NO
-            try
+            if (!it.second->getOurVote ())
             {
-                JLOG (j_.debug)
-                    << "Test applying disputed transaction that did"
-                    << " not get in";
-                SerialIter sit (it.second->peekTransaction().slice());
+                // we voted NO
+                try
+                {
+                    JLOG (j_.debug)
+                        << "Test applying disputed transaction that did"
+                        << " not get in";
+                    SerialIter sit (it.second->peekTransaction().slice());
 
-                auto txn = std::make_shared<STTx const>(sit);
+                    auto txn = std::make_shared<STTx const>(sit);
 
-                retriableTxs.insert (txn);
+                    retriableTxs.insert (txn);
 
-                anyDisputes = true;
-            }
-            catch (...)
-            {
-                JLOG (j_.debug)
-                    << "Failed to apply transaction we voted NO on";
+                    anyDisputes = true;
+                }
+                catch (...)
+                {
+                    JLOG (j_.debug)
+                        << "Failed to apply transaction we voted NO on";
+                }
             }
         }
-    }
 
-    {
         // Build new open ledger
         auto lock = beast::make_lock(
             app_.getMasterMutex(), std::defer_lock);
@@ -1198,7 +1205,12 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             rules.emplace();
         app_.openLedger().accept(app_, *rules,
             newLCL, localTx, anyDisputes, retriableTxs, tapNONE,
-                app_.getHashRouter(), "consensus");
+                "consensus",
+                    [&](OpenView& view, beast::Journal j)
+                    {
+                        // Stuff the ledger with transactions from the queue.
+                        return app_.getTxQ().accept(app_, view);
+                    });
     }
 
     mNewLedgerHash = newLCL->getHash ();

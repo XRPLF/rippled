@@ -24,7 +24,6 @@
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/ledger/OpenView.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
-#include <ripple/app/misc/HashRouter.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/Config.h>
@@ -57,6 +56,20 @@ private:
     std::shared_ptr<OpenView const> current_;
 
 public:
+    /** Signature for modification functions.
+
+        The modification function is called during
+        apply and modify with an OpenView to accumulate
+        changes and the Journal to use for logging.
+
+        A return value of `true` informs OpenLedger
+        that changes were made. Always returning
+        `true` won't cause harm, but it may be
+        sub-optimal.
+    */
+    using modify_type = std::function<
+        bool(OpenView&, beast::Journal)>;
+
     OpenLedger() = delete;
     OpenLedger (OpenLedger const&) = delete;
     OpenLedger& operator= (OpenLedger const&) = delete;
@@ -97,7 +110,7 @@ public:
             non-modifiable snapshot of the open ledger
             at the time of the call.
     */
-    std::shared_ptr<ReadView const>
+    std::shared_ptr<OpenView const>
     current() const;
 
     /** Modify the open ledger
@@ -105,17 +118,13 @@ public:
         Thread safety:
             Can be called concurrently from any thread.
 
-        `f` will be called as
-            bool(ReadView&)
-
         If `f` returns `true`, the changes made in the
         OpenView will be published to the open ledger.
 
         @return `true` if the open view was changed
     */
     bool
-    modify (std::function<
-        bool(OpenView&, beast::Journal)> const& f);
+    modify (modify_type const& f);
 
     /** Accept a new ledger.
 
@@ -135,6 +144,12 @@ public:
             The list of local transactions are applied
             to the new open view.
 
+            The optional modify function f is called
+            to perform further modifications to the
+            open view, atomically. Changes made in
+            the modify function are not visible to
+            callers until accept() returns.
+
             Any failed, retriable transactions are left
             in `retries` for the caller.
 
@@ -149,8 +164,8 @@ public:
         std::shared_ptr<Ledger const> const& ledger,
             OrderedTxs const& locals, bool retriesFirst,
                 OrderedTxs& retries, ApplyFlags flags,
-                    HashRouter& router,
-                        std::string const& suffix = "");
+                    std::string const& suffix = "",
+                        modify_type const& f = {});
 
     /** Algorithm for applying transactions.
 
@@ -163,7 +178,7 @@ public:
     apply (Application& app, OpenView& view,
         ReadView const& check, FwdRange const& txs,
             OrderedTxs& retries, ApplyFlags flags,
-                HashRouter& router, beast::Journal j);
+                beast::Journal j);
 
 private:
     enum Result
@@ -182,7 +197,7 @@ private:
     apply_one (Application& app, OpenView& view,
         std::shared_ptr< STTx const> const& tx,
             bool retry, ApplyFlags flags,
-                HashRouter& router, beast::Journal j);
+                beast::Journal j);
 };
 
 //------------------------------------------------------------------------------
@@ -192,7 +207,7 @@ void
 OpenLedger::apply (Application& app, OpenView& view,
     ReadView const& check, FwdRange const& txs,
         OrderedTxs& retries, ApplyFlags flags,
-            HashRouter& router, beast::Journal j)
+            beast::Journal j)
 {
     for (auto iter = txs.begin();
         iter != txs.end(); ++iter)
@@ -205,7 +220,7 @@ OpenLedger::apply (Application& app, OpenView& view,
             if (check.txExists(tx->getTransactionID()))
                 continue;
             auto const result = apply_one(app, view,
-                tx, true, flags, router, j);
+                tx, true, flags, j);
             if (result == Result::retry)
                 retries.insert(tx);
         }
@@ -226,7 +241,7 @@ OpenLedger::apply (Application& app, OpenView& view,
         {
             switch (apply_one(app, view,
                 iter->second, retry, flags,
-                    router, j))
+                    j))
             {
             case Result::success:
                 ++changes;

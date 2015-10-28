@@ -56,7 +56,7 @@ public:
 
             // ledger close times have a dynamic resolution depending on network
             // conditions it appears the resolution in test is 10 seconds
-            env.close (tp);
+            env.close (tp, {});
 
             NetClock::time_point const pct (
                 std::chrono::seconds (env.open ()->info ().parentCloseTime));

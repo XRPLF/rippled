@@ -76,12 +76,13 @@ makeConfig()
 }
 
 // VFALCO Could wrap the log in a Journal here
-Env::Env (beast::unit_test::suite& test_)
+Env::Env(beast::unit_test::suite& test_,
+    std::unique_ptr<Config const> config)
     : test (test_)
     , master ("master", generateKeyPair(
         KeyType::secp256k1,
             generateSeed("masterpassphrase")))
-    , bundle_ (makeConfig())
+    , bundle_ (std::move(config))
     , closed_ (std::make_shared<Ledger>(
         create_genesis, app().config(), app().family()))
     , cachedSLEs_ (std::chrono::seconds(5), stopwatch_)
@@ -91,7 +92,12 @@ Env::Env (beast::unit_test::suite& test_)
     Pathfinder::initPathTable();
 }
 
-std::shared_ptr<ReadView const>
+Env::Env(beast::unit_test::suite& test_)
+    : Env(test_, makeConfig())
+{
+}
+
+std::shared_ptr<OpenView const>
 Env::open() const
 {
     return openLedger.current();
@@ -104,7 +110,8 @@ Env::closed() const
 }
 
 void
-Env::close(NetClock::time_point const& closeTime)
+Env::close(NetClock::time_point const& closeTime,
+    OpenLedger::modify_type const& f)
 {
     clock.set(closeTime);
     // VFALCO TODO Fix the Ledger constructor
@@ -117,13 +124,12 @@ Env::close(NetClock::time_point const& closeTime)
     for (auto iter = cur->txs.begin();
             iter != cur->txs.end(); ++iter)
         txs.push_back(iter->first);
-    auto router = std::make_unique<HashRouter>(60);
     OrderedTxs retries(uint256{});
     {
         OpenView accum(&*next);
         OpenLedger::apply(app(), accum, *closed_,
-            txs, retries, applyFlags(), *router,
-                journal);
+            txs, retries, applyFlags(), journal);
+
         accum.apply(*next);
     }
     // To ensure that the close time is exact and not rounded, we don't
@@ -134,7 +140,7 @@ Env::close(NetClock::time_point const& closeTime)
         ledgerPossibleTimeResolutions[0], false, app().config());
     OrderedTxs locals({});
     openLedger.accept(app(), next->rules(), next,
-        locals, false, retries, applyFlags(), *router);
+        locals, false, retries, applyFlags(), "", f);
     closed_ = next;
     cachedSLEs_.expire();
 }
@@ -289,9 +295,15 @@ Env::submit (JTx const& jt)
         ter_ = temMALFORMED;
         didApply = false;
     }
-    if (jt.ter && ! test.expect(ter_ == *jt.ter,
-        "apply: " + transToken(ter_) +
-            " (" + transHuman(ter_) + ")"))
+    return postconditions(jt, ter_, didApply);
+}
+
+void
+Env::postconditions(JTx const& jt, TER ter, bool didApply)
+{
+    if (jt.ter && ! test.expect(ter == *jt.ter,
+        "apply: " + transToken(ter) +
+            " (" + transHuman(ter) + ")"))
     {
         test.log << pretty(jt.jv);
         // Don't check postconditions if

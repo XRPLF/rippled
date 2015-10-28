@@ -153,6 +153,8 @@ public:
     Env (Env const&) = delete;
     Env& operator= (Env const&) = delete;
 
+    Env (beast::unit_test::suite& test_,
+        std::unique_ptr<Config const> config);
     Env (beast::unit_test::suite& test_);
 
     Application&
@@ -169,7 +171,7 @@ public:
         will not be visible.
 
     */
-    std::shared_ptr<ReadView const>
+    std::shared_ptr<OpenView const>
     open() const;
 
     /** Returns the last closed ledger.
@@ -195,7 +197,8 @@ public:
             The Env clock is set to the new time.
     */
     void
-    close (NetClock::time_point const& closeTime);
+    close (NetClock::time_point const& closeTime,
+        OpenLedger::modify_type const& f = {});
 
     /** Close and advance the ledger.
 
@@ -205,10 +208,11 @@ public:
     template <class Rep, class Period>
     void
     close (std::chrono::duration<
-        Rep, Period> const& elapsed)
+        Rep, Period> const& elapsed,
+        OpenLedger::modify_type const& f = {})
     {
         stopwatch_.advance(elapsed);
-        close (clock.now() + elapsed);
+        close (clock.now() + elapsed, f);
     }
 
     /** Close and advance the ledger.
@@ -217,9 +221,9 @@ public:
         the previous ledger closing time.
     */
     void
-    close()
+    close(OpenLedger::modify_type const& f = {})
     {
-        close (std::chrono::seconds(5));
+        close (std::chrono::seconds(5), f);
     }
 
     /** Turn on JSON tracing.
@@ -343,6 +347,12 @@ public:
     virtual
     void
     submit (JTx const& jt);
+
+    /** Check expected postconditions
+        of JTx submission.
+    */
+    void
+    postconditions(JTx const& jt, TER ter, bool didApply);
 
     /** Apply funclets and submit. */
     /** @{ */

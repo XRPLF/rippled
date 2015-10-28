@@ -109,8 +109,8 @@ Rules::changed (DigestAwareReadView const& ledger) const
 bool
 Rules::operator== (Rules const& other) const
 {
-#if 0
-    if (! impl_ && ! other.impl_)
+#if 1
+    if (impl_.get() == other.impl_.get())
         return true;
     if (! impl_ || ! other.impl_)
         return false;

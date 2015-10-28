@@ -32,27 +32,15 @@ struct PreflightContext
 public:
     Application& app;
     STTx const& tx;
-    Rules const& rules;
+    Rules const rules;
     ApplyFlags flags;
     beast::Journal j;
 
     PreflightContext(Application& app_, STTx const& tx_,
         Rules const& rules_, ApplyFlags flags_,
             beast::Journal j_);
-};
 
-struct PreflightResult
-{
-public:
-    PreflightContext const ctx;
-    TER const ter;
-
-    PreflightResult(PreflightContext const& ctx_,
-        TER ter_)
-        : ctx(ctx_)
-        , ter(ter_)
-    {
-    }
+    PreflightContext& operator=(PreflightContext const&) = delete;
 };
 
 /** State information when determining if a tx is likely to claim a fee. */
@@ -77,28 +65,8 @@ public:
         , j(j_)
     {
     }
-};
 
-struct PreclaimResult
-{
-public:
-    PreclaimContext const ctx;
-    TER const ter;
-    std::uint64_t const baseFee;
-
-    PreclaimResult(PreclaimContext const& ctx_,
-        TER ter_, std::uint64_t const& baseFee_)
-        : ctx(ctx_)
-        , ter(ter_)
-        , baseFee(baseFee_)
-    {
-    }
-
-    PreclaimResult(PreclaimContext const& ctx_,
-        std::pair<TER, std::uint64_t> const& result)
-        : PreclaimResult(ctx_, result.first, result.second)
-    {
-    }
+    PreclaimContext& operator=(PreclaimContext const&) = delete;
 };
 
 class Transactor
