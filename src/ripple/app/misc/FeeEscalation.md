@@ -85,7 +85,7 @@ external transactions, transactions are applied from the queue to the
 ledger from highest [fee level](#fee-level) to lowest. These transactions
 count against the open ledger limit, so the required [fee level](#fee-level)
 may start rising during this process.
-3. Once the queue is empty, or required the [fee level](#fee-level)
+3. Once the queue is empty, or the required [fee level](#fee-level)
 jumps too high for the remaining transactions in the queue, the ledger
 is opened up for normal transaction processing.
 4. A transaction in the queue can stay there indefinitely in principle,
