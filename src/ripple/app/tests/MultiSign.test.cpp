@@ -621,6 +621,39 @@ public:
         env(regkey (alice, disabled), sig(alie));
     }
 
+    // Verify that the first regular key can be made for free using the
+    // master key, but not when multisigning.
+    void test_regKey()
+    {
+        using namespace jtx;
+        Env env(*this);
+        Account const alice {"alice", KeyType::secp256k1};
+        env.fund(XRP(1000), alice);
+
+        // Give alice a regular key with a zero fee.  Should succeed.  Once.
+        Account const alie {"alie", KeyType::ed25519};
+        env(regkey (alice, alie), sig (alice), fee (0));
+
+        // Try it again and creating the regular key for free should fail.
+        Account const liss {"liss", KeyType::secp256k1};
+        env(regkey (alice, liss), sig (alice), fee (0), ter(telINSUF_FEE_P));
+
+        // But paying to create a regular key should succeed.
+        env(regkey (alice, liss), sig (alice));
+
+        // In contrast, trying to multisign for a regular key with a zero
+        // fee should always fail.  Even the first time.
+        Account const becky {"becky", KeyType::ed25519};
+        env.fund(XRP(1000), becky);
+
+        env(signers(becky, 1, {{alice, 1}}), sig (becky));
+        env(regkey (becky, alie), msig (alice), fee (0), ter(telINSUF_FEE_P));
+
+        // Using the master key to sign for a regular key for free should
+        // still work.
+        env(regkey (becky, alie), sig (becky), fee (0));
+    }
+
     // See if every kind of transaction can be successfully multi-signed.
     void test_txTypes()
     {
@@ -716,6 +749,7 @@ public:
         test_regularSigners();
         test_heterogeneousSigners();
         test_keyDisable();
+        test_regKey();
         test_txTypes();
     }
 };
