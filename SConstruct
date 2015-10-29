@@ -81,6 +81,14 @@ GCC 5: If the gcc toolchain is used, gcc version 5 or better is required. On
     either be built with gcc 4 or with the preprocessor flag
     `_GLIBCXX_USE_CXX11_ABI` set to zero.
 
+Clang on linux: Clang cannot use the new gcc 5 ABI (clang does not know about
+    the `abi_tag` attribute). On linux distros that ship with the gcc 5 ABI
+    (ubuntu >= 15.10), building with clang requires building boost and protobuf
+    with the old ABI (best to build them with clang). It is best to statically
+    link rippled in this scenario (use the `--static` with scons), as dynamic
+    linking may use a library with the incorrect ABI.
+
+
 '''
 #
 '''
@@ -299,14 +307,17 @@ def is_ubuntu():
         return False
 
 @memoize
-def use_gcc4_abi(gcc_cmd):
+def use_gcc4_abi(cc_cmd):
     if os.getenv('RIPPLED_OLD_GCC_ABI'):
         return True
     gcc_ver = ''
     ubuntu_ver = None
     try:
-        gcc_ver = subprocess.check_output([gcc_cmd, '-dumpversion'],
-                                        stderr=subprocess.STDOUT).strip()
+        if 'gcc' in cc_cmd:
+            gcc_ver = subprocess.check_output([cc_cmd, '-dumpversion'],
+                                            stderr=subprocess.STDOUT).strip()
+        else:
+            gcc_ver = '5' # assume gcc 5 for ABI purposes for clang
 
         if is_ubuntu():
             ubuntu_ver = float(
@@ -502,11 +513,11 @@ def config_env(toolchain, variant, env):
                 env.Append(LINKFLAGS=[
                     '-static-libstdc++',
                 ])
+            if use_gcc4_abi(env['CC'] if 'CC' in env else 'gcc'):
+                env.Append(CPPDEFINES={
+                    '-D_GLIBCXX_USE_CXX11_ABI' : 0
+                })
             if toolchain == 'gcc':
-                if use_gcc4_abi(env['CC'] if 'CC' in env else 'gcc'):
-                    env.Append(CPPDEFINES={
-                        '-D_GLIBCXX_USE_CXX11_ABI' : 0
-                    })
 
                 env.Append(CCFLAGS=[
                     '-Wno-unused-but-set-variable',
