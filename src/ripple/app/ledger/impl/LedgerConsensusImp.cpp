@@ -442,7 +442,7 @@ void LedgerConsensusImp::mapCompleteInternal (
     auto it = mAcquired.find (hash);
 
     // If we have already acquired this transaction set
-    if (mAcquired.find (hash) != mAcquired.end ())
+    if (it != mAcquired.end ())
     {
         if (it->second)
         {
@@ -595,13 +595,11 @@ void LedgerConsensusImp::checkLCL ()
         JLOG (j_.warning)
             << ripple::getJson (*mPreviousLedger);
 
-        if (ShouldLog (lsDEBUG, LedgerConsensus))
+        if (j_.debug)
         {
             for (auto& it : vals)
-            {
-                JLOG (j_.debug)
+                j_.debug
                     << "V: " << it.first << ", " << it.second.first;
-            }
         }
 
         if (mHaveCorrectLCL)
@@ -1641,7 +1639,7 @@ void LedgerConsensusImp::updateOurPositions ()
         for (auto it = closeTimes.begin ()
             , end = closeTimes.end (); it != end; ++it)
         {
-            JLOG (j_.debug) << "CCTime: seq"
+            JLOG (j_.debug) << "CCTime: seq "
                 << mPreviousLedger->info().seq + 1 << ": "
                 << it->first << " has " << it->second << ", "
                 << threshVote << " required";
