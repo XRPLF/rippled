@@ -33,8 +33,8 @@ fi
 
 if [ ${ubuntu_release} == "14.04" ] || [ ${ubuntu_release} == "15.04" ]; then
     apt-get install python-software-properties
-    echo "deb [arch=amd64] http://mirrors.ripple.com/ubuntu/ trusty stable contrib" | sudo tee /etc/apt/sources.list.d/ripple.list 
-    wget -O- -q http://mirrors.ripple.com/mirrors.ripple.com.gpg.key | sudo apt-key add -
+    echo "deb [arch=amd64] https://mirrors.ripple.com/ubuntu/ trusty stable contrib" | sudo tee /etc/apt/sources.list.d/ripple.list 
+    wget -O- -q https://mirrors.ripple.com/mirrors.ripple.com.gpg.key | sudo apt-key add -
     add-apt-repository ppa:ubuntu-toolchain-r/test
     apt-get update
     apt-get -y upgrade
