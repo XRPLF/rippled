@@ -102,8 +102,16 @@ struct STAccount_test : public beast::unit_test::suite
                 const std::uint8_t bits128[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
                 s.addVL (bits128, sizeof (bits128));
                 SerialIter sit (s.slice ());
-                STAccount const deserializedBadSize (sit, sfAccount);
-                expect (! deserializedBadSize.isValueH160());
+                try
+                {
+                    // Constructing an STAccount with a bad size should throw.
+                    STAccount const deserializedBadSize (sit, sfAccount);
+                }
+                catch (std::runtime_error const& ex)
+                {
+                    expect (ex.what() == std::string("Invalid STAccount size"));
+                }
+
             }
 
             // Interestingly, equal values but different types are equivalent!
