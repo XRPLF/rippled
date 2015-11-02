@@ -86,7 +86,7 @@ Clang on linux: Clang cannot use the new gcc 5 ABI (clang does not know about
     (ubuntu >= 15.10), building with clang requires building boost and protobuf
     with the old ABI (best to build them with clang). It is best to statically
     link rippled in this scenario (use the `--static` with scons), as dynamic
-    linking may a library with the incorrect ABI.
+    linking may use a library with the incorrect ABI.
 
 
 '''
