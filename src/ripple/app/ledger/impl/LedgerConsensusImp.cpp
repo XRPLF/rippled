@@ -1144,7 +1144,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             << "CNF newLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
-    ledgerMaster_.consensusBuilt (newLCL);
+    ledgerMaster_.consensusBuilt (newLCL, getJson (true));
 
     {
         // Apply disputed transactions that didn't get in
