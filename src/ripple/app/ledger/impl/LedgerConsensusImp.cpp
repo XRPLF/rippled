@@ -600,6 +600,7 @@ void LedgerConsensusImp::checkLCL ()
             for (auto& it : vals)
                 j_.debug
                     << "V: " << it.first << ", " << it.second.first;
+            j_.debug << getJson (true);
         }
 
         if (mHaveCorrectLCL)
@@ -741,31 +742,23 @@ void LedgerConsensusImp::statePreClose ()
 
     // This ledger is open. This computes how long since last ledger closed
     int sinceClose;
-    int idleInterval = 0;
-
-    if (mHaveCorrectLCL && getCloseAgree(mPreviousLedger->info()))
     {
-        // we can use consensus timing
-        sinceClose = 1000 * (
-            app_.timeKeeper().closeTime().time_since_epoch().count()
-            - mPreviousLedger->info().closeTime);
-        idleInterval = 2 * mPreviousLedger->info().closeTimeResolution;
+        bool previousCloseCorrect = mHaveCorrectLCL && getCloseAgree (mPreviousLedger->info())
+            && (mPreviousLedger->info().closeTime != (mPreviousLedger->info().parentCloseTime + 1));
 
-        if (idleInterval < LEDGER_IDLE_INTERVAL)
-            idleInterval = LEDGER_IDLE_INTERVAL;
-    }
-    else
-    {
-        // Use the time we saw the last ledger close
-        sinceClose = 1000 * (
-            app_.timeKeeper().closeTime().time_since_epoch().count()
-            - consensus_.getLastCloseTime ());
-        idleInterval = LEDGER_IDLE_INTERVAL;
+        std::uint32_t closeTime = previousCloseCorrect
+            ? mPreviousLedger->info().closeTime // use consensus timing
+            : consensus_.getLastCloseTime(); // use the time we saw
+
+        std::uint32_t now = app_.timeKeeper().closeTime().time_since_epoch().count();
+        if (now >= closeTime)
+            sinceClose = static_cast<int> (1000 * (now - closeTime));
+        else
+            sinceClose = - static_cast<int> (1000 * (closeTime - now));
     }
 
-    idleInterval = std::max (idleInterval, LEDGER_IDLE_INTERVAL);
-    idleInterval = std::max (
-        idleInterval, 2 * mPreviousLedger->info().closeTimeResolution);
+    auto const idleInterval = std::max (LEDGER_IDLE_INTERVAL,
+        2 * mPreviousLedger->info().closeTimeResolution);
 
     // Decide if we should close the ledger
     if (shouldCloseLedger (anyTransactions
@@ -982,35 +975,27 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         consensus_.peekStoredProposals ().clear ();
     }
 
-    auto closeTime = mOurPosition->getCloseTime();
+    std::uint32_t closeTime = mOurPosition->getCloseTime ();
+    bool closeTimeCorrect;
 
     auto replay = ledgerMaster_.releaseReplay();
-
     if (replay)
     {
-        // If we're replaying a close, use the time the ledger
-        // we're replaying closed
+        // replaying, use the time the ledger we're replaying closed
         closeTime = replay->closeTime_;
-
-        if ((replay->closeFlags_ & sLCF_NoConsensusTime) != 0)
-            closeTime = 0;
+        closeTimeCorrect = ((replay->closeFlags_ & sLCF_NoConsensusTime) == 0);
     }
-
-    closeTime = roundCloseTime (closeTime, mCloseResolution);
-
-    // If we don't have a close time, then we just agree to disagree
-    bool const closeTimeCorrect = (closeTime != 0);
-
-    // Switch to new semantics on Oct 27, 2015 at 11:00:00am PDT
-    if (mPreviousLedger->info().closeTime > 499284000)
+    else if (closeTime == 0)
     {
-        // Ledger close times should increase strictly monotonically
-        if (closeTime <= mPreviousLedger->info().closeTime)
-            closeTime = mPreviousLedger->info().closeTime + 1;
-    }
-    else if (!closeTimeCorrect)
-    {
+        // We agreed to disagree on the close time
         closeTime = mPreviousLedger->info().closeTime + 1;
+        closeTimeCorrect = false;
+    }
+    else
+    {
+        // We agreed on a close time
+        closeTime = effectiveCloseTime (closeTime);
+        closeTimeCorrect = true;
     }
 
     JLOG (j_.debug)
@@ -1526,6 +1511,16 @@ participantsNeeded (int participants, int percent)
     return (result == 0) ? 1 : result;
 }
 
+std::uint32_t LedgerConsensusImp::effectiveCloseTime (std::uint32_t closeTime)
+{
+    if (closeTime == 0)
+        return 0;
+
+    return std::max (
+        roundCloseTime (closeTime, mCloseResolution),
+        mPreviousLedger->info().closeTime + 1);
+}
+
 void LedgerConsensusImp::updateOurPositions ()
 {
     // Compute a cutoff time
@@ -1558,8 +1553,8 @@ void LedgerConsensusImp::updateOurPositions ()
         else
         {
             // proposal is still fresh
-            ++closeTimes[roundCloseTime (
-                it->second->getCloseTime (), mCloseResolution)];
+            ++closeTimes[effectiveCloseTime (
+                it->second->getCloseTime ())];
             ++it;
         }
     }
@@ -1611,16 +1606,15 @@ void LedgerConsensusImp::updateOurPositions ()
     {
         // no other times
         mHaveCloseTimeConsensus = true;
-        closeTime = roundCloseTime (
-            mOurPosition->getCloseTime (), mCloseResolution);
+        closeTime = effectiveCloseTime (mOurPosition->getCloseTime ());
     }
     else
     {
         int participants = mPeerPositions.size ();
         if (mProposing)
         {
-            ++closeTimes[roundCloseTime (
-                mOurPosition->getCloseTime (), mCloseResolution)];
+            ++closeTimes[
+                effectiveCloseTime (mOurPosition->getCloseTime ())];
             ++participants;
         }
 
@@ -1646,8 +1640,7 @@ void LedgerConsensusImp::updateOurPositions ()
 
             if (it->second >= threshVote)
             {
-                JLOG (j_.debug)
-                    << "Close time consensus reached: " << it->first;
+                // A close time has enough votes for us to try to agree
                 closeTime = it->first;
                 threshVote = it->second;
 
@@ -1656,22 +1649,18 @@ void LedgerConsensusImp::updateOurPositions ()
             }
         }
 
-        // If we agree to disagree on the close time, don't delay consensus
-        if (!mHaveCloseTimeConsensus && (closeTimes[0] > threshConsensus))
-        {
-            closeTime = 0;
-            mHaveCloseTimeConsensus = true;
-        }
-
         CondLog (!mHaveCloseTimeConsensus, lsDEBUG, LedgerConsensus)
             << "No CT consensus: Proposers:" << mPeerPositions.size ()
             << " Proposing:" << (mProposing ? "yes" : "no") << " Thresh:"
             << threshConsensus << " Pos:" << closeTime;
     }
 
+    // Temporarily send a new proposal if there's any change to our
+    // claimed close time. Once the new close time code is deployed
+    // to the full network, this can be relaxed to force a change
+    // only if the rounded close time has changed.
     if (!changes &&
-            ((closeTime != roundCloseTime (
-                mOurPosition->getCloseTime (), mCloseResolution))
+            ((closeTime != mOurPosition->getCloseTime ())
             || mOurPosition->isStale (ourCutoff)))
     {
         // close time changed or our position is stale
