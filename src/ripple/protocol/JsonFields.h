@@ -43,6 +43,7 @@ JSS ( DeliverMin );                 // in: TransactionSign
 JSS ( Fee );                        // in/out: TransactionSign; field.
 JSS ( Flags );                      // in/out: TransactionSign; field.
 JSS ( Invalid );                    //
+JSS ( LastLedgerSequence );         // in: TransactionSign; field
 JSS ( LimitAmount );                // field.
 JSS ( OfferSequence );              // field.
 JSS ( Paths );                      // in/out: TransactionSign

@@ -129,9 +129,9 @@ public:
     the fee will grow exponentially.
 
     Transactions that don't have a high enough fee to be applied to
-    the ledger are added to the queue in order from highest fee to
+    the ledger are added to the queue in order from highest fee level to
     lowest. Whenever a new ledger is accepted as validated, transactions
-    are first applied from the queue to the open ledger in fee order
+    are first applied from the queue to the open ledger in fee level order
     until either all transactions are applied or the fee again jumps
     too high for the remaining transactions.
 */
@@ -141,7 +141,9 @@ public:
     struct Setup
     {
         std::size_t ledgersInQueue = 20;
-        std::uint32_t retrySequencePercent = 125;
+        std::uint32_t retrySequencePercent = 25;
+        std::uint32_t multiTxnPercent = 25;
+        std::uint32_t invalidationPenaltyPercent = 25;
         bool standAlone = false;
     };
 
@@ -175,9 +177,10 @@ public:
             No: Continue to step 2.
         2. Is the `txn`s fee level >= the required fee level?
             Yes: `txn` can be applied to the ledger. Pass it
-                 to the engine and return that result.
-            No: Can it be held in the queue? (See TxQImpl::canBeHeld).
-                No: Reject `txn` with a low fee TER code.
+                 to ripple::apply() and return that result.
+            No: Can it be held in the queue? (See TxQ::canBeHeld).
+                No: Reject `txn` with a low fee TER code (or PRE_SEQ
+                    if not the first sequence # for this account).
                 Yes: Is the queue full?
                     No: Put `txn` in the queue.
                     Yes: Is the `txn`'s fee higher than the end item's
@@ -185,13 +188,10 @@ public:
                         Yes: Remove the end item, and add `txn`.
                         No: Reject `txn` with a low fee TER code.
 
-        If the transaction is queued, addTransaction will return
-        { TD_held, terQUEUED }
-
-
-        @param txn The transaction to be attempted.
-        @param params Flags to control engine behaviors.
-        @param engine Transaction Engine.
+        @return A pair with the TER and a bool indicating
+                whether or not the transaction was applied.
+                If the transaction is queued, will return
+                { terQUEUED, false }.
     */
     std::pair<TER, bool>
     apply(Application& app, OpenView& view,
@@ -205,7 +205,7 @@ public:
 
         Iterate over the transactions from highest fee to lowest.
         For each transaction, compute the required fee.
-        Is the transaction fee is less than the required fee?
+        Is the transaction fee less than the required fee?
             Yes: Stop. We're done.
             No: Try to apply the transaction. Did it apply?
                 Yes: Take it out of the queue.
@@ -220,13 +220,12 @@ public:
         We have a new last validated ledger, update and clean up the
         queue.
 
-        1) Keep track of the average non-empty ledger size. Once there
-            are enough data points, the maximum queue size will be
-            enough to hold 20 ledgers. (Parameters for this are
-            experimentally configurable, but should be left alone.)
+        1) Adjust the maximum queue size to be enough to hold 20
+            ledgers. (Parameters for this are experimentally
+            configurable, but should be left alone.)
             1a) If the new limit makes the queue full, trim excess
                 transactions from the end of the queue.
-        2) Remove any transactions from the queue whos the
+        2) Remove any transactions from the queue for which the
             `LastLedgerSequence` has passed.
 
     */
@@ -239,7 +238,7 @@ public:
     std::size_t
     setMinimumTx(int m);
 
-    /** Returns fee metrics in reference fee (level) units.
+    /** Returns fee metrics in reference fee level units.
     */
     struct Metrics
     getMetrics(OpenView const& view) const;
@@ -266,6 +265,12 @@ private:
 
         std::shared_ptr<STTx const> txn;
 
+        // Defaults to empty. Only set when test applying
+        // multiple transactions per account. If set, this
+        // candidate HAS BEEN applied to the view.
+        std::shared_ptr<OpenView> view;
+        std::uint32_t invalidations;
+
         uint64_t const feeLevel;
         TxID const txID;
         boost::optional<TxID> priorTxID;
@@ -273,7 +278,7 @@ private:
         boost::optional<LedgerIndex> lastValid;
         TxSeq const sequence;
         ApplyFlags const flags;
-        // pfresult_ is never allowed to be empty. The
+        // pfresult is never allowed to be empty. The
         // boost::optional is leveraged to allow `emplace`d
         // construction and replacement without a copy
         // assignment operation.
@@ -284,6 +289,9 @@ private:
             TxID const& txID, std::uint64_t feeLevel,
                 ApplyFlags const flags,
                     PreflightResult const& pfresult);
+
+        std::pair<TER, bool>
+        apply(Application& app, OpenView& view);
     };
 
     class GreaterFee
@@ -298,11 +306,11 @@ private:
     class TxQAccount
     {
     public:
+        using TxMap = std::map <TxSeq, CandidateTxn>;
 
         AccountID const account;
-        uint64_t totalFees;
         // Sequence number will be used as the key.
-        std::map <TxSeq, CandidateTxn> transactions;
+        TxMap transactions;
 
     public:
         explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
@@ -326,10 +334,25 @@ private:
         bool
         removeCandidate(TxSeq const& sequence);
 
-        CandidateTxn const*
-        findCandidateAt(TxSeq const& sequence) const;
+        void
+        invalidate(TxMap::iterator);
+
     };
 
+    struct MultiTxn
+    {
+        TxQAccount::TxMap::iterator nextAcctIter;
+        TxQAccount::TxMap::iterator prevTxnIter;
+        std::shared_ptr<OpenView> workingView;
+
+        MultiTxn(TxQAccount::TxMap::iterator next,
+            TxQAccount::TxMap::iterator prev,
+            std::shared_ptr<OpenView> view = {})
+            : nextAcctIter(next)
+            , prevTxnIter(prev)
+            , workingView(view)
+        { }
+    };
 
     using FeeHook = boost::intrusive::member_hook
         <CandidateTxn, boost::intrusive::set_member_hook<>,
@@ -359,7 +382,12 @@ private:
 
     bool canBeHeld(std::shared_ptr<STTx const> const&);
 
+    // Erase and return the next entry in byFee_ (lower fee level)
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
+    // Erase and return the next entry for the account (if fee level
+    // is higher), or next entry in byFee_ (lower fee level).
+    // Used to get the next "applyable" candidate for accept().
+    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
 
 };
 
