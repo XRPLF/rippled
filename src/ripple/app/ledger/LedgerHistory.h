@@ -119,9 +119,8 @@ private:
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
-    class cv_entry
+    struct cv_entry
     {
-        public:
         boost::optional<LedgerHash> built;
         boost::optional<LedgerHash> validated;
         boost::optional<Json::Value> consensus;
