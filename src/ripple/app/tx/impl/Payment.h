@@ -45,6 +45,10 @@ public:
     }
 
     static
+    XRPAmount
+    calculateMaxSpend(STTx const& tx);
+
+    static
     TER
     preflight (PreflightContext const& ctx);
 

@@ -152,10 +152,22 @@ std::uint64_t Transactor::calculateBaseFee (
     return baseFee + (signerCount * baseFee);
 }
 
+XRPAmount
+Transactor::calculateFeePaid(STTx const& tx)
+{
+    return tx[sfFee].xrp();
+}
+
+XRPAmount
+Transactor::calculateMaxSpend(STTx const& tx)
+{
+    return beast::zero;
+}
+
 TER
 Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
 {
-    auto const feePaid = ctx.tx[sfFee].xrp ();
+    auto const feePaid = calculateFeePaid(ctx.tx);
     if (!isLegalAmount (feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -198,7 +210,7 @@ Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
 
 TER Transactor::payFee ()
 {
-    auto const feePaid = ctx_.tx[sfFee].xrp();
+    auto const feePaid = calculateFeePaid(ctx_.tx);
 
     auto const sle = view().peek(
         keylet::account(account_));
@@ -237,11 +249,6 @@ Transactor::checkSeq (PreclaimContext const& ctx)
     {
         if (a_seq < t_seq)
         {
-            if (ctx.flags & tapPOST_SEQ)
-            {
-                return tesSUCCESS;
-            }
-
             JLOG(ctx.j.trace()) <<
                 "applyTransaction: has future sequence number " <<
                 "a_seq=" << a_seq << " t_seq=" << t_seq;

@@ -57,8 +57,17 @@ in the fee escalation formula for the next open ledger.
   which is 15,000 drops for a
   [reference transaction](#reference-transaction).
   * This will cause the first 21 transactions only require 10
-  drops, but the 22st transaction will require
+  drops, but the 22nd transaction will require
   a level of about 110,000,000 or about 4.3 million drops (4.3XRP).
+
+* This example assumes a cold-start scenario, with a single, possibly
+malicious, user willing to pay arbitrary amounts to get transactions
+into the open ledger. It ignores the effects of the [Transaction
+Queue](#transaction-queue). Any lower fee level transactions submitted
+by other users at the same time as this user's transactions will go into
+the transaction queue, and will have the first opportunity to be applied
+to the _next_ open ledger. The next section describes how that works in
+more detail.
 
 ## Transaction Queue
 
@@ -91,19 +100,36 @@ is opened up for normal transaction processing.
 4. A transaction in the queue can stay there indefinitely in principle,
 but in practice, either
   * it will eventually get applied to the ledger,
+  * it will attempt to apply to the ledger and fail,
+  * it will attempt to apply to the ledger and retry [10
+  times](#other-constants),
   * its last ledger sequence number will expire,
   * the user will replace it by submitting another transaction with the same
-  sequence number and a higher fee, or
+  sequence number and at least a 25% higher fee, or
   * it will get dropped when the queue fills up with more valuable transactions.
   The size limit is computed dynamically, and can hold transactions for
   the next [20 ledgers](#other-constants).
-  The lower the transaction's fee, the more likely that it will get dropped if the
-  network is busy.
 
-Currently, there is an additional restriction that the queue can only hold one
-transaction per account at a time. Future development will make the queue
-aware of transaction dependencies so that more than one can be
-queued up at a time per account.
+If a transaction is submitted for an account with one or more transactions
+already in the queue, and a sequence number that is sequential with the other
+transactions in the queue for that account, it will be considered
+for the queue if it meets these additional criteria:
+  * the account has fewer than [10](#other-constants) transactions
+  already in the queue.
+  * it pays a [fee level](#fee-level) that is greater than 10% of the
+  fee level for the transaction with the previous sequence number,
+  * all other queued transactions for that account, in the case where
+  they spend the maximum possible XRP, leave enough XRP balance to pay
+  the fee,
+  * the total fees for the other queued transactions are less than both
+  the network's minimum reserve and the account's XRP balance, and
+  * none of the prior queued transactions affect the ability of subsequent
+  transactions to claim a fee.
+
+Currently, there is an additional restriction that the queue can not work with
+transactions using the `sfPreviousTxnID` or `sfAccountTxnID` fields.
+`sfPreviousTxnID` is deprecated and shouldn't be used anyway. Future
+development will make the queue aware of `sfAccountTxnID` mechanisms.
 
 ## Technical Details
 
@@ -115,15 +141,21 @@ transaction](#reference-transaction), the base fee
 level is 256. If a transaction is submitted with a higher `Fee` field,
 the fee level is scaled appropriately.
 
-Examples, assuming a base fee of 10 drops:
+Examples, assuming a [reference transaction](#reference-transaction)
+base fee of 10 drops:
 
 1. A single-signed [reference transaction](#reference-transaction)
-with `Fee=20` will have a fee level of 512.
-2. A multi-signed transaction with 3 signatures (base fee = 40 drops)
-and `Fee=60` will have a fee level of 384.
+with `Fee=20` will have a fee level of
+`20 drop fee * 256 fee level / 10 drop base fee = 512 fee level`.
+2. A multi-signed [reference transaction](#reference-transaction) with
+3 signatures (base fee = 40 drops) and `Fee=60` will have a fee level of
+`60 drop fee * 256 fee level / ((1tx + 3sigs) * 10 drop base fee) = 384
+fee level`.
 3. A hypothetical future non-reference transaction with a base
 fee of 15 drops multi-signed with 5 signatures and `Fee=90` will
-have a fee level of 256.
+have a fee level of
+`90 drop fee * 256 fee level / ((1tx + 5sigs) * 15 drop base fee) = 256
+fee level`.
 
 This demonstrates that a simpler transaction paying less XRP can be more
 likely to get into the open ledger, or be sorted earlier in the queue
@@ -168,7 +200,28 @@ to process successfully.  The limit of 20 ledgers was used to provide
 a balance between resource (specifically memory) usage, and giving
 transactions a realistic chance to be processed. This exact value was
 chosen experimentally, and can easily change in the future.
-
+* *Maximum retries*. A transaction in the queue can attempt to apply
+to the open ledger, but get a retry (`ter`) code up to 10 times, at
+which point, it will be removed from the queue and dropped. The
+value was chosen to be large enough to allow temporary failures to clear
+up, but small enough that the queue doesn't fill up with stale
+transactions which prevent lower fee level, but more likely to succeed,
+transactions from queuing.
+* *Maximum transactions per account*. A single account can have up to 10
+transactions in the queue at any given time. This is primarily to
+mitigate the lost cost of broadcasting multiple transactions if one of
+the earlier ones fails or is otherwise removed from the queue without
+being applied to the open ledger. The value was chosen arbitrarily, and
+can easily change in the future.
+* *Minimum last ledger sequence buffer*. If a transaction has a
+`LastLedgerSequence` value, and can not be processed into the open
+ledger, that `LastLedgerSequence` must be at least 2 more than the
+sequence number of the open ledger to be considered for the queue. The
+value was chosen to provide a balance between letting the user control
+the lifespan of the transaction, and giving a queued transaction a
+chance to get processed out of the queue before getting discarded,
+particularly since it may have dependent transactions also in the queue,
+which will never succeed if this one is discarded.
 ### `fee` command
 
 **The `fee` RPC and WebSocket command is still experimental, and may
@@ -209,14 +262,52 @@ Result format:
 }
 ```
 
-### Enabling Fee Escalation
+### [`server_info`](https://ripple.com/build/rippled-apis/#server-info) command
 
-These features are disabled by default and need to be activated by a
-feature in your rippled.cfg. Add a `[features]` section if one is not
-already present, and add `FeeEscalation` (case-sensitive) to that
-list, then restart rippled.
+**The fields listed here are still experimental, and may change
+without warning.**
 
-```
-[features]
-FeeEscalation
-```
+Up to two fields in `server_info` output are related to fee escalation.
+
+1. `load_factor_fee_escalation`: The factor on base transaction cost
+that a transaction must pay to get into the open ledger. This value can
+change quickly as transactions are processed from the network and
+ledgers are closed. If not escalated, the value is 1, so will not be
+returned.
+2. `load_factor_fee_queue`: If the queue is full, this is the factor on
+base transaction cost that a transaction must pay to get into the queue.
+If not full, the value is 1, so will not be returned.
+
+In all cases, the transaction fee must be high enough to overcome both
+`load_factor_fee_queue` and `load_factor` to be considered. It does not
+need to overcome `load_factor_fee_escalation`, though if it does not, it
+is more likely to be queued than immediately processed into the open
+ledger.
+
+### [`server_state`](https://ripple.com/build/rippled-apis/#server-state) command
+
+**The fields listed here are still experimental, and may change
+without warning.**
+
+Three fields in `server_state` output are related to fee escalation.
+
+1. `load_factor_fee_escalation`: The factor on base transaction cost
+that a transaction must pay to get into the open ledger. This value can
+change quickly as transactions are processed from the network and
+ledgers are closed. The ratio between this value and
+`load_factor_fee_reference` determines the multiplier for transaction
+fees to get into the current open ledger.
+2. `load_factor_fee_queue`: This is the factor on base transaction cost
+that a transaction must pay to get into the queue. The ratio between
+this value and `load_factor_fee_reference` determines the multiplier for
+transaction fees to get into the transaction queue to be considered for
+a later ledger.
+3. `load_factor_fee_reference`: Like `load_base`, this is the baseline
+that is used to scale fee escalation computations.
+
+In all cases, the transaction fee must be high enough to overcome both
+`load_factor_fee_queue` and `load_factor` to be considered. It does not
+need to overcome `load_factor_fee_escalation`, though if it does not, it
+is more likely to be queued than immediately processed into the open
+ledger.
+

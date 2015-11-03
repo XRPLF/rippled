@@ -122,7 +122,7 @@ public:
     std::string                 START_LEDGER;
 
     // Network parameters
-    int                         TRANSACTION_FEE_BASE = 10;   // The number of fee units a reference transaction costs
+    int const                   TRANSACTION_FEE_BASE = 10;   // The number of fee units a reference transaction costs
 
     /** Operate in stand-alone mode.
 

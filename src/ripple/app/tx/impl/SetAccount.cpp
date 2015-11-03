@@ -29,6 +29,25 @@
 
 namespace ripple {
 
+bool
+SetAccount::affectsSubsequentTransactionAuth(STTx const& tx)
+{
+    auto const uTxFlags = tx.getFlags();
+    if(uTxFlags & (tfRequireAuth | tfOptionalAuth))
+        return true;
+
+    auto const uSetFlag = tx[~sfSetFlag];
+    if(uSetFlag && (*uSetFlag == asfRequireAuth ||
+        *uSetFlag == asfDisableMaster ||
+            *uSetFlag == asfAccountTxnID))
+                return true;
+
+    auto const uClearFlag = tx[~sfClearFlag];
+    return uClearFlag && (*uClearFlag == asfRequireAuth ||
+        *uClearFlag == asfDisableMaster ||
+            *uClearFlag == asfAccountTxnID);
+}
+
 TER
 SetAccount::preflight (PreflightContext const& ctx)
 {
