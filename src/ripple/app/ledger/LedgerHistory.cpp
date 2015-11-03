@@ -301,7 +301,7 @@ leaves (SHAMap const& sm)
 
 
 void LedgerHistory::handleMismatch (
-    LedgerHash const& built, LedgerHash const& valid)
+    LedgerHash const& built, LedgerHash const& valid, Json::Value const& consensus)
 {
     assert (built != valid);
     ++mismatch_counter_;
@@ -318,6 +318,13 @@ void LedgerHistory::handleMismatch (
     }
 
     assert (builtLedger->info().seq == validLedger->info().seq);
+
+    if (j_.debug)
+    {
+        j_.debug << "Built: " << getJson (*builtLedger);
+        j_.debug << "Valid: " << getJson (*validLedger);
+        j_.debug << "Consensus: " << consensus;
+    }
 
     // Determine the mismatch reason
     // Distinguish Byzantine failure from transaction processing difference
@@ -384,7 +391,7 @@ void LedgerHistory::handleMismatch (
         log_one (validLedger, (*v)->key(), "built", j_);
 }
 
-void LedgerHistory::builtLedger (Ledger::ref ledger)
+void LedgerHistory::builtLedger (Ledger::ref ledger, Json::Value&& consensus)
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->getHash();
@@ -392,20 +399,18 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
-    auto entry = std::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize(index, entry, false);
 
-    if (entry->first != hash)
+    if (entry->validated && (entry->validated.get() != hash))
     {
-        if (entry->second.isNonZero() && (entry->second != hash))
-        {
-            JLOG (j_.error) << "MISMATCH: seq=" << index
-                << " validated:" << entry->second
-                << " then:" << hash;
-            handleMismatch (hash, entry->first);
-        }
-        entry->first = hash;
+        JLOG (j_.error) << "MISMATCH: seq=" << index
+            << " validated:" << entry->validated.get()
+            << " then:" << hash;
+        handleMismatch (hash, entry->validated.get(), consensus);
     }
+    entry->built.emplace (hash);
+    entry->consensus.emplace (std::move (consensus));
 }
 
 void LedgerHistory::validatedLedger (Ledger::ref ledger)
@@ -416,21 +421,18 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
-    auto entry = std::make_shared<std::pair<LedgerHash, LedgerHash>>();
+    auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize(index, entry, false);
 
-    if (entry->second != hash)
+    if (entry->built && (entry->built.get() != hash))
     {
-        if (entry->first.isNonZero() && (entry->first != hash))
-        {
-            JLOG (j_.error) << "MISMATCH: seq=" << index
-                << " built:" << entry->first
-                << " then:" << hash;
-            handleMismatch (entry->first, hash);
-        }
-
-        entry->second = hash;
+        JLOG (j_.error) << "MISMATCH: seq=" << index
+            << " built:" << entry->built.get()
+            << " then:" << hash;
+        handleMismatch (entry->built.get(), hash, entry->consensus.get());
     }
+
+    entry->validated.emplace (hash);
 }
 
 /** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index

@@ -405,8 +405,7 @@ void Ledger::setAccepted (
     std::uint32_t closeTime, int closeResolution, bool correctCloseTime,
         Config const& config)
 {
-    // Used when we witnessed the consensus.  Rounds the close time, updates the
-    // hash, and sets the ledger accepted and immutable.
+    // Used when we witnessed the consensus.
     assert (closed());
 
     info_.closeTime = closeTime;

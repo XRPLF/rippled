@@ -293,6 +293,9 @@ private:
     /** Add our load fee to our validation */
     void addLoad(STValidation::ref val);
 
+    /** Convert an advertised close time to an effective close time */
+    std::uint32_t effectiveCloseTime (std::uint32_t closeTime);
+
 private:
     Application& app_;
     ConsensusImp& consensus_;
