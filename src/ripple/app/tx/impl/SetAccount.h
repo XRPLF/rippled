@@ -42,6 +42,10 @@ public:
     }
 
     static
+    bool
+    affectsSubsequentTransactionAuth(STTx const& tx);
+
+    static
     TER
     preflight (PreflightContext const& ctx);
 

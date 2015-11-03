@@ -156,6 +156,47 @@ invoke_calculateBaseFee(PreclaimContext const& ctx)
     }
 }
 
+template<class T>
+static
+TxConsequences
+invoke_calculateConsequences(STTx const& tx)
+{
+    auto const category = T::affectsSubsequentTransactionAuth(tx) ?
+        TxConsequences::blocker : TxConsequences::normal;
+    auto const feePaid = T::calculateFeePaid(tx);
+    auto const maxSpend = T::calculateMaxSpend(tx);
+
+    return{ category, feePaid, maxSpend };
+}
+
+static
+TxConsequences
+invoke_calculateConsequences(STTx const& tx)
+{
+    switch (tx.getTxnType())
+    {
+    case ttACCOUNT_SET:     return invoke_calculateConsequences<SetAccount>(tx);
+    case ttOFFER_CANCEL:    return invoke_calculateConsequences<CancelOffer>(tx);
+    case ttOFFER_CREATE:    return invoke_calculateConsequences<CreateOffer>(tx);
+    case ttPAYMENT:         return invoke_calculateConsequences<Payment>(tx);
+    case ttSUSPAY_CREATE:   return invoke_calculateConsequences<SusPayCreate>(tx);
+    case ttSUSPAY_FINISH:   return invoke_calculateConsequences<SusPayFinish>(tx);
+    case ttSUSPAY_CANCEL:   return invoke_calculateConsequences<SusPayCancel>(tx);
+    case ttREGULAR_KEY_SET: return invoke_calculateConsequences<SetRegularKey>(tx);
+    case ttSIGNER_LIST_SET: return invoke_calculateConsequences<SetSignerList>(tx);
+    case ttTICKET_CANCEL:   return invoke_calculateConsequences<CancelTicket>(tx);
+    case ttTICKET_CREATE:   return invoke_calculateConsequences<CreateTicket>(tx);
+    case ttTRUST_SET:       return invoke_calculateConsequences<SetTrust>(tx);
+    case ttAMENDMENT:
+    case ttFEE:
+        // fall through to default
+    default:
+        assert(false);
+        return { TxConsequences::blocker, Transactor::calculateFeePaid(tx),
+            beast::zero };
+    }
+}
+
 static
 std::pair<TER, bool>
 invoke_apply (ApplyContext& ctx)
@@ -243,6 +284,17 @@ calculateBaseFee(Application& app, ReadView const& view,
             tapNONE, j);
 
     return invoke_calculateBaseFee(ctx);
+}
+
+TxConsequences
+calculateConsequences(PreflightResult const& preflightResult)
+{
+    assert(preflightResult.ter == tesSUCCESS);
+    if (preflightResult.ter != tesSUCCESS)
+        return{ TxConsequences::blocker,
+            Transactor::calculateFeePaid(preflightResult.tx),
+                beast::zero };
+    return invoke_calculateConsequences(preflightResult.tx);
 }
 
 std::pair<TER, bool>

@@ -96,8 +96,6 @@ public:
     }
 
 
-    Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits) const;
-
     void setClusterFee (std::uint32_t fee)
     {
         ScopedLockType sl (mLock);

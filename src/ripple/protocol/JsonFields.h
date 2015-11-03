@@ -43,6 +43,7 @@ JSS ( DeliverMin );                 // in: TransactionSign
 JSS ( Fee );                        // in/out: TransactionSign; field.
 JSS ( Flags );                      // in/out: TransactionSign; field.
 JSS ( Invalid );                    //
+JSS ( LastLedgerSequence );         // in: TransactionSign; field
 JSS ( LimitAmount );                // field.
 JSS ( OfferSequence );              // field.
 JSS ( Paths );                      // in/out: TransactionSign
@@ -231,6 +232,9 @@ JSS ( load );                       // out: NetworkOPs, PeerImp
 JSS ( load_base );                  // out: NetworkOPs
 JSS ( load_factor );                // out: NetworkOPs
 JSS ( load_factor_cluster );        // out: NetworkOPs
+JSS ( load_factor_fee_escalation ); // out: NetworkOPs
+JSS ( load_factor_fee_queue );      // out: NetworkOPs
+JSS ( load_factor_fee_reference );  // out: NetworkOPs
 JSS ( load_factor_local );          // out: NetworkOPs
 JSS ( load_factor_net );            // out: NetworkOPs
 JSS ( load_fee );                   // out: LoadFeeTrackImp
