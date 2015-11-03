@@ -138,7 +138,7 @@ ConsensusImp::storeProposal (
 {
     auto& props = storedProposals_[peerPublic.getNodeID ()];
 
-    if (props.size () >= (unsigned) (getLastCloseProposers () + 10))
+    if (props.size () >= 10)
         props.pop_front ();
 
     props.push_back (proposal);

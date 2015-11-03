@@ -1489,6 +1489,11 @@ void NetworkOPsImp::processTrustedProposal (
 
         bool relay = true;
 
+        if (mConsensus)
+            mConsensus->storeProposal (proposal, nodePublic);
+        else
+            m_journal.warning << "Unable to store proposal";
+
         if (!haveConsensusObject ())
         {
             m_journal.info << "Received proposal outside consensus window";
@@ -1496,17 +1501,15 @@ void NetworkOPsImp::processTrustedProposal (
             if (mMode == omFULL)
                 relay = false;
         }
-        else
+        else if (mLedgerConsensus->getLCL () == proposal->getPrevLedger ())
         {
-            mConsensus->storeProposal (proposal, nodePublic);
-
-            if (mLedgerConsensus->getLCL () == proposal->getPrevLedger ())
-            {
-                relay = mLedgerConsensus->peerPosition (proposal);
-                m_journal.trace
-                    << "Proposal processing finished, relay=" << relay;
-            }
+            relay = mLedgerConsensus->peerPosition (proposal);
+            m_journal.trace
+                << "Proposal processing finished, relay=" << relay;
         }
+        else
+            m_journal.debug << "Got proposal for " << proposal->getPrevLedger ()
+                << " but we are on " << mLedgerConsensus->getLCL();
 
         if (relay)
             app_.overlay().relay(*set, proposal->getSuppressionID());
