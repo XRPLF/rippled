@@ -300,6 +300,8 @@ LedgerConsensusImp::LedgerConsensusImp (
         // update the network status table as to whether we're
         // proposing/validating
         consensus_.setProposing (mProposing, mValidating);
+
+    playbackProposals ();
 }
 
 Json::Value LedgerConsensusImp::getJson (bool full)
@@ -971,8 +973,6 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
            consensus_.takePosition (mPreviousLedger->info().seq, set);
 
         assert (set->getHash () == mOurPosition->getCurrentHash ());
-        // these are now obsolete
-        consensus_.peekStoredProposals ().clear ();
     }
 
     std::uint32_t closeTime = mOurPosition->getCloseTime ();
