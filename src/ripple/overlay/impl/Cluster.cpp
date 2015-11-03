@@ -49,7 +49,7 @@ Cluster::member (RippleAddress const& identity)
 }
 
 std::size_t
-Cluster::size()
+Cluster::size() const
 {
     std::lock_guard<std::mutex> _(lock_);
     return nodes_.size();
@@ -86,7 +86,7 @@ Cluster::update (
 
 void
 Cluster::for_each (
-    std::function<void(ClusterNode const&)> func)
+    std::function<void(ClusterNode const&)> func) const
 {
     std::lock_guard<std::mutex> _(lock_);
     for (auto const& ni : nodes_)

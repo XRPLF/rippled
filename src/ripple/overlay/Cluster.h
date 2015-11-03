@@ -68,8 +68,8 @@ private:
     };
 
     std::set<ClusterNode, Comparator> nodes_;
-    std::mutex lock_;
-    beast::Journal j_;
+    std::mutex mutable lock_;
+    beast::Journal mutable j_;
 
 public:
     Cluster (beast::Journal j);
@@ -84,7 +84,7 @@ public:
 
     /** The number of nodes in the cluster list. */
     std::size_t
-    size();
+    size() const;
 
     /** Store information about the state of a cluster node.
         @param identity The node's public identity
@@ -104,7 +104,7 @@ public:
     */
     void
     for_each (
-        std::function<void(ClusterNode const&)> func);
+        std::function<void(ClusterNode const&)> func) const;
 };
 
 std::unique_ptr<Cluster>
