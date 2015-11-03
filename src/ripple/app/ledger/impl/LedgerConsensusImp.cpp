@@ -745,14 +745,17 @@ void LedgerConsensusImp::statePreClose ()
     // This ledger is open. This computes how long since last ledger closed
     int sinceClose;
     {
-        bool previousCloseCorrect = mHaveCorrectLCL && getCloseAgree (mPreviousLedger->info())
-            && (mPreviousLedger->info().closeTime != (mPreviousLedger->info().parentCloseTime + 1));
+        bool previousCloseCorrect = mHaveCorrectLCL
+            && getCloseAgree (mPreviousLedger->info())
+            && (mPreviousLedger->info().closeTime !=
+                (mPreviousLedger->info().parentCloseTime + 1));
 
-        std::uint32_t closeTime = previousCloseCorrect
+        auto closeTime = previousCloseCorrect
             ? mPreviousLedger->info().closeTime // use consensus timing
             : consensus_.getLastCloseTime(); // use the time we saw
 
-        std::uint32_t now = app_.timeKeeper().closeTime().time_since_epoch().count();
+        auto now =
+            app_.timeKeeper().closeTime().time_since_epoch().count();
         if (now >= closeTime)
             sinceClose = static_cast<int> (1000 * (now - closeTime));
         else
@@ -975,7 +978,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         assert (set->getHash () == mOurPosition->getCurrentHash ());
     }
 
-    std::uint32_t closeTime = mOurPosition->getCloseTime ();
+    auto  closeTime = mOurPosition->getCloseTime ();
     bool closeTimeCorrect;
 
     auto replay = ledgerMaster_.releaseReplay();
@@ -1630,7 +1633,7 @@ void LedgerConsensusImp::updateOurPositions ()
             << mPeerPositions.size () << " nw:" << neededWeight
             << " thrV:" << threshVote << " thrC:" << threshConsensus;
 
-        for (auto const it : closeTimes)
+        for (auto const& it : closeTimes)
         {
             JLOG (j_.debug) << "CCTime: seq "
                 << mPreviousLedger->info().seq + 1 << ": "

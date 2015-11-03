@@ -338,7 +338,7 @@ private:
     hash_map<uint256, std::shared_ptr <DisputedTx>> mDisputes;
     hash_set<uint256> mCompares;
 
-    // Close time estimates
+    // Close time estimates, keep ordered for predictable traverse
     std::map<std::uint32_t, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process
