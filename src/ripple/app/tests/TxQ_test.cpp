@@ -23,6 +23,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/TestSuite.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/test/jtx.h>
@@ -69,21 +70,20 @@ class TxQ_test : public TestSuite
             // in the open ledger _will_ make it into the closed
             // ledger, but for metrics that's probably good enough.
             env.app().getTxQ().processValidatedLedger(
-                env.app(), *view, timeLeap, tapENABLE_TESTING);
+                env.app(), *view, timeLeap);
         }
 
         env.close(
             [&](OpenView& view, beast::Journal j)
             {
                 // Stuff the ledger with transactions from the queue.
-                return env.app().getTxQ().accept(env.app(), view,
-                    tapENABLE_TESTING);
+                return env.app().getTxQ().accept(env.app(), view);
             }
             );
     }
 
     void
-    submit(jtx::Env& env, jtx::JTx const& jt)
+    submit(jtx::Env& env, jtx::JTx const& jt, ApplyFlags flags = tapENABLE_TESTING)
     {
         // Env checks this, but this test shouldn't
         // generate any malformed txns.
@@ -97,7 +97,7 @@ class TxQ_test : public TestSuite
             {
                 std::tie(ter, didApply) =
                     env.app().getTxQ().apply(env.app(),
-                        view, jt.stx, tapENABLE_TESTING,
+                        view, jt.stx, flags,
                             env.journal);
 
                 return didApply;
@@ -117,7 +117,8 @@ class TxQ_test : public TestSuite
         section.set("ledgers_in_queue", "2");
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
-        section.set("retry_sequence_percent", "125");
+        section.set("retry_sequence_percent", "25");
+        p->features.insert(feature("FeeEscalation"));
         return std::move(p);
     }
 
@@ -155,7 +156,8 @@ public:
             env.jt(noop(alice), queued));
         checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
 
-        // Alice - Alice is already in the queue, so can't hold.
+        // Alice - Alice is already in the queue and we're not
+        // bumping the fee up high enough, so can't hold.
         submit(env,
             env.jt(noop(alice), seq(env.seq(alice) + 1),
                 ter(telINSUF_FEE_P)));
@@ -166,12 +168,17 @@ public:
             {
                 return fee(txq.openLedgerFee(*env.open()));
             };
+        /*
+        With multi-transaction support, this txn will get
+        queued, which screws up the rest of the test.
+
         // Alice's next transaction -
         // fails because the item in the TxQ hasn't applied.
         submit(env,
             env.jt(noop(alice), openLedgerFee(),
                 seq(env.seq(alice) + 1), ter(terPRE_SEQ)));
         checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
+        */
 
         // Bob with really high fee - applies
         submit(env,
@@ -445,6 +452,7 @@ public:
 
         auto alice = Account("alice");
         auto bob = Account("bob");
+        auto carol = Account("carol");
 
         auto queued = ter(terQUEUED);
 
@@ -452,7 +460,7 @@ public:
 
         // Fund these accounts and close the ledger without
         // involving the queue, so that stats aren't affected.
-        env.fund(XRP(1000), noripple(alice, bob));
+        env.fund(XRP(1000), noripple(alice, bob, carol));
         env.close();
 
         // Fill the ledger
@@ -473,17 +481,83 @@ public:
             env.jt(regkey(alice, bob), fee(0)));
         checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
 
+        // Close out this ledger so we can get a maxsize
+        close(env, 4);
+        checkMetrics(env, 0, 8, 1, 4, 256, 500);
+
+        for (int i = 0; i < 4; ++i)
+            submit(env, env.jt(noop(bob)));
+        checkMetrics(env, 0, 8, 5, 4, 256, 500);
+
+        auto feeBob = 30;
+        auto seqBob = env.seq(bob);
+        for (int i = 0; i < 4; ++i)
+        {
+            submit(env,
+                env.jt(noop(bob), fee(feeBob),
+                    seq(seqBob), queued));
+            feeBob = (feeBob + 1) * 125 / 100;
+            ++seqBob;
+        }
+        checkMetrics(env, 4, 8, 5, 4, 256, 500);
+
         // This transaction also has an "infinite" fee level,
-        // but since bob has a txn in the queue, and multiple
-        // transactions aren't yet supported, this one fails
-        // with terPRE_SEQ (notably, *not* telINSUF_FEE_P).
-        // This implicitly relies on preclaim succeeding and
-        // canBeHeld failing under the hood.
+        // but since bob has txns in the queue, it gets queued.
         submit(env,
             env.jt(regkey(bob, alice), fee(0),
-                seq(env.seq(bob) + 1), ter(terPRE_SEQ)));
-        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+                seq(seqBob), queued));
+        ++seqBob;
+        checkMetrics(env, 5, 8, 5, 4, 256, 500);
 
+        // Unfortunately bob can't get any more txns into
+        // the queue, because off the multiTxnPercent.
+        // TANSTAAFL
+        submit(env,
+            env.jt(noop(bob), fee(XRP(100)),
+                seq(seqBob), ter(telINSUF_FEE_P)));
+
+        // Let carol overfill the queue, and kick out all
+        // of the transactions, except bob's "infinite".
+        auto feeCarol = feeBob;
+        auto seqCarol = env.seq(carol);
+        for (int i = 0; i < 7; ++i)
+        {
+            submit(env,
+                env.jt(noop(carol), fee(feeCarol),
+                    seq(seqCarol), queued));
+            feeCarol = (feeCarol + 1) * 125 / 100;
+            ++seqCarol;
+        }
+        checkMetrics(env, 8, 8, 5, 4, feeBob * 256 / 10 + 1, 500);
+
+        // Carol can not take that 8th entry away from Bob.
+        submit(env,
+            env.jt(noop(carol), fee(feeCarol),
+                seq(seqCarol), ter(terPRE_SEQ)));
+
+        close(env, 5);
+        // Ironically, though, bob's transaction is stuck
+        // because of the missing sequence numbers now.
+        checkMetrics(env, 2, 10, 6, 5, 256, 500);
+
+        close(env, 6);
+        auto lastMedian = 3520;
+        checkMetrics(env, 1, 12, 1, 6, 256, lastMedian);
+
+        // Fill in the missing seqs
+        for (int i = 0; i < 4; ++i)
+        {
+            submit(env,
+                env.jt(noop(bob)));
+        }
+        submit(env,
+            env.jt(noop(bob), ter(telINSUF_FEE_P)));
+        checkMetrics(env, 1, 12, 5, 6, 256, lastMedian);
+
+        close(env, 5);
+        close(env, 1);
+        lastMedian = 500;
+        checkMetrics(env, 0, 12, 0, 6, 256, lastMedian);
     }
 
     void testPreclaimFailures()
@@ -548,7 +622,321 @@ public:
         // Alice's queued transaction failed in TxQ::accept
         // with tefPAST_SEQ
         checkMetrics(env, 0, 8, 0, 4, 256, 500);
+    }
 
+    void testMultiTxnPerAccount()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig());
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(3);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        auto charlie = Account("charlie");
+        auto daria = Account("daria");
+
+        auto queued = ter(terQUEUED);
+
+        expectEquals(env.open()->fees().base, 10);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 3, 256, lastMedian);
+
+        // Create several accounts while the fee is cheap so they all apply.
+        env.fund(XRP(50000), noripple(alice, bob, charlie, daria));
+        checkMetrics(env, 0, boost::none, 4, 3, 256, lastMedian);
+
+        // Alice - price starts exploding: held
+        submit(env,
+            env.jt(noop(alice), queued));
+        checkMetrics(env, 1, boost::none, 4, 3, 256, lastMedian);
+
+        // Alice - try to queue a second transaction, but don't
+        // set the fee high enough to overcome the multiTxnPercent.
+        submit(env,
+            env.jt(noop(alice), seq(env.seq(alice) + 1), fee(12),
+                ter(telINSUF_FEE_P)));
+        checkMetrics(env, 1, boost::none, 4, 3, 256, lastMedian);
+
+        // Alice - try to queue a second transaction, but leave a gap
+        submit(env,
+            env.jt(noop(alice), seq(env.seq(alice) + 2), fee(100),
+                ter(terPRE_SEQ)));
+        checkMetrics(env, 1, boost::none, 4, 3, 256, lastMedian);
+
+        // Alice - queue a second transaction. Yay.
+        submit(env,
+            env.jt(noop(alice), seq(env.seq(alice) + 1), fee(13),
+                queued));
+        checkMetrics(env, 2, boost::none, 4, 3, 256, lastMedian);
+
+        // Alice - try to queue a third transaction, but don't
+        // set fee high enough
+        submit(env,
+            env.jt(noop(alice), seq(env.seq(alice) + 2), fee(16),
+                ter(telINSUF_FEE_P)));
+        checkMetrics(env, 2, boost::none, 4, 3, 256, lastMedian);
+
+        // Alice - queue a third transaction. Yay.
+        submit(env,
+            env.jt(noop(alice), seq(env.seq(alice) + 2), fee(17),
+                queued));
+        checkMetrics(env, 3, boost::none, 4, 3, 256, lastMedian);
+
+        // Bob - queue a transaction
+        submit(env,
+            env.jt(noop(bob), queued));
+        checkMetrics(env, 4, boost::none, 4, 3, 256, lastMedian);
+
+        // Bob - queue a second transaction
+        submit(env,
+            env.jt(noop(bob), seq(env.seq(bob) + 1), fee(50),
+                queued));
+        checkMetrics(env, 5, boost::none, 4, 3, 256, lastMedian);
+
+        // Charlie - queue a transaction, with a higher fee
+        // than default
+        submit(env,
+            env.jt(noop(charlie), fee(15), queued));
+        checkMetrics(env, 6, boost::none, 4, 3, 256, lastMedian);
+
+        auto aliceSeq = env.seq(alice);
+        auto bobSeq = env.seq(bob);
+        auto charlieSeq = env.seq(charlie);
+
+        close(env, 4);
+        // Verify that all of but one of the queued transactions
+        // got applied.
+        lastMedian = 500;
+        checkMetrics(env, 1, 8, 5, 4, 256, lastMedian);
+
+        // Verify that the stuck transaction is Bob's second.
+        // Even though it had a higher fee than Alice's and
+        // Charlie's, it didn't get attempted until the fee escalated.
+        expect(env.seq(alice) == aliceSeq + 3);
+        expect(env.seq(bob) == bobSeq + 1);
+        expect(env.seq(charlie) == charlieSeq + 1);
+
+        // Alice - fill up the queue
+        std::int64_t aliceFee = 10;
+        aliceSeq = env.seq(alice);
+        auto lastLedgerSeq = env.closed()->info().seq + 2;
+        for (auto i = 0; i < 7; i++)
+        {
+            submit(env,
+                env.jt(noop(alice), seq(aliceSeq),
+                    json(jss::LastLedgerSequence, lastLedgerSeq + i),
+                        fee(aliceFee), queued));
+            aliceFee = (aliceFee + 1) * 125 / 100;
+            ++aliceSeq;
+        }
+        checkMetrics(env, 8, 8, 5, 4, 257, lastMedian);
+
+        // Alice attempts to add another item to the queue,
+        // but you can't force your own earlier txn off the
+        // queue.
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), ter(terPRE_SEQ)));
+        checkMetrics(env, 8, 8, 5, 4, 257, lastMedian);
+
+        // Charlie - add another item to the queue, which
+        // causes Alice's cheap txn to drop
+        submit(env,
+            env.jt(noop(charlie), fee(30), queued));
+        checkMetrics(env, 8, 8, 5, 4, 333, lastMedian);
+
+        // Alice - now attempt to add one more to the queue,
+        // which fails because the earliest txn is gone, so
+        // there is no complete chain, and rippled protects
+        // itself against wasting more resources.
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), ter(terPRE_SEQ)));
+        aliceFee = (aliceFee + 1) * 125 / 100;
+        ++aliceSeq;
+        checkMetrics(env, 8, 8, 5, 4, 333, lastMedian);
+
+        close(env, 5);
+        lastMedian = 500;
+        // Alice's transactions stayed in the queue
+        checkMetrics(env, 6, 10, 2, 5, 256, lastMedian);
+
+        // Since we lost a transaction, make a new one.
+        // (We could have replayed.)
+        // Note that there is nothing special about this
+        // txn because it uses the "next" sequence number,
+        // and it succeeds because the ledger is open.
+        submit(env,
+            env.jt(noop(alice)));
+        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+
+        // Try to replace a middle item in the queue
+        // without enough fee.
+        aliceSeq = env.seq(alice) + 2;
+        aliceFee = 27;
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), ter(telINSUF_FEE_P)));
+
+        // Replace a middle item from the queue successfully
+        ++aliceFee;
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), queued));
+        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+
+        // Try to replace the next item in the queue
+        // without enough fee. This time, we also pay
+        // the invalidation penalty.
+        ++aliceSeq;
+        aliceFee = aliceFee * 125 * 125 / (100 * 100);
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), ter(telINSUF_FEE_P)));
+
+        // Replace a middle item from the queue successfully
+        ++aliceFee;
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), queued));
+        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+
+        // Replace that item again with a transaction that will
+        // bankrupt Alice
+        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops()
+            - (14 + aliceFee);
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq),
+                fee(aliceFee), queued));
+        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+
+        // Alice - Attempt to queue a last transaction, but it
+        // fails because the intermediate transactions can't
+        // apply to the test view.
+        submit(env,
+            env.jt(noop(alice), seq(env.seq(alice) + 6),
+                fee(72), ter(terPRE_SEQ)));
+        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+
+        close(env, 3);
+        // Some of Alice's transactions applied, but the others
+        // get terINSUF_FEE_B and are stuck until Alice
+        // gets funded again.
+        lastMedian = 768;
+        checkMetrics(env, 2, 10, 4, 5, 256, lastMedian);
+
+        close(env, 4);
+        lastMedian = 576;
+        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+
+        close(env, 0);
+        lastMedian = 500;
+        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+
+        close(env, 0);
+        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+
+        close(env, 0);
+        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+
+        close(env, 0);
+        checkMetrics(env, 1, 10, 0, 5, 256, lastMedian);
+
+        close(env, 0);
+        checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
+
+        // Alice is still broke
+        submit(env,
+            env.jt(noop(alice), ter(terINSUF_FEE_B)));
+        checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
+    }
+
+    void testDisabled()
+    {
+        using namespace jtx;
+
+        Env env(*this);
+        env.disable_testing();
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(1);
+
+        auto alice = Account("alice");
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 1, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(alice));
+        checkMetrics(env, 0, boost::none, 1, 1, 256, lastMedian);
+
+        // If the queue was enabled, most of these would
+        // return terQUEUED. (The required fee for the last
+        // would be 10 * 500 * 11^2 = 605,000.)
+        for (int i = 0; i < 10; ++i)
+            submit(env,
+                env.jt(noop(alice), fee(30)), tapNONE);
+
+        // Either way, we get metrics.
+        checkMetrics(env, 0, boost::none, 11, 1, 256, lastMedian);
+
+        close(env, 11);
+        // If the queue was enabled, it would have a limit, and the
+        // lastMedian would be 256*3 = 768.
+        checkMetrics(env, 0, boost::none, 0, 1, 256, lastMedian);
+    }
+
+    void testAcctTxnID()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig());
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(1);
+
+        auto alice = Account("alice");
+
+        auto queued = ter(terQUEUED);
+
+        expectEquals(env.open()->fees().base, 10);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 1, 256, lastMedian);
+
+        // Create several accounts while the fee is cheap so they all apply.
+        env.fund(XRP(50000), noripple(alice));
+        checkMetrics(env, 0, boost::none, 1, 1, 256, lastMedian);
+
+        submit(env,
+            env.jt(fset(alice, asfAccountTxnID)));
+        checkMetrics(env, 0, boost::none, 2, 1, 256, lastMedian);
+
+        // Immediately after the fset, the sfAccountTxnID field
+        // is still uninitialized, so preflight succeeds here,
+        // and this txn fails because it can't be stored in the queue.
+        submit(env,
+            env.jt(noop(alice), json(R"({"AccountTxnID": "0"})"),
+                ter(telINSUF_FEE_P)));
+
+        close(env, 2);
+        checkMetrics(env, 0, 4, 0, 2, 256, lastMedian);
+
+        // Now it succeeds.
+        submit(env,
+            env.jt(noop(alice), json(R"({"AccountTxnID": "0"})")));
+        checkMetrics(env, 0, 4, 1, 2, 256, lastMedian);
+        
+        submit(env,
+            env.jt(noop(alice)));
+        checkMetrics(env, 0, 4, 2, 2, 256, lastMedian);
+
+        submit(env,
+            env.jt(noop(alice), json(R"({"AccountTxnID": "0"})"),
+                ter(tefWRONG_PRIOR)));
     }
 
     void run()
@@ -558,6 +946,9 @@ public:
         testZeroFeeTxn();
         testPreclaimFailures();
         testQueuedFailure();
+        testMultiTxnPerAccount();
+        testDisabled();
+        testAcctTxnID();
     }
 };
 

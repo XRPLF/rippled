@@ -141,7 +141,9 @@ public:
     struct Setup
     {
         std::size_t ledgersInQueue = 20;
-        std::uint32_t retrySequencePercent = 125;
+        std::uint32_t retrySequencePercent = 25;
+        std::uint32_t multiTxnPercent = 25;
+        std::uint32_t invalidationPenaltyPercent = 25;
         bool standAlone = false;
     };
 
@@ -214,8 +216,7 @@ public:
         @return Whether any txs were added to the view.
     */
     bool
-    accept(Application& app, OpenView& view,
-        ApplyFlags flags = tapNONE);
+    accept(Application& app, OpenView& view);
 
     /**
         We have a new last validated ledger, update and clean up the
@@ -233,8 +234,7 @@ public:
     */
     void
     processValidatedLedger(Application& app,
-        OpenView const& view, bool timeLeap,
-            ApplyFlags flags = tapNONE);
+        OpenView const& view, bool timeLeap);
 
     /** Used by tests only.
     */
@@ -268,6 +268,12 @@ private:
 
         std::shared_ptr<STTx const> txn;
 
+        // Defaults to empty. Only set when test applying
+        // multiple transactions per account. If set, this
+        // candidate HAS BEEN applied to the view.
+        std::shared_ptr<OpenView> view;
+        std::uint32_t invalidations;
+
         uint64_t const feeLevel;
         TxID const txID;
         boost::optional<TxID> priorTxID;
@@ -286,6 +292,9 @@ private:
             TxID const& txID, std::uint64_t feeLevel,
                 ApplyFlags const flags,
                     PreflightResult const& pfresult);
+
+        std::pair<TER, bool>
+        apply(Application& app, OpenView& view);
     };
 
     class GreaterFee
@@ -300,11 +309,11 @@ private:
     class TxQAccount
     {
     public:
+        using TxMap = std::map <TxSeq, CandidateTxn>;
 
         AccountID const account;
-        uint64_t totalFees;
         // Sequence number will be used as the key.
-        std::map <TxSeq, CandidateTxn> transactions;
+        TxMap transactions;
 
     public:
         explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
@@ -328,10 +337,25 @@ private:
         bool
         removeCandidate(TxSeq const& sequence);
 
-        CandidateTxn const*
-        findCandidateAt(TxSeq const& sequence) const;
+        void
+        invalidate(TxMap::iterator);
+
     };
 
+    struct MultiTxn
+    {
+        TxQAccount::TxMap::iterator nextAcctIter;
+        TxQAccount::TxMap::iterator prevTxnIter;
+        std::shared_ptr<OpenView> workingView;
+
+        MultiTxn(TxQAccount::TxMap::iterator next,
+            TxQAccount::TxMap::iterator prev,
+            std::shared_ptr<OpenView> view = {})
+            : nextAcctIter(next)
+            , prevTxnIter(prev)
+            , workingView(view)
+        { }
+    };
 
     using FeeHook = boost::intrusive::member_hook
         <CandidateTxn, boost::intrusive::set_member_hook<>,
@@ -361,7 +385,12 @@ private:
 
     bool canBeHeld(std::shared_ptr<STTx const> const&);
 
+    // Erase and return the next entry in byFee_ (lower fee level)
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
+    // Erase and return the next entry for the account (if fee level
+    // is higher), or next entry in byFee_ (lower fee level).
+    // Used to get the next "applyable" candidate for accept().
+    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
 
 };
 
