@@ -1551,8 +1551,10 @@ void LedgerConsensusImp::updateOurPositions ()
         else
         {
             // proposal is still fresh
-            ++closeTimes[roundCloseTime (
-                it->second->getCloseTime (), mCloseResolution)];
+            ++closeTimes[std::max (
+                roundCloseTime (it->second->getCloseTime (),
+                    mCloseResolution),
+                mPreviousLedger->info().closeTime + 1)];
             ++it;
         }
     }
@@ -1604,16 +1606,20 @@ void LedgerConsensusImp::updateOurPositions ()
     {
         // no other times
         mHaveCloseTimeConsensus = true;
-        closeTime = roundCloseTime (
-            mOurPosition->getCloseTime (), mCloseResolution);
+        closeTime = std::max(
+            roundCloseTime (mOurPosition->getCloseTime (),
+                mCloseResolution),
+            mPreviousLedger->info().closeTime + 1);
     }
     else
     {
         int participants = mPeerPositions.size ();
         if (mProposing)
         {
-            ++closeTimes[roundCloseTime (
-                mOurPosition->getCloseTime (), mCloseResolution)];
+            ++closeTimes[std::max (
+                roundCloseTime (mOurPosition->getCloseTime (),
+                    mCloseResolution),
+                mPreviousLedger->info().closeTime + 1)];
             ++participants;
         }
 
@@ -1663,8 +1669,7 @@ void LedgerConsensusImp::updateOurPositions ()
     }
 
     if (!changes &&
-            ((closeTime != roundCloseTime (
-                mOurPosition->getCloseTime (), mCloseResolution))
+            ((closeTime != mOurPosition->getCloseTime ())
             || mOurPosition->isStale (ourCutoff)))
     {
         // close time changed or our position is stale
