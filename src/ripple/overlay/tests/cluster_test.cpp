@@ -29,14 +29,14 @@ class cluster_test : public ripple::TestSuite
 {
 public:
     std::unique_ptr<Cluster>
-    make_Cluster (std::vector<RippleAddress> nodes)
+    make_Cluster (std::vector<RippleAddress> const& nodes)
     {
         auto cluster = std::make_unique <Cluster> (beast::Journal ());
 
         for (auto const& n : nodes)
             cluster->update (n, n.humanNodePublic());
 
-        return std::move(cluster);
+        return cluster;
     }
 
     RippleAddress

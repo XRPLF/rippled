@@ -48,6 +48,13 @@ Cluster::member (RippleAddress const& identity)
     return iter->name ();
 }
 
+std::size_t
+Cluster::size()
+{
+    std::lock_guard<std::mutex> _(lock_);
+    return nodes_.size();
+}
+
 bool
 Cluster::update (
     RippleAddress const& identity,
@@ -57,8 +64,8 @@ Cluster::update (
 {
     std::lock_guard<std::mutex> _(lock_);
 
-    // NIKB FIXME: We can't use auto here yet due to an
-    //             issue with libstdc++.
+    // We can't use auto here yet due to the libstdc++ issue
+    // described at https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68190
     std::set<ClusterNode, Comparator>::iterator iter =
         nodes_.find (identity);
 
@@ -130,7 +137,7 @@ make_Cluster (Config const& config, beast::Journal j)
         cluster->update(nid, match[2]);
     }
 
-    return std::move(cluster);
+    return cluster;
 }
 
 } // ripple

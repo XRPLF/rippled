@@ -82,7 +82,11 @@ public:
     boost::optional<std::string>
     member (RippleAddress const& node);
 
-    /** Creates of updates a cluster node.
+    /** The number of nodes in the cluster list. */
+    std::size_t
+    size();
+
+    /** Store information about the state of a cluster node.
         @param identity The node's public identity
         @param name The node's name (may be empty)
         @return true if we updated our information
@@ -94,7 +98,10 @@ public:
         std::uint32_t loadFee = 0,
         std::uint32_t reportTime = 0);
 
-    /** Invokes the callback once for every cluster node */
+    /** Invokes the callback once for every cluster node.
+        @note You are not allowed to call `update` from
+              within the callback.
+    */
     void
     for_each (
         std::function<void(ClusterNode const&)> func);

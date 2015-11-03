@@ -945,7 +945,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
     auto const thresh = app_.timeKeeper().now().time_since_epoch().count() - 90;
     std::uint32_t clusterFee = 0;
 
-    std::vector<std::uint32_t> fees;
+    std::vector<std::uint32_t> fees (app_.cluster().size());
 
     app_.cluster().for_each(
         [&fees,thresh](ClusterNode const& status)
@@ -956,8 +956,12 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 
     if (!fees.empty())
     {
-        std::sort (fees.begin(), fees.end());
-        clusterFee = fees[fees.size() / 2];
+        auto const index = fees.size() / 2;
+        std::nth_element (
+            fees.begin(),
+            fees.begin () + index,
+            fees.end());
+        clusterFee = fees[index];
     }
 
     app_.getFeeTrack().setClusterFee(clusterFee);
