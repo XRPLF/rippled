@@ -1384,6 +1384,9 @@ void NetworkOPsImp::processTrustedProposal (
 
         bool relay = true;
 
+        if (mConsensus)
+            mConsensus->storeProposal (proposal, nodePublic);
+
         if (!haveConsensusObject ())
         {
             m_journal.info << "Received proposal outside consensus window";
@@ -1393,8 +1396,6 @@ void NetworkOPsImp::processTrustedProposal (
         }
         else
         {
-            mConsensus->storeProposal (proposal, nodePublic);
-
             if (mLedgerConsensus->getLCL () == proposal->getPrevLedger ())
             {
                 relay = mLedgerConsensus->peerPosition (proposal);
