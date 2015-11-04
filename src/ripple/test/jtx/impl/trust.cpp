@@ -29,7 +29,8 @@ namespace jtx {
 
 Json::Value
 trust (Account const& account,
-    STAmount const& amount)
+    STAmount const& amount,
+        std::uint32_t flags)
 {
     if (isXRP(amount))
         Throw<std::runtime_error> (
@@ -38,7 +39,7 @@ trust (Account const& account,
     jv[jss::Account] = account.human();
     jv[jss::LimitAmount] = amount.getJson(0);
     jv[jss::TransactionType] = "TrustSet";
-    jv[jss::Flags] = 0;    // tfClearNoRipple;
+    jv[jss::Flags] = flags;
     return jv;
 }
 

@@ -506,7 +506,8 @@ public:
     /** @{ */
     void
     trust (STAmount const& amount,
-        Account const& account);
+        Account const& account,
+            std::uint32_t flags=0);
 
     template<class... Accounts>
     void
