@@ -84,7 +84,8 @@ class Taker_test : public beast::unit_test::suite
         cross (Amounts offer1, Quality quality1, Amounts offer2, Quality quality2)
         {
             /* check if composed quality should be rejected */
-            Quality const quality (composed_quality (quality1, quality2));
+            Quality const quality (composed_quality (
+                quality1, quality2, STAmountCalcSwitchovers{false}));
 
             if (reject (quality))
                 return std::make_pair(

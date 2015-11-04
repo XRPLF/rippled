@@ -135,16 +135,21 @@ void rippleLiquidity (
         // If the next rate is at least as good as the current rate, process.
         if (!uRateMax || uRate <= uRateMax)
         {
+            STAmountCalcSwitchovers amountCalcSwitchovers (
+                rippleCalc.view.info ().parentCloseTime);
+
             auto currency = saCur.getCurrency ();
             auto uCurIssuerID = saCur.getIssuer ();
 
             // current actual = current request * (quality out / quality in).
             auto numerator = mulRound (
-                saCur, uQualityOut, {currency, uCurIssuerID}, true);
+                saCur, uQualityOut, {currency, uCurIssuerID}, true,
+                amountCalcSwitchovers);
             // True means "round up" to get best flow.
 
             STAmount saCurIn = divRound (
-                numerator, uQualityIn, {currency, uCurIssuerID}, true);
+                numerator, uQualityIn, {currency, uCurIssuerID}, true,
+                amountCalcSwitchovers);
 
             JLOG (rippleCalc.j_.trace)
                 << "rippleLiquidity:"
@@ -173,11 +178,13 @@ void rippleLiquidity (
 
                 Issue issue{currency, uCurIssuerID};
                 auto numerator = mulRound (
-                    saPrv, uQualityIn, issue, true);
+                    saPrv, uQualityIn, issue, true,
+                    amountCalcSwitchovers);
                 // A part of current. All of previous. (Cur is the driver
                 // variable.)
                 STAmount saCurOut = divRound (
-                    numerator, uQualityOut, issue, true);
+                    numerator, uQualityOut, issue, true,
+                    amountCalcSwitchovers);
 
                 JLOG (rippleCalc.j_.trace)
                     << "rippleLiquidity:4: saCurReq=" << saCurReq;

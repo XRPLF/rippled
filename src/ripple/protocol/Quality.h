@@ -131,14 +131,16 @@ public:
         to prevent money creation.
     */
     Amounts
-    ceil_in (Amounts const& amount, STAmount const& limit) const;
+    ceil_in (Amounts const& amount, STAmount const& limit,
+             STAmountCalcSwitchovers const& switchovers) const;
 
     /** Returns the scaled amount with out capped.
         Math is avoided if the result is exact. The input is clamped
         to prevent money creation.
     */
     Amounts
-    ceil_out (Amounts const& amount, STAmount const& limit) const;
+    ceil_out (Amounts const& amount, STAmount const& limit,
+              STAmountCalcSwitchovers const& switchovers) const;
 
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
@@ -179,7 +181,8 @@ public:
     @param rhs  The second leg of the path: intermediate to output.
 */
 Quality
-composed_quality (Quality const& lhs, Quality const& rhs);
+composed_quality (Quality const& lhs, Quality const& rhs,
+                  STAmountCalcSwitchovers const& switchovers);
 
 }
 

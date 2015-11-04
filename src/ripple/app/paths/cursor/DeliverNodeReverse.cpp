@@ -59,6 +59,9 @@ TER PathCursor::deliverNodeReverseImpl (
         node().directory.restart(multiQuality_);
     }
 
+    STAmountCalcSwitchovers amountCalcSwitchovers (
+        rippleCalc_.view.info ().parentCloseTime);
+
     // Accumulation of what the previous node must deliver.
     // Possible optimization: Note this gets zeroed on each increment, ideally
     // only on first increment, then it could be a limit on the forward pass.
@@ -171,7 +174,10 @@ TER PathCursor::deliverNodeReverseImpl (
         //
         // Round down: prefer liquidity rather than microscopic fees.
         STAmount saOutPlusFees   = mulRound (
-            saOutPassAct, saOutFeeRate, saOutPassAct.issue (), false);
+            saOutPassAct, saOutFeeRate, saOutPassAct.issue (), false,
+            amountCalcSwitchovers);
+
+
         // Offer out with fees.
 
         JLOG (j_.trace)
@@ -192,7 +198,7 @@ TER PathCursor::deliverNodeReverseImpl (
             // Round up: prefer liquidity rather than microscopic fees. But,
             // limit by requested.
             auto fee = divRound (saOutPlusFees, saOutFeeRate,
-                saOutPlusFees.issue (), true);
+                saOutPlusFees.issue (), true, amountCalcSwitchovers);
             saOutPassAct = std::min (saOutPassReq, fee);
 
             JLOG (j_.trace)
@@ -204,7 +210,16 @@ TER PathCursor::deliverNodeReverseImpl (
 
         // Compute portion of input needed to cover actual output.
         auto outputFee = mulRound (
-            saOutPassAct, node().saOfrRate, node().saTakerPays.issue (), true);
+            saOutPassAct, node().saOfrRate, node().saTakerPays.issue (), true,
+            amountCalcSwitchovers);
+        if (!amountCalcSwitchovers.enableUnderflowFix () && !outputFee)
+        {
+            JLOG (j_.fatal)
+                << "underflow computing outputFee "
+                << "saOutPassAct: " << saOutPassAct
+                << " saOfrRate: " << node ().saOfrRate;
+            return telFAILED_PROCESSING;
+        }
         STAmount saInPassReq = std::min (node().saTakerPays, outputFee);
         STAmount saInPassAct;
 
@@ -269,10 +284,12 @@ TER PathCursor::deliverNodeReverseImpl (
         {
             // Adjust output to conform to limited input.
             auto outputRequirements = divRound (
-                saInPassAct, node().saOfrRate, node().saTakerGets.issue (), true);
+                saInPassAct, node ().saOfrRate, node ().saTakerGets.issue (), true,
+                amountCalcSwitchovers);
             saOutPassAct = std::min (saOutPassReq, outputRequirements);
             auto outputFees = mulRound (
-                saOutPassAct, saOutFeeRate, saOutPassAct.issue (), true);
+                saOutPassAct, saOutFeeRate, saOutPassAct.issue (), true,
+                amountCalcSwitchovers);
             saOutPlusFees   = std::min (node().saOfferFunds, outputFees);
 
             JLOG (j_.trace)
