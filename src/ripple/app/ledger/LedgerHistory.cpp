@@ -391,7 +391,7 @@ void LedgerHistory::handleMismatch (
         log_one (validLedger, (*v)->key(), "built", j_);
 }
 
-void LedgerHistory::builtLedger (Ledger::ref ledger, Json::Value&& consensus)
+void LedgerHistory::builtLedger (Ledger::ref ledger, Json::Value consensus)
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->getHash();

@@ -153,7 +153,7 @@ public:
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
     virtual void checkAccept (uint256 const& hash, std::uint32_t seq) = 0;
-    virtual void consensusBuilt (Ledger::ref ledger, Json::Value&& consensus) = 0;
+    virtual void consensusBuilt (Ledger::ref ledger, Json::Value consensus) = 0;
 
     virtual LedgerIndex getBuildingLedger () = 0;
     virtual void setBuildingLedger (LedgerIndex index) = 0;

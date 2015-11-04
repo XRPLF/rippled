@@ -83,7 +83,7 @@ public:
 
     /** Report that we have locally built a particular ledger
     */
-    void builtLedger (Ledger::ref, Json::Value &&);
+    void builtLedger (Ledger::ref, Json::Value);
 
     /** Report that we have validated a particular ledger
     */
