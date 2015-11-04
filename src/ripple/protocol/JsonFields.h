@@ -236,6 +236,7 @@ JSS ( load_factor_net );            // out: NetworkOPs
 JSS ( load_fee );                   // out: LoadFeeTrackImp
 JSS ( local );                      // out: resource/Logic.h
 JSS ( local_txs );                  // out: GetCounts
+JSS ( majority );                   // out: RPC feature
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData
@@ -412,6 +413,7 @@ JSS ( validation_key );             // out: ValidationCreate, ValidationSeed
 JSS ( validation_public_key );      // out: ValidationCreate, ValidationSeed
 JSS ( validation_quorum );          // out: NetworkOPs
 JSS ( validation_seed );            // out: ValidationCreate, ValidationSeed
+JSS ( validations );                // out: AmendmentTableImpl
 JSS ( value );                      // out: STAmount
 JSS ( version );                    // out: RPCVersion
 JSS ( vetoed );                     // out: AmendmentTableImpl

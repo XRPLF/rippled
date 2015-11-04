@@ -64,6 +64,7 @@ struct ConfigSection
 #define SECTION_VALIDATION_SEED         "validation_seed"
 #define SECTION_WEBSOCKET_PING_FREQ     "websocket_ping_frequency"
 #define SECTION_VALIDATORS              "validators"
+#define SECTION_VETO_AMENDMENTS         "veto_amendments"
 
 } // ripple
 

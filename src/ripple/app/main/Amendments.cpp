@@ -17,17 +17,32 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <string>
+#include <vector>
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/misc/Validations.cpp>
+namespace ripple {
 
-#include <ripple/app/misc/impl/AccountTxPaging.cpp>
-#include <ripple/app/misc/impl/AmendmentTable.cpp>
-#include <ripple/app/misc/impl/Transaction.cpp>
-#include <ripple/app/misc/impl/TxQ.cpp>
-#include <ripple/app/misc/impl/ValidatorList.cpp>
+namespace detail {
+
+/** Amendments that this server supports and enables by default */
+std::vector<std::string>
+preEnabledAmendments ()
+{
+    return
+    {
+    };
+}
+
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<std::string>
+supportedAmendments ()
+{
+    return
+    {
+    };
+}
+
+}
+
+}
+
