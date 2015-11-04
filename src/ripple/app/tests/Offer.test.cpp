@@ -161,11 +161,86 @@ public:
                 sendmax (USD (100)), ter (expectedResult));
         }
     }
+    void testEnforceNoRipple ()
+    {
+        testcase ("Enforce No Ripple");
+
+        using namespace jtx;
+
+        auto const gw = Account ("gateway");
+        auto const USD = gw["USD"];
+        auto const BTC = gw["BTC"];
+        auto const EUR = gw["EUR"];
+        Account const alice ("alice");
+        Account const bob ("bob");
+        Account const carol ("carol");
+        Account const dan ("dan");
+
+        {
+            // No ripple with an implied account step after an offer
+            Env env (*this);
+            auto const gw1 = Account ("gw1");
+            auto const USD1 = gw1["USD"];
+            auto const gw2 = Account ("gw2");
+            auto const USD2 = gw2["USD"];
+
+            env.fund (XRP (10000), alice, noripple (bob), carol, dan, gw1, gw2);
+            env.trust (USD1 (1000), alice, carol, dan);
+            env(trust (bob, USD1 (1000), tfSetNoRipple));
+            env.trust (USD2 (1000), alice, carol, dan);
+            env(trust (bob, USD2 (1000), tfSetNoRipple));
+
+            env (pay (gw1, dan, USD1 (50)));
+            env (pay (gw1, bob, USD1 (50)));
+            env (pay (gw2, bob, USD2 (50)));
+
+            env (offer (dan, XRP (50), USD1 (50)));
+
+            env (pay (alice, carol, USD2 (50)), path (~USD1, bob), ter(tecPATH_DRY),
+                sendmax (XRP (50)), txflags (tfNoRippleDirect));
+        }
+        {
+            // Make sure payment works with default flags
+            Env env (*this);
+            auto const gw1 = Account ("gw1");
+            auto const USD1 = gw1["USD"];
+            auto const gw2 = Account ("gw2");
+            auto const USD2 = gw2["USD"];
+
+            env.fund (XRP (10000), alice, bob, carol, dan, gw1, gw2);
+            env.trust (USD1 (1000), alice, bob, carol, dan);
+            env.trust (USD2 (1000), alice, bob, carol, dan);
+
+            env (pay (gw1, dan, USD1 (50)));
+            env (pay (gw1, bob, USD1 (50)));
+            env (pay (gw2, bob, USD2 (50)));
+
+            env (offer (dan, XRP (50), USD1 (50)));
+
+            env (pay (alice, carol, USD2 (50)), path (~USD1, bob),
+                sendmax (XRP (50)), txflags (tfNoRippleDirect));
+
+            auto xrpMinusFee = [](jtx::Env const& env,
+                std::int64_t xrpAmount) -> jtx::PrettyAmount
+            {
+                using namespace jtx;
+                auto feeDrops = env.current ()->fees ().base;
+                return drops (
+                    dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
+            };
+
+            env.require (balance (alice, xrpMinusFee (env, 10000 - 50)));
+            env.require (balance (bob, USD1 (100)));
+            env.require (balance (bob, USD2 (0)));
+            env.require (balance (carol, USD2 (50)));
+        }
+    }
     void run ()
     {
         testCanceledOffer ();
         testRmFundedOffer ();
         testTinyPayment ();
+        testEnforceNoRipple ();
     }
 };
 
