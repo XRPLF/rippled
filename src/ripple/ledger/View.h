@@ -130,8 +130,7 @@ cdirNext (ReadView const& view,
     beast::Journal j);
 
 // Return the list of enabled amendments
-using enabledAmendments_t = std::set <uint256>;
-enabledAmendments_t
+std::set <uint256>
 getEnabledAmendments (ReadView const& view);
 
 // Return a map of amendments that have achieved majority

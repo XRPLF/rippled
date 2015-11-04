@@ -1398,11 +1398,28 @@ void LedgerConsensusImp::takeInitialPosition (
             && ((mPreviousLedger->info().seq % 256) == 0))
     {
         // previous ledger was flag ledger, add pseudo-transactions
-        ValidationSet parentSet = app_.getValidations().getValidations (
-            mPreviousLedger->info().parentHash);
-        m_feeVote.doVoting (mPreviousLedger, parentSet, initialSet);
-        app_.getAmendmentTable ().doVoting (
-            mPreviousLedger, parentSet, initialSet);
+        auto const validations =
+            app_.getValidations().getValidations (
+                mPreviousLedger->info().parentHash);
+
+        auto const count = std::count_if (
+            validations.begin(), validations.end(),
+            [](auto const& v)
+            {
+                return v.second->isTrusted();
+            });
+
+        if (count >= ledgerMaster_.getMinValidations())
+        {
+            m_feeVote.doVoting (
+                mPreviousLedger,
+                validations,
+                initialSet);
+            app_.getAmendmentTable ().doVoting (
+                mPreviousLedger,
+                validations,
+                initialSet);
+        }
     }
 
     // Set should be immutable snapshot

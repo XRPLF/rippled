@@ -210,6 +210,15 @@ public:
     }
 };
 
+
+/** Amendments that this server supports and enables by default */
+std::vector<std::string>
+preEnabledAmendments ();
+
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<std::string>
+supportedAmendments ();
+
 } // detail
 
 //------------------------------------------------------------------------------
@@ -451,10 +460,6 @@ public:
 
         , serverHandler_ (make_ServerHandler (*this, *m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
-
-        , m_amendmentTable (make_AmendmentTable
-                            (weeks(2), MAJORITY_FRACTION,
-                             logs_->journal("AmendmentTable")))
 
         , mFeeTrack (std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
@@ -959,8 +964,23 @@ void ApplicationImp::setup()
     if (!config_->RUN_STANDALONE)
         updateTables ();
 
-    m_amendmentTable->addInitial (
-        config_->section (SECTION_AMENDMENTS));
+    // Configure the amendments the server supports
+    {
+        Section supportedAmendments ("Supported Amendments");
+        supportedAmendments.append (detail::supportedAmendments ());
+
+        Section enabledAmendments = config_->section (SECTION_AMENDMENTS);
+        enabledAmendments.append (detail::preEnabledAmendments ());
+
+        m_amendmentTable = make_AmendmentTable (
+            weeks(2),
+            MAJORITY_FRACTION,
+            supportedAmendments,
+            enabledAmendments,
+            config_->section (SECTION_VETO_AMENDMENTS),
+            logs_->journal("Amendments"));
+    }
+
     Pathfinder::initPathTable();
 
     m_ledgerMaster->setMinValidations (

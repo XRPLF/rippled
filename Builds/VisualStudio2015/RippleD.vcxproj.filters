@@ -2205,6 +2205,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\TransactionStateSF.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\main\Amendments.cpp">
+      <Filter>ripple\app\main</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>
@@ -2256,9 +2259,6 @@
     <ClInclude Include="..\..\src\ripple\app\misc\AmendmentTable.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\AmendmentTableImpl.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\CanonicalTXSet.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2283,6 +2283,9 @@
     <ClInclude Include="..\..\src\ripple\app\misc\impl\AccountTxPaging.h">
       <Filter>ripple\app\misc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\AmendmentTable.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\Transaction.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
