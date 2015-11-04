@@ -70,7 +70,8 @@ public:
         In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
     {
         auto expect_result (amounts (in_expected, out_expected));
-        auto actual_result (q.ceil_in (amounts(in, out), amount(limit)));
+        auto actual_result (q.ceil_in (
+            amounts (in, out), amount (limit), STAmountCalcSwitchovers{false}));
 
         expect (actual_result == expect_result);
     }
@@ -81,7 +82,8 @@ public:
         In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
     {
         auto const expect_result (amounts (in_expected, out_expected));
-        auto const actual_result (q.ceil_out (amounts(in, out), amount(limit)));
+        auto const actual_result (q.ceil_out (
+            amounts (in, out), amount (limit), STAmountCalcSwitchovers{false}));
 
         expect (actual_result == expect_result);
     }
@@ -230,7 +232,8 @@ public:
                 raw (2755280000000000ull, -15));    // 2.75528
             STAmount const limit (
                 raw (4131113916555555, -16));       // .4131113916555555
-            Amounts const result (q.ceil_out (value, limit));
+            Amounts const result (
+                q.ceil_out (value, limit, STAmountCalcSwitchovers{false}));
             expect (result.in != zero);
         }
     }
@@ -273,10 +276,13 @@ public:
         Quality const q21 (Amounts (amount2, amount1));
         Quality const q31 (Amounts (amount3, amount1));
 
-        expect (composed_quality (q12, q21) == q11);
+        expect (
+            composed_quality (q12, q21, STAmountCalcSwitchovers{false}) == q11);
 
-        Quality const q13_31 (composed_quality (q13, q31));
-        Quality const q31_13 (composed_quality (q31, q13));
+        Quality const q13_31 (
+            composed_quality (q13, q31, STAmountCalcSwitchovers{false}));
+        Quality const q31_13 (
+            composed_quality (q31, q13, STAmountCalcSwitchovers{false}));
 
         expect (q13_31 == q31_13);
         expect (q13_31 == q11);

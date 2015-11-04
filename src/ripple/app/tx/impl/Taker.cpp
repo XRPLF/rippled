@@ -140,7 +140,7 @@ BasicTaker::done () const
 }
 
 Amounts
-BasicTaker::remaining_offer () const
+BasicTaker::remaining_offer (STAmountCalcSwitchovers const& amountCalcSwitchovers) const
 {
     // If the taker is done, then there's no offer to place.
     if (done ())
@@ -156,14 +156,16 @@ BasicTaker::remaining_offer () const
 
         // We scale the output based on the remaining input:
         return Amounts (remaining_.in, divRound (
-            remaining_.in, quality_.rate (), issue_out_, true));
+            remaining_.in, quality_.rate (), issue_out_, true,
+            amountCalcSwitchovers));
     }
 
     assert (remaining_.out > zero);
 
     // We scale the input based on the remaining output:
     return Amounts (mulRound (
-        remaining_.out, quality_.rate (), issue_in_, true), remaining_.out);
+        remaining_.out, quality_.rate (), issue_in_, true, amountCalcSwitchovers),
+        remaining_.out);
 }
 
 Amounts const&

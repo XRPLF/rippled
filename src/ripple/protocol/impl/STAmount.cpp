@@ -1140,7 +1140,8 @@ canonicalizeRound (bool native, std::uint64_t& value, int& offset, bool roundUp)
 
 STAmount
 mulRound (STAmount const& v1, STAmount const& v2,
-    Issue const& issue, bool roundUp)
+    Issue const& issue, bool roundUp,
+        STAmountCalcSwitchovers const& switchovers)
 {
     if (v1 == zero || v2 == zero)
         return {issue};
@@ -1203,12 +1204,21 @@ mulRound (STAmount const& v1, STAmount const& v2,
     int offset = offset1 + offset2 + 14;
     canonicalizeRound (
         isXRP (issue), amount, offset, resultNegative != roundUp);
-    return STAmount (issue, amount, offset, resultNegative);
+    STAmount result (issue, amount, offset, resultNegative);
+    if (switchovers.enableUnderflowFix () && roundUp && !resultNegative && !result)
+    {
+        // return the smallest value above zero
+        amount = STAmount::cMinValue;
+        offset = STAmount::cMinOffset;
+        return STAmount (issue, amount, offset, resultNegative);
+    }
+    return result;
 }
 
 STAmount
 divRound (STAmount const& num, STAmount const& den,
-    Issue const& issue, bool roundUp)
+    Issue const& issue, bool roundUp,
+        STAmountCalcSwitchovers const& switchovers)
 {
     if (den == zero)
         Throw<std::runtime_error> ("division by zero");
@@ -1254,7 +1264,15 @@ divRound (STAmount const& num, STAmount const& den,
     int offset = numOffset - denOffset - 17;
     canonicalizeRound (
         isXRP (issue), amount, offset, resultNegative != roundUp);
-    return STAmount (issue, amount, offset, resultNegative);
+    STAmount result (issue, amount, offset, resultNegative);
+    if (switchovers.enableUnderflowFix () && roundUp && !resultNegative && !result)
+    {
+        // return the smallest value above zero
+        amount = STAmount::cMinValue;
+        offset = STAmount::cMinOffset;
+        return STAmount (issue, amount, offset, resultNegative);
+    }
+    return result;
 }
 
 // compute (value)*(mul)/(div) - avoid overflow but keep precision
@@ -1289,6 +1307,24 @@ mulDivNoThrow(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
     {
         return std::numeric_limits<std::uint64_t>::max();
     }
+}
+
+std::uint32_t
+STAmountCalcSwitchovers::enableUnderflowFixCloseTime ()
+{
+    // Mon Dec 28 10:00:00am PST
+    return 504'640'800;
+}
+
+STAmountCalcSwitchovers::STAmountCalcSwitchovers (std::uint32_t parentCloseTime)
+{
+    enableUnderflowFix_ = parentCloseTime > enableUnderflowFixCloseTime();
+}
+
+
+bool STAmountCalcSwitchovers::enableUnderflowFix () const
+{
+    return enableUnderflowFix_;
 }
 
 } // ripple
