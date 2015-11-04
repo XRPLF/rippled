@@ -418,13 +418,13 @@ ConnectAttempt::processResponse (beast::http::message const& m,
     if(journal_.info) journal_.info <<
         "Protocol: " << to_string(protocol);
 
-    auto cluster = app_.cluster().member(publicKey);
-    if (cluster)
+    auto member = app_.cluster().member(publicKey);
+    if (member)
         if (journal_.info) journal_.info <<
-            "Cluster name: " << *cluster;
+            "Cluster name: " << *member;
 
     auto const result = overlay_.peerFinder().activate (slot_,
-        publicKey.toPublicKey(), static_cast<bool>(cluster));
+        publicKey.toPublicKey(), static_cast<bool>(member));
     if (result != PeerFinder::Result::success)
         return fail("Outbound slots full");
 

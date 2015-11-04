@@ -68,7 +68,7 @@ private:
     };
 
     std::set<ClusterNode, Comparator> nodes_;
-    std::mutex mutable lock_;
+    std::mutex mutable mutex_;
     beast::Journal mutable j_;
 
 public:
@@ -80,7 +80,7 @@ public:
                 empty).
     */
     boost::optional<std::string>
-    member (RippleAddress const& node);
+    member (RippleAddress const& node) const;
 
     /** The number of nodes in the cluster list. */
     std::size_t

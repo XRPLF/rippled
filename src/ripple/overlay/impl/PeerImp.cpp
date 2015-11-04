@@ -615,9 +615,9 @@ void PeerImp::doAccept()
     if(journal_.info) journal_.info <<
         "Public Key: " << publicKey_.humanNodePublic();
 
-    if (auto cluster = app_.cluster().member(publicKey_))
+    if (auto member = app_.cluster().member(publicKey_))
     {
-        name_ = *cluster;
+        name_ = *member;
         if (journal_.info) journal_.info <<
             "Cluster name: " << name_;
     }
@@ -945,7 +945,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
     auto const thresh = app_.timeKeeper().now().time_since_epoch().count() - 90;
     std::uint32_t clusterFee = 0;
 
-    std::vector<std::uint32_t> fees (app_.cluster().size());
+    std::vector<std::uint32_t> fees;
+    fees.reserve (app_.cluster().size());
 
     app_.cluster().for_each(
         [&fees,thresh](ClusterNode const& status)

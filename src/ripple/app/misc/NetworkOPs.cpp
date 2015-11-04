@@ -596,7 +596,7 @@ void NetworkOPsImp::processClusterTimer ()
 
     if (!update)
     {
-        m_journal.debug << "To soon to send cluster update";
+        m_journal.debug << "Too soon to send cluster update";
         return;
     }
 
