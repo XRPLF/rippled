@@ -487,7 +487,7 @@ public:
     operator[](OptionaledField<T> const& of) const;
 
     /** Return a modifiable field value.
-        
+
         Throws:
 
             missing_field_error if the field is
@@ -585,11 +585,11 @@ private:
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString
-    // types.  Their getValue returns by const ref.  We return those types
+    // types.  Their value() returns by const ref.  We return those types
     // by value.
     template <typename T, typename V =
         typename std::remove_cv < typename std::remove_reference <
-            decltype (std::declval <T> ().getValue ())>::type >::type >
+            decltype (std::declval <T> ().value ())>::type >::type >
     V getFieldByValue (SField const& field) const
     {
         const STBase* rf = peekAtPField (field);
@@ -607,7 +607,7 @@ private:
         if (!cf)
             throw std::runtime_error ("Wrong field type");
 
-        return cf->getValue ();
+        return cf->value ();
     }
 
     // Implementations for getting (most) fields that return by const reference.

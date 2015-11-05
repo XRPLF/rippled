@@ -22,7 +22,6 @@
 
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STBlob.h>
 #include <string>
 
 namespace ripple {
@@ -95,7 +94,7 @@ public:
     STAccount&
     operator= (AccountID const& value)
     {
-        setValueH160(value);
+        setValue (value);
         return *this;
     }
 
@@ -103,33 +102,14 @@ public:
     value() const noexcept
     {
         AccountID result;
-        getValueH160(result);
+        result.copyFrom (value_);
         return result;
     }
 
-    template <typename Tag>
-    void setValueH160 (base_uint<160, Tag> const& v)
+    void setValue (AccountID const& v)
     {
         value_.copyFrom (v);
         default_ = false;
-    }
-
-    // VFALCO This is a clumsy interface, it should return
-    //        the value. And it should not be possible to
-    //        have anything other than a uint160 in here.
-    //        The base_uint tag should always be `AccountIDTag`.
-    template <typename Tag>
-    bool getValueH160 (base_uint<160, Tag>& v) const
-    {
-        bool const success = isValueH160();
-        if (success)
-            v.copyFrom (value_);
-        return success;
-    }
-
-    bool isValueH160 () const
-    {
-        return ! isDefault();
     }
 };
 

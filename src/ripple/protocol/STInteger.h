@@ -71,12 +71,6 @@ public:
         s.addInteger (value_);
     }
 
-    Integer
-    getValue () const
-    {
-        return value_;
-    }
-
     STInteger& operator= (value_type const& v)
     {
         value_ = v;
