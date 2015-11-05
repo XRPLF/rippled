@@ -98,12 +98,6 @@ public:
         s.addBitString<Bits> (value_);
     }
 
-    const value_type&
-    getValue () const
-    {
-        return value_;
-    }
-
     template <typename Tag>
     void setValue (base_uint<Bits, Tag> const& v)
     {

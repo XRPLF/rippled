@@ -134,10 +134,9 @@ STTx::getMentionedAccounts () const
     {
         if (auto sa = dynamic_cast<STAccount const*> (&it))
         {
-            AccountID id;
-            assert(sa->isValueH160());
-            if (sa->getValueH160(id))
-                list.insert(id);
+            assert(! sa->isDefault());
+            if (! sa->isDefault())
+                list.insert(sa->value());
         }
         else if (auto sa = dynamic_cast<STAmount const*> (&it))
         {
@@ -488,7 +487,7 @@ isAccountFieldOkay (STObject const& st)
     for (int i = 0; i < st.getCount(); ++i)
     {
         auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
-        if (t && !t->isValueH160 ())
+        if (t && t->isDefault ())
             return false;
     }
 

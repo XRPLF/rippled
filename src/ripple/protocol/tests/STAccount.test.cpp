@@ -35,7 +35,6 @@ struct STAccount_test : public beast::unit_test::suite
             expect (defaultAcct.getText() == "");
             expect (defaultAcct.isDefault() == true);
             expect (defaultAcct.value() == AccountID {});
-            expect (! defaultAcct.isValueH160());
             {
 #ifdef NDEBUG // Qualified because the serialization asserts in a debug build.
                 Serializer s;
@@ -45,7 +44,6 @@ struct STAccount_test : public beast::unit_test::suite
                 SerialIter sit (s.slice ());
                 STAccount const deserializedDefault (sit, sfAccount);
                 expect (deserializedDefault.isEquivalent (defaultAcct));
-                expect (! deserializedDefault.isValueH160());
 #endif // NDEBUG
             }
             {
@@ -55,7 +53,6 @@ struct STAccount_test : public beast::unit_test::suite
                 SerialIter sit (s.slice ());
                 STAccount const deserializedDefault (sit, sfAccount);
                 expect (deserializedDefault.isEquivalent (defaultAcct));
-                expect (! deserializedDefault.isValueH160());
             }
 
             // Test constructor from SField.
@@ -64,7 +61,6 @@ struct STAccount_test : public beast::unit_test::suite
             expect (sfAcct.getText() == "");
             expect (sfAcct.isDefault());
             expect (sfAcct.value() == AccountID {});
-            expect (! sfAcct.isValueH160());
             expect (sfAcct.isEquivalent (defaultAcct));
             {
                 Serializer s;
@@ -74,7 +70,6 @@ struct STAccount_test : public beast::unit_test::suite
                 SerialIter sit (s.slice ());
                 STAccount const deserializedSf (sit, sfAccount);
                 expect (deserializedSf.isEquivalent(sfAcct));
-                expect (! deserializedSf.isValueH160());
             }
 
             // Test constructor from SField and AccountID.
@@ -82,7 +77,6 @@ struct STAccount_test : public beast::unit_test::suite
             expect (zeroAcct.getText() == "rrrrrrrrrrrrrrrrrrrrrhoLvTp");
             expect (! zeroAcct.isDefault());
             expect (zeroAcct.value() == AccountID {0});
-            expect (zeroAcct.isValueH160());
             expect (! zeroAcct.isEquivalent (defaultAcct));
             expect (! zeroAcct.isEquivalent (sfAcct));
             {
@@ -94,7 +88,6 @@ struct STAccount_test : public beast::unit_test::suite
                 SerialIter sit (s.slice ());
                 STAccount const deserializedZero (sit, sfAccount);
                 expect (deserializedZero.isEquivalent (zeroAcct));
-                expect (deserializedZero.isValueH160());
             }
             {
                 // Construct from a VL that is not exactly 160 bits.
