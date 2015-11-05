@@ -147,12 +147,6 @@ public:
         return value_;
     }
 
-    Buffer
-    getValue () const
-    {
-        return Buffer(value_.data (), value_.size ());
-    }
-
     void
     setValue (Buffer&& b)
     {

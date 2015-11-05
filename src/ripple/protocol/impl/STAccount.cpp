@@ -68,9 +68,4 @@ std::string STAccount::getText () const
     return toBase58 (value());
 }
 
-bool STAccount::isValueH160 () const
-{
-    return true;
-}
-
 } // ripple

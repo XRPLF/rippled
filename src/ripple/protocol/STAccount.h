@@ -22,7 +22,6 @@
 
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STBlob.h>
 #include <string>
 
 namespace ripple {
@@ -36,7 +35,7 @@ private:
     // bits.  So we can store it with less overhead in a ripple::uint160.
     //
     // However, we need to leave the serialization format of the STAccount
-    // unchanged.  So, even though we store the value in an uint160, we
+    // unchanged.  So, even though we store the value in a uint160, we
     // serialize and deserialize like an STBlob.
     uint160 value_;
 
@@ -94,7 +93,7 @@ public:
     STAccount&
     operator= (AccountID const& value)
     {
-        setValueH160(value);
+        setValue (value);
         return *this;
     }
 
@@ -102,28 +101,14 @@ public:
     value() const noexcept
     {
         AccountID result;
-        getValueH160(result);
+        result.copyFrom (value_);
         return result;
     }
 
-    template <typename Tag>
-    void setValueH160 (base_uint<160, Tag> const& v)
+    void setValue (AccountID const& v)
     {
         value_.copyFrom (v);
     }
-
-    // VFALCO This is a clumsy interface, it should return
-    //        the value. And it should not be possible to
-    //        have anything other than a uint160 in here.
-    //        The base_uint tag should always be `AccountIDTag`.
-    template <typename Tag>
-    bool getValueH160 (base_uint<160, Tag>& v) const
-    {
-        v.copyFrom (value_);
-        return true;
-    }
-
-    bool isValueH160 () const;
 };
 
 } // ripple

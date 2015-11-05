@@ -136,15 +136,9 @@ TxMeta::getAffectedAccounts() const
             {
                 for (auto const& field : *inner)
                 {
-                    STAccount const* sa =
-                        dynamic_cast<STAccount const*> (&field);
-
-                    if (sa)
+                    if (auto sa = dynamic_cast<STAccount const*> (&field))
                     {
-                        AccountID id;
-                        assert(sa->isValueH160());
-                        if (sa->getValueH160(id))
-                            list.insert(id);
+                        list.insert(sa->value());
                     }
                     else if ((field.getFName () == sfLowLimit) || (field.getFName () == sfHighLimit) ||
                              (field.getFName () == sfTakerPays) || (field.getFName () == sfTakerGets))

@@ -134,10 +134,7 @@ STTx::getMentionedAccounts () const
     {
         if (auto sa = dynamic_cast<STAccount const*> (&it))
         {
-            AccountID id;
-            assert(sa->isValueH160());
-            if (sa->getValueH160(id))
-                list.insert(id);
+            list.insert(sa->value());
         }
         else if (auto sa = dynamic_cast<STAmount const*> (&it))
         {
@@ -480,31 +477,10 @@ isMemoOkay (STObject const& st, std::string& reason)
     return true;
 }
 
-// Ensure all account fields are 160-bits
-static
-bool
-isAccountFieldOkay (STObject const& st)
-{
-    for (int i = 0; i < st.getCount(); ++i)
-    {
-        auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
-        if (t && !t->isValueH160 ())
-            return false;
-    }
-
-    return true;
-}
-
 bool passesLocalChecks (STObject const& st, std::string& reason)
 {
     if (!isMemoOkay (st, reason))
         return false;
-
-    if (!isAccountFieldOkay (st))
-    {
-        reason = "An account field is invalid.";
-        return false;
-    }
 
     return true;
 }
