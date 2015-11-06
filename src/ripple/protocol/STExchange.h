@@ -50,7 +50,7 @@ struct STExchange<STInteger<U>, T>
     get (boost::optional<T>& t,
         STInteger<U> const& u)
     {
-        t = u.getValue();
+        t = u.value();
     }
 
     static

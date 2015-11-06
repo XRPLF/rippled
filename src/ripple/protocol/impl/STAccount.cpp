@@ -19,32 +19,53 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/types.h>
 
 namespace ripple {
+
+STAccount::STAccount ()
+    : STBase ()
+    , value_ (beast::zero)
+{
+}
+
+STAccount::STAccount (SField const& n, Buffer&& v)
+    : STBase (n)
+    , value_ (beast::zero)
+{
+    if (v.empty())
+        return;  // Zero is a valid size for an uninitialized STAccount
+
+    // Is it safe to throw from this constructor?  Today (November 2015)
+    // the only place that calls this constructor is
+    //    STVar::STVar (SerialIter&, SField const&)
+    // which throws.  If STVar can throw in its constructor, then so can
+    // STAccount.
+    if (v.size() != (160 / 8))
+        throw std::runtime_error ("Invalid STAccount size");
+
+    memcpy (value_.begin(), v.data (), (160 / 8));
+}
+
+STAccount::STAccount (SField const& n)
+    : STBase (n)
+    , value_ (beast::zero)
+{
+}
 
 STAccount::STAccount (SerialIter& sit, SField const& name)
     : STAccount(name, sit.getVLBuffer())
 {
 }
 
+STAccount::STAccount (SField const& n, AccountID const& v)
+    : STBase (n)
+{
+    value_.copyFrom (v);
+}
+
 std::string STAccount::getText () const
 {
-    AccountID u;
-    RippleAddress a;
-    if (! getValueH160 (u))
-        return STBlob::getText ();
-    return toBase58(u);
-}
-
-STAccount::STAccount (SField const& n, AccountID const& v)
-        : STBlob (n, v.data (), v.size ())
-{
-}
-
-bool STAccount::isValueH160 () const
-{
-    return peekValue ().size () == (160 / 8);
+    return toBase58 (value());
 }
 
 } // ripple

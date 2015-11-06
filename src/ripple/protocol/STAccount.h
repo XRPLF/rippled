@@ -21,45 +21,43 @@
 #define RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 
 #include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/RippleAddress.h>
-#include <ripple/protocol/STBlob.h>
+#include <ripple/protocol/STBase.h>
 #include <string>
 
 namespace ripple {
 
 class STAccount final
-    : public STBlob
+    : public STBase
 {
+private:
+    // The original implementation of STAccount kept the value in an STBlob.
+    // But, over time, it was determined that an STAccount is always 160
+    // bits.  So we can store it with less overhead in a ripple::uint160.
+    //
+    // However, we need to leave the serialization format of the STAccount
+    // unchanged.  So, even though we store the value in a uint160, we
+    // serialize and deserialize like an STBlob.
+    uint160 value_;
+
 public:
     using value_type = AccountID;
 
-    STAccount (SField const& n, Buffer&& v)
-            : STBlob (n, std::move(v))
-    {
-        ;
-    }
-    STAccount (SField const& n, AccountID const& v);
-    STAccount (SField const& n) : STBlob (n)
-    {
-        ;
-    }
-    STAccount ()
-    {
-        ;
-    }
-
+    STAccount ();
+    STAccount (SField const& n);
+    STAccount (SField const& n, Buffer&& v);
     STAccount (SerialIter& sit, SField const& name);
+    STAccount (SField const& n, AccountID const& v);
 
     STBase*
     copy (std::size_t n, void* buf) const override
     {
-        return emplace(n, buf, *this);
+        return emplace (n, buf, *this);
     }
 
     STBase*
     move (std::size_t n, void* buf) override
     {
-        return emplace(n, buf, std::move(*this));
+        return emplace (n, buf, std::move(*this));
     }
 
     SerializedTypeID getSType () const override
@@ -69,42 +67,48 @@ public:
 
     std::string getText () const override;
 
-    STAccount&
-    operator= (value_type const& value)
+    void
+    add (Serializer& s) const override
     {
-        setValueH160(value);
+        assert (fName->isBinary ());
+        assert ((fName->fieldType == STI_VL) ||
+            (fName->fieldType == STI_ACCOUNT));
+
+        s.addVL (value_.data(), (160 / 8));
+    }
+
+    bool
+    isEquivalent (const STBase& t) const override
+    {
+        auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
+        return (tPtr && (value_ == tPtr->value_));
+    }
+
+    bool
+    isDefault () const override
+    {
+        return value_ == beast::zero;
+    }
+
+    STAccount&
+    operator= (AccountID const& value)
+    {
+        setValue (value);
         return *this;
     }
 
-    value_type
+    AccountID
     value() const noexcept
     {
         AccountID result;
-        getValueH160(result);
+        result.copyFrom (value_);
         return result;
     }
 
-    template <typename Tag>
-    void setValueH160 (base_uint<160, Tag> const& v)
+    void setValue (AccountID const& v)
     {
-        peekValue () = Buffer (v.data (), v.size ());
-        assert (peekValue ().size () == (160 / 8));
+        value_.copyFrom (v);
     }
-
-    // VFALCO This is a clumsy interface, it should return
-    //        the value. And it should not be possible to
-    //        have anything other than a uint160 in here.
-    //        The base_uint tag should always be `AccountIDTag`.
-    template <typename Tag>
-    bool getValueH160 (base_uint<160, Tag>& v) const
-    {
-        auto success = isValueH160 ();
-        if (success)
-            memcpy (v.begin (), peekValue ().data (), (160 / 8));
-        return success;
-    }
-
-    bool isValueH160 () const;
 };
 
 } // ripple

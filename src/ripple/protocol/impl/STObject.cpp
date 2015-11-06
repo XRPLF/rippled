@@ -18,18 +18,12 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/Log.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/STObject.h>
 #include <ripple/protocol/InnerObjectFormats.h>
-#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STParsedJSON.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <memory>
+#include <ripple/protocol/STBlob.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 
@@ -431,7 +425,7 @@ bool STObject::setFlag (std::uint32_t f)
     if (!t)
         return false;
 
-    t->setValue (t->getValue () | f);
+    t->setValue (t->value () | f);
     return true;
 }
 
@@ -442,7 +436,7 @@ bool STObject::clearFlag (std::uint32_t f)
     if (!t)
         return false;
 
-    t->setValue (t->getValue () & ~f);
+    t->setValue (t->value () & ~f);
     return true;
 }
 
@@ -458,7 +452,7 @@ std::uint32_t STObject::getFlags (void) const
     if (!t)
         return 0;
 
-    return t->getValue ();
+    return t->value ();
 }
 
 STBase* STObject::makeFieldPresent (SField const& field)
@@ -560,22 +554,7 @@ uint256 STObject::getFieldH256 (SField const& field) const
 
 AccountID STObject::getAccountID (SField const& field) const
 {
-    auto rf = peekAtPField (field);
-    if (!rf)
-        throw std::runtime_error ("Field not found");
-
-    AccountID account;
-    if (rf->getSType () != STI_NOTPRESENT)
-    {
-        const STAccount* cf = dynamic_cast<const STAccount*> (rf);
-
-        if (!cf)
-            throw std::runtime_error ("Wrong field type");
-
-        cf->getValueH160 (account);
-    }
-
-    return account;
+    return getFieldByValue <STAccount> (field);
 }
 
 Blob STObject::getFieldVL (SField const& field) const
@@ -670,26 +649,12 @@ void STObject::setFieldV256 (SField const& field, STVector256 const& v)
 
 void STObject::setAccountID (SField const& field, AccountID const& v)
 {
-    STBase* rf = getPField (field, true);
-
-    if (!rf)
-        throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT)
-        rf = makeFieldPresent (field);
-
-    STAccount* cf = dynamic_cast<STAccount*> (rf);
-
-    if (!cf)
-        throw std::runtime_error ("Wrong field type");
-
-    cf->setValueH160 (v);
+    setFieldUsingSetValue <STAccount> (field, v);
 }
 
 void STObject::setFieldVL (SField const& field, Blob const& v)
 {
-    setFieldUsingSetValue <STBlob>
-            (field, Buffer(v.data (), v.size ()));
+    setFieldUsingSetValue <STBlob> (field, Buffer(v.data (), v.size ()));
 }
 
 void STObject::setFieldAmount (SField const& field, STAmount const& v)
