@@ -293,6 +293,9 @@ private:
     /** Add our load fee to our validation */
     void addLoad(STValidation::ref val);
 
+    /** Convert an advertised close time to an effective close time */
+    std::uint32_t effectiveCloseTime (std::uint32_t closeTime);
+
 private:
     Application& app_;
     ConsensusImp& consensus_;
@@ -335,7 +338,7 @@ private:
     hash_map<uint256, std::shared_ptr <DisputedTx>> mDisputes;
     hash_set<uint256> mCompares;
 
-    // Close time estimates
+    // Close time estimates, keep ordered for predictable traverse
     std::map<std::uint32_t, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process

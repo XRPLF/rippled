@@ -877,7 +877,7 @@ public:
     }
 
     /** Report that the consensus process built a particular ledger */
-    void consensusBuilt (Ledger::ref ledger) override
+    void consensusBuilt (Ledger::ref ledger, Json::Value consensus) override
     {
 
         // Because we just built a ledger, we are no longer building one
@@ -970,7 +970,7 @@ public:
             checkAccept (maxLedger, maxSeq);
         }
 
-        mLedgerHistory.builtLedger (ledger);
+        mLedgerHistory.builtLedger (ledger, std::move (consensus));
     }
 
     void advanceThread()

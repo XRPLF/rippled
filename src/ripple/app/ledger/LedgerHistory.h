@@ -83,7 +83,7 @@ public:
 
     /** Report that we have locally built a particular ledger
     */
-    void builtLedger (Ledger::ref);
+    void builtLedger (Ledger::ref, Json::Value);
 
     /** Report that we have validated a particular ledger
     */
@@ -104,8 +104,10 @@ private:
         validate a different one.
         @param built The hash of the ledger we built
         @param valid The hash of the ledger we deemed fully valid
+        @param consensus The status of the consensus round
     */
-    void handleMismatch (LedgerHash const& built, LedgerHash const& valid);
+    void handleMismatch (LedgerHash const& built, LedgerHash const& valid,
+        Json::Value const& consensus);
 
     Application& app_;
     beast::insight::Collector::ptr collector_;
@@ -117,10 +119,13 @@ private:
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
-    // 1) The hash of a ledger with that index we build
-    // 2) The hash of a ledger with that index we validated
-    using ConsensusValidated = TaggedCache <LedgerIndex,
-        std::pair< LedgerHash, LedgerHash >>;
+    struct cv_entry
+    {
+        boost::optional<LedgerHash> built;
+        boost::optional<LedgerHash> validated;
+        boost::optional<Json::Value> consensus;
+    };
+    using ConsensusValidated = TaggedCache <LedgerIndex, cv_entry>;
     ConsensusValidated m_consensus_validated;
 
 
