@@ -61,13 +61,12 @@ namespace ripple {
     @param previousProposers proposers in the last closing
     @param proposersClosed proposers who have currently closed this ledger
     @param proposersValidated proposers who have validated the last closed
-                             ledger
+                              ledger
     @param previousMSeconds time, in milliseconds, for the previous ledger to
                             reach consensus (in milliseconds)
-    @param currentMSeconds time, in milliseconds since the previous ledger
-                           closed
-    @param openMSeconds time, in milliseconds, since the previous LCL was
-                        computed
+    @param currentMSeconds time, in milliseconds, since the previous ledger's
+                           (possibly rounded) close time
+    @param openMSeconds time, in milliseconds, waiting to close this ledger
     @param idleInterval the network's desired idle interval
 */
 bool shouldCloseLedger (
@@ -76,14 +75,15 @@ bool shouldCloseLedger (
     int proposersClosed,
     int proposersValidated,
     int previousMSeconds,
-    int currentMSeconds,
-    int openMSeconds,
+    int currentMSeconds, // Time since last ledger's close time
+    int openMSeconds,    // Time waiting to close this ledger
     int idleInterval,
     beast::Journal j)
 {
     if ((previousMSeconds < -1000) || (previousMSeconds > 600000) ||
-            (currentMSeconds < -1000) || (currentMSeconds > 600000))
+        (currentMSeconds > 600000))
     {
+        // These are unexpected cases, we just close the ledger
         JLOG (j.warning) <<
             "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no") <<
             " Prop: " << previousProposers << "/" << proposersClosed <<
@@ -92,42 +92,38 @@ bool shouldCloseLedger (
         return true;
     }
 
+    if ((proposersClosed + proposersValidated) > (previousProposers / 2))
+    {
+        // If more than half of the network has closed, we close
+        JLOG (j.trace) << "Others have closed";
+        return true;
+    }
+
     if (!anyTransactions)
     {
-        // did we miss a transaction?
-        if (proposersClosed > (previousProposers / 4))
-        {
-            JLOG (j.trace) <<
-                "no transactions, many proposers: now (" << proposersClosed <<
-                " closed, " << previousProposers << " before)";
-            return true;
-        }
-
-        // Only close if we have idled for too long.
+        // Only close at the end of the idle interval
         return currentMSeconds >= (idleInterval * 1000); // normal idle
     }
 
-    // If we have any transactions, we don't want to close too frequently:
+    // Preserve minimum ledger open time
     if (openMSeconds < LEDGER_MIN_CLOSE)
     {
-        if ((proposersClosed + proposersValidated) < (previousProposers / 2 ))
-        {
-            JLOG (j.debug) <<
-                "Must wait minimum time before closing";
-            return false;
-        }
+        JLOG (j.debug) <<
+            "Must wait minimum time before closing";
+        return false;
     }
 
-    if (currentMSeconds < previousMSeconds)
+    // Don't let this ledger close more than twice as fast as the previous
+    // ledger reached consensus so that slower validators can slow down
+    // the network
+    if (openMSeconds < (previousMSeconds / 2))
     {
-        if ((proposersClosed + proposersValidated) < previousProposers)
-        {
-            JLOG (j.debug) <<
-                "We are waiting for more closes/validations";
-            return false;
-        }
+        JLOG (j.debug) <<
+            "Ledger has not been open long enough";
+        return false;
     }
 
+    // Close the ledger
     return true;
 }
 
@@ -748,7 +744,7 @@ void LedgerConsensusImp::statePreClose ()
         = app_.getValidations ().getTrustedValidationCount
         (mPrevLedgerHash);
 
-    // This ledger is open. This computes how long since last ledger closed
+    // This computes how long since last ledger's close time
     int sinceClose;
     {
         bool previousCloseCorrect = mHaveCorrectLCL
