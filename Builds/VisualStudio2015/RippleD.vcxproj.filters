@@ -3741,6 +3741,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\tests\RippleAddress.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\STAccount.test.cpp">
+      <Filter>ripple\protocol\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\tests\STAmount.test.cpp">
       <Filter>ripple\protocol\tests</Filter>
     </ClCompile>
