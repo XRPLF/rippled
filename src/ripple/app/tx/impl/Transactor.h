@@ -79,8 +79,6 @@ protected:
     XRPAmount     mFeeDue;
     XRPAmount     mPriorBalance;  // Balance before fees.
     XRPAmount     mSourceBalance; // Balance after fees.
-    bool          mSigMaster;
-    RippleAddress mSigningPubKey;
 
 public:
     /** Process the transaction. */
@@ -151,7 +149,6 @@ protected:
 private:
     void setSeq ();
     TER payFee ();
-    void checkMasterSign ();
     static TER checkSingleSign (PreclaimContext const& ctx);
     static TER checkMultiSign (PreclaimContext const& ctx);
 };
