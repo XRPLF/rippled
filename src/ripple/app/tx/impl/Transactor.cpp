@@ -79,15 +79,6 @@ preflight1 (PreflightContext const& ctx)
 TER
 preflight2 (PreflightContext const& ctx)
 {
-    // Extract signing key
-    // Transactions contain a signing key.  This allows us to trivially verify a
-    // transaction has at least been properly signed without going to disk.
-    // Each transaction also notes a source account id. This is used to verify
-    // that the signing key is associated with the account.
-    // XXX This could be a lot cleaner to prevent unnecessary copying.
-    auto const pk = RippleAddress::createAccountPublic(
-        ctx.tx.getSigningPubKey());
-
     if(!( ctx.flags & tapNO_CHECK_SIGN) &&
         checkValidity(ctx.app.getHashRouter(),
             ctx.tx, ctx.rules, ctx.app.config(),
@@ -128,7 +119,6 @@ Transactor::Transactor(
     ApplyContext& ctx)
     : ctx_ (ctx)
     , j_ (ctx.journal)
-    , mSigMaster (false)
 {
 }
 
@@ -285,9 +275,6 @@ void Transactor::preCompute ()
 {
     account_ = ctx_.tx.getAccountID(sfAccount);
     assert(account_ != zero);
-    mSigningPubKey =
-        RippleAddress::createAccountPublic(
-            ctx_.tx.getSigningPubKey());
 }
 
 TER Transactor::apply ()
@@ -316,8 +303,6 @@ TER Transactor::apply ()
 
         if (terResult != tesSUCCESS) return terResult;
 
-        checkMasterSign ();
-
         view().update (sle);
     }
 
@@ -342,21 +327,6 @@ Transactor::checkSign (PreclaimContext const& ctx)
     }
 
     return checkSingleSign (ctx);
-}
-
-void
-Transactor::checkMasterSign ()
-{
-    if ((view().flags() & tapENABLE_TESTING) ||
-        (view().rules().enabled(featureMultiSign,
-            ctx_.app.config().features)))
-    {
-        if (mSigningPubKey.getAccountPublic().empty())
-            // Multisign obviously doesn't use the master key
-            return;
-    }
-
-    mSigMaster = calcAccountID(mSigningPubKey) == account_;
 }
 
 TER

@@ -176,6 +176,21 @@ SetAccount::doApply ()
     bool bSetDisallowXRP   = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
     bool bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
 
+    bool sigWithMaster = false;
+
+    {
+        auto const blob = ctx_.tx.getSigningPubKey();
+
+        if (!blob.empty ())
+        {
+            auto const signingPubKey =
+                RippleAddress::createAccountPublic(blob);
+
+            if (calcAccountID(signingPubKey) == account_)
+                sigWithMaster = true;
+        }
+    }
+
     //
     // RequireAuth
     //
@@ -226,7 +241,7 @@ SetAccount::doApply ()
     //
     if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
     {
-        if (!mSigMaster)
+        if (!sigWithMaster)
         {
             j_.trace << "Must use master key to disable master key.";
             return tecNEED_MASTER_KEY;
@@ -273,7 +288,7 @@ SetAccount::doApply ()
     //
     if (uSetFlag == asfNoFreeze)
     {
-        if (!mSigMaster && !(uFlagsIn & lsfDisableMaster))
+        if (!sigWithMaster && !(uFlagsIn & lsfDisableMaster))
         {
             j_.trace << "Can't use regular key to set NoFreeze.";
             return tecNEED_MASTER_KEY;
