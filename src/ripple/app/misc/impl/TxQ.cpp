@@ -539,7 +539,7 @@ TxQ::processValidatedLedger(Application& app,
         && (!maxSize_ || keptCandidates < *maxSize_))
     {
         if (candidateIter->lastValid
-            && *candidateIter->lastValid >= ledgerSeq)
+            && *candidateIter->lastValid <= ledgerSeq)
         {
             candidateIter = erase(candidateIter);
         }
