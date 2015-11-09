@@ -23,7 +23,10 @@
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/RawStateTable.h>
+#include <ripple/basics/qalloc.h>
 #include <ripple/protocol/XRPAmount.h>
+#include <functional>
+#include <utility>
 
 namespace ripple {
 
@@ -51,9 +54,11 @@ private:
 
     // List of tx, key order
     using txs_map = std::map<key_type,
-        std::pair<std::shared_ptr<
-            Serializer const>, std::shared_ptr<
-                Serializer const>>>;
+        std::pair<std::shared_ptr<Serializer const>,
+        std::shared_ptr<Serializer const>>,
+        std::less<key_type>, qalloc_type<std::pair<key_type const,
+        std::pair<std::shared_ptr<Serializer const>,
+        std::shared_ptr<Serializer const>>>, false>>;
 
     Rules rules_;
     txs_map txs_;

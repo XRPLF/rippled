@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SIM_QALLOC_H_INCLUDED
-#define RIPPLE_SIM_QALLOC_H_INCLUDED
+#ifndef RIPPLE_BASICS_QALLOC_H_INCLUDED
+#define RIPPLE_BASICS_QALLOC_H_INCLUDED
 
 #include <boost/intrusive/list.hpp>
 #include <cstddef>
@@ -28,9 +28,9 @@
 #include <memory>
 #include <new>
 #include <sstream>
+#include <type_traits>
 
 namespace ripple {
-namespace test {
 
 namespace detail {
 
@@ -86,11 +86,11 @@ public:
 
 } // detail
 
-template <class T>
+template <class T, bool ShareOnCopy = true>
 class qalloc_type
 {
 private:
-    template <class U>
+    template <class, bool>
     friend class qalloc_type;
 
     std::shared_ptr<
@@ -104,22 +104,24 @@ public:
         std::add_lvalue_reference<T>::type;
     using const_reference = typename
         std::add_lvalue_reference<T const>::type;
+    using propagate_on_container_move_assignment =
+        std::true_type;
 
     template <class U>
     struct rebind
     {
-        using other = qalloc_type<U>;
+        using other = qalloc_type<U, ShareOnCopy>;
     };
 
     qalloc_type (qalloc_type const&) = default;
-    qalloc_type& operator= (qalloc_type const&) = default;
     qalloc_type (qalloc_type&& other) = default;
+    qalloc_type& operator= (qalloc_type const&) = default;
     qalloc_type& operator= (qalloc_type&&) = default;
 
     qalloc_type();
 
     template <class U>
-    qalloc_type (qalloc_type<U> const& u);
+    qalloc_type (qalloc_type<U, ShareOnCopy> const& u);
 
     template <class U>
     U*
@@ -135,16 +137,23 @@ public:
     void
     deallocate (T* p, std::size_t n);
 
-    void
-    destroy (T* t);
+    template <class U>
+    bool
+    operator== (qalloc_type<U, ShareOnCopy> const& u);
 
     template <class U>
     bool
-    operator== (qalloc_type<U> const& u);
+    operator!= (qalloc_type<U, ShareOnCopy> const& u);
 
-    template <class U>
-    bool
-    operator!= (qalloc_type<U> const& u);
+    qalloc_type
+    select_on_container_copy_construction() const;
+
+private:
+    qalloc_type
+    select_on_copy(std::true_type) const;
+
+    qalloc_type
+    select_on_copy(std::false_type) const;
 };
 
 /** Allocator optimized for delete in temporal order.
@@ -157,7 +166,7 @@ public:
 
         May not be called concurrently.
 */
-using qalloc = qalloc_type<int>;
+using qalloc = qalloc_type<int, true>;
 
 //------------------------------------------------------------------------------
 
@@ -291,25 +300,25 @@ qalloc_impl<_>::deallocate (void* p)
 
 //------------------------------------------------------------------------------
 
-template <class T>
-qalloc_type<T>::qalloc_type()
+template <class T, bool ShareOnCopy>
+qalloc_type<T, ShareOnCopy>::qalloc_type()
     : impl_ (std::make_shared<
         detail::qalloc_impl<>>())
 {
 }
 
-template <class T>
+template <class T, bool ShareOnCopy>
 template <class U>
-qalloc_type<T>::qalloc_type(
-        qalloc_type<U> const& u)
+qalloc_type<T, ShareOnCopy>::qalloc_type(
+        qalloc_type<U, ShareOnCopy> const& u)
     : impl_ (u.impl_)
 {
 }
 
-template <class T>
+template <class T, bool ShareOnCopy>
 template <class U>
 U*
-qalloc_type<T>::alloc (std::size_t n)
+qalloc_type<T, ShareOnCopy>::alloc (std::size_t n)
 {
     if (n > std::numeric_limits<
             std::size_t>::max() / sizeof(U))
@@ -320,61 +329,77 @@ qalloc_type<T>::alloc (std::size_t n)
             std::alignment_of<U>::value));
 }
 
-template <class T>
+template <class T, bool ShareOnCopy>
 template <class U>
 inline
 void
-qalloc_type<T>::dealloc(
+qalloc_type<T, ShareOnCopy>::dealloc(
     U* p, std::size_t n)
 {
     impl_->deallocate(p);
 }
 
-template <class T>
+template <class T, bool ShareOnCopy>
 T*
-qalloc_type<T>::allocate (std::size_t n)
+qalloc_type<T, ShareOnCopy>::allocate (std::size_t n)
 {
     return alloc<T>(n);
 }
 
-template <class T>
+template <class T, bool ShareOnCopy>
 inline
 void
-qalloc_type<T>::deallocate(
+qalloc_type<T, ShareOnCopy>::deallocate(
     T* p, std::size_t n)
 {
     dealloc(p, n);
 }
 
-template <class T>
-inline
-void
-qalloc_type<T>::destroy (T* t)
-{
-    t->~T();
-}
-
-template <class T>
+template <class T, bool ShareOnCopy>
 template <class U>
 inline
 bool
-qalloc_type<T>::operator==(
-    qalloc_type<U> const& u)
+qalloc_type<T, ShareOnCopy>::operator==(
+    qalloc_type<U, ShareOnCopy> const& u)
 {
     return impl_.get() == u.impl_.get();
 }
 
-template <class T>
+template <class T, bool ShareOnCopy>
 template <class U>
 inline
 bool
-qalloc_type<T>::operator!=(
-    qalloc_type<U> const& u)
+qalloc_type<T, ShareOnCopy>::operator!=(
+    qalloc_type<U, ShareOnCopy> const& u)
 {
     return ! (*this == u);
 }
 
-} // test
+template <class T, bool ShareOnCopy>
+auto
+qalloc_type<T, ShareOnCopy>::select_on_container_copy_construction() const ->
+    qalloc_type
+{
+    return select_on_copy(
+        std::integral_constant<bool, ShareOnCopy>{});
+}
+
+template <class T, bool ShareOnCopy>
+auto
+qalloc_type<T, ShareOnCopy>::select_on_copy(std::true_type) const ->
+    qalloc_type
+{
+    return *this; // shared arena
+}
+
+template <class T, bool ShareOnCopy>
+auto
+qalloc_type<T, ShareOnCopy>::select_on_copy(std::false_type) const ->
+    qalloc_type
+{
+    return {}; // new arena
+}
+
 } // ripple
 
 #endif

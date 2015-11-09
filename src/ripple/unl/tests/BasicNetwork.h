@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SIM_BASICNETWORK_H_INCLUDED
 #define RIPPLE_SIM_BASICNETWORK_H_INCLUDED
 
-#include <ripple/unl/tests/qalloc.h>
+#include <ripple/basics/qalloc.h>
 #include <beast/chrono/manual_clock.h>
 #include <beast/hash/hash_append.h>
 #include <beast/hash/uhash.h>
@@ -49,7 +49,7 @@ namespace test {
     vertices and configurable connections representing edges.
     The caller is responsible for creating the Peer objects ahead
     of time.
-   
+
     Peer objects cannot be destroyed once the BasicNetwork is
     constructed. To handle peers going online and offline,
     callers can simply disconnect all links and reconnect them
@@ -166,7 +166,7 @@ private:
             , h_ (std::move(h))
         {
         }
-        
+
         msg_impl (Peer* from_, Peer* to_,
                 time_point when_, Handler const& h)
             : msg (from_, to_, when_)
@@ -320,7 +320,7 @@ public:
 
             If a connection is present, both ends are
             disconnected.
-            
+
             Any pending messages on the connection
             are discarded.
 
@@ -345,7 +345,7 @@ public:
 
         Effects:
 
-            If the link is not broken when the 
+            If the link is not broken when the
             link's `delay` time has elapsed,
             the function will be invoked with
             no arguments.
@@ -399,7 +399,7 @@ public:
     cancel (cancel_token const& token);
 
     /** Perform breadth-first search.
-        
+
         Function will be called with this signature:
 
             void(std::size_t, Peer&);
