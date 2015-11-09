@@ -1377,6 +1377,33 @@ public:
         return mCompleteLedgers.toString ();
     }
 
+    boost::optional <uint32_t>
+    getCloseTimeBySeq (LedgerIndex ledgerIndex) override
+    {
+        uint256 hash = getHashBySeq (ledgerIndex);
+        return hash.isNonZero() ? getCloseTimeByHash (hash) : boost::none;
+    }
+
+    boost::optional <uint32_t>
+    getCloseTimeByHash (LedgerHash const& ledgerHash) override
+    {
+        auto node = app_.getNodeStore().fetch (ledgerHash);
+        if (node &&
+            (node->getData().size() >= 120))
+        {
+            SerialIter it (node->getData().data(), node->getData().size());
+            if (it.get32() == HashPrefix::ledgerMaster)
+            {
+                it.skip (
+                    4+8+32+    // seq drops parentHash
+                    32+32+4);  // txHash acctHash parentClose
+                return it.get32();
+            }
+        }
+
+        return boost::none;
+    }
+
     uint256 getHashBySeq (std::uint32_t index) override
     {
         uint256 hash = mLedgerHistory.getLedgerHash (index);

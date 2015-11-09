@@ -161,10 +161,10 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
         if (options == 1)
         {
-            auto ledger = mApp.getLedgerMaster ().
-                    getLedgerBySeq (mInLedger);
-            if (ledger)
-                ret[jss::date] = ledger->info().closeTime;
+            auto ct = mApp.getLedgerMaster().
+                getCloseTimeBySeq (mInLedger);
+            if (ct)
+                ret[jss::date] = *ct;
         }
     }
 
