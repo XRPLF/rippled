@@ -118,11 +118,11 @@ class TxQ_test : public TestSuite
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "125");
-        return std::unique_ptr<Config const>(p.release());
+        return std::move(p);
     }
 
 public:
-    void run()
+    void testQueue()
     {
         using namespace jtx;
 
@@ -359,6 +359,205 @@ public:
             metrics.txQMaxSize, metrics.txPerLedger + 1,
             metrics.txPerLedger,
             256, lastMedian);
+    }
+
+    void testLastLedgerSeq()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig());
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(2);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        auto charlie = Account("charlie");
+        auto daria = Account("daria");
+        auto edgar = Account("edgar");
+        auto felicia = Account("felicia");
+
+        auto queued = ter(terQUEUED);
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+
+        // Fund these accounts and close the ledger without
+        // involving the queue, so that stats aren't affected.
+        env.fund(XRP(1000), noripple(alice, bob, charlie, daria, edgar, felicia));
+        env.close();
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+        submit(env,
+            env.jt(noop(bob)));
+        submit(env,
+            env.jt(noop(charlie)));
+        submit(env,
+            env.jt(noop(daria)));
+        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+
+        // Queue an item with a LastLedgerSeq.
+        submit(env,
+            env.jt(noop(alice), json(R"({"LastLedgerSequence":4})"),
+                queued));
+        // Queue items with higher fees to force the previous
+        // txn to wait.
+        submit(env,
+            env.jt(noop(bob), fee(20), queued));
+        submit(env,
+            env.jt(noop(charlie), fee(20), queued));
+        submit(env,
+            env.jt(noop(daria), fee(20), queued));
+        submit(env,
+            env.jt(noop(edgar), fee(20), queued));
+        checkMetrics(env, 5, boost::none, 3, 2, 256, 500);
+
+        close(env, 3);
+        checkMetrics(env, 1, 6, 4, 3, 256, 500);
+
+        // Keep alice's transaction waiting.
+        submit(env,
+            env.jt(noop(bob), fee(20), queued));
+        submit(env,
+            env.jt(noop(charlie), fee(20), queued));
+        submit(env,
+            env.jt(noop(daria), fee(20), queued));
+        submit(env,
+            env.jt(noop(edgar), fee(20), queued));
+        submit(env,
+            env.jt(noop(felicia), fee(20), queued));
+        checkMetrics(env, 6, 6, 4, 3, 257, 500);
+
+        close(env, 4);
+        // alice's transaction expired without getting
+        // into the ledger, so the queue is now empty.
+        checkMetrics(env, 0, 8, 5, 4, 256, 512);
+        expect(env.seq(alice) == 1);
+    }
+
+    void testZeroFeeTxn()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig());
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(2);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+
+        auto queued = ter(terQUEUED);
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+
+        // Fund these accounts and close the ledger without
+        // involving the queue, so that stats aren't affected.
+        env.fund(XRP(1000), noripple(alice, bob));
+        env.close();
+
+        // Fill the ledger
+        submit(env, env.jt(noop(alice)));
+        submit(env, env.jt(noop(alice)));
+        submit(env, env.jt(noop(alice)));
+        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+
+        submit(env,
+            env.jt(noop(bob), queued));
+        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+
+        // Even though this transaction has a 0 fee,
+        // SetRegularKey::calculateBaseFee indicates this is
+        // a "free" transaction, so it has an "infinite" fee
+        // level and goes into the open ledger.
+        submit(env,
+            env.jt(regkey(alice, bob), fee(0)));
+        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+
+        // This transaction also has an "infinite" fee level,
+        // but since bob has a txn in the queue, and multiple
+        // transactions aren't yet supported, this one fails
+        // with terPRE_SEQ (notably, *not* telINSUF_FEE_P).
+        // This implicitly relies on preclaim succeeding and
+        // canBeHeld failing under the hood.
+        submit(env,
+            env.jt(regkey(bob, alice), fee(0),
+                seq(env.seq(bob) + 1), ter(terPRE_SEQ)));
+        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+
+    }
+
+    void testPreclaimFailures()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig());
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+
+        env.fund(XRP(1000), noripple(alice));
+
+        // These types of checks are tested elsewhere, but
+        // this verifies that TxQ handles the failures as
+        // expected.
+
+        // Fail in preflight
+        submit(env,
+            env.jt(pay(alice, bob, XRP(-1000)),
+                ter(temBAD_AMOUNT)));
+
+        // Fail in preclaim
+        submit(env,
+            env.jt(noop(alice), fee(XRP(100000)),
+                ter(terINSUF_FEE_B)));
+    }
+
+    void testQueuedFailure()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig());
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(2);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+
+        auto queued = ter(terQUEUED);
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+
+        env.fund(XRP(1000), noripple(alice, bob));
+
+        checkMetrics(env, 0, boost::none, 2, 2, 256, 500);
+
+        // Fill the ledger
+        submit(env, env.jt(noop(alice)));
+        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+
+        // Put a transaction in the queue
+        submit(env, env.jt(noop(alice), queued));
+        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+
+        // Now cheat, and bypass the queue.
+        env(noop(alice));
+        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+
+        close(env, 4);
+        // Alice's queued transaction failed in TxQ::accept
+        // with tefPAST_SEQ
+        checkMetrics(env, 0, 8, 0, 4, 256, 500);
+
+    }
+
+    void run()
+    {
+        testQueue();
+        testLastLedgerSeq();
+        testZeroFeeTxn();
+        testPreclaimFailures();
+        testQueuedFailure();
     }
 };
 
