@@ -22,6 +22,7 @@
 
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/basics/qalloc.h>
 #include <map>
 #include <utility>
 
@@ -89,7 +90,9 @@ private:
     class sles_iter_impl;
 
     using items_t = std::map<key_type,
-        std::pair<Action, std::shared_ptr<SLE>>>;
+        std::pair<Action, std::shared_ptr<SLE>>,
+        std::less<key_type>, qalloc_type<std::pair<key_type const,
+        std::pair<Action, std::shared_ptr<SLE>>>, false>>;
 
     items_t items_;
     XRPAmount dropsDestroyed_ = 0;
