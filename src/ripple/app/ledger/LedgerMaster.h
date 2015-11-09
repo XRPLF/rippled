@@ -137,6 +137,12 @@ public:
     virtual uint256 getLedgerHash(
         std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
+    virtual boost::optional <uint32_t> getCloseTimeBySeq (
+        LedgerIndex ledgerIndex) = 0;
+
+    virtual boost::optional <uint32_t> getCloseTimeByHash (
+        LedgerHash const& ledgerHash) = 0;
+
     virtual void addHeldTransaction (std::shared_ptr<Transaction> const& trans) = 0;
     virtual void fixMismatch (Ledger::ref ledger) = 0;
 
