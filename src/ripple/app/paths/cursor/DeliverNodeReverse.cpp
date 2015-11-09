@@ -83,7 +83,7 @@ TER PathCursor::deliverNodeReverseImpl (
                 CALC_NODE_DELIVER_MAX_LOOPS_MQ :
                 CALC_NODE_DELIVER_MAX_LOOPS))
         {
-            JLOG (j_.fatal) << "loop count exceeded";
+            JLOG (j_.warning) << "loop count exceeded";
             return telFAILED_PROCESSING;
         }
 
