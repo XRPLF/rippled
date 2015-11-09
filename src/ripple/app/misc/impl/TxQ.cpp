@@ -35,11 +35,11 @@ static
 std::uint64_t
 getRequiredFeeLevel(TxType txType)
 {
-    if ((txType == ttAMENDMENT) || (txType == ttFEE))
-        return 0;
-
-    // For now, all valid non-pseudo transactions have a level of 256.
+    // For now, all valid non-pseudo transactions have a level of 256,
+    // and no pseudo transactions should ever be seen by the open
+    // ledger (and if one somehow is, it will have a 0 fee).
     // This code can be changed to support variable transaction fees
+    // based on txType.
     return 256;
 }
 
@@ -315,6 +315,8 @@ TxQ::apply(Application& app, OpenView& view,
     auto const account = (*tx)[sfAccount];
     auto currentSeq = true;
 
+    std::lock_guard<std::mutex> lock(mutex_);
+
     // If there are other transactions in the queue
     // for this account, account for that before the pre-checks,
     // so we don't get a false terPRE_SEQ.
@@ -355,8 +357,6 @@ TxQ::apply(Application& app, OpenView& view,
 
     // Too low of a fee should get caught by preclaim
     assert(feeLevelPaid >= feeMetrics_.baseLevel);
-
-    std::lock_guard<std::mutex> lock(mutex_);
 
     // Is there a transaction for the same account with the
     // same sequence number already in the queue?
@@ -432,21 +432,13 @@ TxQ::apply(Application& app, OpenView& view,
 
         std::tie(txnResult, didApply) = doApply(pcresult, app, view);
 
-        if (didApply)
-        {
-            JLOG(j_.trace) << "Transaction " <<
-                transactionID <<
-                " applied successfully with " <<
-                transToken(txnResult);
-
-            return { txnResult, true };
-        }
-        // failure
         JLOG(j_.trace) << "Transaction " <<
             transactionID <<
-            " failed with " << transToken(txnResult);
+                (didApply ? " applied successfully with " :
+                    " failed with ") <<
+                        transToken(txnResult);
 
-        return { txnResult, false };
+        return { txnResult, didApply };
     }
 
     if (! canBeHeld(tx))
@@ -531,7 +523,7 @@ TxQ::processValidatedLedger(Application& app,
     if (!timeLeap)
         maxSize_ = feeMetrics_.getTxnsExpected() * setup_.ledgersInQueue;
 
-    // Remove any queued candidates whos LastLedgerSequence has gone by.
+    // Remove any queued candidates whose LastLedgerSequence has gone by.
     // Stop if we leave maxSize_ candidates.
     size_t keptCandidates = 0;
     auto candidateIter = byFee_.begin();
