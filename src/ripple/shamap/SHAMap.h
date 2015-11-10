@@ -135,14 +135,14 @@ public:
     // Handles copy on write for mutable snapshots.
     std::shared_ptr<SHAMap> snapShot (bool isMutable) const;
     void setLedgerSeq (std::uint32_t lseq);
-    bool fetchRoot (uint256 const& hash, SHAMapSyncFilter * filter);
+    bool fetchRoot (SHAMapHash const& hash, SHAMapSyncFilter * filter);
 
     // normal hash access functions
     bool hasItem (uint256 const& id) const;
     bool delItem (uint256 const& id);
     bool addItem (SHAMapItem const& i, bool isTransaction, bool hasMeta);
     bool addItem (SHAMapItem&& i, bool isTransaction, bool hasMeta);
-    uint256 getHash () const;
+    SHAMapHash getHash () const;
 
     // save a copy if you have a temporary anyway
     bool updateGiveItem (std::shared_ptr<SHAMapItem const> const&,
@@ -164,7 +164,7 @@ public:
     // of the SHAMapItem beyond this SHAMap
     std::shared_ptr<SHAMapItem const> const& peekItem (uint256 const& id) const;
     std::shared_ptr<SHAMapItem const> const&
-        peekItem (uint256 const& id, uint256 & hash) const;
+        peekItem (uint256 const& id, SHAMapHash& hash) const;
     std::shared_ptr<SHAMapItem const> const&
         peekItem (uint256 const& id, SHAMapTreeNode::TNType & type) const;
 
@@ -187,8 +187,8 @@ public:
 
     bool getRootNode (Serializer & s, SHANodeFormat format) const;
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
-    SHAMapAddNode addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
-                               SHAMapSyncFilter * filter);
+    SHAMapAddNode addRootNode (SHAMapHash const& hash, Blob const& rootNode,
+                               SHANodeFormat format, SHAMapSyncFilter * filter);
     SHAMapAddNode addRootNode (Blob const& rootNode, SHANodeFormat format,
                                SHAMapSyncFilter * filter);
     SHAMapAddNode addKnownNode (SHAMapNodeID const& nodeID, Blob const& rawNode,
@@ -230,18 +230,18 @@ private:
     int unshare ();
 
      // tree node cache operations
-    std::shared_ptr<SHAMapAbstractNode> getCache (uint256 const& hash) const;
-    void canonicalize (uint256 const& hash, std::shared_ptr<SHAMapAbstractNode>&) const;
+    std::shared_ptr<SHAMapAbstractNode> getCache (SHAMapHash const& hash) const;
+    void canonicalize (SHAMapHash const& hash, std::shared_ptr<SHAMapAbstractNode>&) const;
 
     // database operations
-    std::shared_ptr<SHAMapAbstractNode> fetchNodeFromDB (uint256 const& hash) const;
-    std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (uint256 const& hash) const;
+    std::shared_ptr<SHAMapAbstractNode> fetchNodeFromDB (SHAMapHash const& hash) const;
+    std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (SHAMapHash const& hash) const;
     std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (
         SHAMapNodeID const& id,
-        uint256 const& hash,
+        SHAMapHash const& hash,
         SHAMapSyncFilter *filter) const;
-    std::shared_ptr<SHAMapAbstractNode> fetchNode (uint256 const& hash) const;
-    std::shared_ptr<SHAMapAbstractNode> checkFilter(uint256 const& hash,
+    std::shared_ptr<SHAMapAbstractNode> fetchNode (SHAMapHash const& hash) const;
+    std::shared_ptr<SHAMapAbstractNode> checkFilter(SHAMapHash const& hash,
         SHAMapNodeID const& id, SHAMapSyncFilter* filter) const;
 
     /** Update hashes up to the root */
@@ -295,8 +295,8 @@ private:
     /** If there is only one leaf below this node, get its contents */
     std::shared_ptr<SHAMapItem const> const& onlyBelow (SHAMapAbstractNode*) const;
 
-    bool hasInnerNode (SHAMapNodeID const& nodeID, uint256 const& hash) const;
-    bool hasLeafNode (uint256 const& tag, uint256 const& hash) const;
+    bool hasInnerNode (SHAMapNodeID const& nodeID, SHAMapHash const& hash) const;
+    bool hasLeafNode (uint256 const& tag, SHAMapHash const& hash) const;
 
     SHAMapItem const* peekFirstItem(NodeStack& stack) const;
     SHAMapItem const* peekNextItem(uint256 const& id, NodeStack& stack) const;

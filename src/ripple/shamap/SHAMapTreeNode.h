@@ -39,6 +39,48 @@ enum SHANodeFormat
     snfHASH     = 3, // just the hash
 };
 
+// A SHAMapHash is the hash of a node in a SHAMap, and also the
+// type of the hash of the entire SHAMap.
+class SHAMapHash
+{
+    uint256 hash_;
+public:
+    SHAMapHash() = default;
+    explicit SHAMapHash(uint256 const& hash)
+        : hash_(hash)
+        {}
+
+    uint256 const& as_uint256() const {return hash_;}
+    uint256& as_uint256() {return hash_;}
+    bool isZero() const {return hash_.isZero();}
+    bool isNonZero() const {return hash_.isNonZero();}
+    int signum() const {return hash_.signum();}
+    void zero() {hash_.zero();}
+
+    friend bool operator==(SHAMapHash const& x, SHAMapHash const& y)
+    {
+        return x.hash_ == y.hash_;
+    }
+
+    friend bool operator<(SHAMapHash const& x, SHAMapHash const& y)
+    {
+        return x.hash_ < y.hash_;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, SHAMapHash const& x)
+    {
+        return os << x.hash_;
+    }
+
+    friend std::string to_string(SHAMapHash const& x) {return to_string(x.hash_);}
+};
+
+inline
+bool operator!=(SHAMapHash const& x, SHAMapHash const& y)
+{
+    return !(x == y);
+}
+
 class SHAMapAbstractNode
 {
 public:
@@ -53,7 +95,7 @@ public:
 
 protected:
     TNType                          mType;
-    uint256                         mHash;
+    SHAMapHash                      mHash;
     std::uint32_t                   mSeq;
 
 protected:
@@ -62,12 +104,12 @@ protected:
     SHAMapAbstractNode& operator=(SHAMapAbstractNode const&) = delete;
 
     SHAMapAbstractNode(TNType type, std::uint32_t seq);
-    SHAMapAbstractNode(TNType type, std::uint32_t seq, uint256 const& hash);
+    SHAMapAbstractNode(TNType type, std::uint32_t seq, SHAMapHash const& hash);
 
 public:
     std::uint32_t getSeq () const;
     void setSeq (std::uint32_t s);
-    uint256 const& getNodeHash () const;
+    SHAMapHash const& getNodeHash () const;
     TNType getType () const;
     bool isLeaf () const;
     bool isInner () const;
@@ -81,7 +123,7 @@ public:
 
     static std::shared_ptr<SHAMapAbstractNode>
         make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
-             uint256 const& hash, bool hashValid, beast::Journal j);
+             SHAMapHash const& hash, bool hashValid, beast::Journal j);
 
     // debugging
 #ifdef BEAST_DEBUG
@@ -92,7 +134,7 @@ public:
 class SHAMapInnerNode
     : public SHAMapAbstractNode
 {
-    uint256                         mHashes[16];
+    SHAMapHash                      mHashes[16];
     std::shared_ptr<SHAMapAbstractNode> mChildren[16];
     int                             mIsBranch = 0;
     std::uint32_t                   mFullBelowGen = 0;
@@ -105,7 +147,7 @@ public:
     bool isEmpty () const;
     bool isEmptyBranch (int m) const;
     int getBranchCount () const;
-    uint256 const& getChildHash (int m) const;
+    SHAMapHash const& getChildHash (int m) const;
 
     void setChild(int m, std::shared_ptr<SHAMapAbstractNode> const& child);
     void shareChild (int m, std::shared_ptr<SHAMapAbstractNode> const& child);
@@ -125,7 +167,7 @@ public:
 
     friend std::shared_ptr<SHAMapAbstractNode>
         SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq,
-             SHANodeFormat format, uint256 const& hash, bool hashValid,
+             SHANodeFormat format, SHAMapHash const& hash, bool hashValid,
                  beast::Journal j);
 };
 
@@ -143,7 +185,7 @@ public:
     SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
                     TNType type, std::uint32_t seq);
     SHAMapTreeNode(std::shared_ptr<SHAMapItem const> const& item, TNType type,
-                   std::uint32_t seq, uint256 const& hash);
+                   std::uint32_t seq, SHAMapHash const& hash);
     std::shared_ptr<SHAMapAbstractNode> clone(std::uint32_t seq) const override;
 
     void addRaw (Serializer&, SHANodeFormat format) const override;
@@ -173,7 +215,7 @@ SHAMapAbstractNode::SHAMapAbstractNode(TNType type, std::uint32_t seq)
 
 inline
 SHAMapAbstractNode::SHAMapAbstractNode(TNType type, std::uint32_t seq,
-                                       uint256 const& hash)
+                                       SHAMapHash const& hash)
     : mType(type)
     , mHash(hash)
     , mSeq(seq)
@@ -195,7 +237,7 @@ SHAMapAbstractNode::setSeq (std::uint32_t s)
 }
 
 inline
-uint256 const&
+SHAMapHash const&
 SHAMapAbstractNode::getNodeHash () const
 {
     return mHash;
@@ -254,7 +296,7 @@ SHAMapInnerNode::isEmptyBranch (int m) const
 }
 
 inline
-uint256 const&
+SHAMapHash const&
 SHAMapInnerNode::getChildHash (int m) const
 {
     assert ((m >= 0) && (m < 16) && (getType() == tnINNER));

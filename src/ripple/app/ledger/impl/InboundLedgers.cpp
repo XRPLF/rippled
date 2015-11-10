@@ -257,7 +257,7 @@ public:
 
                 auto newNode = SHAMapAbstractNode::make(
                     Blob (node.nodedata().begin(), node.nodedata().end()),
-                    0, snfWIRE, uZero, false, app_.journal ("SHAMapNodeID"));
+                    0, snfWIRE, SHAMapHash{uZero}, false, app_.journal ("SHAMapNodeID"));
 
                 if (!newNode)
                     return;
@@ -268,7 +268,7 @@ public:
                 auto blob = std::make_shared<Blob> (s.begin(), s.end());
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getNodeHash(), blob);
+                    newNode->getNodeHash().as_uint256(), blob);
             }
         }
         catch (...)

@@ -141,7 +141,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
     int const maxDefer = f_.db().getDesiredAsyncReadCount ();
 
     // Track the missing hashes we have found so far
-    std::set <uint256> missingHashes;
+    std::set <SHAMapHash> missingHashes;
 
 
     while (1)
@@ -173,13 +173,13 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                 int branch = (firstChild + currentChild++) % 16;
                 if (!node->isEmptyBranch (branch))
                 {
-                    uint256 const& childHash = node->getChildHash (branch);
+                    auto const& childHash = node->getChildHash (branch);
 
                     if (missingHashes.count (childHash) != 0)
                     {
                         fullBelow = false;
                     }
-                    else if (! backed_ || ! f_.fullbelow().touch_if_exists (childHash))
+                    else if (! backed_ || ! f_.fullbelow().touch_if_exists (childHash.as_uint256()))
                     {
                         SHAMapNodeID childID = nodeID.getChildNodeID (branch);
                         bool pending = false;
@@ -190,7 +190,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                             if (!pending)
                             { // node is not in the database
                                 nodeIDs.push_back (childID);
-                                hashes.push_back (childHash);
+                                hashes.push_back (childHash.as_uint256());
 
                                 if (--max <= 0)
                                     return;
@@ -226,7 +226,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
             { // No partial node encountered below this node
                 node->setFullBelowGen (generation);
                 if (backed_)
-                    f_.fullbelow().insert (node->getNodeHash ());
+                    f_.fullbelow().insert (node->getNodeHash ().as_uint256());
             }
 
             if (stack.empty ())
@@ -274,7 +274,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
             else if ((max > 0) && (missingHashes.insert (nodeHash).second))
             {
                 nodeIDs.push_back (nodeID);
-                hashes.push_back (nodeHash);
+                hashes.push_back (nodeHash.as_uint256());
 
                 --max;
             }
@@ -419,7 +419,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
 
     assert (seq_ >= 1);
     auto node = SHAMapAbstractNode::make(
-        rootNode, 0, format, uZero, false, f_.journal ());
+        rootNode, 0, format, SHAMapHash{uZero}, false, f_.journal ());
     if (!node || !node->isValid ())
         return SHAMapAddNode::invalid ();
 
@@ -439,14 +439,14 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
     {
         Serializer s;
         root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash (),
+        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash ().as_uint256(),
                          s.modData (), root_->getType ());
     }
 
     return SHAMapAddNode::useful ();
 }
 
-SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
+SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
     // we already have a root_ node
@@ -460,7 +460,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
     assert (seq_ >= 1);
     auto node = SHAMapAbstractNode::make(
-        rootNode, 0, format, uZero, false, f_.journal ());
+        rootNode, 0, format, SHAMapHash{uZero}, false, f_.journal ());
     if (!node || !node->isValid() || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
 
@@ -476,8 +476,8 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     {
         Serializer s;
         root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash (), s.modData (),
-                         root_->getType ());
+        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash ().as_uint256(), 
+                         s.modData (), root_->getType ());
     }
 
     return SHAMapAddNode::useful ();
@@ -515,8 +515,8 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
             return SHAMapAddNode::invalid ();
         }
 
-        uint256 childHash = inner->getChildHash (branch);
-        if (f_.fullbelow().touch_if_exists (childHash))
+        auto childHash = inner->getChildHash (branch);
+        if (f_.fullbelow().touch_if_exists (childHash.as_uint256()))
             return SHAMapAddNode::duplicate ();
 
         auto prevNode = inner;
@@ -538,7 +538,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
             }
 
             auto newNode = SHAMapAbstractNode::make(
-                rawNode, 0, snfWIRE, uZero, false, f_.journal ());
+                rawNode, 0, snfWIRE, SHAMapHash{uZero}, false, f_.journal ());
 
             if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
             {
@@ -563,7 +563,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
             {
                 Serializer s;
                 newNode->addRaw (s, snfPREFIX);
-                filter->gotNode (false, node, childHash,
+                filter->gotNode (false, node, childHash.as_uint256(),
                                  s.modData (), newNode->getType ());
             }
 
@@ -653,7 +653,7 @@ bool SHAMap::deepCompare (SHAMap& other) const
 */
 bool
 SHAMap::hasInnerNode (SHAMapNodeID const& targetNodeID,
-                      uint256 const& targetNodeHash) const
+                      SHAMapHash const& targetNodeHash) const
 {
     auto node = root_.get();
     SHAMapNodeID nodeID;
@@ -675,7 +675,7 @@ SHAMap::hasInnerNode (SHAMapNodeID const& targetNodeID,
 /** Does this map have this leaf node?
 */
 bool
-SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash) const
+SHAMap::hasLeafNode (uint256 const& tag, SHAMapHash const& targetNodeHash) const
 {
     auto node = root_.get();
     SHAMapNodeID nodeID;
@@ -720,7 +720,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
             {
                 Serializer s;
                 smn.addRaw (s, snfPREFIX);
-                func (smn.getNodeHash(), s.peekData());
+                func (smn.getNodeHash().as_uint256(), s.peekData());
 
                 if (--max <= 0)
                     return false;
@@ -772,7 +772,7 @@ SHAMap::visitDifferences(SHAMap* have,
         {
             if (!node->isEmptyBranch (i))
             {
-                uint256 const& childHash = node->getChildHash (i);
+                auto const& childHash = node->getChildHash (i);
                 SHAMapNodeID childID = nodeID.getChildNodeID (i);
                 auto next = descendThrow(node, i);
 

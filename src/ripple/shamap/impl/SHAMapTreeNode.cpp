@@ -65,7 +65,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
 }
 
 SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
-                                TNType type, std::uint32_t seq, uint256 const& hash)
+                                TNType type, std::uint32_t seq, SHAMapHash const& hash)
     : SHAMapAbstractNode(type, seq, hash)
     , mItem (item)
 {
@@ -74,7 +74,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
 
 std::shared_ptr<SHAMapAbstractNode>
 SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
-                         uint256 const& hash, bool hashValid, beast::Journal j)
+                         SHAMapHash const& hash, bool hashValid, beast::Journal j)
 {
     if (format == snfWIRE)
     {
@@ -125,7 +125,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             auto ret = std::make_shared<SHAMapInnerNode>(seq);
             for (int i = 0; i < 16; ++i)
             {
-                s.get256 (ret->mHashes[i], i * 32);
+                s.get256 (ret->mHashes[i].as_uint256(), i * 32);
 
                 if (ret->mHashes[i].isNonZero ())
                     ret->mIsBranch |= (1 << i);
@@ -147,7 +147,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
                     throw std::runtime_error ("short CI node");
                 if ((pos < 0) || (pos >= 16))
                     throw std::runtime_error ("invalid CI node");
-                s.get256 (ret->mHashes[pos], i * 33);
+                s.get256 (ret->mHashes[pos].as_uint256(), i * 33);
                 if (ret->mHashes[pos].isNonZero ())
                     ret->mIsBranch |= (1 << pos);
             }
@@ -230,7 +230,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             auto ret = std::make_shared<SHAMapInnerNode>(seq);
             for (int i = 0; i < 16; ++i)
             {
-                s.get256 (ret->mHashes[i], i * 32);
+                s.get256 (ret->mHashes[i].as_uint256(), i * 32);
 
                 if (ret->mHashes[i].isNonZero ())
                     ret->mIsBranch |= (1 << i);
@@ -276,9 +276,9 @@ SHAMapInnerNode::updateHash()
             Slice(reinterpret_cast<unsigned char const*>(mHashes),
                 sizeof (mHashes)));
     }
-    if (nh == mHash)
+    if (nh == mHash.as_uint256())
         return false;
-    mHash = nh;
+    mHash = SHAMapHash{nh};
     return true;
 }
 
@@ -317,10 +317,10 @@ SHAMapTreeNode::updateHash()
     else
         assert (false);
 
-    if (nh == mHash)
+    if (nh == mHash.as_uint256())
         return false;
 
-    mHash = nh;
+    mHash = SHAMapHash{nh};
     return true;
 }
 
@@ -334,7 +334,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
 
     if (format == snfHASH)
     {
-        s.add256 (getNodeHash ());
+        s.add256 (mHash.as_uint256());
     }
     else if (mType == tnINNER)
     {
@@ -345,7 +345,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             s.add32 (HashPrefix::innerNode);
 
             for (int i = 0; i < 16; ++i)
-                s.add256 (mHashes[i]);
+                s.add256 (mHashes[i].as_uint256());
         }
         else
         {
@@ -355,7 +355,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
                 for (int i = 0; i < 16; ++i)
                     if (!isEmptyBranch (i))
                     {
-                        s.add256 (mHashes[i]);
+                        s.add256 (mHashes[i].as_uint256());
                         s.add8 (i);
                     }
 
@@ -364,7 +364,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             else
             {
                 for (int i = 0; i < 16; ++i)
-                    s.add256 (mHashes[i]);
+                    s.add256 (mHashes[i].as_uint256());
 
                 s.add8 (2);
             }
@@ -384,7 +384,7 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
 
     if (format == snfHASH)
     {
-        s.add256 (getNodeHash ());
+        s.add256 (mHash.as_uint256());
     }
     else if (mType == tnACCOUNT_STATE)
     {

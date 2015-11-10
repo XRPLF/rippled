@@ -445,7 +445,7 @@ void LedgerConsensusImp::mapCompleteInternal (
         return;
     }
 
-    assert (hash == map->getHash ());
+    assert (hash == map->getHash ().as_uint256());
 
     auto it = mAcquired.find (hash);
 
@@ -505,7 +505,7 @@ void LedgerConsensusImp::mapCompleteInternal (
     std::vector<NodeID> peers;
     for (auto& it : mPeerPositions)
     {
-        if (it.second->getCurrentHash () == map->getHash ())
+        if (it.second->getCurrentHash () == map->getHash ().as_uint256())
             peers.push_back (it.second->getPeerID ());
     }
 
@@ -981,7 +981,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         if (set->getHash ().isNonZero ())
            consensus_.takePosition (mPreviousLedger->info().seq, set);
 
-        assert (set->getHash () == mOurPosition->getCurrentHash ());
+        assert (set->getHash ().as_uint256() == mOurPosition->getCurrentHash ());
     }
 
     auto  closeTime = mOurPosition->getCloseTime ();
@@ -1020,7 +1020,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
     // Put transactions into a deterministic, but unpredictable, order
-    CanonicalTXSet retriableTxs (set->getHash ());
+    CanonicalTXSet retriableTxs (set->getHash ().as_uint256());
 
     // Build the new last closed ledger
     auto newLCL = std::make_shared<Ledger>(
@@ -1464,7 +1464,7 @@ void LedgerConsensusImp::takeInitialPosition (
     // Tell the ledger master not to acquire the ledger we're probably building
     ledgerMaster_.setBuildingLedger (mPreviousLedger->info().seq + 1);
 
-    uint256 txSet = initialSet->getHash ();
+    auto txSet = initialSet->getHash ().as_uint256();
     JLOG (j_.info) << "initial position " << txSet;
     mapCompleteInternal (txSet, initialSet, false);
 
@@ -1489,7 +1489,7 @@ void LedgerConsensusImp::takeInitialPosition (
 
             if (iit != mAcquired.end ())
             {
-                mCompares.insert(iit->second->getHash());
+                mCompares.insert(iit->second->getHash().as_uint256());
                 createDisputes (initialSet, iit->second);
             }
         }
@@ -1680,7 +1680,7 @@ void LedgerConsensusImp::updateOurPositions ()
 
     if (changes)
     {
-        uint256 newHash = ourPosition->getHash ();
+        auto newHash = ourPosition->getHash ().as_uint256();
         JLOG (j_.info)
             << "Position change: CTime " << closeTime
             << ", tx " << newHash;

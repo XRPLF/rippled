@@ -254,7 +254,7 @@ SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
         SHAMapAbstractNode const& node)
 {
     // Copy a single record from node to database_
-    database_->fetchNode (node.getNodeHash());
+    database_->fetchNode (node.getNodeHash().as_uint256());
     if (! (++nodeCount % checkHealthInterval_))
     {
         if (health())

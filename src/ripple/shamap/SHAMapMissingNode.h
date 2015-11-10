@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/shamap/SHAMapTreeNode.h>
 #include <iosfwd>
 #include <stdexcept>
 
@@ -38,28 +39,27 @@ class SHAMapMissingNode
 {
 private:
     SHAMapType mType;
-    uint256 mNodeHash;
+    SHAMapHash mNodeHash;
+    uint256    mNodeID;
 public:
     SHAMapMissingNode (SHAMapType t,
-                       uint256 const& nodeHash)
+                       SHAMapHash const& nodeHash)
         : std::runtime_error ("SHAMapMissingNode")
         , mType (t)
         , mNodeHash (nodeHash)
     {
     }
 
-    SHAMapType getMapType () const
+    SHAMapMissingNode (SHAMapType t,
+                       uint256 const& nodeID)
+        : std::runtime_error ("SHAMapMissingNode")
+        , mType (t)
+        , mNodeID (nodeID)
     {
-        return mType;
     }
 
-    uint256 const& getNodeHash () const
-    {
-        return mNodeHash;
-    }
+    friend std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
 };
-
-extern std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
 
 } // ripple
 
