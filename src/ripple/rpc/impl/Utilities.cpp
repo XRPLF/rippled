@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/Utilities.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
@@ -60,6 +61,19 @@ addPaymentDeliveredAmount (
     // that the amount delivered is listed in the Amount field.
     if (transaction->getLedger () >= 4594095)
     {
+        meta[jss::delivered_amount] =
+            serializedTx->getFieldAmount (sfAmount).getJson (1);
+        return;
+    }
+
+    // If the ledger closed long after the DeliveredAmount code was deployed
+    // then its absence indicates that the amount delivered is listed in the
+    // Amount field. DeliveredAmount went live January 24, 2014.
+    auto ct =
+        context.ledgerMaster.getCloseTimeBySeq (transaction->getLedger ());
+    if (ct && (*ct > 446000000))
+    {
+        // 446000000 is in Feb 2014, well after DeliveredAmount went live
         meta[jss::delivered_amount] =
             serializedTx->getFieldAmount (sfAmount).getJson (1);
         return;
