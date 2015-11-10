@@ -52,13 +52,12 @@ class LedgerCleanerImp : public LedgerCleaner
     std::thread thread_;
 
     enum class State : char {
-        notReady = 0,
+        readyToClean = 0,
         startCleaning,
         cleaning,
-        stoppedCleaning,
         shouldExit
     };
-    State state_ = State::notReady;
+    State state_ = State::readyToClean;
 
     // The lowest ledger in the range we're checking.
     LedgerIndex  minRange_ = 0;
@@ -234,13 +233,6 @@ public:
     //
     //--------------------------------------------------------------------------
 private:
-    // Don't call this method if you already have mutex_ locked!
-    State lockAndGetState () const
-    {
-        std::lock_guard<std::mutex> lock (mutex_);
-        return state_;
-    }
-
     void init ()
     {
         JLOG (j_.debug) << "Initializing";
@@ -420,9 +412,15 @@ private:
             state_ = State::cleaning;
         }
 
+        auto shouldExit = [this]()
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            return state_ == State::shouldExit;
+        };
+
         Ledger::pointer goodLedger;
 
-        while (lockAndGetState() != State::shouldExit)
+        while (! shouldExit())
         {
             LedgerIndex ledgerIndex;
             LedgerHash ledgerHash;
@@ -433,7 +431,7 @@ private:
             {
                 JLOG (j_.debug) << "Waiting for load to subside";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
-                if (lockAndGetState() == State::shouldExit)
+                if (shouldExit())
                     return;
             }
 
@@ -443,7 +441,7 @@ private:
                     (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
-                    state_ = State::stoppedCleaning;
+                    state_ = State::readyToClean;
                     return;
                 }
                 ledgerIndex = maxRange_;
