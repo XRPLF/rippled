@@ -19,10 +19,13 @@
 
 #include <BeastConfig.h>
 #include <ripple/resource/ResourceManager.h>
+#include <ripple/resource/impl/Logic.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/basics/Log.h>  // JLOG
+#include <ripple/basics/Log.h>
 #include <beast/threads/Thread.h>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 namespace ripple {
 namespace Resource {
@@ -33,15 +36,15 @@ private:
     beast::Journal journal_;
     Logic logic_;
     std::thread thread_;
-    std::atomic<bool> run_;
+    bool stop_ = false;
+    std::mutex mutex_;
+    std::condition_variable cond_;
 
 public:
     ManagerImp (beast::insight::Collector::ptr const& collector,
         beast::Journal journal)
         : journal_ (journal)
         , logic_ (collector, stopwatch(), journal)
-        , thread_ ()
-        , run_ (true)
     {
         thread_ = std::thread {&ManagerImp::run, this};
     }
@@ -52,17 +55,12 @@ public:
 
     ~ManagerImp () override
     {
-        run_.store (false);
-        try
         {
-            thread_.join();
+            std::lock_guard<std::mutex> lock(mutex_);
+            stop_ = true;
+            cond_.notify_one();
         }
-        catch (std::exception ex)
-        {
-            // Swallow the exception in a destructor.
-            JLOG(journal_.warning) << "std::exception in Resource::~Manager.  "
-                << ex.what();
-        }
+        thread_.join();
     }
 
     Consumer newInboundEndpoint (beast::IP::Endpoint const& address) override
@@ -116,12 +114,14 @@ private:
     void run ()
     {
         beast::Thread::setCurrentThreadName ("Resource::Manager");
-        do
+        for(;;)
         {
             logic_.periodicActivity();
-            std::this_thread::sleep_for (std::chrono::seconds (1));
+            std::unique_lock<std::mutex> lock(mutex_);
+            cond_.wait_for(lock, std::chrono::seconds(1));
+            if (stop_)
+                break;
         }
-        while (run_.load());
     }
 };
 
