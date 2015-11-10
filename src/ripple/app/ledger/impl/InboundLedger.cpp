@@ -217,7 +217,7 @@ bool InboundLedger::tryLocal ()
             TransactionStateSF filter(app_);
 
             if (mLedger->txMap().fetchRoot (
-                mLedger->info().txHash, &filter))
+                SHAMapHash{mLedger->info().txHash}, &filter))
             {
                 auto h (mLedger->getNeededTransactionHashes (1, &filter));
 
@@ -245,7 +245,7 @@ bool InboundLedger::tryLocal ()
             AccountStateSF filter(app_);
 
             if (mLedger->stateMap().fetchRoot (
-                mLedger->info().accountHash, &filter))
+                SHAMapHash{mLedger->info().accountHash}, &filter))
             {
                 auto h (mLedger->getNeededAccountStateHashes (1, &filter));
 
@@ -854,7 +854,7 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
         if (nodeIDit->isRoot ())
         {
             san += mLedger->txMap().addRootNode (
-                mLedger->info().txHash, *nodeDatait, snfWIRE, &tFilter);
+                SHAMapHash{mLedger->info().txHash}, *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood())
                 return false;
         }
@@ -920,7 +920,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         if (nodeIDit->isRoot ())
         {
             san += mLedger->stateMap().addRootNode (
-                mLedger->info().accountHash, *nodeDatait, snfWIRE, &tFilter);
+                SHAMapHash{mLedger->info().accountHash}, *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood ())
             {
                 if (m_journal.warning) m_journal.warning <<
@@ -977,7 +977,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 
     AccountStateSF tFilter(app_);
     san += mLedger->stateMap().addRootNode (
-        mLedger->info().accountHash, data, snfWIRE, &tFilter);
+        SHAMapHash{mLedger->info().accountHash}, data, snfWIRE, &tFilter);
     return san.isGood();
 }
 
@@ -1000,7 +1000,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 
     TransactionStateSF tFilter(app_);
     san += mLedger->txMap().addRootNode (
-        mLedger->info().txHash, data, snfWIRE, &tFilter);
+        SHAMapHash{mLedger->info().txHash}, data, snfWIRE, &tFilter);
     return san.isGood();
 }
 

@@ -148,7 +148,7 @@ ConsensusImp::storeProposal (
 void
 ConsensusImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
 {
-    recentPositions_[position->getHash ()] = std::make_pair (seq, position);
+    recentPositions_[position->getHash ().as_uint256()] = std::make_pair (seq, position);
 
     if (recentPositions_.size () > 4)
     {

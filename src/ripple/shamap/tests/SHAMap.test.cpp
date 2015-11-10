@@ -87,7 +87,7 @@ public:
         unexpected (i != e, "bad traverse");
 
         testcase ("snapshot");
-        uint256 mapHash = sMap.getHash ();
+        SHAMapHash mapHash = sMap.getHash ();
         std::shared_ptr<SHAMap> map2 = sMap.snapShot (false);
         unexpected (sMap.getHash () != mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
@@ -119,19 +119,19 @@ public:
 
             SHAMap map (SHAMapType::FREE, f);
 
-            expect (map.getHash() == uint256(), "bad initial empty map hash");
+            expect (map.getHash() == zero, "bad initial empty map hash");
             for (int i = 0; i < keys.size(); ++i)
             {
                 SHAMapItem item (keys[i], IntToVUC (i));
                 map.addItem (item, true, false);
-                expect (map.getHash() == hashes[i], "bad buildup map hash");
+                expect (map.getHash().as_uint256() == hashes[i], "bad buildup map hash");
             }
             for (int i = keys.size() - 1; i >= 0; --i)
             {
-                expect (map.getHash() == hashes[i], "bad teardown hash");
+                expect (map.getHash().as_uint256() == hashes[i], "bad teardown hash");
                 map.delItem (keys[i]);
             }
-            expect (map.getHash() == uint256(), "bad final empty map hash");
+            expect (map.getHash() == zero, "bad final empty map hash");
         }
     }
 };

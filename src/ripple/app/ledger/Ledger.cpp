@@ -225,14 +225,14 @@ Ledger::Ledger (uint256 const& parentHash,
     loaded = true;
 
     if (info_.txHash.isNonZero () &&
-        !txMap_->fetchRoot (info_.txHash, nullptr))
+        !txMap_->fetchRoot (SHAMapHash{info_.txHash}, nullptr))
     {
         loaded = false;
         JLOG (j.warning) << "Don't have TX root for ledger";
     }
 
     if (info_.accountHash.isNonZero () &&
-        !stateMap_->fetchRoot (info_.accountHash, nullptr))
+        !stateMap_->fetchRoot (SHAMapHash{info_.accountHash}, nullptr))
     {
         loaded = false;
         JLOG (j.warning) << "Don't have AS root for ledger";
@@ -350,12 +350,12 @@ void Ledger::updateHash()
     if (! mImmutable)
     {
         if (txMap_)
-            info_.txHash = txMap_->getHash ();
+            info_.txHash = txMap_->getHash ().as_uint256();
         else
             info_.txHash.zero ();
 
         if (stateMap_)
-            info_.accountHash = stateMap_->getHash ();
+            info_.accountHash = stateMap_->getHash ().as_uint256();
         else
             info_.accountHash.zero ();
     }
@@ -610,12 +610,12 @@ auto
 Ledger::digest (key_type const& key) const ->
     boost::optional<digest_type>
 {
-    digest_type digest;
+    SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
     //        from the NodeStore needlessly.
     if (! stateMap_->peekItem(key, digest))
         return boost::none;
-    return digest;
+    return digest.as_uint256();
 }
 
 //------------------------------------------------------------------------------
@@ -795,9 +795,9 @@ bool Ledger::walkLedger (beast::Journal j) const
 
     if (stateMap_->getHash().isZero() &&
         ! info_.accountHash.isZero() &&
-        ! stateMap_->fetchRoot (info_.accountHash, nullptr))
+        ! stateMap_->fetchRoot (SHAMapHash{info_.accountHash}, nullptr))
     {
-        missingNodes1.emplace_back (SHAMapType::STATE, info_.accountHash);
+        missingNodes1.emplace_back (SHAMapType::STATE, SHAMapHash{info_.accountHash});
     }
     else
     {
@@ -814,9 +814,9 @@ bool Ledger::walkLedger (beast::Journal j) const
 
     if (txMap_->getHash().isZero() &&
         info_.txHash.isNonZero() &&
-        ! txMap_->fetchRoot (info_.txHash, nullptr))
+        ! txMap_->fetchRoot (SHAMapHash{info_.txHash}, nullptr))
     {
-        missingNodes2.emplace_back (SHAMapType::TRANSACTION, info_.txHash);
+        missingNodes2.emplace_back (SHAMapType::TRANSACTION, SHAMapHash{info_.txHash});
     }
     else
     {
@@ -840,8 +840,8 @@ bool Ledger::assertSane (beast::Journal ledgerJ)
             info_.accountHash.isNonZero () &&
             stateMap_ &&
             txMap_ &&
-            (info_.accountHash == stateMap_->getHash ()) &&
-            (info_.txHash == txMap_->getHash ()))
+            (info_.accountHash == stateMap_->getHash ().as_uint256()) &&
+            (info_.txHash == txMap_->getHash ().as_uint256()))
     {
         return true;
     }
@@ -969,7 +969,7 @@ static bool saveValidatedLedger (
         assert (false);
     }
 
-    if (ledger->info().accountHash != ledger->stateMap().getHash ())
+    if (ledger->info().accountHash != ledger->stateMap().getHash ().as_uint256())
     {
         JLOG (j.fatal) << "sAL: " << ledger->info().accountHash
                                    << " != " << ledger->stateMap().getHash ();
@@ -978,7 +978,7 @@ static bool saveValidatedLedger (
         assert (false);
     }
 
-    assert (ledger->info().txHash == ledger->txMap().getHash ());
+    assert (ledger->info().txHash == ledger->txMap().getHash ().as_uint256());
 
     // Save the ledger header in the hashed object store
     {
