@@ -479,7 +479,7 @@ private:
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    // ledger [id|index|current|closed|validated] [full]
+    // ledger [id|index|current|closed|validated] [full|tx]
     Json::Value parseLedger (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
@@ -491,9 +491,17 @@ private:
 
         jvParseLedger (jvRequest, jvParams[0u].asString ());
 
-        if (2 == jvParams.size () && jvParams[1u].asString () == "full")
+        if (2 == jvParams.size ())
         {
-            jvRequest[jss::full]   = bool (1);
+            if (jvParams[1u].asString () == "full")
+            {
+                jvRequest[jss::full]   = true;
+            }
+            else if (jvParams[1u].asString () == "tx")
+            {
+                jvRequest[jss::transactions] = true;
+                jvRequest[jss::expand] = true;
+            }
         }
 
         return jvRequest;
