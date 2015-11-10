@@ -369,6 +369,9 @@ public:
     Blob
     getVL();
 
+    void
+    skip (int num);
+
     Buffer
     getVLBuffer();
 

@@ -433,6 +433,17 @@ SerialIter::reset() noexcept
     used_ = 0;
 }
 
+void
+SerialIter::skip (int length)
+{
+    if (remain_ < length)
+        throw std::runtime_error(
+            "invalid SerialIter skip");
+    p_ += length;
+    used_ += length;
+    remain_ -= length;
+}
+
 unsigned char
 SerialIter::get8()
 {
