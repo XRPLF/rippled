@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <algorithm>
 #include <iterator>
@@ -56,7 +57,7 @@ IOUAmount::normalize ()
     while (mantissa_ > maxMantissa)
     {
         if (exponent_ >= maxExponent)
-            throw std::overflow_error ("IOUAmount::normalize");
+            Throw<std::overflow_error> ("IOUAmount::normalize");
 
         mantissa_ /= 10;
         ++exponent_;
@@ -69,7 +70,7 @@ IOUAmount::normalize ()
     }
 
     if (exponent_ > maxExponent)
-        throw std::overflow_error ("value overflow");
+        Throw<std::overflow_error> ("value overflow");
 
     if (negative)
         mantissa_ = -mantissa_;

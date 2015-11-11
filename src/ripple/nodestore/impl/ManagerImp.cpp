@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/ManagerImp.h>
 #include <ripple/nodestore/impl/DatabaseImp.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
@@ -39,7 +40,7 @@ ManagerImp::instance()
 void
 ManagerImp::missing_backend()
 {
-    throw std::runtime_error (
+    Throw<std::runtime_error> (
         "Your rippled.cfg is missing a [node_db] entry, "
         "please see the rippled-example.cfg file!"
         );

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <unordered_map>
 #include <utility>
@@ -132,7 +133,7 @@ private:
                 std::forward_as_tuple (code), std::forward_as_tuple (
                     code, token, message)));
         if (! result.second)
-            throw std::invalid_argument ("duplicate error code");
+            Throw<std::invalid_argument> ("duplicate error code");
     }
 
 private:

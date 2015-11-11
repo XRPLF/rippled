@@ -35,6 +35,7 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -531,7 +532,7 @@ void LedgerConsensusImp::mapComplete (
         leaveConsensus();
         JLOG (j_.error) <<
             "Missing node processing complete map " << mn;
-        throw;
+        Throw();
     }
 }
 
@@ -731,7 +732,7 @@ void LedgerConsensusImp::timerEntry ()
         leaveConsensus ();
         JLOG (j_.error) <<
            "Missing node during consensus process " << mn;
-        throw;
+        Throw();
     }
 }
 
@@ -1167,7 +1168,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
                     anyDisputes = true;
                 }
-                catch (...)
+                catch (std::exception const&)
                 {
                     JLOG (j_.debug)
                         << "Failed to apply transaction we voted NO on";
@@ -1857,7 +1858,7 @@ applyTransaction (Application& app, OpenView& view,
             << "Transaction retry: " << transHuman (result.first);
         return LedgerConsensusImp::resultRetry;
     }
-    catch (...)
+    catch (std::exception const&)
     {
         JLOG (j.warning) << "Throws";
         return LedgerConsensusImp::resultFail;
@@ -1893,7 +1894,7 @@ void applyTransactions (
             {
                 txn = std::make_shared<STTx const>(SerialIter{item.slice()});
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 JLOG (j.warning) << "  Throws";
             }
@@ -1946,7 +1947,7 @@ void applyTransactions (
                     ++it;
                 }
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 JLOG (j.warning)
                     << "Transaction throws";

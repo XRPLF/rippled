@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_reader.h>
@@ -1039,11 +1040,14 @@ struct RPCCallImp
 
             // Receive reply
             if (iStatus == 401)
-                throw std::runtime_error ("incorrect rpcuser or rpcpassword (authorization failed)");
+                Throw<std::runtime_error> (
+                    "incorrect rpcuser or rpcpassword (authorization failed)");
             else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
-                throw std::runtime_error (std::string ("server returned HTTP error ") + std::to_string (iStatus));
+                Throw<std::runtime_error> (
+                    std::string ("server returned HTTP error ") +
+                        std::to_string (iStatus));
             else if (strData.empty ())
-                throw std::runtime_error ("no response from server");
+                Throw<std::runtime_error> ("no response from server");
 
             // Parse reply
             JLOG (j.debug) << "RPC reply: " << strData << std::endl;
@@ -1052,10 +1056,10 @@ struct RPCCallImp
             Json::Value     jvReply;
 
             if (!reader.parse (strData, jvReply))
-                throw std::runtime_error ("couldn't parse reply from server");
+                Throw<std::runtime_error> ("couldn't parse reply from server");
 
             if (!jvReply)
-                throw std::runtime_error ("expected reply to have result, error and id properties");
+                Throw<std::runtime_error> ("expected reply to have result, error and id properties");
 
             Json::Value     jvResult (Json::objectValue);
 
@@ -1130,7 +1134,7 @@ int fromCommandLine (
                 std::stringstream ss;
                 setup = setup_ServerHandler(config, ss);
             }
-            catch(...)
+            catch (std::exception const&)
             {
                 // ignore any exceptions, so the command
                 // line client works without a config file
@@ -1212,12 +1216,6 @@ int fromCommandLine (
     {
         jvOutput                = rpcError (rpcINTERNAL);
         jvOutput["error_what"]  = e.what ();
-        nRet                    = rpcINTERNAL;
-    }
-    catch (...)
-    {
-        jvOutput                = rpcError (rpcINTERNAL);
-        jvOutput["error_what"]  = "exception";
         nRet                    = rpcINTERNAL;
     }
 

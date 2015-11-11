@@ -25,8 +25,9 @@
 */
 
 #include <BeastConfig.h>
-
+#include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
+#include <soci/sqlite3/soci-sqlite3.h>
 
 // dummy soci-backend
 namespace soci {
@@ -34,7 +35,8 @@ namespace dynamic_backends {
 // used internally by session
 backend_factory const& get (std::string const& name)
 {
-    throw std::runtime_error ("Not Supported");
+    ripple::Throw<std::runtime_error> ("Not Supported");
+    return std::ref(soci::sqlite3); // Silence compiler warning.
 };
 
 // provided for advanced user-level management

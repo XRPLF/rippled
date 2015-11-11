@@ -31,6 +31,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/paths/Pathfinder.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -155,7 +156,7 @@ Env::lookup (AccountID const& id) const
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "Env::lookup:: unknown account ID");
     return iter->second;
 }
@@ -166,7 +167,7 @@ Env::lookup (std::string const& base58ID) const
     auto const account =
         parseBase58<AccountID>(base58ID);
     if (! account)
-        throw std::runtime_error(
+        Throw<std::runtime_error>(
             "Env::lookup: invalid account ID");
     return lookup(*account);
 }
@@ -206,7 +207,7 @@ Env::seq (Account const& account) const
 {
     auto const sle = le(account);
     if (! sle)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "missing account root");
     return sle->getFieldU32(sfSequence);
 }
@@ -371,7 +372,7 @@ Env::autofill (JTx& jt)
         test.log <<
             "parse failed:\n" <<
             pretty(jv);
-        throw;
+        Throw();
     }
 }
 
@@ -390,14 +391,14 @@ Env::st (JTx const& jt)
         test.log <<
             "Exception: parse_error\n" <<
             pretty(jt.jv);
-        throw;
+        Throw();
     }
 
     try
     {
         return sterilize(STTx{std::move(*obj)});
     }
-    catch(...)
+    catch(std::exception const&)
     {
     }
     return nullptr;

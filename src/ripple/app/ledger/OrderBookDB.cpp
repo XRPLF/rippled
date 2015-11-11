@@ -282,7 +282,7 @@ void OrderBookDB::processTxn (
                     }
                 }
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 JLOG (j_.info)
                     << "Fields not found in OrderBookDB::processTxn";

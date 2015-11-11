@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 
@@ -35,7 +36,7 @@ STValidation::STValidation (SerialIter& sit, bool checkSignature)
     if  (checkSignature && !isValid ())
     {
         WriteLog (lsTRACE, Ledger) << "Invalid validation " << getJson (0);
-        throw std::runtime_error ("Invalid validation");
+        Throw<std::runtime_error> ("Invalid validation");
     }
 }
 
@@ -104,7 +105,7 @@ bool STValidation::isValid (uint256 const& signingHash) const
         return raPublicKey.isValid () &&
             raPublicKey.verifyNodePublic (signingHash, getFieldVL (sfSignature), fullyCanonical);
     }
-    catch (...)
+    catch (std::exception const&)
     {
         WriteLog (lsINFO, Ledger) << "exception validating validation";
         return false;

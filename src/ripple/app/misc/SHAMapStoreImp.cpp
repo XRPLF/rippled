@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/ConfigSections.h>
 #include <boost/format.hpp>
 #include <boost/format.hpp>
@@ -62,7 +63,7 @@ void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
                 "SELECT COUNT(Key) FROM DbState WHERE Key = 1;"
                 , soci::into (countO);
         if (!countO)
-            throw std::runtime_error("Failed to fetch Key Count from DbState.");
+            Throw<std::runtime_error> ("Failed to fetch Key Count from DbState.");
         count = *countO;
     }
 
@@ -79,7 +80,7 @@ void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
                 "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;"
                 , soci::into (countO);
         if (!countO)
-            throw std::runtime_error("Failed to fetch Key Count from CanDelete.");
+            Throw<std::runtime_error> ("Failed to fetch Key Count from CanDelete.");
         count = *countO;
     }
 
@@ -185,13 +186,13 @@ SHAMapStoreImp::SHAMapStoreImp (
     {
         if (setup_.deleteInterval < minimumDeletionInterval_)
         {
-            throw std::runtime_error ("online_delete must be at least " +
+            Throw<std::runtime_error> ("online_delete must be at least " +
                 std::to_string (minimumDeletionInterval_));
         }
 
         if (setup_.ledgerHistory > setup_.deleteInterval)
         {
-            throw std::runtime_error (
+            Throw<std::runtime_error> (
                 "online_delete must be less than ledger_history (currently " +
                 std::to_string (setup_.ledgerHistory) + ")");
         }
@@ -419,7 +420,7 @@ SHAMapStoreImp::dbPaths()
         {
             std::cerr << "node db path must be a directory. "
                     << dbPath.string();
-            throw std::runtime_error (
+            Throw<std::runtime_error> (
                     "node db path must be a directory.");
         }
     }
@@ -465,7 +466,7 @@ SHAMapStoreImp::dbPaths()
                 << get<std::string>(setup_.nodeDatabase, "path")
                 << std::endl;
 
-        throw std::runtime_error ("state db error");
+        Throw<std::runtime_error> ("state db error");
     }
 }
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/shamap/SHAMap.h>
 #include <beast/unit_test/suite.h>
 
@@ -180,7 +181,7 @@ SHAMap::fetchNodeFromDB (SHAMapHash const& hash) const
                 if (node)
                     canonicalize (hash, node);
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 if (journal_.warning) journal_.warning <<
                     "Invalid DB node " << hash;
@@ -261,7 +262,7 @@ std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNode (SHAMapHash const& hash) c
     auto node = fetchNodeNT (hash);
 
     if (!node)
-        throw SHAMapMissingNode (type_, hash);
+        Throw<SHAMapMissingNode> (type_, hash);
 
     return node;
 }
@@ -271,7 +272,7 @@ SHAMapAbstractNode* SHAMap::descendThrow (SHAMapInnerNode* parent, int branch) c
     SHAMapAbstractNode* ret = descend (parent, branch);
 
     if (! ret && ! parent->isEmptyBranch (branch))
-        throw SHAMapMissingNode (type_, parent->getChildHash (branch));
+        Throw<SHAMapMissingNode> (type_, parent->getChildHash (branch));
 
     return ret;
 }
@@ -282,7 +283,7 @@ SHAMap::descendThrow (std::shared_ptr<SHAMapInnerNode> const& parent, int branch
     std::shared_ptr<SHAMapAbstractNode> ret = descend (parent, branch);
 
     if (! ret && ! parent->isEmptyBranch (branch))
-        throw SHAMapMissingNode (type_, parent->getChildHash (branch));
+        Throw<SHAMapMissingNode> (type_, parent->getChildHash (branch));
 
     return ret;
 }
@@ -530,7 +531,7 @@ SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
                 stack.push({node, nodeID});
                 auto leaf = firstBelow(node, stack);
                 if (!leaf)
-                    throw SHAMapMissingNode(type_, id);
+                    Throw<SHAMapMissingNode> (type_, id);
                 assert(leaf->isLeaf());
                 return leaf->peekItem().get();
             }
@@ -621,7 +622,7 @@ SHAMap::upper_bound(uint256 const& id) const
                     stack.push({node, nodeID});
                     auto leaf = firstBelow(node, stack);
                     if (!leaf)
-                        throw SHAMapMissingNode(type_, id);
+                        Throw<SHAMapMissingNode> (type_, id);
                     return const_iterator(this, leaf->peekItem().get(),
                                           std::move(stack));
                 }
@@ -647,7 +648,7 @@ bool SHAMap::delItem (uint256 const& id)
     auto stack = getStack (id, true);
 
     if (stack.empty ())
-        throw SHAMapMissingNode(type_, id);
+        Throw<SHAMapMissingNode> (type_, id);
 
     auto leaf = std::dynamic_pointer_cast<SHAMapTreeNode>(stack.top ().first);
     stack.pop ();
@@ -735,7 +736,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     auto stack = getStack (tag, true);
 
     if (stack.empty ())
-        throw SHAMapMissingNode(type_, tag);
+        Throw<SHAMapMissingNode> (type_, tag);
 
     auto node = stack.top ().first;
     auto nodeID = stack.top ().second;
@@ -832,7 +833,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     auto stack = getStack (tag, true);
 
     if (stack.empty ())
-        throw SHAMapMissingNode(type_, tag);
+        Throw<SHAMapMissingNode> (type_, tag);
 
     auto node = std::dynamic_pointer_cast<SHAMapTreeNode>(stack.top().first);
     auto nodeID = stack.top ().second;

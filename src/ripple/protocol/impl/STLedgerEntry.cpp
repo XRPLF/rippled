@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Indexes.h>
@@ -36,7 +37,7 @@ STLedgerEntry::STLedgerEntry (Keylet const& k)
     mFormat =
         LedgerFormats::getInstance().findByType (type_);
     if (mFormat == nullptr)
-        throw std::runtime_error ("invalid ledger entry type");
+        Throw<std::runtime_error> ("invalid ledger entry type");
     set (mFormat->elements);
     setFieldU16 (sfLedgerEntryType,
         static_cast <std::uint16_t> (mFormat->getType ()));
@@ -72,7 +73,7 @@ void STLedgerEntry::setSLEType ()
         static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType)));
 
     if (mFormat == nullptr)
-        throw std::runtime_error ("invalid ledger entry type");
+        Throw<std::runtime_error> ("invalid ledger entry type");
 
     type_ = mFormat->getType ();
     if (!setType (mFormat->elements))
@@ -80,7 +81,7 @@ void STLedgerEntry::setSLEType ()
         WriteLog (lsWARNING, SerializedLedger)
             << "Ledger entry not valid for type " << mFormat->getName ();
         WriteLog (lsWARNING, SerializedLedger) << getJson (0);
-        throw std::runtime_error ("ledger entry not valid for type");
+        Throw<std::runtime_error> ("ledger entry not valid for type");
     }
 }
 

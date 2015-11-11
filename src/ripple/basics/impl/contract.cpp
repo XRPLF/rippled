@@ -36,14 +36,6 @@ accessViolation() noexcept
     std::abort ();
 }
 
-// This hook lets you do pre or post
-// processing on exceptions to suit needs.
-void
-throwException (std::exception_ptr ep)
-{
-    std::rethrow_exception(ep);
-}
-
 } // detail
 
 [[noreturn]]
@@ -51,6 +43,12 @@ void
 LogicError (std::string const&) noexcept
 {
     detail::accessViolation();
+}
+
+void
+Throw ()
+{
+    throw;
 }
 
 } // ripple

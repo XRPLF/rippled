@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -1699,7 +1700,7 @@ public:
                 Json::Value req;
                 Json::Reader ().parse (txnTest.json, req);
                 if (RPC::contains_error (req))
-                    throw std::runtime_error (
+                    Throw<std::runtime_error> (
                         "Internal JSONRPC_test error.  Bad test JSON.");
 
                 static Role const testedRoles[] =

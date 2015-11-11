@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/rpc/Status.h>
+#include <ripple/basics/contract.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {
@@ -183,7 +184,7 @@ private:
         testcase ("throw");
         try
         {
-            throw Status (temBAD_PATH, {"path=sdcdfd"});
+            Throw<Status> (Status(temBAD_PATH, { "path=sdcdfd" }));
         }
         catch (Status const& s)
         {
@@ -192,7 +193,7 @@ private:
             expect (msgs.size () == 1, "Wrong number of messages");
             expect (msgs[0] == "path=sdcdfd", msgs[0]);
         }
-        catch (...)
+        catch (std::exception const&)
         {
             expect (false, "Didn't catch a Status");
         }

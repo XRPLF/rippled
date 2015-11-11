@@ -18,30 +18,45 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx/trust.h>
-#include <ripple/protocol/JsonFields.h>
 #include <ripple/basics/contract.h>
-#include <stdexcept>
+#include <beast/unit_test/suite.h>
+#include <string>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-Json::Value
-trust (Account const& account,
-    STAmount const& amount)
+class contract_test : public beast::unit_test::suite
 {
-    if (isXRP(amount))
-        Throw<std::runtime_error> (
-            "trust() requires IOU");
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::LimitAmount] = amount.getJson(0);
-    jv[jss::TransactionType] = "TrustSet";
-    jv[jss::Flags] = 0;    // tfClearNoRipple;
-    return jv;
-}
+public:
+    void run ()
+    {
+        try
+        {
+            Throw<std::runtime_error>("Throw test");
+        }
+        catch (std::runtime_error const& e)
+        {
+            expect(std::string(e.what()) == "Throw test");
 
-} // jtx
-} // test
-} // ripple
+            try
+            {
+                Throw();
+            }
+            catch (std::runtime_error const& e)
+            {
+                expect(std::string(e.what()) == "Throw test");
+            }
+            catch (...)
+            {
+                expect(false);
+            }
+        }
+        catch (...)
+        {
+            expect(false);
+        }
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(contract,basics,ripple);
+
+}

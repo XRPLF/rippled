@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/PlainPeer.h>
 #include <ripple/server/impl/SSLPeer.h>
@@ -180,8 +181,7 @@ Door::Door (boost::asio::io_service& io_service,
     {
         if (server_.journal().error) server_.journal().error <<
             "Open port '" << port.name << "' failed:" << ec.message();
-        throw std::exception();
-        return;
+        Throw<std::exception> ();
     }
 
     acceptor_.set_option(
@@ -190,8 +190,7 @@ Door::Door (boost::asio::io_service& io_service,
     {
         if (server_.journal().error) server_.journal().error <<
             "Option for port '" << port.name << "' failed:" << ec.message();
-        throw std::exception();
-        return;
+        Throw<std::exception> ();
     }
 
     acceptor_.bind(local_address, ec);
@@ -199,8 +198,7 @@ Door::Door (boost::asio::io_service& io_service,
     {
         if (server_.journal().error) server_.journal().error <<
             "Bind port '" << port.name << "' failed:" << ec.message();
-        throw std::exception();
-        return;
+        Throw<std::exception> ();
     }
 
     acceptor_.listen(boost::asio::socket_base::max_connections, ec);
@@ -208,8 +206,7 @@ Door::Door (boost::asio::io_service& io_service,
     {
         if (server_.journal().error) server_.journal().error <<
             "Listen on port '" << port.name << "' failed:" << ec.message();
-        throw std::exception();
-        return;
+        Throw<std::exception> ();
     }
 
     if (server_.journal().info) server_.journal().info <<

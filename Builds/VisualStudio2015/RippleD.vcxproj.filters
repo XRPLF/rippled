@@ -2718,6 +2718,9 @@
     <ClCompile Include="..\..\src\ripple\basics\tests\CheckLibraryVersions.test.cpp">
       <Filter>ripple\basics\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\tests\contract.test.cpp">
+      <Filter>ripple\basics\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\tests\hardened_hash_test.cpp">
       <Filter>ripple\basics\tests</Filter>
     </ClCompile>

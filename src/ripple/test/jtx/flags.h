@@ -23,6 +23,7 @@
 #include <ripple/test/jtx/Env.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 namespace test {
@@ -72,7 +73,7 @@ private:
         case asfGlobalFreeze:   mask_ |= lsfGlobalFreeze; break;
         case asfDefaultRipple:  mask_ |= lsfDefaultRipple; break;
         default:
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "unknown flag");
         }
     }

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/core/DatabaseCon.h>
@@ -55,7 +56,7 @@ private:
         if (!is_directory (dbPath))
         {
             // someone created a file where we want to put our directory
-            throw std::runtime_error ("Cannot create directory: " +
+            Throw<std::runtime_error> ("Cannot create directory: " +
                                       dbPath.string ());
         }
     }
@@ -70,7 +71,7 @@ public:
         {
             setupDatabaseDir (getDatabasePath ());
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
     }
@@ -80,7 +81,7 @@ public:
         {
             cleanupDatabaseDir (getDatabasePath ());
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
     }
@@ -110,10 +111,9 @@ public:
 
         std::string const m (static_cast<char const*> (s.data()), s.size());
         if (auto r = ripple::make_Manifest (std::move (m)))
-        {
             return std::move (*r);
-        }
-        throw std::runtime_error("Could not create a manifest");
+        Throw<std::runtime_error> ("Could not create a manifest");
+        return *ripple::make_Manifest(std::move(m)); // Silence compiler warning.
     }
 
     Manifest

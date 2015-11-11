@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/impl/json_assert.h>
 #include <ripple/json/to_string.h>
 #include <ripple/json/json_writer.h>

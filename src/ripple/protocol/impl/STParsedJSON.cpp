@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/STAccount.h>
@@ -28,6 +28,7 @@
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STBlob.h>
 #include <ripple/protocol/STVector256.h>
+#include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/TxFormats.h>
@@ -46,7 +47,7 @@ template <typename T, typename U>
 static T range_check_cast (U value, T minimum, T maximum)
 {
     if ((value < minimum) || (value > maximum))
-        throw std::runtime_error ("Value out of range");
+        Throw<std::runtime_error> ("Value out of range");
 
     return static_cast<T> (value);
 }
@@ -212,7 +213,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -282,7 +283,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -316,7 +317,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -349,7 +350,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -370,7 +371,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -391,7 +392,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -412,7 +413,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 return ret;
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -431,13 +432,13 @@ static boost::optional<detail::STVar> parseLeaf (
         {
             std::pair<Blob, bool> vBlob (strUnHex (value.asString ()));
 
-            if (!vBlob.second)
-                throw std::invalid_argument ("invalid data");
+            if (! vBlob.second)
+                Throw<std::invalid_argument> ("invalid data");
 
             ret = detail::make_stvar <STBlob> (field, vBlob.first.data (),
                                              vBlob.first.size ());
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -450,7 +451,7 @@ static boost::optional<detail::STVar> parseLeaf (
         {
             ret = detail::make_stvar <STAmount> (amountFromJson (field, value));
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -476,7 +477,7 @@ static boost::optional<detail::STVar> parseLeaf (
             }
             ret = detail::make_stvar <STVector256> (std::move (tail));
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -606,7 +607,7 @@ static boost::optional<detail::STVar> parseLeaf (
             }
             ret = detail::make_stvar <STPathSet> (std::move (tail));
         }
-        catch (...)
+        catch (std::exception const&)
         {
             error = invalid_data (json_name, fieldName);
             return ret;
@@ -638,7 +639,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 ret = detail::make_stvar <STAccount>(
                     field, *account);
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 error = invalid_data (json_name, fieldName);
                 return ret;
@@ -721,7 +722,7 @@ static boost::optional <STObject> parseObject (
                     return boost::none;
                 data.emplace_back (std::move (*ret));
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 error = invalid_data (json_name, fieldName);
                 return boost::none;
@@ -739,7 +740,7 @@ static boost::optional <STObject> parseObject (
                     return boost::none;
                 data.emplace_back (std::move (*array));
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 error = invalid_data (json_name, fieldName);
                 return boost::none;
@@ -846,7 +847,7 @@ static boost::optional <detail::STVar> parseArray (
 
         return detail::make_stvar <STArray> (std::move (tail));
     }
-    catch (...)
+    catch (std::exception const&)
     {
         error = invalid_data (json_name);
         return boost::none;

@@ -226,7 +226,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& node
         progress ();
         return SHAMapAddNode::useful ();
     }
-    catch (...)
+    catch (std::exception const&)
     {
         JLOG (j_.error) << "Peer sends us junky transaction node data";
         return SHAMapAddNode::invalid ();

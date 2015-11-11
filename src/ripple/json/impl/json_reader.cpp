@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/json_reader.h>
 #include <string>
 #include <cctype>
@@ -949,7 +950,8 @@ std::istream& operator>> ( std::istream& sin, Value& root )
     bool ok = reader.parse (sin, root);
 
     //JSON_ASSERT( ok );
-    if (!ok) throw std::runtime_error (reader.getFormatedErrorMessages ());
+    if (! ok)
+        ripple::Throw<std::runtime_error> (reader.getFormatedErrorMessages ());
 
     return sin;
 }

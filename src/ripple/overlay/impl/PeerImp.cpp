@@ -1119,7 +1119,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
                 });
         }
     }
-    catch (...)
+    catch (std::exception const&)
     {
         p_journal_.warning << "Transaction invalid: " <<
             strHex(m->rawtransaction ());
@@ -1614,12 +1614,6 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             "Validation: Exception, " << e.what();
         fee_ = Resource::feeInvalidRequest;
     }
-    catch (...)
-    {
-        p_journal_.warning <<
-            "Validation: Unknown exception";
-        fee_ = Resource::feeInvalidRequest;
-    }
 }
 
 void
@@ -1880,7 +1874,7 @@ PeerImp::checkTransaction (int flags,
         app_.getOPs ().processTransaction (
             tx, trusted, false, NetworkOPs::FailHard::no);
     }
-    catch (...)
+    catch (std::exception const&)
     {
         app_.getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
         charge (Resource::feeBadData);
@@ -1957,7 +1951,7 @@ PeerImp::checkValidation (STValidation::pointer val,
                 val, std::to_string(id())))
             overlay_.relay(*packet, signingHash);
     }
-    catch (...)
+    catch (std::exception const&)
     {
         p_journal_.trace <<
             "Exception processing validation";

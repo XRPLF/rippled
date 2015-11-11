@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/net/HTTPClient.h>
@@ -50,8 +51,10 @@ public:
             m_context.set_default_verify_paths (ec);
 
             if (ec && config.SSL_VERIFY_DIR.empty ())
-                throw std::runtime_error (boost::str (
-                    boost::format ("Failed to set_default_verify_paths: %s") % ec.message ()));
+                Throw<std::runtime_error> (
+                    boost::str (boost::format (
+                        "Failed to set_default_verify_paths: %s") %
+                            ec.message ()));
         }
         else
         {
@@ -63,8 +66,9 @@ public:
             m_context.add_verify_path (config.SSL_VERIFY_DIR, ec);
 
             if (ec)
-                throw std::runtime_error (boost::str (
-                    boost::format ("Failed to add verify path: %s") % ec.message ()));
+                Throw<std::runtime_error> (
+                    boost::str (boost::format (
+                        "Failed to add verify path: %s") % ec.message ()));
         }
     }
 

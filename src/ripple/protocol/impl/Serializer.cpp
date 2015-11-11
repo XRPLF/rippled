@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/Serializer.h>
@@ -283,7 +284,7 @@ bool Serializer::getVL (Blob& objectVL, int offset, int& length) const
         }
         else return false;
     }
-    catch (...)
+    catch (std::exception const&)
     {
         return false;
     }
@@ -324,7 +325,7 @@ bool Serializer::getVLLength (int& length, int offset) const
         }
         else return false;
     }
-    catch (...)
+    catch (std::exception const&)
     {
         return false;
     }
@@ -357,14 +358,14 @@ int Serializer::addEncoded (int length)
         bytes[2] = static_cast<unsigned char> (length & 0xff);
         numBytes = 3;
     }
-    else throw std::overflow_error ("lenlen");
+    else Throw<std::overflow_error> ("lenlen");
 
     return addRaw (&bytes[0], numBytes);
 }
 
 int Serializer::encodeLengthLength (int length)
 {
-    if (length < 0) throw std::overflow_error ("len<0");
+    if (length < 0) Throw<std::overflow_error> ("len<0");
 
     if (length <= 192) return 1;
 
@@ -372,12 +373,13 @@ int Serializer::encodeLengthLength (int length)
 
     if (length <= 918744) return 3;
 
-    throw std::overflow_error ("len>918744");
+    Throw<std::overflow_error> ("len>918744");
+    return 0; // Silence compiler warning.
 }
 
 int Serializer::decodeLengthLength (int b1)
 {
-    if (b1 < 0) throw std::overflow_error ("b1<0");
+    if (b1 < 0) Throw<std::overflow_error> ("b1<0");
 
     if (b1 <= 192) return 1;
 
@@ -385,32 +387,33 @@ int Serializer::decodeLengthLength (int b1)
 
     if (b1 <= 254) return 3;
 
-    throw std::overflow_error ("b1>254");
+    Throw<std::overflow_error> ("b1>254");
+    return 0; // Silence compiler warning.
 }
 
 int Serializer::decodeVLLength (int b1)
 {
-    if (b1 < 0) throw std::overflow_error ("b1<0");
+    if (b1 < 0) Throw<std::overflow_error> ("b1<0");
 
-    if (b1 > 254) throw std::overflow_error ("b1>254");
+    if (b1 > 254) Throw<std::overflow_error> ("b1>254");
 
     return b1;
 }
 
 int Serializer::decodeVLLength (int b1, int b2)
 {
-    if (b1 < 193) throw std::overflow_error ("b1<193");
+    if (b1 < 193) Throw<std::overflow_error> ("b1<193");
 
-    if (b1 > 240) throw std::overflow_error ("b1>240");
+    if (b1 > 240) Throw<std::overflow_error> ("b1>240");
 
     return 193 + (b1 - 193) * 256 + b2;
 }
 
 int Serializer::decodeVLLength (int b1, int b2, int b3)
 {
-    if (b1 < 241) throw std::overflow_error ("b1<241");
+    if (b1 < 241) Throw<std::overflow_error> ("b1<241");
 
-    if (b1 > 254) throw std::overflow_error ("b1>254");
+    if (b1 > 254) Throw<std::overflow_error> ("b1>254");
 
     return 12481 + (b1 - 241) * 65536 + b2 * 256 + b3;
 }
@@ -448,7 +451,7 @@ unsigned char
 SerialIter::get8()
 {
     if (remain_ < 1)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter get8");
     unsigned char t = *p_;
     ++p_;
@@ -461,7 +464,7 @@ std::uint16_t
 SerialIter::get16()
 {
     if (remain_ < 2)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter get16");
     auto t = p_;
     p_ += 2;
@@ -476,7 +479,7 @@ std::uint32_t
 SerialIter::get32()
 {
     if (remain_ < 4)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter get32");
     auto t = p_;
     p_ += 4;
@@ -493,7 +496,7 @@ std::uint64_t
 SerialIter::get64 ()
 {
     if (remain_ < 8)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter get64");
     auto t = p_;
     p_ += 8;
@@ -522,7 +525,7 @@ SerialIter::getFieldID (int& type, int& name)
         // uncommon type
         type = get8();
         if (type == 0 || type < 16)
-            throw std::runtime_error(
+            Throw<std::runtime_error> (
                 "gFID: uncommon type out of range " +
                     std::to_string(type));
     }
@@ -532,7 +535,7 @@ SerialIter::getFieldID (int& type, int& name)
         // uncommon name
         name = get8();
         if (name == 0 || name < 16)
-            throw std::runtime_error(
+            Throw<std::runtime_error> (
                 "gFID: uncommon name out of range " +
                     std::to_string(name));
     }
@@ -545,7 +548,7 @@ T SerialIter::getRawHelper (int size)
     static_assert(std::is_same<T, Blob>::value ||
                   std::is_same<T, Buffer>::value, "");
     if (remain_ < size)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter getRaw");
     T result (size);
     memcpy(result.data (), p_, size);
@@ -590,7 +593,7 @@ Slice
 SerialIter::getSlice (std::size_t bytes)
 {
     if (bytes > remain_)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter getSlice");
     Slice s(p_, bytes);
     p_ += bytes;

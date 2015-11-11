@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/net/RPCSub.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
@@ -49,19 +50,13 @@ public:
         std::string strScheme;
 
         if (!parseUrl (strUrl, strScheme, mIp, mPort, mPath))
-        {
-            throw std::runtime_error ("Failed to parse url.");
-        }
+            Throw<std::runtime_error> ("Failed to parse url.");
         else if (strScheme == "https")
-        {
-            mSSL    = true;
-        }
+            mSSL = true;
         else if (strScheme != "http")
-        {
-            throw std::runtime_error ("Only http and https is supported.");
-        }
+            Throw<std::runtime_error> ("Only http and https is supported.");
 
-        mSeq    = 1;
+        mSeq = 1;
 
         if (mPort < 0)
             mPort   = mSSL ? 443 : 80;

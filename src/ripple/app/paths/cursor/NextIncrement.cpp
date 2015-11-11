@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 
 namespace ripple {
@@ -54,7 +55,7 @@ void PathCursor::nextIncrement () const
             << " inPass()=" << pathState_.inPass();
 
         if (isDry)
-            throw std::runtime_error ("Made no progress.");
+            Throw<std::runtime_error> ("Made no progress.");
 
         // Calculate relative quality.
         pathState_.setQuality(getRate (

@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <memory>
 
@@ -68,7 +69,7 @@ DatabaseCon::Setup setup_DatabaseCon (Config const& c)
 void DatabaseCon::setupCheckpointing (JobQueue* q, Logs& l)
 {
     if (! q)
-        throw std::logic_error ("No JobQueue");
+        Throw<std::logic_error> ("No JobQueue");
     checkpointer_ = makeCheckpointer (session_, *q, l);
 }
 

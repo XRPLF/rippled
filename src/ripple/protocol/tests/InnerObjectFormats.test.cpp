@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/ErrorCodes.h>          // RPC::containsError
 #include <ripple/json/json_reader.h>             // Json::Reader
@@ -180,7 +181,7 @@ public:
             Json::Reader ().parse (test.txt, req);
             if (RPC::contains_error (req))
             {
-                throw std::runtime_error (
+                Throw<std::runtime_error> (
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");
             }
             STParsedJSONObject parsed ("request", req);

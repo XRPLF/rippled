@@ -629,7 +629,7 @@ public:
                 {
                     hash = hashOfSeq(*ledger, lSeq, m_journal);
                 }
-                catch (...)
+                catch (std::exception const&)
                 {
                     JLOG (m_journal.warning) <<
                         "fixMismatch encounters partial ledger";
@@ -984,7 +984,7 @@ public:
         {
             doAdvance();
         }
-        catch (...)
+        catch (std::exception const&)
         {
             JLOG (m_journal.fatal) << "doAdvance throws an exception";
         }
@@ -1106,7 +1106,7 @@ public:
 
                 }
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 JLOG (m_journal.error)
                     << "findNewLedgersToPublish catches an exception";
@@ -1501,7 +1501,7 @@ public:
                     if (hash)
                         return mLedgerHistory.getLedgerByHash (*hash);
                 }
-                catch (...)
+                catch (std::exception const&)
                 {
                     // Missing nodes are already handled
                 }
@@ -1734,7 +1734,7 @@ void LedgerMasterImp::doAdvance ()
                                                      InboundLedger::fcHISTORY);
                                     }
                                 }
-                                catch (...)
+                                catch (std::exception const&)
                                 {
                                     JLOG (m_journal.warning) <<
                                     "Threw while prefetching";
@@ -1962,7 +1962,7 @@ void LedgerMasterImp::makeFetchPack (
         auto msg = std::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
         peer->send (msg);
     }
-    catch (...)
+    catch (std::exception const&)
     {
         m_journal.warning << "Exception building fetch pach";
     }

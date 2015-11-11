@@ -22,6 +22,7 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/TxFlags.h>
@@ -196,7 +197,7 @@ public:
                         // line above should throw
                         fail ("didn't throw");
                     }
-                    catch (...)
+                    catch (std::exception const&)
                     {
                         pass ();
                     }
@@ -207,7 +208,7 @@ public:
                         // line above should throw
                         fail ("didn't throw");
                     }
-                    catch (...)
+                    catch (std::exception const&)
                     {
                         pass ();
                     }
@@ -233,7 +234,7 @@ public:
                     // line above should throw
                     fail ("didn't throw");
                 }
-                catch (...)
+                catch (std::exception const&)
                 {
                     pass ();
                 }
@@ -243,7 +244,7 @@ public:
                     // line above should throw
                     fail ("didn't throw");
                 }
-                catch (...)
+                catch (std::exception const&)
                 {
                     pass ();
                 }
@@ -457,28 +458,28 @@ public:
                 case 0:
                 // amendment goes from majority to enabled
                     if (enabled.find (hash) != enabled.end ())
-                        throw std::runtime_error ("enabling already enabled");
+                        Throw<std::runtime_error> ("enabling already enabled");
                     if (majority.find (hash) == majority.end ())
-                        throw std::runtime_error ("enabling without majority");
+                        Throw<std::runtime_error> ("enabling without majority");
                     enabled.insert (hash);
                     majority.erase (hash);
                     break;
 
                 case tfGotMajority:
                     if (majority.find (hash) != majority.end ())
-                        throw std::runtime_error ("got majority while having majority");
+                        Throw<std::runtime_error> ("got majority while having majority");
                     majority[hash] = roundTime;
                     break;
 
                 case tfLostMajority:
                     if (majority.find (hash) == majority.end ())
-                        throw std::runtime_error ("lost majority without majority");
+                        Throw<std::runtime_error> ("lost majority without majority");
                     majority.erase (hash);
                     break;
 
                 default:
                     assert (false);
-                    throw std::runtime_error ("unknown action");
+                    Throw<std::runtime_error> ("unknown action");
             }
         }
     }

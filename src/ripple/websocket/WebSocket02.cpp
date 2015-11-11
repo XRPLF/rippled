@@ -20,6 +20,7 @@
 #include <ripple/websocket/WebSocket02.h>
 #include <ripple/websocket/Handler.h>
 #include <ripple/websocket/Server.h>
+#include <ripple/basics/contract.h>
 #include <beast/weak_fn.h>
 
 // This file contains websocket::WebSocket02 implementations for the WebSocket
@@ -122,7 +123,7 @@ void Server <WebSocket02>::listen()
                 }
             }
         }
-        throw e;
+        Throw<std::exception> (e);
     }
 }
 

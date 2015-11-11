@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/test/jtx/rate.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/contract.h>
 #include <stdexcept>
 
 namespace ripple {
@@ -30,7 +31,7 @@ Json::Value
 rate (Account const& account, double multiplier)
 {
     if (multiplier > 4)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "rate multiplier out of range");
     Json::Value jv;
     jv[jss::Account] = account.human();
