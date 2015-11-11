@@ -75,7 +75,7 @@ JSS ( action );
 JSS ( acquiring );                  // out: LedgerRequest
 JSS ( address );                    // out: PeerImp
 JSS ( affected );                   // out: AcceptedLedgerTx
-JSS ( age );                        // out: UniqueNodeList, NetworkOPs, Peers
+JSS ( age );                        // out: NetworkOPs, Peers
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( asks );                       // out: Subscribe

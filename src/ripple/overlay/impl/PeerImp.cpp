@@ -28,8 +28,8 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
-#include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
@@ -1264,7 +1264,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         return;
     }
 
-    bool isTrusted = app_.getUNL ().nodeInUNL (signerPublic);
+    auto const isTrusted = app_.validators().trusted (signerPublic);
 
     if (!isTrusted)
     {
@@ -1593,7 +1593,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             return;
         }
 
-        bool isTrusted = app_.getUNL ().nodeInUNL (val->getSignerPublic ());
+        auto const isTrusted =
+            app_.validators().trusted(val->getSignerPublic ());
         if (!isTrusted && (sanity_.load () == Sanity::insane))
         {
             p_journal_.debug <<
@@ -1605,9 +1606,13 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             app_.getJobQueue ().addJob (
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                 "recvValidation->checkValidation",
-                [weak, val, isTrusted, m] (Job&) {
+                [weak, val, isTrusted, m] (Job&)
+                {
                     if (auto peer = weak.lock())
-                        peer->checkValidation(val, isTrusted, m);
+                        peer->checkValidation(
+                            val,
+                            isTrusted,
+                            m);
                 });
         }
         else

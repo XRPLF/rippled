@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Cluster.h>
@@ -93,51 +94,52 @@ Cluster::for_each (
         func (ni);
 }
 
-std::unique_ptr<Cluster>
-make_Cluster (Config const& config, beast::Journal j)
+bool
+Cluster::load (Section const& nodes)
 {
     static boost::regex const re (
-        "^"                         // start of line
-        "(?:\\s*)"                  // whitespace (optional)
-        "([a-zA-Z0-9]*)"            // Node identity
-        "(?:\\s*)"                  // whitespace (optional)
-        "(.*\\S*)"                  // <value>
-        "(?:\\s*)"                  // whitespace (optional)
+        "[[:space:]]*"            // skip leading whitespace
+        "([[:alnum:]]+)"          // node identity
+        "(?:"                     // begin optional comment block
+        "[[:space:]]+"            // (skip all leading whitespace)
+        "(?:"                     // begin optional comment
+        "(.*[^[:space:]]+)"       // the comment
+        "[[:space:]]*"            // (skip all trailing whitespace)
+        ")?"                      // end optional comment
+        ")?"                      // end optional comment block
     );
 
-    auto cluster = std::make_unique<Cluster> (j);
-
-    for (auto const& n : config.CLUSTER_NODES)
+    for (auto const& n : nodes.values())
     {
         boost::smatch match;
 
         if (!boost::regex_match (n, match, re))
         {
-            JLOG (j.error) <<
+            JLOG (j_.error) <<
                 "Malformed entry: '" << n << "'";
-            continue;
+            return false;
         }
 
         auto const nid = RippleAddress::createNodePublic (match[1]);
 
         if (!nid.isValid())
         {
-            JLOG (j.error) <<
+            JLOG (j_.error) <<
                 "Invalid node identity: " << match[1];
-            continue;
+            return false;
         }
 
-        if (cluster->member (nid))
+        if (member (nid))
         {
-            JLOG (j.warning) <<
+            JLOG (j_.warning) <<
                 "Duplicate node identity: " << match[1];
             continue;
         }
 
-        cluster->update(nid, match[2]);
+        update(nid, trim_whitespace(match[2]));
     }
 
-    return cluster;
+    return true;
 }
 
 } // ripple

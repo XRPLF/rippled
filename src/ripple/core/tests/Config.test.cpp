@@ -156,10 +156,10 @@ public:
 
         if (dbPath.empty ())
         {
-            dataDir_ = subDir_ / path (Config::Helpers::getDatabaseDirName ());
+            dataDir_ = subDir_ / path (Config::databaseDirName);
         }
 
-        configFile_ = subDir_ / path (Config::Helpers::getConfigFileName ());
+        configFile_ = subDir_ / path (Config::configFileName);
         {
             if (!exists (subDir_))
             {
@@ -338,7 +338,7 @@ port_wss_admin
             auto& c (g.config ());
             std::string const nativeDbPath =
                 absolute (path ("test_db") /
-                          path (Config::Helpers::getDatabaseDirName ()))
+                          path (Config::databaseDirName))
                     .string ();
             expect (g.dataDirExists ());
             expect (g.configFileExists ());

@@ -45,7 +45,6 @@ class HashRouter;
 class Logs;
 class LoadFeeTrack;
 class LocalCredentials;
-class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
 class InboundTransactions;
@@ -64,6 +63,7 @@ class TimeKeeper;
 class TransactionMaster;
 class TxQ;
 class Validations;
+class ValidatorList;
 class Cluster;
 
 class DatabaseCon;
@@ -117,7 +117,7 @@ public:
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;
     virtual TxQ&                    getTxQ() = 0;
-    virtual UniqueNodeList&         getUNL () = 0;
+    virtual ValidatorList&          validators () = 0;
     virtual Cluster&                cluster () = 0;
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;

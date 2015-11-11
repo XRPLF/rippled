@@ -42,9 +42,9 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/paths/PathRequests.h>
-#include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
@@ -323,7 +323,7 @@ public:
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <Cluster> cluster_;
-    std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
+    std::unique_ptr <ValidatorList> validators_;
     std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
@@ -446,8 +446,11 @@ public:
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
             logs_->journal("NetworkOPs")))
 
-        // VFALCO NOTE LocalCredentials starts the deprecated UNL service
-        , m_deprecatedUNL (make_UniqueNodeList (*this, *m_jobQueue))
+        , cluster_ (std::make_unique<Cluster> (
+            logs_->journal("Overlay")))
+
+        , validators_ (std::make_unique<ValidatorList> (
+            logs_->journal("UniqueNodeList")))
 
         , serverHandler_ (make_ServerHandler (*this, *m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
@@ -658,9 +661,9 @@ public:
         return *mValidations;
     }
 
-    UniqueNodeList& getUNL () override
+    ValidatorList& validators () override
     {
-        return *m_deprecatedUNL;
+        return *validators_;
     }
 
     Cluster& cluster () override
@@ -1001,21 +1004,22 @@ void ApplicationImp::setup()
 
     m_orderBookDB.setup (getLedgerMaster ().getCurrentLedger ());
 
-    cluster_ = make_Cluster (config (), logs_->journal("Overlay"));
+    if (!cluster_->load (config().section(SECTION_CLUSTER_NODES)))
+    {
+        m_journal.fatal << "Invalid entry in cluster configuration.";
+        throw std::exception();
+    }
 
-    // Begin validation and ip maintenance.
-    //
-    // - LocalCredentials maintains local information: including identity
-    // - and network connection persistence information.
-    //
-    // VFALCO NOTE this starts the UNL
+    if (!validators_->load (config().section (SECTION_VALIDATORS)))
+    {
+        m_journal.fatal << "Invalid entry in validator configuration.";
+        throw std::exception();
+    }
+
+    if (validators_->size () == 0 && !config_->RUN_STANDALONE)
+        m_journal.warning << "No validators are configured.";
+
     m_localCredentials.start ();
-
-    //
-    // Set up UNL.
-    //
-    if (!config_->RUN_STANDALONE)
-        getUNL ().nodeBootstrap ();
 
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
     m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
