@@ -2652,6 +2652,9 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\make_SSLContext.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\mulDiv.cpp">
+      <Filter>ripple\basics\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -2686,6 +2689,9 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\mulDiv.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\qalloc.h">
@@ -2731,6 +2737,9 @@
       <Filter>ripple\basics\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\tests\KeyCache.test.cpp">
+      <Filter>ripple\basics\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\tests\mulDiv.test.cpp">
       <Filter>ripple\basics\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\tests\RangeSet.test.cpp">

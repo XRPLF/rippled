@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/mulDiv.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STAmount.h>
@@ -31,7 +32,7 @@ std::uint64_t
 LoadFeeTrack::scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
     std::uint32_t referenceFeeUnits) const
 {
-    return mulDiv (fee, baseFee, referenceFeeUnits);
+    return mulDivThrow (fee, baseFee, referenceFeeUnits);
 }
 
 // Scale using load as well as base rate
@@ -116,7 +117,7 @@ LoadFeeTrack::getJson (std::uint64_t baseFee,
         // load_fee = The cost to send a "reference" transaction now,
         // in millionths of a Ripple
         j[jss::load_fee] = Json::Value::UInt (
-            mulDiv (baseFee, std::max (mLocalTxnLoadFee,
+            mulDivThrow(baseFee, std::max(mLocalTxnLoadFee,
                 mRemoteTxnLoadFee), lftNormalFee));
     }
 
