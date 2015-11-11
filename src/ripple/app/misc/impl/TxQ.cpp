@@ -24,6 +24,7 @@
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/mulDiv.h>
 #include <boost/algorithm/clamp.hpp>
 #include <limits>
 

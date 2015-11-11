@@ -25,6 +25,7 @@
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/tx/apply.h>              // Validity::Valid
 #include <ripple/basics/Log.h>
+#include <ripple/basics/mulDiv.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
