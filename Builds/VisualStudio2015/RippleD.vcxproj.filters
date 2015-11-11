@@ -2286,6 +2286,9 @@
     <ClCompile Include="..\..\src\ripple\app\misc\impl\TxQ.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorList.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -2310,16 +2313,13 @@
     <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
-      <Filter>ripple\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\UniqueNodeList.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
@@ -2476,6 +2476,9 @@
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\TxQ_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\ValidatorList_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\apply.h">
@@ -4000,18 +4003,6 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlList.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlLoad.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlNetwork.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlReset.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlScore.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Unsubscribe.cpp">

@@ -25,7 +25,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STExchange.h>
-#include <ripple/test/jtx.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -122,7 +121,7 @@ public:
         return Manifest (m.serialized, m.masterKey, m.signingKey, m.sequence);
     }
 
-    void testLoadStore (ManifestCache const& m, UniqueNodeList& unl)
+    void testLoadStore (ManifestCache const& m, ValidatorList& unl)
     {
         testcase ("load/store");
 
@@ -184,16 +183,14 @@ public:
     run() override
     {
         ManifestCache cache;
-        test::jtx::Env env(*this);
-        auto& unl = env.app().getUNL();
+        beast::Journal journal;
+        auto unl = std::make_unique<ValidatorList> (journal);
         {
             testcase ("apply");
             auto const accepted = ManifestDisposition::accepted;
             auto const untrusted = ManifestDisposition::untrusted;
             auto const stale = ManifestDisposition::stale;
             auto const invalid = ManifestDisposition::invalid;
-
-            beast::Journal journal;
 
             auto const sk_a = randomSecretKey();
             auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
@@ -210,26 +207,26 @@ public:
                 make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 2, true);  // broken
             auto const fake = s_b1.serialized + '\0';
 
-            expect (cache.applyManifest (clone (s_a0), unl, journal) == untrusted,
+            expect (cache.applyManifest (clone (s_a0), *unl, journal) == untrusted,
                     "have to install a trusted key first");
 
             cache.addTrustedKey (pk_a, "a");
             cache.addTrustedKey (pk_b, "b");
 
-            expect (cache.applyManifest (clone (s_a0), unl, journal) == accepted);
-            expect (cache.applyManifest (clone (s_a0), unl, journal) == stale);
+            expect (cache.applyManifest (clone (s_a0), *unl, journal) == accepted);
+            expect (cache.applyManifest (clone (s_a0), *unl, journal) == stale);
 
-            expect (cache.applyManifest (clone (s_a1), unl, journal) == accepted);
-            expect (cache.applyManifest (clone (s_a1), unl, journal) == stale);
-            expect (cache.applyManifest (clone (s_a0), unl, journal) == stale);
+            expect (cache.applyManifest (clone (s_a1), *unl, journal) == accepted);
+            expect (cache.applyManifest (clone (s_a1), *unl, journal) == stale);
+            expect (cache.applyManifest (clone (s_a0), *unl, journal) == stale);
 
-            expect (cache.applyManifest (clone (s_b0), unl, journal) == accepted);
-            expect (cache.applyManifest (clone (s_b0), unl, journal) == stale);
+            expect (cache.applyManifest (clone (s_b0), *unl, journal) == accepted);
+            expect (cache.applyManifest (clone (s_b0), *unl, journal) == stale);
 
             expect (!ripple::make_Manifest(fake));
-            expect (cache.applyManifest (clone (s_b2), unl, journal) == invalid);
+            expect (cache.applyManifest (clone (s_b2), *unl, journal) == invalid);
         }
-        testLoadStore (cache, unl);
+        testLoadStore (cache, *unl);
     }
 };
 
