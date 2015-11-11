@@ -243,7 +243,7 @@ Ledger::Ledger (uint256 const& parentHash,
 
     if (! setup(config))
         loaded = false;
-    
+
     if (! loaded)
     {
         updateHash ();
@@ -456,7 +456,7 @@ deserializeTxPlusMeta (SHAMapItem const& item)
 void Ledger::setAcquiring (void)
 {
     if (!txMap_ || !stateMap_)
-        throw std::runtime_error ("invalid map");
+        Throw<std::runtime_error> ("invalid map");
 
     txMap_->setSynching ();
     stateMap_->setSynching ();
@@ -721,11 +721,10 @@ Ledger::setup (Config const& config)
     {
         ret = false;
     }
-    catch (...)
+    catch (std::exception const&)
     {
-        throw;
+        Throw();
     }
-
 
     try
     {
@@ -735,9 +734,9 @@ Ledger::setup (Config const& config)
     {
         ret = false;
     }
-    catch (...)
+    catch (std::exception const&)
     {
-        throw;
+        Throw();
     }
 
     return ret;
@@ -783,7 +782,7 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
     catch (SHAMapMissingNode&)
     {
         stateMap_->family().missing_node (info_.hash);
-        throw;
+        Throw();
     }
 }
 
@@ -999,7 +998,7 @@ static bool saveValidatedLedger (
             app.getAcceptedLedgerCache().canonicalize(ledger->info().hash, aLedger);
         }
     }
-    catch (...)
+    catch (std::exception const&)
     {
         JLOG (j.warning) << "An accepted ledger was missing nodes";
         app.getLedgerMaster().failedSave(seq, ledger->info().hash);

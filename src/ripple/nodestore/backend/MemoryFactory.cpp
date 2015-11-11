@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
 #include <beast/utility/ci_char_traits.h>
@@ -63,7 +64,7 @@ public:
             std::make_tuple(path), std::make_tuple());
         MemoryDB& db = result.first->second;
         if (db.open)
-            throw std::runtime_error("already open");
+            Throw<std::runtime_error> ("already open");
         return db;
     }
 };
@@ -88,7 +89,7 @@ public:
         , journal_ (journal)
     {
         if (name_.empty())
-            throw std::runtime_error ("Missing path in Memory backend");
+            Throw<std::runtime_error> ("Missing path in Memory backend");
         db_ = &memoryFactory.open(name_);
     }
 
@@ -137,7 +138,7 @@ public:
     std::vector<std::shared_ptr<NodeObject>>
     fetchBatch (std::size_t n, void const* const* keys) override
     {
-        throw std::runtime_error("pure virtual called");
+        Throw<std::runtime_error> ("pure virtual called");
         return {};
     }
 

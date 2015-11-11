@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <beast/hash/xxhasher.h>
+#include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
 #include <beast/chrono/basic_seconds_clock.h>
 #include <beast/chrono/chrono_io.h>
@@ -280,12 +281,12 @@ parse_args(std::string const& s)
     {
         boost::smatch m;
         if (! boost::regex_match (kv, m, re1))
-            throw std::runtime_error(
+            Throw<std::runtime_error> (
                 "invalid parameter " + kv);
         auto const result =
             map.emplace(m[1], m[2]);
         if (! result.second)
-            throw std::runtime_error(
+            Throw<std::runtime_error> (
                 "duplicate parameter " + m[1]);
     }
     return map;
@@ -379,7 +380,7 @@ public:
                 rocksdb::DB::OpenForReadOnly(
                     options, from_path, &pdb);
             if (! status.ok () || ! pdb)
-                throw std::runtime_error (
+                Throw<std::runtime_error> (
                     "Can't open '" + from_path + "': " +
                         status.ToString());
             db.reset(pdb);
@@ -413,7 +414,7 @@ public:
             for (it->SeekToFirst (); it->Valid (); it->Next())
             {
                 if (it->key().size() != 32)
-                    throw std::runtime_error(
+                    Throw<std::runtime_error> (
                         "Unexpected key size " +
                             std::to_string(it->key().size()));
                 void const* const key = it->key().data();
@@ -829,7 +830,7 @@ read (File& f, dat_file_header& dh)
     }
     catch (file_short_read_error const&)
     {
-        throw store_corrupt_error(
+        Throw<store_corrupt_error> (
             "short data file header");
     }
     istream is(buf);
@@ -888,7 +889,7 @@ read (File& f, key_file_header& kh)
     }
     catch (file_short_read_error const&)
     {
-        throw store_corrupt_error(
+        Throw<store_corrupt_error> (
             "short key file header");
     }
     istream is(buf);

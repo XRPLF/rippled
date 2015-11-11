@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/crypto/ECDSA.h>
 #include <ripple/crypto/ECIES.h>
@@ -151,20 +151,15 @@ RippleAddress::toPublicKey() const
     return RipplePublicKey (vchData.begin(), vchData.end());
 }
 
-static
-std::runtime_error badSourceError (int nVersion)
-{
-    return std::runtime_error ("bad source: " + std::to_string (nVersion));
-}
-
 NodeID RippleAddress::getNodeID () const
 {
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getNodeID");
+        Throw<std::runtime_error> ("unset source - getNodeID");
 
-    case TOKEN_NODE_PUBLIC: {
+    case TOKEN_NODE_PUBLIC:
+    {
         // Note, we are encoding the left.
         NodeID node;
         node.copyFrom(Hash160 (vchData));
@@ -172,8 +167,9 @@ NodeID RippleAddress::getNodeID () const
     }
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 Blob const& RippleAddress::getNodePublic () const
@@ -181,14 +177,15 @@ Blob const& RippleAddress::getNodePublic () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getNodePublic");
+        Throw<std::runtime_error> ("unset source - getNodePublic");
 
     case TOKEN_NODE_PUBLIC:
         return vchData;
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error>("bad source: " + std::to_string(nVersion));
     }
+    return vchData; // Silence compiler warning.
 }
 
 std::string RippleAddress::humanNodePublic () const
@@ -196,14 +193,15 @@ std::string RippleAddress::humanNodePublic () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - humanNodePublic");
+        Throw<std::runtime_error> ("unset source - humanNodePublic");
 
     case TOKEN_NODE_PUBLIC:
         return ToString ();
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error>("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 bool RippleAddress::setNodePublic (std::string const& strPublic)
@@ -253,14 +251,15 @@ Blob const& RippleAddress::getNodePrivateData () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getNodePrivateData");
+        Throw<std::runtime_error> ("unset source - getNodePrivateData");
 
     case TOKEN_NODE_PRIVATE:
         return vchData;
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return vchData; // Silence compiler warning.
 }
 
 uint256 RippleAddress::getNodePrivate () const
@@ -268,14 +267,15 @@ uint256 RippleAddress::getNodePrivate () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source = getNodePrivate");
+        Throw<std::runtime_error> ("unset source = getNodePrivate");
 
     case TOKEN_NODE_PRIVATE:
         return uint256 (vchData);
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 std::string RippleAddress::humanNodePrivate () const
@@ -283,14 +283,15 @@ std::string RippleAddress::humanNodePrivate () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - humanNodePrivate");
+        Throw<std::runtime_error> ("unset source - humanNodePrivate");
 
     case TOKEN_NODE_PRIVATE:
         return ToString ();
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 bool RippleAddress::setNodePrivate (std::string const& strPrivate)
@@ -320,7 +321,7 @@ void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
     vchSig = ECDSASign (hash, getNodePrivate());
 
     if (vchSig.empty())
-        throw std::runtime_error ("Signing failed.");
+        Throw<std::runtime_error> ("Signing failed.");
 }
 
 //
@@ -342,18 +343,18 @@ Blob const& RippleAddress::getAccountPublic () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getAccountPublic");
+        Throw<std::runtime_error> ("unset source - getAccountPublic");
 
     case TOKEN_ACCOUNT_ID:
-        throw std::runtime_error ("public not available from account id");
-        break;
+        Throw<std::runtime_error> ("public not available from account id");
 
     case TOKEN_ACCOUNT_PUBLIC:
         return vchData;
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return vchData; // Silence compiler warning.
 }
 
 std::string RippleAddress::humanAccountPublic () const
@@ -361,17 +362,18 @@ std::string RippleAddress::humanAccountPublic () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - humanAccountPublic");
+        Throw<std::runtime_error> ("unset source - humanAccountPublic");
 
     case TOKEN_ACCOUNT_ID:
-        throw std::runtime_error ("public not available from account id");
+        Throw<std::runtime_error> ("public not available from account id");
 
     case TOKEN_ACCOUNT_PUBLIC:
         return ToString ();
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 bool RippleAddress::setAccountPublic (std::string const& strPublic)
@@ -437,14 +439,15 @@ uint256 RippleAddress::getAccountPrivate () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getAccountPrivate");
+        Throw<std::runtime_error> ("unset source - getAccountPrivate");
 
     case TOKEN_ACCOUNT_SECRET:
         return uint256::fromVoid (vchData.data() + (vchData.size() - 32));
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 bool RippleAddress::setAccountPrivate (std::string const& strPrivate)
@@ -518,7 +521,7 @@ Blob RippleAddress::accountPrivateEncrypt (
         {
             vucCipherText = encryptECIES (secretKey, publicKey, vucPlainText);
         }
-        catch (...)
+        catch (std::exception const&)
         {
             // TODO: log this or explain why this is unimportant!
         }
@@ -540,7 +543,7 @@ Blob RippleAddress::accountPrivateDecrypt (
         {
             vucPlainText = decryptECIES (secretKey, publicKey, vucCipherText);
         }
-        catch (...)
+        catch (std::exception const&)
         {
             // TODO: log this or explain why this is unimportant!
         }
@@ -559,15 +562,16 @@ Blob const& RippleAddress::getGenerator () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getGenerator");
+        Throw<std::runtime_error> ("unset source - getGenerator");
 
     case TOKEN_FAMILY_GENERATOR:
         // Do nothing.
         return vchData;
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return vchData; // Silence compiler warning.
 }
 
 std::string RippleAddress::humanGenerator () const
@@ -575,14 +579,15 @@ std::string RippleAddress::humanGenerator () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - humanGenerator");
+        Throw<std::runtime_error> ("unset source - humanGenerator");
 
     case TOKEN_FAMILY_GENERATOR:
         return ToString ();
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 void RippleAddress::setGenerator (Blob const& vPublic)
@@ -607,14 +612,15 @@ uint128 RippleAddress::getSeed () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - getSeed");
+        Throw<std::runtime_error> ("unset source - getSeed");
 
     case TOKEN_FAMILY_SEED:
         return uint128 (vchData);
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 std::string RippleAddress::humanSeed1751 () const
@@ -622,7 +628,7 @@ std::string RippleAddress::humanSeed1751 () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - humanSeed1751");
+        Throw<std::runtime_error> ("unset source - humanSeed1751");
 
     case TOKEN_FAMILY_SEED:
     {
@@ -641,8 +647,9 @@ std::string RippleAddress::humanSeed1751 () const
     }
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 std::string RippleAddress::humanSeed () const
@@ -650,14 +657,15 @@ std::string RippleAddress::humanSeed () const
     switch (nVersion)
     {
     case TOKEN_NONE:
-        throw std::runtime_error ("unset source - humanSeed");
+        Throw<std::runtime_error> ("unset source - humanSeed");
 
     case TOKEN_FAMILY_SEED:
         return ToString ();
 
     default:
-        throw badSourceError (nVersion);
+        Throw<std::runtime_error> ("bad source: " + std::to_string(nVersion));
     }
+    return {}; // Silence compiler warning.
 }
 
 int RippleAddress::setSeed1751 (std::string const& strHuman1751)

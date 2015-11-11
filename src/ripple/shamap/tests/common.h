@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/shamap/Family.h>
 #include <ripple/shamap/FullBelowCache.h>
@@ -108,13 +109,13 @@ public:
     void
     missing_node (std::uint32_t refNum) override
     {
-        throw std::runtime_error("missing node");
+        Throw<std::runtime_error> ("missing node");
     }
 
     void
     missing_node (uint256 const& refHash) override
     {
-        throw std::runtime_error("missing node");
+        Throw<std::runtime_error> ("missing node");
     }
 };
 

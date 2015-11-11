@@ -23,6 +23,7 @@
 #include <ripple/test/jtx/Env.h>
 #include <ripple/test/jtx/tags.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/basics/contract.h>
 #include <boost/optional.hpp>
 
 namespace ripple {
@@ -53,7 +54,7 @@ public:
         : amount_(amount)
     {
         if (! isXRP(*amount_))
-            throw std::runtime_error(
+            Throw<std::runtime_error> (
                 "fee: not XRP");
     }
 

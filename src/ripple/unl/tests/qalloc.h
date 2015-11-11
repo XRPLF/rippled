@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SIM_QALLOC_H_INCLUDED
 #define RIPPLE_SIM_QALLOC_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <boost/intrusive/list.hpp>
 #include <cstddef>
 #include <cstdint>
@@ -266,7 +267,7 @@ qalloc_impl<_>::allocate(
     block* const b =
         new(std::malloc(n)) block(n);
     if (! b)
-        throw std::bad_alloc();
+        Throw<std::bad_alloc> ();
     used_ = b;
     // VFALCO This has to succeed
     return used_->allocate(bytes, align);
@@ -313,7 +314,7 @@ qalloc_type<T>::alloc (std::size_t n)
 {
     if (n > std::numeric_limits<
             std::size_t>::max() / sizeof(U))
-        throw std::bad_alloc();
+        Throw<std::bad_alloc> ();
     auto const bytes = n * sizeof(U);
     return static_cast<U*>(
         impl_->allocate(bytes,

@@ -25,6 +25,8 @@
 #ifndef RIPPLE_CRYPTO_CAUTOBN_CTX_H_INCLUDED
 #define RIPPLE_CRYPTO_CAUTOBN_CTX_H_INCLUDED
 
+#include <ripple/basics/contract.h>
+
 #include <openssl/bn.h>
 
 #include <stdexcept>
@@ -43,7 +45,7 @@ public:
         pctx = BN_CTX_new ();
 
         if (pctx == nullptr)
-            throw std::runtime_error ("CAutoBN_CTX : BN_CTX_new() returned nullptr");
+            Throw<std::runtime_error> ("CAutoBN_CTX : BN_CTX_new() returned nullptr");
     }
 
     ~CAutoBN_CTX ()

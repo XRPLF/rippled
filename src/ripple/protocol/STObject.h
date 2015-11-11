@@ -533,8 +533,8 @@ public:
     {
         STBase* rf = getPField (field, true);
 
-        if (!rf)
-            throw std::runtime_error ("Field not found");
+        if (! rf)
+            Throw<std::runtime_error> ("Field not found");
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
@@ -543,7 +543,7 @@ public:
         if (auto cf = dynamic_cast<Bits*> (rf))
             cf->setValue (v);
         else
-            throw std::runtime_error ("Wrong field type");
+            Throw<std::runtime_error> ("Wrong field type");
     }
 
     STObject& peekFieldObject (SField const& field);
@@ -594,8 +594,8 @@ private:
     {
         const STBase* rf = peekAtPField (field);
 
-        if (!rf)
-            throw std::runtime_error ("Field not found");
+        if (! rf)
+            Throw<std::runtime_error> ("Field not found");
 
         SerializedTypeID id = rf->getSType ();
 
@@ -604,8 +604,8 @@ private:
 
         const T* cf = dynamic_cast<const T*> (rf);
 
-        if (!cf)
-            throw std::runtime_error ("Wrong field type");
+        if (! cf)
+            Throw<std::runtime_error> ("Wrong field type");
 
         return cf->value ();
     }
@@ -620,8 +620,8 @@ private:
     {
         const STBase* rf = peekAtPField (field);
 
-        if (!rf)
-            throw std::runtime_error ("Field not found");
+        if (! rf)
+            Throw<std::runtime_error> ("Field not found");
 
         SerializedTypeID id = rf->getSType ();
 
@@ -630,8 +630,8 @@ private:
 
         const T* cf = dynamic_cast<const T*> (rf);
 
-        if (!cf)
-            throw std::runtime_error ("Wrong field type");
+        if (! cf)
+            Throw<std::runtime_error> ("Wrong field type");
 
         return *cf;
     }
@@ -644,16 +644,16 @@ private:
 
         STBase* rf = getPField (field, true);
 
-        if (!rf)
-            throw std::runtime_error ("Field not found");
+        if (! rf)
+            Throw<std::runtime_error> ("Field not found");
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
 
         T* cf = dynamic_cast<T*> (rf);
 
-        if (!cf)
-            throw std::runtime_error ("Wrong field type");
+        if (! cf)
+            Throw<std::runtime_error> ("Wrong field type");
 
         cf->setValue (std::move (value));
     }
@@ -664,16 +664,16 @@ private:
     {
         STBase* rf = getPField (field, true);
 
-        if (!rf)
-            throw std::runtime_error ("Field not found");
+        if (! rf)
+            Throw<std::runtime_error> ("Field not found");
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
 
         T* cf = dynamic_cast<T*> (rf);
 
-        if (!cf)
-            throw std::runtime_error ("Wrong field type");
+        if (! cf)
+            Throw<std::runtime_error> ("Wrong field type");
 
         (*cf) = value;
     }
@@ -684,16 +684,16 @@ private:
     {
         STBase* rf = getPField (field, true);
 
-        if (!rf)
-            throw std::runtime_error ("Field not found");
+        if (! rf)
+            Throw<std::runtime_error> ("Field not found");
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
 
         T* cf = dynamic_cast<T*> (rf);
 
-        if (!cf)
-            throw std::runtime_error ("Wrong field type");
+        if (! cf)
+            Throw<std::runtime_error> ("Wrong field type");
 
         return *cf;
     }
@@ -710,7 +710,7 @@ STObject::Proxy<T>::Proxy (STObject* st, TypedField<T> const* f)
     {
         // STObject has associated template
         if (! st_->peekAtPField(*f_))
-            THROW(template_field_error, *f);
+            Throw<template_field_error> (*f);
         style_ = st_->mType->style(*f_);
     }
     else
@@ -728,7 +728,7 @@ STObject::Proxy<T>::value() const ->
     if (t)
         return t->value();
     if (style_ != SOE_DEFAULT)
-        THROW(missing_field_error, *f_);
+        Throw<missing_field_error> (*f_);
     return value_type{};
 }
 
@@ -884,7 +884,7 @@ STObject::OptionalProxy<T>::disengage()
 {
     if (this->style_ == SOE_REQUIRED ||
             this->style_ == SOE_DEFAULT)
-        THROW(template_field_error, *this->f_);
+        Throw<template_field_error> (*this->f_);
     if (this->style_ == SOE_INVALID)
         this->st_->delField(*this->f_);
     else
@@ -911,7 +911,7 @@ STObject::operator[](TypedField<T> const& f) const
     if (! b)
         // This is a free object (no constraints)
         // with no template
-        THROW(missing_field_error, f);
+        Throw<missing_field_error> (f);
     auto const u =
         dynamic_cast<T const*>(b);
     if (! u)
@@ -919,7 +919,7 @@ STObject::operator[](TypedField<T> const& f) const
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
         if(mType->style(f) == SOE_OPTIONAL)
-            THROW(missing_field_error, f);
+            Throw<missing_field_error> (f);
         assert(mType->style(f) == SOE_DEFAULT);
         // Handle the case where value_type is a
         // const reference, otherwise we return

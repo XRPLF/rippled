@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_SLICE_H_INCLUDED
 #define RIPPLE_BASICS_SLICE_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/basics/strHex.h>
 #include <algorithm>
 #include <cassert>
@@ -100,7 +101,7 @@ public:
     operator+= (std::size_t n)
     {
         if (n > size_)
-            throw std::domain_error("too small");
+            Throw<std::domain_error> ("too small");
         data_ += n;
         size_ -= n;
         return *this;

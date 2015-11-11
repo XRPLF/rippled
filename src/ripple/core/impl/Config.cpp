@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/Feature.h>
@@ -267,7 +268,8 @@ void Config::setup (std::string const& strConf, bool bQuiet)
             boost::filesystem::create_directories (CONFIG_DIR, ec);
 
             if (ec)
-                throw std::runtime_error (boost::str (boost::format ("Can not create %s") % CONFIG_DIR));
+                Throw<std::runtime_error> (
+                    boost::str(boost::format ("Can not create %s") % CONFIG_DIR));
         }
     }
 
@@ -285,7 +287,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
     boost::filesystem::create_directories (dataDir, ec);
 
     if (ec)
-        throw std::runtime_error (
+        Throw<std::runtime_error> (
             boost::str (boost::format ("Can not create %s") % dataDir));
 
     legacy ("database_path", boost::filesystem::absolute (dataDir).string ());
@@ -349,10 +351,11 @@ void Config::loadFromString (std::string const& fileContents)
             Json::Reader    jrReader;
             Json::Value     jvCommand;
 
-            if (!jrReader.parse (strJson, jvCommand))
-                throw std::runtime_error (
+            if (! jrReader.parse (strJson, jvCommand))
+                Throw<std::runtime_error> (
                     boost::str (boost::format (
-                        "Couldn't parse [" SECTION_RPC_STARTUP "] command: %s") % strJson));
+                        "Couldn't parse [" SECTION_RPC_STARTUP "] command: %s")
+                            % strJson));
 
             RPC_STARTUP.append (jvCommand);
         }

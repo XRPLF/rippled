@@ -25,6 +25,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
+#include <ripple/basics/contract.h>
 #include <cstring>
 
 namespace ripple {
@@ -36,7 +37,7 @@ parse (Json::Value const& jv)
 {
     STParsedJSONObject p("tx_json", jv);
     if (! p.object)
-        throw parse_error(
+        Throw<parse_error> (
             rpcErrorString(p.error));
     return std::move(*p.object);
 }
@@ -77,12 +78,12 @@ fill_seq (Json::Value& jv,
         parseBase58<AccountID>(
             jv[jss::Account].asString());
     if (! account)
-        throw parse_error(
+        Throw<parse_error> (
             "unexpected invalid Account");
     auto const ar = view.read(
         keylet::account(*account));
     if (! ar)
-        throw parse_error(
+        Throw<parse_error> (
             "unexpected missing account root");
     jv[jss::Sequence] =
         ar->getFieldU32(sfSequence);

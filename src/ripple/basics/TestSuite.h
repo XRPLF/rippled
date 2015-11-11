@@ -110,7 +110,8 @@ public:
         try
         {
             f();
-        } catch (...)
+        }
+        catch (std::exception const&)
         {
             success = true;
         }

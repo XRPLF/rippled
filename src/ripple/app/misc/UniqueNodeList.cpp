@@ -23,6 +23,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
@@ -861,7 +862,7 @@ int UniqueNodeListImp::iSourceScore (ValidatorSource vsWhy)
         break;
 
     default:
-        throw std::runtime_error ("Internal error: bad ValidatorSource.");
+        Throw<std::runtime_error> ("Internal error: bad ValidatorSource.");
     }
 
     return iScore;

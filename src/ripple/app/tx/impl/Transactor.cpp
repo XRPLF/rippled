@@ -22,6 +22,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -671,7 +672,7 @@ Transactor::operator()()
             {
                 // VFALCO Log to journal here
                 // JLOG(journal.fatal) << "invalid fee";
-                throw std::logic_error("amount is negative!");
+                Throw<std::logic_error> ("amount is negative!");
             }
 
             if (fee != zero)

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/codec.h>
@@ -71,7 +72,7 @@ public:
         , scheduler_ (scheduler)
     {
         if (name_.empty())
-            throw std::runtime_error (
+            Throw<std::runtime_error> (
                 "nodestore: Missing path in NuDB backend");
         auto const folder = boost::filesystem::path (name_);
         boost::filesystem::create_directories (folder);
@@ -85,13 +86,10 @@ public:
             0.50);
         try
         {
-            if (! db_.open (dp, kp, lp,
-                    arena_alloc_size))
-                throw std::runtime_error(
-                    "nodestore: open failed");
+            if (! db_.open (dp, kp, lp, arena_alloc_size))
+                Throw<std::runtime_error> ("nodestore: open failed");
             if (db_.appnum() != currentType)
-                throw std::runtime_error(
-                    "nodestore: unknown appnum");
+                Throw<std::runtime_error> ("nodestore: unknown appnum");
         }
         catch (std::exception const& e)
         {
@@ -157,7 +155,7 @@ public:
     std::vector<std::shared_ptr<NodeObject>>
     fetchBatch (std::size_t n, void const* const* keys) override
     {
-        throw std::runtime_error("pure virtual called");
+        Throw<std::runtime_error> ("pure virtual called");
         return {};
     }
 

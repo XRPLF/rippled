@@ -48,7 +48,7 @@ Json::Value doRandom (RPC::Context& context)
         jvResult[jss::random]  = to_string (rand);
         return jvResult;
     }
-    catch (...)
+    catch (std::exception const&)
     {
         return rpcError (rpcINTERNAL);
     }

@@ -47,11 +47,6 @@ Transaction::Transaction (std::shared_ptr<STTx const> const& stx,
         reason = e.what();
         return;
     }
-    catch (...)
-    {
-        reason = "Unexpected exception";
-        return;
-    }
 
     mStatus = NEW;
 }

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/Base58.h>
 #include <ripple/crypto/CAutoBN_CTX.h>
 #include <ripple/crypto/CBigNum.h>
@@ -89,7 +90,7 @@ std::string Base58::raw_encode (unsigned char const* begin,
     while (bn > bn0)
     {
         if (!BN_div (&dv, &rem, &bn, &bn58, pctx))
-            throw std::runtime_error ("EncodeBase58 : BN_div failed");
+            Throw<std::runtime_error> ("EncodeBase58 : BN_div failed");
 
         bn = dv;
         unsigned int c = rem.getuint ();
@@ -199,7 +200,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
         bnChar.setuint (p1 - alphabet.chars());
 
         if (!BN_mul (&bn, &bn, &bn58, pctx))
-            throw std::runtime_error ("DecodeBase58 : BN_mul failed");
+            Throw<std::runtime_error> ("DecodeBase58 : BN_mul failed");
 
         bn += bnChar;
     }

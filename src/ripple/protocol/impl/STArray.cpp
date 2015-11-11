@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STArray.h>
@@ -77,7 +78,7 @@ STArray::STArray (SerialIter& sit, SField const& f)
         {
             WriteLog (lsWARNING, STObject) <<
                 "Encountered array with end of object marker";
-            throw std::runtime_error ("Illegal terminator in array");
+            Throw<std::runtime_error> ("Illegal terminator in array");
         }
 
         auto const& fn = SField::getField (type, field);
@@ -86,13 +87,13 @@ STArray::STArray (SerialIter& sit, SField const& f)
         {
             WriteLog (lsTRACE, STObject) <<
                 "Unknown field: " << type << "/" << field;
-            throw std::runtime_error ("Unknown field");
+            Throw<std::runtime_error> ("Unknown field");
         }
 
         if (fn.fieldType != STI_OBJECT)
         {
             WriteLog (lsTRACE, STObject) << "Array contains non-object";
-            throw std::runtime_error ("Non-object in array");
+            Throw<std::runtime_error> ("Non-object in array");
         }
 
         v_.emplace_back(fn);
@@ -100,7 +101,7 @@ STArray::STArray (SerialIter& sit, SField const& f)
 
         if (v_.back().setTypeFromSField (fn) == STObject::typeSetFail)
         {
-            throw std::runtime_error ("Malformed object in array");
+            Throw<std::runtime_error> ("Malformed object in array");
         }
     }
 }

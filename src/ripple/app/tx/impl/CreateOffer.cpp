@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/st.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
@@ -322,7 +323,7 @@ CreateOffer::bridged_cross (
     assert (!isXRP (taker_amount.in) && !isXRP (taker_amount.out));
 
     if (isXRP (taker_amount.in) || isXRP (taker_amount.out))
-        throw std::logic_error ("Bridging with XRP and an endpoint.");
+        Throw<std::logic_error> ("Bridging with XRP and an endpoint.");
 
     OfferStream offers_direct (view, view_cancel,
         Book (taker.issue_in (), taker.issue_out ()),
@@ -461,7 +462,7 @@ CreateOffer::bridged_cross (
         assert (direct_consumed || leg1_consumed || leg2_consumed);
 
         if (!direct_consumed && !leg1_consumed && !leg2_consumed)
-            throw std::logic_error ("bridged crossing: nothing was fully consumed.");
+            Throw<std::logic_error> ("bridged crossing: nothing was fully consumed.");
     }
 
     return std::make_pair(cross_result, taker.remaining_offer ());
@@ -542,7 +543,7 @@ CreateOffer::direct_cross (
         assert (direct_consumed);
 
         if (!direct_consumed)
-            throw std::logic_error ("direct crossing: nothing was fully consumed.");
+            Throw<std::logic_error> ("direct crossing: nothing was fully consumed.");
     }
 
     return std::make_pair(cross_result, taker.remaining_offer ());
@@ -599,11 +600,6 @@ CreateOffer::cross (
     catch (std::exception const& e)
     {
         j_.error << "Exception during offer crossing: " << e.what ();
-        return std::make_pair (tecINTERNAL, taker.remaining_offer ());
-    }
-    catch (...)
-    {
-        j_.error << "Exception during offer crossing.";
         return std::make_pair (tecINTERNAL, taker.remaining_offer ());
     }
 }

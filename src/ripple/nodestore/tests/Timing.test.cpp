@@ -312,12 +312,12 @@ public:
             parallel_for<Body>(params.items,
                 params.threads, std::ref(*this), std::ref(*backend));
         }
-        catch(...)
+        catch (std::exception const&)
         {
         #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
         #endif
-            throw;
+            Throw();
         }
         backend->close();
     }
@@ -373,12 +373,12 @@ public:
             parallel_for_id<Body>(params.items, params.threads,
                 std::ref(*this), std::ref(params), std::ref(*backend));
         }
-        catch(...)
+        catch (std::exception const&)
         {
         #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
         #endif
-            throw;
+            Throw();
         }
         backend->close();
     }
@@ -436,12 +436,12 @@ public:
             parallel_for_id<Body>(params.items, params.threads,
                 std::ref(*this), std::ref(params), std::ref(*backend));
         }
-        catch(...)
+        catch (std::exception const&)
         {
         #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
         #endif
-            throw;
+            Throw();
         }
         backend->close();
     }
@@ -514,12 +514,12 @@ public:
             parallel_for_id<Body>(params.items, params.threads,
                 std::ref(*this), std::ref(params), std::ref(*backend));
         }
-        catch(...)
+        catch (std::exception const&)
         {
         #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
         #endif
-            throw;
+            Throw();
         }
         backend->close();
     }
@@ -626,12 +626,12 @@ public:
             parallel_for_id<Body>(params.items, params.threads,
                 std::ref(*this), std::ref(params), std::ref(*backend));
         }
-        catch(...)
+        catch (std::exception const&)
         {
         #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
         #endif
-            throw;
+            Throw();
         }
         backend->close();
     }

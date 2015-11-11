@@ -26,6 +26,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
@@ -266,7 +267,7 @@ void executeRPC (
     {
         // Can't ever get here.
         assert (false);
-        throw std::logic_error ("RPC handler with no method");
+        Throw<std::logic_error> ("RPC handler with no method");
     }
 }
 

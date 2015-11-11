@@ -593,7 +593,7 @@ public:
         {
             pass ();
         }
-        catch (...)
+        catch (std::exception const&)
         {
             fail ("wrong exception");
         }
@@ -625,7 +625,7 @@ public:
         {
             pass ();
         }
-        catch (...)
+        catch (std::exception const&)
         {
             fail ("wrong exception");
         }

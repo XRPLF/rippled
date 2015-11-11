@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
@@ -194,7 +195,8 @@ STObject& TxMeta::getAffectedNode (uint256 const& node)
             return n;
     }
     assert (false);
-    throw std::runtime_error ("Affected node not found");
+    Throw<std::runtime_error> ("Affected node not found");
+    return *(mNodes.begin()); // Silence compiler warning.
 }
 
 const STObject& TxMeta::peekAffectedNode (uint256 const& node) const
@@ -205,7 +207,8 @@ const STObject& TxMeta::peekAffectedNode (uint256 const& node) const
             return n;
     }
 
-    throw std::runtime_error ("Affected node not found");
+    Throw<std::runtime_error> ("Affected node not found");
+    return *(mNodes.begin()); // Silence compiler warning.
 }
 
 void TxMeta::init (uint256 const& id, std::uint32_t ledger)

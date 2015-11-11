@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STEXCHANGE_H_INCLUDED
 
 #include <ripple/basics/Buffer.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBlob.h>
@@ -139,7 +140,7 @@ get (STObject const& st,
         dynamic_cast<U const*>(b);
     // This should never happen
     if (! u)
-        throw std::runtime_error (
+        Throw<std::runtime_error> (
             "Wrong field type");
     STExchange<U, T>::get(t, *u);
     return t;

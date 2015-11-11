@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 #define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
 #include <beast/utility/Debug.h>
 #include <boost/optional.hpp>
@@ -161,7 +162,7 @@ public:
                     "Updating database to version " << currentSchemaVersion;
             else if (version > currentSchemaVersion)
             {
-                throw std::runtime_error (
+                Throw<std::runtime_error> (
                     "The PeerFinder database version is higher than expected");
             }
         }

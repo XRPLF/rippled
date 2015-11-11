@@ -24,6 +24,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/types.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 namespace test {
@@ -88,7 +89,7 @@ msig::operator()(Env& env, JTx& jt) const
         catch(parse_error const&)
         {
             env.test.log << pretty(jt.jv);
-            throw;
+            Throw();
         }
         auto& js = jt[sfSigners.getJsonName()];
         js.resize(mySigners.size());

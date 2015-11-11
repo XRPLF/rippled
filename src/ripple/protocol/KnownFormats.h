@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 #define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <memory>
 
@@ -110,13 +111,9 @@ public:
         Item const* const result = findByName (name);
 
         if (result != nullptr)
-        {
             return result->getType ();
-        }
-        else
-        {
-            throw std::runtime_error ("Unknown format name");
-        }
+        Throw<std::runtime_error> ("Unknown format name");
+        return {}; // Silence compiler warning.
     }
 
     /** Retrieve a format based on its type.

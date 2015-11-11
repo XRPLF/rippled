@@ -67,7 +67,7 @@ void ConsensusTransSetSF::gotNode (
                     pap->getOPs().submitTransaction(stx);
                 });
         }
-        catch (...)
+        catch (std::exception const&)
         {
             JLOG (j_.warning)
                     << "Fetched invalid transaction in proposed set";

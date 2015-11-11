@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/tags.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/basics/contract.h>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -197,14 +198,14 @@ struct XRP_t
             auto const d = std::uint64_t(
                 std::round(v * c));
             if (double(d) / c != v)
-                throw std::domain_error(
+                Throw<std::domain_error> (
                     "unrepresentable");
             return { d };
         }
         auto const d = std::int64_t(
             std::round(v * c));
         if (double(d) / c != v)
-            throw std::domain_error(
+            Throw<std::domain_error> (
                 "unrepresentable");
         return { d };
     }

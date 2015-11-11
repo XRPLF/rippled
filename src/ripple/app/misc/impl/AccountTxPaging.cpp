@@ -106,7 +106,7 @@ accountTxPage (
             findLedger = token[jss::ledger].asInt();
             findSeq = token[jss::seq].asInt();
         }
-        catch (...)
+        catch (std::exception const&)
         {
             return;
         }

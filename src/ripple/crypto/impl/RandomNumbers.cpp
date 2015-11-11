@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/rand.h>
 #include <cassert>
@@ -65,7 +66,7 @@ void random_fill (void* buffer, int count)
     assert (count > 0);
 
     if (RAND_bytes (reinterpret_cast <unsigned char*> (buffer), count) != 1)
-        throw std::runtime_error ("Insufficient entropy in pool.");
+        Throw<std::runtime_error> ("Insufficient entropy in pool.");
 }
 
 }

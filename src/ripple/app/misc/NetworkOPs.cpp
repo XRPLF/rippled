@@ -43,6 +43,7 @@
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Time.h>
 #include <ripple/protocol/digest.h>
@@ -767,7 +768,7 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
             return;
         }
     }
-    catch (...)
+    catch (std::exception const&)
     {
         JLOG(m_journal.warning) << "Exception checking transaction" << txid;
 
@@ -1259,7 +1260,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
                 ++vc.nodesUsing;
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 // Peer is likely not connected anymore
             }
@@ -2539,7 +2540,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
     assert (m_standalone);
 
     if (!m_standalone)
-        throw std::runtime_error ("Operation only possible in STANDALONE mode.");
+        Throw<std::runtime_error> ("Operation only possible in STANDALONE mode.");
 
     // FIXME Could we improve on this and remove the need for a specialized
     // API in LedgerConsensus?

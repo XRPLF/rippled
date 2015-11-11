@@ -152,7 +152,7 @@ public:
                 STTx copy (sit);
                 serialized = true;
             }
-            catch (...)
+            catch (std::exception const&)
             {
                 ; // If it threw then serialization failed.
             }

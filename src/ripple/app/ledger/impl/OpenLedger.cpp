@@ -184,7 +184,7 @@ debugTostr (SHAMap const& set)
                 STTx const>(sit);
             ss << debugTxstr(tx) << ", ";
         }
-        catch(...)
+        catch(std::exception const&)
         {
             ss << "THRO, ";
         }

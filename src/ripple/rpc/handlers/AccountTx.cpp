@@ -186,7 +186,7 @@ Json::Value doAccountTx (RPC::Context& context)
         return ret;
 #ifndef BEAST_DEBUG
     }
-    catch (...)
+    catch (std::exception const&)
     {
         return rpcError (rpcINTERNAL);
     }

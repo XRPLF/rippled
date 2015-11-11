@@ -271,7 +271,7 @@ public:
                     newNode->getNodeHash().as_uint256(), blob);
             }
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
     }

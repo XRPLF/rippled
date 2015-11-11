@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
@@ -171,8 +172,8 @@ public:
             {
                 // Cannot run the test someone created a file where we want to
                 // put out directory
-                throw std::runtime_error ("Cannot create directory: " +
-                                          subDir_.string ());
+                Throw<std::runtime_error> (
+                    "Cannot create directory: " + subDir_.string ());
             }
         }
 
@@ -183,9 +184,9 @@ public:
         }
         else
         {
-            throw std::runtime_error (
+            Throw<std::runtime_error> (
                 "Refusing to overwrite existing config file: " +
-                configFile_.string ());
+                    configFile_.string ());
         }
 
         rmDataDir_ = !exists (dataDir_);
