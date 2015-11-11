@@ -24,6 +24,7 @@
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/mulDiv.h>
 #include <boost/algorithm/clamp.hpp>
 #include <limits>
 
@@ -62,9 +63,10 @@ getFeeLevelPaid(
     // TODO: getRequiredFeeLevel(ttREFERENCE)?
     auto referenceFee =
         ripple::getRequiredFeeLevel(ttACCOUNT_SET);
-    return mulDivNoThrow(tx[sfFee].xrp().drops(),
+    // Don't care about the overflow flag
+    return mulDiv(tx[sfFee].xrp().drops(),
         baseRefLevel * referenceFee,
-            refTxnCostDrops * requiredFee);
+            refTxnCostDrops * requiredFee).second;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -169,8 +171,9 @@ FeeMetrics::scaleFeeLevel(OpenView const& view) const
     if (current > target)
     {
         // Compute escalated fee level
-        fee = mulDivNoThrow(fee, current * current *
-            multiplier, target * target);
+        // Don't care about the overflow flag
+        fee = mulDiv(fee, current * current *
+            multiplier, target * target).second;
     }
 
     return fee;
@@ -368,9 +371,10 @@ TxQ::apply(Application& app, OpenView& view,
         {
             // Is the current transaction's fee higher than
             // the queued transaction's fee?
-            auto requiredRetryLevel = mulDivNoThrow(
+            // Don't care about the overflow flag
+            auto requiredRetryLevel = mulDiv(
                 existingCandidate->feeLevel,
-                setup_.retrySequencePercent, 100);
+                setup_.retrySequencePercent, 100).second;
             JLOG(j_.trace) << "Found transaction in queue for account " <<
                 account << " with sequence number " << sequence <<
                 " new txn fee level is " << feeLevelPaid <<
@@ -693,18 +697,19 @@ TxQ::doRPC(Application& app) const
     auto const baseFee = view->fees().base;
     auto& drops = ret[jss::drops] = Json::Value();
 
-    drops[jss::base_fee] = to_string(mulDivNoThrow(
+    // Don't care about the overflow flags
+    drops[jss::base_fee] = to_string(mulDiv(
         metrics.referenceFeeLevel, baseFee,
-            metrics.referenceFeeLevel));
-    drops[jss::minimum_fee] = to_string(mulDivNoThrow(
+            metrics.referenceFeeLevel).second);
+    drops[jss::minimum_fee] = to_string(mulDiv(
         metrics.minFeeLevel, baseFee,
-            metrics.referenceFeeLevel));
-    drops[jss::median_fee] = to_string(mulDivNoThrow(
+            metrics.referenceFeeLevel).second);
+    drops[jss::median_fee] = to_string(mulDiv(
         metrics.medFeeLevel, baseFee,
-            metrics.referenceFeeLevel));
-    drops[jss::open_ledger_fee] = to_string(mulDivNoThrow(
+            metrics.referenceFeeLevel).second);
+    drops[jss::open_ledger_fee] = to_string(mulDiv(
         metrics.expFeeLevel, baseFee,
-            metrics.referenceFeeLevel));
+            metrics.referenceFeeLevel).second);
 
     return ret;
 }
@@ -714,8 +719,9 @@ TxQ::openLedgerFee(OpenView const& view) const
 {
     auto metrics = getMetrics(view);
 
-    return mulDivNoThrow(metrics.expFeeLevel,
-        view.fees().base, metrics.referenceFeeLevel) + 1;
+    // Don't care about the overflow flag
+    return mulDiv(metrics.expFeeLevel,
+        view.fees().base, metrics.referenceFeeLevel).second + 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
