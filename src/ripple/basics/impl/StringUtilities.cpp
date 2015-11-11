@@ -189,4 +189,11 @@ bool parseUrl (std::string const& strUrl, std::string& strScheme, std::string& s
 
     return bMatch;
 }
+
+std::string trim_whitespace (std::string str)
+{
+    boost::trim (str);
+    return str;
+}
+
 } // ripple

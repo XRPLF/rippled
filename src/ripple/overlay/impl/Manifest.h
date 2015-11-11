@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
 #define RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
 
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/PublicKey.h>
@@ -162,16 +162,16 @@ public:
     ~ManifestCache() = default;
 
     void configValidatorKey(std::string const& line, beast::Journal journal);
-    void configManifest (Manifest m, UniqueNodeList& unl, beast::Journal journal);
+    void configManifest (Manifest m, ValidatorList& unl, beast::Journal journal);
 
     void addTrustedKey (PublicKey const& pk, std::string comment);
 
     ManifestDisposition
     applyManifest (
-        Manifest m, UniqueNodeList& unl, beast::Journal journal);
+        Manifest m, ValidatorList& unl, beast::Journal journal);
 
     void load (
-        DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal journal);
+        DatabaseCon& dbCon, ValidatorList& unl, beast::Journal journal);
     void save (DatabaseCon& dbCon) const;
 
     // A "for_each" for populated manifests only

@@ -21,7 +21,6 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/LocalCredentials.h>
-#include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
@@ -52,8 +51,6 @@ void LocalCredentials::start ()
 
     if (!app_.config().QUIET)
         std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic () << std::endl;
-
-    app_.getUNL ().start ();
 }
 
 // Retrieve network identity.

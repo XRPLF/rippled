@@ -25,9 +25,9 @@
 #include <ripple/app/misc/HashRouter.cpp>
 #include <ripple/app/misc/NetworkOPs.cpp>
 #include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/misc/UniqueNodeList.cpp>
 #include <ripple/app/misc/Validations.cpp>
 
 #include <ripple/app/misc/impl/AccountTxPaging.cpp>
 #include <ripple/app/misc/impl/Transaction.cpp>
 #include <ripple/app/misc/impl/TxQ.cpp>
+#include <ripple/app/misc/impl/ValidatorList.cpp>
