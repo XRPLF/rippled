@@ -50,7 +50,7 @@ public:
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
-        uint256 beforeHash = map.getHash ();
+        SHAMapHash beforeHash = map.getHash ();
 
         std::list<uint256> items;
 

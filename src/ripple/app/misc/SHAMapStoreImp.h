@@ -190,9 +190,9 @@ private:
     {
         std::uint64_t check = 0;
 
-        for (uint256 it: cache.getKeys())
+        for (uint256 const& key: cache.getKeys())
         {
-            database_->fetchNode (it);
+            database_->fetchNode (key);
             if (! (++check % checkHealthInterval_) && health())
                 return true;
         }

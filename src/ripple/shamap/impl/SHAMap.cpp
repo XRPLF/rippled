@@ -164,13 +164,13 @@ SHAMapTreeNode* SHAMap::walkToPointer (uint256 const& id) const
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMap::fetchNodeFromDB (uint256 const& hash) const
+SHAMap::fetchNodeFromDB (SHAMapHash const& hash) const
 {
     std::shared_ptr<SHAMapAbstractNode> node;
 
     if (backed_)
     {
-        std::shared_ptr<NodeObject> obj = f_.db().fetch (hash);
+        std::shared_ptr<NodeObject> obj = f_.db().fetch (hash.as_uint256());
         if (obj)
         {
             try
@@ -199,18 +199,18 @@ SHAMap::fetchNodeFromDB (uint256 const& hash) const
 
 // See if a sync filter has a node
 std::shared_ptr<SHAMapAbstractNode>
-SHAMap::checkFilter(uint256 const& hash, SHAMapNodeID const& id,
+SHAMap::checkFilter(SHAMapHash const& hash, SHAMapNodeID const& id,
                     SHAMapSyncFilter* filter) const
 {
     std::shared_ptr<SHAMapAbstractNode> node;
     Blob nodeData;
-    if (filter->haveNode (id, hash, nodeData))
+    if (filter->haveNode (id, hash.as_uint256(), nodeData))
     {
         node = SHAMapAbstractNode::make(
             nodeData, 0, snfPREFIX, hash, true, f_.journal ());
         if (node)
         {
-            filter->gotNode (true, id, hash, nodeData, node->getType ());
+            filter->gotNode (true, id, hash.as_uint256(), nodeData, node->getType ());
             if (backed_)
                 canonicalize (hash, node);
         }
@@ -222,7 +222,7 @@ SHAMap::checkFilter(uint256 const& hash, SHAMapNodeID const& id,
 // Used on maps where missing nodes are expected
 std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT(
     SHAMapNodeID const& id,
-    uint256 const& hash,
+    SHAMapHash const& hash,
     SHAMapSyncFilter* filter) const
 {
     std::shared_ptr<SHAMapAbstractNode> node = getCache (hash);
@@ -245,7 +245,7 @@ std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT(
     return node;
 }
 
-std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT (uint256 const& hash) const
+std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT (SHAMapHash const& hash) const
 {
     auto node = getCache (hash);
 
@@ -256,7 +256,7 @@ std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT (uint256 const& hash) co
 }
 
 // Throw if the node is missing
-std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNode (uint256 const& hash) const
+std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNode (SHAMapHash const& hash) const
 {
     auto node = fetchNodeNT (hash);
 
@@ -337,7 +337,7 @@ SHAMap::descend (SHAMapInnerNode * parent, SHAMapNodeID const& parentID,
 
     SHAMapNodeID childID = parentID.getChildNodeID (branch);
     SHAMapAbstractNode* child = parent->getChildPointer (branch);
-    uint256 const& childHash = parent->getChildHash (branch);
+    auto const& childHash = parent->getChildHash (branch);
 
     if (!child)
     {
@@ -363,7 +363,7 @@ SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
     if (ret)
         return ret;
 
-    uint256 const& hash = parent->getChildHash (branch);
+    auto const& hash = parent->getChildHash (branch);
 
     std::shared_ptr<SHAMapAbstractNode> ptr = getCache (hash);
     if (!ptr)
@@ -374,7 +374,7 @@ SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
         if (!ptr && backed_)
         {
             std::shared_ptr<NodeObject> obj;
-            if (! f_.db().asyncFetch (hash, obj))
+            if (! f_.db().asyncFetch (hash.as_uint256(), obj))
             {
                 pending = true;
                 return nullptr;
@@ -565,7 +565,7 @@ SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 }
 
 std::shared_ptr<SHAMapItem const> const&
-SHAMap::peekItem (uint256 const& id, uint256& hash) const
+SHAMap::peekItem (uint256 const& id, SHAMapHash& hash) const
 {
     SHAMapTreeNode* leaf = walkToPointer (id);
 
@@ -659,7 +659,7 @@ bool SHAMap::delItem (uint256 const& id)
 
     // What gets attached to the end of the chain
     // (For now, nothing, since we deleted the leaf)
-    uint256 prevHash;
+    SHAMapHash prevHash;
     std::shared_ptr<SHAMapAbstractNode> prevNode;
 
     while (!stack.empty ())
@@ -682,7 +682,7 @@ bool SHAMap::delItem (uint256 const& id)
             if (bc == 0)
             {
                 // no children below this branch
-                prevHash = uint256 ();
+                prevHash.zero();
                 prevNode.reset ();
             }
             else if (bc == 1)
@@ -808,7 +808,7 @@ SHAMap::addItem(SHAMapItem&& i, bool isTransaction, bool hasMetaData)
                                                           isTransaction, hasMetaData);
 }
 
-uint256
+SHAMapHash
 SHAMap::getHash () const
 {
     auto hash = root_->getNodeHash();
@@ -858,7 +858,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     return true;
 }
 
-bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
+bool SHAMap::fetchRoot (SHAMapHash const& hash, SHAMapSyncFilter* filter)
 {
     if (hash == root_->getNodeHash ())
         return true;
@@ -917,7 +917,7 @@ SHAMap::writeNode (
     Serializer s;
     node->addRaw (s, snfPREFIX);
     f_.db().store (t,
-        std::move (s.modData ()), node->getNodeHash ());
+        std::move (s.modData ()), node->getNodeHash ().as_uint256());
     return node;
 }
 
@@ -1109,21 +1109,21 @@ void SHAMap::dump (bool hash) const
         leafCount << " resident leaves";
 }
 
-std::shared_ptr<SHAMapAbstractNode> SHAMap::getCache (uint256 const& hash) const
+std::shared_ptr<SHAMapAbstractNode> SHAMap::getCache (SHAMapHash const& hash) const
 {
-    auto ret = f_.treecache().fetch (hash);
+    auto ret = f_.treecache().fetch (hash.as_uint256());
     assert (!ret || !ret->getSeq());
     return ret;
 }
 
 void
-SHAMap::canonicalize(uint256 const& hash, std::shared_ptr<SHAMapAbstractNode>& node) const
+SHAMap::canonicalize(SHAMapHash const& hash, std::shared_ptr<SHAMapAbstractNode>& node) const
 {
     assert (backed_);
     assert (node->getSeq() == 0);
     assert (node->getNodeHash() == hash);
 
-    f_.treecache().canonicalize (hash, node);
+    f_.treecache().canonicalize (hash.as_uint256(), node);
 }
 
 } // ripple
