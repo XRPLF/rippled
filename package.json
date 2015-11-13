@@ -20,6 +20,7 @@
     "simple-jsonrpc": "~0.0.2"
   },
   "scripts": {
+    "pretest": "node test/pretest.js",
     "test": "mocha test/websocket-test.js test/server-test.js test/*-test.{js,coffee}"
   },
   "repository": {
