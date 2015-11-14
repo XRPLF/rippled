@@ -54,10 +54,10 @@ class LedgerCleanerImp : public LedgerCleaner
     enum class State : char {
         readyToClean = 0,
         startCleaning,
-        cleaning,
-        shouldExit
+        cleaning
     };
     State state_ = State::readyToClean;
+    bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
     LedgerIndex  minRange_ = 0;
@@ -88,8 +88,6 @@ public:
 
     ~LedgerCleanerImp () override
     {
-        assert (!thread_.joinable());
-
         if (thread_.joinable())
             LogicError ("LedgerCleanerImp::onStop not called.");
     }
@@ -114,7 +112,7 @@ public:
         JLOG (j_.info) << "Stopping";
         {
             std::lock_guard<std::mutex> lock (mutex_);
-            state_ = State::shouldExit;
+            shouldExit_ = true;
             wakeup_.notify_one();
         }
         thread_.join();
@@ -222,8 +220,11 @@ public:
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
 
-            state_ = State::startCleaning;
-            wakeup_.notify_one();
+            if (state_ == State::readyToClean)
+            {
+                state_ = State::startCleaning;
+                wakeup_.notify_one();
+            }
         }
     }
 
@@ -247,21 +248,20 @@ private:
 
         while (true)
         {
-            std::unique_lock<std::mutex> lock (mutex_);
-            wakeup_.wait(lock, [this]()
-                {
-                    return (
-                        state_ == State::startCleaning ||
-                        state_ == State::shouldExit);
-                });
-            State const state = state_;
-            lock.unlock();
+            {
+                std::unique_lock<std::mutex> lock (mutex_);
+                wakeup_.wait(lock, [this]()
+                    {
+                        return (
+                            shouldExit_ ||
+                            state_ == State::startCleaning);
+                    });
+                if (shouldExit_)
+                    break;
 
-            if (state == State::shouldExit)
-                break;
-
-            if (state == State::startCleaning)
-                doLedgerCleaner();
+                state_ = State::cleaning;
+            }
+            doLedgerCleaner();
         }
 
         stopped();
@@ -404,18 +404,10 @@ private:
     /** Run the ledger cleaner. */
     void doLedgerCleaner()
     {
-        // Update our state.
-        {
-            std::lock_guard<std::mutex> lock (mutex_);
-            if (state_ == State::shouldExit)
-                return;
-            state_ = State::cleaning;
-        }
-
         auto shouldExit = [this]()
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            return state_ == State::shouldExit;
+            return shouldExit_;
         };
 
         Ledger::pointer goodLedger;
