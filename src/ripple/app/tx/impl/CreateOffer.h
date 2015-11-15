@@ -99,7 +99,7 @@ private:
     // Return false if the is no offer in the book, true otherwise.
     static
     bool
-    step_account (OfferStream& stream, Taker const& taker, Logs& logs);
+    step_account (OfferStream& stream, Taker const& taker);
 
     // True if the number of offers that have been crossed
     // exceeds the limit.

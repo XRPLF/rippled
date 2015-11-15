@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
-#include <ripple/protocol/AmountSpec.h>
+#include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/XRPAmount.h>
@@ -39,7 +39,7 @@ namespace ripple {
     For offers, "in" is always TakerPays and "out" is
     always TakerGets.
 */
-template<class TIn, class TOut>
+template<class In, class Out>
 struct TAmounts
 {
     TAmounts() = default;
@@ -50,7 +50,7 @@ struct TAmounts
     {
     }
 
-    TAmounts (TIn const& in_, TOut const& out_)
+    TAmounts (In const& in_, Out const& out_)
         : in (in_)
         , out (out_)
     {
@@ -77,32 +77,32 @@ struct TAmounts
         return *this;
     }
 
-    TIn in;
-    TOut out;
+    In in;
+    Out out;
 };
 
-template<class TIn, class TOut>
-TAmounts<TIn, TOut> make_Amounts(TIn const& in, TOut const& out)
+template<class In, class Out>
+TAmounts<In, Out> make_Amounts(In const& in, Out const& out)
 {
-    return TAmounts<TIn, TOut>(in, out);
+    return TAmounts<In, Out>(in, out);
 }
 
 using Amounts = TAmounts<STAmount, STAmount>;
 
-template<class TIn, class TOut>
+template<class In, class Out>
 bool
 operator== (
-    TAmounts<TIn, TOut> const& lhs,
-    TAmounts<TIn, TOut> const& rhs) noexcept
+    TAmounts<In, Out> const& lhs,
+    TAmounts<In, Out> const& rhs) noexcept
 {
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-template<class TIn, class TOut>
+template<class In, class Out>
 bool
 operator!= (
-    TAmounts<TIn, TOut> const& lhs,
-    TAmounts<TIn, TOut> const& rhs) noexcept
+    TAmounts<In, Out> const& lhs,
+    TAmounts<In, Out> const& rhs) noexcept
 {
     return ! (lhs == rhs);
 }
@@ -139,8 +139,8 @@ public:
     Quality (Amounts const& amount);
 
     /** Create a quality from the ratio of two amounts. */
-    template<class TIn, class TOut>
-    Quality (TOut const& out, TIn const& in)
+    template<class In, class Out>
+    Quality (Out const& out, In const& in)
         : Quality (Amounts (toSTAmount (in),
                             toSTAmount (out)))
     {}
@@ -177,9 +177,9 @@ public:
     Amounts
     ceil_in (Amounts const& amount, STAmount const& limit) const;
 
-    template<class TIn, class TOut>
-    TAmounts<TIn, TOut>
-    ceil_in (TAmounts<TIn, TOut> const& amount, TIn const& limit) const
+    template<class In, class Out>
+    TAmounts<In, Out>
+    ceil_in (TAmounts<In, Out> const& amount, In const& limit) const
     {
         if (amount.in <= limit)
             return amount;
@@ -189,7 +189,7 @@ public:
         Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
         STAmount stLim (toSTAmount (limit));
         auto const stRes = ceil_in (stAmt, stLim);
-        return TAmounts<TIn, TOut> (toAmount<TIn> (stRes.in), toAmount<TOut> (stRes.out));
+        return TAmounts<In, Out> (toAmount<In> (stRes.in), toAmount<Out> (stRes.out));
     }
 
     /** Returns the scaled amount with out capped.
@@ -199,9 +199,9 @@ public:
     Amounts
     ceil_out (Amounts const& amount, STAmount const& limit) const;
 
-    template<class TIn, class TOut>
-    TAmounts<TIn, TOut>
-    ceil_out (TAmounts<TIn, TOut> const& amount, TOut const& limit) const
+    template<class In, class Out>
+    TAmounts<In, Out>
+    ceil_out (TAmounts<In, Out> const& amount, Out const& limit) const
     {
         if (amount.out <= limit)
             return amount;
@@ -211,7 +211,7 @@ public:
         Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
         STAmount stLim (toSTAmount (limit));
         auto const stRes = ceil_out (stAmt, stLim);
-        return TAmounts<TIn, TOut> (toAmount<TIn> (stRes.in), toAmount<TOut> (stRes.out));
+        return TAmounts<In, Out> (toAmount<In> (stRes.in), toAmount<Out> (stRes.out));
     }
 
     /** Returns `true` if lhs is lower quality than `rhs`.

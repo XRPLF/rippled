@@ -18,16 +18,17 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/paths/Tuning.h>
+#include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 namespace path {
-
-namespace {
 
 static
 TER
@@ -40,8 +41,6 @@ deleteOffers (ApplyView& view,
             return r;
     return tesSUCCESS;
 }
-
-} // namespace
 
 RippleCalc::Output RippleCalc::rippleCalculate (
     PaymentSandbox& view,
@@ -68,29 +67,110 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     // explore for liquidity.
     STPathSet const& spsPaths,
     Logs& l,
+    Config const& config,
     Input const* const pInputs)
 {
-    RippleCalc rc (
-        view,
-        saMaxAmountReq,
-        saDstAmountReq,
-        uDstAccountID,
-        uSrcAccountID,
-        spsPaths,
-        l);
-    if (pInputs != nullptr)
+    bool const useFlowV1Output =
+        !flowV2Switchover (view.info ().parentCloseTime) &&
+        !view.rules ().enabled (featureFlowV2, config.features);
+    // When flowV2 is enabled via rules, call old flow so results may be
+    // compared
+    bool const callFlowV1 = useFlowV1Output ||
+        view.rules ().enabled (featureFlowV2, config.features);
+    bool const callFlowV2 = !useFlowV1Output;
+
+    Output flowV1Out;
+    PaymentSandbox flowV1SB (&view);
+    if (callFlowV1)
     {
-        rc.inputFlags = *pInputs;
+        RippleCalc rc (
+            flowV1SB,
+            saMaxAmountReq,
+            saDstAmountReq,
+            uDstAccountID,
+            uSrcAccountID,
+            spsPaths,
+            l);
+        if (pInputs != nullptr)
+        {
+            rc.inputFlags = *pInputs;
+        }
+
+        auto result = rc.rippleCalculate ();
+        flowV1Out.setResult (result);
+        flowV1Out.actualAmountIn = rc.actualAmountIn_;
+        flowV1Out.actualAmountOut = rc.actualAmountOut_;
     }
 
-    auto result = rc.rippleCalculate ();
-    Output output;
-    output.setResult (result);
-    output.actualAmountIn = rc.actualAmountIn_;
-    output.actualAmountOut = rc.actualAmountOut_;
-    output.pathStateList = rc.pathStateList_;
+    Output flowV2Out;
+    PaymentSandbox flowV2SB (&view);
+    if (callFlowV2)
+    {
+        bool defaultPaths = true;
+        bool partialPayment = false;
+        boost::optional<Quality> limitQuality;
+        boost::optional<STAmount> sendMax;
 
-    return output;
+        if (pInputs)
+        {
+            defaultPaths = pInputs->defaultPathsAllowed;
+            partialPayment = pInputs->partialPaymentAllowed;
+            if (pInputs->limitQuality && saMaxAmountReq > beast::zero)
+                limitQuality.emplace (
+                    Amounts (saMaxAmountReq, saDstAmountReq));
+        }
+
+        if (saMaxAmountReq >= beast::zero ||
+            saMaxAmountReq.getCurrency () != saDstAmountReq.getCurrency () ||
+            saMaxAmountReq.getIssuer () != uSrcAccountID)
+        {
+            sendMax.emplace (saMaxAmountReq);
+        }
+
+        auto j = l.journal ("Flow");
+
+        try
+        {
+            flowV2Out = flow (flowV2SB, saDstAmountReq, uSrcAccountID,
+                uDstAccountID, spsPaths, defaultPaths, partialPayment,
+                limitQuality, sendMax, j);
+        }
+        catch (std::exception& e)
+        {
+            JLOG (j.trace) << "Exception from flow" << e.what ();
+            if (!useFlowV1Output)
+                throw;
+        }
+
+        if (callFlowV2 && callFlowV1 &&
+            (flowV2Out.result () != flowV1Out.result () ||
+                (flowV2Out.result () == tesSUCCESS &&
+                    (flowV2Out.actualAmountIn != flowV1Out.actualAmountIn ||
+                        flowV2Out.actualAmountOut != flowV1Out.actualAmountOut))))
+        {
+            JLOG (j.trace) <<
+                    "Mismatch: New Flow and RippleCalc" <<
+                    " Old actualIn: " << flowV1Out.actualAmountIn <<
+                    " New actualIn: " << flowV2Out.actualAmountIn <<
+                    " Old actualOut: " << flowV1Out.actualAmountOut <<
+                    " New actualOut: " << flowV2Out.actualAmountOut <<
+                    " Old result: " << flowV1Out.result () <<
+                    " New result: " << flowV2Out.result();
+        }
+        else
+        {
+            JLOG (j.trace) << "Match: New Flow and RippleCalc";
+        }
+        JLOG (j.trace) << "Using old flow: " << useFlowV1Output;
+    }
+
+    if (!useFlowV1Output)
+    {
+        flowV2SB.apply (view);
+        return flowV2Out;
+    }
+    flowV1SB.apply (view);
+    return flowV1Out;
 }
 
 bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
@@ -269,6 +349,12 @@ TER RippleCalc::rippleCalculate ()
 
                     assert (pathState->inPass() && pathState->outPass());
 
+                    JLOG (j_.debug)
+                        << "Old flow iter (iter, in, out): "
+                        << iPass << " "
+                        << pathState->inPass() << " "
+                        << pathState->outPass();
+
                     if ((!inputFlags.limitQuality ||
                          pathState->quality() <= uQualityLimit)
                         // Quality is not limited or increment has allowed
@@ -325,7 +411,8 @@ TER RippleCalc::rippleCalculate ()
                 << " uQuality="
                 << amountFromRate (pathState->quality())
                 << " inPass()=" << pathState->inPass()
-                << " saOutPass=" << pathState->outPass();
+                << " saOutPass=" << pathState->outPass()
+                << " iBest=" << iBest;
 
             // Record best pass' offers that became unfunded for deletion on
             // success.
@@ -339,6 +426,16 @@ TER RippleCalc::rippleCalculate ()
 
             actualAmountIn_ += pathState->inPass();
             actualAmountOut_ += pathState->outPass();
+
+            JLOG (j_.trace)
+                    << "rippleCalc: best:"
+                    << " uQuality="
+                    << amountFromRate (pathState->quality())
+                    << " inPass()=" << pathState->inPass()
+                    << " saOutPass=" << pathState->outPass()
+                    << " actualIn=" << actualAmountIn_
+                    << " actualOut=" << actualAmountOut_
+                    << " iBest=" << iBest;
 
             if (multiQuality)
             {

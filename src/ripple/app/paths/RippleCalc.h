@@ -27,6 +27,7 @@
 #include <ripple/protocol/TER.h>
 
 namespace ripple {
+class Config;
 namespace path {
 
 /** RippleCalc calculates the quality of a payment path.
@@ -42,7 +43,6 @@ public:
         bool partialPaymentAllowed = false;
         bool defaultPathsAllowed = true;
         bool limitQuality = false;
-        bool deleteUnfundedOffers = false;
         bool isLedgerOpen = true;
     };
     struct Output
@@ -53,13 +53,8 @@ public:
         // The computed output amount.
         STAmount actualAmountOut;
 
-        // Expanded path with all the actual nodes in it.
-        // A path starts with the source account, ends with the destination account
-        // and goes through other acounts or order books.
-        PathState::List pathStateList;
-
     private:
-        TER calculationResult_;
+        TER calculationResult_ = temUNKNOWN;
 
     public:
         TER result () const
@@ -100,6 +95,7 @@ public:
         // explore for liquidity.
         STPathSet const& spsPaths,
         Logs& l,
+        Config const& config,
         Input const* const pInputs = nullptr);
 
     // The view we are currently working on

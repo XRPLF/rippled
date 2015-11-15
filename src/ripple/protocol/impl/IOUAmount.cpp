@@ -254,7 +254,13 @@ mulRatio (
 {
     using namespace boost::multiprecision;
 
-    static std::vector<uint128_t> const logTable = []
+    if (!den)
+        Throw<std::runtime_error> ("division by zero");
+
+    // A vector with the value 10^index for indexes from 0 to 29
+    // The largest intermediate value we expect is 2^96, which
+    // is less than 10^29
+    static auto const powerTable = []
     {
         std::vector<uint128_t> result;
         result.reserve (30);  // 2^96 is largest intermediate result size
@@ -266,26 +272,39 @@ mulRatio (
         };
         return result;
     }();
+
+    // Return floor(log10(v))
     // Note: Returns -1 for v == 0
     static auto log10Floor = [](uint128_t const& v)
     {
-        auto const l = std::lower_bound (logTable.begin (), logTable.end (), v);
-        int index = std::distance (logTable.begin (), l);
+        // Find the index of the first element >= the requested element, the index
+        // is the log of the element in the log table.
+        auto const l = std::lower_bound (powerTable.begin (), powerTable.end (), v);
+        int index = std::distance (powerTable.begin (), l);
+        // If we're not equal, subtract to get the floor
         if (*l != v)
             --index;
         return index;
     };
+
+    // Return ceil(log10(v))
     static auto log10Ceil = [](uint128_t const& v)
     {
-        auto const l = std::lower_bound (logTable.begin (), logTable.end (), v);
-        return int(std::distance (logTable.begin (), l));
+        // Find the index of the first element >= the requested element, the index
+        // is the log of the element in the log table.
+        auto const l = std::lower_bound (powerTable.begin (), powerTable.end (), v);
+        return int(std::distance (powerTable.begin (), l));
     };
+
     static auto const fl64 =
         log10Floor (std::numeric_limits<std::int64_t>::max ());
+
     bool const neg = amt.mantissa () < 0;
     uint128_t const den128 (den);
+    // a 32 value * a 64 bit value and stored in a 128 bit value. This will never overflow
     uint128_t const mul =
         uint128_t (neg ? -amt.mantissa () : amt.mantissa ()) * uint128_t (num);
+
     auto low = mul / den128;
     uint128_t rem (mul - low * den128);
 
@@ -293,27 +312,37 @@ mulRatio (
 
     if (rem)
     {
+        // Mathematically, the result is low + rem/den128. However, since this
+        // uses integer division rem/den128 will be zero. Scale the result so
+        // low does not overflow the largest amount we can store in the mantissa
+        // and (rem/den128) is as large as possible. Scale by multiplying low
+        // and rem by 10 and subtracting one from the exponent. We could do this
+        // with a loop, but it's more efficient to use logarithms.
         auto const roomToGrow = fl64 - log10Ceil (low);
         if (roomToGrow > 0)
         {
             exponent -= roomToGrow;
-            low *= logTable[roomToGrow];
-            rem *= logTable[roomToGrow];
+            low *= powerTable[roomToGrow];
+            rem *= powerTable[roomToGrow];
         }
         auto const addRem = rem / den128;
         low += addRem;
         rem = rem - addRem * den128;
     }
 
+    // The largest result we can have is ~2^95, which overflows the 64 bit
+    // result we can store in the mantissa. Scale result down by dividing by ten
+    // and adding one to the exponent until the low will fit in the 64-bit
+    // mantissa. Use logarithms to avoid looping.
     bool hasRem = bool(rem);
     auto const mustShrink = log10Ceil (low) - fl64;
     if (mustShrink > 0)
     {
         uint128_t const sav (low);
         exponent += mustShrink;
-        low /= logTable[mustShrink];
-        if (!hasRem && roundUp)
-            hasRem = bool(sav - low * logTable[mustShrink]);
+        low /= powerTable[mustShrink];
+        if (!hasRem)
+            hasRem = bool(sav - low * powerTable[mustShrink]);
     }
 
     std::int64_t mantissa = low.convert_to<std::int64_t> ();
@@ -324,13 +353,28 @@ mulRatio (
 
     IOUAmount result (mantissa, exponent);
 
-    if (roundUp && hasRem && !neg)
+    if (hasRem)
     {
-        if (!result)
+        // handle rounding
+        if (roundUp && !neg)
         {
-            return IOUAmount (minMantissa, minExponent);
+            if (!result)
+            {
+                return IOUAmount (minMantissa, minExponent);
+            }
+            // This addition cannot overflow because the mantissa is already normalized
+            return IOUAmount (result.mantissa () + 1, result.exponent ());
         }
-        return IOUAmount (result.mantissa() + 1, result.exponent());
+
+        if (!roundUp && neg)
+        {
+            if (!result)
+            {
+                return IOUAmount (-minMantissa, minExponent);
+            }
+            // This subtraction cannot underflow because `result` is not zero
+            return IOUAmount (result.mantissa () - 1, result.exponent ());
+        }
     }
 
     return result;

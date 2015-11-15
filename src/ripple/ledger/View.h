@@ -328,6 +328,8 @@ transferXRP (ApplyView& view,
             STAmount const& amount,
                 beast::Journal j);
 
+bool flowV2Switchover (NetClock::time_point const closeTime);
+
 } // ripple
 
 #endif

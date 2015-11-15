@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
@@ -144,15 +145,25 @@ mulRatio (
     bool roundUp)
 {
     using namespace boost::multiprecision;
+
+    if (!den)
+        Throw<std::runtime_error> ("division by zero");
+
     int128_t const den128 (den);
     int128_t const num128 (num);
     int128_t const amt128 (amt.drops ());
-    auto const m = int128_t (amt.drops ()) * num;
+    auto const neg = amt.drops () < 0;
+    auto const m = amt128 * num;
     auto r = m / den;
-    if (roundUp && r >= 0 && (m % den))
-        r += 1;
+    if (m % den)
+    {
+        if (!neg && roundUp)
+            r += 1;
+        if (neg && !roundUp)
+            r -= 1;
+    }
     if (r > std::numeric_limits<std::int64_t>::max ())
-        throw std::overflow_error ("XRP mulRatio overflow");
+        Throw<std::overflow_error> ("XRP mulRatio overflow");
     return XRPAmount (r.convert_to<std::int64_t> ());
 }
 

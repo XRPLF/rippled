@@ -21,7 +21,9 @@
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/basics/Log.h>
+#include <ripple/core/Config.h>
 #include <ripple/protocol/st.h>
+#include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
@@ -347,12 +349,13 @@ Payment::doApply ()
         rcInput.partialPaymentAllowed = partialPaymentAllowed;
         rcInput.defaultPathsAllowed = defaultPathsAllowed;
         rcInput.limitQuality = limitQuality;
-        rcInput.deleteUnfundedOffers = true;
         rcInput.isLedgerOpen = view().open();
 
         path::RippleCalc::Output rc;
         {
             PaymentSandbox pv(&view());
+            JLOG(j_.debug)
+                << "Entering RippleCalc in payment: " << ctx_.tx.getTransactionID();
             rc = path::RippleCalc::rippleCalculate (
                 pv,
                 maxSourceAmount,
@@ -361,6 +364,7 @@ Payment::doApply ()
                 account_,
                 spsPaths,
                 ctx_.app.logs(),
+                ctx_.app.config(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
             //             on the TER. But always applying *should*

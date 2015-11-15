@@ -140,6 +140,11 @@ public:
 std::string
 to_string (IOUAmount const& amount);
 
+/* Return num*amt/den
+   This function keeps more precision than computing
+   num*amt, storing the result in an IOUAmount, then
+   dividing by den.
+*/
 IOUAmount
 mulRatio (
     IOUAmount const& amt,
