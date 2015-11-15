@@ -151,6 +151,61 @@ private:
     }
 };
 
+using Strand = std::vector<std::unique_ptr<Step>>;
+
+/**
+   Create a strand for the specified path
+
+   @param sb view for trust lines, balances, and attributes like auth and freeze
+   @param src Account that is sending assets
+   @param dst Account that is receiving assets
+   @param deliver Asset the dst account will receive
+   (if issuer of deliver == dst, then accept any issuer)
+   @param sendMax Optional asset to send.
+   @param path Liquidity sources to use for this strand of the payment. The path
+               contains an ordered collection of the offer books to use and
+               accounts to ripple through.
+   @param addDefaultPath Determines if the default path should be considered
+   @param l logs to write journal messages to
+   @return error code and collection of strands
+*/
+std::pair<TER, Strand>
+toStrand (
+    ReadView const& sb,
+    AccountID const& src,
+    AccountID const& dst,
+    Issue const& deliver,
+    boost::optional<Issue> const& sendMaxIssue,
+    STPath const& path,
+    Logs& l);
+
+/**
+   Create a strand for each specified path (including the default path, if
+   specified)
+
+   @param sb view for trust lines, balances, and attributes like auth and freeze
+   @param src Account that is sending assets
+   @param dst Account that is receiving assets
+   @param deliver Asset the dst account will receive
+                  (if issuer of deliver == dst, then accept any issuer)
+   @param sendMax Optional asset to send.
+   @param paths Paths to use to fullfill the payment. Each path in the pathset
+                contains an ordered collection of the offer books to use and
+                accounts to ripple through.
+   @param addDefaultPath Determines if the default path should be considered
+   @param l logs to write journal messages to
+   @return error code and collection of strands
+*/
+std::pair<TER, std::vector<Strand>>
+toStrands (ReadView const& sb,
+    AccountID const& src,
+    AccountID const& dst,
+    Issue const& deliver,
+    boost::optional<Issue> const& sendMax,
+    STPathSet const& paths,
+    bool addDefaultPath,
+    Logs& l);
+
 template <class TIn, class TOut, class TDerived>
 struct StepImp : public Step
 {
