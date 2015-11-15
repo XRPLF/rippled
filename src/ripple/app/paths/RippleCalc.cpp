@@ -18,11 +18,14 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/paths/Tuning.h>
+#include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Feature.h>
 
 namespace ripple {
 namespace path {
@@ -71,27 +74,112 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     Config const& config,
     Input const* const pInputs)
 {
-    RippleCalc rc (
-        view,
-        saMaxAmountReq,
-        saDstAmountReq,
-        uDstAccountID,
-        uSrcAccountID,
-        spsPaths,
-        l);
-    if (pInputs != nullptr)
+#if RIPPLE_NEW_FLOW
+    bool const useOldFlowOutput =
+        ! ((view.flags() & tapENABLE_TESTING) &&
+           view.rules ().enabled (featureNewFlow, config.features));
+    bool const callFlow = true;
+#else
+    bool const callFlow = false;
+    bool const useOldFlowOutput = true;
+#endif
+
+    Output oldFlowOut;
+    PaymentSandbox oldFlowSB (&view);
     {
-        rc.inputFlags = *pInputs;
+        RippleCalc rc (
+            oldFlowSB,
+            saMaxAmountReq,
+            saDstAmountReq,
+            uDstAccountID,
+            uSrcAccountID,
+            spsPaths,
+            l);
+        if (pInputs != nullptr)
+        {
+            rc.inputFlags = *pInputs;
+        }
+
+        auto result = rc.rippleCalculate ();
+        oldFlowOut.setResult (result);
+        oldFlowOut.actualAmountIn = rc.actualAmountIn_;
+        oldFlowOut.actualAmountOut = rc.actualAmountOut_;
+        oldFlowOut.pathStateList = rc.pathStateList_;
     }
 
-    auto result = rc.rippleCalculate ();
-    Output output;
-    output.setResult (result);
-    output.actualAmountIn = rc.actualAmountIn_;
-    output.actualAmountOut = rc.actualAmountOut_;
-    output.pathStateList = rc.pathStateList_;
+    Output newFlowOut;
+    PaymentSandbox newFlowSB (&view);
+    if (callFlow)
+    {
+        FlowParams flowParams;
+        if (pInputs)
+        {
+            flowParams.defaultPaths = pInputs->defaultPathsAllowed;
+            flowParams.deleteUnfunded = pInputs->deleteUnfundedOffers;
+            flowParams.partialPayment = pInputs->partialPaymentAllowed;
+            if (pInputs->limitQuality && saMaxAmountReq > beast::zero)
+                flowParams.limitQuality.emplace (
+                    Amounts (saMaxAmountReq, saDstAmountReq));
+        }
 
-    return output;
+        if (saMaxAmountReq >= beast::zero ||
+            saMaxAmountReq.getCurrency () != saDstAmountReq.getCurrency () ||
+            saMaxAmountReq.getIssuer () != uSrcAccountID)
+        {
+            flowParams.sendMax.emplace (saMaxAmountReq);
+        }
+
+        // swd TBD: [Remove] set up a journal just to trace newFlow
+        auto& sink = l["Flow"];
+        sink.severity (beast::Journal::kTrace);
+        auto j = l.journal ("Flow");
+
+        try
+        {
+            flow (newFlowSB, saDstAmountReq, uSrcAccountID, uDstAccountID,
+                spsPaths, flowParams, newFlowOut, l);
+        }
+        catch (std::exception& e)
+        {
+            j.trace << "Exception from flow" << e.what ();
+            if (!useOldFlowOutput)
+                throw;
+        }
+        catch (...)
+        {
+            j.trace << "Unknown exception from flow";
+            if (!useOldFlowOutput)
+                throw;
+        }
+
+        if (newFlowOut.result () != oldFlowOut.result () ||
+            (newFlowOut.result () == tesSUCCESS &&
+                (newFlowOut.actualAmountIn != oldFlowOut.actualAmountIn ||
+                    newFlowOut.actualAmountOut != oldFlowOut.actualAmountOut)))
+        {
+            JLOG (j.trace) <<
+                    "Mismatch: New Flow and RippleCalc" <<
+                    " Old actualIn: " << oldFlowOut.actualAmountIn <<
+                    " New actualIn: " << newFlowOut.actualAmountIn <<
+                    " Old actualOut: " << oldFlowOut.actualAmountOut <<
+                    " New actualOut: " << newFlowOut.actualAmountOut <<
+                    " Old result: " << oldFlowOut.result () <<
+                    " New result: " << newFlowOut.result();
+        }
+        else
+        {
+            JLOG (j.trace) << "Match: New Flow and RippleCalc";
+        }
+        JLOG (j.trace) << "Using old flow: " << useOldFlowOutput;
+    }
+
+    if (!useOldFlowOutput)
+    {
+        newFlowSB.apply (view);
+        return newFlowOut;
+    }
+    oldFlowSB.apply (view);
+    return oldFlowOut;
 }
 
 bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
