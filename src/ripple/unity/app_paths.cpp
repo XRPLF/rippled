@@ -29,6 +29,7 @@
 #include <ripple/app/paths/PathState.cpp>
 #include <ripple/app/paths/RippleCalc.cpp>
 #include <ripple/app/paths/RippleLineCache.cpp>
+#include <ripple/app/paths/Flow.cpp>
 #include <ripple/app/paths/impl/PaySteps.cpp>
 #include <ripple/app/paths/impl/DirectStep.cpp>
 #include <ripple/app/paths/impl/BookStep.cpp>

@@ -2364,6 +2364,12 @@
     <ClInclude Include="..\..\src\ripple\app\paths\FindPaths.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\Flow.cpp">
+      <Filter>ripple\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\Flow.h">
+      <Filter>ripple\app\paths</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\impl\BookStep.cpp">
       <Filter>ripple\app\paths\impl</Filter>
     </ClCompile>
@@ -2374,6 +2380,9 @@
       <Filter>ripple\app\paths\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\impl\DirectStep.h">
+      <Filter>ripple\app\paths\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\paths\impl\Flow.h">
       <Filter>ripple\app\paths\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\impl\PaySteps.cpp">
