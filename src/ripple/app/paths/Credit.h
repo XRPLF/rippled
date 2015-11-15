@@ -33,6 +33,7 @@ namespace ripple {
     @param currency the IOU to check.
     @return The maximum amount that can be held.
 */
+/** @{ */
 STAmount creditLimit (
     ReadView const& view,
     AccountID const& account,
@@ -45,6 +46,7 @@ creditLimit2 (
     AccountID const& acc,
     AccountID const& iss,
     Currency const& cur);
+/** @} */
 
 /** Returns the amount of IOUs issued by issuer that are held by an account
     @param ledger the ledger to check against.
@@ -52,6 +54,7 @@ creditLimit2 (
     @param issuer the issuer of the IOU.
     @param currency the IOU to check.
 */
+/** @{ */
 STAmount creditBalance (
     ReadView const& view,
     AccountID const& account,
@@ -64,6 +67,7 @@ creditBalance2 (
     AccountID const& acc,
     AccountID const& iss,
     Currency const& cur);
+/** @} */
 
 } // ripple
 

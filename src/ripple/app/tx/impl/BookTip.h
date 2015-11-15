@@ -79,7 +79,7 @@ public:
         @return `true` if there is a next offer
     */
     bool
-    step (Logs& l);
+    step (beast::Journal j);
 };
 
 }

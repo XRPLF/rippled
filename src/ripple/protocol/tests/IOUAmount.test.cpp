@@ -160,6 +160,91 @@ public:
         expect(to_string(IOUAmount (-2, -20)) == "-2000000000000000e-35");
     }
 
+    void testMulRatio()
+    {
+        testcase ("mulRatio");
+
+        /* The range for the mantissa when normalized */
+        constexpr std::int64_t minMantissa = 1000000000000000ull;
+        constexpr std::int64_t maxMantissa = 9999999999999999ull;
+        // log(2,maxMantissa) ~ 53.15
+        /* The range for the exponent when normalized */
+        constexpr int minExponent = -96;
+        constexpr int maxExponent = 80;
+        constexpr auto maxUInt = std::numeric_limits<std::uint32_t>::max ();
+
+        {
+            // multiply by a number that would overflow the mantissa, then
+            // divide by the same number, and check we didn't lose any value
+            IOUAmount bigMan (maxMantissa, 0);
+            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, true));
+            // rounding mode shouldn't matter as the result is exact
+            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, false));
+        }
+        {
+            // Similar test as above, but for negative values
+            IOUAmount bigMan (-maxMantissa, 0);
+            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, true));
+            // rounding mode shouldn't matter as the result is exact
+            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, false));
+        }
+
+        {
+            // small amounts
+            IOUAmount tiny (minMantissa, minExponent);
+            // Round up should give the smallest allowable number
+            expect (tiny == mulRatio (tiny, 1, maxUInt, true));
+            expect (tiny == mulRatio (tiny, maxUInt - 1, maxUInt, true));
+            // rounding down should be zero
+            expect (beast::zero == mulRatio (tiny, 1, maxUInt, false));
+            expect (beast::zero == mulRatio (tiny, maxUInt - 1, maxUInt, false));
+
+            // tiny negative numbers
+            IOUAmount tinyNeg (-minMantissa, minExponent);
+            // Round up should give zero
+            expect (zero == mulRatio (tinyNeg, 1, maxUInt, true));
+            expect (zero == mulRatio (tinyNeg, maxUInt - 1, maxUInt, true));
+            // rounding down should be tiny
+            expect (tinyNeg == mulRatio (tinyNeg, 1, maxUInt, false));
+            expect (tinyNeg == mulRatio (tinyNeg, maxUInt - 1, maxUInt, false));
+        }
+
+        {
+            // rounding
+            {
+                IOUAmount one (1, 0);
+                auto const rup = mulRatio (one, maxUInt - 1, maxUInt, true);
+                auto const rdown = mulRatio (one, maxUInt - 1, maxUInt, false);
+                expect (rup.mantissa () - rdown.mantissa () == 1);
+            }
+            {
+                IOUAmount big (maxMantissa, maxExponent);
+                auto const rup = mulRatio (big, maxUInt - 1, maxUInt, true);
+                auto const rdown = mulRatio (big, maxUInt - 1, maxUInt, false);
+                expect (rup.mantissa () - rdown.mantissa () == 1);
+            }
+
+            {
+                IOUAmount negOne (-1, 0);
+                auto const rup = mulRatio (negOne, maxUInt - 1, maxUInt, true);
+                auto const rdown = mulRatio (negOne, maxUInt - 1, maxUInt, false);
+                expect (rup.mantissa () - rdown.mantissa () == 1);
+            }
+        }
+
+        {
+            // division by zero
+            IOUAmount one (1, 0);
+            except ([&] {mulRatio (one, 1, 0, true);});
+        }
+
+        {
+            // overflow
+            IOUAmount big (maxMantissa, maxExponent);
+            except ([&] {mulRatio (big, 2, 0, true);});
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     void run ()
@@ -169,6 +254,7 @@ public:
         testBeastZero ();
         testComparisons ();
         testToString ();
+        testMulRatio ();
     }
 };
 

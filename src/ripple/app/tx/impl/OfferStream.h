@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-template<class TIn=STAmount, class TOut=STAmount>
+template<class TIn, class TOut>
 class TOfferStreamBase
 {
 public:
@@ -59,6 +59,10 @@ public:
             count_++;
             return true;
         }
+        std::uint32_t count() const
+        {
+            return count_;
+        };
     };
 
 protected:
@@ -77,11 +81,13 @@ protected:
 
     virtual
     void
-    permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j) = 0;
+    permRmOffer (std::shared_ptr<SLE> const& sle) = 0;
 public:
     TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
         Book const& book, NetClock::time_point when,
             StepCounter& counter, beast::Journal journal);
+
+    virtual ~TOfferStreamBase() = default;
 
     /** Returns the offer at the tip of the order book.
         Offers are always presented in decreasing quality.
@@ -101,7 +107,7 @@ public:
         @return `true` if there is a valid offer.
     */
     bool
-    step (Logs& l);
+    step ();
 
     TOut ownerFunds () const
     {
@@ -126,14 +132,13 @@ public:
     When an offer is removed, it is removed from both views. This grooms the
     order book regardless of whether or not the transaction is successful.
 */
-class OfferStream : public TOfferStreamBase<>
+class OfferStream : public TOfferStreamBase<STAmount, STAmount>
 {
 protected:
-    virtual
     void
-    permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j) override;
+    permRmOffer (std::shared_ptr<SLE> const& sle) override;
 public:
-    using TOfferStreamBase<>::TOfferStreamBase;
+    using TOfferStreamBase<STAmount, STAmount>::TOfferStreamBase;
 };
 
 /** Presents and consumes the offers in an order book.
@@ -159,9 +164,8 @@ class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 private:
     std::vector<uint256> toRemove_;
 protected:
-    virtual
     void
-    permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j) override;
+    permRmOffer (std::shared_ptr<SLE> const& sle) override;
 
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;

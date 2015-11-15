@@ -524,6 +524,7 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache, int const
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
             app_.logs(),
+            app_.config(),
             &rcInput);
 
         if (! convert_all_ &&
@@ -544,7 +545,8 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache, int const
                 *raDstAccount,  // --> Account to deliver to.
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.
-                app_.logs());
+                app_.logs(),
+                app_.config());
 
             if (rc.result() != tesSUCCESS)
             {

@@ -81,7 +81,7 @@ static
 STAmount accountFundsHelper (ReadView const& view,
     AccountID const& id,
     STAmount const& saDefault,
-    Issue const& issue,
+    Issue const&,
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
@@ -118,18 +118,17 @@ XRPAmount accountFundsHelper (ReadView const& view,
 
 template<class TIn, class TOut>
 bool
-TOfferStreamBase<TIn, TOut>::step (Logs& l)
+TOfferStreamBase<TIn, TOut>::step ()
 {
     // Modifying the order or logic of these
     // operations causes a protocol breaking change.
 
-    auto viewJ = l.journal ("View");
     for(;;)
     {
         ownerFunds_ = boost::none;
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
-        if (! tip_.step(l))
+        if (! tip_.step(j_))
             return false;
 
         std::shared_ptr<SLE> entry = tip_.entry();
@@ -154,7 +153,7 @@ TOfferStreamBase<TIn, TOut>::step (Logs& l)
         {
             JLOG(j_.trace) <<
                 "Removing expired offer " << entry->getIndex();
-                permRmOffer (entry, viewJ);
+                permRmOffer (entry);
             continue;
         }
 
@@ -167,14 +166,14 @@ TOfferStreamBase<TIn, TOut>::step (Logs& l)
         {
             JLOG(j_.warning) <<
                 "Removing bad offer " << entry->getIndex();
-            permRmOffer (entry, viewJ);
+            permRmOffer (entry);
             offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
         // Calculate owner funds
         ownerFunds_ = accountFundsHelper (view_, offer_.owner (), amount.out,
-            offer_.issueOut (), fhZERO_IF_FROZEN, viewJ);
+            offer_.issueOut (), fhZERO_IF_FROZEN, j_);
 
         // Check for unfunded offer
         if (*ownerFunds_ <= zero)
@@ -184,11 +183,11 @@ TOfferStreamBase<TIn, TOut>::step (Logs& l)
             // offer is "found unfunded" versus "became unfunded"
             auto const original_funds =
                 accountFundsHelper (cancelView_, offer_.owner (), amount.out,
-                    offer_.issueOut (), fhZERO_IF_FROZEN, viewJ);
+                    offer_.issueOut (), fhZERO_IF_FROZEN, j_);
 
             if (original_funds == *ownerFunds_)
             {
-                permRmOffer (entry, viewJ);
+                permRmOffer (entry);
                 JLOG(j_.trace) <<
                     "Removing unfunded offer " << entry->getIndex();
             }
@@ -208,14 +207,14 @@ TOfferStreamBase<TIn, TOut>::step (Logs& l)
 }
 
 void
-OfferStream::permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j)
+OfferStream::permRmOffer (std::shared_ptr<SLE> const& sle)
 {
     offerDelete (cancelView_,
-                 cancelView_.peek(keylet::offer(sle->key())), j);
+                 cancelView_.peek(keylet::offer(sle->key())), j_);
 }
 
 template<class TIn, class TOut>
-void FlowOfferStream<TIn, TOut>::permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal)
+void FlowOfferStream<TIn, TOut>::permRmOffer (std::shared_ptr<SLE> const& sle)
 {
     toRemove_.push_back (sle->key());
 }

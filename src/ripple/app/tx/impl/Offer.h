@@ -46,7 +46,7 @@ class TOfferBase<STAmount, STAmount>
 
 template<class TIn=STAmount, class TOut=STAmount>
 class TOffer
-    : public TOfferBase<TIn, TOut>
+    : private TOfferBase<TIn, TOut>
 {
 private:
     SLE::pointer m_entry;
