@@ -402,6 +402,7 @@ ripplePathFind (RippleLineCache::pointer const& cache,
             raSrc,          // --> Account sending from.
             ps,             // --> Path set.
             app.logs(),
+            app.config(),
             &rcInput);
 
         JLOG(j.warning)
@@ -429,7 +430,8 @@ ripplePathFind (RippleLineCache::pointer const& cache,
                 raDst,          // --> Account to deliver to.
                 raSrc,          // --> Account sending from.
                 ps,             // --> Path set.
-                app.logs());
+                app.logs(),
+                app.config());
             JLOG(jpr.debug)
                 << "Extra path element gives "
                 << transHuman(rc.result());

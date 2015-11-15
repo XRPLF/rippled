@@ -28,6 +28,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/core/Config.h>
 #include <tuple>
 
 /*
@@ -354,6 +355,7 @@ TER Pathfinder::getPathLiquidity (
             mSrcAccount,
             pathSet,
             app_.logs(),
+            app_.config(),
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
         if (rc.result () != tesSUCCESS)
@@ -374,6 +376,7 @@ TER Pathfinder::getPathLiquidity (
                 mSrcAccount,
                 pathSet,
                 app_.logs (),
+                app_.config (),
                 &rcInput);
 
             // If we found further liquidity, add it into the result.
@@ -425,6 +428,7 @@ void Pathfinder::computePathRanks (int maxPaths)
             mSrcAccount,
             STPathSet(),
             app_.logs (),
+            app_.config (),
             &rcInput);
 
         if (rc.result () == tesSUCCESS)

@@ -68,6 +68,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     // explore for liquidity.
     STPathSet const& spsPaths,
     Logs& l,
+    Config const& config,
     Input const* const pInputs)
 {
     RippleCalc rc (

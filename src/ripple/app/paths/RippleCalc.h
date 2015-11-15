@@ -27,6 +27,7 @@
 #include <ripple/protocol/TER.h>
 
 namespace ripple {
+class Config;
 namespace path {
 
 /** RippleCalc calculates the quality of a payment path.
@@ -100,6 +101,7 @@ public:
         // explore for liquidity.
         STPathSet const& spsPaths,
         Logs& l,
+        Config const& config,
         Input const* const pInputs = nullptr);
 
     // The view we are currently working on
