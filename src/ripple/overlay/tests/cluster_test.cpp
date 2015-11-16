@@ -130,7 +130,7 @@ public:
 
         auto const node = randomNode ();
         std::uint32_t load = 0;
-        std::uint32_t tick = 0;
+        NetClock::time_point tick = {};
 
         // Initial update
         expect (c->update (node, "", load, tick));
@@ -149,7 +149,9 @@ public:
         }
 
         // Updating the name (empty updates to non-empty)
-        expect (c->update (node, node.humanNodePublic (), load, ++tick));
+        using namespace std::chrono_literals;
+        tick += 1s;
+        expect (c->update (node, node.humanNodePublic (), load, tick));
         {
             auto member = c->member (node);
             expect (static_cast<bool>(member));
@@ -157,7 +159,8 @@ public:
         }
 
         // Updating the name (non-empty doesn't go to empty)
-        expect (c->update (node, "", load, ++tick));
+        tick += 1s;
+        expect (c->update (node, "", load, tick));
         {
             auto member = c->member (node);
             expect (static_cast<bool>(member));
@@ -165,7 +168,8 @@ public:
         }
 
         // Updating the name (non-empty updates to new non-empty)
-        expect (c->update (node, "test", load, ++tick));
+        tick += 1s;
+        expect (c->update (node, "test", load, tick));
         {
             auto member = c->member (node);
             expect (static_cast<bool>(member));

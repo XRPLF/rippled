@@ -53,6 +53,8 @@
 #include <memory>
 #include <sstream>
 
+using namespace std::chrono_literals;
+
 namespace ripple {
 
 PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
@@ -923,7 +925,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
             RippleAddress::createNodePublic(node.publickey()),
             name,
             node.nodeload(),
-            node.reporttime());
+            NetClock::time_point{NetClock::duration{node.reporttime()}});
     }
 
     int loadSources = m->loadsources().size();
@@ -944,7 +946,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
     }
 
     // Calculate the cluster fee:
-    auto const thresh = app_.timeKeeper().now().time_since_epoch().count() - 90;
+    auto const thresh = app_.timeKeeper().now() - 90s;
     std::uint32_t clusterFee = 0;
 
     std::vector<std::uint32_t> fees;
@@ -1107,7 +1109,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMTransaction> const& m)
 
         if (app_.getJobQueue().getJobCount(jtTRANSACTION) > 100)
             p_journal_.info << "Transaction queue is full";
-        else if (app_.getLedgerMaster().getValidatedLedgerAge() > 240)
+        else if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
             p_journal_.trace << "No new transactions until synchronized";
         else
         {
@@ -1242,7 +1244,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     memcpy (prevLedger.begin (), set.previousledger ().data (), 32);
 
     uint256 suppression = proposalUniqueId (
-        proposeHash, prevLedger, set.proposeseq(), set.closetime (),
+        proposeHash, prevLedger, set.proposeseq(),
+        NetClock::time_point{NetClock::duration{set.closetime()}},
         Blob(set.nodepubkey ().begin (), set.nodepubkey ().end ()),
         Blob(set.signature ().begin (), set.signature ().end ()));
 
@@ -1282,7 +1285,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         "Proposal: " << (isTrusted ? "trusted" : "UNTRUSTED");
 
     auto proposal = std::make_shared<LedgerProposal> (
-        prevLedger, set.proposeseq (), proposeHash, set.closetime (),
+        prevLedger, set.proposeseq (), proposeHash,
+        NetClock::time_point{NetClock::duration{set.closetime()}},
             signerPublic, PublicKey(makeSlice(set.nodepubkey())),
                 suppression);
 
@@ -1361,7 +1365,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMStatusChange> const& m)
     }
 
     if (m->has_ledgerseq() &&
-        app_.getLedgerMaster().getValidatedLedgerAge() < 120)
+        app_.getLedgerMaster().getValidatedLedgerAge() < 2min)
     {
         checkSanity (m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
@@ -1552,8 +1556,7 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
-    auto const closeTime =
-        app_.timeKeeper().closeTime().time_since_epoch().count();
+    auto const closeTime = app_.timeKeeper().closeTime();
 
     if (m->has_hops() && ! slot_->cluster())
         m->set_hops(m->hops() + 1);
@@ -1786,7 +1789,7 @@ PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet
     // Don't queue fetch pack jobs if we're under load or we already have
     // some queued.
     if (app_.getFeeTrack ().isLoadedLocal () ||
-        (app_.getLedgerMaster().getValidatedLedgerAge() > 40) ||
+        (app_.getLedgerMaster().getValidatedLedgerAge() > 40s) ||
         (app_.getJobQueue().getJobCount(jtPACK) > 10))
     {
         p_journal_.info << "Too busy to make fetch pack";

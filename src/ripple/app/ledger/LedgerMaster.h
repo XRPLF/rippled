@@ -43,7 +43,7 @@ class Transaction;
 struct LedgerReplay
 {
     std::map< int, std::shared_ptr<STTx const> > txns_;
-    std::uint32_t closeTime_;
+    NetClock::time_point closeTime_;
     int closeFlags_;
     Ledger::pointer prevLedger_;
 };
@@ -93,8 +93,8 @@ public:
 
     virtual bool isValidLedger(LedgerInfo const&) = 0;
 
-    virtual int getPublishedLedgerAge () = 0;
-    virtual int getValidatedLedgerAge () = 0;
+    virtual std::chrono::seconds getPublishedLedgerAge () = 0;
+    virtual std::chrono::seconds getValidatedLedgerAge () = 0;
     virtual bool isCaughtUp(std::string& reason) = 0;
 
     virtual int getMinValidations () = 0;
@@ -137,10 +137,10 @@ public:
     virtual uint256 getLedgerHash(
         std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
-    virtual boost::optional <uint32_t> getCloseTimeBySeq (
+    virtual boost::optional <NetClock::time_point> getCloseTimeBySeq (
         LedgerIndex ledgerIndex) = 0;
 
-    virtual boost::optional <uint32_t> getCloseTimeByHash (
+    virtual boost::optional <NetClock::time_point> getCloseTimeByHash (
         LedgerHash const& ledgerHash) = 0;
 
     virtual void addHeldTransaction (std::shared_ptr<Transaction> const& trans) = 0;

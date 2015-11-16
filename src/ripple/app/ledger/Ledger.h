@@ -103,8 +103,9 @@ public:
     // Used for ledgers loaded from JSON files
     Ledger (uint256 const& parentHash, uint256 const& transHash,
             uint256 const& accountHash,
-            std::uint64_t totDrops, std::uint32_t closeTime,
-            std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
+            std::uint64_t totDrops, NetClock::time_point closeTime,
+            NetClock::time_point parentCloseTime, int closeFlags,
+            NetClock::duration closeResolution,
             std::uint32_t ledgerSeq, bool & loaded, Config const& config,
             Family& family,
             beast::Journal j);
@@ -127,7 +128,7 @@ public:
 
     // used for database ledgers
     Ledger (std::uint32_t ledgerSeq,
-        std::uint32_t closeTime, Config const& config,
+        NetClock::time_point closeTime, Config const& config,
             Family& family);
 
     ~Ledger();
@@ -236,8 +237,8 @@ public:
         info_.validated = true;
     }
 
-    void setAccepted (std::uint32_t closeTime,
-        int closeResolution, bool correctCloseTime,
+    void setAccepted (NetClock::time_point closeTime,
+        NetClock::duration closeResolution, bool correctCloseTime,
             Config const& config);
 
     void setImmutable (Config const& config);
@@ -272,17 +273,6 @@ public:
     {
         info_.drops = totDrops;
     }
-
-    // close time functions
-    void setCloseTime (std::uint32_t when)
-    {
-        assert (!mImmutable);
-        info_.closeTime = when;
-    }
-
-    void setCloseTime (boost::posix_time::ptime);
-
-    boost::posix_time::ptime getCloseTime () const;
 
     SHAMap const&
     stateMap() const

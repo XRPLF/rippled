@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STAmount.h>

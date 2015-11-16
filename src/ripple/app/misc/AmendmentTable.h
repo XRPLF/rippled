@@ -30,11 +30,11 @@ namespace ripple {
 class AmendmentSet
 {
 public:
-    std::uint32_t mCloseTime;
+    NetClock::time_point mCloseTime;
     int mTrustedValidations;                    // number of trusted validations
     hash_map<uint256, int> mVotes; // yes votes by amendment
 
-    AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
+    AmendmentSet (NetClock::time_point ct) : mCloseTime (ct), mTrustedValidations (0)
     {
         ;
     }
@@ -227,7 +227,7 @@ public:
     // inject pseudo-transactions
     virtual std::map <uint256, std::uint32_t>
     doVoting (
-        std::uint32_t closeTime,
+        NetClock::time_point closeTime,
         enabledAmendments_t const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
         ValidationSet const& valSet) = 0;

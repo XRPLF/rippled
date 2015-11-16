@@ -1221,8 +1221,9 @@ bool ApplicationImp::loadOldLedger (
 
 
                      std::uint32_t seq = 1;
-                     auto closeTime = timeKeeper().closeTime().time_since_epoch().count();
-                     std::uint32_t closeTimeResolution = 30;
+                     auto closeTime = timeKeeper().closeTime();
+                     using namespace std::chrono_literals;
+                     auto closeTimeResolution = 30s;
                      bool closeTimeEstimated = false;
                      std::uint64_t totalDrops = 0;
 
@@ -1234,12 +1235,14 @@ bool ApplicationImp::loadOldLedger (
                           }
                           if (ledger.get().isMember ("close_time"))
                           {
-                              closeTime = ledger.get()["close_time"].asUInt();
+                              using tp = NetClock::time_point;
+                              using d = tp::duration;
+                              closeTime = tp{d{ledger.get()["close_time"].asUInt()}};
                           }
                           if (ledger.get().isMember ("close_time_resolution"))
                           {
-                              closeTimeResolution =
-                                  ledger.get()["close_time_resolution"].asUInt();
+                              closeTimeResolution = std::chrono::seconds{
+                                  ledger.get()["close_time_resolution"].asUInt()};
                           }
                           if (ledger.get().isMember ("close_time_estimated"))
                           {

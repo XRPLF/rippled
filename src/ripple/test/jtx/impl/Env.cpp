@@ -134,10 +134,8 @@ Env::close(NetClock::time_point const& closeTime,
     }
     // To ensure that the close time is exact and not rounded, we don't
     // claim to have reached consensus on what it should be.
-    next->setAccepted (
-        std::chrono::duration_cast<std::chrono::seconds> (
-            closeTime.time_since_epoch ()).count (),
-        ledgerPossibleTimeResolutions[0], false, app().config());
+    next->setAccepted(closeTime, ledgerPossibleTimeResolutions[0],
+                      false, app().config());
     OrderedTxs locals({});
     openLedger.accept(app(), next->rules(), next,
         locals, false, retries, applyFlags(), "", f);

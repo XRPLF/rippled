@@ -125,6 +125,7 @@ public:
     {
         // Regression test for tiny payments
         using namespace jtx;
+        using namespace std::chrono_literals;
         auto const alice = Account ("alice");
         auto const bob = Account ("bob");
         auto const carol = Account ("carol");
@@ -148,10 +149,10 @@ public:
 
         auto const switchoverTime = STAmountCalcSwitchovers::enableUnderflowFixCloseTime ();
 
-        for (auto timeDelta : {-10, 10}){
-            auto const closeTime = switchoverTime + timeDelta;
+        for (auto timeDelta : {-10s, 10s}){
+            NetClock::time_point const closeTime = switchoverTime + timeDelta;
             STAmountCalcSwitchovers switchover (closeTime);
-            env.close (NetClock::time_point (std::chrono::seconds (closeTime)));
+            env.close (closeTime);
             // Will fail without the underflow fix
             auto expectedResult = switchover.enableUnderflowFix () ?
                     tesSUCCESS : tecPATH_PARTIAL;

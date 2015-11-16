@@ -51,7 +51,8 @@ static int const defaultAutoFillFeeMultiplier = 10;
 static int const maxPathfindsInProgress = 2;
 static int const maxPathfindJobCount = 50;
 static int const maxJobQueueClients = 500;
-static int const maxValidatedLedgerAge = 120;
+using namespace std::chrono_literals;
+auto constexpr maxValidatedLedgerAge = 2min;
 static int const maxRequestSize = 1000000;
 
 /** Maximum number of pages in one response from a binary LedgerData request. */

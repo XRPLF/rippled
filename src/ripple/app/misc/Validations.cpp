@@ -94,8 +94,11 @@ private:
 
         if (!val->isTrusted ())
         {
-            JLOG (j_.debug) << "Node " << signer.humanNodePublic () << " not in UNL st=" << val->getSignTime () <<
-                                            ", hash=" << val->getLedgerHash () << ", shash=" << val->getSigningHash () << " src=" << source;
+            JLOG (j_.debug) << "Node " << signer.humanNodePublic ()
+                            << " not in UNL st="
+                            << val->getSignTime().time_since_epoch().count()
+                            << ", hash=" << val->getLedgerHash ()
+                            << ", shash=" << val->getSigningHash () << " src=" << source;
         }
 
         auto hash = val->getLedgerHash ();
@@ -174,15 +177,14 @@ private:
         // that avoids any chance of overflowing or underflowing
         // the signing time.
 
-        auto const now =
-            app_.timeKeeper().now().time_since_epoch().count();
+        auto const now = app_.timeKeeper().now();
 
         auto const signTime = val->getSignTime();
 
         return
             (signTime > (now - VALIDATION_VALID_EARLY)) &&
             (signTime < (now + VALIDATION_VALID_WALL)) &&
-            ((val->getSeenTime() == 0) ||
+            ((val->getSeenTime() == NetClock::time_point{}) ||
                 (val->getSeenTime() < (now + VALIDATION_VALID_LOCAL)));
     }
 
@@ -403,10 +405,10 @@ private:
         return ret;
     }
 
-    std::vector<uint32_t>
+    std::vector<NetClock::time_point>
     getValidationTimes (uint256 const& hash) override
     {
-        std::vector <std::uint32_t> times;
+        std::vector <NetClock::time_point> times;
         ScopedLockType sl (mLock);
         if (auto j = findSet (hash))
             for (auto& it : *j)
@@ -482,7 +484,8 @@ private:
                         *db << boost::str (
                             insVal % to_string (it->getLedgerHash ()) %
                             it->getSignerPublic ().humanNodePublic () %
-                            it->getSignTime () % sqlEscape (s.peekData ()));
+                            it->getSignTime().time_since_epoch().count() %
+                            sqlEscape (s.peekData ()));
                     }
 
                     tr.commit ();

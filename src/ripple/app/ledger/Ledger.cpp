@@ -198,10 +198,10 @@ Ledger::Ledger (uint256 const& parentHash,
                 uint256 const& transHash,
                 uint256 const& accountHash,
                 std::uint64_t totDrops,
-                std::uint32_t closeTime,
-                std::uint32_t parentCloseTime,
+                NetClock::time_point closeTime,
+                NetClock::time_point parentCloseTime,
                 int closeFlags,
-                int closeResolution,
+                NetClock::duration closeResolution,
                 std::uint32_t ledgerSeq,
                 bool& loaded,
                 Config const& config,
@@ -280,14 +280,12 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger,
     info_.drops = prevLedger.info().drops;
     info_.closeTimeResolution = prevLedger.info_.closeTimeResolution;
     info_.parentHash = prevLedger.getHash ();
-    info_.closeTimeResolution = getNextLedgerTimeResolution (
+    info_.closeTimeResolution = getNextLedgerTimeResolution(
         prevLedger.info_.closeTimeResolution,
         getCloseAgree(prevLedger.info()), info_.seq);
-    if (prevLedger.info_.closeTime == 0)
+    if (prevLedger.info_.closeTime == NetClock::time_point{})
     {
-        info_.closeTime = roundCloseTime (
-            closeTime.time_since_epoch().count(),
-            info_.closeTimeResolution);
+        info_.closeTime = roundCloseTime(closeTime, info_.closeTimeResolution);
     }
     else
     {
@@ -311,7 +309,7 @@ Ledger::Ledger (void const* data,
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq,
-        std::uint32_t closeTime, Config const& config,
+        NetClock::time_point closeTime, Config const& config,
             Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
@@ -368,9 +366,9 @@ void Ledger::updateHash()
         info_.parentHash,
         info_.txHash,
         info_.accountHash,
-        std::uint32_t(info_.parentCloseTime),
-        std::uint32_t(info_.closeTime),
-        std::uint8_t(info_.closeTimeResolution),
+        std::uint32_t(info_.parentCloseTime.time_since_epoch().count()),
+        std::uint32_t(info_.closeTime.time_since_epoch().count()),
+        std::uint8_t(info_.closeTimeResolution.count()),
         std::uint8_t(info_.closeFlags));
     mValidHash = true;
 }
@@ -385,9 +383,9 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
     info_.parentHash = sit.get256 ();
     info_.txHash = sit.get256 ();
     info_.accountHash = sit.get256 ();
-    info_.parentCloseTime = sit.get32 ();
-    info_.closeTime = sit.get32 ();
-    info_.closeTimeResolution = sit.get8 ();
+    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info_.closeTimeResolution = NetClock::duration{sit.get8()};
     info_.closeFlags = sit.get8 ();
     updateHash ();
     txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
@@ -401,9 +399,10 @@ void Ledger::addRaw (Serializer& s) const
     ripple::addRaw(info_, s);
 }
 
-void Ledger::setAccepted (
-    std::uint32_t closeTime, int closeResolution, bool correctCloseTime,
-        Config const& config)
+void
+Ledger::setAccepted(NetClock::time_point closeTime,
+                    NetClock::duration closeResolution,
+                    bool correctCloseTime, Config const& config)
 {
     // Used when we witnessed the consensus.
     assert (closed());
@@ -475,17 +474,6 @@ bool Ledger::isAcquiringTx (void) const
 bool Ledger::isAcquiringAS (void) const
 {
     return stateMap_->isSynching ();
-}
-
-boost::posix_time::ptime Ledger::getCloseTime () const
-{
-    return ptFromSeconds (info_.closeTime);
-}
-
-void Ledger::setCloseTime (boost::posix_time::ptime ptm)
-{
-    assert (!mImmutable);
-    info_.closeTime = iToSeconds (ptm);
 }
 
 //------------------------------------------------------------------------------
@@ -1096,8 +1084,10 @@ static bool saveValidatedLedger (
         *db << boost::str (
             addLedger %
             to_string (ledger->info().hash) % seq % to_string (ledger->info().parentHash) %
-            to_string (ledger->info().drops) % ledger->info().closeTime %
-            ledger->info().parentCloseTime % ledger->info().closeTimeResolution %
+            to_string (ledger->info().drops) %
+            ledger->info().closeTime.time_since_epoch().count() %
+            ledger->info().parentCloseTime.time_since_epoch().count() %
+            ledger->info().closeTimeResolution.count() %
             ledger->info().closeFlags % to_string (ledger->info().accountHash) %
             to_string (ledger->info().txHash));
     }
@@ -1286,15 +1276,17 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
     if (sTransHash)
         transHash.SetHexExact (*sTransHash);
 
+    using time_point = NetClock::time_point;
+    using duration = NetClock::duration;
     bool loaded = false;
     ledger = std::make_shared<Ledger>(prevHash,
                                       transHash,
                                       accountHash,
                                       totDrops.value_or(0),
-                                      closingTime.value_or(0),
-                                      prevClosingTime.value_or(0),
+                                      time_point{duration{closingTime.value_or(0)}},
+                                      time_point{duration{prevClosingTime.value_or(0)}},
                                       closeFlags.value_or(0),
-                                      closeResolution.value_or(0),
+                                      duration{closeResolution.value_or(0)},
                                       ledgerSeq,
                                       loaded,
                                       app.config(),
