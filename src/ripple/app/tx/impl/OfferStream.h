@@ -92,7 +92,7 @@ private:
 
 public:
     OfferStream (ApplyView& view, ApplyView& cancelView,
-        Book const& book, NetClock::rep when,
+        Book const& book, NetClock::time_point when,
             StepCounter& counter, beast::Journal journal);
 
     /** Returns the offer at the tip of the order book.

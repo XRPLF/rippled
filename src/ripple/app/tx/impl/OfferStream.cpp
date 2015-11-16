@@ -24,13 +24,13 @@
 namespace ripple {
 
 OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
-    Book const& book, NetClock::rep when,
+    Book const& book, NetClock::time_point when,
         StepCounter& counter, beast::Journal journal)
     : j_ (journal)
     , view_ (view)
     , cancelView_ (cancelView)
     , book_ (book)
-    , expire_ (NetClock::duration{when})
+    , expire_ (when)
     , tip_ (view, book_)
     , counter_ (counter)
 {

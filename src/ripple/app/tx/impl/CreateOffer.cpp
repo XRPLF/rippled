@@ -315,7 +315,7 @@ CreateOffer::bridged_cross (
     Taker& taker,
     ApplyView& view,
     ApplyView& view_cancel,
-    Clock::time_point const when)
+    NetClock::time_point const when)
 {
     auto const& taker_amount = taker.original_offer ();
 
@@ -472,7 +472,7 @@ CreateOffer::direct_cross (
     Taker& taker,
     ApplyView& view,
     ApplyView& view_cancel,
-    Clock::time_point const when)
+    NetClock::time_point const when)
 {
     OfferStream offers (
         view, view_cancel,
@@ -581,8 +581,8 @@ CreateOffer::cross (
     ApplyView& cancel_view,
     Amounts const& taker_amount)
 {
-    Clock::time_point const when =
-        ctx_.view().parentCloseTime();
+    NetClock::time_point const when{
+        NetClock::duration{ctx_.view().parentCloseTime()}};
 
     beast::WrappedSink takerSink (j_, "Taker ");
 
