@@ -54,6 +54,8 @@
 
 namespace ripple {
 
+using namespace std::chrono_literals;
+
 // 150/256ths of validations of previous ledger
 #define MIN_VALIDATION_RATIO    150
 
@@ -61,7 +63,7 @@ namespace ripple {
 #define MAX_LEDGER_GAP          100
 
 // Don't acquire history if ledger is too old
-#define MAX_LEDGER_AGE_ACQUIRE  60
+auto constexpr MAX_LEDGER_AGE_ACQUIRE = 1min;
 
 class LedgerMasterImp
     : public LedgerMaster
@@ -224,44 +226,45 @@ public:
         return true;
     }
 
-    int getPublishedLedgerAge () override
+    std::chrono::seconds
+    getPublishedLedgerAge() override
     {
-        std::uint32_t pubClose = mPubLedgerClose.load();
-        if (!pubClose)
+        std::chrono::seconds pubClose{mPubLedgerClose.load()};
+        if (pubClose == 0s)
         {
             JLOG (m_journal.debug) << "No published ledger";
-            return 999999;
+            return weeks{2};
         }
 
-        // VFALCO int widening?
-        auto ret = app_.timeKeeper().closeTime().time_since_epoch().count();
-        ret -= static_cast<std::int64_t> (pubClose);
-        ret = (ret > 0) ? ret : 0;
+        std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
+        ret -= pubClose;
+        ret = (ret > 0s) ? ret : 0s;
 
-        JLOG (m_journal.trace) << "Published ledger age is " << ret;
-        return static_cast<int> (ret);
+        JLOG (m_journal.trace) << "Published ledger age is " << ret.count();
+        return ret;
     }
 
-    int getValidatedLedgerAge () override
+    std::chrono::seconds
+    getValidatedLedgerAge() override
     {
-        std::uint32_t valClose = mValidLedgerSign.load();
-        if (!valClose)
+        std::chrono::seconds valClose{mValidLedgerSign.load()};
+        if (valClose == 0s)
         {
             JLOG (m_journal.debug) << "No validated ledger";
-            return 999999;
+            return weeks{2};
         }
 
-        auto ret = app_.timeKeeper().closeTime().time_since_epoch().count();
-        ret -= static_cast<std::int64_t> (valClose);
-        ret = (ret > 0) ? ret : 0;
+        std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
+        ret -= valClose;
+        ret = (ret > 0s) ? ret : 0s;
 
-        JLOG (m_journal.trace) << "Validated ledger age is " << ret;
-        return static_cast<int> (ret);
+        JLOG (m_journal.trace) << "Validated ledger age is " << ret.count();
+        return ret;
     }
 
     bool isCaughtUp(std::string& reason) override
     {
-        if (getPublishedLedgerAge() > 180)
+        if (getPublishedLedgerAge() > 3min)
         {
             reason = "No recently-published ledger";
             return false;
@@ -283,8 +286,8 @@ public:
 
     void setValidLedger(Ledger::ref l)
     {
-        std::vector <std::uint32_t> times;
-        std::uint32_t signTime;
+        std::vector <NetClock::time_point> times;
+        NetClock::time_point signTime;
         if (! app_.config().RUN_STANDALONE)
             times = app_.getValidations().getValidationTimes(
                 l->getHash());
@@ -292,8 +295,9 @@ public:
         {
             // Calculate the sample median
             std::sort (times.begin (), times.end ());
-            signTime = (times[times.size() / 2] +
-                times[(times.size() - 1) / 2]) / 2;
+            auto const t0 = times[(times.size() - 1) / 2];
+            auto const t1 = times[times.size() / 2];
+            signTime = t0 + (t1 - t0)/2;
         }
         else
         {
@@ -301,7 +305,7 @@ public:
         }
 
         mValidLedger.set (l);
-        mValidLedgerSign = signTime;
+        mValidLedgerSign = signTime.time_since_epoch().count();
         mValidLedgerSeq = l->info().seq;
         app_.getOPs().updateLocalTx (l);
         app_.getSHAMapStore().onLedgerClosed (getValidatedLedger());
@@ -312,7 +316,7 @@ public:
     void setPubLedger(Ledger::ref l)
     {
         mPubLedger = l;
-        mPubLedgerClose = l->info().closeTime;
+        mPubLedgerClose = l->info().closeTime.time_since_epoch().count();
         mPubLedgerSeq = l->info().seq;
     }
 
@@ -1211,10 +1215,10 @@ public:
 
             if (!standalone_)
             { // don't pathfind with a ledger that's more than 60 seconds old
-                auto age = app_.timeKeeper().closeTime().time_since_epoch()
-                        .count();
-                age -= static_cast<std::int64_t> (lastLedger->info().closeTime);
-                if (age > 60)
+                using namespace std::chrono;
+                auto age = time_point_cast<seconds>(app_.timeKeeper().closeTime())
+                    - lastLedger->info().closeTime;
+                if (age > 1min)
                 {
                     JLOG (m_journal.debug)
                             << "Published ledger too old for updating paths";
@@ -1382,14 +1386,14 @@ public:
         return mCompleteLedgers.toString ();
     }
 
-    boost::optional <uint32_t>
+    boost::optional <NetClock::time_point>
     getCloseTimeBySeq (LedgerIndex ledgerIndex) override
     {
         uint256 hash = getHashBySeq (ledgerIndex);
         return hash.isNonZero() ? getCloseTimeByHash (hash) : boost::none;
     }
 
-    boost::optional <uint32_t>
+    boost::optional <NetClock::time_point>
     getCloseTimeByHash (LedgerHash const& ledgerHash) override
     {
         auto node = app_.getNodeStore().fetch (ledgerHash);
@@ -1402,7 +1406,7 @@ public:
                 it.skip (
                     4+8+32+    // seq drops parentHash
                     32+32+4);  // txHash acctHash parentClose
-                return it.get32();
+                return NetClock::time_point{NetClock::duration{it.get32()}};
             }
         }
 
@@ -1862,7 +1866,7 @@ void LedgerMasterImp::makeFetchPack (
     }
 
     if (app_.getFeeTrack ().isLoadedLocal () ||
-        (getValidatedLedgerAge() > 40))
+        (getValidatedLedgerAge() > 40s))
     {
         m_journal.info << "Too busy to make fetch pack";
         return;

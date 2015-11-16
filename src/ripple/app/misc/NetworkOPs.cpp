@@ -340,9 +340,9 @@ public:
     }
     void setAmendmentBlocked () override;
     void consensusViewChange () override;
-    void setLastCloseTime (std::uint32_t t) override
+    void setLastCloseTime (NetClock::time_point t) override
     {
-        mConsensus->setLastCloseTime (t);
+        mConsensus->setLastCloseTime(t);
     }
     Json::Value getConsensusInfo () override;
     Json::Value getServerInfo (bool human, bool admin) override;
@@ -597,7 +597,7 @@ void NetworkOPsImp::setStateTimer ()
 
 void NetworkOPsImp::setHeartbeatTimer ()
 {
-    m_heartbeatTimer.setExpiration (LEDGER_GRANULARITY / 1000.0);
+    m_heartbeatTimer.setExpiration (LEDGER_GRANULARITY);
 }
 
 void NetworkOPsImp::setClusterTimer ()
@@ -674,10 +674,10 @@ void NetworkOPsImp::processClusterTimer ()
     bool const update = app_.cluster().update(
         app_.getLocalCredentials().getNodePublic(),
         "",
-        (m_ledgerMaster.getValidatedLedgerAge() <= 240)
+        (m_ledgerMaster.getValidatedLedgerAge() <= 4min)
             ? app_.getFeeTrack().getLocalFee()
             : 0,
-        app_.timeKeeper().now().time_since_epoch().count());
+        app_.timeKeeper().now());
 
     if (!update)
     {
@@ -691,7 +691,7 @@ void NetworkOPsImp::processClusterTimer ()
         {
             protocol::TMClusterNode& n = *cluster.add_clusternodes();
             n.set_publickey(node.identity().humanNodePublic());
-            n.set_reporttime(node.getReportTime());
+            n.set_reporttime(node.getReportTime().time_since_epoch().count());
             n.set_nodeload(node.getLoadFee());
             if (!node.name().empty())
                 n.set_nodename(node.name());
@@ -1184,7 +1184,7 @@ void NetworkOPsImp::tryStartConsensus ()
         // Note: Do not go to omFULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to omCONNECTED -- TODO
         auto current = m_ledgerMaster.getCurrentLedger();
-        if (app_.timeKeeper().now().time_since_epoch().count() <
+        if (app_.timeKeeper().now() <
             (current->info().parentCloseTime + 2* current->info().closeTimeResolution))
         {
             setMode (omFULL);
@@ -1661,12 +1661,12 @@ void NetworkOPsImp::setMode (OperatingMode om)
 {
     if (om == omCONNECTED)
     {
-        if (app_.getLedgerMaster ().getValidatedLedgerAge () < 60)
+        if (app_.getLedgerMaster ().getValidatedLedgerAge () < 1min)
             om = omSYNCING;
     }
     else if (om == omSYNCING)
     {
-        if (app_.getLedgerMaster ().getValidatedLedgerAge () >= 60)
+        if (app_.getLedgerMaster ().getValidatedLedgerAge () >= 1min)
             om = omCONNECTED;
     }
 
@@ -2015,13 +2015,14 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     if (human)
     {
-        lastClose[jss::converge_time_s] = static_cast<double> (
-            mConsensus->getLastCloseDuration()) / 1000.0;
+        lastClose[jss::converge_time_s] =
+            std::chrono::duration<double>{
+                mConsensus->getLastCloseDuration()}.count();
     }
     else
     {
         lastClose[jss::converge_time] =
-                Json::Int (mConsensus->getLastCloseDuration());
+                Json::Int (mConsensus->getLastCloseDuration().count());
     }
 
     info[jss::last_close] = lastClose;
@@ -2083,7 +2084,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             l[jss::reserve_inc] =
                     Json::Value::UInt (lpClosed->fees().increment);
             l[jss::close_time] =
-                    Json::Value::UInt (lpClosed->info().closeTime);
+                    Json::Value::UInt (lpClosed->info().closeTime.time_since_epoch().count());
         }
         else
         {
@@ -2106,14 +2107,13 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             if (std::abs (closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = closeOffset.count();
 
-            std::uint32_t lCloseTime = lpClosed->info().closeTime;
-            std::uint32_t closeTime =
-                app_.timeKeeper().closeTime().time_since_epoch().count();
+            auto lCloseTime = lpClosed->info().closeTime;
+            auto closeTime = app_.timeKeeper().closeTime();
             if (lCloseTime <= closeTime)
             {
-                std::uint32_t age = closeTime - lCloseTime;
-                if (age < 1000000)
-                    l[jss::age] = Json::UInt (age);
+                auto age = closeTime - lCloseTime;
+                if (age < 1000000s)
+                    l[jss::age] = Json::UInt (age.count());
                 else
                     l[jss::age] = 0;
             }
@@ -2204,7 +2204,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref lpAccepted)
             jvObj[jss::ledger_index] = lpAccepted->info().seq;
             jvObj[jss::ledger_hash] = to_string (lpAccepted->getHash ());
             jvObj[jss::ledger_time]
-                    = Json::Value::UInt (lpAccepted->info().closeTime);
+                    = Json::Value::UInt (lpAccepted->info().closeTime.time_since_epoch().count());
 
             jvObj[jss::fee_ref]
                     = Json::UInt (lpAccepted->fees().units);
@@ -2273,7 +2273,8 @@ Json::Value NetworkOPsImp::transJson(
     {
         jvObj[jss::ledger_index]           = lpCurrent->info().seq;
         jvObj[jss::ledger_hash]            = to_string (lpCurrent->info().hash);
-        jvObj[jss::transaction][jss::date] = lpCurrent->info().closeTime;
+        jvObj[jss::transaction][jss::date] =
+            lpCurrent->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated]              = true;
 
         // WRITEME: Put the account next seq here
@@ -2562,7 +2563,7 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::ledger_index]    = lpClosed->info().seq;
         jvResult[jss::ledger_hash]     = to_string (lpClosed->getHash ());
         jvResult[jss::ledger_time]
-                = Json::Value::UInt (lpClosed->info().closeTime);
+            = Json::Value::UInt(lpClosed->info().closeTime.time_since_epoch().count());
         jvResult[jss::fee_ref]
                 = Json::UInt (lpClosed->fees().units);
         jvResult[jss::fee_base]        = Json::UInt (lpClosed->fees().base);

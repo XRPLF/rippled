@@ -60,7 +60,7 @@ Cluster::update (
     RippleAddress const& identity,
     std::string name,
     std::uint32_t loadFee,
-    std::uint32_t reportTime)
+    NetClock::time_point reportTime)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 

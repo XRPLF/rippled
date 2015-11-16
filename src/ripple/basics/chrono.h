@@ -42,43 +42,17 @@ using weeks = std::chrono::duration
 /** Clock for measuring Ripple Network Time.
 
     The epoch is January 1, 2000
+    epoch_offset = days(10957);  // 2000-01-01
 */
-// VFALCO TODO Finish the implementation and make
-//             the network clock instance a member
-//             of the Application object
-//
-// epoch_offset = days(10957);  // 2000-01-01
-//
-class NetClock // : public abstract_clock <std::chrono::seconds>
+class NetClock
 {
 public:
-    // Unfortunately this is signed for legacy reasons
-    using rep = std::int32_t;
+    using rep        = std::uint32_t;
+    using period     = std::ratio<1>;
+    using duration   = std::chrono::duration<rep, period>;
+    using time_point = std::chrono::time_point<NetClock>;
 
-    using period = std::ratio<1>;
-
-    using duration =
-        std::chrono::duration<rep, period>;
-
-    using time_point =
-        std::chrono::time_point<
-            NetClock, duration>;
-
-    static bool const /* constexpr? */ is_steady =
-        std::chrono::system_clock::is_steady;
-
-    static
-    time_point
-    now()
-    {
-        using namespace std;
-        auto const when =
-            chrono::system_clock::now();
-        return time_point(
-            chrono::duration_cast<duration>(
-                when.time_since_epoch() -
-                    days(10957)));
-    }
+    static bool const is_steady = false;
 };
 
 /** A manual NetClock for unit tests. */

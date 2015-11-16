@@ -1309,14 +1309,15 @@ mulDivNoThrow(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
     }
 }
 
-std::uint32_t
+NetClock::time_point
 STAmountCalcSwitchovers::enableUnderflowFixCloseTime ()
 {
-    // Mon Dec 28 10:00:00am PST
-    return 504'640'800;
+    using namespace std::chrono_literals;
+    // Mon Dec 28, 2015 10:00:00am PST
+    return NetClock::time_point{504640800s};
 }
 
-STAmountCalcSwitchovers::STAmountCalcSwitchovers (std::uint32_t parentCloseTime)
+STAmountCalcSwitchovers::STAmountCalcSwitchovers (NetClock::time_point parentCloseTime)
 {
     enableUnderflowFix_ = parentCloseTime > enableUnderflowFixCloseTime();
 }

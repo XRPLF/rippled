@@ -68,14 +68,14 @@ void fillJson(Object& json, LedgerInfo const& info, bool bFull)
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
-    json[jss::parent_close_time] = info.parentCloseTime;
-    json[jss::close_time] = info.closeTime;
-    json[jss::close_time_resolution] = info.closeTimeResolution;
+    json[jss::parent_close_time] = info.parentCloseTime.time_since_epoch().count();
+    json[jss::close_time] = info.closeTime.time_since_epoch().count();
+    json[jss::close_time_resolution] = info.closeTimeResolution.count();
 
-    if (auto closeTime = info.closeTime)
+    if (info.closeTime != NetClock::time_point{})
     {
         json[jss::close_time_human] = boost::posix_time::to_simple_string (
-            ptFromSeconds (closeTime));
+            ptFromSeconds (info.closeTime.time_since_epoch().count()));
         if (! getCloseAgree(info))
             json[jss::close_time_estimated] = true;
     }

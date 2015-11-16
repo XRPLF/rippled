@@ -177,13 +177,15 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
+    using d = NetClock::duration;
+    using tp = NetClock::time_point;
     auto const expiration = ctx.tx[~sfExpiration];
 
     // Expiration is defined in terms of the close time of the parent ledger,
     // because we definitively know the time that it closed but we do not
     // know the closing time of the ledger that is under construction.
     if (expiration &&
-        (ctx.view.parentCloseTime() >= *expiration))
+        (ctx.view.parentCloseTime() >= tp{d{*expiration}}))
     {
         // Note that this will get checked again in applyGuts,
         // but it saves us a call to checkAcceptAsset and
@@ -317,7 +319,7 @@ CreateOffer::bridged_cross (
     Taker& taker,
     ApplyView& view,
     ApplyView& view_cancel,
-    Clock::time_point const when)
+    NetClock::time_point const when)
 {
     auto const& taker_amount = taker.original_offer ();
 
@@ -479,7 +481,7 @@ CreateOffer::direct_cross (
     Taker& taker,
     ApplyView& view,
     ApplyView& view_cancel,
-    Clock::time_point const when)
+    NetClock::time_point const when)
 {
     OfferStream offers (
         view, view_cancel,
@@ -589,8 +591,7 @@ CreateOffer::cross (
     ApplyView& cancel_view,
     Amounts const& taker_amount)
 {
-    Clock::time_point const when =
-        ctx_.view().parentCloseTime();
+    NetClock::time_point const when{ctx_.view().parentCloseTime()};
 
     beast::WrappedSink takerSink (j_, "Taker ");
 
@@ -690,12 +691,14 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     }
 
     auto const expiration = ctx_.tx[~sfExpiration];
+    using d = NetClock::duration;
+    using tp = NetClock::time_point;
 
     // Expiration is defined in terms of the close time of the parent ledger,
     // because we definitively know the time that it closed but we do not
     // know the closing time of the ledger that is under construction.
     if (expiration &&
-        (ctx_.view().parentCloseTime() >= *expiration))
+        (ctx_.view().parentCloseTime() >= tp{d{*expiration}}))
     {
         // If the offer has expired, the transaction has successfully
         // done nothing, so short circuit from here.

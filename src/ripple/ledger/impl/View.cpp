@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/basics/contract.h>
@@ -51,9 +52,9 @@ void addRaw (LedgerInfo const& info, Serializer& s)
     s.add256 (info.parentHash);
     s.add256 (info.txHash);
     s.add256 (info.accountHash);
-    s.add32 (info.parentCloseTime);
-    s.add32 (info.closeTime);
-    s.add8 (info.closeTimeResolution);
+    s.add32 (info.parentCloseTime.time_since_epoch().count());
+    s.add32 (info.closeTime.time_since_epoch().count());
+    s.add8 (info.closeTimeResolution.count());
     s.add8 (info.closeFlags);
 }
 
@@ -486,6 +487,8 @@ getEnabledAmendments (ReadView const& view)
 majorityAmendments_t
 getMajorityAmendments (ReadView const& view)
 {
+    using tp = NetClock::time_point;
+    using d = tp::duration;
     majorityAmendments_t majorities;
     auto const sleAmendments = view.read(keylet::amendments());
 
@@ -493,7 +496,8 @@ getMajorityAmendments (ReadView const& view)
     {
         auto const& majArray = sleAmendments->getFieldArray (sfMajorities);
         for (auto const& m : majArray)
-            majorities[m.getFieldH256 (sfAmendment)] = m.getFieldU32 (sfCloseTime);
+            majorities[m.getFieldH256 (sfAmendment)] =
+                tp(d(m.getFieldU32(sfCloseTime)));
     }
 
     return majorities;

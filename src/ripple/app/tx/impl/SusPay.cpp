@@ -164,9 +164,8 @@ SusPayCreate::doApply()
     // canceled, or finished without proof, within a
     // reasonable period of time for the first release.
     using namespace std::chrono;
-    auto const maxExpire =
-        ctx_.view().info().parentCloseTime +
-            seconds{days(7)}.count();
+    auto const maxExpire = (ctx_.view().info().parentCloseTime +
+                           weeks{1}).time_since_epoch().count();
     if (ctx_.tx[~sfDigest])
     {
         if (! ctx_.tx[~sfCancelAfter] ||
@@ -315,14 +314,14 @@ SusPayFinish::doApply()
 
     // Too soon?
     if ((*slep)[~sfFinishAfter] &&
-        ctx_.view().info().parentCloseTime <=
+        ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
             (*slep)[sfFinishAfter])
         return tecNO_PERMISSION;
 
     // Too late?
     if ((*slep)[~sfCancelAfter] &&
         (*slep)[sfCancelAfter] <=
-            ctx_.view().info().parentCloseTime)
+            ctx_.view().info().parentCloseTime.time_since_epoch().count())
         return tecNO_PERMISSION;
 
     // Same digest?
@@ -395,7 +394,7 @@ SusPayCancel::doApply()
 
     // Too soon?
     if (! (*slep)[~sfCancelAfter] ||
-        ctx_.view().info().parentCloseTime <=
+        ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
             (*slep)[sfCancelAfter])
         return tecNO_PERMISSION;
 

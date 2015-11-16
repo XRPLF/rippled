@@ -46,17 +46,6 @@ struct Protocol
     static int const txMaxSizeBytes = 1024 * 1024; // 1048576
 };
 
-/** A clock representing network time.
-    This measures seconds since the Ripple epoch as seen
-    by the ledger close clock.
-*/
-class Clock // : public abstract_clock <std::chrono::seconds>
-{
-public:
-    using time_point = std::uint32_t;
-    using duration = std::chrono::seconds;
-};
-
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 

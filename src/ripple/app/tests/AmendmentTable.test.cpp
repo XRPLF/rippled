@@ -388,15 +388,15 @@ public:
         return ret;
     }
 
-    static std::uint32_t weekTime (int w)
+    static NetClock::time_point weekTime (weeks w)
     {
-        return w * (7*24*60*60);
+        return NetClock::time_point{w};
     }
 
     // Execute a pretend consensus round for a flag ledger
     void doRound
         ( AmendmentTable& table
-        , int week
+        , weeks week
         , std::vector <RippleAddress> const& validators
         , std::vector <std::pair <uint256, int> > const& votes
         , std::vector <uint256>& ourVotes
@@ -414,7 +414,7 @@ public:
         // enabled:    In/out enabled amendments
         // majority:   In/our majority amendments (and when they got a majority)
 
-        std::uint32_t const roundTime = weekTime (week);
+        auto const roundTime = weekTime (week);
 
         // Build validations
         ValidationSet validations;
@@ -501,7 +501,7 @@ public:
         enabledAmendments_t enabled;
         majorityAmendments_t majority;
 
-        doRound (*table, 1,
+        doRound (*table, weeks{1},
             validators,
             votes,
             ourVotes,
@@ -513,7 +513,7 @@ public:
 
         votes.emplace_back (testAmendment, 256);
 
-        doRound (*table, 2,
+        doRound (*table, weeks{2},
                 validators,
                 votes,
                 ourVotes,
@@ -522,11 +522,11 @@ public:
         expect (ourVotes.empty(), "Voted on unknown because others did");
         expect (enabled.empty(), "Enabled amendment for no reason");
 
-        majority[testAmendment] = weekTime(1);
+        majority[testAmendment] = weekTime(weeks{1});
 
         // Note that the simulation code assumes others behave as we do,
         // so the amendment won't get enabled
-        doRound (*table, 5,
+        doRound (*table, weeks{5},
                 validators,
                 votes,
                 ourVotes,
@@ -554,7 +554,7 @@ public:
         enabledAmendments_t enabled;
         majorityAmendments_t majority;
 
-        doRound (*table, 1,
+        doRound (*table, weeks{1},
             validators,
             votes,
             ourVotes,
@@ -566,7 +566,7 @@ public:
 
         votes.emplace_back (testAmendment, 256);
 
-        doRound (*table, 2,
+        doRound (*table, weeks{2},
                 validators,
                 votes,
                 ourVotes,
@@ -575,9 +575,9 @@ public:
         expect (ourVotes.empty(), "Voted on vetoed amendment because others did");
         expect (enabled.empty(), "Enabled amendment for no reason");
 
-        majority[testAmendment] = weekTime(1);
+        majority[testAmendment] = weekTime(weeks{1});
 
-        doRound (*table, 5,
+        doRound (*table, weeks{5},
                 validators,
                 votes,
                 ourVotes,
@@ -604,7 +604,7 @@ public:
         majorityAmendments_t majority;
 
         // Week 1: We should vote for all known amendments not enabled
-        doRound (*table, 1,
+        doRound (*table, weeks{1},
             validators,
             votes,
             ourVotes,
@@ -620,7 +620,7 @@ public:
             votes.emplace_back (i.id(), 256);
 
         // Week 2: We should recognize a majority
-        doRound (*table, 2,
+        doRound (*table, weeks{2},
                 validators,
                 votes,
                 ourVotes,
@@ -629,10 +629,10 @@ public:
         expect (ourVotes.size() == amendmentNames.size(), "Did not vote");
         expect (enabled.empty(), "Enabled amendment for no reason");
         for (auto const& i : amendmentNames)
-            expect (majority[i.id()] == weekTime(2), "majority not detected");
+            expect (majority[i.id()] == weekTime(weeks{2}), "majority not detected");
 
         // Week 5: We should enable the amendment
-        doRound (*table, 5,
+        doRound (*table, weeks{5},
                 validators,
                 votes,
                 ourVotes,
@@ -641,7 +641,7 @@ public:
         expect (enabled.size() == amendmentNames.size(), "Did not enable");
 
         // Week 6: We should remove it from our votes and from having a majority
-        doRound (*table, 6,
+        doRound (*table, weeks{6},
                 validators,
                 votes,
                 ourVotes,
@@ -676,7 +676,7 @@ public:
             if ((i > 0) && (i < 17))
                 votes.emplace_back (testAmendment, i * 16);
 
-            doRound (*table, i,
+            doRound (*table, weeks{i},
                 validators, votes, ourVotes, enabled, majority);
 
             if (i < 14)
@@ -737,7 +737,7 @@ public:
 
             votes.emplace_back (testAmendment, 250);
 
-            doRound (*table, 1,
+            doRound (*table, weeks{1},
                 validators, votes, ourVotes, enabled, majority);
 
             expect (enabled.empty(), "Enabled for no reason");
@@ -752,7 +752,7 @@ public:
             // Gradually reduce support
             votes.emplace_back (testAmendment, 256 - i * 8);
 
-            doRound (*table, i + 1,
+            doRound (*table, weeks{i + 1},
                 validators, votes, ourVotes, enabled, majority);
 
             if (i < 6)

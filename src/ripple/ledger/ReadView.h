@@ -77,7 +77,7 @@ struct LedgerInfo
 
     bool open = true;
     LedgerIndex seq = 0;
-    std::uint32_t parentCloseTime = 0;
+    NetClock::time_point parentCloseTime = {};
 
     //
     // For closed ledgers
@@ -101,13 +101,13 @@ struct LedgerInfo
     int closeFlags = 0;
 
     // the resolution for this ledger close time (2-120 seconds)
-    int closeTimeResolution = 0;
+    NetClock::duration closeTimeResolution = {};
 
     // For closed ledgers, the time the ledger
     // closed. For open ledgers, the time the ledger
     // will close if there's no transactions.
     //
-    std::uint32_t closeTime = 0;
+    NetClock::time_point closeTime = {};
 };
 
 //------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ public:
     }
 
     /** Returns the close time of the previous ledger. */
-    std::uint32_t
+    NetClock::time_point
     parentCloseTime() const
     {
         return info().parentCloseTime;

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
+#include <ripple/basics/chrono.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STBase.h>
@@ -384,13 +385,13 @@ class STAmountCalcSwitchovers
   public:
     STAmountCalcSwitchovers () = delete;
     explicit
-    STAmountCalcSwitchovers (std::uint32_t parentCloseTime);
+    STAmountCalcSwitchovers (NetClock::time_point parentCloseTime);
     explicit
     STAmountCalcSwitchovers (bool enableAll)
         : enableUnderflowFix_ (enableAll) {}
     bool enableUnderflowFix () const;
     // for tests
-    static std::uint32_t enableUnderflowFixCloseTime ();
+    static NetClock::time_point enableUnderflowFixCloseTime ();
 };
 
 // multiply, or divide rounding result in specified direction

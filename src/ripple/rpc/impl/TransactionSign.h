@@ -81,7 +81,7 @@ Json::Value transactionSign (
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ApplyFlags flags = tapNONE);
@@ -91,7 +91,7 @@ Json::Value transactionSubmit (
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction,
@@ -102,7 +102,7 @@ Json::Value transactionSignFor (
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ApplyFlags flags = tapNONE);
@@ -112,7 +112,7 @@ Json::Value transactionSubmitMultiSigned (
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction,

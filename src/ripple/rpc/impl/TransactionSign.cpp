@@ -240,7 +240,7 @@ checkTxJsonFields (
     Json::Value const& tx_json,
     Role const role,
     bool const verify,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Config const& config,
     LoadFeeTrack const& feeTrack)
 {
@@ -333,7 +333,7 @@ transactionPreProcessImpl (
     Json::Value& params,
     Role role,
     SigningForParams& signingArgs,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger)
 {
@@ -673,7 +673,7 @@ Json::Value transactionSign (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ApplyFlags flags)
@@ -708,7 +708,7 @@ Json::Value transactionSubmit (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction,
@@ -834,7 +834,7 @@ Json::Value transactionSignFor (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ApplyFlags flags)
@@ -944,7 +944,7 @@ Json::Value transactionSubmitMultiSigned (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
     Role role,
-    int validatedLedgerAge,
+    std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
     ProcessTransactionFn const& processTransaction,

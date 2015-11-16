@@ -31,7 +31,7 @@ LedgerProposal::LedgerProposal (
         uint256 const& pLgr,
         std::uint32_t seq,
         uint256 const& tx,
-        std::uint32_t closeTime,
+        NetClock::time_point closeTime,
         RippleAddress const& publicKey,
         PublicKey const& pk,
         uint256 const& suppression)
@@ -51,7 +51,7 @@ LedgerProposal::LedgerProposal (
         RippleAddress const& publicKey,
         uint256 const& prevLgr,
         uint256 const& position,
-        std::uint32_t closeTime)
+        NetClock::time_point closeTime)
     : mPreviousLedger (prevLgr)
     , mCurrentHash (position)
     , mCloseTime (closeTime)
@@ -69,7 +69,7 @@ uint256 LedgerProposal::getSigningHash () const
     return sha512Half(
         HashPrefix::proposal,
         std::uint32_t(mProposeSeq),
-        std::uint32_t(mCloseTime),
+        mCloseTime.time_since_epoch().count(),
         mPreviousLedger,
         mCurrentHash);
 }
@@ -82,7 +82,7 @@ bool LedgerProposal::checkSign (std::string const& signature) const
 
 bool LedgerProposal::changePosition (
     uint256 const& newPosition,
-    std::uint32_t closeTime)
+    NetClock::time_point closeTime)
 {
     if (mProposeSeq == seqLeave)
         return false;
@@ -120,7 +120,7 @@ Json::Value LedgerProposal::getJson () const
         ret[jss::propose_seq] = mProposeSeq;
     }
 
-    ret[jss::close_time] = mCloseTime;
+    ret[jss::close_time] = mCloseTime.time_since_epoch().count();
 
     if (mPublicKey.isValid ())
         ret[jss::peer_id] = mPublicKey.humanNodePublic ();
@@ -132,7 +132,7 @@ uint256 proposalUniqueId (
     uint256 const& proposeHash,
     uint256 const& previousLedger,
     std::uint32_t proposeSeq,
-    std::uint32_t closeTime,
+    NetClock::time_point closeTime,
     Blob const& pubKey,
     Blob const& signature)
 {
@@ -141,7 +141,7 @@ uint256 proposalUniqueId (
     s.add256 (proposeHash);
     s.add256 (previousLedger);
     s.add32 (proposeSeq);
-    s.add32 (closeTime);
+    s.add32 (closeTime.time_since_epoch().count());
     s.addVL (pubKey);
     s.addVL (signature);
 

@@ -100,7 +100,7 @@ public:
         doValidation (enabledAmendments_t const& enabledAmendments)
             override;
 
-    std::map <uint256, std::uint32_t> doVoting (std::uint32_t closeTime,
+    std::map <uint256, std::uint32_t> doVoting (NetClock::time_point closeTime,
         enabledAmendments_t const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
         ValidationSet const& validations) override;
@@ -402,7 +402,7 @@ AmendmentTableImpl::doValidation (
 
 std::map <uint256, std::uint32_t>
 AmendmentTableImpl::doVoting (
-    std::uint32_t closeTime,
+    NetClock::time_point closeTime,
     enabledAmendments_t const& enabledAmendments,
     majorityAmendments_t const& majorityAmendments,
     ValidationSet const& valSet)
@@ -450,7 +450,7 @@ AmendmentTableImpl::doVoting (
         {
             bool const hasValMajority = amendmentSet.count (entry.first) >= threshold;
 
-            std::uint32_t majorityTime = 0;
+            NetClock::time_point majorityTime = {};
             auto const it = majorityAmendments.find (entry.first);
             if (it != majorityAmendments.end ())
                 majorityTime = it->second;
@@ -460,18 +460,19 @@ AmendmentTableImpl::doVoting (
             {
                 // Already enabled, nothing to do
             }
-            else  if (hasValMajority && (majorityTime == 0) && (! entry.second.mVetoed))
+            else  if (hasValMajority && (majorityTime == NetClock::time_point{})
+                                     && (! entry.second.mVetoed))
             {
                 // Ledger says no majority, validators say yes
                 actions[entry.first] = tfGotMajority;
             }
-            else if (! hasValMajority && (majorityTime != 0))
+            else if (! hasValMajority && (majorityTime != NetClock::time_point{}))
             {
                 // Ledger says majority, validators say no
                 actions[entry.first] = tfLostMajority;
             }
-            else if ((majorityTime != 0) &&
-                ((majorityTime + m_majorityTime.count()) <= closeTime) &&
+            else if ((majorityTime != NetClock::time_point{}) &&
+                ((majorityTime + m_majorityTime) <= closeTime) &&
                 ! entry.second.mVetoed)
             {
                 // Ledger says majority held

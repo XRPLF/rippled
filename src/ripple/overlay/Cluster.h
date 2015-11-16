@@ -22,6 +22,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/core/Config.h>
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/RippleAddress.h>
@@ -96,7 +97,7 @@ public:
         RippleAddress const& identity,
         std::string name,
         std::uint32_t loadFee = 0,
-        std::uint32_t reportTime = 0);
+        NetClock::time_point reportTime = NetClock::time_point{});
 
     /** Invokes the callback once for every cluster node.
         @note You are not allowed to call `update` from

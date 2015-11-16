@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 #define RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 
+#include <ripple/basics/chrono.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <cstdint>
 #include <string>
@@ -35,7 +36,7 @@ public:
             RippleAddress const& identity,
             std::string const& name,
             std::uint32_t fee = 0,
-            std::uint32_t rtime = 0)
+            NetClock::time_point rtime = NetClock::time_point{})
         : identity_ (identity)
         , name_(name)
         , mLoadFee(fee)
@@ -52,7 +53,7 @@ public:
         return mLoadFee;
     }
 
-    std::uint32_t getReportTime() const
+    NetClock::time_point getReportTime() const
     {
         return mReportTime;
     }
@@ -67,7 +68,7 @@ private:
     RippleAddress identity_;
     std::string name_;
     std::uint32_t mLoadFee = 0;
-    std::uint32_t mReportTime = 0;
+    NetClock::time_point mReportTime = {};
 };
 
 } // ripple

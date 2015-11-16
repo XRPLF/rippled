@@ -49,7 +49,7 @@ public:
     STValidation (SerialIter & sit, bool checkSignature = true);
 
     // Does not sign the validation
-    STValidation (uint256 const& ledgerHash, std::uint32_t signTime,
+    STValidation (uint256 const& ledgerHash, NetClock::time_point signTime,
                           const RippleAddress & raPub, bool isFull);
 
     STBase*
@@ -65,8 +65,8 @@ public:
     }
 
     uint256         getLedgerHash ()     const;
-    std::uint32_t   getSignTime ()       const;
-    std::uint32_t   getSeenTime ()       const;
+    NetClock::time_point getSignTime ()  const;
+    NetClock::time_point getSeenTime ()  const;
     std::uint32_t   getFlags ()          const;
     RippleAddress   getSignerPublic ()   const;
     NodeID          getNodeID ()         const
@@ -86,7 +86,7 @@ public:
     {
         mTrusted = true;
     }
-    void            setSeen (std::uint32_t s)
+    void            setSeen (NetClock::time_point s)
     {
         mSeen = s;
     }
@@ -118,7 +118,7 @@ private:
     uint256 mPreviousHash;
     NodeID mNodeID;
     bool mTrusted = false;
-    std::uint32_t mSeen = 0;
+    NetClock::time_point mSeen = {};
 };
 
 } // ripple
