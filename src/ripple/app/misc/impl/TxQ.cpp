@@ -99,10 +99,8 @@ increaseWithPenalty(std::uint64_t level,
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace detail {
-
 std::size_t
-FeeMetrics::updateFeeMetrics(Application& app,
+TxQ::FeeMetrics::update(Application& app,
     ReadView const& view, bool timeLeap)
 {
     std::vector<uint64_t> feeLevels;
@@ -177,7 +175,7 @@ FeeMetrics::updateFeeMetrics(Application& app,
 }
 
 std::uint64_t
-FeeMetrics::scaleFeeLevel(OpenView const& view) const
+TxQ::FeeMetrics::scaleFeeLevel(OpenView const& view) const
 {
     auto fee = baseLevel;
 
@@ -205,8 +203,6 @@ FeeMetrics::scaleFeeLevel(OpenView const& view) const
 
     return fee;
 }
-
-} // detail
 
 TxQ::CandidateTxn::CandidateTxn(
     std::shared_ptr<STTx const> const& txn_,
@@ -307,7 +303,7 @@ TxQ::TxQ(Setup const& setup,
     beast::Journal j)
     : setup_(setup)
     , j_(j)
-    , feeMetrics_(setup.standAlone, j)
+    , feeMetrics_(setup, j)
     , maxSize_(boost::none)
 {
 }
@@ -698,7 +694,7 @@ TxQ::processValidatedLedger(Application& app,
         return;
     }
 
-    feeMetrics_.updateFeeMetrics(app, view, timeLeap);
+    feeMetrics_.update(app, view, timeLeap);
 
     auto ledgerSeq = view.info().seq;
 
@@ -911,6 +907,11 @@ setup_TxQ(Config const& config)
     set(setup.ledgersInQueue, "ledgers_in_queue", section);
     set(setup.retrySequencePercent, "retry_sequence_percent", section);
     set(setup.multiTxnPercent, "multi_txn_percent", section);
+    set(setup.invalidationPenaltyPercent, "invalidation_penalty_percent", section);
+    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
+    set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
+    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
+    set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
     setup.standAlone = config.RUN_STANDALONE;
     return setup;
 }
