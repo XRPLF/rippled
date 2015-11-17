@@ -31,13 +31,26 @@ namespace ripple {
 
 /** A clock based on system_clock and adjusted for SNTP. */
 class SNTPClock
-    : public beast::abstract_clock<
-        std::chrono::system_clock>
 {
+protected:
+    using clock_type = std::chrono::system_clock;
 public:
+    virtual ~SNTPClock() = default;
+    SNTPClock() = default;
+    SNTPClock(SNTPClock const&) = delete;
+    SNTPClock& operator=(SNTPClock const&) = delete;
+
+    using duration   = clock_type::duration;
+    using rep        = duration::rep;
+    using period     = duration::period;
+    using time_point = std::chrono::time_point<SNTPClock>;
+    static const bool is_steady = false;
+
     virtual
     void
     run (std::vector <std::string> const& servers) = 0;
+
+    virtual time_point now() const = 0;
 
     virtual
     duration

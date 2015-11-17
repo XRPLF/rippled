@@ -119,7 +119,7 @@ public:
         parentCloseTime == previous.closeTime.
     */
     Ledger (open_ledger_t, Ledger const& previous,
-        NetClock::time_point closeTime);
+        TimeKeeper::time_point closeTime);
 
     Ledger (void const* data,
         std::size_t size, bool hasPrefix,

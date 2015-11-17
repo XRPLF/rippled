@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/core/impl/SNTPClock.h>
@@ -34,10 +35,10 @@ private:
     duration closeOffset_;
     std::unique_ptr<SNTPClock> clock_;
 
-    // Adjust system_clock::time_point for NetClock epoch
+    // Adjust SNTPClock::time_point for TimeKeeper epoch
     static
     time_point
-    adjust (std::chrono::system_clock::time_point when)
+    adjust (SNTPClock::time_point when)
     {
         return time_point(
             std::chrono::duration_cast<duration>(
@@ -76,8 +77,7 @@ public:
     }
 
     void
-    adjustCloseTime(
-        NetClock::duration amount) override
+    adjustCloseTime(duration amount) override
     {
         using namespace std::chrono;
         auto const s = amount.count();

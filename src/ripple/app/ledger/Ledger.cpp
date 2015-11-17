@@ -265,7 +265,7 @@ Ledger::Ledger (Ledger const& ledger,
 
 // Create a new open ledger that follows this one
 Ledger::Ledger (open_ledger_t, Ledger const& prevLedger,
-    NetClock::time_point closeTime)
+    TimeKeeper::time_point closeTime)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         prevLedger.stateMap_->family()))
