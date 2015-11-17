@@ -33,92 +33,6 @@ namespace ripple {
 
 class Application;
 
-namespace detail {
-
-class FeeMetrics
-{
-private:
-    // Fee escalation
-
-    // Limit of the txnsExpected value after a
-    // time leap.
-    std::size_t const targetTxnCount_;
-    // Minimum value of txnsExpected.
-    std::size_t minimumTxnCount_;
-    // Number of transactions expected per ledger.
-    // One more than this value will be accepted
-    // before escalation kicks in.
-    std::size_t txnsExpected_;
-    // Minimum value of escalationMultiplier.
-    std::uint32_t const minimumMultiplier_;
-    // Based on the median fee of the LCL. Used
-    // when fee escalation kicks in.
-    std::uint32_t escalationMultiplier_;
-    beast::Journal j_;
-
-    std::mutex mutable lock_;
-
-public:
-    static const std::uint64_t baseLevel = 256;
-
-public:
-    FeeMetrics(bool standAlone, beast::Journal j)
-        : targetTxnCount_(50)
-        , minimumTxnCount_(standAlone ? 1000 : 5)
-        , txnsExpected_(minimumTxnCount_)
-        , minimumMultiplier_(500)
-        , escalationMultiplier_(minimumMultiplier_)
-        , j_(j)
-    {
-    }
-
-    /**
-    Updates fee metrics based on the transactions in the ReadView
-    for use in fee escalation calculations.
-
-    @param view View of the LCL that was just closed or received.
-    @param timeLeap Indicates that rippled is under load so fees
-    should grow faster.
-    */
-    std::size_t
-    updateFeeMetrics(Application& app,
-        ReadView const& view, bool timeLeap);
-
-    /** Used by tests only.
-    */
-    std::size_t
-    setMinimumTx(int m)
-    {
-        std::lock_guard <std::mutex> sl(lock_);
-
-        auto const old = minimumTxnCount_;
-        minimumTxnCount_ = m;
-        txnsExpected_ = m;
-        return old;
-    }
-
-    std::size_t
-    getTxnsExpected() const
-    {
-        std::lock_guard <std::mutex> sl(lock_);
-
-        return txnsExpected_;
-    }
-
-    std::uint32_t
-    getEscalationMultiplier() const
-    {
-        std::lock_guard <std::mutex> sl(lock_);
-
-        return escalationMultiplier_;
-    }
-
-    std::uint64_t
-    scaleFeeLevel(OpenView const& view) const;
-};
-
-}
-
 /**
     Transaction Queue. Used to manage transactions in conjunction with
     fee escalation. See also: RIPD-598, and subissues
@@ -144,6 +58,10 @@ public:
         std::uint32_t retrySequencePercent = 25;
         std::uint32_t multiTxnPercent = 25;
         std::uint32_t invalidationPenaltyPercent = 25;
+        std::uint32_t minimumEscalationMultiplier = 500;
+        std::uint32_t minimumTxnInLedger = 5;
+        std::uint32_t minimumTxnInLedgerSA = 1000;
+        std::uint32_t targetTxnInLedger = 50;
         bool standAlone = false;
     };
 
@@ -255,6 +173,90 @@ public:
     openLedgerFee(OpenView const& view) const;
 
 private:
+    class FeeMetrics
+    {
+    private:
+        // Fee escalation
+
+        // Limit of the txnsExpected value after a
+        // time leap.
+        std::size_t const targetTxnCount_;
+        // Minimum value of txnsExpected.
+        std::size_t minimumTxnCount_;
+        // Number of transactions expected per ledger.
+        // One more than this value will be accepted
+        // before escalation kicks in.
+        std::size_t txnsExpected_;
+        // Minimum value of escalationMultiplier.
+        std::uint32_t const minimumMultiplier_;
+        // Based on the median fee of the LCL. Used
+        // when fee escalation kicks in.
+        std::uint32_t escalationMultiplier_;
+        beast::Journal j_;
+
+        std::mutex mutable lock_;
+
+    public:
+        static const std::uint64_t baseLevel = 256;
+
+    public:
+        FeeMetrics(Setup const& setup, beast::Journal j)
+            : targetTxnCount_(setup.targetTxnInLedger)
+            , minimumTxnCount_(setup.standAlone ?
+                setup.minimumTxnInLedgerSA :
+                setup.minimumTxnInLedger)
+            , txnsExpected_(minimumTxnCount_)
+            , minimumMultiplier_(setup.minimumEscalationMultiplier)
+            , escalationMultiplier_(minimumMultiplier_)
+            , j_(j)
+        {
+        }
+
+        /**
+        Updates fee metrics based on the transactions in the ReadView
+        for use in fee escalation calculations.
+
+        @param view View of the LCL that was just closed or received.
+        @param timeLeap Indicates that rippled is under load so fees
+        should grow faster.
+        */
+        std::size_t
+        update(Application& app,
+            ReadView const& view, bool timeLeap);
+
+        /** Used by tests only.
+        */
+        std::size_t
+        setMinimumTx(int m)
+        {
+            std::lock_guard <std::mutex> sl(lock_);
+
+            auto const old = minimumTxnCount_;
+            minimumTxnCount_ = m;
+            txnsExpected_ = m;
+            return old;
+        }
+
+        std::size_t
+        getTxnsExpected() const
+        {
+            std::lock_guard <std::mutex> sl(lock_);
+
+            return txnsExpected_;
+        }
+
+        std::uint32_t
+        getEscalationMultiplier() const
+        {
+            std::lock_guard <std::mutex> sl(lock_);
+
+            return escalationMultiplier_;
+        }
+
+        std::uint64_t
+        scaleFeeLevel(OpenView const& view) const;
+    };
+
     class CandidateTxn
     {
     public:
@@ -365,7 +367,7 @@ private:
     Setup const setup_;
     beast::Journal j_;
 
-    detail::FeeMetrics feeMetrics_;
+    FeeMetrics feeMetrics_;
     FeeMultiSet byFee_;
     std::map <AccountID, TxQAccount> byAccount_;
     boost::optional<size_t> maxSize_;
