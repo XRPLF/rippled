@@ -264,7 +264,7 @@ public:
     {
         // Ask implementation what to do
         auto actions = doVoting (
-            lastClosedLedger->parentCloseTime(),
+            lastClosedLedger->parentCloseTime().time_since_epoch().count(),
             getEnabledAmendments(*lastClosedLedger),
             getMajorityAmendments(*lastClosedLedger),
             parentValidations);

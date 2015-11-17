@@ -24,9 +24,10 @@
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/protocol/Quality.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Quality.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/WrappedSink.h>
 #include <memory>
@@ -84,14 +85,14 @@ private:
         Taker& taker,
         ApplyView& view,
         ApplyView& view_cancel,
-        Clock::time_point const when);
+        NetClock::time_point const when);
 
     std::pair<TER, Amounts>
     direct_cross (
         Taker& taker,
         ApplyView& view,
         ApplyView& view_cancel,
-        Clock::time_point const when);
+        NetClock::time_point const when);
 
     // Step through the stream for as long as possible, skipping any offers
     // that are from the taker or which cross the taker's threshold.

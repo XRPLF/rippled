@@ -24,7 +24,7 @@
 namespace ripple {
 
 OfferStream::OfferStream (ApplyView& view, ApplyView& cancelView,
-    Book const& book, Clock::time_point when,
+    Book const& book, NetClock::time_point when,
         StepCounter& counter, beast::Journal journal)
     : j_ (journal)
     , view_ (view)
@@ -104,8 +104,10 @@ OfferStream::step (Logs& l)
         }
 
         // Remove if expired
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
         if (entry->isFieldPresent (sfExpiration) &&
-            entry->getFieldU32 (sfExpiration) <= expire_)
+            tp{d{entry->getFieldU32(sfExpiration)}} <= expire_)
         {
             JLOG(j_.trace) <<
                 "Removing expired offer " << entry->getIndex();

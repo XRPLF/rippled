@@ -247,10 +247,12 @@ public:
     }
 
     /** Returns the close time of the previous ledger. */
-    std::uint32_t
+    NetClock::time_point
     parentCloseTime() const
     {
-        return info().parentCloseTime;
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
+        return tp{d{info().parentCloseTime}};
     }
 
     /** Returns the sequence number of the base ledger. */
