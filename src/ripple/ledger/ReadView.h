@@ -20,8 +20,8 @@
 #ifndef RIPPLE_LEDGER_READVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_READVIEW_H_INCLUDED
 
+#include <ripple/core/TimeKeeper.h>
 #include <ripple/ledger/detail/ReadViewFwdRange.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Protocol.h>
@@ -247,11 +247,11 @@ public:
     }
 
     /** Returns the close time of the previous ledger. */
-    NetClock::time_point
+    TimeKeeper::time_point
     parentCloseTime() const
     {
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using d = TimeKeeper::duration;
+        using tp = TimeKeeper::time_point;
         return tp{d{info().parentCloseTime}};
     }
 

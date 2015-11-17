@@ -176,8 +176,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using d = TimeKeeper::duration;
+    using tp = TimeKeeper::time_point;
     auto const expiration = ctx.tx[~sfExpiration];
 
     // Expiration is defined in terms of the close time of the parent ledger,
@@ -317,7 +317,7 @@ CreateOffer::bridged_cross (
     Taker& taker,
     ApplyView& view,
     ApplyView& view_cancel,
-    NetClock::time_point const when)
+    TimeKeeper::time_point const when)
 {
     auto const& taker_amount = taker.original_offer ();
 
@@ -474,7 +474,7 @@ CreateOffer::direct_cross (
     Taker& taker,
     ApplyView& view,
     ApplyView& view_cancel,
-    NetClock::time_point const when)
+    TimeKeeper::time_point const when)
 {
     OfferStream offers (
         view, view_cancel,
@@ -583,8 +583,8 @@ CreateOffer::cross (
     ApplyView& cancel_view,
     Amounts const& taker_amount)
 {
-    NetClock::time_point const when{
-        NetClock::time_point{ctx_.view().parentCloseTime()}};
+    TimeKeeper::time_point const when{
+        TimeKeeper::time_point{ctx_.view().parentCloseTime()}};
 
     beast::WrappedSink takerSink (j_, "Taker ");
 
@@ -690,8 +690,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     }
 
     auto const expiration = ctx_.tx[~sfExpiration];
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using d = TimeKeeper::duration;
+    using tp = TimeKeeper::time_point;
 
     // Expiration is defined in terms of the close time of the parent ledger,
     // because we definitively know the time that it closed but we do not
@@ -814,7 +814,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     {
         // Mon Aug 17 11:00:00am PDT
-        static NetClock::time_point const switchoverTime (
+        static TimeKeeper::time_point const switchoverTime (
             std::chrono::seconds (493149600));
 
         XRPAmount reserve;

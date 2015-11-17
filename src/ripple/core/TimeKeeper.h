@@ -20,6 +20,10 @@
 #ifndef RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 #define RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 
+#include <beast/utility/Journal.h>
+#include <chrono>
+#include <memory>
+#include <ratio>
 #include <string>
 #include <vector>
 

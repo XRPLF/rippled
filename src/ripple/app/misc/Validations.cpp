@@ -312,7 +312,7 @@ private:
 
     std::list<STValidation::pointer> getCurrentTrustedValidations () override
     {
-        // VFALCO LEDGER_VAL_INTERVAL should be a NetClock::duration
+        // HH LEDGER_VAL_INTERVAL should be a chrono::duration
         auto const cutoff = app_.timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
 
         std::list<STValidation::pointer> ret;

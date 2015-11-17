@@ -85,14 +85,14 @@ private:
         Taker& taker,
         ApplyView& view,
         ApplyView& view_cancel,
-        NetClock::time_point const when);
+        TimeKeeper::time_point const when);
 
     std::pair<TER, Amounts>
     direct_cross (
         Taker& taker,
         ApplyView& view,
         ApplyView& view_cancel,
-        NetClock::time_point const when);
+        TimeKeeper::time_point const when);
 
     // Step through the stream for as long as possible, skipping any offers
     // that are from the taker or which cross the taker's threshold.

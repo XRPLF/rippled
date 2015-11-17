@@ -66,12 +66,12 @@ CreateTicket::doApply ()
             return tecINSUFFICIENT_RESERVE;
     }
 
-    NetClock::time_point expiration{};
+    TimeKeeper::time_point expiration{};
 
     if (ctx_.tx.isFieldPresent (sfExpiration))
     {
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using d = TimeKeeper::duration;
+        using tp = TimeKeeper::time_point;
         expiration = tp{d{ctx_.tx.getFieldU32 (sfExpiration)}};
 
         if (view().parentCloseTime() >= expiration)
@@ -82,7 +82,7 @@ CreateTicket::doApply ()
         getTicketIndex (account_, ctx_.tx.getSequence ()));
     sleTicket->setAccountID (sfAccount, account_);
     sleTicket->setFieldU32 (sfSequence, ctx_.tx.getSequence ());
-    if (expiration != NetClock::time_point{})
+    if (expiration != TimeKeeper::time_point{})
         sleTicket->setFieldU32 (sfExpiration, expiration.time_since_epoch().count());
     view().insert (sleTicket);
 
