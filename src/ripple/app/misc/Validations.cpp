@@ -175,7 +175,7 @@ private:
         // the signing time.
 
         auto const now =
-            app_.timeKeeper().now().time_since_epoch().count();
+            app_.timeKeeper().closeTime().time_since_epoch().count();
 
         auto const signTime = val->getSignTime();
 
