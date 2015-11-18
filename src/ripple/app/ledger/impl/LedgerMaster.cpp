@@ -423,6 +423,8 @@ public:
     // returns Ledgers we have all the nodes for
     bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
+        // Validated ledger is likely not stored in the DB yet so we use the
+        // published ledger which is.
         maxVal = mPubLedgerSeq.load();
 
         if (!maxVal)
@@ -444,6 +446,8 @@ public:
     // Returns Ledgers we have all the nodes for and are indexed
     bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
+        // Validated ledger is likely not stored in the DB yet so we use the
+        // published ledger which is.
         maxVal = mPubLedgerSeq.load();
 
         if (!maxVal)
@@ -1325,6 +1329,7 @@ public:
     // ledger.
     Ledger::ref getPublishedLedger () override
     {
+        ScopedLockType lock(m_mutex);
         return mPubLedger;
     }
 
@@ -1676,20 +1681,31 @@ void LedgerMasterImp::doAdvance ()
                                         << "tryAdvance acquired "
                                         << ledger->info().seq;
                                 setFullLedger(ledger, false, false);
-                                mHistLedger = ledger;
                                 auto& parent = ledger->info().parentHash;
-                                if (mFillInProgress == 0 &&
+
+                                int fillInProgress;
+                                {
+                                    ScopedLockType lock(m_mutex);
+                                    mHistLedger = ledger;
+                                    fillInProgress = mFillInProgress;
+                                }
+
+                                if (fillInProgress == 0 &&
                                     getHashByIndex(seq - 1, app_) == parent)
                                 {
-                                    // Previous ledger is in DB
-                                    ScopedLockType lock (m_mutex);
-                                    mFillInProgress = ledger->info().seq;
+                                    {
+                                        // Previous ledger is in DB
+                                        ScopedLockType lock(m_mutex);
+                                        mFillInProgress = ledger->info().seq;
+                                    }
+
                                     app_.getJobQueue().addJob(
                                         jtADVANCE, "tryFill",
                                         [this, ledger] (Job& j) {
                                             tryFill(j, ledger);
                                         });
                                 }
+
                                 progress = true;
                             }
                             else
@@ -1755,13 +1771,17 @@ void LedgerMasterImp::doAdvance ()
                         "tryAdvance publishing seq " << ledger->info().seq;
 
                     setFullLedger(ledger, true, true);
-                    app_.getOPs().pubLedger(ledger);
                 }
 
                 setPubLedger(ledger);
-                progress = true;
+
+                {
+                    ScopedUnlockType sul(m_mutex);
+                    app_.getOPs().pubLedger(ledger);
+                }
             }
 
+            progress = true;
             app_.getOPs().clearNeedNetworkLedger();
             newPFWork ("pf:newLedger");
         }
