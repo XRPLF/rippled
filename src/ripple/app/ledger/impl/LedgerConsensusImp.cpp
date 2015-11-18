@@ -550,8 +550,9 @@ void LedgerConsensusImp::checkLCL ()
     // Get validators that are on our ledger, or  "close" to being on
     // our ledger.
     hash_map<uint256, ValidationCounter> vals =
-        app_.getValidations ().getCurrentValidations
-        (favoredLedger, priorLedger);
+        app_.getValidations ().getCurrentValidations(
+            favoredLedger, priorLedger,
+            ledgerMaster_.getValidLedgerIndex ());
 
     for (auto& it : vals)
     {

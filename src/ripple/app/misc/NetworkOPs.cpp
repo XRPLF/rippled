@@ -1218,7 +1218,8 @@ bool NetworkOPsImp::checkLastClosedLedger (
     hash_map<uint256, ValidationCount> ledgers;
     {
         auto current = app_.getValidations ().getCurrentValidations (
-            closedLedger, prevClosedLedger);
+            closedLedger, prevClosedLedger,
+            m_ledgerMaster.getValidLedgerIndex());
 
         for (auto& it: current)
         {

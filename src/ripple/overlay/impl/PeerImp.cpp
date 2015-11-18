@@ -1569,11 +1569,19 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             SerialIter sit (makeSlice(m->validation()));
             val = std::make_shared <
                 STValidation> (std::ref (sit), false);
+            val->setSeen (closeTime);
         }
 
         if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
         {
             p_journal_.trace << "Validation: Too old";
+            fee_ = Resource::feeUnwantedData;
+            return;
+        }
+
+        if ((closeTime + 120) < val->getFieldU32(sfSigningTime))
+        {
+            p_journal_.debug << "Validation: Too new";
             fee_ = Resource::feeUnwantedData;
             return;
         }
