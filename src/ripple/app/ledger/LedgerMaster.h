@@ -89,7 +89,7 @@ public:
 
     // This is the last ledger we published to clients and can lag the validated
     // ledger
-    virtual Ledger::ref getPublishedLedger () = 0;
+    virtual Ledger::pointer getPublishedLedger () = 0;
 
     virtual bool isValidLedger(LedgerInfo const&) = 0;
 
