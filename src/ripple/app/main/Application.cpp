@@ -1007,7 +1007,6 @@ void ApplicationImp::setup()
     if (!config_->RUN_STANDALONE)
         getUNL ().nodeBootstrap ();
 
-    mValidations->tune (config_->getSize (siValidationsSize), config_->getSize (siValidationsAge));
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
     m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
     family().treecache().setTargetSize (config_->getSize (siTreeCacheSize));

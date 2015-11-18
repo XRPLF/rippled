@@ -63,8 +63,6 @@ class Rules;
 enum SizedItemName
 {
     siSweepInterval,
-    siValidationsSize,
-    siValidationsAge,
     siNodeCacheSize,
     siNodeCacheAge,
     siTreeCacheSize,

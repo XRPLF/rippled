@@ -513,9 +513,6 @@ int Config::getSize (SizedItemName item) const
 
         { siLedgerFetch,        {   2,      2,      3,      3,          3       } },
 
-        { siValidationsSize,    {   256,    256,    512,    1024,       1024    } },
-        { siValidationsAge,     {   500,    500,    500,    500,        500     } },
-
         { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     524288  } },
         { siNodeCacheAge,       {   60,     90,     120,    900,        1800    } },
 

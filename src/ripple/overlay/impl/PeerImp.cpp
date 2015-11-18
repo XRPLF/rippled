@@ -23,11 +23,13 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
@@ -1550,7 +1552,8 @@ void
 PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
-    auto const closeTime = app_.timeKeeper().closeTime().time_since_epoch().count();
+    auto const closeTime =
+        app_.timeKeeper().closeTime().time_since_epoch().count();
 
     if (m->has_hops() && ! slot_->cluster())
         m->set_hops(m->hops() + 1);
@@ -1569,11 +1572,12 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             SerialIter sit (makeSlice(m->validation()));
             val = std::make_shared <
                 STValidation> (std::ref (sit), false);
+            val->setSeen (closeTime);
         }
 
-        if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
+        if (! app_.getValidations().current (val))
         {
-            p_journal_.trace << "Validation: Too old";
+            p_journal_.trace << "Validation: Not current";
             fee_ = Resource::feeUnwantedData;
             return;
         }

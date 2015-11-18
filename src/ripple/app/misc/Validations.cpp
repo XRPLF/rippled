@@ -75,7 +75,7 @@ private:
 public:
     ValidationsImp (Application& app)
         : app_ (app)
-        , mValidations ("Validations", 128, 600, stopwatch(),
+        , mValidations ("Validations", 4096, 600, stopwatch(),
             app.journal("TaggedCache"))
         , mWriting (false)
         , j_ (app.journal ("Validations"))
@@ -87,18 +87,10 @@ private:
     bool addValidation (STValidation::ref val, std::string const& source) override
     {
         RippleAddress signer = val->getSignerPublic ();
-        bool isCurrent = false;
+        bool isCurrent = current (val);
 
-        if (!val->isTrusted() && app_.getUNL().nodeInUNL (signer))
+        if (! val->isTrusted() && app_.getUNL().nodeInUNL (signer))
             val->setTrusted();
-
-        auto const now = app_.timeKeeper().closeTime().time_since_epoch().count();
-        std::uint32_t valClose = val->getSignTime();
-
-        if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
-            isCurrent = true;
-        else
-            JLOG (j_.warning) << "Received stale validation now=" << now << ", close=" << valClose;
 
         if (!val->isTrusted ())
         {
@@ -144,7 +136,8 @@ private:
         }
 
         JLOG (j_.debug) << "Val for " << hash << " from " << signer.humanNodePublic ()
-                                        << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
+            << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/")
+            << (isCurrent ? "current" : "stale");
 
         if (val->isTrusted () && isCurrent)
         {
@@ -174,6 +167,25 @@ private:
         return ValidationSet ();
     }
 
+    bool current (STValidation::ref val) override
+    {
+        // Because this can be called on untrusted, possibly
+        // malicious validations, we do our math in a way
+        // that avoids any chance of overflowing or underflowing
+        // the signing time.
+
+        auto const now =
+            app_.timeKeeper().now().time_since_epoch().count();
+
+        auto const signTime = val->getSignTime();
+
+        return
+            (signTime > (now - VALIDATION_VALID_EARLY)) &&
+            (signTime < (now + VALIDATION_VALID_WALL)) &&
+            ((val->getSeenTime() == 0) ||
+                (val->getSeenTime() < (now + VALIDATION_VALID_LOCAL)));
+    }
+
     void getValidationCount (uint256 const& ledger, bool currentOnly,
                              int& trusted, int& untrusted) override
     {
@@ -183,22 +195,14 @@ private:
 
         if (set)
         {
-            auto const now =
-                app_.timeKeeper().now().time_since_epoch().count();
             for (auto& it: *set)
             {
                 bool isTrusted = it.second->isTrusted ();
 
-                if (isTrusted && currentOnly)
+                if (isTrusted && currentOnly && ! current (it.second))
                 {
-                    std::uint32_t closeTime = it.second->getSignTime ();
-
-                    if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_VAL_INTERVAL)))
-                        isTrusted = false;
-                    else
-                    {
-                        JLOG (j_.trace) << "VC: Untrusted due to time " << ledger;
-                    }
+                    JLOG (j_.trace) << "VC: Untrusted due to time " << ledger;
+                    isTrusted = false;
                 }
 
                 if (isTrusted)
@@ -312,9 +316,6 @@ private:
 
     std::list<STValidation::pointer> getCurrentTrustedValidations () override
     {
-        // VFALCO LEDGER_VAL_INTERVAL should be a NetClock::duration
-        auto const cutoff = app_.timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
-
         std::list<STValidation::pointer> ret;
 
         ScopedLockType sl (mLock);
@@ -324,7 +325,7 @@ private:
         {
             if (!it->second) // contains no record
                 it = mCurrentValidations.erase (it);
-            else if (it->second->getSignTime () < cutoff)
+            else if (! current (it->second))
             {
                 // contains a stale record
                 mStaleValidations.push_back (it->second);
@@ -346,9 +347,10 @@ private:
     }
 
     LedgerToValidationCounter getCurrentValidations (
-        uint256 currentLedger, uint256 priorLedger) override
+        uint256 currentLedger,
+        uint256 priorLedger,
+        LedgerIndex cutoffBefore) override
     {
-        auto const cutoff = app_.timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
@@ -361,7 +363,7 @@ private:
         {
             if (!it->second) // contains no record
                 it = mCurrentValidations.erase (it);
-            else if (it->second->getSignTime () < cutoff)
+            else if (! current (it->second))
             {
                 // contains a stale record
                 mStaleValidations.push_back (it->second);
@@ -369,7 +371,8 @@ private:
                 condWrite ();
                 it = mCurrentValidations.erase (it);
             }
-            else
+            else if (! it->second->isFieldPresent (sfLedgerSequence) ||
+                (it->second->getFieldU32 (sfLedgerSequence) >= cutoffBefore))
             {
                 // contains a live record
                 bool countPreferred = valCurrentLedger && (it->second->getLedgerHash () == currentLedger);
@@ -389,6 +392,10 @@ private:
                 if (ni > p.second)
                     p.second = ni;
 
+                ++it;
+            }
+            else
+            {
                 ++it;
             }
         }

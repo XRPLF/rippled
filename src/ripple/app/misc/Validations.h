@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MISC_VALIDATIONS_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STValidation.h>
 #include <memory>
 #include <vector>
@@ -43,6 +44,8 @@ public:
 
     virtual bool addValidation (STValidation::ref, std::string const& source) = 0;
 
+    virtual bool current (STValidation::ref) = 0;
+
     virtual ValidationSet getValidations (uint256 const& ledger) = 0;
 
     virtual void getValidationCount (
@@ -63,7 +66,8 @@ public:
 
     // VFALCO TODO make a type alias for this ugly return value!
     virtual LedgerToValidationCounter getCurrentValidations (
-        uint256 currentLedger, uint256 previousLedger) = 0;
+        uint256 currentLedger, uint256 previousLedger,
+        LedgerIndex cutoffBefore) = 0;
 
     /** Return the times of all validations for a particular ledger hash. */
     virtual std::vector<std::uint32_t> getValidationTimes (
