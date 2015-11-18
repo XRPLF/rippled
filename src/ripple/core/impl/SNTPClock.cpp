@@ -180,8 +180,8 @@ public:
         auto const when = clock_type::now();
         if ((lastUpdate_ == (time_t)-1) ||
                 ((lastUpdate_ + NTP_TIMESTAMP_VALID) < time(nullptr)))
-            return when;
-        return when + std::chrono::seconds(offset_);
+            return time_point{when.time_since_epoch()};
+        return time_point{when.time_since_epoch() + std::chrono::seconds(offset_)};
     }
 
     duration

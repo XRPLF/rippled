@@ -49,7 +49,7 @@ using weeks = std::chrono::duration
 //
 // epoch_offset = days(10957);  // 2000-01-01
 //
-class NetClock // : public abstract_clock <std::chrono::seconds>
+class NetClock
 {
 public:
     // Unfortunately this is signed for legacy reasons
@@ -64,7 +64,7 @@ public:
         std::chrono::time_point<
             NetClock, duration>;
 
-    static bool const /* constexpr? */ is_steady =
+    static bool const is_steady =
         std::chrono::system_clock::is_steady;
 
     static

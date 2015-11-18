@@ -20,8 +20,10 @@
 #ifndef RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 #define RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 
-#include <beast/chrono/abstract_clock.h>
-#include <ripple/basics/chrono.h>
+#include <beast/utility/Journal.h>
+#include <chrono>
+#include <memory>
+#include <ratio>
 #include <string>
 #include <vector>
 
@@ -29,10 +31,19 @@ namespace ripple {
 
 /** Manages various times used by the server. */
 class TimeKeeper
-    : public beast::abstract_clock<NetClock>
 {
 public:
+    using rep        = std::int32_t;
+    using period     = std::ratio<1>;
+    using duration   = std::chrono::duration<rep, period>;
+    using time_point = std::chrono::time_point<TimeKeeper>;
+
+    static bool const is_steady = false;
+
     virtual ~TimeKeeper() = default;
+    TimeKeeper() = default;
+    TimeKeeper(TimeKeeper const&) = delete;
+    TimeKeeper& operator=(TimeKeeper const&) = delete;
 
     /** Launch the internal thread.
 

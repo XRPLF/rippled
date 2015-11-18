@@ -342,6 +342,7 @@ class View_test
     testContext()
     {
         using namespace jtx;
+        using namespace std::chrono;
         {
             Env env(*this);
             wipe(env.openLedger);
@@ -349,7 +350,7 @@ class View_test
             OpenView v0(open.get());
             expect(v0.seq() != 98);
             expect(v0.seq() == open->seq());
-            expect(v0.parentCloseTime() != 99);
+            expect(v0.parentCloseTime() != TimeKeeper::time_point{99s});
             expect(v0.parentCloseTime() ==
                 open->parentCloseTime());
             {

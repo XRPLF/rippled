@@ -65,7 +65,9 @@ CancelTicket::doApply ()
     // And finally, anyone can remove an expired ticket
     if (!authorized && sleTicket->isFieldPresent (sfExpiration))
     {
-        std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
+        using d = TimeKeeper::duration;
+        using tp = TimeKeeper::time_point;
+        auto const expiration = tp{d{sleTicket->getFieldU32 (sfExpiration)}};
 
         if (view().parentCloseTime() >= expiration)
             authorized = true;
