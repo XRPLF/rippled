@@ -1327,7 +1327,7 @@ public:
 
     // This is the last ledger we published to clients and can lag the validated
     // ledger.
-    Ledger::ref getPublishedLedger () override
+    Ledger::pointer getPublishedLedger () override
     {
         ScopedLockType lock(m_mutex);
         return mPubLedger;
