@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MISC_VALIDATIONS_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STValidation.h>
 #include <memory>
 #include <vector>

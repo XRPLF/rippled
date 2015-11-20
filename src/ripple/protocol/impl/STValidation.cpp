@@ -28,7 +28,6 @@ namespace ripple {
 
 STValidation::STValidation (SerialIter& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
-    , mTrusted (false), mSeen (0)
 {
     mNodeID = RippleAddress::createNodePublic (getFieldVL (sfSigningPubKey)).getNodeID ();
     assert (mNodeID.isNonZero ());
@@ -44,7 +43,7 @@ STValidation::STValidation (
     uint256 const& ledgerHash, std::uint32_t signTime,
     RippleAddress const& raPub, bool isFull)
     : STObject (getFormat (), sfValidation)
-    , mTrusted (false), mSeen (0)
+    , mSeen (signTime)
 {
     // Does not sign
     setFieldH256 (sfLedgerHash, ledgerHash);
@@ -52,7 +51,6 @@ STValidation::STValidation (
 
     setFieldVL (sfSigningPubKey, raPub.getNodePublic ());
     mNodeID = raPub.getNodeID ();
-    mSeen = signTime;
     assert (mNodeID.isNonZero ());
 
     if (!isFull)

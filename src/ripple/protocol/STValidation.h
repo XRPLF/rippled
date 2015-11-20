@@ -117,8 +117,8 @@ private:
 
     uint256 mPreviousHash;
     NodeID mNodeID;
-    bool mTrusted;
-    std::uint32_t mSeen;
+    bool mTrusted = false;
+    std::uint32_t mSeen = 0;
 };
 
 } // ripple
