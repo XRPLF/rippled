@@ -62,6 +62,7 @@ public:
         std::uint32_t minimumTxnInLedger = 5;
         std::uint32_t minimumTxnInLedgerSA = 1000;
         std::uint32_t targetTxnInLedger = 50;
+        boost::optional<std::uint32_t> maximumTxnInLedger;
         bool standAlone = false;
     };
 
@@ -151,11 +152,6 @@ public:
     processValidatedLedger(Application& app,
         OpenView const& view, bool timeLeap);
 
-    /** Used by tests only.
-    */
-    std::size_t
-    setMinimumTx(int m);
-
     /** Returns fee metrics in reference fee level units.
     */
     struct Metrics
@@ -178,11 +174,13 @@ private:
     private:
         // Fee escalation
 
+        // Minimum value of txnsExpected.
+        std::size_t minimumTxnCount_;
         // Limit of the txnsExpected value after a
         // time leap.
         std::size_t const targetTxnCount_;
-        // Minimum value of txnsExpected.
-        std::size_t minimumTxnCount_;
+        // Maximum value of txnsExpected
+        boost::optional<std::size_t> const maximumTxnCount_;
         // Number of transactions expected per ledger.
         // One more than this value will be accepted
         // before escalation kicks in.
@@ -201,10 +199,15 @@ private:
 
     public:
         FeeMetrics(Setup const& setup, beast::Journal j)
-            : targetTxnCount_(setup.targetTxnInLedger)
-            , minimumTxnCount_(setup.standAlone ?
+            : minimumTxnCount_(setup.standAlone ?
                 setup.minimumTxnInLedgerSA :
                 setup.minimumTxnInLedger)
+            , targetTxnCount_(setup.targetTxnInLedger < minimumTxnCount_ ?
+                minimumTxnCount_ : setup.targetTxnInLedger)
+            , maximumTxnCount_(setup.maximumTxnInLedger ?
+                *setup.maximumTxnInLedger < targetTxnCount_ ?
+                    targetTxnCount_ : *setup.maximumTxnInLedger :
+                        boost::optional<std::size_t>(boost::none))
             , txnsExpected_(minimumTxnCount_)
             , minimumMultiplier_(setup.minimumEscalationMultiplier)
             , escalationMultiplier_(minimumMultiplier_)
@@ -223,19 +226,6 @@ private:
         std::size_t
         update(Application& app,
             ReadView const& view, bool timeLeap);
-
-        /** Used by tests only.
-        */
-        std::size_t
-        setMinimumTx(int m)
-        {
-            std::lock_guard <std::mutex> sl(lock_);
-
-            auto const old = minimumTxnCount_;
-            minimumTxnCount_ = m;
-            txnsExpected_ = m;
-            return old;
-        }
 
         std::size_t
         getTxnsExpected() const
@@ -267,9 +257,36 @@ private:
 
         std::shared_ptr<STTx const> txn;
 
-        // Defaults to empty. Only set when test applying
-        // multiple transactions per account. If set, this
-        // candidate HAS BEEN applied to the view.
+        /* The rule for determining if more than one transaction
+           for a given account can be held in the queue is,
+           "if all prior transactions from the account successfully
+            claim a fee in a relatively recent OpenView, and the
+            latest transaction is likely to claim a fee in that same
+            OpenView, then the latest transaction can be held".
+
+           To see if the new transaction is likely to claim
+           a fee, we copy the OpenView, test apply all the
+           transactions which are already in the queue and have
+           not been applied, and store the OpenView in each
+           applied Candidate for reuse by later transactions.
+
+           The stored OpenView can be invalidated if the account
+           performs certain operations outside of the TxQ logic
+           (e.g. by submitting transactions to different servers),
+           or replaces a queued transaction which has been test
+           applied (by sequence number). Normally, each transaction
+           will only be applied to a ledger at most once, and at
+           most one copy of the OpenView will be created.
+
+           An alternative implementation would be to make only
+           a local OpenView copy or "sandbox" in TxQ::apply, test
+           apply all the prior transactions for this account, then
+           discard the copy.
+        */
+        /* view Defaults to empty. Only set when test applying
+           multiple transactions per account. If set, this
+           candidate HAS BEEN applied to the view.
+        */
         std::shared_ptr<OpenView> view;
         std::uint32_t invalidations;
 
@@ -341,21 +358,6 @@ private:
 
     };
 
-    struct MultiTxn
-    {
-        TxQAccount::TxMap::iterator nextAcctIter;
-        TxQAccount::TxMap::iterator prevTxnIter;
-        std::shared_ptr<OpenView> workingView;
-
-        MultiTxn(TxQAccount::TxMap::iterator next,
-            TxQAccount::TxMap::iterator prev,
-            std::shared_ptr<OpenView> view = {})
-            : nextAcctIter(next)
-            , prevTxnIter(prev)
-            , workingView(view)
-        { }
-    };
-
     using FeeHook = boost::intrusive::member_hook
         <CandidateTxn, boost::intrusive::set_member_hook<>,
         &CandidateTxn::byFeeListHook>;
@@ -389,7 +391,8 @@ private:
     // Erase and return the next entry for the account (if fee level
     // is higher), or next entry in byFee_ (lower fee level).
     // Used to get the next "applyable" candidate for accept().
-    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
+    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type,
+        bool invalidate = false);
 
 };
 

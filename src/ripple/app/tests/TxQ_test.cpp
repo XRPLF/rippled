@@ -62,7 +62,7 @@ class TxQ_test : public beast::unit_test::suite
 
     static
     std::unique_ptr<Config>
-    makeConfig()
+    makeConfig(std::map<std::string, std::string> extra = {})
     {
         auto p = std::make_unique<Config>();
         setupConfigForUnitTests(*p);
@@ -71,6 +71,10 @@ class TxQ_test : public beast::unit_test::suite
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "25");
+        for (auto const& value : extra)
+        {
+            section.set(value.first, value.second);
+        }
         return std::move(p);
     }
 
@@ -80,10 +84,9 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
-
+        Env env(*this, makeConfig({ {"minimum_txn_in_ledger_standalone", "3"} }),
+            features(featureFeeEscalation));
         auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(3);
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -292,10 +295,9 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
-
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
+            features(featureFeeEscalation));
         auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(2);
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -353,10 +355,8 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
-
-        auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(2);
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
+            features(featureFeeEscalation));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -417,10 +417,10 @@ public:
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
+            features(featureFeeEscalation));
 
         auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(2);
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -551,10 +551,8 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
-
-        auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(2);
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "2" } }),
+            features(featureFeeEscalation));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -607,10 +605,8 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
-
-        auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(3);
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -819,41 +815,37 @@ public:
 
         Env env(*this);
         env.disable_testing();
-
-        auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(1);
+        size_t constexpr txPerLedger = 1000;
 
         auto alice = Account("alice");
 
         auto lastMedian = 500;
-        checkMetrics(env, 0, boost::none, 0, 1, 256, lastMedian);
+        checkMetrics(env, 0, boost::none, 0, txPerLedger, 256, lastMedian);
 
         env.fund(XRP(50000), noripple(alice));
-        checkMetrics(env, 0, boost::none, 1, 1, 256, lastMedian);
+        checkMetrics(env, 0, boost::none, 1, txPerLedger, 256, lastMedian);
 
         // If the queue was enabled, most of these would
         // return terQUEUED. (The required fee for the last
-        // would be 10 * 500 * 11^2 = 605,000.)
+        // would be 10 * 500 * 11^2 / 5^2 = 24,200.)
         for (int i = 0; i < 10; ++i)
             env(noop(alice), fee(30));
 
         // Either way, we get metrics.
-        checkMetrics(env, 0, boost::none, 11, 1, 256, lastMedian);
+        checkMetrics(env, 0, boost::none, 11, txPerLedger, 256, lastMedian);
 
         env.close();
         // If the queue was enabled, it would have a limit, and the
         // lastMedian would be 256*3 = 768.
-        checkMetrics(env, 0, boost::none, 0, 1, 256, lastMedian);
+        checkMetrics(env, 0, boost::none, 0, txPerLedger, 256, lastMedian);
     }
 
     void testAcctTxnID()
     {
         using namespace jtx;
 
-        Env env(*this, makeConfig(), features(featureFeeEscalation));
-
-        auto& txq = env.app().getTxQ();
-        txq.setMinimumTx(1);
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "1" } }),
+            features(featureFeeEscalation));
 
         auto alice = Account("alice");
 
@@ -864,7 +856,6 @@ public:
         auto lastMedian = 500;
         checkMetrics(env, 0, boost::none, 0, 1, 256, lastMedian);
 
-        // Create several accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice));
         checkMetrics(env, 0, boost::none, 1, 1, 256, lastMedian);
 
@@ -892,6 +883,119 @@ public:
             ter(tefWRONG_PRIOR));
     }
 
+    void testMaximum()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig(
+            { {"minimum_txn_in_ledger_standalone", "2"},
+                {"target_txn_in_ledger", "4"},
+                    {"maximum_txn_in_ledger", "5"} }),
+                        features(featureFeeEscalation));
+        auto& txq = env.app().getTxQ();
+
+        auto alice = Account("alice");
+        auto queued = ter(terQUEUED);
+        auto lastMedian = 500;
+
+        auto openLedgerFee =
+            [&]()
+        {
+            return fee(txq.openLedgerFee(*env.current()));
+        };
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(alice));
+        checkMetrics(env, 0, boost::none, 1, 2, 256, lastMedian);
+
+        for (int i = 0; i < 10; ++i)
+            env(noop(alice), fee(openLedgerFee()));
+
+        checkMetrics(env, 0, boost::none, 11, 2, 256, lastMedian);
+
+        env.close();
+        lastMedian = 800025;
+        // If not for the maximum, the per ledger would be 11.
+        checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
+
+    }
+
+    void testUnexpectedBalanceChange()
+    {
+        using namespace jtx;
+
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+                features(featureFeeEscalation));
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+
+        auto queued = ter(terQUEUED);
+
+        auto openLedgerFee =
+            [&]()
+        {
+            return fee(env.app().getTxQ().openLedgerFee(*env.current()));
+        };
+
+        expect(env.current()->fees().base == 10);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 3, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(alice, bob));
+        checkMetrics(env, 0, boost::none, 2, 3, 256, lastMedian);
+        auto USD = bob["USD"];
+
+        env(offer(alice, USD(5000), XRP(50000)), require(owners(alice, 1)));
+        checkMetrics(env, 0, boost::none, 3, 3, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 6, 0, 3, 256, lastMedian);
+
+        // Fill up the ledger
+        for (int i = 0; i < 4; ++i)
+            env(noop(alice));
+        checkMetrics(env, 0, 6, 4, 3, 256, lastMedian);
+
+        // Queue up a couple of really expensive transactions
+        auto aliceSeq = env.seq(alice);
+        env(noop(alice), seq(aliceSeq++), queued);
+        env(noop(alice), fee(XRP(1000)),
+            seq(aliceSeq++), queued);
+        env(noop(alice), fee(XRP(1251)),
+            seq(aliceSeq++), queued);
+        env(noop(alice), fee(XRP(1564)),
+            seq(aliceSeq), queued);
+        checkMetrics(env, 4, 6, 4, 3, 256, lastMedian);
+
+        // This offer should take Alice's offer
+        // up to Alice's reserve.
+        env(offer(bob, XRP(50000), USD(5000)),
+            openLedgerFee(), require(balance("alice", XRP(250)),
+                owners(alice, 1), lines(alice, 1)));
+        checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
+
+        // Try adding a new transaction. This will
+        // test the main loop check.
+        env(noop(alice), fee(XRP(1956)), seq(aliceSeq+1),
+            ter(terPRE_SEQ));
+        checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
+
+        // Replace that last transaction, which failed in
+        // the previous attempt. This avoids invalidation,
+        // and tests the edge case where no queued
+        // transactions are test applied.
+        env(noop(alice), fee(XRP(1956)), seq(aliceSeq),
+            ter(terPRE_SEQ));
+        checkMetrics(env, 3, 6, 5, 3, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 2, 10, 1, 5, 256, lastMedian);
+    }
+
     void run()
     {
         testQueue();
@@ -903,6 +1007,8 @@ public:
         testMultiTxnPerAccount();
         testDisabled();
         testAcctTxnID();
+        testMaximum();
+        testUnexpectedBalanceChange();
     }
 };
 
