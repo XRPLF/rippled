@@ -53,6 +53,11 @@ public:
             , messagesIn (ts.messagesIn.load())
             , messagesOut (ts.messagesOut.load())
         { ; }
+
+        operator bool () const
+        {
+            return messagesIn || messagesOut;
+        }
     };
 
 
@@ -107,9 +112,10 @@ public:
 
         for (auto& i : counts_)
         {
-            ret.emplace (std::piecewise_construct,
-                std::forward_as_tuple (getName (i.first)),
-                std::forward_as_tuple (i.second));
+            if (i.second)
+                ret.emplace (std::piecewise_construct,
+                    std::forward_as_tuple (getName (i.first)),
+                    std::forward_as_tuple (i.second));
         }
 
         return ret;
