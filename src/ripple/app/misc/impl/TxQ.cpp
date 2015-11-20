@@ -137,7 +137,7 @@ TxQ::FeeMetrics::update(Application& app,
         // Ledgers are taking to long to process,
         // so clamp down on limits.
         txnsExpected = boost::algorithm::clamp(feeLevels.size(),
-            mimimumTx, targetTxnCount_ - 1);
+            mimimumTx, targetTxnCount_);
     }
     else if (feeLevels.size() > txnsExpected ||
         feeLevels.size() > targetTxnCount_)
@@ -145,7 +145,9 @@ TxQ::FeeMetrics::update(Application& app,
         // Ledgers are processing in a timely manner,
         // so keep the limit high, but don't let it
         // grow without bound.
-        txnsExpected = feeLevels.size();
+        txnsExpected = maximumTxnCount_ ?
+            std::min(feeLevels.size(), *maximumTxnCount_) :
+            feeLevels.size();
     }
 
     if (feeLevels.empty())
@@ -311,14 +313,6 @@ TxQ::TxQ(Setup const& setup,
 TxQ::~TxQ()
 {
     byFee_.clear();
-}
-
-/** Used by tests only.
-*/
-std::size_t
-TxQ::setMinimumTx(int m)
-{
-    return feeMetrics_.setMinimumTx(m);
 }
 
 bool
@@ -912,6 +906,9 @@ setup_TxQ(Config const& config)
     set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
     set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
     set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
+    std::uint32_t max;
+    if (set(max, "maximum_txn_in_ledger", section))
+        setup.maximumTxnInLedger.emplace(max);
     setup.standAlone = config.RUN_STANDALONE;
     return setup;
 }

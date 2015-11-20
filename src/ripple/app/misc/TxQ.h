@@ -62,6 +62,7 @@ public:
         std::uint32_t minimumTxnInLedger = 5;
         std::uint32_t minimumTxnInLedgerSA = 1000;
         std::uint32_t targetTxnInLedger = 50;
+        boost::optional<std::uint32_t> maximumTxnInLedger;
         bool standAlone = false;
     };
 
@@ -154,11 +155,6 @@ public:
     processValidatedLedger(Application& app,
         OpenView const& view, bool timeLeap);
 
-    /** Used by tests only.
-    */
-    std::size_t
-    setMinimumTx(int m);
-
     /** Returns fee metrics in reference fee (level) units.
     */
     struct Metrics
@@ -181,11 +177,13 @@ private:
     private:
         // Fee escalation
 
+        // Minimum value of txnsExpected.
+        std::size_t minimumTxnCount_;
         // Limit of the txnsExpected value after a
         // time leap.
         std::size_t const targetTxnCount_;
-        // Minimum value of txnsExpected.
-        std::size_t minimumTxnCount_;
+        // Maximum value of txnsExpected
+        boost::optional<std::size_t> const maximumTxnCount_;
         // Number of transactions expected per ledger.
         // One more than this value will be accepted
         // before escalation kicks in.
@@ -204,10 +202,15 @@ private:
 
     public:
         FeeMetrics(Setup const& setup, beast::Journal j)
-            : targetTxnCount_(setup.targetTxnInLedger)
-            , minimumTxnCount_(setup.standAlone ?
+            : minimumTxnCount_(setup.standAlone ?
                 setup.minimumTxnInLedgerSA :
                 setup.minimumTxnInLedger)
+            , targetTxnCount_(setup.targetTxnInLedger < minimumTxnCount_ ?
+                minimumTxnCount_ : setup.targetTxnInLedger)
+            , maximumTxnCount_(setup.maximumTxnInLedger ?
+                *setup.maximumTxnInLedger < targetTxnCount_ ?
+                    targetTxnCount_ : *setup.maximumTxnInLedger :
+                        boost::optional<std::size_t>(boost::none))
             , txnsExpected_(minimumTxnCount_)
             , minimumMultiplier_(setup.minimumEscalationMultiplier)
             , escalationMultiplier_(minimumMultiplier_)
@@ -226,19 +229,6 @@ private:
         std::size_t
         update(Application& app,
             ReadView const& view, bool timeLeap);
-
-        /** Used by tests only.
-        */
-        std::size_t
-        setMinimumTx(int m)
-        {
-            std::lock_guard <std::mutex> sl(lock_);
-
-            auto const old = minimumTxnCount_;
-            minimumTxnCount_ = m;
-            txnsExpected_ = m;
-            return old;
-        }
 
         std::size_t
         getTxnsExpected() const
