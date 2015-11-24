@@ -456,19 +456,6 @@ Payment::doApply ()
         }
     }
 
-    std::string strToken;
-    std::string strHuman;
-
-    if (transResultInfo (terResult, strToken, strHuman))
-    {
-        JLOG(j_.trace) <<
-            strToken << ": " << strHuman;
-    }
-    else
-    {
-        assert (false);
-    }
-
     return terResult;
 }
 
