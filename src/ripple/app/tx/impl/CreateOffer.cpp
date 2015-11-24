@@ -387,7 +387,7 @@ CreateOffer::bridged_cross (
 
             cross_result = taker.cross(offers_direct.tip ());
 
-            j_.debug << "Direct Result: " << transToken (cross_result);
+            JLOG (j_.debug) << "Direct Result: " << transToken (cross_result);
 
             if (dry_offer (view, offers_direct.tip ()))
             {
@@ -424,7 +424,7 @@ CreateOffer::bridged_cross (
 
             cross_result = taker.cross(offers_leg1.tip (), offers_leg2.tip ());
 
-            j_.debug << "Bridge Result: " << transToken (cross_result);
+            JLOG (j_.debug) << "Bridge Result: " << transToken (cross_result);
 
             if (dry_offer (view, offers_leg1.tip ()))
             {
@@ -511,7 +511,7 @@ CreateOffer::direct_cross (
 
         cross_result = taker.cross (offer);
 
-        j_.debug << "Direct Result: " << transToken (cross_result);
+        JLOG (j_.debug) << "Direct Result: " << transToken (cross_result);
 
         if (dry_offer (view, offer))
         {
@@ -744,7 +744,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
         if (result != tesSUCCESS)
         {
-            j_.debug << "final result: " << transToken (result);
+            JLOG (j_.debug) << "final result: " << transToken (result);
             return { result, true };
         }
 
@@ -781,7 +781,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     if (result != tesSUCCESS)
     {
-        j_.debug << "final result: " << transToken (result);
+        JLOG (j_.debug) << "final result: " << transToken (result);
         return { result, true };
     }
 
@@ -832,7 +832,10 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
                 result = tecINSUF_RESERVE_OFFER;
 
             if (result != tesSUCCESS)
-                j_.debug << "final result: " << transToken (result);
+            {
+                JLOG (j_.debug) <<
+                    "final result: " << transToken (result);
+            }
 
             return { result, true };
         }
@@ -897,7 +900,10 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     }
 
     if (result != tesSUCCESS)
-        j_.debug << "final result: " << transToken (result);
+    {
+        JLOG (j_.debug) <<
+            "final result: " << transToken (result);
+    }
 
     return { result, true };
 }

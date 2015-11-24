@@ -1840,7 +1840,7 @@ applyTransaction (Application& app, OpenView& view,
         if (result.second)
         {
             JLOG (j.debug)
-            << "Transaction applied: " << transHuman (result.first);
+                << "Transaction applied: " << transHuman (result.first);
             return LedgerConsensusImp::resultSuccess;
         }
 

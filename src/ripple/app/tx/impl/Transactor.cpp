@@ -542,21 +542,6 @@ void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers, 
 }
 
 //------------------------------------------------------------------------------
-
-static
-inline
-void
-log (std::pair<
-    TER, bool> const& result,
-        beast::Journal j)
-{
-#if 0
-    JLOG(j.error) <<
-        "apply: { " << transToken(result.first) <<
-        ", " << (result.second ? "true" : "false") << " }";
-#endif
-}
-
 std::pair<TER, bool>
 Transactor::operator()()
 {
@@ -694,14 +679,15 @@ Transactor::operator()()
         }
 
         ctx_.apply(terResult);
-        // VFALCO NOTE since we called apply(), it is not
-        //             okay to look at view() past this point.
+        // since we called apply(), it is not okay to look
+        // at view() past this point.
     }
 
-    auto const result =
-        std::make_pair(terResult, didApply);
-    log(result, j_);
-    return result;
+    JLOG(j_.trace) <<
+        "apply: " << transToken(terResult) <<
+        ", " << (didApply ? "true" : "false");
+
+    return { terResult, didApply };
 }
 
 }
