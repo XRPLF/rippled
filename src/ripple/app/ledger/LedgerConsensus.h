@@ -54,6 +54,13 @@ public:
 
     virtual bool peerPosition (LedgerProposal::ref) = 0;
 
+    virtual void startRound (
+        LedgerHash const& prevLCLHash,
+        Ledger::ref prevLedger,
+        NetClock::time_point closeTime,
+        int previousProposers,
+        std::chrono::milliseconds previousConvergeTime) = 0;
+
     /** Simulate the consensus process without any network traffic.
 
         The end result, is that consensus begins and completes as if everyone

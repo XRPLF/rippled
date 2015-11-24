@@ -1030,6 +1030,12 @@ void ApplicationImp::setup()
         *config_);
     add (*m_overlay); // add to PropertyStream
 
+    // start first consensus round
+    if (! m_networkOPs->beginConsensus(m_ledgerMaster->getClosedLedger()->info().hash))
+    {
+        LogicError ("Unable to start consensus");
+    }
+
     m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
 
     {

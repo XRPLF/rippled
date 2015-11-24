@@ -162,6 +162,7 @@ public:
                               std::shared_ptr<SHAMap> const& map) = 0;
 
     // network state machine
+    virtual bool beginConsensus (uint256 const& netLCL) = 0;
     virtual void endConsensus (bool correctLCL) = 0;
     virtual void setStandAlone () = 0;
     virtual void setStateTimer () = 0;
