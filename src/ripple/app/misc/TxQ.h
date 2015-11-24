@@ -43,9 +43,9 @@ class Application;
     the fee will grow exponentially.
 
     Transactions that don't have a high enough fee to be applied to
-    the ledger are added to the queue in order from highest fee to
+    the ledger are added to the queue in order from highest fee level to
     lowest. Whenever a new ledger is accepted as validated, transactions
-    are first applied from the queue to the open ledger in fee order
+    are first applied from the queue to the open ledger in fee level order
     until either all transactions are applied or the fee again jumps
     too high for the remaining transactions.
 */
@@ -96,9 +96,10 @@ public:
             No: Continue to step 2.
         2. Is the `txn`s fee level >= the required fee level?
             Yes: `txn` can be applied to the ledger. Pass it
-                 to the engine and return that result.
-            No: Can it be held in the queue? (See TxQImpl::canBeHeld).
-                No: Reject `txn` with a low fee TER code.
+                 to ripple::apply() and return that result.
+            No: Can it be held in the queue? (See TxQ::canBeHeld).
+                No: Reject `txn` with a low fee TER code (or PRE_SEQ
+                    if not the first sequence # for this account).
                 Yes: Is the queue full?
                     No: Put `txn` in the queue.
                     Yes: Is the `txn`'s fee higher than the end item's
@@ -106,13 +107,10 @@ public:
                         Yes: Remove the end item, and add `txn`.
                         No: Reject `txn` with a low fee TER code.
 
-        If the transaction is queued, addTransaction will return
-        { TD_held, terQUEUED }
-
-
-        @param txn The transaction to be attempted.
-        @param params Flags to control engine behaviors.
-        @param engine Transaction Engine.
+        @return A pair with the TER and a bool indicating
+                whether or not the transaction was applied.
+                If the transaction is queued, will return
+                { terQUEUED, false }.
     */
     std::pair<TER, bool>
     apply(Application& app, OpenView& view,
@@ -126,7 +124,7 @@ public:
 
         Iterate over the transactions from highest fee to lowest.
         For each transaction, compute the required fee.
-        Is the transaction fee is less than the required fee?
+        Is the transaction fee less than the required fee?
             Yes: Stop. We're done.
             No: Try to apply the transaction. Did it apply?
                 Yes: Take it out of the queue.
@@ -141,13 +139,12 @@ public:
         We have a new last validated ledger, update and clean up the
         queue.
 
-        1) Keep track of the average non-empty ledger size. Once there
-            are enough data points, the maximum queue size will be
-            enough to hold 20 ledgers. (Parameters for this are
-            experimentally configurable, but should be left alone.)
+        1) Adjust the maximum queue size to be enough to hold 20
+            ledgers. (Parameters for this are experimentally
+            configurable, but should be left alone.)
             1a) If the new limit makes the queue full, trim excess
                 transactions from the end of the queue.
-        2) Remove any transactions from the queue whos the
+        2) Remove any transactions from the queue for which the
             `LastLedgerSequence` has passed.
 
     */
@@ -155,7 +152,7 @@ public:
     processValidatedLedger(Application& app,
         OpenView const& view, bool timeLeap);
 
-    /** Returns fee metrics in reference fee (level) units.
+    /** Returns fee metrics in reference fee level units.
     */
     struct Metrics
     getMetrics(OpenView const& view) const;
@@ -273,7 +270,7 @@ private:
         boost::optional<LedgerIndex> lastValid;
         TxSeq const sequence;
         ApplyFlags const flags;
-        // pfresult_ is never allowed to be empty. The
+        // pfresult is never allowed to be empty. The
         // boost::optional is leveraged to allow `emplace`d
         // construction and replacement without a copy
         // assignment operation.
