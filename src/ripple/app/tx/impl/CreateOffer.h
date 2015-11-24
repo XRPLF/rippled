@@ -122,7 +122,6 @@ private:
 private:
     // What kind of offer we are placing
     CrossType cross_type_;
-    std::uint32_t deprecatedWrongOwnerCount_;
 
     // The number of steps to take through order books while crossing
     OfferStream::StepCounter stepCounter_;

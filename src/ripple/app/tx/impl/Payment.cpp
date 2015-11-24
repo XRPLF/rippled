@@ -28,17 +28,6 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
-// Mon Aug 17 11:00:00am PDT
-static std::uint32_t const deliverMinTime = 493149600;
-
-static
-bool
-allowDeliverMin (ReadView const& view, ApplyFlags const& flags)
-{
-    return view.info().parentCloseTime > deliverMinTime ||
-        (flags & tapENABLE_TESTING);
-}
-
 TER
 Payment::preflight (PreflightContext const& ctx)
 {
@@ -199,14 +188,6 @@ Payment::preflight (PreflightContext const& ctx)
 TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
-    auto const deliverMin = ctx.tx[~sfDeliverMin];
-
-    if (deliverMin)
-    {
-        if (!allowDeliverMin(ctx.view, ctx.flags))
-            return temMALFORMED;
-    }
-
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
     bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;

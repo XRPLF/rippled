@@ -1873,10 +1873,6 @@ void applyTransactions (
     ApplyFlags flags)
 {
 
-    // Switch to new transaction ordering on
-    // October 27, 2015 at 11:00AM PDT
-    bool const newTxOrder = checkLedger->info().closeTime > 499284000;
-
     auto j = app.journal ("LedgerConsensus");
     if (set)
     {
@@ -1900,17 +1896,8 @@ void applyTransactions (
 
             if (txn)
             {
-                if (newTxOrder)
-                {
-                    // All transactions execute in canonical order
-                    retriableTxs.insert (txn);
-                }
-                else if (applyTransaction(app, view, txn, true, flags, j) ==
-                    LedgerConsensusImp::resultRetry)
-                {
-                    // Failures are retried in canonical order
-                    retriableTxs.insert (txn);
-                }
+                // All transactions execute in canonical order
+                retriableTxs.insert (txn);
             }
         }
     }

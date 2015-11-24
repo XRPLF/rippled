@@ -658,8 +658,6 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     auto const sleCreator = view.peek (keylet::account(account_));
 
-    deprecatedWrongOwnerCount_ = (*sleCreator)[sfOwnerCount];
-
     auto const uSequence = ctx_.tx.getSequence ();
 
     // This is the original rate of the offer, and is the rate at which
@@ -809,19 +807,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     }
 
     {
-        // Mon Aug 17 11:00:00am PDT
-        static NetClock::time_point const switchoverTime (
-            std::chrono::seconds (493149600));
-
-        XRPAmount reserve;
-
-        if (ctx_.view().info().parentCloseTime <=
-                switchoverTime.time_since_epoch().count())
-            reserve = ctx_.view().fees().accountReserve(
-                deprecatedWrongOwnerCount_+1);
-        else
-            reserve = ctx_.view().fees().accountReserve(
-                sleCreator->getFieldU32 (sfOwnerCount) + 1);
+        XRPAmount reserve = ctx_.view().fees().accountReserve(
+            sleCreator->getFieldU32 (sfOwnerCount) + 1);
 
         if (mPriorBalance < reserve)
         {
