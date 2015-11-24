@@ -165,6 +165,12 @@ public:
             mIssuerID == t.mIssuerID;
     }
 
+    bool
+    operator!= (const STPathElement& t) const
+    {
+        return !operator==(t);
+    }
+
 private:
     unsigned int mType;
     AccountID mAccountID;
