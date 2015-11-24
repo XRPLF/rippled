@@ -402,13 +402,22 @@ void LedgerHistory::builtLedger (Ledger::ref ledger, Json::Value consensus)
     auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize(index, entry, false);
 
-    if (entry->validated && (entry->validated.get() != hash))
+    if (entry->validated && ! entry->built)
     {
-        JLOG (j_.error) << "MISMATCH: seq=" << index
-            << " validated:" << entry->validated.get()
-            << " then:" << hash;
-        handleMismatch (hash, entry->validated.get(), consensus);
+        if (entry->validated.get() != hash)
+        {
+            JLOG (j_.error) << "MISMATCH: seq=" << index
+                << " validated:" << entry->validated.get()
+                << " then:" << hash;
+            handleMismatch (hash, entry->validated.get(), consensus);
+        }
+        else
+        {
+            // We validated a ledger and then built it locally
+            JLOG (j_.debug) << "MATCH: seq=" << index << " late";
+        }
     }
+
     entry->built.emplace (hash);
     entry->consensus.emplace (std::move (consensus));
 }
@@ -424,12 +433,20 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize(index, entry, false);
 
-    if (entry->built && (entry->built.get() != hash))
+    if (entry->built && ! entry->validated)
     {
-        JLOG (j_.error) << "MISMATCH: seq=" << index
-            << " built:" << entry->built.get()
-            << " then:" << hash;
-        handleMismatch (entry->built.get(), hash, entry->consensus.get());
+        if (entry->built.get() != hash)
+        {
+            JLOG (j_.error) << "MISMATCH: seq=" << index
+                << " built:" << entry->built.get()
+                << " then:" << hash;
+            handleMismatch (entry->built.get(), hash, entry->consensus.get());
+        }
+        else
+        {
+            // We built a ledger locally and then validated it
+            JLOG (j_.debug) << "MATCH: seq=" << index;
+        }
     }
 
     entry->validated.emplace (hash);

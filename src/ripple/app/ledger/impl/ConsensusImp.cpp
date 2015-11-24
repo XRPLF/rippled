@@ -64,18 +64,25 @@ ConsensusImp::getLastCloseDuration () const
 }
 
 std::shared_ptr<LedgerConsensus>
-ConsensusImp::startRound (
+ConsensusImp::makeLedgerConsensus (
     Application& app,
     InboundTransactions& inboundTransactions,
-    LocalTxs& localtx,
     LedgerMaster& ledgerMaster,
+    LocalTxs& localTxs)
+{
+    return make_LedgerConsensus (app, *this,
+        inboundTransactions, localTxs, ledgerMaster, *feeVote_);
+}
+
+void
+ConsensusImp::startRound (
+    LedgerConsensus& consensus,
     LedgerHash const &prevLCLHash,
     Ledger::ref previousLedger,
     std::uint32_t closeTime)
 {
-    return make_LedgerConsensus (app, *this, lastCloseProposers_,
-        lastCloseConvergeTook_, inboundTransactions, localtx, ledgerMaster,
-        prevLCLHash, previousLedger, closeTime, *feeVote_);
+    consensus.startRound (prevLCLHash, previousLedger,
+        closeTime, lastCloseProposers_, lastCloseConvergeTook_);
 }
 
 
@@ -101,12 +108,10 @@ ConsensusImp::setLastValidation (STValidation::ref v)
 void
 ConsensusImp::newLCL (
     int proposers,
-    int convergeTime,
-    uint256 const& ledgerHash)
+    int convergeTime)
 {
     lastCloseProposers_ = proposers;
     lastCloseConvergeTook_ = convergeTime;
-    lastCloseHash_ = ledgerHash;
 }
 
 std::uint32_t
@@ -136,6 +141,8 @@ ConsensusImp::storeProposal (
     LedgerProposal::ref proposal,
     RippleAddress const& peerPublic)
 {
+    std::lock_guard <std::mutex> _(lock_);
+
     auto& props = storedProposals_[peerPublic.getNodeID ()];
 
     if (props.size () >= 10)
@@ -148,6 +155,8 @@ ConsensusImp::storeProposal (
 void
 ConsensusImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
 {
+    std::lock_guard <std::mutex> _(lock_);
+
     recentPositions_[position->getHash ().as_uint256()] = std::make_pair (seq, position);
 
     if (recentPositions_.size () > 4)
@@ -165,10 +174,15 @@ ConsensusImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
     }
 }
 
-Consensus::Proposals&
-ConsensusImp::peekStoredProposals ()
+void
+ConsensusImp::visitStoredProposals (
+    std::function<void(LedgerProposal::ref)> const& f)
 {
-    return storedProposals_;
+    std::lock_guard <std::mutex> _(lock_);
+
+    for (auto const& it : storedProposals_)
+        for (auto const& prop : it.second)
+            f(prop);
 }
 
 //==============================================================================

@@ -1918,13 +1918,7 @@ PeerImp::checkPropose (Job& job,
     }
     else
     {
-        uint256 consensusLCL;
-        {
-            std::lock_guard<Application::MutexType> lock (app_.getMasterMutex());
-            consensusLCL = app_.getOPs ().getConsensusLCL ();
-        }
-
-        if (consensusLCL == proposal->getPrevLedger())
+        if (app_.getOPs().getConsensusLCL() == proposal->getPrevLedger())
         {
             // relay untrusted proposal
             p_journal_.trace <<
