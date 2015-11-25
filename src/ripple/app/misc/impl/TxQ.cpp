@@ -68,6 +68,7 @@ getFeeLevelPaid(
             refTxnCostDrops * requiredFee);
 }
 
+static
 std::uint64_t
 increaseWithPenalty(std::uint64_t level,
     std::uint32_t increasePercent,
