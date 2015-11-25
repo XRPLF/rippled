@@ -46,7 +46,7 @@ public:
     std::string to_string () const;
 
     /** Returns `true` if this is a privileged endpoint. */
-    bool admin () const;
+    bool isUnlimited () const;
 
     /** Raise the Consumer's privilege level to a Named endpoint.
         The reference to the original endpoint descriptor is released.

@@ -913,6 +913,9 @@ void server<endpoint>::connection<connection_type>::handle_write_response(
 
     m_connection.m_state = session::state::OPEN;
 
+    m_connection.set_identity (get_request_header ("X-Forwarded-For"),
+        get_request_header ("X-User"));
+
     m_connection.get_handler()->on_open(m_connection.shared_from_this());
 
     get_io_service().post(

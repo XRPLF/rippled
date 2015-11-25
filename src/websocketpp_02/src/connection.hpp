@@ -753,6 +753,27 @@ public:
         boost::lock_guard<boost::recursive_mutex> lock(m_lock);
         return m_strand;
     }
+
+    /**
+     * Set values based on HTTP headers X-Forwarded-For and X-User to
+     * be passed to Connection object. This is used to identify users
+     * connecting through a secure_gateway.
+     */
+    void set_identity (std::string const& forwarded_for,
+        std::string const& user)
+    {
+        m_identity = std::make_pair (forwarded_for, user);
+    }
+
+    /**
+     * Get values derived from contents of HTTP headers X-Forwarded-For and
+     * X-User. This identifies users connecting through a secure_gateway.
+     */
+    std::pair<std::string, std::string> get_identity()
+    {
+        return m_identity;
+    }
+
 public:
 //protected:  TODO: figure out why VCPP2010 doesn't like protected here
 
@@ -1522,6 +1543,9 @@ public:
     mutable boost::recursive_mutex      m_lock;
     boost::asio::strand         m_strand;
     bool                        m_detached; // TODO: this should be atomic
+
+    // Header identification: X-Forwarded-For, X-User
+    std::pair<std::string, std::string> m_identity;
 };
 
 // connection related types that it and its policy classes need.

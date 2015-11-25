@@ -37,7 +37,7 @@ LoadFeeTrack::scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
 // Scale using load as well as base rate
 std::uint64_t
 LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
-    std::uint32_t referenceFeeUnits, bool bAdmin) const
+    std::uint32_t referenceFeeUnits, bool bUnlimited) const
 {
     if (fee == 0)
         return fee;
@@ -49,9 +49,9 @@ LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
         feeFactor = std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee);
         uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
     }
-    // Let admins pay the normal fee until
+    // Let privileged users pay the normal fee until
     //   the local load exceeds four times the remote.
-    if (bAdmin && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
+    if (bUnlimited && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
         feeFactor = uRemFee;
 
     // Compute:

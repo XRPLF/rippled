@@ -345,7 +345,27 @@ public:
         return m_strand;
     }
 
-protected:
+    /**
+     * Set values based on HTTP headers X-Forwarded-For and X-User to
+     * be passed to Connection object. This is used to identify users
+     * connecting through a secure_gateway.
+     */
+    void set_identity (std::string const& forwarded_for,
+        std::string const& user)
+    {
+        m_identity = std::make_pair (forwarded_for, user);
+    }
+
+    /**
+     * Get values derived from contents of HTTP headers X-Forwarded-For and
+     * X-User. This identifies users connecting through a secure_gateway.
+     */
+    std::pair<std::string, std::string> get_identity()
+    {
+        return m_identity;
+    }
+
+    protected:
     /// Initialize transport for reading
     /**
      * init_asio is called once immediately after construction to initialize
@@ -477,7 +497,7 @@ protected:
         }
 
         timer_ptr post_timer;
-        
+
         if (config::timeout_socket_post_init > 0) {
             post_timer = set_timer(
                 config::timeout_socket_post_init,
@@ -1032,7 +1052,7 @@ protected:
      * @param callback The function to call back
      * @param ec The status code
      */
-    void handle_async_shutdown_timeout(timer_ptr, init_handler callback, 
+    void handle_async_shutdown_timeout(timer_ptr, init_handler callback,
         lib::error_code const & ec)
     {
         lib::error_code ret_ec;
@@ -1148,6 +1168,9 @@ private:
 
     async_read_handler  m_async_read_handler;
     async_write_handler m_async_write_handler;
+
+    // Header identification: X-Forwarded-For, X-User
+    std::pair<std::string, std::string> m_identity;
 };
 
 

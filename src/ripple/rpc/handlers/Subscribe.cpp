@@ -324,7 +324,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
                     auto add = [&](Json::StaticString field)
                     {
-                        context.netOps.getBookPage (context.role == Role::ADMIN,
+                        context.netOps.getBookPage (isUnlimited (context.role),
                             lpLedger, field == jss::asks ? reversed (book) : book,
                             takerID ? *takerID : noAccount(), false, 0, jvMarker,
                             jvOffers);

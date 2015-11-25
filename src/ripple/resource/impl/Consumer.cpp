@@ -78,18 +78,12 @@ std::string Consumer::to_string () const
     return m_entry->to_string();
 }
 
-bool Consumer::admin () const
+bool Consumer::isUnlimited () const
 {
     if (m_entry)
-        return m_entry->admin();
+        return m_entry->isUnlimited();
 
     return false;
-}
-
-void Consumer::elevate (std::string const& name)
-{
-    bassert (m_entry != nullptr);
-    m_entry = &m_logic->elevateToAdminEndpoint (*m_entry, name);
 }
 
 Disposition Consumer::disposition() const

@@ -98,7 +98,7 @@ calculateFee(Application& app, std::uint64_t const baseFee,
     Fees const& fees, ApplyFlags flags)
 {
     return app.getFeeTrack().scaleFeeLoad(
-        baseFee, fees.base, fees.units, flags & tapADMIN);
+        baseFee, fees.base, fees.units, flags & tapUNLIMITED);
 }
 
 //------------------------------------------------------------------------------

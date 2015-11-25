@@ -74,7 +74,8 @@ public:
         handler_type& handler,
         connection_ptr const& cpConnection,
         beast::IP::Endpoint const& remoteAddress,
-        boost::asio::io_service& io_service);
+        boost::asio::io_service& io_service,
+        std::pair<std::string, std::string> identity);
 
     void preDestroy ();
 
@@ -108,6 +109,8 @@ private:
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     beast::IP::Endpoint const m_remoteAddress;
+    std::string const m_forwardedFor;
+    std::string const m_user;
     std::mutex m_receiveQueueMutex;
     std::deque <message_ptr> m_receiveQueue;
     NetworkOPs& m_netOPs;
@@ -133,13 +136,18 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
     handler_type& handler,
     connection_ptr const& cpConnection,
     beast::IP::Endpoint const& remoteAddress,
-    boost::asio::io_service& io_service)
+    boost::asio::io_service& io_service,
+    std::pair<std::string, std::string> identity)
         : InfoSub (source, requestInboundEndpoint (
-            resourceManager, remoteAddress, handler.port()))
+            resourceManager, remoteAddress, handler.port(), identity.second))
         , app_(app)
         , m_port (handler.port ())
         , m_resourceManager (resourceManager)
         , m_remoteAddress (remoteAddress)
+        , m_forwardedFor (isIdentified (m_port, m_remoteAddress.address(),
+            identity.second) ? identity.first : std::string())
+        , m_user (isIdentified (m_port, m_remoteAddress.address(),
+            identity.second) ? identity.second : std::string())
         , m_netOPs (app_.getOPs ())
         , m_io_service (io_service)
         , m_pingTimer (io_service)
@@ -150,6 +158,12 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
 {
     // VFALCO Disabled since it might cause hangs
     pingFreq_ = 0;
+
+    if (! m_forwardedFor.empty() || ! m_user.empty())
+    {
+        j_.debug << "connect secure_gateway X-Forwarded-For: " <<
+            m_forwardedFor << ", X-User: " << m_user;
+    }
 }
 
 template <class WebSocket>
@@ -273,7 +287,8 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     Json::Value jvResult (Json::objectValue);
 
     auto required = RPC::roleRequired (jvRequest[jss::command].asString());
-    auto role = requestRole (required, m_port, jvRequest, m_remoteAddress);
+    auto role = requestRole (required, m_port, jvRequest, m_remoteAddress,
+        m_user);
 
     if (Role::FORBID == role)
     {
@@ -283,7 +298,7 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     {
         RPC::Context context {app_.journal ("RPCHandler"), jvRequest,
             app_, loadType, m_netOPs, app_.getLedgerMaster(), role,
-                jobCoro, this->shared_from_this ()};
+                jobCoro, this->shared_from_this (), {m_user, m_forwardedFor}};
         RPC::doCommand (context, jvResult[jss::result]);
     }
 
@@ -308,6 +323,13 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     else
     {
         jvResult[jss::status] = jss::success;
+
+        // For testing resource limits on this connection.
+        if (jvRequest[jss::command].asString() == "ping")
+        {
+            if (getConsumer().isUnlimited())
+                jvResult[jss::unlimited] = true;
+        }
     }
 
     if (jvRequest.isMember (jss::id))
@@ -323,6 +345,12 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::preDestroy ()
 {
+    if (! m_forwardedFor.empty() || ! m_user.empty())
+    {
+        j_.debug << "disconnect secure_gateway X-Forwarded-For: " <<
+            m_forwardedFor << ", X-User: " << m_user;
+    }
+
     // sever connection
     this->m_pingTimer.cancel ();
     m_connection.reset ();

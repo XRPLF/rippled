@@ -165,7 +165,12 @@ public:
         return Consumer (*this, *entry);
     }
 
-    Consumer newAdminEndpoint (std::string const& name)
+    /**
+     * Create endpoint that should not have resource limits applied. Other
+     * restrictions, such as permission to perform certain RPC calls, may be
+     * enabled.
+     */
+    Consumer newUnlimitedEndpoint (std::string const& name)
     {
         Entry* entry (nullptr);
 
@@ -173,7 +178,7 @@ public:
             std::lock_guard<std::recursive_mutex> _(lock_);
             auto result =
                 table_.emplace (std::piecewise_construct,
-                    std::make_tuple (kindAdmin, name),                  // Key
+                    std::make_tuple (name),                             // Key
                     std::make_tuple (m_clock.now()));                   // Entry
 
             entry = &result.first->second;
@@ -189,40 +194,9 @@ public:
         }
 
         m_journal.debug <<
-            "New admin endpoint " << *entry;
+            "New unlimited endpoint " << *entry;
 
         return Consumer (*this, *entry);
-    }
-
-    Entry& elevateToAdminEndpoint (Entry& prior, std::string const& name)
-    {
-        m_journal.info <<
-            "Elevate " << prior << " to " << name;
-
-        Entry* entry (nullptr);
-
-        {
-            std::lock_guard<std::recursive_mutex> _(lock_);
-            auto result =
-                table_.emplace (std::piecewise_construct,
-                    std::make_tuple (kindAdmin, name),                  // Key
-                    std::make_tuple (m_clock.now()));                   // Entry
-
-            entry = &result.first->second;
-            entry->key = &result.first->first;
-            ++entry->refcount;
-            if (entry->refcount == 1)
-            {
-                if (! result.second)
-                    inactive_.erase (
-                        inactive_.iterator_to (*entry));
-                admin_.push_back (*entry);
-            }
-
-            release (prior);
-        }
-
-        return *entry;
     }
 
     Json::Value getJson ()
@@ -450,7 +424,7 @@ public:
                 outbound_.erase (
                     outbound_.iterator_to (entry));
                 break;
-            case kindAdmin:
+            case kindUnlimited:
                 admin_.erase (
                     admin_.iterator_to (entry));
                 break;
@@ -475,7 +449,7 @@ public:
 
     bool warn (Entry& entry)
     {
-        if (entry.admin())
+        if (entry.isUnlimited())
             return false;
 
         std::lock_guard<std::recursive_mutex> _(lock_);
@@ -498,7 +472,7 @@ public:
 
     bool disconnect (Entry& entry)
     {
-        if (entry.admin())
+        if (entry.isUnlimited())
             return false;
 
         std::lock_guard<std::recursive_mutex> _(lock_);

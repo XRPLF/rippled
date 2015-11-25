@@ -192,7 +192,7 @@ static Json::Value checkPayment(
                 "Cannot build XRP to XRP paths.");
 
         {
-            LegacyPathFind lpf (role == Role::ADMIN, app);
+            LegacyPathFind lpf (isUnlimited (role), app);
             if (!lpf.isOk ())
                 return rpcError (rpcTOO_BUSY);
 
@@ -284,7 +284,7 @@ checkTxJsonFields (
     }
 
     // Check for load.
-    if (feeTrack.isLoadedCluster() && (role != Role::ADMIN))
+    if (feeTrack.isLoadedCluster() && !isUnlimited (role))
     {
         ret.first = rpcError (rpcTOO_BUSY);
         return ret;
@@ -646,10 +646,10 @@ Json::Value checkFee (
     // Default fee in fee units.
     std::uint64_t const feeDefault = config.TRANSACTION_FEE_BASE;
 
-    // Administrative endpoints are exempt from local fees.
+    // Administrative and identified endpoints are exempt from local fees.
     std::uint64_t const fee =
         feeTrack.scaleFeeLoad (feeDefault,
-            ledger->fees().base, ledger->fees().units, role == Role::ADMIN);
+            ledger->fees().base, ledger->fees().units, isUnlimited (role));
 
     std::uint64_t const limit = mult * feeTrack.scaleFeeBase (
         feeDefault, ledger->fees().base, ledger->fees().units);
@@ -741,7 +741,7 @@ Json::Value transactionSubmit (
     {
         // FIXME: For performance, should use asynch interface
         processTransaction (
-            txn.second, role == Role::ADMIN, true, failType);
+            txn.second, isUnlimited (role), true, failType);
     }
     catch (std::exception&)
     {
@@ -1112,7 +1112,7 @@ Json::Value transactionSubmitMultiSigned (
     {
         // FIXME: For performance, should use asynch interface
         processTransaction (
-            txn.second, role == Role::ADMIN, true, failType);
+            txn.second, isUnlimited (role), true, failType);
     }
     catch (std::exception&)
     {

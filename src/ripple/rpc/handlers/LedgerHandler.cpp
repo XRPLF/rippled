@@ -64,11 +64,11 @@ Status LedgerHandler::check()
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
-        if (context_.role != Role::ADMIN)
+        if (! isUnlimited (context_.role))
             return rpcNO_PERMISSION;
 
         if (context_.app.getFeeTrack().isLoadedLocal() &&
-            context_.role != Role::ADMIN)
+            !isUnlimited (context_.role))
         {
             return rpcTOO_BUSY;
         }

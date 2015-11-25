@@ -111,7 +111,7 @@ Json::Value doSubmit (RPC::Context& context)
         auto const failType = getFailHard (context);
 
         context.netOps.processTransaction (
-            tpTrans, context.role == Role::ADMIN, true, failType);
+            tpTrans, isUnlimited (context.role), true, failType);
     }
     catch (std::exception& e)
     {

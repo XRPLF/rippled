@@ -221,18 +221,18 @@ public:
 
     void processTransaction (
         std::shared_ptr<Transaction>& transaction,
-        bool bAdmin, bool bLocal, FailHard failType) override;
+        bool bUnlimited, bool bLocal, FailHard failType) override;
 
     /**
      * For transactions submitted directly by a client, apply batch of
      * transactions and wait for this transaction to complete.
      *
      * @param transaction Transaction object.
-     * @param bAdmin Whether an administrative client connection submitted it.
+     * @param bUnliimited Whether a privileged client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
      */
     void doTransactionSync (std::shared_ptr<Transaction> transaction,
-        bool bAdmin, FailHard failType);
+        bool bUnlimited, FailHard failType);
 
     /**
      * For transactions not submitted by a locally connected client, fire and
@@ -240,11 +240,11 @@ public:
      * currently being applied.
      *
      * @param transaction Transaction object
-     * @param bAdmin Whether an administrative client connection submitted it.
+     * @param bUnlimited Whether a privileged client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
      */
     void doTransactionAsync (std::shared_ptr<Transaction> transaction,
-        bool bAdmin, FailHard failtype);
+        bool bUnlimited, FailHard failtype);
 
     /**
      * Apply transactions in batches. Continue until none are queued.
@@ -270,7 +270,7 @@ public:
     // Book functions.
     //
 
-    void getBookPage (bool bAdmin, std::shared_ptr<ReadView const>& lpLedger,
+    void getBookPage (bool bUnlimited, std::shared_ptr<ReadView const>& lpLedger,
                       Book const&, AccountID const& uTakerID, const bool bProof,
                       const unsigned int iLimit,
                       Json::Value const& jvMarker, Json::Value& jvResult)
@@ -366,19 +366,19 @@ public:
         std::string selection, AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit,
-        bool binary, bool count, bool bAdmin);
+        bool binary, bool count, bool bUnlimited);
 
     // Client information retrieval functions.
     using NetworkOPs::AccountTxs;
     AccountTxs getAccountTxs (
         AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool descending,
-        std::uint32_t offset, int limit, bool bAdmin) override;
+        std::uint32_t offset, int limit, bool bUnlimited) override;
 
     AccountTxs getTxsAccount (
         AccountID const& account, std::int32_t minLedger,
         std::int32_t maxLedger, bool forward, Json::Value& token, int limit,
-        bool bAdmin) override;
+        bool bUnlimited) override;
 
     using NetworkOPs::txnMetaLedgerType;
     using NetworkOPs::MetaTxsList;
@@ -387,13 +387,13 @@ public:
     getAccountTxsB (
         AccountID const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool descending, std::uint32_t offset,
-        int limit, bool bAdmin) override;
+        int limit, bool bUnlimited) override;
 
     MetaTxsList
     getTxsAccountB (
         AccountID const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool forward, Json::Value& token,
-        int limit, bool bAdmin) override;
+        int limit, bool bUnlimited) override;
 
     //
     // Monitoring: publisher side.
@@ -787,7 +787,7 @@ void NetworkOPsImp::submitTransaction (std::shared_ptr<STTx const> const& iTrans
 }
 
 void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transaction,
-        bool bAdmin, bool bLocal, FailHard failType)
+        bool bUnlimited, bool bLocal, FailHard failType)
 {
     auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
     auto const newFlags = app_.getHashRouter ().getFlags (transaction->getID ());
@@ -826,20 +826,20 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
     app_.getMasterTransaction ().canonicalize (&transaction);
 
     if (bLocal)
-        doTransactionSync (transaction, bAdmin, failType);
+        doTransactionSync (transaction, bUnlimited, failType);
     else
-        doTransactionAsync (transaction, bAdmin, failType);
+        doTransactionAsync (transaction, bUnlimited, failType);
 }
 
 void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction,
-        bool bAdmin, FailHard failType)
+        bool bUnlimited, FailHard failType)
 {
     std::lock_guard<std::mutex> lock (mMutex);
 
     if (transaction->getApplying())
         return;
 
-    mTransactions.push_back (TransactionStatus (transaction, bAdmin, false,
+    mTransactions.push_back (TransactionStatus (transaction, bUnlimited, false,
         failType));
     transaction->setApplying();
 
@@ -852,14 +852,14 @@ void NetworkOPsImp::doTransactionAsync (std::shared_ptr<Transaction> transaction
 }
 
 void NetworkOPsImp::doTransactionSync (std::shared_ptr<Transaction> transaction,
-        bool bAdmin, FailHard failType)
+        bool bUnlimited, FailHard failType)
 {
     std::unique_lock<std::mutex> lock (mMutex);
 
     if (! transaction->getApplying())
     {
-        mTransactions.push_back (TransactionStatus (transaction, bAdmin, true,
-        failType));
+        mTransactions.push_back (TransactionStatus (transaction, bUnlimited,
+            true, failType));
         transaction->setApplying();
     }
 
@@ -925,7 +925,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     // we check before addingto the batch
                     ApplyFlags flags = tapNO_CHECK_SIGN;
                     if (e.admin)
-                        flags = flags | tapADMIN;
+                        flags = flags | tapUNLIMITED;
 
                     auto const result = app_.getTxQ().apply(
                         app_, view, e.transaction->getSTransaction(),
@@ -1689,7 +1689,7 @@ NetworkOPsImp::transactionsSQL (
     std::string selection, AccountID const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit,
-    bool binary, bool count, bool bAdmin)
+    bool binary, bool count, bool bUnlimited)
 {
     std::uint32_t NONBINARY_PAGE_LENGTH = 200;
     std::uint32_t BINARY_PAGE_LENGTH = 500;
@@ -1704,7 +1704,7 @@ NetworkOPsImp::transactionsSQL (
     {
         numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
     }
-    else if (!bAdmin)
+    else if (!bUnlimited)
     {
         numberOfResults = std::min (
             binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH,
@@ -1771,14 +1771,15 @@ NetworkOPsImp::transactionsSQL (
 NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
     AccountID const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
-    std::uint32_t offset, int limit, bool bAdmin)
+    std::uint32_t offset, int limit, bool bUnlimited)
 {
     // can be called with no locks
     AccountTxs ret;
 
     std::string sql = transactionsSQL (
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
-        minLedger, maxLedger, descending, offset, limit, false, false, bAdmin);
+        minLedger, maxLedger, descending, offset, limit, false, false,
+        bUnlimited);
 
     {
         auto db = app_.getTxnDB ().checkoutDb ();
@@ -1836,7 +1837,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
 std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
     AccountID const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
-    std::uint32_t offset, int limit, bool bAdmin)
+    std::uint32_t offset, int limit, bool bUnlimited)
 {
     // can be called with no locks
     std::vector<txnMetaLedgerType> ret;
@@ -1844,7 +1845,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
     std::string sql = transactionsSQL (
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta", account,
         minLedger, maxLedger, descending, offset, limit, true/*binary*/, false,
-        bAdmin);
+        bUnlimited);
 
     {
         auto db = app_.getTxnDB ().checkoutDb ();
@@ -1886,7 +1887,7 @@ NetworkOPsImp::AccountTxs
 NetworkOPsImp::getTxsAccount (
     AccountID const& account, std::int32_t minLedger,
     std::int32_t maxLedger, bool forward, Json::Value& token,
-    int limit, bool bAdmin)
+    int limit, bool bUnlimited)
 {
     static std::uint32_t const page_length (200);
 
@@ -1906,7 +1907,7 @@ NetworkOPsImp::getTxsAccount (
     accountTxPage(app_.getTxnDB (), app_.accountIDCache(),
         std::bind(saveLedgerAsync, std::ref(app_),
             std::placeholders::_1), bound, account, minLedger,
-                maxLedger, forward, token, limit, bAdmin,
+                maxLedger, forward, token, limit, bUnlimited,
                     page_length);
 
     return ret;
@@ -1916,7 +1917,7 @@ NetworkOPsImp::MetaTxsList
 NetworkOPsImp::getTxsAccountB (
     AccountID const& account, std::int32_t minLedger,
     std::int32_t maxLedger,  bool forward, Json::Value& token,
-    int limit, bool bAdmin)
+    int limit, bool bUnlimited)
 {
     static const std::uint32_t page_length (500);
 
@@ -1934,7 +1935,7 @@ NetworkOPsImp::getTxsAccountB (
     accountTxPage(app_.getTxnDB (), app_.accountIDCache(),
         std::bind(saveLedgerAsync, std::ref(app_),
             std::placeholders::_1), bound, account, minLedger,
-                maxLedger, forward, token, limit, bAdmin,
+                maxLedger, forward, token, limit, bUnlimited,
                     page_length);
     return ret;
 }
@@ -2702,7 +2703,7 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (
 //
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
-    bool bAdmin,
+    bool bUnlimited,
     std::shared_ptr<ReadView const>& lpLedger,
     Book const& book,
     AccountID const& uTakerID,
@@ -2745,7 +2746,7 @@ void NetworkOPsImp::getBookPage (
     auto viewJ = app_.journal ("View");
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
-    if (! bAdmin && left > 300)
+    if (! bUnlimited && left > 300)
         left = 300;
 
     while (!bDone && left-- > 0)
@@ -2926,7 +2927,7 @@ void NetworkOPsImp::getBookPage (
 
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
-    bool bAdmin,
+    bool bUnlimited,
     std::shared_ptr<ReadView const> lpLedger,
     Book const& book,
     AccountID const& uTakerID,
@@ -2948,7 +2949,7 @@ void NetworkOPsImp::getBookPage (
                                lesActive.isGlobalFrozen (book.in.account);
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
-    if (! bAdmin && left > 300)
+    if (! bUnlimited && left > 300)
         left = 300;
 
     while (left-- > 0 && obIterator.nextOffer ())

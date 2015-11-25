@@ -318,6 +318,7 @@ JSS ( response );                   // websocket
 JSS ( result );                     // RPC
 JSS ( ripple_lines );               // out: NetworkOPs
 JSS ( ripple_state );               // in: LedgerEntr
+JSS ( role );                       // out: Ping.cpp
 JSS ( rt_accounts );                // in: Subscribe, Unsubscribe
 JSS ( sanity );                     // out: PeerImp
 JSS ( search_depth );               // in: RipplePathFind
@@ -387,6 +388,7 @@ JSS ( type );                       // in: AccountObjects
                                     //      paths/Node.cpp, OverlayImpl, Logic
 JSS ( type_hex );                   // out: STPathSet
 JSS ( unl );                        // out: UnlList
+JSS ( unlimited);                   // out: Connection.h
 JSS ( uptime );                     // out: GetCounts
 JSS ( url );                        // in/out: Subscribe, Unsubscribe
 JSS ( url_password );               // in: Subscribe

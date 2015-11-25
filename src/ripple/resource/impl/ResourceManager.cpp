@@ -73,9 +73,9 @@ public:
         return logic_.newOutboundEndpoint (address);
     }
 
-    Consumer newAdminEndpoint (std::string const& name) override
+    Consumer newUnlimitedEndpoint (std::string const& name) override
     {
-        return logic_.newAdminEndpoint (name);
+        return logic_.newUnlimitedEndpoint (name);
     }
 
     Gossip exportConsumers () override
