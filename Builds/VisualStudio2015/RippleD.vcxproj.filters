@@ -2685,6 +2685,9 @@
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\qalloc.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -4599,9 +4602,6 @@
     <ClCompile Include="..\..\src\ripple\unl\tests\Network_test.cpp">
       <Filter>ripple\unl\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\tests\qalloc.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\unl\tests\Sim1.h">
       <Filter>ripple\unl\tests</Filter>
     </ClInclude>
