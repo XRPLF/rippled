@@ -47,7 +47,7 @@ enum ApplyFlags
     tapRETRY            = 0x20,
 
     // Transaction came from a privileged source
-    tapADMIN            = 0x400,
+    tapUNLIMITED            = 0x400,
 };
 
 inline

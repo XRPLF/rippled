@@ -41,6 +41,7 @@ struct Port
     std::uint16_t port = 0;
     std::set<std::string, beast::ci_less> protocol;
     std::vector<beast::IP::Address> admin_ip;
+    std::vector<beast::IP::Address> secure_gateway_ip;
     std::string user;
     std::string password;
     std::string admin_user;
@@ -94,22 +95,8 @@ Port::protocols() const
     return s;
 }
 
-inline
 std::ostream&
-operator<< (std::ostream& os, Port const& p)
-{
-    os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
-
-    if (! p.admin_ip.empty ())
-    {
-        os << "admin IPs:";
-        for (auto const& ip : p.admin_ip)
-            os << ip.to_string () << ", ";
-    }
-
-    os << p.protocols () << ")";
-    return os;
-}
+operator<< (std::ostream& os, Port const& p);
 
 } // HTTP
 } // ripple

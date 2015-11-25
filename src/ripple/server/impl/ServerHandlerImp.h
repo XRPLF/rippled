@@ -114,7 +114,8 @@ private:
     void
     processRequest (HTTP::Port const& port, std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress, Output&&,
-            std::shared_ptr<JobCoro> jobCoro);
+        std::shared_ptr<JobCoro> jobCoro,
+        std::string forwardedFor, std::string user);
 
     //
     // PropertyStream

@@ -57,7 +57,7 @@ public:
 
     // Scale using load as well as base rate
     std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
-        std::uint32_t referenceFeeUnits, bool bAdmin) const;
+        std::uint32_t referenceFeeUnits, bool bUnlimited) const;
 
     void setRemoteFee (std::uint32_t f)
     {

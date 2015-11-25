@@ -204,7 +204,8 @@ ServerHandlerImp::processSession (std::shared_ptr<HTTP::Session> const& session,
     std::shared_ptr<JobCoro> jobCoro)
 {
     processRequest (session->port(), to_string (session->body()),
-        session->remoteAddress().at_port (0), makeOutput (*session), jobCoro);
+        session->remoteAddress().at_port (0), makeOutput (*session), jobCoro,
+        session->forwarded_for(), session->user());
 
     if (session->request().keep_alive())
         session->complete();
@@ -215,7 +216,8 @@ ServerHandlerImp::processSession (std::shared_ptr<HTTP::Session> const& session,
 void
 ServerHandlerImp::processRequest (HTTP::Port const& port,
     std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
-        Output&& output, std::shared_ptr<JobCoro> jobCoro)
+        Output&& output, std::shared_ptr<JobCoro> jobCoro,
+        std::string forwardedFor, std::string user)
 {
     auto rpcJ = app_.journal ("RPC");
     // Move off the webserver thread onto the JobQueue.
@@ -260,18 +262,28 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
                 jsonRPC["params"][Json::UInt(0)].isObject())
     {
         role = requestRole(required, port, jsonRPC["params"][Json::UInt(0)],
-            remoteIPAddress);
+            remoteIPAddress, user);
     }
     else
     {
         role = requestRole(required, port, Json::objectValue,
-            remoteIPAddress);
+            remoteIPAddress, user);
+    }
+
+    /**
+     * Clear header-assigned values if not positively identified from a
+     * secure_gateway.
+     */
+    if (role != Role::IDENTIFIED)
+    {
+        forwardedFor.clear();
+        user.clear();
     }
 
     Resource::Consumer usage;
 
-    if (role == Role::ADMIN)
-        usage = m_resourceManager.newAdminEndpoint (
+    if (isUnlimited (role))
+        usage = m_resourceManager.newUnlimitedEndpoint (
             remoteIPAddress.to_string());
     else
         usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
@@ -338,7 +350,8 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-        app_.getLedgerMaster(), role, jobCoro};
+        app_.getLedgerMaster(), role, jobCoro, InfoSub::pointer(),
+        {user, forwardedFor}};
     Json::Value result;
     RPC::doCommand (context, result);
 
@@ -474,7 +487,72 @@ struct ParsedPort
     boost::optional<boost::asio::ip::address> ip;
     boost::optional<std::uint16_t> port;
     boost::optional<std::vector<beast::IP::Address>> admin_ip;
+    boost::optional<std::vector<beast::IP::Address>> secure_gateway_ip;
 };
+
+void
+populate (Section const& section, std::string const& field, std::ostream& log,
+    boost::optional<std::vector<beast::IP::Address>>& ips,
+    bool allowAllIps, std::vector<beast::IP::Address> const& admin_ip)
+{
+    auto const result = section.find(field);
+    if (result.second)
+    {
+        std::stringstream ss (result.first);
+        std::string ip;
+        bool has_any (false);
+
+        ips.emplace();
+        while (std::getline (ss, ip, ','))
+        {
+            auto const addr = beast::IP::Endpoint::from_string_checked (ip);
+            if (! addr.second)
+            {
+                log << "Invalid value '" << ip << "' for key '" << field <<
+                    "' in [" << section.name () << "]\n";
+                Throw<std::exception> ();
+            }
+
+            if (is_unspecified (addr.first))
+            {
+                if (! allowAllIps)
+                {
+                    log << "0.0.0.0 not allowed'" <<
+                        "' for key '" << field << "' in [" <<
+                        section.name () << "]\n";
+                    throw std::exception ();
+                }
+                else
+                {
+                    has_any = true;
+                }
+            }
+
+            if (has_any && ! ips->empty ())
+            {
+                log << "IP specified along with 0.0.0.0 '" << ip <<
+                    "' for key '" << field << "' in [" <<
+                    section.name () << "]\n";
+                Throw<std::exception> ();
+            }
+
+            auto const& address = addr.first.address();
+            if (std::find_if (admin_ip.begin(), admin_ip.end(),
+                [&address] (beast::IP::Address const& ip)
+                {
+                    return address == ip;
+                }
+                ) != admin_ip.end())
+            {
+                log << "IP specified for " << field << " is also for " <<
+                    "admin: " << ip << " in [" << section.name() << "]\n";
+                throw std::exception();
+            }
+
+            ips->emplace_back (addr.first.address ());
+        }
+    }
+}
 
 void
 parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
@@ -527,39 +605,9 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         }
     }
 
-    {
-        auto const result = section.find("admin");
-        if (result.second)
-        {
-            std::stringstream ss (result.first);
-            std::string ip;
-            bool has_any (false);
-
-            port.admin_ip.emplace ();
-            while (std::getline (ss, ip, ','))
-            {
-                auto const addr = beast::IP::Endpoint::from_string_checked (ip);
-                if (! addr.second)
-                {
-                    log << "Invalid value '" << ip << "' for key 'admin' in ["
-                        << section.name () << "]\n";
-                    Throw<std::exception> ();
-                }
-
-                if (is_unspecified (addr.first))
-                    has_any = true;
-
-                if (has_any && ! port.admin_ip->empty ())
-                {
-                    log << "IP specified along with 0.0.0.0 '" << ip <<
-                        "' for key 'admin' in [" << section.name () << "]\n";
-                    Throw<std::exception> ();
-                }
-
-                port.admin_ip->emplace_back (addr.first.address ());
-            }
-        }
-    }
+    populate (section, "admin", log, port.admin_ip, true, {});
+    populate (section, "secure_gateway", log, port.secure_gateway_ip, false,
+        port.admin_ip.get_value_or({}));
 
     set(port.user, "user", section);
     set(port.password, "password", section);
@@ -596,6 +644,8 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     p.port = *parsed.port;
     if (parsed.admin_ip)
         p.admin_ip = *parsed.admin_ip;
+    if (parsed.secure_gateway_ip)
+        p.secure_gateway_ip = *parsed.secure_gateway_ip;
 
     if (parsed.protocol.empty())
     {

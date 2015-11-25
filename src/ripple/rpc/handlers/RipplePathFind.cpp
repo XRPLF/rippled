@@ -116,7 +116,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         return jvResult;
     }
 
-    RPC::LegacyPathFind lpf (context.role == Role::ADMIN, context.app);
+    RPC::LegacyPathFind lpf (isUnlimited (context.role), context.app);
     if (! lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
 
@@ -214,7 +214,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             && context.params[jss::search_depth].isIntegral())
         {
             int rLev = context.params[jss::search_depth].asInt ();
-            if ((rLev < level) || (context.role == Role::ADMIN))
+            if ((rLev < level) || (isUnlimited (context.role)))
                 level = rLev;
         }
 

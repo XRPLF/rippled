@@ -118,12 +118,12 @@ public:
      * submitted by clients. Process local transactions synchronously
      *
      * @param transaction Transaction object
-     * @param bAdmin Whether an administrative client connection submitted it.
+     * @param bUnlimited Whether a privileged client connection submitted it.
      * @param bLocal Client submission.
      * @param failType fail_hard setting from transaction submission.
      */
     virtual void processTransaction (std::shared_ptr<Transaction>& transaction,
-        bool bAdmin, bool bLocal, FailHard failType) = 0;
+        bool bUnlimited, bool bLocal, FailHard failType) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -139,7 +139,7 @@ public:
     //
 
     virtual void getBookPage (
-        bool bAdmin,
+        bool bUnlimited,
         std::shared_ptr<ReadView const>& lpLedger,
         Book const& book,
         AccountID const& uTakerID,
@@ -205,23 +205,23 @@ public:
     virtual AccountTxs getAccountTxs (
         AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
-        std::uint32_t offset, int limit, bool bAdmin) = 0;
+        std::uint32_t offset, int limit, bool bUnlimited) = 0;
 
     virtual AccountTxs getTxsAccount (
         AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool forward,
-        Json::Value& token, int limit, bool bAdmin) = 0;
+        Json::Value& token, int limit, bool bUnlimited) = 0;
 
     using txnMetaLedgerType = std::tuple<std::string, std::string, std::uint32_t>;
     using MetaTxsList       = std::vector<txnMetaLedgerType>;
 
     virtual MetaTxsList getAccountTxsB (AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
-            std::uint32_t offset, int limit, bool bAdmin) = 0;
+            std::uint32_t offset, int limit, bool bUnlimited) = 0;
 
     virtual MetaTxsList getTxsAccountB (AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool forward,
-        Json::Value& token, int limit, bool bAdmin) = 0;
+        Json::Value& token, int limit, bool bUnlimited) = 0;
 
     //--------------------------------------------------------------------------
     //

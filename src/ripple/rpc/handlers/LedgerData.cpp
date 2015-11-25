@@ -69,7 +69,7 @@ Json::Value doLedgerData (RPC::Context& context)
     }
 
     auto maxLimit = RPC::Tuning::pageLength(isBinary);
-    if ((limit < 0) || ((limit > maxLimit) && (context.role != Role::ADMIN)))
+    if ((limit < 0) || ((limit > maxLimit) && (! isUnlimited (context.role))))
         limit = maxLimit;
 
     jvResult[jss::ledger_hash] = to_string (lpLedger->info().hash);

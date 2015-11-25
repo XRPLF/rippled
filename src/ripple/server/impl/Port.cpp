@@ -17,28 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RESOURCE_KIND_H_INCLUDED
-#define RIPPLE_RESOURCE_KIND_H_INCLUDED
+#include <ripple/server/Port.h>
 
 namespace ripple {
-namespace Resource {
-
-/**
- * Kind of consumer.
- * kindInbound:   Inbound connection.
- * kindOutbound:  Outbound connection.
- * kindUnlimited: Inbound connection with no resource limits, but could be
- *                subjected to administrative restrictions, such as
- *                use of some RPC commands like "stop".
- */
-enum Kind
+namespace HTTP {
+        
+std::ostream&
+operator<< (std::ostream& os, Port const& p)
 {
-     kindInbound
-    ,kindOutbound
-    ,kindUnlimited
-};
+    os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-}
+    if (! p.admin_ip.empty ())
+    {
+        os << "admin IPs:";
+        for (auto const& ip : p.admin_ip)
+            os << ip.to_string () << ", ";
+    }
+
+    if (! p.secure_gateway_ip.empty ())
+    {
+        os << "secure_gateway IPs:";
+        for (auto const& ip : p.secure_gateway_ip)
+            os << ip.to_string () << ", ";
+    }
+
+    os << p.protocols () << ")";
+    return os;
 }
 
-#endif
+} // HTTP
+} // ripple

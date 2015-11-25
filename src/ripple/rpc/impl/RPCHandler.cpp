@@ -112,7 +112,7 @@ namespace {
 error_code_i fillHandler (Context& context,
                           boost::optional<Handler const&>& result)
 {
-    if (context.role != Role::ADMIN)
+    if (! isUnlimited (context.role))
     {
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
@@ -232,7 +232,27 @@ Status doCommand (
     }
 
     if (auto method = handler->valueMethod_)
-        return callMethod (context, method, handler->name_, result);
+    {
+        if (! context.headers.user.empty() ||
+            ! context.headers.forwardedFor.empty())
+        {
+            context.j.debug << "start command: " << handler->name_ <<
+                ", X-User: " << context.headers.user << ", X-Forwarded-For: " <<
+                    context.headers.forwardedFor;
+
+            auto ret = callMethod (context, method, handler->name_, result);
+
+            context.j.debug << "finish command: " << handler->name_ <<
+                ", X-User: " << context.headers.user << ", X-Forwarded-For: " <<
+                    context.headers.forwardedFor;
+
+            return ret;
+        }
+        else
+        {
+            return callMethod (context, method, handler->name_, result);
+        }
+    }
 
     return rpcUNKNOWN_COMMAND;
 }

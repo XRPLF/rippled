@@ -4167,6 +4167,9 @@
     <ClInclude Include="..\..\src\ripple\server\impl\PlainPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
+      <Filter>ripple\server\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\server\impl\Role.cpp">
       <Filter>ripple\server\impl</Filter>
     </ClCompile>
