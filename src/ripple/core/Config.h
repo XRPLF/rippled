@@ -43,19 +43,6 @@
 
 namespace ripple {
 
-IniFileSections
-parseIniFile (std::string const& strInput, const bool bTrim);
-
-bool
-getSingleSection (IniFileSections& secSource,
-    std::string const& strSection, std::string& strValue, beast::Journal j);
-
-int
-countSectionEntries (IniFileSections& secSource, std::string const& strSection);
-
-IniFileSections::mapped_type*
-getIniFileSection (IniFileSections& secSource, std::string const& strSection);
-
 class Rules;
 
 //------------------------------------------------------------------------------
@@ -93,31 +80,10 @@ struct SizedItem
 class Config : public BasicConfig
 {
 public:
-    struct Helpers
-    {
-        // This replaces CONFIG_FILE_NAME
-        static char const* getConfigFileName ()
-        {
-            return "rippled.cfg";
-        }
-
-        static char const* getDatabaseDirName ()
-        {
-            return "db";
-        }
-
-        static char const* getValidatorsFileName ()
-        {
-            return "validators.txt";
-        }
-    };
-
-    //--------------------------------------------------------------------------
-
     // Settings related to the configuration file location and directories
-
-    /** Returns the directory from which the configuration file was loaded. */
-    beast::File getConfigDir () const;
+    static char const* const configFileName;
+    static char const* const databaseDirName;
+    static char const* const validatorsFileName;
 
     /** Returns the full path and filename of the debug log file. */
     boost::filesystem::path getDebugLogFile () const;
@@ -125,31 +91,13 @@ public:
     /** Returns the full path and filename of the entropy seed file. */
     boost::filesystem::path getEntropyFile () const;
 
-    // DEPRECATED
-    boost::filesystem::path CONFIG_FILE; // used by UniqueNodeList
 private:
+    boost::filesystem::path CONFIG_FILE;
     boost::filesystem::path CONFIG_DIR;
     boost::filesystem::path DEBUG_LOGFILE;
 
     void load ();
     beast::Journal j_;
-public:
-
-    //--------------------------------------------------------------------------
-
-    // Settings related to validators
-
-    /** Return the path to the separate, optional validators file. */
-    beast::File getValidatorsFile () const;
-
-    /** Returns the optional URL to a trusted network source of validators. */
-    beast::URL getValidatorsURL () const;
-
-    // DEPRECATED
-    boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
-
-    /** List of Validators entries from rippled.cfg */
-    std::vector <std::string> validators;
 
 public:
     //--------------------------------------------------------------------------
@@ -165,9 +113,6 @@ public:
     bool                        QUIET = false;
     bool                        ELB_SUPPORT = false;
 
-    std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.
-    std::string                 VALIDATORS_URI;         // URI of validators.txt.
-    std::string                 VALIDATORS_BASE;        // Name
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
     std::vector<std::string>    IPS_FIXED;              // Fixed Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
@@ -226,8 +171,7 @@ public:
     RippleAddress               VALIDATION_PUB;
     RippleAddress               VALIDATION_PRIV;
 
-    // Node/Cluster
-    std::vector<std::string>    CLUSTER_NODES;
+    // Node
     RippleAddress               NODE_SEED;
     RippleAddress               NODE_PUB;
     RippleAddress               NODE_PRIV;

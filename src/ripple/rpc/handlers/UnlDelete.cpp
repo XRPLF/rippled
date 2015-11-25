@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -39,19 +39,14 @@ Json::Value doUnlDelete (RPC::Context& context)
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);
 
-    auto strNode = context.params[jss::node].asString ();
     RippleAddress raNodePublic;
-
-    if (raNodePublic.setNodePublic (strNode))
+    if (raNodePublic.setNodePublic (context.params[jss::node].asString ()))
     {
-        context.app.getUNL ().nodeRemovePublic (raNodePublic);
+        context.app.validators().removePermanentKey (raNodePublic);
         return RPC::makeObjectValue ("removing node by public key");
     }
-    else
-    {
-        context.app.getUNL ().nodeRemoveDomain (strNode);
-        return RPC::makeObjectValue ("removing node by domain");
-    }
+
+    return rpcError (rpcINVALID_PARAMS);
 }
 
 } // ripple

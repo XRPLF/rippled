@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/protocol/RippleAddress.h>
@@ -157,7 +157,7 @@ ManifestCache::configValidatorKey(
 
 void
 ManifestCache::configManifest (
-    Manifest m, UniqueNodeList& unl, beast::Journal journal)
+    Manifest m, ValidatorList& unl, beast::Journal journal)
 {
     if (!m.verify())
     {
@@ -227,7 +227,7 @@ ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
 
 ManifestDisposition
 ManifestCache::applyManifest (
-    Manifest m, UniqueNodeList& unl, beast::Journal journal)
+    Manifest m, ValidatorList& unl, beast::Journal journal)
 {
     {
         std::lock_guard<std::mutex> lock (mutex_);
@@ -306,7 +306,7 @@ ManifestCache::applyManifest (
                           m.masterKey, m.sequence, old->sequence);
         }
 
-        unl.deleteEphemeralKey (old->signingKey);
+        unl.removeEphemeralKey (old->signingKey);
     }
 
     if (m.revoked ())
@@ -334,7 +334,7 @@ ManifestCache::applyManifest (
 }
 
 void ManifestCache::load (
-    DatabaseCon& dbCon, UniqueNodeList& unl, beast::Journal journal)
+    DatabaseCon& dbCon, ValidatorList& unl, beast::Journal journal)
 {
     static const char* const sql =
         "SELECT RawData FROM ValidatorManifests;";

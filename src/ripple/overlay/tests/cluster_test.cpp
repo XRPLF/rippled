@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
@@ -29,7 +30,7 @@ class cluster_test : public ripple::TestSuite
 {
 public:
     std::unique_ptr<Cluster>
-    make_Cluster (std::vector<RippleAddress> const& nodes)
+    create (std::vector<RippleAddress> const& nodes)
     {
         auto cluster = std::make_unique <Cluster> (beast::Journal ());
 
@@ -58,7 +59,7 @@ public:
         {
             testcase ("Membership: Empty cluster");
 
-            auto c = make_Cluster ({});
+            auto c = create ({});
 
             for (auto const& n : network)
                 expect (!c->member (n));
@@ -71,7 +72,7 @@ public:
             while (cluster.size () != 32)
                 cluster.push_back (randomNode());
 
-            auto c = make_Cluster (cluster);
+            auto c = create (cluster);
 
             for (auto const& n : network)
                 expect (!c->member (n));
@@ -86,7 +87,7 @@ public:
             while (cluster.size () != 32)
                 cluster.push_back (randomNode());
 
-            auto c = make_Cluster (cluster);
+            auto c = create (cluster);
 
             for (auto const& n : cluster)
                 expect (c->member (n));
@@ -106,7 +107,7 @@ public:
             std::vector<RippleAddress> cluster (
                 network.begin (), network.begin () + 32);
 
-            auto c = make_Cluster (cluster);
+            auto c = create (cluster);
 
             for (auto const& n : cluster)
                 expect (c->member (n));
@@ -126,7 +127,7 @@ public:
     {
         testcase ("Updating");
 
-        auto c = make_Cluster ({});
+        auto c = create ({});
 
         auto const node = randomNode ();
         std::uint32_t load = 0;
@@ -174,10 +175,77 @@ public:
     }
 
     void
+    testConfigLoad ()
+    {
+        testcase ("Config Load");
+
+        auto c = std::make_unique <Cluster> (beast::Journal ());
+
+        // The servers on the network
+        std::vector<RippleAddress> network;
+
+        while (network.size () != 8)
+            network.push_back (randomNode());
+
+        Section s1;
+
+        // Correct (empty) configuration
+        expect (c->load (s1));
+        expect (c->size() == 0);
+
+        // Correct configuration
+        s1.append (network[0].humanNodePublic());
+        s1.append (network[1].humanNodePublic() + " Comment");
+        s1.append (network[2].humanNodePublic() + " Multi Word Comment");
+        s1.append (network[3].humanNodePublic() + "    Leading Whitespace");
+        s1.append (network[4].humanNodePublic() + " Trailing Whitespace    ");
+        s1.append (network[5].humanNodePublic() + "    Leading & Trailing Whitespace    ");
+        s1.append (network[6].humanNodePublic() + "    Leading, Trailing & Internal    Whitespace    ");
+        s1.append (network[7].humanNodePublic() + "    ");
+
+        expect (c->load (s1));
+
+        for (auto const& n : network)
+            expect (c->member (n));
+
+        // Incorrect configurations
+        Section s2;
+        s2.append ("NotAPublicKey");
+
+        expect (!c->load (s2));
+
+        Section s3;
+        s3.append ("@" + network[0].humanNodePublic());
+        expect (!c->load (s3));
+
+        Section s4;
+        s4.append (network[0].humanNodePublic() + "!");
+        expect (!c->load (s4));
+
+        Section s5;
+        s5.append (network[0].humanNodePublic() + "!  Comment");
+        expect (!c->load (s5));
+
+        // Check if we properly terminate when we encounter
+        // a malformed or unparseable entry:
+        auto const badNode = randomNode();
+        auto const goodNode = randomNode ();
+
+        Section s6;
+        s6.append (badNode.humanNodePublic() + "XXX");
+        s6.append (goodNode.humanNodePublic());
+
+        expect (!c->load (s6));
+        expect (!c->member (badNode));
+        expect (!c->member (goodNode));
+    }
+
+    void
     run() override
     {
         testMembership ();
         testUpdating ();
+        testConfigLoad ();
     }
 };
 

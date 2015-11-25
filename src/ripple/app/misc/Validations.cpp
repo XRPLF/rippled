@@ -24,7 +24,7 @@
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
@@ -89,7 +89,7 @@ private:
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
 
-        if (!val->isTrusted() && app_.getUNL().nodeInUNL (signer))
+        if (!val->isTrusted() && app_.validators().trusted (signer))
             val->setTrusted();
 
         auto const now = app_.timeKeeper().closeTime().time_since_epoch().count();

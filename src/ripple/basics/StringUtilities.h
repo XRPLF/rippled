@@ -93,6 +93,8 @@ bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort);
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
 
+std::string trim_whitespace (std::string str);
+
 } // ripple
 
 #endif
