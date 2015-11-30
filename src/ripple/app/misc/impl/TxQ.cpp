@@ -354,7 +354,8 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter)
 }
 
 auto
-TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
+TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter,
+    bool invalidate)
 -> FeeMultiSet::iterator_type
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
@@ -363,6 +364,9 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     assert(accountIter != txQAccount.transactions.end());
     assert(accountIter == txQAccount.transactions.begin());
     assert(byFee_.iterator_to(accountIter->second) == candidateIter);
+    if(invalidate)
+        // Invalidate the queued txns, if appropriate
+        txQAccount.invalidate(accountIter);
     auto accountNextIter = std::next(accountIter);
     // Check if the next transaction for this account has the
     // next sequence number, and a higher fee, which means we
@@ -396,6 +400,21 @@ TxQ::apply(Application& app, OpenView& view,
     auto const account = (*tx)[sfAccount];
     auto const transactionID = tx->getTransactionID();
     auto const t_seq = tx->getSequence();
+
+    // See if the transaction is valid, properly formed,
+    // etc. before doing potentially expensive queue
+    // replace and multi-transaction operations.
+    auto const pfresult = preflight(app, view.rules(),
+        *tx, flags, j);
+    if (pfresult.ter != tesSUCCESS)
+        return{ pfresult.ter, false };
+
+    struct MultiTxn
+    {
+        TxQAccount::TxMap::iterator nextAcctIter;
+        TxQAccount::TxMap::iterator prevTxnIter;
+        std::shared_ptr<OpenView> workingView;
+    };
 
     boost::optional<MultiTxn> multiTxn;
 
@@ -498,7 +517,7 @@ TxQ::apply(Application& app, OpenView& view,
                         (prevTxnIter != txQAcct.transactions.end()) &&
                             std::distance(nextAcctIter, prevTxnIter) ==
                                t_seq - a_seq - 1)
-                    multiTxn.emplace(nextAcctIter, prevTxnIter);
+                    multiTxn = { nextAcctIter, prevTxnIter };
             }
 
             if (multiTxn)
@@ -515,6 +534,16 @@ TxQ::apply(Application& app, OpenView& view,
 
                 if (feeLevelPaid > requiredMultiLevel)
                 {
+                    /*
+                        Note that the OpenView stored in the candidates can
+                        easily become obsolete, and the account state could
+                        potentially change, however, the only state the TxQ
+                        is concerned with is the account's XRP balance, so
+                        a `balanceAdjustment` is computed based on the stored
+                        OpenView and the live OpenView. Transactions created
+                        by other accounts can not change state in any other
+                        way that would prevent taking a fee.
+                    */
                     auto workingIter = multiTxn->prevTxnIter;
                     // search backwards for an existing view to use
                     while (workingIter != multiTxn->nextAcctIter &&
@@ -535,23 +564,40 @@ TxQ::apply(Application& app, OpenView& view,
                         multiTxn->workingView =
                             std::make_shared<OpenView>(view);
                     }
+                    auto const actualBalance = (*sle)[sfBalance].xrp();
+                    auto workingBalance = (*multiTxn->workingView->
+                        read(keylet::account(account)))[sfBalance].xrp();
+                    auto const balanceAdjustment = workingBalance -
+                        actualBalance;
                     // Apply the transactions to the working view
                     auto end = std::next(multiTxn->prevTxnIter);
                     for (; multiTxn && workingIter != end; ++workingIter)
                     {
                         auto result = workingIter->second.apply(app,
                             *multiTxn->workingView);
+                        workingBalance = (*multiTxn->workingView->
+                            read(keylet::account(account)))[sfBalance].xrp();
                         // Don't care about the TER, just that it applied.
-                        if (result.second)
+                        if (result.second &&
+                            workingBalance >= balanceAdjustment)
                         {
                             workingIter->second.view = multiTxn->workingView;
                         }
                         else
                         {
-                            // Prior transactions fail to apply, we can't
-                            // queue this one.
+                            // Prior transactions fail to apply or drive the
+                            // real balance too low, we can't queue this one.
                             multiTxn.reset();
                         }
+                    }
+                    if (multiTxn && balanceAdjustment.signum() > 0 &&
+                        (workingBalance - (*tx)[sfFee].xrp() <
+                            balanceAdjustment))
+                    {
+                        // This transaction will take the balance too low
+                        // in the live OpenView, but may not get detected
+                        // by preclaim with the workingView.
+                        multiTxn.reset();
                     }
                 }
                 else
@@ -571,8 +617,6 @@ TxQ::apply(Application& app, OpenView& view,
     }
 
     // See if the transaction is likely to claim a fee.
-    auto const pfresult = preflight(app, view.rules(),
-        *tx, flags, j);
     assert(!multiTxn || multiTxn->workingView);
     auto const pcresult = preclaim(pfresult, app,
         multiTxn ? *multiTxn->workingView : view);
@@ -801,7 +845,7 @@ TxQ::accept(Application& app,
                 JLOG(j_.debug) << "Queued transaction " <<
                     candidateIter->txID << " failed with " <<
                     transToken(txnResult) << ". Remove from queue.";
-                candidateIter = eraseAndAdvance(candidateIter);
+                candidateIter = eraseAndAdvance(candidateIter, true);
             }
             else
             {

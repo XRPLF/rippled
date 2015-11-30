@@ -962,6 +962,89 @@ public:
 
     }
 
+    void testUnexpectedBalanceChange()
+    {
+        using namespace jtx;
+
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger", "3" } }));
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+
+        auto queued = ter(terQUEUED);
+
+        auto openLedgerFee =
+            [&]()
+        {
+            return fee(env.app().getTxQ().openLedgerFee(*env.open()));
+        };
+
+        expectEquals(env.open()->fees().base, 10);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 3, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(alice, bob));
+        checkMetrics(env, 0, boost::none, 2, 3, 256, lastMedian);
+        auto USD = bob["USD"];
+
+        env(offer(alice, USD(5000), XRP(50000)), require(owners(alice, 1)));
+        checkMetrics(env, 0, boost::none, 3, 3, 256, lastMedian);
+
+        close(env, 3);
+        checkMetrics(env, 0, 6, 0, 3, 256, lastMedian);
+
+        // Fill up the ledger
+        for (int i = 0; i < 4; ++i)
+        {
+            submit(env,
+                env.jt(noop(alice)));
+        }
+        checkMetrics(env, 0, 6, 4, 3, 256, lastMedian);
+
+        // Queue up a couple of really expensive transactions
+        auto aliceSeq = env.seq(alice);
+        submit(env,
+            env.jt(noop(alice), seq(aliceSeq++), queued));
+        submit(env,
+            env.jt(noop(alice), fee(XRP(1000)),
+                seq(aliceSeq++), queued));
+        submit(env,
+            env.jt(noop(alice), fee(XRP(1251)),
+                seq(aliceSeq++), queued));
+        submit(env,
+            env.jt(noop(alice), fee(XRP(1564)),
+                seq(aliceSeq), queued));
+        checkMetrics(env, 4, 6, 4, 3, 256, lastMedian);
+
+        // This offer should take Alice's offer
+        // up to Alice's reserve.
+        submit(env,
+            env.jt(offer(bob, XRP(50000), USD(5000)),
+                openLedgerFee(), require(balance("alice", XRP(250)),
+                    owners(alice, 1), lines(alice, 1))));
+        checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
+
+        // Try adding a new transaction. This will
+        // test the main loop check.
+        submit(env,
+            env.jt(noop(alice), fee(XRP(1956)), seq(aliceSeq+1),
+                ter(terPRE_SEQ)));
+        checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
+
+        // Replace that last transaction, which failed in
+        // the previous attempt. This avoids invalidation,
+        // and tests the edge case where no queued
+        // transactions are test applied.
+        submit(env,
+            env.jt(noop(alice), fee(XRP(1956)), seq(aliceSeq),
+                ter(terPRE_SEQ)));
+        checkMetrics(env, 3, 6, 5, 3, 256, lastMedian);
+
+        close(env, 5);
+        checkMetrics(env, 2, 10, 1, 5, 256, lastMedian);
+    }
+
     void run()
     {
         testQueue();
@@ -973,6 +1056,7 @@ public:
         testDisabled();
         testAcctTxnID();
         testMaximum();
+        testUnexpectedBalanceChange();
     }
 };
 
