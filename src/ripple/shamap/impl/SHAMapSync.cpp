@@ -711,7 +711,7 @@ Note: a caller should set includeLeaves to false for transaction trees.
 There's no point in including the leaves of transaction trees.
 */
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
-                           std::function<void (uint256 const&, const Blob&)> func) const
+                           std::function<void (SHAMapHash const&, const Blob&)> func) const
 {
     visitDifferences (have,
         [includeLeaves, &max, &func] (SHAMapAbstractNode& smn) -> bool
@@ -720,7 +720,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
             {
                 Serializer s;
                 smn.addRaw (s, snfPREFIX);
-                func (smn.getNodeHash().as_uint256(), s.peekData());
+                func (smn.getNodeHash(), s.peekData());
 
                 if (--max <= 0)
                     return false;
