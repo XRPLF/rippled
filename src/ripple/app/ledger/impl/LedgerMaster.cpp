@@ -1915,12 +1915,12 @@ void LedgerMasterImp::makeFetchPack (
     auto fpAppender = [](
         protocol::TMGetObjectByHash* reply,
         std::uint32_t ledgerSeq,
-        uint256 const& hash,
+        SHAMapHash const& hash,
         const Blob& blob)
     {
         protocol::TMIndexedObject& newObj = * (reply->add_objects ());
         newObj.set_ledgerseq (ledgerSeq);
-        newObj.set_hash (hash.begin (), 256 / 8);
+        newObj.set_hash (hash.as_uint256().begin (), 256 / 8);
         newObj.set_data (&blob[0], blob.size ());
     };
 

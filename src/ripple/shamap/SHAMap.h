@@ -215,7 +215,7 @@ public:
     void visitDifferences(SHAMap* have, std::function<bool(SHAMapAbstractNode&)>) const;
 
     void getFetchPack (SHAMap * have, bool includeLeaves, int max,
-        std::function<void (uint256 const&, const Blob&)>) const;
+        std::function<void (SHAMapHash const&, const Blob&)>) const;
 
     void setUnbacked ();
 
