@@ -73,6 +73,14 @@ public:
     }
 
     friend std::string to_string(SHAMapHash const& x) {return to_string(x.hash_);}
+
+    template <class H>
+    friend
+    void
+    hash_append(H& h, SHAMapHash const& x)
+    {
+        hash_append(h, x.hash_);
+    }
 };
 
 inline
