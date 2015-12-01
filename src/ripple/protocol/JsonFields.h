@@ -275,7 +275,7 @@ JSS ( open );                       // out: handlers/Ledger
 JSS ( open_ledger_fee );            // out: TxQ
 JSS ( open_ledger_level );          // out: TxQ
 JSS ( owner );                      // in: LedgerEntry, out: NetworkOPs
-JSS ( owner_funds );                // out: NetworkOPs, AcceptedLedgerTx
+JSS ( owner_funds );                // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS ( params );                     // RPC
 JSS ( parent_close_time );          // out: LedgerToJson
 JSS ( parent_hash );                // out: LedgerToJson
