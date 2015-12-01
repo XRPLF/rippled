@@ -96,19 +96,37 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
             {
                 txns.append(to_string(i.first->getTransactionID()));
             }
-            else if (bBinary)
-            {
-                auto&& txJson = appendObject (txns);
-                txJson[jss::tx_blob] = serializeHex(*i.first);
-                if (i.second)
-                    txJson[jss::meta] = serializeHex(*i.second);
-            }
             else
             {
-                auto&& txJson = appendObject (txns);
-                copyFrom(txJson, i.first->getJson(0));
-                if (i.second)
-                    txJson[jss::metaData] = i.second->getJson(0);
+                auto&& txJson = appendObject(txns);
+                if (bBinary)
+                {
+                    txJson[jss::tx_blob] = serializeHex(*i.first);
+                    if (i.second)
+                        txJson[jss::meta] = serializeHex(*i.second);
+                }
+                else
+                {
+                    copyFrom(txJson, i.first->getJson(0));
+                    if (i.second)
+                        txJson[jss::metaData] = i.second->getJson(0);
+                }
+
+                if ((fill.options & LedgerFill::ownerFunds) &&
+                    i.first->getTxnType() == ttOFFER_CREATE)
+                {
+                    auto const account = i.first->getAccountID(sfAccount);
+                    auto const amount = i.first->getFieldAmount(sfTakerGets);
+
+                    // If the offer create is not self funded then add the
+                    // owner balance
+                    if (account != amount.getIssuer())
+                    {
+                        auto const ownerFunds = accountFunds(fill.ledger,
+                            account, amount, fhIGNORE_FREEZE, beast::Journal());
+                        txJson[jss::owner_funds] = ownerFunds.getText ();
+                    }
+                }
             }
         }
     }
