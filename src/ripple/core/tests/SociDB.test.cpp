@@ -21,6 +21,7 @@
 
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/SociDB.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/basics/BasicConfig.h>
 #include <boost/filesystem.hpp>
@@ -59,8 +60,8 @@ private:
         if (!is_directory (dbPath))
         {
             // someone created a file where we want to put out directory
-            throw std::runtime_error ("Cannot create directory: " +
-                                      dbPath.string ());
+            Throw<std::runtime_error> (
+                "Cannot create directory: " + dbPath.string ());
         }
     }
     static boost::filesystem::path getDatabasePath ()
@@ -75,7 +76,7 @@ public:
         {
             setupDatabaseDir (getDatabasePath ());
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
     }
@@ -85,7 +86,7 @@ public:
         {
             cleanupDatabaseDir (getDatabasePath ());
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
     }

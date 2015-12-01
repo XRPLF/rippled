@@ -210,7 +210,7 @@ bool STObject::set (SerialIter& sit, int depth)
         {
             WriteLog (lsWARNING, STObject) <<
                 "Encountered object with end of array marker";
-            throw std::runtime_error ("Illegal terminator in object");
+            Throw<std::runtime_error> ("Illegal terminator in object");
         }
 
         if (!reachedEndOfObject)
@@ -224,7 +224,7 @@ bool STObject::set (SerialIter& sit, int depth)
                 WriteLog (lsWARNING, STObject) <<
                     "Unknown field: field_type=" << type <<
                     ", field_name=" << field;
-                throw std::runtime_error ("Unknown field");
+                Throw<std::runtime_error> ("Unknown field");
             }
 
             // Unflatten the field
@@ -234,7 +234,7 @@ bool STObject::set (SerialIter& sit, int depth)
             STObject* const obj = dynamic_cast <STObject*> (&(v_.back().get()));
             if (obj && (obj->setTypeFromSField (fn) == typeSetFail))
             {
-                throw std::runtime_error ("field deserialization error");
+                Throw<std::runtime_error> ("field deserialization error");
             }
         }
     }
@@ -352,7 +352,7 @@ const STBase& STObject::peekAtField (SField const& field) const
     int index = getFieldIndex (field);
 
     if (index == -1)
-        throw std::runtime_error ("Field not found");
+        Throw<std::runtime_error> ("Field not found");
 
     return peekAtIndex (index);
 }
@@ -362,7 +362,7 @@ STBase& STObject::getField (SField const& field)
     int index = getFieldIndex (field);
 
     if (index == -1)
-        throw std::runtime_error ("Field not found");
+        Throw<std::runtime_error> ("Field not found");
 
     return getIndex (index);
 }
@@ -462,7 +462,7 @@ STBase* STObject::makeFieldPresent (SField const& field)
     if (index == -1)
     {
         if (!isFree ())
-            throw std::runtime_error ("Field not found");
+            Throw<std::runtime_error> ("Field not found");
 
         return getPIndex (emplace_back(detail::nonPresentObject, field));
     }
@@ -482,7 +482,7 @@ void STObject::makeFieldAbsent (SField const& field)
     int index = getFieldIndex (field);
 
     if (index == -1)
-        throw std::runtime_error ("Field not found");
+        Throw<std::runtime_error> ("Field not found");
 
     const STBase& f = peekAtIndex (index);
 
@@ -512,7 +512,7 @@ std::string STObject::getFieldString (SField const& field) const
 {
     const STBase* rf = peekAtPField (field);
 
-    if (!rf) throw std::runtime_error ("Field not found");
+    if (! rf) Throw<std::runtime_error> ("Field not found");
 
     return rf->getText ();
 }
@@ -606,7 +606,7 @@ STObject::set (std::unique_ptr<STBase> v)
     else
     {
         if (! isFree())
-            throw std::runtime_error(
+            Throw<std::runtime_error> (
                 "missing field in templated STObject");
         v_.emplace_back(std::move(*v));
     }

@@ -23,6 +23,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/CBigNum.h>
 #include <ripple/crypto/CAutoBN_CTX.h>
 #include <stdexcept>
@@ -43,14 +44,14 @@ CBigNum::CBigNum (const CBigNum& b)
     if (!BN_copy (this, &b))
     {
         BN_clear_free (this);
-        throw std::runtime_error ("CBigNum::CBigNum(const CBigNum&) : BN_copy failed");
+        Throw<std::runtime_error> ("CBigNum::CBigNum(const CBigNum&) : BN_copy failed");
     }
 }
 
 CBigNum& CBigNum::operator= (const CBigNum& b)
 {
     if (!BN_copy (this, &b))
-        throw std::runtime_error ("CBigNum::operator= : BN_copy failed");
+        Throw<std::runtime_error> ("CBigNum::operator= : BN_copy failed");
 
     return (*this);
 }
@@ -202,7 +203,7 @@ std::uint64_t CBigNum::getuint64 () const
     int len = BN_num_bytes (this);
 
     if (len > 8)
-        throw std::runtime_error ("BN getuint64 overflow");
+        Throw<std::runtime_error> ("BN getuint64 overflow");
 
     unsigned char buf[8];
     memset (buf, 0, sizeof (buf));
@@ -381,7 +382,7 @@ std::string CBigNum::ToString (int nBase) const
     while (BN_cmp (&bn, &bn0) > 0)
     {
         if (!BN_div (&dv, &rem, &bn, &bnBase, pctx))
-            throw std::runtime_error ("CBigNum::ToString() : BN_div failed");
+            Throw<std::runtime_error> ("CBigNum::ToString() : BN_div failed");
 
         bn = dv;
         unsigned int c = rem.getuint ();
@@ -408,7 +409,7 @@ bool CBigNum::operator! () const
 CBigNum& CBigNum::operator+= (const CBigNum& b)
 {
     if (!BN_add (this, this, &b))
-        throw std::runtime_error ("CBigNum::operator+= : BN_add failed");
+        Throw<std::runtime_error> ("CBigNum::operator+= : BN_add failed");
 
     return *this;
 }
@@ -424,7 +425,7 @@ CBigNum& CBigNum::operator*= (const CBigNum& b)
     CAutoBN_CTX pctx;
 
     if (!BN_mul (this, this, &b, pctx))
-        throw std::runtime_error ("CBigNum::operator*= : BN_mul failed");
+        Throw<std::runtime_error> ("CBigNum::operator*= : BN_mul failed");
 
     return *this;
 }
@@ -444,7 +445,7 @@ CBigNum& CBigNum::operator%= (const CBigNum& b)
 CBigNum& CBigNum::operator<<= (unsigned int shift)
 {
     if (!BN_lshift (this, this, shift))
-        throw std::runtime_error ("CBigNum:operator<<= : BN_lshift failed");
+        Throw<std::runtime_error> ("CBigNum:operator<<= : BN_lshift failed");
 
     return *this;
 }
@@ -462,8 +463,8 @@ CBigNum& CBigNum::operator>>= (unsigned int shift)
         return *this;
     }
 
-    if (!BN_rshift (this, this, shift))
-        throw std::runtime_error ("CBigNum:operator>>= : BN_rshift failed");
+    if (! BN_rshift (this, this, shift))
+        Throw<std::runtime_error> ("CBigNum:operator>>= : BN_rshift failed");
 
     return *this;
 }
@@ -472,8 +473,8 @@ CBigNum& CBigNum::operator>>= (unsigned int shift)
 CBigNum& CBigNum::operator++ ()
 {
     // prefix operator
-    if (!BN_add (this, this, BN_value_one ()))
-        throw std::runtime_error ("CBigNum::operator++ : BN_add failed");
+    if (! BN_add (this, this, BN_value_one ()))
+        Throw<std::runtime_error> ("CBigNum::operator++ : BN_add failed");
 
     return *this;
 }
@@ -491,8 +492,8 @@ CBigNum& CBigNum::operator-- ()
     // prefix operator
     CBigNum r;
 
-    if (!BN_sub (&r, this, BN_value_one ()))
-        throw std::runtime_error ("CBigNum::operator-- : BN_sub failed");
+    if (! BN_sub (&r, this, BN_value_one ()))
+        Throw<std::runtime_error> ("CBigNum::operator-- : BN_sub failed");
 
     *this = r;
     return *this;
@@ -508,8 +509,9 @@ const CBigNum CBigNum::operator-- (int)
 
 void CBigNum::setulong (unsigned long n)
 {
-    if (!BN_set_word (this, n))
-        throw std::runtime_error ("CBigNum conversion from unsigned long : BN_set_word failed");
+    if (! BN_set_word (this, n))
+        Throw<std::runtime_error> (
+            "CBigNum conversion from unsigned long : BN_set_word failed");
 }
 
 unsigned long CBigNum::getulong () const
@@ -521,8 +523,8 @@ const CBigNum operator+ (const CBigNum& a, const CBigNum& b)
 {
     CBigNum r;
 
-    if (!BN_add (&r, &a, &b))
-        throw std::runtime_error ("CBigNum::operator+ : BN_add failed");
+    if (! BN_add (&r, &a, &b))
+        Throw<std::runtime_error> ("CBigNum::operator+ : BN_add failed");
 
     return r;
 }
@@ -531,8 +533,8 @@ const CBigNum operator- (const CBigNum& a, const CBigNum& b)
 {
     CBigNum r;
 
-    if (!BN_sub (&r, &a, &b))
-        throw std::runtime_error ("CBigNum::operator- : BN_sub failed");
+    if (! BN_sub (&r, &a, &b))
+        Throw<std::runtime_error> ("CBigNum::operator- : BN_sub failed");
 
     return r;
 }
@@ -549,8 +551,8 @@ const CBigNum operator* (const CBigNum& a, const CBigNum& b)
     CAutoBN_CTX pctx;
     CBigNum r;
 
-    if (!BN_mul (&r, &a, &b, pctx))
-        throw std::runtime_error ("CBigNum::operator* : BN_mul failed");
+    if (! BN_mul (&r, &a, &b, pctx))
+        Throw<std::runtime_error> ("CBigNum::operator* : BN_mul failed");
 
     return r;
 }
@@ -560,8 +562,8 @@ const CBigNum operator/ (const CBigNum& a, const CBigNum& b)
     CAutoBN_CTX pctx;
     CBigNum r;
 
-    if (!BN_div (&r, nullptr, &a, &b, pctx))
-        throw std::runtime_error ("CBigNum::operator/ : BN_div failed");
+    if (! BN_div (&r, nullptr, &a, &b, pctx))
+        Throw<std::runtime_error> ("CBigNum::operator/ : BN_div failed");
 
     return r;
 }
@@ -571,8 +573,8 @@ const CBigNum operator% (const CBigNum& a, const CBigNum& b)
     CAutoBN_CTX pctx;
     CBigNum r;
 
-    if (!BN_mod (&r, &a, &b, pctx))
-        throw std::runtime_error ("CBigNum::operator% : BN_div failed");
+    if (! BN_mod (&r, &a, &b, pctx))
+        Throw<std::runtime_error> ("CBigNum::operator% : BN_div failed");
 
     return r;
 }
@@ -581,8 +583,8 @@ const CBigNum operator<< (const CBigNum& a, unsigned int shift)
 {
     CBigNum r;
 
-    if (!BN_lshift (&r, &a, shift))
-        throw std::runtime_error ("CBigNum:operator<< : BN_lshift failed");
+    if (! BN_lshift (&r, &a, shift))
+        Throw<std::runtime_error> ("CBigNum:operator<< : BN_lshift failed");
 
     return r;
 }

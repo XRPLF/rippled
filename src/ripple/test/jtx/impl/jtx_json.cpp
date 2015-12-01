@@ -21,6 +21,7 @@
 #include <ripple/test/jtx/jtx_json.h>
 #include <ripple/test/jtx/utility.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 namespace test {
@@ -29,7 +30,7 @@ namespace jtx {
 json::json(std::string const& s)
 {
     if (! Json::Reader().parse(s, jv_))
-        throw parse_error("bad json");
+        Throw<parse_error> ("bad json");
 
 }
 

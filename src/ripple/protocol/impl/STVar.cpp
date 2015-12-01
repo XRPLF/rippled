@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STArray.h>
@@ -142,7 +143,7 @@ STVar::STVar (SerialIter& sit, SField const& name)
     case STI_OBJECT:        construct<STObject>(sit, name); return;
     case STI_ARRAY:         construct<STArray>(sit, name); return;
     default:
-        throw std::runtime_error ("Unknown object type");
+        Throw<std::runtime_error> ("Unknown object type");
     }
 }
 
@@ -167,7 +168,7 @@ STVar::STVar (SerializedTypeID id, SField const& name)
     case STI_OBJECT:        construct<STObject>(name); return;
     case STI_ARRAY:         construct<STArray>(name); return;
     default:
-        throw std::runtime_error ("Unknown object type");
+        Throw<std::runtime_error> ("Unknown object type");
     }
 }
 

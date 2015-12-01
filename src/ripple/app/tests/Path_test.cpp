@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/AccountCurrencies.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
@@ -26,7 +28,6 @@
 #include <ripple/rpc/RipplePathFind.h>
 #include <ripple/test/jtx.h>
 #include <beast/unit_test/suite.h>
-#include <ripple/app/paths/AccountCurrencies.h>
 
 namespace ripple {
 namespace test {
@@ -158,7 +159,7 @@ find_paths(jtx::Env& env,
                 level, saSendMax, convert_all, env.app());
     if (! result.first)
     {
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "Path_test::findPath: ripplePathFind find failed");
     }
     auto const& jv = result.second[0u];

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STAmount.h>
@@ -75,7 +76,7 @@ LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
     // If baseFee * feeFactor overflows, the final result will overflow
     const auto max = std::numeric_limits<std::uint64_t>::max();
     if (baseFee > max / feeFactor)
-        throw std::overflow_error("scaleFeeLoad");
+        Throw<std::overflow_error> ("scaleFeeLoad");
     baseFee *= feeFactor;
     // Reorder fee and baseFee
     if (fee < baseFee)
@@ -86,7 +87,7 @@ LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
         // Do the division first, on the larger of fee and baseFee
         fee /= den;
         if (fee > max / baseFee)
-            throw std::overflow_error("scaleFeeLoad");
+            Throw<std::overflow_error> ("scaleFeeLoad");
         fee *= baseFee;
     }
     else

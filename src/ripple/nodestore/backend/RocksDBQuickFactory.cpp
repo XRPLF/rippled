@@ -23,6 +23,7 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
+#include <ripple/basics/contract.h>
 #include <ripple/core/Config.h> // VFALCO Bad dependency
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
@@ -103,7 +104,8 @@ public:
         , m_name (get<std::string>(keyValues, "path"))
     {
         if (m_name.empty())
-            throw std::runtime_error ("Missing path in RocksDBQuickFactory backend");
+            Throw<std::runtime_error> (
+                "Missing path in RocksDBQuickFactory backend");
 
         // Defaults
         std::uint64_t budget = 512 * 1024 * 1024;  // 512MB
@@ -167,8 +169,10 @@ public:
         rocksdb::DB* db = nullptr;
 
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
-        if (!status.ok () || !db)
-            throw std::runtime_error (std::string("Unable to open/create RocksDBQuick: ") + status.ToString());
+        if (! status.ok () || ! db)
+            Throw<std::runtime_error> (
+                std::string("Unable to open/create RocksDBQuick: ") +
+                    status.ToString());
 
         m_db.reset (db);
     }
@@ -265,7 +269,7 @@ public:
     std::vector<std::shared_ptr<NodeObject>>
     fetchBatch (std::size_t n, void const* const* keys) override
     {
-        throw std::runtime_error("pure virtual called");
+        Throw<std::runtime_error> ("pure virtual called");
         return {};
     }
 
@@ -294,8 +298,8 @@ public:
 
         auto ret = m_db->Write (options, &wb);
 
-        if (!ret.ok ())
-            throw std::runtime_error ("storeBatch failed: " + ret.ToString());
+        if (! ret.ok ())
+            Throw<std::runtime_error> ("storeBatch failed: " + ret.ToString());
     }
 
     void

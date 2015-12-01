@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/shamap/SHAMap.h>
 
 namespace ripple {
@@ -139,7 +140,7 @@ SHAMap::compare (SHAMap const& otherMap,
         if (!ourNode || !otherNode)
         {
             assert (false);
-            throw SHAMapMissingNode (type_, uint256 ());
+            Throw<SHAMapMissingNode> (type_, uint256 ());
         }
 
         if (ourNode->isLeaf () && otherNode->isLeaf ())

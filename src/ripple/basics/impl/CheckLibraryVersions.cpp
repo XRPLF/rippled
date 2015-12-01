@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/impl/CheckLibraryVersionsImpl.h>
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/diagnostic/SemanticVersion.h>
@@ -58,19 +59,23 @@ std::string openSSLVersion(VersionNumber openSSLVersion)
 void checkVersion(std::string name, std::string required, std::string actual)
 {
     beast::SemanticVersion r, a;
-    if (!r.parse(required)) {
-        throw std::runtime_error("Didn't understand required version of " +
-                                 name + ": " + required);
-    }
-    if (!a.parse(actual)) {
-        throw std::runtime_error("Didn't understand actual version of " +
-                                 name + ": " + required);
+    if (! r.parse(required))
+    {
+        Throw<std::runtime_error> (
+            "Didn't understand required version of " + name + ": " + required);
     }
 
-    if (a < r) {
-        throw std::runtime_error("Your " + name + " library is out of date.\n" +
-                                 "Your version: " + actual + "\n" +
-                                 "Required version: " +  "\n");
+    if (! a.parse(actual))
+    {
+        Throw<std::runtime_error> (
+            "Didn't understand actual version of " + name + ": " + required);
+    }
+
+    if (a < r)
+    {
+        Throw<std::runtime_error> (
+            "Your " + name + " library is out of date.\n" + "Your version: " +
+                actual + "\nRequired version: " + required + "\n");
     }
 }
 

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NODESTORE_CODEC_H_INCLUDED
 #define RIPPLE_NODESTORE_CODEC_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/nudb/common.h>
@@ -62,14 +63,14 @@ snappy_decompress (void const* in,
     if (! snappy::GetUncompressedLength(
             reinterpret_cast<char const*>(in),
                 in_size, &result.second))
-        throw beast::nudb::codec_error(
+        Throw<beast::nudb::codec_error> (
             "snappy decompress");
     void* const out = bf(result.second);
     result.first = out;
     if (! snappy::RawUncompress(
         reinterpret_cast<char const*>(in), in_size,
             reinterpret_cast<char*>(out)))
-        throw beast::nudb::codec_error(
+        Throw<beast::nudb::codec_error> (
             "snappy decompress");
     return result;
 }
@@ -87,7 +88,7 @@ lz4_decompress (void const* in,
     auto const n = read_varint(
         p, in_size, result.second);
     if (n == 0)
-        throw codec_error(
+        Throw<codec_error> (
             "lz4 decompress");
     void* const out = bf(result.second);
     result.first = out;
@@ -95,7 +96,7 @@ lz4_decompress (void const* in,
         reinterpret_cast<char const*>(in) + n,
             reinterpret_cast<char*>(out),
                 result.second) + n != in_size)
-        throw codec_error(
+        Throw<codec_error> (
             "lz4 decompress");
     return result;
 }
@@ -123,7 +124,7 @@ lz4_compress (void const* in,
             reinterpret_cast<char*>(out + n),
                 in_size);
     if (out_size == 0)
-        throw codec_error(
+        Throw<codec_error> (
             "lz4 compress");
     result.second = n + out_size;
     return result;
@@ -154,7 +155,7 @@ nodeobject_decompress (void const* in,
     auto const vn = read_varint(
         p, in_size, type);
     if (vn == 0)
-        throw codec_error(
+        Throw<codec_error> (
             "nodeobject decompress");
     p += vn;
     in_size -= vn;
@@ -179,7 +180,7 @@ nodeobject_decompress (void const* in,
         auto const hs =
             field<std::uint16_t>::size; // Mask
         if (in_size < hs + 32)
-            throw codec_error(
+            Throw<codec_error> (
                 "nodeobject codec: short inner node");
         istream is(p, in_size);
         std::uint16_t mask;
@@ -194,7 +195,7 @@ nodeobject_decompress (void const* in,
         write<std::uint8_t> (os, hotUNKNOWN);
         write<std::uint32_t>(os, HashPrefix::innerNode);
         if (mask == 0)
-            throw codec_error(
+            Throw<codec_error> (
                 "nodeobject codec: empty inner node");
         std::uint16_t bit = 0x8000;
         for (int i = 16; i--; bit >>= 1)
@@ -202,7 +203,7 @@ nodeobject_decompress (void const* in,
             if (mask & bit)
             {
                 if (in_size < 32)
-                    throw codec_error(
+                    Throw<codec_error> (
                         "nodeobject codec: short inner node");
                 std::memcpy(os.data(32), is(32), 32);
                 in_size -= 32;
@@ -213,14 +214,14 @@ nodeobject_decompress (void const* in,
             }
         }
         if (in_size > 0)
-            throw codec_error(
+            Throw<codec_error> (
                 "nodeobject codec: long inner node");
         break;
     }
     case 3: // full inner node
     {
         if (in_size != 16 * 32) // hashes
-            throw codec_error(
+            Throw<codec_error> (
                 "nodeobject codec: short full inner node");
         istream is(p, in_size);
         result.second = 525;
@@ -235,7 +236,7 @@ nodeobject_decompress (void const* in,
         break;
     }
     default:
-        throw codec_error(
+        Throw<codec_error> (
             "nodeobject codec: bad type=" +
                 std::to_string(type));
     };
@@ -366,7 +367,7 @@ nodeobject_compress (void const* in,
         break;
     }
     default:
-        throw std::logic_error(
+        Throw<std::logic_error> (
             "nodeobject codec: unknown=" +
                 std::to_string(type));
     };

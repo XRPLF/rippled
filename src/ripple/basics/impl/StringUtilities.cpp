@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
 #include <beast/module/core/text/LexicalCast.h>
@@ -89,14 +90,14 @@ uint64_t uintFromHex (std::string const& strSrc)
     uint64_t uValue (0);
 
     if (strSrc.size () > 16)
-        throw std::invalid_argument("overlong 64-bit value");
+        Throw<std::invalid_argument> ("overlong 64-bit value");
 
     for (auto c : strSrc)
     {
         int ret = charUnHex (c);
 
         if (ret == -1)
-            throw std::invalid_argument("invalid hex digit");
+            Throw<std::invalid_argument> ("invalid hex digit");
 
         uValue = (uValue << 4) | ret;
     }

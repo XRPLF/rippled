@@ -23,6 +23,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/impl/ECDSAKey.h>
 #include <openssl/ec.h>
 #include <openssl/hmac.h>
@@ -36,9 +37,8 @@ static EC_KEY* new_initialized_EC_KEY()
     EC_KEY* key = EC_KEY_new_by_curve_name (NID_secp256k1);
 
     if (key == nullptr)
-    {
-        throw std::runtime_error ("new_initialized_EC_KEY() : EC_KEY_new_by_curve_name failed");
-    }
+        Throw<std::runtime_error> (
+            "new_initialized_EC_KEY() : EC_KEY_new_by_curve_name failed");
 
     EC_KEY_set_conv_form (key, POINT_CONVERSION_COMPRESSED);
 
@@ -50,9 +50,7 @@ ec_key ECDSAPrivateKey (uint256 const& serialized)
     BIGNUM* bn = BN_bin2bn (serialized.begin(), serialized.size(), nullptr);
 
     if (bn == nullptr)
-    {
-        throw std::runtime_error ("ec_key::ec_key: BN_bin2bn failed");
-    }
+        Throw<std::runtime_error> ("ec_key::ec_key: BN_bin2bn failed");
 
     EC_KEY* key = new_initialized_EC_KEY();
     ec_key::pointer_t ptr = nullptr;

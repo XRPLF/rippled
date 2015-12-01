@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/StringUtilities.h>
@@ -65,7 +66,7 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
             {
                 WriteLog (lsINFO, STBase)
                     << "STPathSet: Empty path.";
-                throw std::runtime_error ("empty path");
+                Throw<std::runtime_error> ("empty path");
             }
 
             push_back (path);
@@ -79,7 +80,7 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
             WriteLog (lsINFO, STBase)
                 << "STPathSet: Bad path element: " << iType;
 
-            throw std::runtime_error ("bad path element");
+            Throw<std::runtime_error> ("bad path element");
         }
         else
         {

@@ -199,12 +199,6 @@ preflight(Application& app, Rules const& rules,
             "apply: " << e.what();
         return{ pfctx, tefEXCEPTION };
     }
-    catch (...)
-    {
-        JLOG(j.fatal) <<
-            "apply: <unknown exception>";
-        return{ pfctx, tefEXCEPTION };
-    }
 }
 
 PreclaimResult
@@ -236,12 +230,6 @@ preclaim (PreflightResult const& preflightResult,
     {
         JLOG(ctx->j.fatal) <<
             "apply: " << e.what();
-        return{ *ctx, tefEXCEPTION, 0 };
-    }
-    catch (...)
-    {
-        JLOG(ctx->j.fatal) <<
-            "apply: <unknown exception>";
         return{ *ctx, tefEXCEPTION, 0 };
     }
 }
@@ -281,12 +269,6 @@ doApply(PreclaimResult const& preclaimResult,
     {
         JLOG(preclaimResult.j.fatal) <<
             "apply: " << e.what();
-        return { tefEXCEPTION, false };
-    }
-    catch (...)
-    {
-        JLOG(preclaimResult.j.fatal) <<
-            "apply: <unknown exception>";
         return { tefEXCEPTION, false };
     }
 }

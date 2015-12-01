@@ -224,7 +224,7 @@ OpenLedger::apply (Application& app, OpenView& view,
             if (result == Result::retry)
                 retries.insert(tx);
         }
-        catch(...)
+        catch(std::exception const&)
         {
             JLOG(j.error) <<
                 "Caught exception";

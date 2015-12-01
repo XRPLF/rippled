@@ -439,7 +439,7 @@ void Pathfinder::computePathRanks (int maxPaths)
                 << "Default path fails: " << transToken (rc.result ());
         }
     }
-    catch (...)
+    catch (std::exception const&)
     {
         JLOG (j_.debug) << "Default path causes exception";
     }

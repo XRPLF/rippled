@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/JsonFields.h>
@@ -135,7 +136,7 @@ AmendmentTableImpl::addInitial (Section const& section)
                      "preEnabledAmendments contains an invalid hash (expected "
                      "a hex number). Value was: %1%") %
                  a.hexString ()).str ();
-            throw std::runtime_error (errorMsg);
+            Throw<std::runtime_error> (errorMsg);
         }
     }
 
@@ -157,7 +158,7 @@ AmendmentTableImpl::addInitial (Section const& section)
                          "items. Found %3%. Line was: %4%") %
                      SECTION_AMENDMENTS % numExpectedToks % tokens.size () %
                      line).str ();
-                throw std::runtime_error (errorMsg);
+                Throw<std::runtime_error> (errorMsg);
             }
 
             toAdd.emplace_back (std::move (tokens[0]), std::move (tokens[1]));
@@ -170,7 +171,7 @@ AmendmentTableImpl::addInitial (Section const& section)
                          "%3%") %
                      toAdd.back ().hexString () % SECTION_AMENDMENTS %
                      line).str ();
-                throw std::runtime_error (errorMsg);
+                Throw<std::runtime_error> (errorMsg);
             }
         }
     }
@@ -233,7 +234,7 @@ AmendmentTableImpl::addKnown (AmendmentName const& name)
                  "addKnown was given an invalid hash (expected a hex number). "
                  "Value was: %1%") %
              name.hexString ()).str ();
-        throw std::runtime_error (errorMsg);
+        Throw<std::runtime_error> (errorMsg);
     }
 
     std::lock_guard <std::mutex> sl (mLock);

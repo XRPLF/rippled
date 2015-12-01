@@ -24,6 +24,7 @@
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/server/impl/ServerHandlerImp.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/JobQueue.h>
@@ -514,11 +515,11 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             {
                 port.ip = boost::asio::ip::address::from_string(result.first);
             }
-            catch(...)
+            catch (std::exception const&)
             {
                 log << "Invalid value '" << result.first <<
                     "' for key 'ip' in [" << section.name() << "]\n";
-                throw std::exception();
+                Throw();
             }
         }
     }
@@ -532,13 +533,13 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Value '" << result.first
                     << "' for key 'port' is out of range\n";
-                throw std::exception();
+                Throw<std::exception> ();
             }
             if (ul == 0)
             {
                 log <<
                     "Value '0' for key 'port' is invalid\n";
-                throw std::exception();
+                Throw<std::exception> ();
             }
             port.port = static_cast<std::uint16_t>(ul);
         }
@@ -570,7 +571,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 {
                     log << "Invalid value '" << ip << "' for key 'admin' in ["
                         << section.name () << "]\n";
-                    throw std::exception ();
+                    Throw<std::exception> ();
                 }
 
                 if (is_unspecified (addr.first))
@@ -580,7 +581,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 {
                     log << "IP specified along with 0.0.0.0 '" << ip <<
                         "' for key 'admin' in [" << section.name () << "]\n";
-                    throw std::exception ();
+                    Throw<std::exception> ();
                 }
 
                 port.admin_ip->emplace_back (addr.first.address ());
@@ -606,19 +607,19 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     if (! parsed.ip)
     {
         log << "Missing 'ip' in [" << p.name << "]\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
     p.ip = *parsed.ip;
 
     if (! parsed.port)
     {
         log << "Missing 'port' in [" << p.name << "]\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
     else if (*parsed.port == 0)
     {
         log << "Port " << *parsed.port << "in [" << p.name << "] is invalid\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
     p.port = *parsed.port;
     if (parsed.admin_ip)
@@ -627,7 +628,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     if (parsed.protocol.empty())
     {
         log << "Missing 'protocol' in [" << p.name << "]\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
     p.protocol = parsed.protocol;
     if (p.websockets() &&
@@ -636,7 +637,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         parsed.protocol.count("https") > 0))
     {
         log << "Invalid protocol combination in [" << p.name << "]\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
 
     p.user = parsed.user;
@@ -659,7 +660,7 @@ parse_Ports (BasicConfig const& config, std::ostream& log)
     {
         log <<
             "Required section [server] is missing\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
 
     ParsedPort common;
@@ -673,7 +674,7 @@ parse_Ports (BasicConfig const& config, std::ostream& log)
         {
             log <<
                 "Missing section: [" << name << "]\n";
-            throw std::exception();
+            Throw<std::exception> ();
         }
         ParsedPort parsed = common;
         parsed.name = name;
@@ -688,7 +689,7 @@ parse_Ports (BasicConfig const& config, std::ostream& log)
     if (count > 1)
     {
         log << "Error: More than one peer protocol configured in [server]\n";
-        throw std::exception();
+        Throw<std::exception> ();
     }
     if (count == 0)
         log << "Warning: No peer protocol configured\n";

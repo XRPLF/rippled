@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Taker.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 
@@ -401,7 +402,7 @@ BasicTaker::do_cross (Amounts offer, Quality quality, AccountID const& owner)
     }
 
     if (!result.sanity_check ())
-        throw std::logic_error ("Computed flow fails sanity check.");
+        Throw<std::logic_error> ("Computed flow fails sanity check.");
 
     remaining_.out -= result.order.out;
     remaining_.in -= result.order.in;
@@ -476,12 +477,12 @@ BasicTaker::do_cross (
     auto flow1 = flow_iou_to_xrp (offer1, quality1, xrp_funds, leg1_in_funds, leg1_rate);
 
     if (!flow1.sanity_check ())
-        throw std::logic_error ("Computed flow1 fails sanity check.");
+        Throw<std::logic_error> ("Computed flow1 fails sanity check.");
 
     auto flow2 = flow_xrp_to_iou (offer2, quality2, leg2_out_funds, xrp_funds, leg2_rate);
 
     if (!flow2.sanity_check ())
-        throw std::logic_error ("Computed flow2 fails sanity check.");
+        Throw<std::logic_error> ("Computed flow2 fails sanity check.");
 
     // We now have the maximal flows across each leg individually. We need to
     // equalize them, so that the amount of XRP that flows out of the first leg
@@ -505,7 +506,7 @@ BasicTaker::do_cross (
     }
 
     if (flow1.order.out != flow2.order.in)
-        throw std::logic_error ("Bridged flow is out of balance.");
+        Throw<std::logic_error> ("Bridged flow is out of balance.");
 
     remaining_.out -= flow2.order.out;
     remaining_.in -= flow1.order.in;
@@ -555,10 +556,10 @@ void
 Taker::consume_offer (Offer const& offer, Amounts const& order)
 {
     if (order.in < zero)
-        throw std::logic_error ("flow with negative input.");
+        Throw<std::logic_error> ("flow with negative input.");
 
     if (order.out < zero)
-        throw std::logic_error ("flow with negative output.");
+        Throw<std::logic_error> ("flow with negative output.");
 
     if (journal_.debug) journal_.debug << "Consuming from offer " << offer;
 
@@ -585,7 +586,7 @@ TER Taker::transferXRP (
     STAmount const& amount)
 {
     if (!isXRP (amount))
-        throw std::logic_error ("Using transferXRP with IOU");
+        Throw<std::logic_error> ("Using transferXRP with IOU");
 
     if (from == to)
         return tesSUCCESS;
@@ -603,7 +604,7 @@ TER Taker::redeemIOU (
     Issue const& issue)
 {
     if (isXRP (amount))
-        throw std::logic_error ("Using redeemIOU with XRP");
+        Throw<std::logic_error> ("Using redeemIOU with XRP");
 
     if (account == issue.account)
         return tesSUCCESS;
@@ -615,12 +616,12 @@ TER Taker::redeemIOU (
     // If we are trying to redeem some amount, then the account
     // must have a credit balance.
     if (get_funds (account, amount) <= zero)
-        throw std::logic_error ("redeemIOU has no funds to redeem");
+        Throw<std::logic_error> ("redeemIOU has no funds to redeem");
 
     auto ret = ripple::redeemIOU (view_, account, amount, issue, journal_);
 
     if (get_funds (account, amount) < zero)
-        throw std::logic_error ("redeemIOU redeemed more funds than available");
+        Throw<std::logic_error> ("redeemIOU redeemed more funds than available");
 
     return ret;
 }
@@ -631,7 +632,7 @@ TER Taker::issueIOU (
     Issue const& issue)
 {
     if (isXRP (amount))
-        throw std::logic_error ("Using issueIOU with XRP");
+        Throw<std::logic_error> ("Using issueIOU with XRP");
 
     if (account == issue.account)
         return tesSUCCESS;

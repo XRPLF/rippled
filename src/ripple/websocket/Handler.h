@@ -116,7 +116,7 @@ public:
             cpClient->send (
                 mpMessage->get_payload (), mpMessage->get_opcode ());
         }
-        catch (...)
+        catch (std::exception const&)
         {
             WebSocket::closeTooSlowClient (*cpClient, crTooSlow);
         }
@@ -133,7 +133,7 @@ public:
 
             cpClient->send (strMessage);
         }
-        catch (...)
+        catch (std::exception const&)
         {
             WebSocket::closeTooSlowClient (*cpClient, crTooSlow);
         }
@@ -170,7 +170,7 @@ public:
                     // cpClient->get_socket ().remote_endpoint ().to_string ()
                      ")";
             }
-            catch (...)
+            catch (std::exception const&)
             {
             }
         }
@@ -217,7 +217,7 @@ public:
             JLOG (j_.debug) <<
                 "Ws:: on_open(" << remoteEndpoint << ")";
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
     }
@@ -239,7 +239,7 @@ public:
             JLOG (j_.debug) <<
            "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint() << ")";
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
         ptr->onPong (data);
@@ -273,7 +273,7 @@ public:
                            cpClient->get_socket ().remote_endpoint() <<
                            ") not found";
                 }
-                catch (...)
+                catch (std::exception const&)
                 {
                 }
                 return;
@@ -291,7 +291,7 @@ public:
                 "Ws:: " << reason << "(" <<
                    cpClient->get_socket ().remote_endpoint () << ") found";
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
 
@@ -334,7 +334,7 @@ public:
                     cpClient->get_socket().remote_endpoint() <<
                     ") '" << mpMessage->get_payload () << "'";
             }
-            catch (...)
+            catch (std::exception const&)
             {
             }
         }
@@ -391,7 +391,7 @@ public:
                     << cpClient->get_socket ().remote_endpoint ()
                     << ") '" << mpMessage->get_payload () << "'";
         }
-        catch (...)
+        catch (std::exception const&)
         {
         }
 

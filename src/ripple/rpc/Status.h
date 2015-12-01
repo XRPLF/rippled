@@ -35,7 +35,7 @@ namespace RPC {
     A Status can also be used to fill a Json::Value with a JSON-RPC 2.0
     error response:  see http://www.jsonrpc.org/specification#error_object
  */
-struct Status
+struct Status : public std::exception
 {
 public:
     enum class Type {none, TER, error_code_i};

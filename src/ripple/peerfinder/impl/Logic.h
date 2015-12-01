@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Bootcache.h>
 #include <ripple/peerfinder/impl/Counts.h>
@@ -189,7 +190,7 @@ public:
         {
             if (remote_address.port () == 0)
             {
-                throw std::runtime_error ("Port not specified for address:" +
+                Throw<std::runtime_error> ("Port not specified for address:" +
                     remote_address.to_string ());
             }
 

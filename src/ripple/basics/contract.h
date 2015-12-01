@@ -22,6 +22,7 @@
 
 #include <exception>
 #include <string>
+#include <typeinfo>
 #include <utility>
 
 namespace ripple {
@@ -32,22 +33,16 @@ namespace ripple {
     preconditions, postconditions, and invariants.
 */
 
-namespace detail {
-
 void
-throwException(
-    std::exception_ptr ep);
+Throw ();
 
-} // detail
-
-template <class Exception, class... Args>
+template <class E, class... Args>
 void
 Throw (Args&&... args)
 {
-    detail::throwException(
-        std::make_exception_ptr(
-            Exception(std::forward<
-                Args>(args)...)));
+    static_assert (std::is_convertible<E*, std::exception*>::value,
+        "Exception must derive from std::exception.");
+    throw E(std::forward<Args>(args)...);
 }
 
 /** Called when faulty logic causes a broken invariant. */
@@ -55,11 +50,6 @@ Throw (Args&&... args)
 void
 LogicError (
     std::string const& how) noexcept;
-
-/** Called to throw an exception. */
-#ifndef THROW
-#define THROW(T, arg) Throw<T>(arg)
-#endif
 
 } // ripple
 

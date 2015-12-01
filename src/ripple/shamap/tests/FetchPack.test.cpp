@@ -21,6 +21,7 @@
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/tests/common.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/UInt160.h>
@@ -49,7 +50,7 @@ public:
     {
         void operator()(std::uint32_t refNum) const
         {
-            throw std::runtime_error("missing node");
+            Throw<std::runtime_error> ("missing node");
         }
     };
 
@@ -153,7 +154,7 @@ public:
 //             expect (t3->getHash () == t2->getHash (), "root hashes do not match");
 //             expect (t3->deepCompare (*t2), "failed compare");
 //         }
-//         catch (...)
+//         catch (std::exception const&)
 //         {
 //             fail ("unhandled exception");
 //         }

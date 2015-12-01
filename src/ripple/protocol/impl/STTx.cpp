@@ -49,7 +49,7 @@ STTx::STTx (TxType type)
     {
         WriteLog (lsWARNING, STTx) <<
             "Transaction type: " << type;
-        throw std::runtime_error ("invalid transaction type");
+        Throw<std::runtime_error> ("invalid transaction type");
     }
 
     set (format->elements);
@@ -67,14 +67,14 @@ STTx::STTx (STObject&& object)
     {
         WriteLog (lsWARNING, STTx) <<
             "Transaction type: " << tx_type_;
-        throw std::runtime_error ("invalid transaction type");
+        Throw<std::runtime_error> ("invalid transaction type");
     }
 
     if (!setType (format->elements))
     {
         WriteLog (lsWARNING, STTx) <<
             "Transaction not legal for format";
-        throw std::runtime_error ("transaction not valid");
+        Throw<std::runtime_error> ("transaction not valid");
     }
 
     tid_ = getHash(HashPrefix::transactionID);
@@ -89,7 +89,7 @@ STTx::STTx (SerialIter& sit)
     {
         WriteLog (lsERROR, STTx) <<
             "Transaction has invalid length: " << length;
-        throw std::runtime_error ("Transaction length invalid");
+        Throw<std::runtime_error> ("Transaction length invalid");
     }
 
     set (sit);
@@ -101,14 +101,14 @@ STTx::STTx (SerialIter& sit)
     {
         WriteLog (lsWARNING, STTx) <<
             "Invalid transaction type: " << tx_type_;
-        throw std::runtime_error ("invalid transaction type");
+        Throw<std::runtime_error> ("invalid transaction type");
     }
 
     if (!setType (format->elements))
     {
         WriteLog (lsWARNING, STTx) <<
             "Transaction not legal for format";
-        throw std::runtime_error ("transaction not valid");
+        Throw<std::runtime_error> ("transaction not valid");
     }
 
     tid_ = getHash(HashPrefix::transactionID);
@@ -178,7 +178,7 @@ Blob STTx::getSignature () const
     {
         return getFieldVL (sfTxnSignature);
     }
-    catch (...)
+    catch (std::exception const&)
     {
         return Blob ();
     }
@@ -210,7 +210,7 @@ bool STTx::checkSign(bool allowMultiSign) const
             sigGood = checkSingleSign ();
         }
     }
-    catch (...)
+    catch (std::exception const&)
     {
     }
     return sigGood;
@@ -298,7 +298,7 @@ STTx::checkSingleSign () const
         ret = n.accountPublicVerify (getSigningData (*this),
             getFieldVL (sfTxnSignature), fullyCanonical);
     }
-    catch (...)
+    catch (std::exception const&)
     {
         // Assume it was a signature failure.
         ret = false;
@@ -372,7 +372,7 @@ STTx::checkMultiSign () const
             validSig = pubKey.accountPublicVerify (
                 s.getData(), signature, fullyCanonical);
         }
-        catch (...)
+        catch (std::exception const&)
         {
             // We assume any problem lies with the signature.
             validSig = false;

@@ -22,6 +22,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/LocalCredentials.h>
 #include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/Config.h>
@@ -46,7 +47,7 @@ void LocalCredentials::start ()
         nodeIdentityCreate ();
 
         if (!nodeIdentityLoad ())
-            throw std::runtime_error ("unable to retrieve new node identity.");
+            Throw<std::runtime_error> ("unable to retrieve new node identity.");
     }
 
     if (!app_.config().QUIET)

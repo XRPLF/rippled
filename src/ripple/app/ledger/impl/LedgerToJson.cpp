@@ -117,7 +117,7 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
             }
         }
     }
-    catch (...)
+    catch (std::exception const&)
     {
         // Nothing the user can do about this.
     }

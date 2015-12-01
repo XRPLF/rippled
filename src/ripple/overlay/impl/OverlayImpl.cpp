@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/protocol/JsonFields.h>
@@ -466,7 +467,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         }
         else
         {
-            throw std::runtime_error("Malformed manifest in config");
+            Throw<std::runtime_error> ("Malformed manifest in config");
         }
     }
     else
@@ -532,7 +533,7 @@ OverlayImpl::onPrepare()
             {
                 if (addr.port () == 0)
                 {
-                    throw std::runtime_error ("Port not specified for "
+                    Throw<std::runtime_error> ("Port not specified for "
                         "address:" + addr.to_string ());
                 }
 
@@ -1070,7 +1071,7 @@ setup_Overlay (BasicConfig const& config)
             beast::IP::Address::from_string (ip);
         if (! valid || ! setup.public_ip.is_v4() ||
                 is_private (setup.public_ip))
-            throw std::runtime_error ("Configured public IP is invalid");
+            Throw<std::runtime_error> ("Configured public IP is invalid");
     }
     return setup;
 }

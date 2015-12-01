@@ -22,6 +22,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/CheckLibraryVersions.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
@@ -298,7 +299,7 @@ int run (int argc, char** argv)
             vm);
         po::notify (vm);                  // Invoke option notify functions.
     }
-    catch (...)
+    catch (std::exception const&)
     {
         std::cerr << "rippled: Incorrect command line syntax." << std::endl;
         std::cerr << "Use '--help' for a list of options." << std::endl;
@@ -421,7 +422,7 @@ int run (int argc, char** argv)
                 boost::asio::ip::address_v4::from_string(
                     vm["rpc_ip"].as<std::string>()));
         }
-        catch(...)
+        catch(std::exception const&)
         {
             std::cerr << "Invalid rpc_ip = " <<
                 vm["rpc_ip"].as<std::string>() << std::endl;
@@ -439,9 +440,9 @@ int run (int argc, char** argv)
                 vm["rpc_port"].as<std::uint16_t>());
 
             if (*config->rpc_port == 0)
-                throw std::domain_error ("");
+                Throw<std::domain_error> ("");
         }
-        catch(...)
+        catch(std::exception const&)
         {
             std::cerr << "Invalid rpc_port = " <<
                 vm["rpc_port"].as<std::string>() << std::endl;
@@ -457,9 +458,9 @@ int run (int argc, char** argv)
             config->LOCK_QUORUM = true;
 
             if (config->VALIDATION_QUORUM < 0)
-                throw std::domain_error ("");
+                Throw<std::domain_error> ("");
         }
-        catch(...)
+        catch(std::exception const&)
         {
             std::cerr << "Invalid quorum = " <<
                 vm["quorum"].as <std::string> () << std::endl;

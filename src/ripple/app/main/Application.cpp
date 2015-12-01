@@ -46,6 +46,7 @@
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/misc/UniqueNodeList.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Sustain.h>
@@ -1047,7 +1048,7 @@ void ApplicationImp::setup()
         {
             m_journal.fatal << "Could not create Websocket for [" <<
                 port.name << "]";
-            throw std::exception();
+            Throw<std::exception> ();
         }
         websocketServers_.emplace_back (std::move (server));
     }
@@ -1526,7 +1527,7 @@ static bool schemaHas (
     if (static_cast<int> (schema.size ()) <= line)
     {
         JLOG (j.fatal) << "Schema for " << dbName << " has too few lines";
-        throw std::runtime_error ("bad schema");
+        Throw<std::runtime_error> ("bad schema");
     }
 
     return schema[line].find (content) != std::string::npos;
