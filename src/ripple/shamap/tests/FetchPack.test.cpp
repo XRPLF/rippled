@@ -42,7 +42,7 @@ public:
         tableItemsExtra = 20
     };
 
-    using Map   = hash_map <uint256, Blob>;
+    using Map   = hash_map <SHAMapHash, Blob>;
     using Table = SHAMap;
     using Item  = SHAMapItem;
 
@@ -61,13 +61,13 @@ public:
         }
 
         void gotNode (bool fromFilter,
-            SHAMapNodeID const& id, uint256 const& nodeHash,
-                Blob& nodeData, SHAMapTreeNode::TNType type)
+            SHAMapNodeID const& id, SHAMapHash const& nodeHash,
+                Blob& nodeData, SHAMapTreeNode::TNType type) override
         {
         }
 
         bool haveNode (SHAMapNodeID const& id,
-            uint256 const& nodeHash, Blob& nodeData)
+            SHAMapHash const& nodeHash, Blob& nodeData) override
         {
             Map::iterator it = mMap.find (nodeHash);
             if (it == mMap.end ())
@@ -106,9 +106,9 @@ public:
         }
     }
 
-    void on_fetch (Map& map, uint256 const& hash, Blob const& blob)
+    void on_fetch (Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        expect (sha512Half(makeSlice(blob)) == hash,
+        expect (sha512Half(makeSlice(blob)) == hash.as_uint256(),
             "Hash mismatch");
         map.emplace (hash, blob);
     }

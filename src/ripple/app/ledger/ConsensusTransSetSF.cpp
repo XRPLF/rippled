@@ -39,7 +39,7 @@ ConsensusTransSetSF::ConsensusTransSetSF (Application& app, NodeCache& nodeCache
 }
 
 void ConsensusTransSetSF::gotNode (
-    bool fromFilter, const SHAMapNodeID& id, uint256 const& nodeHash,
+    bool fromFilter, const SHAMapNodeID& id, SHAMapHash const& nodeHash,
     Blob& nodeData, SHAMapTreeNode::TNType type)
 {
     if (fromFilter)
@@ -59,7 +59,7 @@ void ConsensusTransSetSF::gotNode (
             Serializer s (nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit (s.slice());
             auto stx = std::make_shared<STTx const> (std::ref (sit));
-            assert (stx->getTransactionID () == nodeHash);
+            assert (stx->getTransactionID () == nodeHash.as_uint256());
             auto const pap = &app_;
             app_.getJobQueue ().addJob (
                 jtTRANSACTION, "TXS->TXN",
@@ -76,12 +76,12 @@ void ConsensusTransSetSF::gotNode (
 }
 
 bool ConsensusTransSetSF::haveNode (
-    const SHAMapNodeID& id, uint256 const& nodeHash, Blob& nodeData)
+    const SHAMapNodeID& id, SHAMapHash const& nodeHash, Blob& nodeData)
 {
     if (m_nodeCache.retrieve (nodeHash, nodeData))
         return true;
 
-    auto txn = app_.getMasterTransaction().fetch(nodeHash, false);
+    auto txn = app_.getMasterTransaction().fetch(nodeHash.as_uint256(), false);
 
     if (txn)
     {
@@ -91,7 +91,7 @@ bool ConsensusTransSetSF::haveNode (
         Serializer s;
         s.add32 (HashPrefix::transactionID);
         txn->getSTransaction ()->add (s);
-        assert(sha512Half(s.slice()) == nodeHash);
+        assert(sha512Half(s.slice()) == nodeHash.as_uint256());
         nodeData = s.peekData ();
         return true;
     }
