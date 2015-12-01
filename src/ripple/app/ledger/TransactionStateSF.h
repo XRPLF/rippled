@@ -41,13 +41,13 @@ public:
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
                   SHAMapNodeID const& id,
-                  uint256 const& nodeHash,
+                  SHAMapHash const& nodeHash,
                   Blob& nodeData,
-                  SHAMapTreeNode::TNType);
+                  SHAMapTreeNode::TNType) override;
 
     bool haveNode (SHAMapNodeID const& id,
-                   uint256 const& nodeHash,
-                   Blob& nodeData);
+                   SHAMapHash const& nodeHash,
+                   Blob& nodeData) override;
 };
 
 } // ripple
