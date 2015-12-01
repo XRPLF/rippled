@@ -69,7 +69,7 @@ class Cluster;
 class DatabaseCon;
 class SHAMapStore;
 
-using NodeCache     = TaggedCache <uint256, Blob>;
+using NodeCache     = TaggedCache <SHAMapHash, Blob>;
 
 class Application : public beast::PropertyStream::Source
 {

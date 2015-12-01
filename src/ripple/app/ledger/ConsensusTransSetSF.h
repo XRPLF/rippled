@@ -34,19 +34,19 @@ namespace ripple {
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-    using NodeCache = TaggedCache <uint256, Blob>;
+    using NodeCache = TaggedCache <SHAMapHash, Blob>;
 
     ConsensusTransSetSF (Application& app, NodeCache& nodeCache);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
                   SHAMapNodeID const& id,
-                  uint256 const& nodeHash,
+                  SHAMapHash const& nodeHash,
                   Blob& nodeData,
                   SHAMapTreeNode::TNType) override;
 
     bool haveNode (SHAMapNodeID const& id,
-                   uint256 const& nodeHash,
+                   SHAMapHash const& nodeHash,
                    Blob& nodeData) override;
 
 private:

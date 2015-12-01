@@ -35,7 +35,7 @@ AccountStateSF::AccountStateSF(Application& app)
 
 void AccountStateSF::gotNode (bool fromFilter,
                               SHAMapNodeID const& id,
-                              uint256 const& nodeHash,
+                              SHAMapHash const& nodeHash,
                               Blob& nodeData,
                               SHAMapTreeNode::TNType)
 {
@@ -43,14 +43,14 @@ void AccountStateSF::gotNode (bool fromFilter,
     //        SHAMap should provide an accessor to get the injected Database,
     //        and this should use that Database instad of getNodeStore
     app_.getNodeStore ().store (
-        hotACCOUNT_NODE, std::move (nodeData), nodeHash);
+        hotACCOUNT_NODE, std::move (nodeData), nodeHash.as_uint256());
 }
 
 bool AccountStateSF::haveNode (SHAMapNodeID const& id,
-                               uint256 const& nodeHash,
+                               SHAMapHash const& nodeHash,
                                Blob& nodeData)
 {
-    return app_.getLedgerMaster ().getFetchPack (nodeHash, nodeData);
+    return app_.getLedgerMaster ().getFetchPack (nodeHash.as_uint256(), nodeData);
 }
 
 } // ripple
