@@ -355,6 +355,7 @@ Payment::doApply ()
         path::RippleCalc::Output rc;
         {
             PaymentSandbox pv(&view());
+            JLOG(j_.error) << "Entering RippleCalc in payment: " << ctx_.tx.getTransactionID();
             rc = path::RippleCalc::rippleCalculate (
                 pv,
                 maxSourceAmount,
