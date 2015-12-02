@@ -1354,8 +1354,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1403,6 +1401,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
     </ClInclude>
