@@ -22,8 +22,12 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/LedgerCleaner.h>
+#include <ripple/app/ledger/LedgerHistory.h>
 #include <ripple/app/ledger/LedgerHolder.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/RangeSet.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
@@ -58,8 +62,12 @@ struct LedgerReplay
 class LedgerMaster
     : public beast::Stoppable
 {
-protected:
-    explicit LedgerMaster (Stoppable& parent);
+public:
+    explicit
+    LedgerMaster(Application& app, Stopwatch& stopwatch,
+        Stoppable& parent,
+            beast::insight::Collector::ptr const& collector,
+                beast::Journal journal);
 
 public:
     using callback = std::function <void (Ledger::ref)>;
@@ -67,156 +75,244 @@ public:
 public:
     virtual ~LedgerMaster () = default;
 
-    virtual LedgerIndex getCurrentLedgerIndex () = 0;
-    virtual LedgerIndex getValidLedgerIndex () = 0;
+    LedgerIndex getCurrentLedgerIndex ();
+    LedgerIndex getValidLedgerIndex ();
 
-    virtual bool isCompatible (Ledger::pointer,
-        beast::Journal::Stream, const char* reason) = 0;
+    bool isCompatible (Ledger::pointer,
+        beast::Journal::Stream, const char* reason);
 
-    virtual std::recursive_mutex& peekMutex () = 0;
+    std::recursive_mutex& peekMutex ();
 
     // The current ledger is the ledger we believe new transactions should go in
-    virtual std::shared_ptr<ReadView const> getCurrentLedger () = 0;
+    std::shared_ptr<ReadView const> getCurrentLedger ();
 
     // The finalized ledger is the last closed/accepted ledger
-    virtual Ledger::pointer getClosedLedger () = 0;
+    Ledger::pointer getClosedLedger ();
 
     // The validated ledger is the last fully validated ledger
-    virtual Ledger::pointer getValidatedLedger () = 0;
+    Ledger::pointer getValidatedLedger ();
 
     // The Rules are in the last fully validated ledger if there is one.
-    virtual Rules getValidatedRules() = 0;
+    Rules getValidatedRules();
 
     // This is the last ledger we published to clients and can lag the validated
     // ledger
-    virtual Ledger::pointer getPublishedLedger () = 0;
+    Ledger::pointer getPublishedLedger ();
 
-    virtual bool isValidLedger(LedgerInfo const&) = 0;
+    bool isValidLedger(LedgerInfo const&);
 
-    virtual std::chrono::seconds getPublishedLedgerAge () = 0;
-    virtual std::chrono::seconds getValidatedLedgerAge () = 0;
-    virtual bool isCaughtUp(std::string& reason) = 0;
+    std::chrono::seconds getPublishedLedgerAge ();
+    std::chrono::seconds getValidatedLedgerAge ();
+    bool isCaughtUp(std::string& reason);
 
-    virtual int getMinValidations () = 0;
+    int getMinValidations ();
 
-    virtual void setMinValidations (int v, bool strict) = 0;
+    void setMinValidations (int v, bool strict);
 
-    virtual std::uint32_t getEarliestFetch () = 0;
+    std::uint32_t getEarliestFetch ();
 
-    virtual bool storeLedger (Ledger::pointer) = 0;
-    virtual void forceValid (Ledger::pointer) = 0;
+    bool storeLedger (Ledger::pointer);
+    void forceValid (Ledger::pointer);
 
-    virtual void setFullLedger (
-        Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
+    void setFullLedger (
+        Ledger::pointer ledger, bool isSynchronous, bool isCurrent);
 
-    virtual void switchLCL (Ledger::pointer lastClosed) = 0;
+    void switchLCL (Ledger::pointer lastClosed);
 
-    virtual void failedSave(std::uint32_t seq, uint256 const& hash) = 0;
+    void failedSave(std::uint32_t seq, uint256 const& hash);
 
-    virtual std::string getCompleteLedgers () = 0;
+    std::string getCompleteLedgers ();
 
-    virtual void applyHeldTransactions () = 0;
+    /** Apply held transactions to the open ledger
+        This is normally called as we close the ledger.
+        The open ledger remains open to handle new transactions
+        until a new open ledger is built.
+    */
+    void applyHeldTransactions ();
 
     /** Get a ledger's hash by sequence number using the cache
     */
-    virtual uint256 getHashBySeq (std::uint32_t index) = 0;
+    uint256 getHashBySeq (std::uint32_t index);
 
     /** Walk to a ledger's hash using the skip list
     */
-    virtual uint256 walkHashBySeq (std::uint32_t index) = 0;
-    virtual uint256 walkHashBySeq (
-        std::uint32_t index, Ledger::ref referenceLedger) = 0;
+    uint256 walkHashBySeq (std::uint32_t index);
+    uint256 walkHashBySeq (
+        std::uint32_t index, Ledger::ref referenceLedger);
 
-    virtual Ledger::pointer getLedgerBySeq (std::uint32_t index) = 0;
+    Ledger::pointer getLedgerBySeq (std::uint32_t index);
 
-    virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
+    Ledger::pointer getLedgerByHash (uint256 const& hash);
 
-    virtual void setLedgerRangePresent (
-        std::uint32_t minV, std::uint32_t maxV) = 0;
+    void setLedgerRangePresent (
+        std::uint32_t minV, std::uint32_t maxV);
 
-    virtual uint256 getLedgerHash(
-        std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
+    uint256 getLedgerHash(
+        std::uint32_t desiredSeq, Ledger::ref knownGoodLedger);
 
-    virtual boost::optional <NetClock::time_point> getCloseTimeBySeq (
-        LedgerIndex ledgerIndex) = 0;
+    boost::optional <NetClock::time_point> getCloseTimeBySeq (
+        LedgerIndex ledgerIndex);
 
-    virtual boost::optional <NetClock::time_point> getCloseTimeByHash (
-        LedgerHash const& ledgerHash) = 0;
+    boost::optional <NetClock::time_point> getCloseTimeByHash (
+        LedgerHash const& ledgerHash);
 
-    virtual void addHeldTransaction (std::shared_ptr<Transaction> const& trans) = 0;
-    virtual void fixMismatch (Ledger::ref ledger) = 0;
+    void addHeldTransaction (std::shared_ptr<Transaction> const& trans);
+    void fixMismatch (Ledger::ref ledger);
 
-    virtual bool haveLedger (std::uint32_t seq) = 0;
-    virtual void clearLedger (std::uint32_t seq) = 0;
-    virtual bool getValidatedRange (
-        std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
-    virtual bool getFullValidatedRange (
-        std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
+    bool haveLedger (std::uint32_t seq);
+    void clearLedger (std::uint32_t seq);
+    bool getValidatedRange (
+        std::uint32_t& minVal, std::uint32_t& maxVal);
+    bool getFullValidatedRange (
+        std::uint32_t& minVal, std::uint32_t& maxVal);
 
-    virtual void tune (int size, int age) = 0;
-    virtual void sweep () = 0;
-    virtual float getCacheHitRate () = 0;
+    void tune (int size, int age);
+    void sweep ();
+    float getCacheHitRate ();
 
-    virtual void checkAccept (Ledger::ref ledger) = 0;
-    virtual void checkAccept (uint256 const& hash, std::uint32_t seq) = 0;
-    virtual void consensusBuilt (Ledger::ref ledger, Json::Value consensus) = 0;
+    void checkAccept (Ledger::ref ledger);
+    void checkAccept (uint256 const& hash, std::uint32_t seq);
+    void consensusBuilt (Ledger::ref ledger, Json::Value consensus);
 
-    virtual LedgerIndex getBuildingLedger () = 0;
-    virtual void setBuildingLedger (LedgerIndex index) = 0;
+    LedgerIndex getBuildingLedger ();
+    void setBuildingLedger (LedgerIndex index);
 
-    virtual void tryAdvance () = 0;
-    virtual void newPathRequest () = 0;
-    virtual bool isNewPathRequest () = 0;
-    virtual void newOrderBookDB () = 0;
+    void tryAdvance ();
+    void newPathRequest ();
+    bool isNewPathRequest ();
+    void newOrderBookDB ();
 
-    virtual bool fixIndex (
-        LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
-    virtual void doLedgerCleaner(Json::Value const& parameters) = 0;
+    bool fixIndex (
+        LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
+    void doLedgerCleaner(Json::Value const& parameters);
 
-    virtual beast::PropertyStream::Source& getPropertySource () = 0;
+    beast::PropertyStream::Source& getPropertySource ();
 
-    virtual void clearPriorLedgers (LedgerIndex seq) = 0;
+    void clearPriorLedgers (LedgerIndex seq);
 
-    virtual void clearLedgerCachePrior (LedgerIndex seq) = 0;
+    void clearLedgerCachePrior (LedgerIndex seq);
 
     // ledger replay
-    virtual void takeReplay (std::unique_ptr<LedgerReplay> replay) = 0;
-    virtual std::unique_ptr<LedgerReplay> releaseReplay () = 0;
+    void takeReplay (std::unique_ptr<LedgerReplay> replay);
+    std::unique_ptr<LedgerReplay> releaseReplay ();
 
     // Fetch Packs
-    virtual
     void gotFetchPack (
         bool progress,
-        std::uint32_t seq) = 0;
+        std::uint32_t seq);
 
-    virtual
     void addFetchPack (
         uint256 const& hash,
-        std::shared_ptr<Blob>& data) = 0;
+        std::shared_ptr<Blob>& data);
 
-    virtual
     bool getFetchPack (
         uint256 const& hash,
-        Blob& data) = 0;
+        Blob& data);
 
-    virtual
     void makeFetchPack (
         std::weak_ptr<Peer> const& wPeer,
         std::shared_ptr<protocol::TMGetObjectByHash> const& request,
         uint256 haveLedgerHash,
-        std::uint32_t uUptime) = 0;
+        std::uint32_t uUptime);
 
-    virtual
-    std::size_t getFetchPackCacheSize () const = 0;
+    std::size_t getFetchPackCacheSize () const;
+
+private:
+    void setValidLedger(Ledger::ref l);
+    void setPubLedger(Ledger::ref l);
+    void tryFill(Job& job, Ledger::pointer ledger);
+    void getFetchPack(LedgerHash missingHash, LedgerIndex missingIndex);
+    LedgerHash getLedgerHashForHistory(LedgerIndex index);
+    int getNeededValidations();
+    void advanceThread();
+    // Try to publish ledgers, acquire missing ledgers
+    void doAdvance();
+    bool shouldFetchPack(std::uint32_t seq) const;
+    bool shouldAcquire(
+        std::uint32_t const currentLedger,
+        std::uint32_t const ledgerHistory,
+        std::uint32_t const ledgerHistoryIndex,
+        std::uint32_t const candidateLedger) const;
+    std::vector<Ledger::pointer> findNewLedgersToPublish();
+    void updatePaths(Job& job);
+    void newPFWork(const char *name);
+
+private:
+    using ScopedLockType = std::lock_guard <std::recursive_mutex>;
+    using ScopedUnlockType = beast::GenericScopedUnlock <std::recursive_mutex>;
+
+    Application& app_;
+    beast::Journal m_journal;
+
+    std::recursive_mutex m_mutex;
+
+    // The ledger that most recently closed.
+    LedgerHolder mClosedLedger;
+
+    // The highest-sequence ledger we have fully accepted.
+    LedgerHolder mValidLedger;
+
+    // The last ledger we have published.
+    Ledger::pointer mPubLedger;
+
+    // The last ledger we did pathfinding against.
+    Ledger::pointer mPathLedger;
+
+    // The last ledger we handled fetching history
+    Ledger::pointer mHistLedger;
+
+    // Fully validated ledger, whether or not we have the ledger resident.
+    std::pair <uint256, LedgerIndex> mLastValidLedger;
+
+    LedgerHistory mLedgerHistory;
+
+    CanonicalTXSet mHeldTransactions;
+
+    // A set of transactions to replay during the next close
+    std::unique_ptr<LedgerReplay> replayData;
+
+    std::recursive_mutex mCompleteLock;
+    RangeSet mCompleteLedgers;
+
+    std::unique_ptr <detail::LedgerCleaner> mLedgerCleaner;
+
+    int mMinValidations;    // The minimum validations to publish a ledger.
+    bool mStrictValCount;   // Don't raise the minimum
+    uint256 mLastValidateHash;
+    std::uint32_t mLastValidateSeq;
+
+    // Publish thread is running.
+    bool                        mAdvanceThread;
+
+    // Publish thread has work to do.
+    bool                        mAdvanceWork;
+    int                         mFillInProgress;
+
+    int     mPathFindThread;    // Pathfinder jobs dispatched
+    bool    mPathFindNewRequest;
+
+    std::atomic <std::uint32_t> mPubLedgerClose;
+    std::atomic <std::uint32_t> mPubLedgerSeq;
+    std::atomic <std::uint32_t> mValidLedgerSign;
+    std::atomic <std::uint32_t> mValidLedgerSeq;
+    std::atomic <std::uint32_t> mBuildingLedgerSeq;
+
+    // The server is in standalone mode
+    bool const standalone_;
+
+    // How many ledgers before the current ledger do we allow peers to request?
+    std::uint32_t const fetch_depth_;
+
+    // How much history do we want to keep
+    std::uint32_t const ledger_history_;
+
+    int const ledger_fetch_size_;
+
+    TaggedCache<uint256, Blob> fetch_packs_;
+
+    std::uint32_t fetch_seq_;
+
 };
-
-std::unique_ptr <LedgerMaster>
-make_LedgerMaster (
-    Application& app,
-    Stopwatch& stopwatch,
-    beast::Stoppable& parent,
-    beast::insight::Collector::ptr const& collector,
-    beast::Journal journal);
 
 } // ripple
 

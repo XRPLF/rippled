@@ -2106,9 +2106,6 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.h">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
@@ -2152,6 +2149,9 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
