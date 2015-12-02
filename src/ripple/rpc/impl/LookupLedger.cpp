@@ -162,11 +162,12 @@ bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger,
         // validated).
         auto hash = ledgerMaster.walkHashBySeq (seq);
 
-        if (ledger.info().hash != hash)
+        if (!hash || ledger.info().hash != *hash)
         {
             // This ledger's hash is not the hash of the validated ledger
-            if (hash.isNonZero ())
+            if (hash)
             {
+                assert(hash->isNonZero());
                 uint256 valHash = getHashByIndex (seq, app);
                 if (valHash == ledger.info().hash)
                 {

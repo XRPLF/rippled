@@ -511,13 +511,14 @@ LedgerMaster::tryFill (Job& job, Ledger::pointer ledger)
 void
 LedgerMaster::getFetchPack (LedgerHash missingHash, LedgerIndex missingIndex)
 {
-    uint256 haveHash = getLedgerHashForHistory (missingIndex + 1);
+    auto haveHash = getLedgerHashForHistory (missingIndex + 1);
 
-    if (haveHash.isZero())
+    if (!haveHash)
     {
         JLOG (m_journal.error) << "No hash for fetch pack";
         return;
     }
+    assert(haveHash->isNonZero());
 
     // Select target Peer based on highest score.  The score is randomized
     // but biased in favor of Peers with low latency.
@@ -544,7 +545,7 @@ LedgerMaster::getFetchPack (LedgerHash missingHash, LedgerIndex missingIndex)
         protocol::TMGetObjectByHash tmBH;
         tmBH.set_query (true);
         tmBH.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
-        tmBH.set_ledgerhash (haveHash.begin(), 32);
+        tmBH.set_ledgerhash (haveHash->begin(), 32);
         auto packet = std::make_shared<Message> (
             tmBH, protocol::mtGET_OBJECTS);
 
@@ -941,8 +942,7 @@ LedgerMaster::advanceThread()
     JLOG (m_journal.trace) << "advanceThread>";
 }
 
-// VFALCO NOTE This should return boost::optional<uint256>
-LedgerHash
+boost::optional<LedgerHash>
 LedgerMaster::getLedgerHashForHistory (LedgerIndex index)
 {
     // Try to get the hash of a ledger we need to fetch for history
@@ -1078,8 +1078,7 @@ LedgerMaster::tryAdvance()
 
 // Return the hash of the valid ledger with a particular sequence, given a
 // subsequent ledger known valid.
-// VFALCO NOTE This should return boost::optional<uint256>
-uint256
+boost::optional<LedgerHash>
 LedgerMaster::getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
 {
     assert(desiredSeq < knownGoodLedger->info().seq);
@@ -1108,9 +1107,7 @@ LedgerMaster::getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedge
         }
     }
 
-    // VFALCO NOTE This shouldn't be needed, but
-    //             preserves original behavior.
-    return hash ? *hash : zero; // kludge
+    return hash;
 }
 
 void
@@ -1375,11 +1372,10 @@ LedgerMaster::getHashBySeq (std::uint32_t index)
     return getHashByIndex (index, app_);
 }
 
-// VFALCO NOTE This should return boost::optional<uint256>
-uint256
+boost::optional<LedgerHash>
 LedgerMaster::walkHashBySeq (std::uint32_t index)
 {
-    uint256 ledgerHash;
+    boost::optional<LedgerHash> ledgerHash;
     Ledger::pointer referenceLedger;
 
     referenceLedger = mValidLedger.get ();
@@ -1388,27 +1384,26 @@ LedgerMaster::walkHashBySeq (std::uint32_t index)
     return ledgerHash;
 }
 
-/** Walk the chain of ledger hashed to determine the hash of the
+/** Walk the chain of ledger hashes to determine the hash of the
     ledger with the specified index. The referenceLedger is used as
     the base of the chain and should be fully validated and must not
     precede the target index. This function may throw if nodes
     from the reference ledger or any prior ledger are not present
     in the node store.
 */
-// VFALCO NOTE This should return boost::optional<uint256>
-uint256
+boost::optional<LedgerHash>
 LedgerMaster::walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
 {
     if (!referenceLedger || (referenceLedger->info().seq < index))
     {
         // Nothing we can do. No validated ledger.
-        return zero;
+        return boost::none;
     }
 
     // See if the hash for the ledger we need is in the reference ledger
     auto ledgerHash = hashOfSeq(*referenceLedger, index, m_journal);
     if (ledgerHash)
-        return *ledgerHash;
+        return ledgerHash;
 
     // The hash is not in the reference ledger. Get another ledger which can
     // be located easily and should contain the hash.
@@ -1444,7 +1439,7 @@ LedgerMaster::walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
             }
         }
     }
-    return ledgerHash ? *ledgerHash : zero; // kludge
+    return ledgerHash;
 }
 
 Ledger::pointer
@@ -1619,18 +1614,19 @@ void LedgerMaster::doAdvance ()
                         << "advanceThread should acquire";
                     {
                         ScopedUnlockType sl(m_mutex);
-                        uint256 hash = getLedgerHashForHistory (missing);
-                        if (hash.isNonZero())
+                        auto hash = getLedgerHashForHistory (missing);
+                        if (hash)
                         {
-                            Ledger::pointer ledger = getLedgerByHash (hash);
+                            assert(hash->isNonZero());
+                            Ledger::pointer ledger = getLedgerByHash (*hash);
                             if (!ledger)
                             {
                                 if (!app_.getInboundLedgers().isFailure (
-                                        hash))
+                                        *hash))
                                 {
                                     ledger =
                                         app_.getInboundLedgers().acquire(
-                                            hash, missing,
+                                            *hash, missing,
                                             InboundLedger::fcHISTORY);
                                     if (! ledger && (missing > 32600) &&
                                         shouldFetchPack (missing))
@@ -1639,7 +1635,7 @@ void LedgerMaster::doAdvance ()
                                         "tryAdvance want fetch pack " <<
                                         missing;
                                         fetch_seq_ = missing;
-                                        getFetchPack(hash, missing);
+                                        getFetchPack(*hash, missing);
                                     }
                                     else
                                         JLOG (m_journal.trace) <<
@@ -1692,12 +1688,15 @@ void LedgerMaster::doAdvance ()
                                     for (int i = 0; i < ledger_fetch_size_; ++i)
                                     {
                                         std::uint32_t seq = missing - i;
-                                        auto hash =
+                                        auto hash2 =
                                                 getLedgerHashForHistory(seq);
-                                        if (hash.isNonZero())
+                                        if (hash2)
+                                        {
+                                            assert(hash2->isNonZero());
                                             app_.getInboundLedgers().acquire
-                                                    (hash, seq,
-                                                     InboundLedger::fcHISTORY);
+                                                (*hash2, seq,
+                                                    InboundLedger::fcHISTORY);
+                                        }
                                     }
                                 }
                                 catch (std::exception const&)
