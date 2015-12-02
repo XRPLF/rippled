@@ -136,8 +136,15 @@ public:
 
     /** Walk to a ledger's hash using the skip list
     */
-    uint256 walkHashBySeq (std::uint32_t index);
-    uint256 walkHashBySeq (
+    boost::optional<LedgerHash> walkHashBySeq (std::uint32_t index);
+    /** Walk the chain of ledger hashes to determine the hash of the
+        ledger with the specified index. The referenceLedger is used as
+        the base of the chain and should be fully validated and must not
+        precede the target index. This function may throw if nodes
+        from the reference ledger or any prior ledger are not present
+        in the node store.
+    */
+    boost::optional<LedgerHash> walkHashBySeq (
         std::uint32_t index, Ledger::ref referenceLedger);
 
     Ledger::pointer getLedgerBySeq (std::uint32_t index);
@@ -147,7 +154,7 @@ public:
     void setLedgerRangePresent (
         std::uint32_t minV, std::uint32_t maxV);
 
-    uint256 getLedgerHash(
+    boost::optional<LedgerHash> getLedgerHash(
         std::uint32_t desiredSeq, Ledger::ref knownGoodLedger);
 
     boost::optional <NetClock::time_point> getCloseTimeBySeq (
@@ -222,7 +229,7 @@ private:
     void setPubLedger(Ledger::ref l);
     void tryFill(Job& job, Ledger::pointer ledger);
     void getFetchPack(LedgerHash missingHash, LedgerIndex missingIndex);
-    LedgerHash getLedgerHashForHistory(LedgerIndex index);
+    boost::optional<LedgerHash> getLedgerHashForHistory(LedgerIndex index);
     int getNeededValidations();
     void advanceThread();
     // Try to publish ledgers, acquire missing ledgers
