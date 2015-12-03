@@ -324,6 +324,15 @@ LedgerMaster::applyHeldTransactions ()
         app_.openLedger().current()->info().parentHash);
 }
 
+std::vector<std::shared_ptr<STTx const>>
+LedgerMaster::pruneHeldTransactions(AccountID const& account,
+    std::uint32_t const seq)
+{
+    ScopedLockType sl(m_mutex);
+
+    return mHeldTransactions.prune(account, seq);
+}
+
 LedgerIndex
 LedgerMaster::getBuildingLedger ()
 {
@@ -1384,13 +1393,6 @@ LedgerMaster::walkHashBySeq (std::uint32_t index)
     return ledgerHash;
 }
 
-/** Walk the chain of ledger hashes to determine the hash of the
-    ledger with the specified index. The referenceLedger is used as
-    the base of the chain and should be fully validated and must not
-    precede the target index. This function may throw if nodes
-    from the reference ledger or any prior ledger are not present
-    in the node store.
-*/
 boost::optional<LedgerHash>
 LedgerMaster::walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
 {
