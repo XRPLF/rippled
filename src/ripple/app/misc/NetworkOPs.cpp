@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
@@ -35,7 +36,6 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
@@ -979,6 +979,13 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             {
                 m_journal.debug << "Transaction is now included in open ledger";
                 e.transaction->setStatus (INCLUDED);
+
+                auto txCur = e.transaction->getSTransaction();
+                for (auto const& tx : m_ledgerMaster.pruneHeldTransactions(
+                    txCur->getAccountID(sfAccount), txCur->getSequence() + 1))
+                {
+                    submitTransaction(tx);
+                }
             }
             else if (e.result == tefPAST_SEQ)
             {

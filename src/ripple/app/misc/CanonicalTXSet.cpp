@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
+#include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
 
@@ -94,6 +95,33 @@ void CanonicalTXSet::insert (std::shared_ptr<STTx const> const& txn)
                 txn->getSequence (),
                 txn->getTransactionID ()),
             txn));
+}
+
+std::vector<std::shared_ptr<STTx const>>
+CanonicalTXSet::prune(AccountID const& account,
+    std::uint32_t const seq)
+{
+    auto effectiveAccount = accountKey (account);
+
+    Key keyLow(effectiveAccount, seq, zero);
+    Key keyHigh(effectiveAccount, seq+1, zero);
+
+    auto range = boost::make_iterator_range(
+        mMap.lower_bound(keyLow),
+            mMap.lower_bound(keyHigh));
+    auto txRange = boost::adaptors::transform(
+        range,
+    [](auto const& p)
+    {
+        return p.second;
+    });
+
+    std::vector<std::shared_ptr<STTx const>> result(
+        txRange.begin(), txRange.end());
+
+    mMap.erase(range.begin(), range.end());
+
+    return result;
 }
 
 CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)

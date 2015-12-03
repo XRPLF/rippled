@@ -130,6 +130,16 @@ public:
     */
     void applyHeldTransactions ();
 
+    /** Get all the transactions held for a particular account.
+        This is normally called when a transaction for that
+        account is successfully applied to the open
+        ledger so those transactions can be resubmitted without
+        waiting for ledger close.
+    */
+    std::vector<std::shared_ptr<STTx const>>
+    pruneHeldTransactions(AccountID const& account,
+        std::uint32_t const seq);
+
     /** Get a ledger's hash by sequence number using the cache
     */
     uint256 getHashBySeq (std::uint32_t index);
@@ -251,7 +261,7 @@ private:
     Application& app_;
     beast::Journal m_journal;
 
-    std::recursive_mutex m_mutex;
+    std::recursive_mutex mutable m_mutex;
 
     // The ledger that most recently closed.
     LedgerHolder mClosedLedger;

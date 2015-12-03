@@ -86,6 +86,9 @@ public:
 
     void insert (std::shared_ptr<STTx const> const& txn);
 
+    std::vector<std::shared_ptr<STTx const>>
+    prune(AccountID const& account, std::uint32_t const seq);
+
     // VFALCO TODO remove this function
     void reset (LedgerHash const& saltHash)
     {
