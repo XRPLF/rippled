@@ -397,6 +397,10 @@ private:
 
                 ++it;
             }
+            else
+            {
+                ++it;
+            }
         }
 
         return ret;
