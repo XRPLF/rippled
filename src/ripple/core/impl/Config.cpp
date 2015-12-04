@@ -264,10 +264,11 @@ void Config::setup (std::string const& strConf, bool bQuiet)
             CONFIG_FILE = CONFIG_DIR / strConfFile;
             dataDir    = strXdgDataHome + "/" + systemName ();
 
-            boost::filesystem::create_directories (CONFIG_DIR, ec);
-
-            if (ec)
-                throw std::runtime_error (boost::str (boost::format ("Can not create %s") % CONFIG_DIR));
+            if (!boost::filesystem::exists (CONFIG_FILE))
+            {
+                CONFIG_DIR  = "/etc/opt/" + systemName ();
+                CONFIG_FILE = CONFIG_DIR / strConfFile;
+            }
         }
     }
 
