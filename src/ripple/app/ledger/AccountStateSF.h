@@ -42,11 +42,11 @@ public:
                   SHAMapNodeID const& id,
                   SHAMapHash const& nodeHash,
                   Blob& nodeData,
-                  SHAMapTreeNode::TNType) override;
+                  SHAMapTreeNode::TNType) const override;
 
     bool haveNode (SHAMapNodeID const& id,
                    SHAMapHash const& nodeHash,
-                   Blob& nodeData) override;
+                   Blob& nodeData) const override;
 };
 
 } // ripple
