@@ -62,12 +62,12 @@ public:
 
         void gotNode (bool fromFilter,
             SHAMapNodeID const& id, SHAMapHash const& nodeHash,
-                Blob& nodeData, SHAMapTreeNode::TNType type) override
+                Blob& nodeData, SHAMapTreeNode::TNType type) const override
         {
         }
 
         bool haveNode (SHAMapNodeID const& id,
-            SHAMapHash const& nodeHash, Blob& nodeData) override
+            SHAMapHash const& nodeHash, Blob& nodeData) const override
         {
             Map::iterator it = mMap.find (nodeHash);
             if (it == mMap.end ())
