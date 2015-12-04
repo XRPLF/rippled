@@ -393,16 +393,15 @@ def config_base(env):
         env.Append(CPPPATH=[os.path.join(profile_jemalloc, 'include')])
         env.Append(LINKFLAGS=['-Wl,-rpath,' + os.path.join(profile_jemalloc, 'lib')])
 
-def add_static_libs(env, libs):
+def add_static_libs(env, static_libs, dyn_libs=None):
     if not 'HASSTATICLIBS' in env:
         env['HASSTATICLIBS'] = True
-        env['STATICLIBS'] = ''
-        env.Replace(LINKCOM=env['LINKCOM'] + " -Wl,-Bstatic $STATICLIBS")
-    c = env['STATICLIBS']
-    if c == None: c = ''
-    for f in libs:
-        c += ' -l' + f 
-    env['STATICLIBS'] = c
+        env.Replace(LINKCOM=env['LINKCOM'] + " -Wl,-Bstatic $STATICLIBS -Wl,-Bdynamic $DYNAMICLIBS")
+    for k,l in [('STATICLIBS', static_libs or []), ('DYNAMICLIBS', dyn_libs or [])]:
+        c = env.get(k, '')
+        for f in l:
+            c += ' -l' + f 
+        env[k] = c
 
 def get_libs(lib, static):
     '''Returns a tuple of lists. The first element is the static libs,
@@ -453,9 +452,9 @@ def config_env(toolchain, variant, env):
             link_static = should_link_static()
             for l in ['openssl', 'protobuf']:
                 static, dynamic = get_libs(l, link_static) 
-                if static:
-                    add_static_libs(env, static)
-                if dynamic:
+                if link_static:
+                    add_static_libs(env, static, dynamic)
+                else:
                     env.Append(LIBS=dynamic)
                 env.ParseConfig('pkg-config --static --cflags ' + l)
 
