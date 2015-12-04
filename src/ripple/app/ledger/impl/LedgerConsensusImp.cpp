@@ -971,6 +971,8 @@ void LedgerConsensusImp::simulate ()
 
 void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 {
+    Json::Value consensusStatus;
+
     {
         auto lock = beast::make_lock(app_.getMasterMutex());
 
@@ -979,6 +981,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
            consensus_.takePosition (mPreviousLedger->info().seq, set);
 
         assert (set->getHash ().as_uint256() == mOurPosition->getCurrentHash ());
+        consensusStatus = getJson (true);
     }
 
     auto  closeTime = mOurPosition->getCloseTime ();
@@ -1135,7 +1138,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             << "CNF newLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
-    ledgerMaster_.consensusBuilt (newLCL, getJson (true));
+    ledgerMaster_.consensusBuilt (newLCL, std::move (consensusStatus));
 
     {
         // Apply disputed transactions that didn't get in
