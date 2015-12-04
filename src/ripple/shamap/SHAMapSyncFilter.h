@@ -39,11 +39,11 @@ public:
                           SHAMapNodeID const& id,
                           SHAMapHash const& nodeHash,
                           Blob& nodeData,
-                          SHAMapTreeNode::TNType type) = 0;
+                          SHAMapTreeNode::TNType type) const = 0;
 
     virtual bool haveNode (SHAMapNodeID const& id,
                            SHAMapHash const& nodeHash,
-                           Blob& nodeData) = 0;
+                           Blob& nodeData) const = 0;
 };
 
 }

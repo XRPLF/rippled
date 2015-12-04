@@ -37,7 +37,7 @@ void AccountStateSF::gotNode (bool fromFilter,
                               SHAMapNodeID const& id,
                               SHAMapHash const& nodeHash,
                               Blob& nodeData,
-                              SHAMapTreeNode::TNType)
+                              SHAMapTreeNode::TNType) const
 {
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
     //        SHAMap should provide an accessor to get the injected Database,
@@ -48,7 +48,7 @@ void AccountStateSF::gotNode (bool fromFilter,
 
 bool AccountStateSF::haveNode (SHAMapNodeID const& id,
                                SHAMapHash const& nodeHash,
-                               Blob& nodeData)
+                               Blob& nodeData) const
 {
     return app_.getLedgerMaster ().getFetchPack (nodeHash.as_uint256(), nodeData);
 }
