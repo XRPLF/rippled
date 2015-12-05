@@ -48,6 +48,7 @@ static LimitRange const bookOffers = {0, 0, 400};
 static LimitRange const noRippleCheck = {10, 300, 400};
 
 static int const defaultAutoFillFeeMultiplier = 10;
+static int const defaultAutoFillFeeDivisor = 1;
 static int const maxPathfindsInProgress = 2;
 static int const maxPathfindJobCount = 50;
 static int const maxJobQueueClients = 500;
