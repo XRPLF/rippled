@@ -631,6 +631,7 @@ Json::Value checkFee (
         return RPC::missing_field_error ("tx_json.Fee");
 
     int mult = Tuning::defaultAutoFillFeeMultiplier;
+    int div = Tuning::defaultAutoFillFeeDivisor;
     if (request.isMember (jss::fee_mult_max))
     {
         if (request[jss::fee_mult_max].isNumeric ())
@@ -643,6 +644,21 @@ Json::Value checkFee (
                 RPC::expected_field_message (jss::fee_mult_max, "a number"));
         }
     }
+    if (request.isMember(jss::fee_div_max))
+    {
+        if (request[jss::fee_div_max].isNumeric())
+        {
+            div = request[jss::fee_div_max].asInt();
+            if (div == 0)
+                return RPC::make_error(rpcINVALID_PARAMS,
+                    RPC::expected_field_message(jss::fee_div_max, "non-zero"));
+        }
+        else
+        {
+            return RPC::make_error(rpcHIGH_FEE,
+                RPC::expected_field_message(jss::fee_div_max, "a number"));
+        }
+    }
 
     // Default fee in fee units.
     std::uint64_t const feeDefault = config.TRANSACTION_FEE_BASE;
@@ -652,8 +668,9 @@ Json::Value checkFee (
         feeTrack.scaleFeeLoad (feeDefault,
             ledger->fees().base, ledger->fees().units, isUnlimited (role));
 
-    std::uint64_t const limit = mult * feeTrack.scaleFeeBase (
-        feeDefault, ledger->fees().base, ledger->fees().units);
+    auto const limit = mulDivThrow(feeTrack.scaleFeeBase (
+        feeDefault, ledger->fees().base, ledger->fees().units),
+        mult, div);
 
     if (fee > limit)
     {

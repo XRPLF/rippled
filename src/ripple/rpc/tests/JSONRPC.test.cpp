@@ -143,12 +143,55 @@ R"({
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
+{ "Add 'fee_mult_max' and 'fee_div_max' field.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 7,
+    "fee_div_max": 4,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"",
+"",
+"Missing field 'tx_json.Fee'.",
+"Missing field 'tx_json.SigningPubKey'."}},
+
 { "fee_mult_max is ignored if 'Fee' is present.",
 R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "fee_mult_max": 0,
+    "tx_json": {
+        "Sequence": 0,
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"",
+"",
+"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+"Missing field 'tx_json.SigningPubKey'."}},
+
+{ "fee_div_max is ignored if 'Fee' is present.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 100,
+    "fee_div_max": 1000,
     "tx_json": {
         "Sequence": 0,
         "Fee": 10,
@@ -184,6 +227,27 @@ R"({
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
+{ "Invalid 'fee_div_max' field.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 5,
+    "fee_div_max": "NotAFeeMultiplier",
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Invalid field 'fee_div_max', not a number.",
+"Invalid field 'fee_div_max', not a number.",
+"Missing field 'tx_json.Fee'.",
+"Missing field 'tx_json.SigningPubKey'."}},
+
 { "Invalid value for 'fee_mult_max' field.",
 R"({
     "command": "doesnt_matter",
@@ -201,6 +265,48 @@ R"({
 {
 "Fee of 10 exceeds the requested tx limit of 0",
 "Fee of 10 exceeds the requested tx limit of 0",
+"Missing field 'tx_json.Fee'.",
+"Missing field 'tx_json.SigningPubKey'."}},
+
+{ "Invalid value for 'fee_div_max' field.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 4,
+    "fee_div_max": 7,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Fee of 10 exceeds the requested tx limit of 5",
+"Fee of 10 exceeds the requested tx limit of 5",
+"Missing field 'tx_json.Fee'.",
+"Missing field 'tx_json.SigningPubKey'."}},
+
+{ "Invalid zero value for 'fee_div_max' field.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "fee_mult_max": 4,
+    "fee_div_max": 0,
+    "tx_json": {
+        "Sequence": 0,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Invalid field 'fee_div_max', not non-zero.",
+"Invalid field 'fee_div_max', not non-zero.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
@@ -1621,6 +1727,18 @@ public:
 
         {
             Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 2, "
+                    "\"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack, ledger);
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+        }
+
+        {
+            Json::Value req;
             Json::Reader ().parse (
                 "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
             Json::Value result =
@@ -1628,6 +1746,44 @@ public:
                     env.app().config(), feeTrack, ledger);
 
             expect (RPC::contains_error (result), "Invalid checkFee");
+        }
+
+        {
+            // 3/6 = 1/2, but use the bigger number make sure
+            // we're dividing.
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 6, "
+                    "\"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack, ledger);
+
+            expect(RPC::contains_error(result), "Invalid checkFee");
+        }
+
+        {
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 0, \"fee_div_max\" : 2, "
+                    "\"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack, ledger);
+
+            expect(RPC::contains_error(result), "Invalid checkFee");
+        }
+
+        {
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 10, \"fee_div_max\" : 0, "
+                    "\"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack, ledger);
+
+            expect(RPC::contains_error(result), "Divide by 0");
         }
     }
 

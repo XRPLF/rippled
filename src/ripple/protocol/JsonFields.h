@@ -158,6 +158,7 @@ JSS ( feature );                    // in: Feature
 JSS ( features );                   // out: Feature
 JSS ( fee );                        // out: NetworkOPs, Peers
 JSS ( fee_base );                   // out: NetworkOPs
+JSS ( fee_div_max );                // in: TransactionSign
 JSS ( fee_mult_max );               // in: TransactionSign
 JSS ( fee_ref );                    // out: NetworkOPs
 JSS ( fetch_pack );                 // out: NetworkOPs

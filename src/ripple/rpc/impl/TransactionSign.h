@@ -44,9 +44,15 @@ namespace RPC {
             wants the fee filled in.
 
     "fee_mult_max"  A multiplier applied to the current ledger's transaction
-                    fee that caps the maximum the fee server should auto fill.
+                    fee that caps the maximum fee the server should auto fill.
                     If this optional field is not specified, then a default
                     multiplier is used.
+    "fee_div_max"   A divider applied to the current ledger's transaction
+                    fee that caps the maximum fee the server should auto fill.
+                    If this optional field is not specified, then a default
+                    divider (1) is used. "fee_mult_max" and "fee_div_max"
+                    are both used such that the maximum fee will be
+                    `base * fee_mult_max / fee_div_max` as an integer.
 
     @param tx       The JSON corresponding to the transaction to fill in.
     @param ledger   A ledger for retrieving the current fee schedule.
