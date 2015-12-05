@@ -145,6 +145,7 @@ enum class ConsensusState
 
 /** Determine whether the network reached consensus and whether we joined.
 
+    @param minValidations Minimum required for quorum.
     @param previousProposers proposers in the last closing (not including us)
     @param currentProposers proposers in this closing so far (not including us)
     @param currentAgree proposers who agree with us
@@ -155,6 +156,7 @@ enum class ConsensusState
                             agree
 */
 ConsensusState checkConsensus (
+    int minValidations,
     int previousProposers,
     int currentProposers,
     int currentAgree,
@@ -168,6 +170,9 @@ ConsensusState checkConsensus (
         "/" << previousProposers <<
         " agree=" << currentAgree << " validated=" << currentFinished <<
         " time=" << currentAgreeTime <<  "/" << previousAgreeTime;
+
+    if (currentAgree < minValidations)
+        return ConsensusState::No;
 
     if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
         return ConsensusState::No;
@@ -860,9 +865,9 @@ bool LedgerConsensusImp::haveConsensus ()
         << ", disagree=" << disagree;
 
     // Determine if we actually have consensus or not
-    auto ret = checkConsensus (mPreviousProposers, agree + disagree, agree,
-        currentValidations, mPreviousMSeconds, mCurrentMSeconds,
-        app_.journal ("LedgerTiming"));
+    auto ret = checkConsensus (ledgerMaster_.getMinValidations(),
+        mPreviousProposers, agree + disagree, agree, currentValidations,
+        mPreviousMSeconds, mCurrentMSeconds, app_.journal ("LedgerTiming"));
 
     if (ret == ConsensusState::No)
         return false;
