@@ -36,23 +36,19 @@ struct Key
 
     Key () = delete;
 
-    // Constructor for Inbound and Outbound (non-Admin) keys
+    // Constructor for Inbound and Outbound (non-Unlimited) keys
     Key (Kind k, beast::IP::Endpoint const& addr)
         : kind(k)
         , address(addr)
-        , name()
     {
-        assert(kind != kindAdmin);
+        assert(kind != kindUnlimited);
     }
 
-    // Constructor for Admin keys
-    Key (Kind k, std::string const& n)
-        : kind(k)
-        , address()
+    // Constructor for Unlimited keys
+    Key (std::string const& n)
+        : kind(kindUnlimited)
         , name(n)
-    {
-        assert(kind == kindAdmin);
-    }
+    {}
 
     struct hasher
     {
@@ -64,7 +60,7 @@ struct Key
             case kindOutbound:
                 return m_addr_hash (v.address);
 
-            case kindAdmin:
+            case kindUnlimited:
                 return m_name_hash (v.name);
 
             default:
@@ -92,7 +88,7 @@ struct Key
             case kindOutbound:
                 return lhs.address == rhs.address;
 
-            case kindAdmin:
+            case kindUnlimited:
                 return lhs.name == rhs.name;
 
             default:

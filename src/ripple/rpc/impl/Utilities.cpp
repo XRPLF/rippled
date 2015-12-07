@@ -123,7 +123,7 @@ boost::optional<Json::Value> readLimitField(
             return RPC::expected_field_error (jss::limit, "unsigned integer");
 
         limit = jvLimit.asUInt();
-        if (context.role != Role::ADMIN)
+        if (! isUnlimited (context.role))
             limit = std::max(range.rmin, std::min(range.rmax, limit));
     }
     return boost::none;

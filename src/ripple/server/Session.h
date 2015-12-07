@@ -68,6 +68,16 @@ public:
     beast::IP::Endpoint
     remoteAddress() = 0;
 
+    /** Returns the user name if behind a proxy (secure_gateway). */
+    virtual
+    std::string
+    user() = 0;
+
+    /** Returns X-Forwarded-For if behind a proxy (secure_gateway). */
+    virtual
+    std::string
+    forwarded_for() = 0;
+
     /** Returns the current HTTP request. */
     virtual
     beast::http::message&

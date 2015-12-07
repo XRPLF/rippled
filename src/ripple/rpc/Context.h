@@ -39,6 +39,15 @@ namespace RPC {
 /** The context of information needed to call an RPC. */
 struct Context
 {
+    /**
+     * Data passed in from HTTP headers.
+     */
+    struct Headers
+    {
+        std::string user;
+        std::string forwardedFor;
+    };
+
     beast::Journal j;
     Json::Value params;
     Application& app;
@@ -48,6 +57,7 @@ struct Context
     Role role;
     std::shared_ptr<JobCoro> jobCoro;
     InfoSub::pointer infoSub;
+    Headers headers;
     NodeStore::ScopedMetrics metrics;
 };
 

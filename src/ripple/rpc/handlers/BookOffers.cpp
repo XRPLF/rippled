@@ -183,7 +183,7 @@ Json::Value doBookOffers (RPC::Context& context)
         : Json::Value (Json::nullValue));
 
     context.netOps.getBookPage (
-        context.role == Role::ADMIN,
+        isUnlimited (context.role),
         lpLedger,
         {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
         takerID ? *takerID : zero, bProof, limit, jvMarker, jvResult);

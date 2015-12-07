@@ -28,11 +28,17 @@
 
 namespace ripple {
 
-/** Indicates the level of administrative permission to grant. */
+/** Indicates the level of administrative permission to grant.
+ * IDENTIFIED role has unlimited resources but cannot perform some
+ *            RPC commands.
+ * ADMIN role has unlimited resources and is able to perform all RPC
+ *            commands.
+ */
 enum class Role
 {
     GUEST,
     USER,
+    IDENTIFIED,
     ADMIN,
     FORBID
 };
@@ -46,12 +52,27 @@ enum class Role
 */
 Role
 requestRole (Role const& required, HTTP::Port const& port,
-    Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp);
+    Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp,
+    std::string const& user);
 
 Resource::Consumer
 requestInboundEndpoint (Resource::Manager& manager,
     beast::IP::Endpoint const& remoteAddress,
-        HTTP::Port const& port);
+        HTTP::Port const& port, std::string const& user);
+
+/**
+ * Check if the role entitles the user to unlimited resources.
+ */
+bool
+isUnlimited (Role const& role);
+
+/**
+ * If the HTTP header X-User exists with a non-empty value was passed by an IP
+ * configured as secure_gateway, then the user can be positively identified.
+ */
+bool
+isIdentified (HTTP::Port const& port, beast::IP::Address const& remoteIp,
+        std::string const& user);
 
 } // ripple
 

@@ -56,25 +56,59 @@ isAdmin (HTTP::Port const& port, Json::Value const& params,
 
 Role
 requestRole (Role const& required, HTTP::Port const& port,
-             Json::Value const& params, beast::IP::Endpoint const& remoteIp)
+             Json::Value const& params, beast::IP::Endpoint const& remoteIp,
+             std::string const& user)
 {
-    Role role (Role::GUEST);
-    if (isAdmin(port, params, remoteIp.address ()))
-        role = Role::ADMIN;
-    if (required == Role::ADMIN && role != required)
-        role = Role::FORBID;
-    return role;
+    if (isAdmin(port, params, remoteIp.address()))
+        return Role::ADMIN;
+
+    if (required == Role::ADMIN)
+        return Role::FORBID;
+
+    if (isIdentified(port, remoteIp.address(), user))
+        return Role::IDENTIFIED;
+
+    return Role::GUEST;
+}
+
+/**
+ * ADMIN and IDENTIFIED roles shall have unlimited resources.
+ */
+bool
+isUnlimited (Role const& required, HTTP::Port const& port,
+    Json::Value const&params, beast::IP::Endpoint const& remoteIp,
+    std::string const& user)
+{
+    Role role = requestRole(required, port, params, remoteIp, user);
+
+    if (role == Role::ADMIN || role == Role::IDENTIFIED)
+        return true;
+    else
+        return false;
+}
+
+bool
+isUnlimited (Role const& role)
+{
+    return role == Role::ADMIN || role == Role::IDENTIFIED;
 }
 
 Resource::Consumer
 requestInboundEndpoint (Resource::Manager& manager,
     beast::IP::Endpoint const& remoteAddress,
-        HTTP::Port const& port)
+        HTTP::Port const& port, std::string const& user)
 {
-    if (requestRole (Role::GUEST, port, Json::Value(), remoteAddress) ==
-            Role::ADMIN)
-        return manager.newAdminEndpoint (to_string (remoteAddress));
+    if (isUnlimited (Role::GUEST, port, Json::Value(), remoteAddress, user))
+        return manager.newUnlimitedEndpoint (to_string (remoteAddress));
+
     return manager.newInboundEndpoint(remoteAddress);
+}
+
+bool
+isIdentified (HTTP::Port const& port, beast::IP::Address const& remoteIp,
+        std::string const& user)
+{
+    return ! user.empty() && ipAllowed (remoteIp, port.secure_gateway_ip);
 }
 
 }

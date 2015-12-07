@@ -56,7 +56,7 @@ struct Entry
         {
         case kindInbound:   return key->address.to_string();
         case kindOutbound:  return key->address.to_string();
-        case kindAdmin:     return std::string ("\"") + key->name + "\"";
+        case kindUnlimited: return std::string ("\"") + key->name + "\"";
         default:
             bassertfalse;
         }
@@ -64,10 +64,14 @@ struct Entry
         return "(undefined)";
     }
 
-    // Returns `true` if this connection is privileged
-    bool admin () const
+    /**
+     * Returns `true` if this connection should have no
+     * resource limits applied--it is still possible for certain RPC commands
+     * to be forbidden, but that depends on Role.
+     */
+    bool isUnlimited () const
     {
-        return key->kind == kindAdmin;
+        return key->kind == kindUnlimited;
     }
 
     // Balance including remote contributions

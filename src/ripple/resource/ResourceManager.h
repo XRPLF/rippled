@@ -47,7 +47,7 @@ public:
     virtual Consumer newOutboundEndpoint (beast::IP::Endpoint const& address) = 0;
 
     /** Create a new endpoint keyed by name. */
-    virtual Consumer newAdminEndpoint (std::string const& name) = 0;
+    virtual Consumer newUnlimitedEndpoint (std::string const& name) = 0;
 
     /** Extract packaged consumer information for export. */
     virtual Gossip exportConsumers () = 0;

@@ -147,7 +147,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
         {
             auto txns = context.netOps.getAccountTxsB (
                 *raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
-                context.role == Role::ADMIN);
+                isUnlimited (context.role));
 
             for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
             {
@@ -169,7 +169,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
         {
             auto txns = context.netOps.getAccountTxs (
                 *raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
-                context.role == Role::ADMIN);
+                isUnlimited (context.role));
 
             for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
             {
