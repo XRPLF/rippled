@@ -66,6 +66,7 @@ public:
 
     uint256         getLedgerHash ()     const;
     std::uint32_t   getSignTime ()       const;
+    std::uint32_t   getSeenTime ()       const;
     std::uint32_t   getFlags ()          const;
     RippleAddress   getSignerPublic ()   const;
     NodeID          getNodeID ()         const
@@ -81,9 +82,13 @@ public:
     uint256         getSigningHash ()    const;
     bool            isValid (uint256 const& ) const;
 
-    void                        setTrusted ()
+    void            setTrusted ()
     {
         mTrusted = true;
+    }
+    void            setSeen (std::uint32_t s)
+    {
+        mSeen = s;
     }
     Blob    getSigned ()                 const;
     Blob    getSignature ()              const;
@@ -112,7 +117,8 @@ private:
 
     uint256 mPreviousHash;
     NodeID mNodeID;
-    bool mTrusted;
+    bool mTrusted = false;
+    std::uint32_t mSeen = 0;
 };
 
 } // ripple

@@ -193,6 +193,8 @@ public:
         , m_heartbeatTimer (this)
         , m_clusterTimer (this)
         , mConsensus (make_Consensus (app_.config(), app_.logs()))
+        , mLedgerConsensus (mConsensus->makeLedgerConsensus (
+            app, app.getInboundTransactions(), ledgerMaster, *m_localTX))
         , m_ledgerMaster (ledgerMaster)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
@@ -303,10 +305,10 @@ private:
         Ledger::pointer newLedger, bool duringConsensus);
     bool checkLastClosedLedger (
         const Overlay::PeerSequence&, uint256& networkClosed);
-    bool beginConsensus (uint256 const& networkClosed);
     void tryStartConsensus ();
 
 public:
+    bool beginConsensus (uint256 const& networkClosed) override;
     void endConsensus (bool correctLCL) override;
     void setStandAlone () override
     {
@@ -474,7 +476,6 @@ private:
     Json::Value transJson (
         const STTx& stTxn, TER terResult, bool bValidated,
         std::shared_ptr<ReadView const> const& lpCurrent);
-    bool haveConsensusObject ();
 
     void pubValidatedTransaction (
         Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
@@ -659,12 +660,9 @@ void NetworkOPsImp::processHeartbeatTimer ()
         else if (mMode == omCONNECTED)
             setMode (omCONNECTED);
 
-        if (!mLedgerConsensus)
-            tryStartConsensus ();
-
-        if (mLedgerConsensus)
-            mLedgerConsensus->timerEntry ();
     }
+
+    mLedgerConsensus->timerEntry ();
 
     setHeartbeatTimer ();
 }
@@ -1191,7 +1189,7 @@ void NetworkOPsImp::tryStartConsensus ()
         }
     }
 
-    if ((!mLedgerConsensus) && (mMode != omDISCONNECTED))
+    if (mMode != omDISCONNECTED)
         beginConsensus (networkClosed);
 }
 
@@ -1218,7 +1216,8 @@ bool NetworkOPsImp::checkLastClosedLedger (
     hash_map<uint256, ValidationCount> ledgers;
     {
         auto current = app_.getValidations ().getCurrentValidations (
-            closedLedger, prevClosedLedger);
+            closedLedger, prevClosedLedger,
+            m_ledgerMaster.getValidLedgerIndex());
 
         for (auto& it: current)
         {
@@ -1427,15 +1426,10 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger ()->getHash ());
 
-    // Create a consensus object to get consensus on this ledger
-    assert (!mLedgerConsensus);
     prevLedger->setImmutable (app_.config());
 
-    mLedgerConsensus = mConsensus->startRound (
-        app_,
-        app_.getInboundTransactions(),
-        *m_localTX,
-        m_ledgerMaster,
+    mConsensus->startRound (
+        *mLedgerConsensus,
         networkClosed,
         prevLedger,
         closingInfo.closeTime);
@@ -1444,40 +1438,8 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     return true;
 }
 
-bool NetworkOPsImp::haveConsensusObject ()
-{
-    if (mLedgerConsensus != nullptr)
-        return true;
-
-    if ((mMode == omFULL) || (mMode == omTRACKING))
-    {
-        tryStartConsensus ();
-    }
-    else
-    {
-        // we need to get into the consensus process
-        uint256 networkClosed;
-        Overlay::PeerSequence peerList = app_.overlay ().getActivePeers ();
-        bool ledgerChange = checkLastClosedLedger (peerList, networkClosed);
-
-        if (!ledgerChange)
-        {
-            m_journal.info << "Beginning consensus due to peer action";
-            if ( ((mMode == omTRACKING) || (mMode == omSYNCING)) &&
-                 (mConsensus->getLastCloseProposers() >= m_ledgerMaster.getMinValidations()) )
-                setMode (omFULL);
-            beginConsensus (networkClosed);
-        }
-    }
-
-    return mLedgerConsensus != nullptr;
-}
-
 uint256 NetworkOPsImp::getConsensusLCL ()
 {
-    if (!haveConsensusObject ())
-        return uint256 ();
-
     return mLedgerConsensus->getLCL ();
 }
 
@@ -1486,33 +1448,9 @@ void NetworkOPsImp::processTrustedProposal (
     std::shared_ptr<protocol::TMProposeSet> set, const RippleAddress& nodePublic)
 {
     {
-        auto lock = beast::make_lock(app_.getMasterMutex());
+        mConsensus->storeProposal (proposal, nodePublic);
 
-        bool relay = true;
-
-        if (mConsensus)
-            mConsensus->storeProposal (proposal, nodePublic);
-        else
-            m_journal.warning << "Unable to store proposal";
-
-        if (!haveConsensusObject ())
-        {
-            m_journal.info << "Received proposal outside consensus window";
-
-            if (mMode == omFULL)
-                relay = false;
-        }
-        else if (mLedgerConsensus->getLCL () == proposal->getPrevLedger ())
-        {
-            relay = mLedgerConsensus->peerPosition (proposal);
-            m_journal.trace
-                << "Proposal processing finished, relay=" << relay;
-        }
-        else
-            m_journal.debug << "Got proposal for " << proposal->getPrevLedger ()
-                << " but we are on " << mLedgerConsensus->getLCL();
-
-        if (relay)
+        if (mLedgerConsensus->peerPosition (proposal))
             app_.overlay().relay(*set, proposal->getSuppressionID());
         else
             m_journal.info << "Not relaying trusted proposal";
@@ -1523,10 +1461,7 @@ void
 NetworkOPsImp::mapComplete (uint256 const& hash,
                             std::shared_ptr<SHAMap> const& map)
 {
-    std::lock_guard<Application::MutexType> lock(app_.getMasterMutex());
-
-    if (haveConsensusObject ())
-        mLedgerConsensus->mapComplete (hash, map, true);
+    mLedgerConsensus->mapComplete (hash, map, true);
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
@@ -1545,7 +1480,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
         }
     }
 
-    mLedgerConsensus = std::shared_ptr<LedgerConsensus> ();
+    tryStartConsensus();
 }
 
 void NetworkOPsImp::consensusViewChange ()
@@ -1950,12 +1885,7 @@ bool NetworkOPsImp::recvValidation (
 
 Json::Value NetworkOPsImp::getConsensusInfo ()
 {
-    if (mLedgerConsensus)
-        return mLedgerConsensus->getJson (true);
-
-    Json::Value info = Json::objectValue;
-    info[jss::consensus] = "none";
-    return info;
+    return mLedgerConsensus->getJson (true);
 }
 
 Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
@@ -2024,8 +1954,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     info[jss::last_close] = lastClose;
 
-    //  if (mLedgerConsensus)
-    //      info[jss::consensus] = mLedgerConsensus->getJson();
+    //  info[jss::consensus] = mLedgerConsensus->getJson();
 
     if (admin)
         info[jss::load] = m_job_queue.getJson ();

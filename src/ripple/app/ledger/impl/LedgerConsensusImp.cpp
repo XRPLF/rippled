@@ -210,14 +210,9 @@ ConsensusState checkConsensus (
 LedgerConsensusImp::LedgerConsensusImp (
         Application& app,
         ConsensusImp& consensus,
-        int previousProposers,
-        int previousConvergeTime,
         InboundTransactions& inboundTransactions,
         LocalTxs& localtx,
         LedgerMaster& ledgerMaster,
-        LedgerHash const & prevLCLHash,
-        Ledger::ref previousLedger,
-        std::uint32_t closeTime,
         FeeVote& feeVote)
     : app_ (app)
     , consensus_ (consensus)
@@ -226,90 +221,30 @@ LedgerConsensusImp::LedgerConsensusImp (
     , ledgerMaster_ (ledgerMaster)
     , m_feeVote (feeVote)
     , state_ (State::open)
-    , mCloseTime (closeTime)
-    , mPrevLedgerHash (prevLCLHash)
-    , mPreviousLedger (previousLedger)
+    , mCloseTime (0)
     , mValPublic (app_.config().VALIDATION_PUB)
     , mValPrivate (app_.config().VALIDATION_PRIV)
+    , mProposing (false)
+    , mValidating (false)
+    , mHaveCorrectLCL (true)
     , mConsensusFail (false)
     , mCurrentMSeconds (0)
     , mClosePercent (0)
+    , mCloseResolution (30)
     , mHaveCloseTimeConsensus (false)
     , mConsensusStartTime (std::chrono::steady_clock::now ())
-    , mPreviousProposers (previousProposers)
-    , mPreviousMSeconds (previousConvergeTime)
+    , mPreviousProposers (0)
+    , mPreviousMSeconds (0)
     , j_ (app.journal ("LedgerConsensus"))
 {
     JLOG (j_.debug) << "Creating consensus object";
-    JLOG (j_.trace)
-        << "LCL:" << previousLedger->getHash () << ", ct=" << closeTime;
-
-    assert (mPreviousMSeconds);
-
-    inboundTransactions_.newRound (mPreviousLedger->info().seq);
-
-    // Adapt close time resolution to recent network conditions
-    mCloseResolution = getNextLedgerTimeResolution (
-        mPreviousLedger->info().closeTimeResolution,
-        getCloseAgree (mPreviousLedger->info()),
-        mPreviousLedger->info().seq + 1);
-
-    if (mValPublic.isSet () && mValPrivate.isSet ()
-        && !app_.getOPs ().isNeedNetworkLedger ())
-    {
-        // If the validation keys were set, and if we need a ledger,
-        // then we want to validate, and possibly propose a ledger.
-        JLOG (j_.info)
-            << "Entering consensus process, validating";
-        mValidating = true;
-        // Propose if we are in sync with the network
-        mProposing =
-            app_.getOPs ().getOperatingMode () == NetworkOPs::omFULL;
-    }
-    else
-    {
-        // Otherwise we just want to monitor the validation process.
-        JLOG (j_.info)
-            << "Entering consensus process, watching";
-        mProposing = mValidating = false;
-    }
-
-    mHaveCorrectLCL = (mPreviousLedger->getHash () == mPrevLedgerHash);
-
-    if (!mHaveCorrectLCL)
-    {
-        // If we were not handed the correct LCL, then set our state
-        // to not proposing.
-        consensus_.setProposing (false, false);
-        handleLCL (mPrevLedgerHash);
-
-        if (!mHaveCorrectLCL)
-        {
-            //          mProposing = mValidating = false;
-            JLOG (j_.info)
-                << "Entering consensus with: "
-                << previousLedger->getHash ();
-            JLOG (j_.info)
-                << "Correct LCL is: " << prevLCLHash;
-        }
-    }
-    else
-        // update the network status table as to whether we're
-        // proposing/validating
-        consensus_.setProposing (mProposing, mValidating);
-
-    playbackProposals ();
-    if (mPeerPositions.size() > (mPreviousProposers / 2))
-    {
-        // We may be falling behind, don't wait for the timer
-        // consider closing the ledger immediately
-        timerEntry ();
-    }
 }
 
 Json::Value LedgerConsensusImp::getJson (bool full)
 {
     Json::Value ret (Json::objectValue);
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
     ret["proposing"] = mProposing;
     ret["validating"] = mValidating;
     ret["proposers"] = static_cast<int> (mPeerPositions.size ());
@@ -333,8 +268,8 @@ Json::Value LedgerConsensusImp::getJson (bool full)
         ret[jss::state] = "consensus";
         break;
 
-    case State::finished:
-        ret[jss::state] = "finished";
+    case State::processing:
+        ret[jss::state] = "processing";
         break;
 
     case State::accepted:
@@ -422,6 +357,7 @@ Json::Value LedgerConsensusImp::getJson (bool full)
 
 uint256 LedgerConsensusImp::getLCL ()
 {
+    std::lock_guard<std::recursive_mutex> _(lock_);
     return mPrevLedgerHash;
 }
 
@@ -523,6 +459,8 @@ void LedgerConsensusImp::mapComplete (
     std::shared_ptr<SHAMap> const& map,
     bool acquired)
 {
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
     try
     {
         mapCompleteInternal (hash, map, acquired);
@@ -550,8 +488,9 @@ void LedgerConsensusImp::checkLCL ()
     // Get validators that are on our ledger, or  "close" to being on
     // our ledger.
     hash_map<uint256, ValidationCounter> vals =
-        app_.getValidations ().getCurrentValidations
-        (favoredLedger, priorLedger);
+        app_.getValidations ().getCurrentValidations(
+            favoredLedger, priorLedger,
+            ledgerMaster_.getValidLedgerIndex ());
 
     for (auto& it : vals)
     {
@@ -578,8 +517,8 @@ void LedgerConsensusImp::checkLCL ()
             status = "establish";
             break;
 
-        case State::finished:
-            status = "finished";
+        case State::processing:
+            status = "processing";
             break;
 
         case State::accepted:
@@ -638,6 +577,7 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
         mProposing = false;
         mPeerPositions.clear ();
         mDisputes.clear ();
+        mCompares.clear ();
         mCloseTimes.clear ();
         mDeadNodes.clear ();
         // To get back in sync:
@@ -676,25 +616,20 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 
     assert (!newLCL->info().open && newLCL->isImmutable ());
     assert (newLCL->getHash () == lclHash);
-    mPreviousLedger = newLCL;
-    mPrevLedgerHash = lclHash;
-
     JLOG (j_.info) <<
         "Have the consensus ledger " << mPrevLedgerHash;
-    mHaveCorrectLCL = true;
-
-    mCloseResolution = getNextLedgerTimeResolution (
-        mPreviousLedger->info().closeTimeResolution,
-        getCloseAgree(mPreviousLedger->info()),
-        mPreviousLedger->info().seq + 1);
+    startRound (lclHash, newLCL, mCloseTime, mPreviousProposers, mPreviousMSeconds);
+    mProposing = false;
 }
 
 void LedgerConsensusImp::timerEntry ()
 {
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
     try
     {
-       if ((state_ != State::finished) && (state_ != State::accepted))
-            checkLCL ();
+       if ((state_ != State::processing) && (state_ != State::accepted))
+           checkLCL ();
 
         mCurrentMSeconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (std::chrono::steady_clock::now() - mConsensusStartTime).count ();
@@ -704,24 +639,24 @@ void LedgerConsensusImp::timerEntry ()
         {
         case State::open:
             statePreClose ();
-            return;
+
+            if (state_ != State::establish) return;
+
+            // Fall through
 
         case State::establish:
             stateEstablish ();
+            return;
 
-            if (state_ != State::finished) return;
-
-            // Fall through
-
-        case State::finished:
-            stateFinished ();
-
-            if (state_ != State::accepted) return;
-
-            // Fall through
+        case State::processing:
+            // We are processing the finished ledger
+            // logic of calculating next ledger advances us out of this state
+            // nothing to do
+            return;
 
         case State::accepted:
-            stateAccepted ();
+            // NetworkOPs needs to setup the next round
+            // nothing to do
             return;
         }
 
@@ -799,21 +734,8 @@ void LedgerConsensusImp::stateEstablish ()
 
     JLOG (j_.info) <<
         "Converge cutoff (" << mPeerPositions.size () << " participants)";
-    state_ = State::finished;
+    state_ = State::processing;
     beginAccept (false);
-}
-
-void LedgerConsensusImp::stateFinished ()
-{
-    // we are processing the finished ledger
-    // logic of calculating next ledger advances us out of this state
-    // nothing to do
-}
-
-void LedgerConsensusImp::stateAccepted ()
-{
-    // we have accepted a new ledger
-    endConsensus ();
 }
 
 bool LedgerConsensusImp::haveConsensus ()
@@ -881,6 +803,8 @@ bool LedgerConsensusImp::haveConsensus ()
 std::shared_ptr<SHAMap> LedgerConsensusImp::getTransactionTree (
     uint256 const& hash)
 {
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
     auto it = mAcquired.find (hash);
     if (it != mAcquired.end() && it->second)
         return it->second;
@@ -895,7 +819,16 @@ std::shared_ptr<SHAMap> LedgerConsensusImp::getTransactionTree (
 
 bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
 {
+    std::lock_guard<std::recursive_mutex> _(lock_);
     auto const peerID = newPosition->getPeerID ();
+
+    if (newPosition->getPrevLedger() != mPrevLedgerHash)
+    {
+        JLOG (j_.debug) << "Got proposal for "
+            << newPosition->getPrevLedger ()
+            << " but we are on " << mPrevLedgerHash;
+        return false;
+    }
 
     if (mDeadNodes.find (peerID) != mDeadNodes.end ())
     {
@@ -961,28 +894,20 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
 
 void LedgerConsensusImp::simulate ()
 {
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
     JLOG (j_.info) << "Simulating consensus";
     closeLedger ();
     mCurrentMSeconds = 100;
     beginAccept (true);
-    endConsensus ();
     JLOG (j_.info) << "Simulation complete";
 }
 
 void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 {
-    Json::Value consensusStatus;
-
-    {
-        auto lock = beast::make_lock(app_.getMasterMutex());
-
-        // put our set where others can get it later
-        if (set->getHash ().isNonZero ())
-           consensus_.takePosition (mPreviousLedger->info().seq, set);
-
-        assert (set->getHash ().as_uint256() == mOurPosition->getCurrentHash ());
-        consensusStatus = getJson (true);
-    }
+    // put our set where others can get it later
+    if (set->getHash ().isNonZero ())
+       consensus_.takePosition (mPreviousLedger->info().seq, set);
 
     auto  closeTime = mOurPosition->getCloseTime ();
     bool closeTimeCorrect;
@@ -1138,7 +1063,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             << "CNF newLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
-    ledgerMaster_.consensusBuilt (newLCL, std::move (consensusStatus));
+    ledgerMaster_.consensusBuilt (newLCL, getJson (true));
 
     {
         // Apply disputed transactions that didn't get in
@@ -1206,9 +1131,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                     });
     }
 
-    mNewLedgerHash = newLCL->getHash ();
     ledgerMaster_.switchLCL (newLCL);
-    state_ = State::accepted;
 
     assert (ledgerMaster_.getClosedLedger()->getHash() == newLCL->getHash());
     assert (app_.openLedger().current()->info().parentHash == newLCL->getHash());
@@ -1245,6 +1168,17 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         app_.timeKeeper().adjustCloseTime(
             std::chrono::seconds(offset));
     }
+
+    // we have accepted a new ledger
+    bool correct;
+    {
+        std::lock_guard<std::recursive_mutex> _(lock_);
+
+        state_ = State::accepted;
+        correct = mHaveCorrectLCL;
+    }
+
+    endConsensus (correct);
 }
 
 void LedgerConsensusImp::createDisputes (
@@ -1378,7 +1312,7 @@ void LedgerConsensusImp::propose ()
     Blob const pubKey = mValPublic.getNodePublic ();
     prop.set_nodepubkey (&pubKey[0], pubKey.size ());
 
-    Blob const sig = mOurPosition->sign (mValPrivate);
+    Blob const& sig = mOurPosition->sign (mValPrivate);
     prop.set_signature (&sig[0], sig.size ());
 
     app_.overlay().send(prop);
@@ -1697,19 +1631,34 @@ void LedgerConsensusImp::updateOurPositions ()
 
 void LedgerConsensusImp::playbackProposals ()
 {
-    for (auto const& it: consensus_.peekStoredProposals ())
-    {
-        for (auto const& proposal : it.second)
+    consensus_.visitStoredProposals (
+        [this](LedgerProposal::ref proposal)
         {
             if (proposal->isPrevLedger (mPrevLedgerHash) &&
                 peerPosition (proposal))
             {
-                JLOG (j_.warning)
-                    << "We should do delayed relay of this proposal,"
-                    << " but we cannot";
+                // Now that we know this proposal
+                // is useful, relay it
+                protocol::TMProposeSet prop;
+
+                prop.set_proposeseq (proposal->getProposeSeq ());
+                prop.set_closetime (proposal->getCloseTime ());
+
+                prop.set_currenttxhash (
+                    proposal->getCurrentHash().begin(), 256 / 8);
+                prop.set_previousledger (
+                    proposal->getPrevLedger().begin(), 256 / 8);
+
+                auto const pubKey = proposal->getPublicKey().getNodePublic ();
+                prop.set_nodepubkey (&pubKey[0], pubKey.size());
+
+                auto const& signature = proposal->getSignature();
+                prop.set_signature (&signature[0], signature.size());
+
+                app_.overlay().relay (
+                    prop, proposal->getSuppressionID ());
             }
-        }
-    }
+        });
 }
 
 void LedgerConsensusImp::closeLedger ()
@@ -1778,7 +1727,7 @@ void LedgerConsensusImp::beginAccept (bool synchronous)
     }
 
     consensus_.newLCL (
-        mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
+        mPeerPositions.size (), mCurrentMSeconds);
 
     if (synchronous)
         accept (consensusSet);
@@ -1790,10 +1739,103 @@ void LedgerConsensusImp::beginAccept (bool synchronous)
     }
 }
 
-void LedgerConsensusImp::endConsensus ()
+void LedgerConsensusImp::endConsensus (bool correctLCL)
 {
-    app_.getOPs ().endConsensus (mHaveCorrectLCL);
+    app_.getOPs ().endConsensus (correctLCL);
 }
+
+void LedgerConsensusImp::startRound (LedgerHash const& prevLCLHash,
+    Ledger::ref prevLedger, std::uint32_t closeTime,
+    int previousProposers, int previousConvergeTime)
+{
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
+    if (state_ == State::processing)
+    {
+        // We can't start a new round while we're processing
+        return;
+    }
+
+    state_ = State::open;
+    mCloseTime = closeTime;
+    mPrevLedgerHash = prevLCLHash;
+    mPreviousLedger = prevLedger;
+    mOurPosition.reset();
+    mConsensusFail = false;
+    mCurrentMSeconds = 0;
+    mClosePercent = 0;
+    mHaveCloseTimeConsensus = false;
+    mConsensusStartTime = std::chrono::steady_clock::now();
+    mPreviousProposers = previousProposers;
+    mPreviousMSeconds = previousConvergeTime;
+    inboundTransactions_.newRound (mPreviousLedger->info().seq);
+
+    mPeerPositions.clear();
+    mAcquired.clear();
+    mDisputes.clear();
+    mCompares.clear();
+    mCloseTimes.clear();
+    mDeadNodes.clear();
+
+    mCloseResolution = getNextLedgerTimeResolution (
+        mPreviousLedger->info().closeTimeResolution,
+        getCloseAgree (mPreviousLedger->info()),
+        mPreviousLedger->info().seq + 1);
+
+    if (mValPublic.isSet () && mValPrivate.isSet ()
+        && !app_.getOPs ().isNeedNetworkLedger ())
+    {
+        // If the validation keys were set, and if we need a ledger,
+        // then we want to validate, and possibly propose a ledger.
+        JLOG (j_.info)
+            << "Entering consensus process, validating";
+        mValidating = true;
+        // Propose if we are in sync with the network
+        mProposing =
+            app_.getOPs ().getOperatingMode () == NetworkOPs::omFULL;
+    }
+    else
+    {
+        // Otherwise we just want to monitor the validation process.
+        JLOG (j_.info)
+            << "Entering consensus process, watching";
+        mProposing = mValidating = false;
+    }
+
+    mHaveCorrectLCL = (mPreviousLedger->getHash () == mPrevLedgerHash);
+
+    if (!mHaveCorrectLCL)
+    {
+        // If we were not handed the correct LCL, then set our state
+        // to not proposing.
+        consensus_.setProposing (false, false);
+        handleLCL (mPrevLedgerHash);
+
+        if (!mHaveCorrectLCL)
+        {
+            //          mProposing = mValidating = false;
+            JLOG (j_.info)
+                << "Entering consensus with: "
+                << mPreviousLedger->getHash ();
+            JLOG (j_.info)
+                << "Correct LCL is: " << prevLCLHash;
+        }
+    }
+    else
+        // update the network status table as to whether we're
+        // proposing/validating
+        consensus_.setProposing (mProposing, mValidating);
+
+    playbackProposals ();
+    if (mPeerPositions.size() > (mPreviousProposers / 2))
+    {
+        // We may be falling behind, don't wait for the timer
+        // consider closing the ledger immediately
+        timerEntry ();
+    }
+
+}
+
 
 void LedgerConsensusImp::addLoad(STValidation::ref val)
 {
@@ -1807,15 +1849,12 @@ void LedgerConsensusImp::addLoad(STValidation::ref val)
 
 //------------------------------------------------------------------------------
 std::shared_ptr <LedgerConsensus>
-make_LedgerConsensus (Application& app, ConsensusImp& consensus, int previousProposers,
-    int previousConvergeTime, InboundTransactions& inboundTransactions,
-    LocalTxs& localtx, LedgerMaster& ledgerMaster,
-    LedgerHash const &prevLCLHash,
-    Ledger::ref previousLedger, std::uint32_t closeTime, FeeVote& feeVote)
+make_LedgerConsensus (Application& app, ConsensusImp& consensus,
+    InboundTransactions& inboundTransactions, LocalTxs& localtx,
+    LedgerMaster& ledgerMaster, FeeVote& feeVote)
 {
-    return std::make_shared <LedgerConsensusImp> (app, consensus, previousProposers,
-        previousConvergeTime, inboundTransactions, localtx, ledgerMaster,
-        prevLCLHash, previousLedger, closeTime, feeVote);
+    return std::make_shared <LedgerConsensusImp> (app, consensus,
+        inboundTransactions, localtx, ledgerMaster, feeVote);
 }
 
 //------------------------------------------------------------------------------

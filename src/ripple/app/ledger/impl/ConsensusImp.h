@@ -53,12 +53,16 @@ public:
     getLastCloseDuration () const override;
 
     std::shared_ptr<LedgerConsensus>
-    startRound (
+    makeLedgerConsensus (
         Application& app,
         InboundTransactions& inboundTransactions,
-        LocalTxs& localtx,
         LedgerMaster& ledgerMaster,
-        LedgerHash const &prevLCLHash,
+        LocalTxs& localTxs) override;
+
+    void
+    startRound (
+        LedgerConsensus& ledgerConsensus,
+        LedgerHash const& prevLCLHash,
         Ledger::ref previousLedger,
         std::uint32_t closeTime) override;
 
@@ -80,10 +84,7 @@ public:
     setLastValidation (STValidation::ref v);
 
     void
-    newLCL (
-        int proposers,
-        int convergeTime,
-        uint256 const& ledgerHash);
+    newLCL (int proposers, int convergeTime);
 
     std::uint32_t
     validationTimestamp (std::uint32_t vt);
@@ -93,8 +94,8 @@ public:
 
     void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
 
-    Consensus::Proposals&
-    peekStoredProposals ();
+    void
+    visitStoredProposals (std::function<void(LedgerProposal::ref)> const&);
 
 private:
     beast::Journal journal_;
@@ -112,9 +113,6 @@ private:
     // How long the last ledger close took, in milliseconds
     int lastCloseConvergeTook_;
 
-    // The hash of the last closed ledger
-    uint256 lastCloseHash_;
-
     // The timestamp of the last validation we used, in network time. This is
     // only used for our own validations.
     std::uint32_t lastValidationTimestamp_;
@@ -126,6 +124,9 @@ private:
     std::map<uint256, std::pair<int, std::shared_ptr<SHAMap>>> recentPositions_;
 
     Consensus::Proposals storedProposals_;
+
+    // lock to protect recentPositions_ and storedProposals_
+    std::mutex lock_;
 };
 
 }

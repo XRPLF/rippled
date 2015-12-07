@@ -68,7 +68,7 @@ public:
         std::uint32_t closeTime);
 
     uint256 getSigningHash () const;
-    bool checkSign (std::string const& signature) const;
+    bool checkSign () const;
 
     NodeID const& getPeerID () const
     {
@@ -81,6 +81,10 @@ public:
     uint256 const& getPrevLedger () const
     {
         return mPreviousLedger;
+    }
+    RippleAddress const& getPublicKey () const
+    {
+        return mPublicKey;
     }
     uint256 const& getSuppressionID () const
     {
@@ -95,7 +99,17 @@ public:
         return mCloseTime;
     }
 
-    Blob sign (RippleAddress const& privateKey);
+    Blob const& sign (RippleAddress const& privateKey);
+
+    void setSignature (Blob sig)
+    {
+        signature_ = sig;
+    }
+
+    Blob const& getSignature () const
+    {
+        return signature_;
+    }
 
     bool isPrevLedger (uint256 const& pl) const
     {
@@ -138,7 +152,8 @@ private:
 
     NodeID          mPeerID;
     RippleAddress   mPublicKey;
-    PublicKey publicKey_;
+    PublicKey       publicKey_;
+    Blob            signature_;
 
     std::chrono::steady_clock::time_point mTime;
 };

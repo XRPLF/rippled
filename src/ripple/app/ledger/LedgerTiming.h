@@ -74,6 +74,11 @@ const int LEDGER_IDLE_INTERVAL = 15;
 // it takes to adjust the close time accuracy window
 const int LEDGER_VAL_INTERVAL = 300;
 
+// The number of seconds a validation remains current after the time we first
+// saw it. This provides faster recovery in very rare cases where the number
+// of validations produced by the network is lower than normal
+const int LEDGER_VAL_LOCAL = 180;
+
 // The number of seconds before a close time that we consider a validation
 // acceptable. This protects against extreme clock errors
 const int LEDGER_EARLY_INTERVAL = 180;

@@ -1283,6 +1283,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         prevLedger, set.proposeseq (), proposeHash, set.closetime (),
             signerPublic, PublicKey(makeSlice(set.nodepubkey())),
                 suppression);
+    proposal->setSignature (Blob (set.signature().begin(), set.signature().end()));
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue ().addJob (
@@ -1569,11 +1570,19 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMValidation> const& m)
             SerialIter sit (makeSlice(m->validation()));
             val = std::make_shared <
                 STValidation> (std::ref (sit), false);
+            val->setSeen (closeTime);
         }
 
         if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
         {
             p_journal_.trace << "Validation: Too old";
+            fee_ = Resource::feeUnwantedData;
+            return;
+        }
+
+        if ((closeTime + 120) < val->getFieldU32(sfSigningTime))
+        {
+            p_journal_.debug << "Validation: Too new";
             fee_ = Resource::feeUnwantedData;
             return;
         }
@@ -1895,7 +1904,7 @@ PeerImp::checkPropose (Job& job,
     assert (packet);
     protocol::TMProposeSet& set = *packet;
 
-    if (! cluster() && ! proposal->checkSign (set.signature ()))
+    if (! cluster() && ! proposal->checkSign ())
     {
         p_journal_.warning <<
             "Proposal fails sig check";
@@ -1910,13 +1919,7 @@ PeerImp::checkPropose (Job& job,
     }
     else
     {
-        uint256 consensusLCL;
-        {
-            std::lock_guard<Application::MutexType> lock (app_.getMasterMutex());
-            consensusLCL = app_.getOPs ().getConsensusLCL ();
-        }
-
-        if (consensusLCL == proposal->getPrevLedger())
+        if (app_.getOPs().getConsensusLCL() == proposal->getPrevLedger())
         {
             // relay untrusted proposal
             p_journal_.trace <<

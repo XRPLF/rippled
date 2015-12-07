@@ -75,7 +75,7 @@ private:
 public:
     ValidationsImp (Application& app)
         : app_ (app)
-        , mValidations ("Validations", 128, 600, stopwatch(),
+        , mValidations ("Validations", 4096, 600, stopwatch(),
             app.journal("TaggedCache"))
         , mWriting (false)
         , j_ (app.journal ("Validations"))
@@ -144,7 +144,8 @@ private:
         }
 
         JLOG (j_.debug) << "Val for " << hash << " from " << signer.humanNodePublic ()
-                                        << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
+            << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/")
+            << (isCurrent ? "current" : "stale");
 
         if (val->isTrusted () && isCurrent)
         {
@@ -346,9 +347,12 @@ private:
     }
 
     LedgerToValidationCounter getCurrentValidations (
-        uint256 currentLedger, uint256 priorLedger) override
+        uint256 currentLedger,
+        uint256 priorLedger,
+        LedgerIndex cutoffBefore) override
     {
         auto const cutoff = app_.timeKeeper().now().time_since_epoch().count() - LEDGER_VAL_INTERVAL;
+        auto const lCutoff = cutoff + LEDGER_VAL_INTERVAL - LEDGER_VAL_LOCAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
@@ -361,7 +365,8 @@ private:
         {
             if (!it->second) // contains no record
                 it = mCurrentValidations.erase (it);
-            else if (it->second->getSignTime () < cutoff)
+            else if ((it->second->getSignTime () < cutoff) ||
+                ((it->second->getSeenTime() != 0) && (it->second->getSeenTime() < lCutoff)))
             {
                 // contains a stale record
                 mStaleValidations.push_back (it->second);
@@ -369,7 +374,8 @@ private:
                 condWrite ();
                 it = mCurrentValidations.erase (it);
             }
-            else
+            else if (! it->second->isFieldPresent (sfLedgerSequence) ||
+                (it->second->getFieldU32 (sfLedgerSequence) >= cutoffBefore))
             {
                 // contains a live record
                 bool countPreferred = valCurrentLedger && (it->second->getLedgerHash () == currentLedger);
@@ -389,6 +395,10 @@ private:
                 if (ni > p.second)
                     p.second = ni;
 
+                ++it;
+            }
+            else
+            {
                 ++it;
             }
         }

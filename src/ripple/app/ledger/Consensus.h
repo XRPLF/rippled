@@ -62,14 +62,20 @@ public:
     int
     getLastCloseDuration () const = 0;
 
-    /** Called when a new round of consensus is about to begin */
+    /** Called to create a LedgerConsensus instance */
     virtual
     std::shared_ptr<LedgerConsensus>
-    startRound (
+    makeLedgerConsensus (
         Application& app,
         InboundTransactions& inboundTransactions,
-        LocalTxs& localtx,
         LedgerMaster& ledgerMaster,
+        LocalTxs& localTxs) = 0;
+
+    /** Called when a new round of consensus is about to begin */
+    virtual
+    void
+    startRound (
+        LedgerConsensus& consensus,
         LedgerHash const &prevLCLHash,
         Ledger::ref previousLedger,
         std::uint32_t closeTime) = 0;

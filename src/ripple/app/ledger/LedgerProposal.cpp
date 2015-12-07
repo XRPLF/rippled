@@ -27,6 +27,7 @@
 
 namespace ripple {
 
+// Used to construct received proposals
 LedgerProposal::LedgerProposal (
         uint256 const& pLgr,
         std::uint32_t seq,
@@ -47,6 +48,8 @@ LedgerProposal::LedgerProposal (
     mTime = std::chrono::steady_clock::now ();
 }
 
+// Used to construct local proposals
+// CAUTION: publicKey_ not set
 LedgerProposal::LedgerProposal (
         RippleAddress const& publicKey,
         uint256 const& prevLgr,
@@ -74,10 +77,10 @@ uint256 LedgerProposal::getSigningHash () const
         mCurrentHash);
 }
 
-bool LedgerProposal::checkSign (std::string const& signature) const
+bool LedgerProposal::checkSign () const
 {
     return mPublicKey.verifyNodePublic(
-        getSigningHash(), signature, ECDSA::not_strict);
+        getSigningHash(), signature_, ECDSA::not_strict);
 }
 
 bool LedgerProposal::changePosition (
@@ -100,13 +103,12 @@ void LedgerProposal::bowOut ()
     mProposeSeq     = seqLeave;
 }
 
-Blob LedgerProposal::sign (RippleAddress const& privateKey)
+Blob const& LedgerProposal::sign (RippleAddress const& privateKey)
 {
-    Blob ret;
-    privateKey.signNodePrivate (getSigningHash (), ret);
+    privateKey.signNodePrivate (getSigningHash (), signature_);
     mSuppression = proposalUniqueId (mCurrentHash, mPreviousLedger, mProposeSeq,
-        mCloseTime, mPublicKey.getNodePublic (), ret);
-    return ret;
+        mCloseTime, mPublicKey.getNodePublic (), signature_);
+    return signature_;
 }
 
 Json::Value LedgerProposal::getJson () const

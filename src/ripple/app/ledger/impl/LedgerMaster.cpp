@@ -198,7 +198,7 @@ public:
         if (mStrictValCount)
         {
             // If we're only using validation count, then we can't
-            // reject a ledger even if it's ioncompatible
+            // reject a ledger even if it's incompatible
             return true;
         }
 
