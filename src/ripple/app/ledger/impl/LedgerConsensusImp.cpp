@@ -1312,7 +1312,7 @@ void LedgerConsensusImp::propose ()
     Blob const pubKey = mValPublic.getNodePublic ();
     prop.set_nodepubkey (&pubKey[0], pubKey.size ());
 
-    Blob const sig = mOurPosition->sign (mValPrivate);
+    Blob const& sig = mOurPosition->sign (mValPrivate);
     prop.set_signature (&sig[0], sig.size ());
 
     app_.overlay().send(prop);
@@ -1637,7 +1637,26 @@ void LedgerConsensusImp::playbackProposals ()
             if (proposal->isPrevLedger (mPrevLedgerHash) &&
                 peerPosition (proposal))
             {
-                // FIXME: Should do delayed relay
+                // Now that we know this proposal
+                // is useful, relay it
+                protocol::TMProposeSet prop;
+
+                prop.set_proposeseq (proposal->getProposeSeq ());
+                prop.set_closetime (proposal->getCloseTime ());
+
+                prop.set_currenttxhash (
+                    proposal->getCurrentHash().begin(), 256 / 8);
+                prop.set_previousledger (
+                    proposal->getPrevLedger().begin(), 256 / 8);
+
+                auto const pubKey = proposal->getPublicKey().getNodePublic ();
+                prop.set_nodepubkey (&pubKey[0], pubKey.size());
+
+                auto const& signature = proposal->getSignature();
+                prop.set_signature (&signature[0], signature.size());
+
+                app_.overlay().relay (
+                    prop, proposal->getSuppressionID ());
             }
         });
 }

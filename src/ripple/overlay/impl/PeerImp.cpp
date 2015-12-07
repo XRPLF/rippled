@@ -1283,6 +1283,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
         prevLedger, set.proposeseq (), proposeHash, set.closetime (),
             signerPublic, PublicKey(makeSlice(set.nodepubkey())),
                 suppression);
+    proposal->setSignature (Blob (set.signature().begin(), set.signature().end()));
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue ().addJob (
@@ -1903,7 +1904,7 @@ PeerImp::checkPropose (Job& job,
     assert (packet);
     protocol::TMProposeSet& set = *packet;
 
-    if (! cluster() && ! proposal->checkSign (set.signature ()))
+    if (! cluster() && ! proposal->checkSign ())
     {
         p_journal_.warning <<
             "Proposal fails sig check";
