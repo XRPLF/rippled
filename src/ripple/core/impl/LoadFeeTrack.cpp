@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/mulDiv.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STAmount.h>

@@ -417,35 +417,6 @@ inline bool isXRP(STAmount const& amount)
     return isXRP (amount.issue().currency);
 }
 
-/**
-    A utility function to compute (value)*(mul)/(div) while avoiding
-    overflow but keeping precision.
-*/
-std::uint64_t
-mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
-
-/**
-    A utility function to compute (value)*(mul)/(div) while avoiding
-    overflow but keeping precision. Will return the max uint64_t
-    value if mulDiv would overflow anyway.
-*/
-std::uint64_t
-mulDivNoThrow(std::uint64_t value, std::uint64_t mul, std::uint64_t div);
-
-template <class T1, class T2>
-void lowestTerms(T1& a,  T2& b)
-{
-    std::uint64_t x = a, y = b;
-    while (y != 0)
-    {
-        auto t = x % y;
-        x = y;
-        y = t;
-    }
-    a /= x;
-    b /= x;
-}
-
 } // ripple
 
 #endif

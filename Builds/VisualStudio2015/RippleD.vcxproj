@@ -1914,6 +1914,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\mulDiv.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1955,6 +1959,8 @@
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\mulDiv.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\qalloc.h">
     </ClInclude>
