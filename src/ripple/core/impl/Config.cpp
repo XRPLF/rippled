@@ -268,6 +268,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
             {
                 CONFIG_DIR  = "/etc/opt/" + systemName ();
                 CONFIG_FILE = CONFIG_DIR / strConfFile;
+                dataDir = "/var/opt/" + systemName();
             }
         }
     }
