@@ -44,6 +44,8 @@ void appendOfferJson (std::shared_ptr<SLE const> const& offer,
     obj[jss::seq] = offer->getFieldU32 (sfSequence);
     obj[jss::flags] = offer->getFieldU32 (sfFlags);
     obj[jss::quality] = dirRate.getText ();
+    if (offer->isFieldPresent(sfExpiration))
+        obj[jss::expiration] = offer->getFieldU32(sfExpiration);
 };
 
 // {
@@ -120,22 +122,20 @@ Json::Value doAccountOffers (RPC::Context& context)
         offers.reserve (++reserve);
     }
 
-    {
-        if (! forEachItemAfter(*ledger, accountID,
-                startAfter, startHint, reserve,
-            [&offers](std::shared_ptr<SLE const> const& offer)
-            {
-                if (offer->getType () == ltOFFER)
-                {
-                    offers.emplace_back (offer);
-                    return true;
-                }
-
-                return false;
-            }))
+    if (! forEachItemAfter(*ledger, accountID,
+            startAfter, startHint, reserve,
+        [&offers](std::shared_ptr<SLE const> const& offer)
         {
-            return rpcError (rpcINVALID_PARAMS);
-        }
+            if (offer->getType () == ltOFFER)
+            {
+                offers.emplace_back (offer);
+                return true;
+            }
+
+            return false;
+        }))
+    {
+        return rpcError (rpcINVALID_PARAMS);
     }
 
     if (offers.size () == reserve)
@@ -147,9 +147,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     }
 
     for (auto const& offer : offers)
-    {
         appendOfferJson(offer, jsonOffers);
-    }
 
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;

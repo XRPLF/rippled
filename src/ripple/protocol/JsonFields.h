@@ -150,6 +150,7 @@ JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
 JSS ( expand );                     // in: handler/Ledger
 JSS ( expected_ledger_size );       // out: TxQ
+JSS ( expiration );                 // out: AccountOffers
 JSS ( fail_hard );                  // in: Sign, Submit
 JSS ( failed );                     // out: InboundLedger
 JSS ( feature );                    // in: Feature
