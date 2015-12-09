@@ -24,7 +24,6 @@
 #include <ripple/core/JobCoro.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/server/Role.h>
-#include <ripple/nodestore/ScopedMetrics.h>
 
 #include <beast/utility/Journal.h>
 
@@ -48,7 +47,6 @@ struct Context
     Role role;
     std::shared_ptr<JobCoro> jobCoro;
     InfoSub::pointer infoSub;
-    NodeStore::ScopedMetrics metrics;
 };
 
 } // RPC

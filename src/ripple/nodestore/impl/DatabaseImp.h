@@ -30,7 +30,6 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
 #include <beast/threads/Thread.h>
-#include <ripple/nodestore/ScopedMetrics.h>
 #include <chrono>
 #include <condition_variable>
 #include <set>
@@ -160,8 +159,6 @@ public:
 
     std::shared_ptr<NodeObject> fetch (uint256 const& hash) override
     {
-        ScopedMetrics::incrementThreadFetches ();
-
         return doTimedFetch (hash, false);
     }
 
