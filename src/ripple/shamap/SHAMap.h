@@ -150,16 +150,6 @@ public:
     bool addGiveItem (std::shared_ptr<SHAMapItem const> const&,
                       bool isTransaction, bool hasMeta);
 
-    /** Fetch an item given its key.
-        This retrieves the item whose key matches.
-        If the item does not exist, an empty pointer is returned.
-        Exceptions:
-            Can throw SHAMapMissingNode
-        @note This can cause NodeStore reads
-    */
-    std::shared_ptr<SHAMapItem const> const&
-        fetch (uint256 const& key) const;
-
     // Save a copy if you need to extend the life
     // of the SHAMapItem beyond this SHAMap
     std::shared_ptr<SHAMapItem const> const& peekItem (uint256 const& id) const;
