@@ -575,22 +575,17 @@ SHAMap::upper_bound(uint256 const& id) const
     NodeStack stack;
     auto node = root_.get();
     auto nodeID = SHAMapNodeID{};
-    auto foundLeaf = true;
+    stack.push ({node, nodeID});
     while (!node->isLeaf())
     {
-        stack.push ({node, nodeID});
         auto branch = nodeID.selectBranch(id);
         auto inner = static_cast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
-        {
-            foundLeaf = false;
             break;
-        }
         node = descendThrow(inner, branch);
         nodeID = nodeID.getChildNodeID(branch);
+        stack.push ({node, nodeID});
     }
-    if (foundLeaf)
-        stack.push({node, nodeID});
     while (!stack.empty())
     {
         std::tie(node, nodeID) = stack.top();
