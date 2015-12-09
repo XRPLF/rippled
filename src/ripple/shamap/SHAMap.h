@@ -242,8 +242,10 @@ private:
     SharedPtrNodeStack
         getStack (uint256 const& id, bool include_nonmatching_leaf) const;
 
-    /** Walk to the specified index, returning the node */
-    SHAMapTreeNode* walkToPointer (uint256 const& id) const;
+    /** Walk towards the specified id, returning the node.  Caller must check
+        if the return is nullptr, and if not, if the node->peekItem()->key() == id */
+    SHAMapTreeNode*
+        walkToKey(uint256 const& id, NodeStack* stack = nullptr) const;
 
     /** Unshare the node, allowing it to be modified */
     template <class Node>
