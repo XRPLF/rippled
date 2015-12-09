@@ -2130,6 +2130,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     }
 
     info[jss::state_accounting] = accounting_.json();
+    info[jss::uptime] = UptimeTimer::getInstance ().getElapsedSeconds ();
 
     return info;
 }
