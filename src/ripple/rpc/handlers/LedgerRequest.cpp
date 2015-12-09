@@ -89,13 +89,20 @@ Json::Value doLedgerRequest (RPC::Context& context)
 
                 if (auto il = context.app.getInboundLedgers().acquire (
                         *refHash, refIndex, InboundLedger::fcGENERIC))
-                    return getJson (LedgerFill (*il));
+                {
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND,
+                            "acquiring ledger containing requested index");
+                    jvResult[jss::acquiring] = getJson (LedgerFill (*il));
+                    return jvResult;
+                }
 
                 if (auto il = context.app.getInboundLedgers().find (*refHash))
                 {
-                    Json::Value jvResult = il->getJson (0);
-
-                    jvResult[jss::error] = "ledgerNotFound";
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND,
+                            "acquiring ledger containing requested index");
+                    jvResult[jss::acquiring] = il->getJson (0);
                     return jvResult;
                 }
 
