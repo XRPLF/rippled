@@ -72,6 +72,7 @@ JSS ( accounts );                   // in: LedgerEntry, Subscribe,
                                     // out: WalletAccounts
 JSS ( accounts_proposed );          // in: Subscribe, Unsubscribe
 JSS ( action );
+JSS ( acquiring );                  // out: LedgerRequest
 JSS ( address );                    // out: PeerImp
 JSS ( affected );                   // out: AcceptedLedgerTx
 JSS ( age );                        // out: UniqueNodeList, NetworkOPs, Peers
