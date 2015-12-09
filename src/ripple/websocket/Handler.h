@@ -73,7 +73,6 @@ public:
 private:
     Application& app_;
     beast::insight::Counter rpc_requests_;
-    beast::insight::Event rpc_io_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
     ServerDescription desc_;
@@ -95,7 +94,6 @@ public:
     {
         auto const& group (desc_.collectorManager.group ("rpc"));
         rpc_requests_ = group->make_counter ("requests");
-        rpc_io_ = group->make_event ("io");
         rpc_size_ = group->make_event ("size");
         rpc_time_ = group->make_event ("time");
     }
@@ -482,12 +480,6 @@ public:
             systemName () + " Test</h1><p>This page shows rippled http(s) "
             "connectivity is working.</p></body></html>");
         return true;
-    }
-
-    void recordMetrics (RPC::Context const& context) const
-    {
-        rpc_io_.notify (static_cast <beast::insight::Event::value_type> (
-            context.metrics.fetches));
     }
 };
 
