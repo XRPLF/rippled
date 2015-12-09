@@ -35,7 +35,6 @@
 #include <ripple/nodestore/impl/EncodedBlob.cpp>
 #include <ripple/nodestore/impl/ManagerImp.cpp>
 #include <ripple/nodestore/impl/NodeObject.cpp>
-#include <ripple/nodestore/impl/ScopedMetrics.cpp>
 
 #include <ripple/nodestore/tests/Backend.test.cpp>
 #include <ripple/nodestore/tests/Basics.test.cpp>

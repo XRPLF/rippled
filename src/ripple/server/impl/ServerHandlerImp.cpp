@@ -68,7 +68,6 @@ ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
 {
     auto const& group (cm.group ("rpc"));
     rpc_requests_ = group->make_counter ("requests");
-    rpc_io_ = group->make_event ("io");
     rpc_size_ = group->make_event ("size");
     rpc_time_ = group->make_event ("time");
 }
@@ -365,8 +364,6 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         std::chrono::duration_cast <std::chrono::milliseconds> (
             std::chrono::high_resolution_clock::now () - start)));
     ++rpc_requests_;
-    rpc_io_.notify (static_cast <beast::insight::Event::value_type> (
-        context.metrics.fetches));
     rpc_size_.notify (static_cast <beast::insight::Event::value_type> (
         response.size ()));
 

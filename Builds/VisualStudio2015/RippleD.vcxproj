@@ -2546,12 +2546,6 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\rocksdb2\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\rocksdb2\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\nodestore\impl\ScopedMetrics.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\rocksdb2\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\rocksdb2\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
@@ -2559,8 +2553,6 @@
     <ClInclude Include="..\..\src\ripple\nodestore\NodeObject.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Scheduler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\ScopedMetrics.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
     </ClInclude>

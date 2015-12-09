@@ -44,7 +44,6 @@ private:
     Setup setup_;
     JobQueue& m_jobQueue;
     beast::insight::Counter rpc_requests_;
-    beast::insight::Event rpc_io_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
 
