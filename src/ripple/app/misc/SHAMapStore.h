@@ -41,6 +41,7 @@ class SHAMapStore
 public:
     struct Setup
     {
+        bool standalone = false;
         std::uint32_t deleteInterval = 0;
         bool advisoryDelete = false;
         std::uint32_t ledgerHistory = 0;

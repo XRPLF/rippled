@@ -890,16 +890,6 @@ static bool saveValidatedLedger (
         "DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
     static boost::format deleteAcctTrans (
         "DELETE FROM AccountTransactions WHERE TransID = '%s';");
-    static boost::format transExists (
-        "SELECT Status FROM Transactions WHERE TransID = '%s';");
-    static boost::format updateTx (
-        "UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s "
-        "WHERE TransID = '%s';");
-    static boost::format addLedger (
-        "INSERT OR REPLACE INTO Ledgers "
-        "(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,"
-        "CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash) VALUES "
-        "('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
     auto seq = ledger->info().seq;
 
@@ -1032,18 +1022,53 @@ static bool saveValidatedLedger (
     }
 
     {
+        static std::string addLedger(
+            R"sql(INSERT OR REPLACE INTO Ledgers
+                (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
+                CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
+            VALUES
+                (:ledgerHash,:ledgerSeq,:prevHash,:totalCoins,:closingTime,:prevClosingTime,
+                :closeTimeRes,:closeFlags,:accountSetHash,:transSetHash);)sql");
+        static std::string updateVal(
+            R"sql(UPDATE Validations SET LedgerSeq = :ledgerSeq, InitialSeq = :initialSeq
+                WHERE LedgerHash = :ledgerHash;)sql");
+
         auto db (app.getLedgerDB ().checkoutDb ());
 
-        // TODO(tom): ARG!
-        *db << boost::str (
-            addLedger %
-            to_string (ledger->info().hash) % seq % to_string (ledger->info().parentHash) %
-            to_string (ledger->info().drops) %
-            ledger->info().closeTime.time_since_epoch().count() %
-            ledger->info().parentCloseTime.time_since_epoch().count() %
-            ledger->info().closeTimeResolution.count() %
-            ledger->info().closeFlags % to_string (ledger->info().accountHash) %
-            to_string (ledger->info().txHash));
+        soci::transaction tr(*db);
+
+        auto const hash = to_string (ledger->info().hash);
+        auto const parentHash = to_string (ledger->info().parentHash);
+        auto const drops = to_string (ledger->info().drops);
+        auto const closeTime =
+            ledger->info().closeTime.time_since_epoch().count();
+        auto const parentCloseTime =
+            ledger->info().parentCloseTime.time_since_epoch().count();
+        auto const closeTimeResolution =
+            ledger->info().closeTimeResolution.count();
+        auto const closeFlags = ledger->info().closeFlags;
+        auto const accountHash = to_string (ledger->info().accountHash);
+        auto const txHash = to_string (ledger->info().txHash);
+
+        *db << addLedger,
+            soci::use(hash),
+            soci::use(seq),
+            soci::use(parentHash),
+            soci::use(drops),
+            soci::use(closeTime),
+            soci::use(parentCloseTime),
+            soci::use(closeTimeResolution),
+            soci::use(closeFlags),
+            soci::use(accountHash),
+            soci::use(txHash);
+
+
+        *db << updateVal,
+            soci::use(seq),
+            soci::use(seq),
+            soci::use(hash);
+
+        tr.commit();
     }
 
     // Clients can now trust the database for
