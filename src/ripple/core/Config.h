@@ -160,7 +160,8 @@ public:
     beast::File getModuleDatabasePath () const;
 
     bool doImport = false;
-    bool                        QUIET = false;
+    bool                        QUIET = false;          // Minimize logging verbosity.
+    bool                        SILENT = false;         // No output to console after startup.
     bool                        ELB_SUPPORT = false;
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.

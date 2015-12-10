@@ -176,7 +176,8 @@ Logs::write (beast::Journal::Severity level, std::string const& partition,
     format (s, text, level, partition);
     std::lock_guard <std::mutex> lock (mutex_);
     file_.writeln (s);
-    std::cerr << s << '\n';
+    if (! silent_)
+        std::cerr << s << '\n';
     // VFALCO TODO Fix console output
     //if (console)
     //    out_.write_console(s);
