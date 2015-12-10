@@ -57,7 +57,7 @@ Env::AppBundle::AppBundle(Application* app_)
 {
 }
 
-Env::AppBundle::AppBundle(std::unique_ptr<Config const> config)
+Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
 {
     auto logs = std::make_unique<Logs>();
     auto timeKeeper_ =
@@ -71,17 +71,17 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config const> config)
 //------------------------------------------------------------------------------
 
 static
-std::unique_ptr<Config const>
+std::unique_ptr<Config>
 makeConfig()
 {
     auto p = std::make_unique<Config>();
     setupConfigForUnitTests(*p);
-    return std::unique_ptr<Config const>(p.release());
+    return p;
 }
 
 // VFALCO Could wrap the log in a Journal here
 Env::Env(beast::unit_test::suite& test_,
-    std::unique_ptr<Config const> config)
+    std::unique_ptr<Config> config)
     : test (test_)
     , master ("master", generateKeyPair(
         KeyType::secp256k1,

@@ -138,7 +138,7 @@ private:
         std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper;
 
-        AppBundle (std::unique_ptr<Config const> config);
+        AppBundle (std::unique_ptr<Config> config);
         AppBundle (Application* app_);
     };
 
@@ -154,7 +154,7 @@ public:
     Env& operator= (Env const&) = delete;
 
     Env (beast::unit_test::suite& test_,
-        std::unique_ptr<Config const> config);
+        std::unique_ptr<Config> config);
     Env (beast::unit_test::suite& test_);
 
     Application&

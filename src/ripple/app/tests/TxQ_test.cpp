@@ -108,7 +108,7 @@ class TxQ_test : public TestSuite
     }
 
     static
-    std::unique_ptr<Config const>
+    std::unique_ptr<Config>
     makeConfig()
     {
         auto p = std::make_unique<Config>();
@@ -118,7 +118,7 @@ class TxQ_test : public TestSuite
         section.set("min_ledgers_to_compute_size_limit", "3");
         section.set("max_ledger_counts_to_store", "100");
         section.set("retry_sequence_percent", "125");
-        return std::move(p);
+        return p;
     }
 
 public:
