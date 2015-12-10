@@ -80,7 +80,9 @@ private:
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
     // minimum # of ledgers to maintain for health of network
-    std::uint32_t minimumDeletionInterval_ = 256;
+    std::uint32_t const minimumDeletionInterval_ = 256;
+    // minimum # of ledgers required for standalone mode.
+    std::uint32_t const minimumDeletionIntervalSA_ = 8;
 
     Setup setup_;
     NodeStore::Scheduler& scheduler_;
@@ -94,7 +96,7 @@ private:
     mutable std::condition_variable cond_;
     mutable std::mutex mutex_;
     Ledger::pointer newLedger_;
-    Ledger::pointer validatedLedger_;
+    std::atomic<bool> rotating_;
     TransactionMaster& transactionMaster_;
     std::atomic <LedgerIndex> canDelete_;
     // these do not exist upon SHAMapStore creation, but do exist
@@ -105,6 +107,12 @@ private:
     TreeNodeCache* treeNodeCache_ = nullptr;
     DatabaseCon* transactionDb_ = nullptr;
     DatabaseCon* ledgerDb_ = nullptr;
+
+public:
+    bool rotating() const
+    {
+        return rotating_;
+    }
 
 public:
     SHAMapStoreImp (Application& app,
@@ -206,9 +214,11 @@ private:
      */
     void clearSql (DatabaseCon& database, LedgerIndex lastRotated,
                    std::string const& minQuery, std::string const& deleteQuery);
+    void clearSql(DatabaseCon& database, std::string const& deleteQuery);
     void clearCaches (LedgerIndex validatedSeq);
     void freshenCaches();
     void clearPrior (LedgerIndex lastRotated);
+private:
 
     // If rippled is not healthy, defer rotate-delete.
     // If already unhealthy, do not change state on further check.
