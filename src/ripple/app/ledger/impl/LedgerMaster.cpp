@@ -975,7 +975,7 @@ LedgerMaster::getLedgerHashForHistory (LedgerIndex index)
     if (! ret)
         ret = walkHashBySeq (index);
 
-    return *ret;
+    return ret;
 }
 
 bool
