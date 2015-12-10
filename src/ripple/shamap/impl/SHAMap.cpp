@@ -145,7 +145,7 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
 }
 
 SHAMapTreeNode*
-SHAMap::walkToKey(uint256 const& id, NodeStack* stack) const
+SHAMap::walkTowardsKey(uint256 const& id, NodeStack* stack) const
 {
     assert(stack == nullptr || stack->empty());
     auto inNode = root_.get();
@@ -155,8 +155,8 @@ SHAMap::walkToKey(uint256 const& id, NodeStack* stack) const
 
     while (inNode->isInner())
     {
-        int branch = nodeID.selectBranch (id);
-        auto inner = static_cast<SHAMapInnerNode*>(inNode);
+        auto const branch = nodeID.selectBranch (id);
+        auto const inner = static_cast<SHAMapInnerNode*>(inNode);
         if (inner->isEmptyBranch (branch))
             return nullptr;
 
@@ -166,6 +166,15 @@ SHAMap::walkToKey(uint256 const& id, NodeStack* stack) const
             stack->push({inNode, nodeID});
     }
     return static_cast<SHAMapTreeNode*>(inNode);
+}
+
+SHAMapTreeNode*
+SHAMap::findKey(uint256 const& id) const
+{
+    SHAMapTreeNode* leaf = walkTowardsKey(id);
+    if (leaf && leaf->peekItem()->key() != id)
+        leaf = nullptr;
+    return leaf;
 }
 
 std::shared_ptr<SHAMapAbstractNode>
@@ -423,28 +432,26 @@ SHAMap::unshareNode (std::shared_ptr<Node> node, SHAMapNodeID const& nodeID)
 SHAMapTreeNode*
 SHAMap::firstBelow(SHAMapAbstractNode* node, NodeStack& stack) const
 {
-    // Return the first item below this node
-    while (true)
+    // Return the first item at or below this node
+    if (node->isLeaf())
+        return static_cast<SHAMapTreeNode*>(node);
+    auto inner = static_cast<SHAMapInnerNode*>(node);
+    for (int i = 0; i < 16;)
     {
-        assert(node != nullptr);
-        if (node->isLeaf())
-            return static_cast<SHAMapTreeNode*>(node);
-        bool foundNode = false;
-        auto inner = static_cast<SHAMapInnerNode*>(node);
-        for (int i = 0; i < 16; ++i)
+        if (!inner->isEmptyBranch(i))
         {
-            if (!inner->isEmptyBranch(i))
-            {
-                node = descendThrow(inner, i);
-                assert(!stack.empty());
-                stack.push({node, stack.top().second.getChildNodeID(i)});
-                foundNode = true;
-                break;
-            }
+            node = descendThrow(inner, i);
+            assert(!stack.empty());
+            stack.push({node, stack.top().second.getChildNodeID(i)});
+            if (node->isLeaf())
+                return static_cast<SHAMapTreeNode*>(node);
+            inner = static_cast<SHAMapInnerNode*>(node);
+            i = 0;  // scan all 16 branches of this new node
         }
-        if (!foundNode)
-            return nullptr;
+        else
+            ++i;  // scan next branch
     }
+    return nullptr;
 }
 
 static const std::shared_ptr<SHAMapItem const> no_item;
@@ -539,9 +546,9 @@ SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
 std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekItem (uint256 const& id) const
 {
-    SHAMapTreeNode* leaf = walkToKey(id);
+    SHAMapTreeNode* leaf = findKey(id);
 
-    if (!leaf || leaf->peekItem()->key() != id)
+    if (!leaf)
         return no_item;
 
     return leaf->peekItem ();
@@ -550,9 +557,9 @@ SHAMap::peekItem (uint256 const& id) const
 std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 {
-    SHAMapTreeNode* leaf = walkToKey(id);
+    SHAMapTreeNode* leaf = findKey(id);
 
-    if (!leaf || leaf->peekItem()->key() != id)
+    if (!leaf)
         return no_item;
 
     type = leaf->getType ();
@@ -562,9 +569,9 @@ SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type) const
 std::shared_ptr<SHAMapItem const> const&
 SHAMap::peekItem (uint256 const& id, SHAMapHash& hash) const
 {
-    SHAMapTreeNode* leaf = walkToKey(id);
+    SHAMapTreeNode* leaf = findKey(id);
 
-    if (!leaf || leaf->peekItem()->key() != id)
+    if (!leaf)
         return no_item;
 
     hash = leaf->getNodeHash ();
@@ -577,7 +584,7 @@ SHAMap::upper_bound(uint256 const& id) const
     // Get a const_iterator to the next item in the tree after a given item
     // item need not be in tree
     NodeStack stack;
-    walkToKey(id, &stack);
+    walkTowardsKey(id, &stack);
     SHAMapAbstractNode* node;
     SHAMapNodeID nodeID;
     while (!stack.empty())
@@ -615,8 +622,8 @@ SHAMap::upper_bound(uint256 const& id) const
 bool SHAMap::hasItem (uint256 const& id) const
 {
     // does the tree have an item with this ID
-    SHAMapTreeNode* leaf = walkToKey(id);
-    return (leaf != nullptr &&  leaf->peekItem()->key() == id);
+    SHAMapTreeNode* leaf = findKey(id);
+    return (leaf != nullptr);
 }
 
 bool SHAMap::delItem (uint256 const& id)
