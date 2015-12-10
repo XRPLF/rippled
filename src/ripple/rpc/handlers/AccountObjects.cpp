@@ -137,7 +137,7 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (! RPC::getAccountObjects (*ledger, accountID, type,
         dirIndex, entryIndex, limit, result))
     {
-        return RPC::invalid_field_error (jss::marker);
+        result[jss::account_objects] = Json::arrayValue;
     }
 
     result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
