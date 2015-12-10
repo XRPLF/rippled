@@ -412,7 +412,8 @@ TER RippleCalc::rippleCalculate ()
                 << " uQuality="
                 << amountFromRate (pathState->quality())
                 << " inPass()=" << pathState->inPass()
-                << " saOutPass=" << pathState->outPass();
+                << " saOutPass=" << pathState->outPass()
+                << " iBest=" << iBest;
 
             // Record best pass' offers that became unfunded for deletion on
             // success.
@@ -426,6 +427,16 @@ TER RippleCalc::rippleCalculate ()
 
             actualAmountIn_ += pathState->inPass();
             actualAmountOut_ += pathState->outPass();
+
+            JLOG (j_.error)
+                    << "rippleCalc: best:"
+                    << " uQuality="
+                    << amountFromRate (pathState->quality())
+                    << " inPass()=" << pathState->inPass()
+                    << " saOutPass=" << pathState->outPass()
+                    << " actualIn=" << actualAmountIn_
+                    << " actualOut=" << actualAmountOut_
+                    << " iBest=" << iBest;
 
             if (multiQuality)
             {
