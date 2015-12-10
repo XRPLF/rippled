@@ -847,15 +847,18 @@ public:
         {
             // VFALCO TODO Move all this into doSweep
 
-            boost::filesystem::space_info space =
-                    boost::filesystem::space (config_->legacy ("database_path"));
-
-            // VFALCO TODO Give this magic constant a name and move it into a well documented header
-            //
-            if (space.available < (512 * 1024 * 1024))
+            if (! config_->RUN_STANDALONE)
             {
-                m_journal.fatal << "Remaining free disk space is less than 512MB";
-                signalStop ();
+                boost::filesystem::space_info space =
+                        boost::filesystem::space (config_->legacy ("database_path"));
+
+                // VFALCO TODO Give this magic constant a name and move it into a well documented header
+                //
+                if (space.available < (512 * 1024 * 1024))
+                {
+                    m_journal.fatal << "Remaining free disk space is less than 512MB";
+                    signalStop ();
+                }
             }
 
             m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
