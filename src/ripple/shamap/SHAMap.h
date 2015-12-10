@@ -245,7 +245,10 @@ private:
     /** Walk towards the specified id, returning the node.  Caller must check
         if the return is nullptr, and if not, if the node->peekItem()->key() == id */
     SHAMapTreeNode*
-        walkToKey(uint256 const& id, NodeStack* stack = nullptr) const;
+        walkTowardsKey(uint256 const& id, NodeStack* stack = nullptr) const;
+    /** Return nullptr if key not found */
+    SHAMapTreeNode*
+        findKey(uint256 const& id) const;
 
     /** Unshare the node, allowing it to be modified */
     template <class Node>
