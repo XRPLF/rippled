@@ -148,6 +148,7 @@ private:
     std::map <std::string, Sink, beast::ci_less> sinks_;
     beast::Journal::Severity level_;
     File file_;
+    bool silent_ = false;
 
 public:
     Logs();
@@ -182,6 +183,17 @@ public:
 
     std::string
     rotate();
+
+    /**
+     * Set flag to write logs to stderr (false) or not (true).
+     *
+     * @param bSilent Set flag accordingly.
+     */
+    void
+    silent (bool bSilent)
+    {
+        silent_ = bSilent;
+    }
 
 public:
     static

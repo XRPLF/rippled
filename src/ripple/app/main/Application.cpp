@@ -926,6 +926,8 @@ void ApplicationImp::setup()
             logs_->severity (beast::Journal::kDebug);
     }
 
+    logs_->silent (config_->SILENT);
+
     if (!config_->RUN_STANDALONE)
         timeKeeper_->run(config_->SNTP_SERVERS);
 

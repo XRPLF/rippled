@@ -271,6 +271,7 @@ int run (int argc, char** argv)
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("quorum", po::value <int> (), "Set the validation quorum.")
+    ("silent", "No output to the console after startup.")
     ("verbose,v", "Verbose logging.")
     ("load", "Load the current ledger from the local DB.")
     ("valid", "Consider the initial ledger a valid network ledger.")
@@ -354,6 +355,9 @@ int run (int argc, char** argv)
 
     // config file, quiet flag.
     config->setup (configFile, bool (vm.count ("quiet")));
+
+    if (vm.count ("silent"))
+        config->SILENT = true;
 
     if (vm.count ("standalone"))
     {
