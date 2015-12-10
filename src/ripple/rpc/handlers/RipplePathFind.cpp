@@ -101,7 +101,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
 
         PathRequest::pointer request;
-        context.loadType = Resource::feeHighBurdenRPC;
         lpLedger = context.ledgerMaster.getClosedLedger();
 
         jvResult = context.app.getPathRequests().makeLegacyPathRequest (
@@ -164,7 +163,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else
     {
-        context.loadType = Resource::feeHighBurdenRPC;
         RippleLineCache::pointer cache;
 
         if (lpLedger)
@@ -180,15 +178,19 @@ Json::Value doRipplePathFind (RPC::Context& context)
             cache = context.app.getPathRequests().getLineCache(lpLedger, false);
         }
 
-        Json::Value     jvSrcCurrencies;
-
+        Json::Value jvSrcCurrencies;
         if (context.params.isMember (jss::source_currencies))
         {
             jvSrcCurrencies = context.params[jss::source_currencies];
+            if (! jvSrcCurrencies.isArray() ||
+                    jvSrcCurrencies.size() > RPC::Tuning::max_src_cur)
+                return rpcError(rpcSRC_CUR_MALFORMED);
         }
         else
         {
             jvSrcCurrencies = buildSrcCurrencies(raSrc, cache);
+            if (jvSrcCurrencies.size() > RPC::Tuning::max_auto_src_cur)
+                return rpcError(rpcINTERNAL);
         }
 
         // Fill in currencies destination will accept

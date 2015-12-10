@@ -20,14 +20,23 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/basics/contract.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RipplePathFind.h>
+#include <ripple/rpc/RPCHandler.h>
 #include <ripple/test/jtx.h>
 #include <beast/unit_test/suite.h>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 namespace ripple {
 namespace test {
@@ -180,16 +189,146 @@ find_paths(jtx::Env& env,
             std::move(sa), std::move(da));
 }
 
+Json::Value
+rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
+{
+    Json::Value jv = Json::objectValue;
+    jv[jss::command] = "ripple_path_find";
+    jv[jss::source_account] = toBase58(src);
+
+    if (num_src > 0)
+    {
+        auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
+        Json::Value j = Json::objectValue;
+        while (num_src--)
+        {
+            j[jss::currency] = std::to_string(num_src + 100);
+            sc.append(j);
+        }
+    }
+
+    auto const d = toBase58(dst);
+    jv[jss::destination_account] = d;
+
+    Json::Value& j = (jv[jss::destination_amount] = Json::objectValue);
+    j[jss::currency] = "USD";
+    j[jss::value] = "0.01";
+    j[jss::issuer] = d;
+
+    return jv;
+}
+
 //------------------------------------------------------------------------------
 
 class Path_test : public beast::unit_test::suite
 {
 public:
+    class gate
+    {
+    private:
+        std::condition_variable cv_;
+        std::mutex mutex_;
+        bool signaled_ = false;
+
+    public:
+        // Thread safe, blocks until signaled or period expires.
+        // Returns `true` if signaled.
+        template <class Rep, class Period>
+        bool
+        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            auto b = cv_.wait_for(lk, rel_time, [=]{ return signaled_; });
+            signaled_ = false;
+            return b;
+        }
+
+        void
+        signal()
+        {
+            std::lock_guard<std::mutex> lk(mutex_);
+            signaled_ = true;
+            cv_.notify_all();
+        }
+    };
+
+    void
+    source_currencies_limit()
+    {
+        testcase("source currency limits");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this);
+        auto const gw = Account("gateway");
+        env.fund(XRP(10000), "alice", "bob", gw);
+        env.trust(gw["USD"](100), "alice", "bob");
+        env.close();
+
+        auto& app = env.app();
+        Resource::Charge loadType = Resource::feeReferenceRPC;
+        RPC::Context context {beast::Journal(), {}, app, loadType, app.getOPs(),
+            app.getLedgerMaster(), Role::USER, {}};
+        Json::Value result;
+        gate g;
+        // Test RPC::Tuning::max_src_cur source currencies.
+        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client",
+            [&](auto const& coro)
+            {
+                context.params = rpf(Account("alice"), Account("bob"),
+                    RPC::Tuning::max_src_cur);
+                context.jobCoro = coro;
+                RPC::doCommand(context, result);
+                g.signal();
+            });
+        expect(g.wait_for(5s));
+        expect(! result.isMember(jss::error));
+
+        // Test more than RPC::Tuning::max_src_cur source currencies.
+        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client",
+            [&](auto const& coro)
+            {
+                context.params = rpf(Account("alice"), Account("bob"),
+                    RPC::Tuning::max_src_cur + 1);
+                context.jobCoro = coro;
+                RPC::doCommand(context, result);
+                g.signal();
+            });
+        expect(g.wait_for(5s));
+        expect(result.isMember(jss::error));
+
+        // Test RPC::Tuning::max_auto_src_cur source currencies.
+        for (auto i = 0; i < (RPC::Tuning::max_auto_src_cur - 1); ++i)
+            env.trust(Account("alice")[std::to_string(i + 100)](100), "bob");
+        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client",
+            [&](auto const& coro)
+            {
+                context.params = rpf(Account("alice"), Account("bob"), 0);
+                context.jobCoro = coro;
+                RPC::doCommand(context, result);
+                g.signal();
+            });
+        expect(g.wait_for(5s));
+        expect(! result.isMember(jss::error));
+
+        // Test more than RPC::Tuning::max_auto_src_cur source currencies.
+        env.trust(Account("alice")["AUD"](100), "bob");
+        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client",
+            [&](auto const& coro)
+            {
+                context.params = rpf(Account("alice"), Account("bob"), 0);
+                context.jobCoro = coro;
+                RPC::doCommand(context, result);
+                g.signal();
+            });
+        expect(g.wait_for(5s));
+        expect(result.isMember(jss::error));
+    }
+
     void
     no_direct_path_no_intermediary_no_alternatives()
     {
-        using namespace jtx;
         testcase("no direct path no intermediary no alternatives");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
 
@@ -201,8 +340,8 @@ public:
     void
     direct_path_no_intermediary()
     {
-        using namespace jtx;
         testcase("direct path no intermediary");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("alice")["USD"](700), "bob");
@@ -218,8 +357,8 @@ public:
     void
     payment_auto_path_find()
     {
-        using namespace jtx;
         testcase("payment auto path find");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -237,8 +376,8 @@ public:
     void
     path_find()
     {
-        using namespace jtx;
         testcase("path find");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -259,8 +398,8 @@ public:
     void
     path_find_consume_all()
     {
-        using namespace jtx;
         testcase("path find consume all");
+        using namespace jtx;
 
         {
             Env env(*this);
@@ -309,8 +448,8 @@ public:
     void
     alternative_path_consume_both()
     {
-        using namespace jtx;
         testcase("alternative path consume both");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -338,8 +477,8 @@ public:
     void
     alternative_paths_consume_best_transfer()
     {
-        using namespace jtx;
         testcase("alternative paths consume best transfer");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -367,8 +506,8 @@ public:
     void
     alternative_paths_consume_best_transfer_first()
     {
-        using namespace jtx;
         testcase("alternative paths - consume best transfer first");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -398,8 +537,8 @@ public:
     void
     alternative_paths_limit_returned_paths_to_best_quality()
     {
-        using namespace jtx;
         testcase("alternative paths - limit returned paths to best quality");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
@@ -429,8 +568,8 @@ public:
     void
     issues_path_negative_issue()
     {
-        using namespace jtx;
         testcase("path negative: Issue #5");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
         env.trust(Account("bob")["USD"](100), "alice", "carol", "dan");
@@ -469,8 +608,8 @@ public:
     void
     issues_path_negative_ripple_client_issue_23_smaller()
     {
-        using namespace jtx;
         testcase("path negative: ripple-client issue #23: smaller");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
         env.trust(Account("alice")["USD"](40), "bob");
@@ -488,8 +627,8 @@ public:
     void
     issues_path_negative_ripple_client_issue_23_larger()
     {
-        using namespace jtx;
         testcase("path negative: ripple-client issue #23: larger");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
         env.trust(Account("alice")["USD"](120), "edward");
@@ -515,8 +654,8 @@ public:
     void
     via_offers_via_gateway()
     {
-        using namespace jtx;
         testcase("via gateway");
+        using namespace jtx;
         Env env(*this);
         auto const gw = Account("gateway");
         auto const AUD = gw["AUD"];
@@ -537,8 +676,8 @@ public:
     void
     indirect_paths_path_find()
     {
-        using namespace jtx;
         testcase("path find");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob", "carol");
         env.trust(Account("alice")["USD"](1000), "bob");
@@ -555,8 +694,8 @@ public:
     void
     quality_paths_quality_set_and_test()
     {
-        using namespace jtx;
         testcase("quality set and test");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
         env(trust("bob", Account("alice")["USD"](1000)),
@@ -597,8 +736,8 @@ public:
     void
     trust_auto_clear_trust_normal_clear()
     {
-        using namespace jtx;
         testcase("trust normal clear");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("bob")["USD"](1000), "alice");
@@ -641,8 +780,8 @@ public:
     void
     trust_auto_clear_trust_auto_clear()
     {
-        using namespace jtx;
         testcase("trust auto clear");
+        using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice", "bob");
         env.trust(Account("bob")["USD"](1000), "alice");
@@ -688,6 +827,7 @@ public:
     void
     run()
     {
+        source_currencies_limit();
         no_direct_path_no_intermediary_no_alternatives();
         direct_path_no_intermediary();
         payment_auto_path_find();

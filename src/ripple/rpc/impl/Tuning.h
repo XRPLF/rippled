@@ -68,6 +68,12 @@ inline int pageLength(bool isBinary)
     return isBinary ? binaryPageLength : jsonPageLength;
 }
 
+/** Maximum number of source currencies allowed in a path find request. */
+static int const max_src_cur = 18;
+
+/** Maximum number of auto source currencies in a path find request. */
+static int const max_auto_src_cur = 88;
+
 } // Tuning
 /** @} */
 
