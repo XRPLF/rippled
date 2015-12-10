@@ -50,6 +50,13 @@
 
 namespace ripple {
 namespace test {
+
+extern
+void
+setupConfigForUnitTests (Config& config);
+
+//------------------------------------------------------------------------------
+
 namespace jtx {
 
 namespace detail {

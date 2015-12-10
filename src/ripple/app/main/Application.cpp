@@ -1671,14 +1671,4 @@ make_Application (
             std::move(timeKeeper));
 }
 
-void
-setupConfigForUnitTests (Config& config)
-{
-    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
-    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
-
-    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
-    config.legacy("database_path", "DummyForUnitTests");
-}
-
 }

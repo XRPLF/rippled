@@ -33,6 +33,7 @@
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -49,6 +50,18 @@
 
 namespace ripple {
 namespace test {
+
+void
+setupConfigForUnitTests (Config& config)
+{
+    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
+    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
+
+    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
+    config.legacy("database_path", "DummyForUnitTests");
+}
+
+//------------------------------------------------------------------------------
 
 namespace jtx {
 
