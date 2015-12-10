@@ -97,14 +97,16 @@ private:
 
     bool isValid (RippleLineCache::ref crCache);
     void setValid ();
-    void resetLevel (int level);
 
     std::unique_ptr<Pathfinder> const&
     getPathFinder(RippleLineCache::ref,
         hash_map<Currency, std::unique_ptr<Pathfinder>>&, Currency const&,
             STAmount const&, int const);
 
-    void
+    /** Finds and sets a PathSet in the JSON argument.
+        Returns false if the source currencies are inavlid.
+    */
+    bool
     findPaths (RippleLineCache::ref, int const, Json::Value&);
 
     int parseJson (Json::Value const&);

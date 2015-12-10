@@ -30,6 +30,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/optional.hpp>
 #include <tuple>
@@ -353,7 +354,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
     {
         Json::Value const& jvSrcCur = jvParams[jss::source_currencies];
 
-        if (!jvSrcCur.isArray ())
+        if (! jvSrcCur.isArray() || jvSrcCur.size() > RPC::Tuning::max_src_cur)
         {
             jvStatus = rpcError (rpcSRC_CUR_MALFORMED);
             return PFR_PJ_INVALID;
@@ -365,8 +366,6 @@ int PathRequest::parseJson (Json::Value const& jvParams)
         {
             Json::Value const& jvCur = jvSrcCur[i];
             Currency uCur;
-            AccountID uIss;
-
             if (! jvCur.isObject() ||
                 ! jvCur.isMember (jss::currency) ||
                 ! to_currency (uCur, jvCur[jss::currency].asString ()))
@@ -375,6 +374,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
                 return PFR_PJ_INVALID;
             }
 
+            AccountID uIss;
             if (jvCur.isMember (jss::issuer) &&
                 !to_issuer (uIss, jvCur[jss::issuer].asString ()))
             {
@@ -443,12 +443,6 @@ Json::Value PathRequest::doStatus (Json::Value const&)
     return jvStatus;
 }
 
-void PathRequest::resetLevel (int l)
-{
-    if (iLastLevel > l)
-        iLastLevel = l;
-}
-
 std::unique_ptr<Pathfinder> const&
 PathRequest::getPathFinder(RippleLineCache::ref cache,
     hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
@@ -468,20 +462,21 @@ PathRequest::getPathFinder(RippleLineCache::ref cache,
     return currency_map[currency] = std::move(pathfinder);
 }
 
-void
+bool
 PathRequest::findPaths (RippleLineCache::ref cache, int const level,
     Json::Value& jvArray)
 {
     auto sourceCurrencies = sciSourceCurrencies;
     if (sourceCurrencies.empty ())
     {
-        auto usCurrencies =
-            accountSourceCurrencies(*raSrcAccount, cache, true);
-        bool sameAccount = *raSrcAccount == *raDstAccount;
+        auto usCurrencies = accountSourceCurrencies(*raSrcAccount, cache, true);
+        bool const sameAccount = *raSrcAccount == *raDstAccount;
         for (auto const& c : usCurrencies)
         {
-            if (!sameAccount || (c != saDstAmount.getCurrency()))
+            if (! sameAccount || c != saDstAmount.getCurrency())
             {
+                if (sourceCurrencies.size() >= RPC::Tuning::max_auto_src_cur)
+                    return false;
                 sourceCurrencies.insert(
                     {c, c.isZero() ? xrpAccount() : *raSrcAccount});
             }
@@ -598,6 +593,8 @@ PathRequest::findPaths (RippleLineCache::ref cache, int const level,
                 << transHuman(rc.result());
         }
     }
+
+    return true;
 }
 
 Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
@@ -667,7 +664,9 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     m_journal.debug << iIdentifier << " processing at level " << iLevel;
 
     Json::Value& jvArray = (newStatus[jss::alternatives] = Json::arrayValue);
-    findPaths(cache, iLevel, jvArray);
+    if (! findPaths(cache, iLevel, jvArray))
+        newStatus = rpcError(rpcINTERNAL);
+
     bLastSuccess = jvArray.size();
     iLastLevel = iLevel;
 
@@ -676,15 +675,14 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         ptQuickReply = boost::posix_time::microsec_clock::universal_time();
         mOwner.reportFast ((ptQuickReply-ptCreated).total_milliseconds());
     }
-    else if (!fast && ptFullReply.is_not_a_date_time())
+    else if (! fast && ptFullReply.is_not_a_date_time())
     {
         ptFullReply = boost::posix_time::microsec_clock::universal_time();
         mOwner.reportFull ((ptFullReply-ptCreated).total_milliseconds());
     }
 
     {
-        ScopedLockType sl (mLock);
-
+        ScopedLockType sl(mLock);
         jvStatus = newStatus;
     }
 
