@@ -46,7 +46,9 @@ DatabaseCon::DatabaseCon (
     {
         try
         {
-            session_ << initStrings[i];
+            soci::statement st = session_.prepare <<
+                initStrings[i];
+            st.execute(true);
         }
         catch (soci::soci_error&)
         {

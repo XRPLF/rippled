@@ -461,8 +461,10 @@ private:
     void doWrite ()
     {
         LoadEvent::autoptr event (app_.getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
-        boost::format insVal ("INSERT INTO Validations "
-                              "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
+        std::string insVal ("INSERT INTO Validations "
+            "(InitialSeq, LedgerSeq, LedgerHash,NodePubKey,SignTime,RawData) "
+            "VALUES (:initialSeq, :ledgerSeq, :ledgerHash,:nodePubKey,:signTime,:rawData);");
+        std::string findSeq("SELECT LedgerSeq FROM Ledgers WHERE Ledgerhash=:ledgerHash;");
 
         ScopedLockType sl (mLock);
         assert (mWriting);
@@ -484,13 +486,34 @@ private:
                     {
                         s.erase ();
                         it->add (s);
-                        *db << boost::str (
-                            insVal % to_string (it->getLedgerHash ()) %
-                            toBase58(
-                                TokenType::TOKEN_NODE_PUBLIC,
-                                it->getSignerPublic ()) %
-                            it->getSignTime().time_since_epoch().count() %
-                            sqlEscape (s.peekData ()));
+
+                        auto const ledgerHash = to_string(it->getLedgerHash());
+
+                        boost::optional<std::uint64_t> ledgerSeq;
+                        *db << findSeq, soci::use(ledgerHash),
+                            soci::into(ledgerSeq);
+
+                        auto const initialSeq = ledgerSeq.value_or(
+                            app_.getLedgerMaster().getCurrentLedgerIndex());
+                        auto const nodePubKey = toBase58(
+                            TokenType::TOKEN_NODE_PUBLIC,
+                            it->getSignerPublic());
+                        auto const signTime =
+                            it->getSignTime().time_since_epoch().count();
+
+                        soci::blob rawData(*db);
+                        rawData.append(reinterpret_cast<const char*>(
+                            s.peekData().data()), s.peekData().size());
+                        assert(rawData.get_len() == s.peekData().size());
+
+                        *db <<
+                            insVal,
+                            soci::use(initialSeq),
+                            soci::use(ledgerSeq),
+                            soci::use(ledgerHash),
+                            soci::use(nodePubKey),
+                            soci::use(signTime),
+                            soci::use(rawData);
                     }
 
                     tr.commit ();

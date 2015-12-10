@@ -2112,6 +2112,9 @@
     <ClCompile Include="..\..\src\ripple\app\tests\SetAuth_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\SHAMapStore_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\SusPay_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
