@@ -157,11 +157,8 @@ public:
 std::unique_ptr <Application>
 make_Application(
     std::unique_ptr<Config const> config,
-    std::unique_ptr<Logs> logs);
-
-extern
-void
-setupConfigForUnitTests (Config& config);
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper);
 
 }
 

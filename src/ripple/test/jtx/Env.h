@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -49,6 +50,13 @@
 
 namespace ripple {
 namespace test {
+
+extern
+void
+setupConfigForUnitTests (Config& config);
+
+//------------------------------------------------------------------------------
+
 namespace jtx {
 
 namespace detail {
@@ -135,8 +143,9 @@ private:
         Application* app;
         std::unique_ptr<Logs> logs;
         std::unique_ptr<Application> owned;
-        
-        AppBundle (std::unique_ptr<Config const> config);
+        ManualTimeKeeper* timeKeeper;
+
+        AppBundle (std::unique_ptr<Config> config);
         AppBundle (Application* app_);
     };
 
@@ -144,17 +153,15 @@ private:
     std::shared_ptr<Ledger const> closed_;
     CachedSLEs cachedSLEs_;
     LogSquelcher logSquelcher_;
+    OpenLedger openLedger_;
 
 public:
-    // Careful with this
-    OpenLedger openLedger;
-
     Env() = delete;
     Env (Env const&) = delete;
     Env& operator= (Env const&) = delete;
 
     Env (beast::unit_test::suite& test_,
-        std::unique_ptr<Config const> config);
+        std::unique_ptr<Config> config);
     Env (beast::unit_test::suite& test_);
 
     Application&
@@ -163,7 +170,7 @@ public:
         return *bundle_.app;
     }
 
-    /** Returns the open ledger.
+    /** Returns the current ledger.
 
         This is a non-modifiable snapshot of the
         open ledger at the moment of the call.
@@ -172,7 +179,17 @@ public:
 
     */
     std::shared_ptr<OpenView const>
-    open() const;
+    current()
+    {
+        return openLedger().current();
+    }
+
+    // Careful with this
+    OpenLedger&
+    openLedger()
+    {
+        return openLedger_;
+    }
 
     /** Returns the last closed ledger.
 
@@ -182,7 +199,10 @@ public:
         and a new open ledger takes its place.
     */
     std::shared_ptr<ReadView const>
-    closed() const;
+    closed()
+    {
+        return closed_;
+    }
 
     /** Close and advance the ledger.
 
@@ -263,24 +283,24 @@ public:
     /** Returns the Account given the AccountID. */
     /** @{ */
     Account const&
-    lookup (AccountID const& id) const;
+    lookup (AccountID const& id);
 
     Account const&
-    lookup (std::string const& base58ID) const;
+    lookup (std::string const& base58ID);
     /** @} */
 
     /** Returns the XRP balance on an account.
         Returns 0 if the account does not exist.
     */
     PrettyAmount
-    balance (Account const& account) const;
+    balance (Account const& account);
 
     /** Returns the next sequence number on account.
         Exceptions:
             Throws if the account does not exist
     */
     std::uint32_t
-    seq (Account const& account) const;
+    seq (Account const& account);
 
     /** Return the balance on an account.
         Returns 0 if the trust line does not exist.
@@ -288,19 +308,19 @@ public:
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
     balance (Account const& account,
-        Issue const& issue) const;
+        Issue const& issue);
 
     /** Return an account root.
         @return empty if the account does not exist.
     */
     std::shared_ptr<SLE const>
-    le (Account const& account) const;
+    le (Account const& account);
 
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
     std::shared_ptr<SLE const>
-    le (Keylet const& k) const;
+    le (Keylet const& k);
 
     /** Create a JTx from parameters. */
     template <class JsonValue,
@@ -377,7 +397,7 @@ public:
 
     /** Return the TER for the last JTx. */
     TER
-    ter() const
+    ter()
     {
         return ter_;
     }
@@ -517,7 +537,7 @@ protected:
     st (JTx const& jt);
 
     ApplyFlags
-    applyFlags() const;
+    applyFlags();
 
     inline
     void

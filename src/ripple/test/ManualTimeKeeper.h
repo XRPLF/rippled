@@ -17,50 +17,53 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/test/jtx/owners.h>
+#ifndef RIPPLE_TEST_MANUALTIMEKEEPER_H_INCLUDED
+#define RIPPLE_TEST_MANUALTIMEKEEPER_H_INCLUDED
+
+#include <ripple/core/TimeKeeper.h>
+#include <mutex>
 
 namespace ripple {
 namespace test {
-namespace jtx {
 
-namespace detail {
-
-std::uint32_t
-owned_count_of(ReadView const& view,
-    AccountID const& id,
-        LedgerEntryType type)
+class ManualTimeKeeper : public TimeKeeper
 {
-    std::uint32_t count = 0;
-    forEachItem (view, id,
-        [&count, type](std::shared_ptr<SLE const> const& sle)
-        {
-            if (sle->getType() == type)
-                ++count;
-        });
-    return count;
-}
+public:
+    ManualTimeKeeper();
 
-void
-owned_count_helper(Env& env,
-    AccountID const& id,
-        LedgerEntryType type,
-            std::uint32_t value)
-{
-    env.test.expect(owned_count_of(
-        *env.current(), id, type) == value);
-}
+    void
+    run (std::vector<std::string> const& servers) override;
 
-} // detail
+    time_point
+    now() const override;
+    
+    time_point
+    closeTime() const override;
 
-void
-owners::operator()(Env& env) const
-{
-    env.test.expect(env.le(
-        account_)->getFieldU32(sfOwnerCount) ==
-            value_);
-}
+    void
+    adjustCloseTime (duration amount) override;
 
-} // jtx
+    duration
+    nowOffset() const override;
+
+    duration
+    closeOffset() const override;
+
+    void
+    set (time_point now);
+
+private:
+    // Adjust system_clock::time_point for NetClock epoch
+    static
+    time_point
+    adjust (std::chrono::system_clock::time_point when);
+
+    std::mutex mutable mutex_;
+    duration closeOffset_;
+    time_point now_;
+};
+
 } // test
 } // ripple
+
+#endif

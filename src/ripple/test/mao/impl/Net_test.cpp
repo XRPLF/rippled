@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/test/mao/Net.h>
+#include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/net/RPCCall.h>
 #include <beast/unit_test/suite.h>
@@ -51,8 +52,10 @@ struct TestApp
         // Hack so we dont have to call Config::setup
         HTTPClient::initializeSSLContext(*config);
         auto logs = std::make_unique<Logs>();
-        instance = make_Application(
-            std::move(config), std::move(logs));
+        auto timeKeeper = std::make_unique<ManualTimeKeeper>();
+        timeKeeper_ = timeKeeper.get();
+        instance = make_Application(std::move(config),
+            std::move(logs), std::move(timeKeeper));
         instance->setup();
         thread_ = std::thread(
             [&]() { instance->run(); });
@@ -106,6 +109,7 @@ private:
         collect(v, args...);
     }
 
+    ManualTimeKeeper* timeKeeper_;
     std::unique_ptr<Application> instance;
     std::thread thread_;
     std::mutex mutex_;

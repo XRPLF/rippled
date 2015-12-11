@@ -42,14 +42,10 @@ using weeks = std::chrono::duration
 /** Clock for measuring Ripple Network Time.
 
     The epoch is January 1, 2000
+
+    epoch_offset = days(10957);  // 2000-01-01
 */
-// VFALCO TODO Finish the implementation and make
-//             the network clock instance a member
-//             of the Application object
-//
-// epoch_offset = days(10957);  // 2000-01-01
-//
-class NetClock // : public abstract_clock <std::chrono::seconds>
+class NetClock
 {
 public:
     // Unfortunately this is signed for legacy reasons

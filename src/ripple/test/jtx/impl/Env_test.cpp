@@ -516,14 +516,14 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        auto seq = env.open()->seq();
+        auto seq = env.current()->seq();
         expect(seq == env.closed()->seq() + 1);
         env.close();
         expect(env.closed()->seq() == seq);
-        expect(env.open()->seq() == seq + 1);
+        expect(env.current()->seq() == seq + 1);
         env.close();
         expect(env.closed()->seq() == seq + 1);
-        expect(env.open()->seq() == seq + 2);
+        expect(env.current()->seq() == seq + 2);
     }
 
     void

@@ -35,26 +35,26 @@ struct BookDirs_test : public beast::unit_test::suite
         {
             Book book(xrpIssue(), USD.issue());
             {
-                auto d = BookDirs(*env.open(), book);
+                auto d = BookDirs(*env.current(), book);
                 expect(std::begin(d) == std::end(d));
                 expect(std::distance(d.begin(), d.end()) == 0);
             }
             {
-                auto d = BookDirs(*env.open(), reversed(book));
+                auto d = BookDirs(*env.current(), reversed(book));
                 expect(std::distance(d.begin(), d.end()) == 0);
             }
         }
 
         {
             env(offer("alice", Account("alice")["USD"](50), XRP(10)));
-            auto d = BookDirs(*env.open(),
+            auto d = BookDirs(*env.current(),
                 Book(Account("alice")["USD"].issue(), xrpIssue()));
             expect(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
             env(offer("alice", gw["CNY"](50), XRP(10)));
-            auto d = BookDirs(*env.open(),
+            auto d = BookDirs(*env.current(),
                 Book(gw["CNY"].issue(), xrpIssue()));
             expect(std::distance(d.begin(), d.end()) == 1);
         }
@@ -63,7 +63,7 @@ struct BookDirs_test : public beast::unit_test::suite
             env.trust(Account("bob")["CNY"](10), "alice");
             env(pay("bob", "alice", Account("bob")["CNY"](10)));
             env(offer("alice", USD(50), Account("bob")["CNY"](10)));
-            auto d = BookDirs(*env.open(),
+            auto d = BookDirs(*env.current(),
                 Book(USD.issue(), Account("bob")["CNY"].issue()));
             expect(std::distance(d.begin(), d.end()) == 1);
         }
@@ -74,7 +74,7 @@ struct BookDirs_test : public beast::unit_test::suite
                 for (auto k = 0; k < 80; ++k)
                     env(offer("alice", AUD(i), XRP(j)));
 
-            auto d = BookDirs(*env.open(),
+            auto d = BookDirs(*env.current(),
                 Book(AUD.issue(), xrpIssue()));
             expect(std::distance(d.begin(), d.end()) == 240);
             auto i = 1, j = 3, k = 0;
