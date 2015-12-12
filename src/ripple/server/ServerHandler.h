@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_SERVERHANDLER_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/core/Config.h>
 #include <ripple/server/Port.h>
 #include <ripple/overlay/Overlay.h>
 #include <beast/utility/Journal.h>
@@ -96,7 +97,9 @@ public:
 //------------------------------------------------------------------------------
 
 ServerHandler::Setup
-setup_ServerHandler (BasicConfig const& c, std::ostream& log);
+setup_ServerHandler (
+    Config const& c,
+    std::ostream& log);
 
 } // ripple
 
