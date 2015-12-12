@@ -674,7 +674,9 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
 }
 
 std::vector<HTTP::Port>
-parse_Ports (BasicConfig const& config, std::ostream& log)
+parse_Ports (
+    Config const& config,
+    std::ostream& log)
 {
     std::vector<HTTP::Port> result;
 
@@ -704,17 +706,40 @@ parse_Ports (BasicConfig const& config, std::ostream& log)
         result.push_back(to_Port(parsed, log));
     }
 
-    std::size_t count = 0;
-    for (auto const& p : result)
-        if (p.protocol.count("peer") > 0)
-            ++count;
-    if (count > 1)
+    if (config.RUN_STANDALONE)
     {
-        log << "Error: More than one peer protocol configured in [server]\n";
-        Throw<std::exception> ();
+        auto it = result.begin ();
+
+        while (it != result.end())
+        {
+            auto& p = it->protocol;
+
+            // Remove the peer protocol, and if that would
+            // leave the port empty, remove the port as well
+            if (p.erase ("peer") && p.empty())
+                it = result.erase (it);
+            else
+                ++it;
+        }
     }
-    if (count == 0)
-        log << "Warning: No peer protocol configured\n";
+    else
+    {
+        auto const count = std::count_if (
+            result.cbegin(), result.cend(),
+            [](HTTP::Port const& p)
+            {
+                return p.protocol.count("peer") != 0;
+            });
+
+        if (count > 1)
+        {
+            log << "Error: More than one peer protocol configured in [server]\n";
+            Throw<std::exception> ();
+        }
+
+        if (count == 0)
+            log << "Warning: No peer protocol configured\n";
+    }
 
     return result;
 }
@@ -748,10 +773,11 @@ setup_Client (ServerHandler::Setup& setup)
 void
 setup_Overlay (ServerHandler::Setup& setup)
 {
-    auto const iter = std::find_if(setup.ports.cbegin(), setup.ports.cend(),
+    auto const iter = std::find_if(
+        setup.ports.cbegin(), setup.ports.cend(),
         [](HTTP::Port const& port)
         {
-            return port.protocol.count("peer") > 0;
+            return port.protocol.count("peer") != 0;
         });
     if (iter == setup.ports.cend())
     {
@@ -765,7 +791,9 @@ setup_Overlay (ServerHandler::Setup& setup)
 }
 
 ServerHandler::Setup
-setup_ServerHandler(BasicConfig const& config, std::ostream& log)
+setup_ServerHandler(
+    Config const& config,
+    std::ostream& log)
 {
     ServerHandler::Setup setup;
     setup.ports = detail::parse_Ports(config, log);
