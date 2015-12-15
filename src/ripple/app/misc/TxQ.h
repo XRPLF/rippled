@@ -214,8 +214,7 @@ public:
         @return Whether any txs were added to the view.
     */
     bool
-    accept(Application& app, OpenView& view,
-        ApplyFlags flags = tapNONE);
+    accept(Application& app, OpenView& view);
 
     /**
         We have a new last validated ledger, update and clean up the
@@ -233,8 +232,7 @@ public:
     */
     void
     processValidatedLedger(Application& app,
-        OpenView const& view, bool timeLeap,
-            ApplyFlags flags = tapNONE);
+        OpenView const& view, bool timeLeap);
 
     /** Used by tests only.
     */

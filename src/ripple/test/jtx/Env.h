@@ -224,7 +224,8 @@ public:
             the close time of the resulting ledger.
     */
     void
-    close (NetClock::time_point closeTime);
+    close (NetClock::time_point closeTime,
+        boost::optional<std::chrono::milliseconds> consensusDelay = boost::none);
 
     /** Close and advance the ledger.
 
