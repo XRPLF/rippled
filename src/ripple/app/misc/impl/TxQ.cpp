@@ -304,9 +304,8 @@ TxQ::apply(Application& app, OpenView& view,
         ApplyFlags flags, beast::Journal j)
 {
     auto const allowEscalation =
-        (flags & tapENABLE_TESTING) ||
-            (view.rules().enabled(featureFeeEscalation,
-                app.config().features));
+        (view.rules().enabled(featureFeeEscalation,
+            app.config().features));
     if (!allowEscalation)
     {
         return ripple::apply(app, view, *tx, flags, j);
@@ -502,11 +501,9 @@ TxQ::apply(Application& app, OpenView& view,
 
 void
 TxQ::processValidatedLedger(Application& app,
-    OpenView const& view, bool timeLeap,
-        ApplyFlags flags)
+    OpenView const& view, bool timeLeap)
 {
     auto const allowEscalation =
-        (flags & tapENABLE_TESTING) ||
         (view.rules().enabled(featureFeeEscalation,
             app.config().features));
     if (!allowEscalation)
@@ -560,10 +557,9 @@ TxQ::processValidatedLedger(Application& app,
 
 bool
 TxQ::accept(Application& app,
-    OpenView& view, ApplyFlags flags)
+    OpenView& view)
 {
     auto const allowEscalation =
-        (flags & tapENABLE_TESTING) ||
         (view.rules().enabled(featureFeeEscalation,
             app.config().features));
     if (!allowEscalation)

@@ -902,13 +902,14 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
     return true;
 }
 
-void LedgerConsensusImp::simulate ()
+void LedgerConsensusImp::simulate (
+    boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
     JLOG (j_.info) << "Simulating consensus";
     closeLedger ();
-    mCurrentMSeconds = 100ms;
+    mCurrentMSeconds = consensusDelay.value_or(100ms);
     beginAccept (true);
     JLOG (j_.info) << "Simulation complete";
 }
