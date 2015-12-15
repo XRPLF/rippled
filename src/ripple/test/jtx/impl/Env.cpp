@@ -28,10 +28,10 @@
 #include <ripple/test/jtx/seq.h>
 #include <ripple/test/jtx/sig.h>
 #include <ripple/test/jtx/utility.h>
-#include <ripple/app/tx/apply.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/core/ConfigSections.h>
@@ -113,12 +113,13 @@ Env::closed()
 }
 
 void
-Env::close(NetClock::time_point closeTime)
+Env::close(NetClock::time_point closeTime,
+    boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
     closeTime += closed()->info().closeTimeResolution - 1s;
     bundle_.timeKeeper->set(closeTime);
-    app().getOPs().acceptLedger();
+    app().getOPs().acceptLedger(consensusDelay);
     bundle_.timeKeeper->set(
         closed()->info().closeTime);
 }
@@ -260,8 +261,8 @@ Env::submit (JTx const& jt)
         app().openLedger().modify(
             [&](OpenView& view, beast::Journal j)
             {
-                std::tie(ter_, didApply) = ripple::apply(
-                    app(), view, *jt.stx, applyFlags(),
+                std::tie(ter_, didApply) = app().getTxQ().apply(
+                    app(), view, jt.stx, applyFlags(),
                         beast::Journal{});
                 return didApply;
             });

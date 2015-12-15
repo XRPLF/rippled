@@ -190,7 +190,8 @@ public:
         performs a virtual consensus round, with all the transactions we are
         proposing being accepted.
     */
-    virtual std::uint32_t acceptLedger () = 0;
+    virtual std::uint32_t acceptLedger (
+        boost::optional<std::chrono::milliseconds> consensusDelay = boost::none) = 0;
 
     virtual uint256 getConsensusLCL () = 0;
 

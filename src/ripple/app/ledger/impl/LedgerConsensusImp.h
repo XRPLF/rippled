@@ -150,7 +150,8 @@ public:
     */
     bool peerPosition (LedgerProposal::ref newPosition) override;
 
-    void simulate () override;
+    void simulate(
+        boost::optional<std::chrono::milliseconds> consensusDelay) override;
 
 private:
     /**
