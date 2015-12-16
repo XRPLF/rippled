@@ -110,6 +110,7 @@ public:
         add (rpcSRC_ISR_MALFORMED,     "srcIsrMalformed",   "Source issuer is malformed.");
         add (rpcSRC_MISSING,           "srcMissing",        "Source is missing.");
         add (rpcSRC_UNCLAIMED,         "srcUnclaimed",      "Source account is not claimed.");
+        add (rpcSTREAM_MALFORMED,      "malformedStream",   "Stream malformed.");
         add (rpcTOO_BUSY,              "tooBusy",           "The server is too busy to help you now.");
         add (rpcTXN_NOT_FOUND,         "txnNotFound",       "Transaction not found.");
         add (rpcUNKNOWN_COMMAND,       "unknownCmd",        "Unknown method.");

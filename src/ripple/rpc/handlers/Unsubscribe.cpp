@@ -37,98 +37,99 @@ Json::Value doUnsubscribe (RPC::Context& context)
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
 
-    if (!context.infoSub && !context.params.isMember (jss::url))
+    if (! context.infoSub && ! context.params.isMember(jss::url))
     {
         // Must be a JSON-RPC call.
-        return rpcError (rpcINVALID_PARAMS);
+        return rpcError(rpcINVALID_PARAMS);
     }
 
-    if (context.params.isMember (jss::url))
+    if (context.params.isMember(jss::url))
     {
         if (context.role != Role::ADMIN)
-            return rpcError (rpcNO_PERMISSION);
+            return rpcError(rpcNO_PERMISSION);
 
-        std::string strUrl  = context.params[jss::url].asString ();
-        ispSub  = context.netOps.findRpcSub (strUrl);
-
-        if (!ispSub)
+        std::string strUrl = context.params[jss::url].asString ();
+        ispSub = context.netOps.findRpcSub (strUrl);
+        if (! ispSub)
             return jvResult;
     }
     else
     {
-        ispSub  = context.infoSub;
+        ispSub = context.infoSub;
     }
 
     if (context.params.isMember (jss::streams))
     {
+        if (! context.params[jss::streams].isArray ())
+            return rpcError (rpcINVALID_PARAMS);
+
         for (auto& it: context.params[jss::streams])
         {
-            if (it.isString ())
+            if (! it.isString())
+                return rpcError(rpcSTREAM_MALFORMED);
+
+            std::string streamName = it.asString ();
+            if (streamName == "server")
             {
-                std::string streamName = it.asString ();
-
-                if (streamName == "server")
-                    context.netOps.unsubServer (ispSub->getSeq ());
-
-                else if (streamName == "ledger")
-                    context.netOps.unsubLedger (ispSub->getSeq ());
-
-                else if (streamName == "transactions")
-                    context.netOps.unsubTransactions (ispSub->getSeq ());
-
-                else if (streamName == "transactions_proposed"
-                         || streamName == "rt_transactions") // DEPRECATED
-                    context.netOps.unsubRTTransactions (ispSub->getSeq ());
-
-                else if (streamName == "validations")
-                    context.netOps.unsubValidations (ispSub->getSeq ());
-
-                else if (streamName == "peer_status")
-                    context.netOps.unsubPeerStatus (ispSub->getSeq ());
-
-                else
-                    jvResult[jss::error] = "Unknown stream: " + streamName;
+                context.netOps.unsubServer (ispSub->getSeq ());
+            }
+            else if (streamName == "ledger")
+            {
+                context.netOps.unsubLedger (ispSub->getSeq ());
+            }
+            else if (streamName == "transactions")
+            {
+                context.netOps.unsubTransactions (ispSub->getSeq ());
+            }
+            else if (streamName == "transactions_proposed"
+                || streamName == "rt_transactions") // DEPRECATED
+            {
+                context.netOps.unsubRTTransactions (ispSub->getSeq ());
+            }
+            else if (streamName == "validations")
+            {
+                context.netOps.unsubValidations (ispSub->getSeq ());
+            }
+            else if (streamName == "peer_status")
+            {
+                context.netOps.unsubPeerStatus (ispSub->getSeq ());
             }
             else
             {
-                jvResult[jss::error]   = "malformedSteam";
+                return rpcError(rpcSTREAM_MALFORMED);
             }
         }
     }
 
-    if (context.params.isMember (jss::accounts_proposed)
-        || context.params.isMember (jss::rt_accounts))
+    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
+        ? jss::accounts_proposed : jss::rt_accounts;  // DEPRECATED
+    if (context.params.isMember(accountsProposed))
     {
-        auto accounts  = RPC::parseAccountIds (
-                    context.params.isMember (jss::accounts_proposed)
-                    ? context.params[jss::accounts_proposed]
-                    : context.params[jss::rt_accounts]); // DEPRECATED
+        if (! context.params[accountsProposed].isArray())
+            return rpcError(rpcINVALID_PARAMS);
 
-        if (accounts.empty ())
-            jvResult[jss::error]   = "malformedAccount";
-        else
-            context.netOps.unsubAccount (ispSub, accounts, true);
+        auto ids = RPC::parseAccountIds(context.params[accountsProposed]);
+        if (ids.empty())
+            return rpcError(rpcACT_MALFORMED);
+        context.netOps.unsubAccount(ispSub, ids, true);
     }
 
-    if (context.params.isMember (jss::accounts))
+    if (context.params.isMember(jss::accounts))
     {
-        auto accounts  = RPC::parseAccountIds (context.params[jss::accounts]);
+        if (! context.params[jss::accounts].isArray())
+            return rpcError(rpcINVALID_PARAMS);
 
-        if (accounts.empty ())
-            jvResult[jss::error]   = "malformedAccount";
-        else
-            context.netOps.unsubAccount (ispSub, accounts, false);
+        auto ids = RPC::parseAccountIds(context.params[jss::accounts]);
+        if (ids.empty())
+            return rpcError(rpcACT_MALFORMED);
+        context.netOps.unsubAccount(ispSub, ids, false);
     }
 
-    if (!context.params.isMember (jss::books))
+    if (context.params.isMember(jss::books))
     {
-    }
-    else if (!context.params[jss::books].isArray ())
-    {
-        return rpcError (rpcINVALID_PARAMS);
-    }
-    else
-    {
+        if (! context.params[jss::books].isArray())
+            return rpcError(rpcINVALID_PARAMS);
+
         for (auto& jv: context.params[jss::books])
         {
             if (!jv.isObject ()
