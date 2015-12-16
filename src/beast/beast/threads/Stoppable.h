@@ -266,8 +266,8 @@ private:
 
     void prepareRecursive ();
     void startRecursive ();
-    void stopAsyncRecursive ();
-    void stopRecursive (Journal journal);
+    void stopAsyncRecursive (Journal j);
+    void stopRecursive (Journal j);
 
     std::string m_name;
     RootStoppable& m_root;
@@ -314,15 +314,16 @@ public:
         Thread safety:
             Safe to call from any thread not associated with a Stoppable.
     */
-    void stop (Journal journal = Journal());
+    void stop (Journal j);
+
 private:
-    /** Notify a root stoppable and children to stop, without waiting.
+    /*  Notify a root stoppable and children to stop, without waiting.
         Has no effect if the stoppable was already notified.
 
         Thread safety:
             Safe to call from any thread at any time.
     */
-    void stopAsync ();
+    void stopAsync(Journal j);
 
     std::atomic<bool> m_prepared;
     std::atomic<bool> m_calledStop;

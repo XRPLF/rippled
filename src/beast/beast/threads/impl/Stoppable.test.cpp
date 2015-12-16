@@ -403,7 +403,7 @@ class Stoppable_test
         {
             prepare();
             start();
-            stop();
+            stop(Journal{});
         }
 
         void onPrepare() override
