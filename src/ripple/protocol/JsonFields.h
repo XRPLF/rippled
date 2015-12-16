@@ -150,6 +150,7 @@ JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
 JSS ( expand );                     // in: handler/Ledger
 JSS ( expected_ledger_size );       // out: TxQ
+JSS ( expiration );                 // out: AccountOffers
 JSS ( fail_hard );                  // in: Sign, Submit
 JSS ( failed );                     // out: InboundLedger
 JSS ( feature );                    // in: Feature
@@ -275,7 +276,7 @@ JSS ( open );                       // out: handlers/Ledger
 JSS ( open_ledger_fee );            // out: TxQ
 JSS ( open_ledger_level );          // out: TxQ
 JSS ( owner );                      // in: LedgerEntry, out: NetworkOPs
-JSS ( owner_funds );                // out: NetworkOPs, AcceptedLedgerTx
+JSS ( owner_funds );                // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS ( params );                     // RPC
 JSS ( parent_close_time );          // out: LedgerToJson
 JSS ( parent_hash );                // out: LedgerToJson

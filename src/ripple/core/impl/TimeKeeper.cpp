@@ -31,7 +31,7 @@ class TimeKeeperImpl : public TimeKeeper
 private:
     beast::Journal j_;
     std::mutex mutable mutex_;
-    duration closeOffset_;
+    std::chrono::duration<std::int32_t> closeOffset_;
     std::unique_ptr<SNTPClock> clock_;
 
     // Adjust system_clock::time_point for NetClock epoch
@@ -77,7 +77,7 @@ public:
 
     void
     adjustCloseTime(
-        NetClock::duration amount) override
+        std::chrono::duration<std::int32_t> amount) override
     {
         using namespace std::chrono;
         auto const s = amount.count();
@@ -107,15 +107,16 @@ public:
         }
     }
 
-    duration
+    std::chrono::duration<std::int32_t>
     nowOffset() const override
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return std::chrono::duration_cast<duration>(
-            clock_->offset());
+        using namespace std::chrono;
+        using namespace std;
+        lock_guard<mutex> lock(mutex_);
+        return duration_cast<chrono::duration<int32_t>>(clock_->offset());
     }
 
-    duration
+    std::chrono::duration<std::int32_t>
     closeOffset() const override
     {
         std::lock_guard<std::mutex> lock(mutex_);

@@ -20,7 +20,8 @@
 #ifndef RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 #define RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 
-#include <ripple/basics/TaggedCache.h>
+#include <ripple/shamap/TreeNodeCache.h>
+#include <ripple/shamap/SHAMapTreeNode.h>
 
 namespace ripple {
 

@@ -70,7 +70,7 @@ public:
         LedgerIndex cutoffBefore) = 0;
 
     /** Return the times of all validations for a particular ledger hash. */
-    virtual std::vector<std::uint32_t> getValidationTimes (
+    virtual std::vector<NetClock::time_point> getValidationTimes (
         uint256 const& ledger) = 0;
 
     virtual std::list <STValidation::pointer>

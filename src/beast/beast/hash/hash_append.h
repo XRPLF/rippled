@@ -25,6 +25,7 @@
 #include <beast/hash/endian.h>
 #include <beast/utility/meta.h>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -470,6 +471,24 @@ void
 hash_append (Hasher& h, std::shared_ptr<T> const& p) noexcept
 {
     hash_append(h, p.get());
+}
+
+// chrono
+
+template <class Hasher, class Rep, class Period>
+inline
+void
+hash_append (Hasher& h, std::chrono::duration<Rep, Period> const& d) noexcept
+{
+    hash_append(h, d.count());
+}
+
+template <class Hasher, class Clock, class Duration>
+inline
+void
+hash_append (Hasher& h, std::chrono::time_point<Clock, Duration> const& tp) noexcept
+{
+    hash_append(h, tp.time_since_epoch());
 }
 
 // variadic

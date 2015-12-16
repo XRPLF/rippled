@@ -33,9 +33,9 @@ ConsensusImp::ConsensusImp (
     , proposing_ (false)
     , validating_ (false)
     , lastCloseProposers_ (0)
-    , lastCloseConvergeTook_ (1000 * LEDGER_IDLE_INTERVAL)
-    , lastValidationTimestamp_ (0)
-    , lastCloseTime_ (0)
+    , lastCloseConvergeTook_ (LEDGER_IDLE_INTERVAL)
+    , lastValidationTimestamp_ (0s)
+    , lastCloseTime_ (0s)
 {
 }
 
@@ -57,7 +57,7 @@ ConsensusImp::getLastCloseProposers () const
     return lastCloseProposers_;
 }
 
-int
+std::chrono::milliseconds
 ConsensusImp::getLastCloseDuration () const
 {
     return lastCloseConvergeTook_;
@@ -71,7 +71,7 @@ ConsensusImp::startRound (
     LedgerMaster& ledgerMaster,
     LedgerHash const &prevLCLHash,
     Ledger::ref previousLedger,
-    std::uint32_t closeTime)
+    NetClock::time_point closeTime)
 {
     return make_LedgerConsensus (app, *this, lastCloseProposers_,
         lastCloseConvergeTook_, inboundTransactions, localtx, ledgerMaster,
@@ -101,7 +101,7 @@ ConsensusImp::setLastValidation (STValidation::ref v)
 void
 ConsensusImp::newLCL (
     int proposers,
-    int convergeTime,
+    std::chrono::milliseconds convergeTime,
     uint256 const& ledgerHash)
 {
     lastCloseProposers_ = proposers;
@@ -109,24 +109,24 @@ ConsensusImp::newLCL (
     lastCloseHash_ = ledgerHash;
 }
 
-std::uint32_t
-ConsensusImp::validationTimestamp (std::uint32_t vt)
+NetClock::time_point
+ConsensusImp::validationTimestamp (NetClock::time_point vt)
 {
     if (vt <= lastValidationTimestamp_)
-        vt = lastValidationTimestamp_ + 1;
+        vt = lastValidationTimestamp_ + 1s;
 
     lastValidationTimestamp_ = vt;
     return vt;
 }
 
-std::uint32_t
+NetClock::time_point
 ConsensusImp::getLastCloseTime () const
 {
     return lastCloseTime_;
 }
 
 void
-ConsensusImp::setLastCloseTime (std::uint32_t t)
+ConsensusImp::setLastCloseTime (NetClock::time_point t)
 {
     lastCloseTime_ = t;
 }

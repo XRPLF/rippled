@@ -166,7 +166,7 @@ Change::applyAmendment()
         auto& entry = newMajorities.back ();
         entry.emplace_back (STHash256 (sfAmendment, amendment));
         entry.emplace_back (STUInt32 (sfCloseTime,
-            view().parentCloseTime()));
+            view().parentCloseTime().time_since_epoch().count()));
     }
     else if (!lostMajority)
     {

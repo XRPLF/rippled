@@ -1639,6 +1639,7 @@ public:
 
     void testTransactionRPC ()
     {
+        using namespace std::chrono_literals;
         // Use jtx to set up a ledger so the tests will do the right thing.
         test::jtx::Account const a {"a"}; // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
         test::jtx::Account const g {"g"}; // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
@@ -1666,7 +1667,7 @@ public:
             Json::Value params,
             NetworkOPs::FailHard failType,
             Role role,
-            int validatedLedgerAge,
+            std::chrono::seconds validatedLedgerAge,
             Application& app,
             std::shared_ptr<ReadView const> ledger,
             ApplyFlags flags);
@@ -1675,7 +1676,7 @@ public:
             Json::Value params,
             NetworkOPs::FailHard failType,
             Role role,
-            int validatedLedgerAge,
+            std::chrono::seconds validatedLedgerAge,
             Application& app,
             std::shared_ptr<ReadView const> ledger,
             ProcessTransactionFn const& processTransaction,
@@ -1717,7 +1718,7 @@ public:
                             req,
                             NetworkOPs::FailHard::yes,
                             testRole,
-                            1,
+                            1s,
                             env.app(),
                             ledger,
                             tapENABLE_TESTING);
@@ -1730,7 +1731,7 @@ public:
                             req,
                             NetworkOPs::FailHard::yes,
                             testRole,
-                            1,
+                            1s,
                             env.app(),
                             ledger,
                             processTxn,

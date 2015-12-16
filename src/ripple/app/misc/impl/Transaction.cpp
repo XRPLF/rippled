@@ -159,7 +159,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
             auto ct = mApp.getLedgerMaster().
                 getCloseTimeBySeq (mInLedger);
             if (ct)
-                ret[jss::date] = *ct;
+                ret[jss::date] = ct->time_since_epoch().count();
         }
     }
 

@@ -69,9 +69,10 @@ addPaymentDeliveredAmount (
     // If the ledger closed long after the DeliveredAmount code was deployed
     // then its absence indicates that the amount delivered is listed in the
     // Amount field. DeliveredAmount went live January 24, 2014.
+    using namespace std::chrono_literals;
     auto ct =
         context.ledgerMaster.getCloseTimeBySeq (transaction->getLedger ());
-    if (ct && (*ct > 446000000))
+    if (ct && (*ct > NetClock::time_point{446000000s}))
     {
         // 446000000 is in Feb 2014, well after DeliveredAmount went live
         meta[jss::delivered_amount] =

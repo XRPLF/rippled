@@ -96,13 +96,13 @@ public:
         Application& app,
         ConsensusImp& consensus,
         int previousProposers,
-        int previousConvergeTime,
+        std::chrono::milliseconds previousConvergeTime,
         InboundTransactions& inboundTransactions,
         LocalTxs& localtx,
         LedgerMaster& ledgerMaster,
         LedgerHash const & prevLCLHash,
         Ledger::ref previousLedger,
-        std::uint32_t closeTime,
+        NetClock::time_point closeTime,
         FeeVote& feeVote);
 
     /**
@@ -294,7 +294,7 @@ private:
     void addLoad(STValidation::ref val);
 
     /** Convert an advertised close time to an effective close time */
-    std::uint32_t effectiveCloseTime (std::uint32_t closeTime);
+    NetClock::time_point effectiveCloseTime(NetClock::time_point closeTime);
 
 private:
     Application& app_;
@@ -305,20 +305,20 @@ private:
     FeeVote& m_feeVote;
 
     State state_;
-    std::uint32_t mCloseTime;      // The wall time this ledger closed
+    NetClock::time_point mCloseTime;      // The wall time this ledger closed
     uint256 mPrevLedgerHash, mNewLedgerHash, mAcquiringLedger;
     Ledger::pointer mPreviousLedger;
     LedgerProposal::pointer mOurPosition;
     RippleAddress mValPublic, mValPrivate;
     bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
 
-    int mCurrentMSeconds;
+    std::chrono::milliseconds mCurrentMSeconds;
 
     // How long the close has taken, expressed as a percentage of the time that
     // we expected it to take.
     int mClosePercent;
 
-    int mCloseResolution;
+    NetClock::duration mCloseResolution;
 
     bool mHaveCloseTimeConsensus;
 
@@ -326,7 +326,7 @@ private:
     int                             mPreviousProposers;
 
     // The time it took for the last consensus process to converge
-    int mPreviousMSeconds;
+    std::chrono::milliseconds mPreviousMSeconds;
 
     // Convergence tracking, trusted peers indexed by hash of public key
     hash_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
@@ -339,7 +339,7 @@ private:
     hash_set<uint256> mCompares;
 
     // Close time estimates, keep ordered for predictable traverse
-    std::map<std::uint32_t, int> mCloseTimes;
+    std::map<NetClock::time_point, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process
     hash_set<NodeID> mDeadNodes;
@@ -350,10 +350,11 @@ private:
 
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (Application& app, ConsensusImp& consensus, int previousProposers,
-    int previousConvergeTime, InboundTransactions& inboundTransactions,
+    std::chrono::milliseconds previousConvergeTime,
+    InboundTransactions& inboundTransactions,
     LocalTxs& localtx, LedgerMaster& ledgerMaster,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
-    std::uint32_t closeTime, FeeVote& feeVote);
+    NetClock::time_point closeTime, FeeVote& feeVote);
 
 } // ripple
 

@@ -22,6 +22,7 @@
 
 #include <ripple/app/tx/impl/BookTip.h>
 #include <ripple/app/tx/impl/Offer.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
 #include <beast/utility/Journal.h>
@@ -81,7 +82,7 @@ private:
     ApplyView& view_;
     ApplyView& cancelView_;
     Book book_;
-    Clock::time_point const expire_;
+    NetClock::time_point const expire_;
     BookTip tip_;
     Offer offer_;
     StepCounter& counter_;
@@ -91,7 +92,7 @@ private:
 
 public:
     OfferStream (ApplyView& view, ApplyView& cancelView,
-        Book const& book, Clock::time_point when,
+        Book const& book, NetClock::time_point when,
             StepCounter& counter, beast::Journal journal);
 
     /** Returns the offer at the tip of the order book.

@@ -135,7 +135,7 @@ enabledAmendments_t
 getEnabledAmendments (ReadView const& view);
 
 // Return a map of amendments that have achieved majority
-using majorityAmendments_t = std::map <uint256, std::uint32_t>;
+using majorityAmendments_t = std::map <uint256, NetClock::time_point>;
 majorityAmendments_t
 getMajorityAmendments (ReadView const& view);
 

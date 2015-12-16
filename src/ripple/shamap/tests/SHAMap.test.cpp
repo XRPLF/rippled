@@ -133,6 +133,31 @@ public:
             }
             expect (map.getHash() == zero, "bad final empty map hash");
         }
+
+        testcase ("iterate");
+        {
+            std::vector<uint256> keys(8);
+            keys[0].SetHex ("f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[1].SetHex ("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[2].SetHex ("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[3].SetHex ("b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[4].SetHex ("b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[5].SetHex ("b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[6].SetHex ("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+            keys[7].SetHex ("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+
+            tests::TestFamily f{beast::Journal{}};
+            SHAMap map{SHAMapType::FREE, f};
+            for (auto const& k : keys)
+                map.addItem(SHAMapItem{k, IntToVUC(0)}, true, false);
+
+            int i = 7;
+            for (auto const& k : map)
+            {
+                expect(k.key() == keys[i]);
+                --i;
+            }
+        }
     }
 };
 

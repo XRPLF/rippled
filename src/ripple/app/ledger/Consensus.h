@@ -59,7 +59,7 @@ public:
 
     /** Returns the time (in milliseconds) that the last close took. */
     virtual
-    int
+    std::chrono::milliseconds
     getLastCloseDuration () const = 0;
 
     /** Called when a new round of consensus is about to begin */
@@ -72,12 +72,12 @@ public:
         LedgerMaster& ledgerMaster,
         LedgerHash const &prevLCLHash,
         Ledger::ref previousLedger,
-        std::uint32_t closeTime) = 0;
+        NetClock::time_point closeTime) = 0;
 
     /** Specified the network time when the last ledger closed */
     virtual
     void
-    setLastCloseTime (std::uint32_t t) = 0;
+    setLastCloseTime (NetClock::time_point t) = 0;
 
     virtual
     void

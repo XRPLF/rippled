@@ -150,16 +150,6 @@ public:
     bool addGiveItem (std::shared_ptr<SHAMapItem const> const&,
                       bool isTransaction, bool hasMeta);
 
-    /** Fetch an item given its key.
-        This retrieves the item whose key matches.
-        If the item does not exist, an empty pointer is returned.
-        Exceptions:
-            Can throw SHAMapMissingNode
-        @note This can cause NodeStore reads
-    */
-    std::shared_ptr<SHAMapItem const> const&
-        fetch (uint256 const& key) const;
-
     // Save a copy if you need to extend the life
     // of the SHAMapItem beyond this SHAMap
     std::shared_ptr<SHAMapItem const> const& peekItem (uint256 const& id) const;
@@ -215,7 +205,7 @@ public:
     void visitDifferences(SHAMap* have, std::function<bool(SHAMapAbstractNode&)>) const;
 
     void getFetchPack (SHAMap * have, bool includeLeaves, int max,
-        std::function<void (uint256 const&, const Blob&)>) const;
+        std::function<void (SHAMapHash const&, const Blob&)>) const;
 
     void setUnbacked ();
 
@@ -252,8 +242,13 @@ private:
     SharedPtrNodeStack
         getStack (uint256 const& id, bool include_nonmatching_leaf) const;
 
-    /** Walk to the specified index, returning the node */
-    SHAMapTreeNode* walkToPointer (uint256 const& id) const;
+    /** Walk towards the specified id, returning the node.  Caller must check
+        if the return is nullptr, and if not, if the node->peekItem()->key() == id */
+    SHAMapTreeNode*
+        walkTowardsKey(uint256 const& id, NodeStack* stack = nullptr) const;
+    /** Return nullptr if key not found */
+    SHAMapTreeNode*
+        findKey(uint256 const& id) const;
 
     /** Unshare the node, allowing it to be modified */
     template <class Node>

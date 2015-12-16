@@ -619,11 +619,12 @@ SHAMapStoreImp::health()
 
     NetworkOPs::OperatingMode mode = netOPs_->getOperatingMode();
 
-    std::int32_t age = ledgerMaster_->getValidatedLedgerAge();
-    if (mode != NetworkOPs::omFULL || age >= setup_.ageThreshold)
+    auto age = ledgerMaster_->getValidatedLedgerAge();
+    if (mode != NetworkOPs::omFULL || age.count() >= setup_.ageThreshold)
     {
-        journal_.warning << "Not deleting. state: " << mode << " age " << age
-                << " age threshold " << setup_.ageThreshold;
+        journal_.warning << "Not deleting. state: " << mode
+                         << " age " << age.count()
+                         << " age threshold " << setup_.ageThreshold;
         healthy_ = false;
     }
 

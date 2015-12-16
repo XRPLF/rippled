@@ -68,14 +68,14 @@ void fillJson(Object& json, LedgerInfo const& info, bool bFull)
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
-    json[jss::parent_close_time] = info.parentCloseTime;
-    json[jss::close_time] = info.closeTime;
-    json[jss::close_time_resolution] = info.closeTimeResolution;
+    json[jss::parent_close_time] = info.parentCloseTime.time_since_epoch().count();
+    json[jss::close_time] = info.closeTime.time_since_epoch().count();
+    json[jss::close_time_resolution] = info.closeTimeResolution.count();
 
-    if (auto closeTime = info.closeTime)
+    if (info.closeTime != NetClock::time_point{})
     {
         json[jss::close_time_human] = boost::posix_time::to_simple_string (
-            ptFromSeconds (closeTime));
+            ptFromSeconds (info.closeTime.time_since_epoch().count()));
         if (! getCloseAgree(info))
             json[jss::close_time_estimated] = true;
     }
@@ -96,19 +96,37 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
             {
                 txns.append(to_string(i.first->getTransactionID()));
             }
-            else if (bBinary)
-            {
-                auto&& txJson = appendObject (txns);
-                txJson[jss::tx_blob] = serializeHex(*i.first);
-                if (i.second)
-                    txJson[jss::meta] = serializeHex(*i.second);
-            }
             else
             {
-                auto&& txJson = appendObject (txns);
-                copyFrom(txJson, i.first->getJson(0));
-                if (i.second)
-                    txJson[jss::metaData] = i.second->getJson(0);
+                auto&& txJson = appendObject(txns);
+                if (bBinary)
+                {
+                    txJson[jss::tx_blob] = serializeHex(*i.first);
+                    if (i.second)
+                        txJson[jss::meta] = serializeHex(*i.second);
+                }
+                else
+                {
+                    copyFrom(txJson, i.first->getJson(0));
+                    if (i.second)
+                        txJson[jss::metaData] = i.second->getJson(0);
+                }
+
+                if ((fill.options & LedgerFill::ownerFunds) &&
+                    i.first->getTxnType() == ttOFFER_CREATE)
+                {
+                    auto const account = i.first->getAccountID(sfAccount);
+                    auto const amount = i.first->getFieldAmount(sfTakerGets);
+
+                    // If the offer create is not self funded then add the
+                    // owner balance
+                    if (account != amount.getIssuer())
+                    {
+                        auto const ownerFunds = accountFunds(fill.ledger,
+                            account, amount, fhIGNORE_FREEZE, beast::Journal());
+                        txJson[jss::owner_funds] = ownerFunds.getText ();
+                    }
+                }
             }
         }
     }

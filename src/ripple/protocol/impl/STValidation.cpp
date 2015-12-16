@@ -40,14 +40,14 @@ STValidation::STValidation (SerialIter& sit, bool checkSignature)
 }
 
 STValidation::STValidation (
-    uint256 const& ledgerHash, std::uint32_t signTime,
+    uint256 const& ledgerHash, NetClock::time_point signTime,
     RippleAddress const& raPub, bool isFull)
     : STObject (getFormat (), sfValidation)
     , mSeen (signTime)
 {
     // Does not sign
     setFieldH256 (sfLedgerHash, ledgerHash);
-    setFieldU32 (sfSigningTime, signTime);
+    setFieldU32 (sfSigningTime, signTime.time_since_epoch().count());
 
     setFieldVL (sfSigningPubKey, raPub.getNodePublic ());
     mNodeID = raPub.getNodeID ();
@@ -79,12 +79,13 @@ uint256 STValidation::getLedgerHash () const
     return getFieldH256 (sfLedgerHash);
 }
 
-std::uint32_t STValidation::getSignTime () const
+NetClock::time_point
+STValidation::getSignTime () const
 {
-    return getFieldU32 (sfSigningTime);
+    return NetClock::time_point{NetClock::duration{getFieldU32(sfSigningTime)}};
 }
 
-std::uint32_t STValidation::getSeenTime () const
+NetClock::time_point STValidation::getSeenTime () const
 {
     return mSeen;
 }

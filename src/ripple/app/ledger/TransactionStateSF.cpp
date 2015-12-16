@@ -36,9 +36,9 @@ TransactionStateSF::TransactionStateSF(Application& app)
 // VFALCO This might be better as Blob&&
 void TransactionStateSF::gotNode (bool fromFilter,
                                   SHAMapNodeID const& id,
-                                  uint256 const& nodeHash,
+                                  SHAMapHash const& nodeHash,
                                   Blob& nodeData,
-                                  SHAMapTreeNode::TNType type)
+                                  SHAMapTreeNode::TNType type) const
 {
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
     //        SHAMap should provide an accessor to get the injected Database,
@@ -47,14 +47,14 @@ void TransactionStateSF::gotNode (bool fromFilter,
         SHAMapTreeNode::tnTRANSACTION_NM);
     app_.getNodeStore().store(
         hotTRANSACTION_NODE,
-            std::move (nodeData), nodeHash);
+            std::move (nodeData), nodeHash.as_uint256());
 }
 
 bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
-                                   uint256 const& nodeHash,
-                                   Blob& nodeData)
+                                   SHAMapHash const& nodeHash,
+                                   Blob& nodeData) const
 {
-    return app_.getLedgerMaster ().getFetchPack (nodeHash, nodeData);
+    return app_.getLedgerMaster ().getFetchPack (nodeHash.as_uint256(), nodeData);
 }
 
 } // ripple

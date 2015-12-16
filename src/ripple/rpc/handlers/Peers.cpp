@@ -40,7 +40,7 @@ Json::Value doPeers (RPC::Context& context)
 
         jvResult[jss::peers] = context.app.overlay ().json ();
 
-        auto const now = context.app.timeKeeper().now().time_since_epoch().count();
+        auto const now = context.app.timeKeeper().now();
         auto const self = context.app.getLocalCredentials().getNodePublic();
 
         Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
@@ -60,10 +60,10 @@ Json::Value doPeers (RPC::Context& context)
                 if ((node.getLoadFee() != ref) && (node.getLoadFee() != 0))
                     json[jss::fee] = static_cast<double>(node.getLoadFee()) / ref;
 
-                if (node.getReportTime())
+                if (node.getReportTime() != NetClock::time_point{})
                     json[jss::age] = (node.getReportTime() >= now)
                         ? 0
-                        : (now - node.getReportTime());
+                        : (now - node.getReportTime()).count();
             });
     }
 

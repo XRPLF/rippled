@@ -79,14 +79,16 @@ public:
     */
     virtual
     void
-    adjustCloseTime (duration amount) = 0;
+    adjustCloseTime (std::chrono::duration<std::int32_t> amount) = 0;
 
+    // This may return a negative value
     virtual
-    duration
+    std::chrono::duration<std::int32_t>
     nowOffset() const = 0;
 
+    // This may return a negative value
     virtual
-    duration
+    std::chrono::duration<std::int32_t>
     closeOffset() const = 0;
 
 };
