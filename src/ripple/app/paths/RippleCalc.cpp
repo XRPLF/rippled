@@ -220,7 +220,8 @@ TER RippleCalc::rippleCalculate ()
                 // Only do active paths.
             {
                 // If computing the only non-dry path, compute multi-quality.
-                multiQuality = ((pathStateList_.size () - iDry) == 1);
+                multiQuality =
+                    (!inputFlags.limitQuality && (pathStateList_.size () - iDry) == 1);
 
                 // Update to current amount processed.
                 pathState->reset (actualAmountIn_, actualAmountOut_);
