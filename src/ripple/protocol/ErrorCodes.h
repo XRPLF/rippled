@@ -110,6 +110,7 @@ enum error_code_i
     rpcSRC_AMT_MALFORMED,
     rpcSRC_CUR_MALFORMED,
     rpcSRC_ISR_MALFORMED,
+    rpcSTREAM_MALFORMED,
     rpcATX_DEPRECATED,
 
     // Internal error (should never happen)
