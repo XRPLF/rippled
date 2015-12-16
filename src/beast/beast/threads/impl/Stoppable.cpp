@@ -183,12 +183,16 @@ void RootStoppable::stop (Journal j)
     // Must have a prior call to start()
     bassert (m_started);
 
-    if (m_calledStop.exchange (true) == true)
     {
-        j.warning << "Stoppable::stop called again";
-        return;
+        std::lock_guard<std::mutex> lock(m_);
+        if (m_calledStop)
+        {
+            j.warning << "Stoppable::stop called again";
+            return;
+        }
+        m_calledStop = true;
+        c_.notify_all();
     }
-
     stopAsync (j);
     stopRecursive (j);
 }

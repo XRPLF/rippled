@@ -22,10 +22,11 @@
 
 #include <beast/intrusive/LockFreeStack.h>
 #include <beast/utility/Journal.h>
-
 #include <beast/threads/WaitableEvent.h>
-
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 namespace beast {
 
@@ -189,6 +190,15 @@ public:
     /** Returns `true` if all children have stopped. */
     bool areChildrenStopped () const;
 
+    /** Sleep or wake up on stop.
+
+        @return `true` if we are stopping
+    */
+    template <class Rep, class Period>
+    bool
+    alertable_sleep_for(
+        std::chrono::duration<Rep, Period> const& d);
+
 protected:
     /** Called by derived classes to indicate that the stoppable has stopped. */
     void stopped ();
@@ -316,6 +326,15 @@ public:
     */
     void stop (Journal j);
 
+    /** Sleep or wake up on stop.
+
+        @return `true` if we are stopping
+    */
+    template <class Rep, class Period>
+    bool
+    alertable_sleep_for(
+        std::chrono::duration<Rep, Period> const& d);
+
 private:
     /*  Notify a root stoppable and children to stop, without waiting.
         Has no effect if the stoppable was already notified.
@@ -326,10 +345,33 @@ private:
     void stopAsync(Journal j);
 
     std::atomic<bool> m_prepared;
-    std::atomic<bool> m_calledStop;
+    bool m_calledStop;
     std::atomic<bool> m_calledStopAsync;
+    std::mutex m_;
+    std::condition_variable c_;
 };
 /** @} */
+
+//------------------------------------------------------------------------------
+
+template <class Rep, class Period>
+bool
+RootStoppable::alertable_sleep_for(
+    std::chrono::duration<Rep, Period> const& d)
+{
+    std::unique_lock<std::mutex> lock(m_);
+    if (m_calledStop)
+        return true;
+    return c_.wait_for(lock, d, [this]{return m_calledStop;});
+}
+
+template <class Rep, class Period>
+bool
+Stoppable::alertable_sleep_for(
+    std::chrono::duration<Rep, Period> const& d)
+{
+    return m_root.alertable_sleep_for(d);
+}
 
 }
 
