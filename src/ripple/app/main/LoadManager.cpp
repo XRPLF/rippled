@@ -190,7 +190,7 @@ void LoadManager::run ()
         }
         else
         {
-            std::this_thread::sleep_for (duration);
+            alertable_sleep_for(duration);
         }
     }
 
