@@ -177,8 +177,7 @@ private:
         // that avoids any chance of overflowing or underflowing
         // the signing time.
 
-        auto const now = app_.timeKeeper().now();
-
+        auto const now = app_.timeKeeper().closeTime();
         auto const signTime = val->getSignTime();
 
         return
