@@ -23,7 +23,10 @@
 #include <ripple/core/Job.h>
 #include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
+#include <boost/optional.hpp>
+#include <boost/thread/tss.hpp>
 #include <string>
+#include <memory>
 #include <mutex>
 
 namespace ripple {
@@ -39,6 +42,46 @@ struct JobCoro_create_t { };
 class JobCoro : public std::enable_shared_from_this<JobCoro>
 {
 private:
+    struct Context
+    {
+        struct BasicValue
+        {
+            virtual ~BasicValue() = default;
+            virtual void* get() = 0;
+        };
+
+        template <class T>
+        struct Value : BasicValue
+        {
+            boost::optional<T> t;
+
+            void* get() override
+            {
+                return &t;
+            }
+        };
+
+        std::unordered_map<void const*,
+            std::unique_ptr<BasicValue>> values;
+
+        static
+        inline
+        void
+        cleanup (Context*)
+        {
+        }
+    };
+
+    static
+    boost::thread_specific_ptr<Context>&
+    context_sp()
+    {
+        static boost::thread_specific_ptr<
+            Context> tsp(&Context::cleanup);
+        return tsp;
+    }
+
+    Context ctx_;
     JobQueue& jq_;
     JobType type_;
     std::string name_;
@@ -47,6 +90,28 @@ private:
     boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
 
 public:
+    template <class T>
+    class LocalValue
+    {
+    public:
+        boost::optional<T>&
+        get() const
+        {
+            auto const ctx = context_sp().get();
+            if (! ctx)
+                throw std::runtime_error("no coroutine");
+            {
+                auto const iter = ctx->values.find(this);
+                if (iter != ctx->values.end())
+                    return *reinterpret_cast<boost::optional<T>*>(
+                        result.first->second->get());
+            }
+            auto const result = ctx->values.emplace(this,
+                std::make_unique<Context::Value<T>>());
+            return result.first->second;
+        }
+    };
+
     // Private: Used in the implementation
     template <class F>
     JobCoro (detail::JobCoro_create_t, JobQueue&, JobType,
@@ -60,7 +125,7 @@ public:
           The associated Job function returns.
           Undefined behavior if called consecutively without a corresponding post.
     */
-    void yield () const;
+    void yield() const;
 
     /** Schedule coroutine execution
         Effects:
@@ -71,7 +136,15 @@ public:
             after the previous call to yield.
         Undefined behavior if called consecutively without a corresponding yield.
     */
-    void post ();
+    void post();
+
+    /** Return `true` if a coroutine is running on this thread. */
+    static
+    bool
+    onCoro()
+    {
+        return context_sp().get() != nullptr;
+    }
 };
 
 } // ripple

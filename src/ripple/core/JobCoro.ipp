@@ -55,7 +55,9 @@ JobCoro::post ()
         [this, sp = shared_from_this()](Job&)
         {
             std::lock_guard<std::mutex> lock (mutex_);
+            context_sp().reset(&ctx_);
             coro_();
+            context_sp().reset(nullptr);
         });
 }
 
