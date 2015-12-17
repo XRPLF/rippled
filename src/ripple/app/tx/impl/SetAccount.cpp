@@ -253,9 +253,8 @@ SetAccount::doApply ()
             // Account has no regular key or multi-signer signer list.
 
             // Prevent transaction changes until we're ready.
-            if (view().flags() & tapENABLE_TESTING ||
-                    view().rules().enabled(featureMultiSign,
-                        ctx_.app.config().features))
+            if (view().rules().enabled(featureMultiSign,
+                    ctx_.app.config().features))
                 return tecNO_ALTERNATIVE_KEY;
 
             return tecNO_REGULAR_KEY;

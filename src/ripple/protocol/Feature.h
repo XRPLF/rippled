@@ -35,6 +35,7 @@ feature (const char* name);
 /** @} */
 
 extern uint256 const featureMultiSign;
+extern uint256 const featureTickets;
 extern uint256 const featureSusPay;
 extern uint256 const featureTrustSetAuth;
 extern uint256 const featureFeeEscalation;

@@ -83,9 +83,8 @@ checkValidity(HashRouter& router,
             ApplyFlags const& flags)
 {
     auto const allowMultiSign =
-        (flags & tapENABLE_TESTING) ||
-            (rules.enabled(featureMultiSign,
-                config.features));
+        rules.enabled(featureMultiSign,
+            config.features);
 
     return checkValidity(router, tx, allowMultiSign);
 }

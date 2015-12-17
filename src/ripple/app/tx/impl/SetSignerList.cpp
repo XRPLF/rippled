@@ -73,9 +73,8 @@ SetSignerList::determineOperation(STTx const& tx,
 TER
 SetSignerList::preflight (PreflightContext const& ctx)
 {
-    if (! (ctx.flags & tapENABLE_TESTING) &&
-            ! ctx.rules.enabled(featureMultiSign,
-                ctx.app.config().features))
+    if (! ctx.rules.enabled(featureMultiSign,
+            ctx.app.config().features))
         return temDISABLED;
 
     auto const ret = preflight1 (ctx);

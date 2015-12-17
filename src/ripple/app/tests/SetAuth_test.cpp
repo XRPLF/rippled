@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/jtx.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
@@ -52,13 +53,12 @@ struct SetAuth_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         {
             Env env(*this);
-            env.disable_testing();
             env.fund(XRP(100000), "alice", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"),       ter(tecNO_LINE_REDUNDANT));
         }
         {
-            Env env(*this);
+            Env env(*this, features(featureTrustSetAuth));
             env.fund(XRP(100000), "alice", "bob", gw);
             env(fset(gw, asfRequireAuth));
             env(auth(gw, "alice", "USD"));

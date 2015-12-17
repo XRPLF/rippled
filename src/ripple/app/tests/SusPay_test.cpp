@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/test/jtx.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/TxFlags.h>
@@ -145,15 +146,20 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
         using S = seconds;
+        auto const c = cond("receipt");
+        {
+            Env env(*this, features(featureSusPay));
+            auto T = [&env](NetClock::duration const& d)
+                { return env.now() + d; };
+            env.fund(XRP(5000), "alice", "bob");
+            // syntax
+            env(condpay("alice", "bob", XRP(1000), c.first, T(S{1})));
+        }
         {
             Env env(*this);
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
-            auto const c = cond("receipt");
-            // syntax
-            env(condpay("alice", "bob", XRP(1000), c.first, T(S{1})));
-            env.disable_testing();
             // disabled in production
             env(condpay("alice", "bob", XRP(1000), c.first, T(S{1})),       ter(temDISABLED));
             env(finish("bob", "alice", 1),                                  ter(temDISABLED));
@@ -168,7 +174,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
         using S = seconds;
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto const alice = Account("alice");
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
@@ -190,7 +196,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
         using S = seconds;
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
@@ -222,7 +228,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
         using S = seconds;
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob");
@@ -244,7 +250,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace std::chrono;
         using S = seconds;
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -270,7 +276,7 @@ struct SusPay_test : public beast::unit_test::suite
             env.close();
         }
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -287,7 +293,7 @@ struct SusPay_test : public beast::unit_test::suite
             expect(! env.le(keylet::susPay(Account("alice").id(), seq)));
         }
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -306,7 +312,7 @@ struct SusPay_test : public beast::unit_test::suite
             env.require(balance("carol", XRP(5000)));
         }
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -318,7 +324,7 @@ struct SusPay_test : public beast::unit_test::suite
             env(finish("bob", "alice", seq, cx.first, cx.second),           ter(tecNO_PERMISSION));
         }
         {
-            Env env(*this);
+            Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
                 { return env.now() + d; };
             env.fund(XRP(5000), "alice", "bob", "carol");
@@ -338,7 +344,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
         using S = seconds;
-        Env env(*this);
+        Env env(*this, features(featureSusPay));
         auto T = [&env](NetClock::duration const& d)
             { return env.now() + d; };
         env.fund(XRP(5000), "alice", "bob", "carol");
