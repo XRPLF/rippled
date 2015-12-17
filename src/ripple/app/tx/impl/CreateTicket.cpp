@@ -21,6 +21,7 @@
 #include <ripple/app/tx/impl/CreateTicket.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 
 namespace ripple {
@@ -28,10 +29,9 @@ namespace ripple {
 TER
 CreateTicket::preflight (PreflightContext const& ctx)
 {
-#if ! RIPPLE_ENABLE_TICKETS
-    if (! (ctx.flags & tapENABLE_TESTING))
+    if (! ctx.rules.enabled(featureTickets,
+            ctx.app.config().features))
         return temDISABLED;
-#endif
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))

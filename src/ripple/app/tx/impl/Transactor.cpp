@@ -314,8 +314,7 @@ TER
 Transactor::checkSign (PreclaimContext const& ctx)
 {
     // Make sure multisigning is enabled before we check for multisignatures.
-    if ((ctx.flags & tapENABLE_TESTING) ||
-        (ctx.view.rules().enabled(featureMultiSign,
+    if ((ctx.view.rules().enabled(featureMultiSign,
             ctx.app.config().features)))
     {
         auto pk =
