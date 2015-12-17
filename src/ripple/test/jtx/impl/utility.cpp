@@ -50,7 +50,7 @@ sign (Json::Value& jv,
         strHex(account.pk().slice());
     Serializer ss;
     ss.add32 (HashPrefix::txSign);
-    parse(jv).add(ss);
+    parse(jv).addWithoutSigningFields(ss);
     auto const sig = ripple::sign(
         *publicKeyType(account.pk().slice()),
             account.sk(), ss.slice());

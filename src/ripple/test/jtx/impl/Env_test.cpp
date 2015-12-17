@@ -561,6 +561,21 @@ public:
                 );
     }
 
+    void testSig()
+    {
+        using namespace jtx;
+        Env env(*this);
+
+        env.fund(XRP(10000), "alice");
+        auto const baseFee = env.app().config().FEE_DEFAULT;
+        std::uint32_t const aliceSeq = env.seq ("alice");
+        
+        Json::Value jsonNoop = env.json (
+            noop ("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
+        JTx jt = env.jt (jsonNoop);
+        env (jt);
+    }
+
     void
     run()
     {
@@ -580,6 +595,7 @@ public:
         testAdvance();
         testClose();
         testPath();
+        testSig();
     }
 };
 
