@@ -164,13 +164,6 @@
 #define RIPPLE_SINGLE_IO_SERVICE_THREAD 0
 #endif
 
-/** Config: RIPPLE_ENABLE_TICKETS
-    Enables processing of ticket transactions
-*/
-#ifndef RIPPLE_ENABLE_TICKETS
-#define RIPPLE_ENABLE_TICKETS 0
-#endif
-
 // Uses OpenSSL instead of alternatives
 #ifndef RIPPLE_USE_OPENSSL
 #define RIPPLE_USE_OPENSSL 1

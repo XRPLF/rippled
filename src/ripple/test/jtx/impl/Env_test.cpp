@@ -21,6 +21,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/test/jtx.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
 #include <beast/hash/uhash.h>
 #include <beast/unit_test/suite.h>
@@ -352,7 +353,7 @@ public:
     {
         using namespace jtx;
 
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         env.fund(XRP(10000), "alice");
         env(signers("alice", 1,
             { { "alice", 1 }, { "bob", 2 } }),                  ter(temBAD_SIGNER));
@@ -381,14 +382,12 @@ public:
         ticket::create("alice", 60, "bob");
 
         {
-            Env env(*this);
+            Env env(*this, features(featureTickets));
             env.fund(XRP(10000), "alice");
             env(noop("alice"),                  require(owners("alice", 0), tickets("alice", 0)));
             env(ticket::create("alice"),        require(owners("alice", 1), tickets("alice", 1)));
             env(ticket::create("alice"),        require(owners("alice", 2), tickets("alice", 2)));
         }
-
-        Env env(*this);
     }
 
     struct UDT

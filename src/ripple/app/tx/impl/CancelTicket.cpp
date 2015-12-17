@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/CancelTicket.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/ledger/View.h>
 
@@ -28,10 +29,9 @@ namespace ripple {
 TER
 CancelTicket::preflight (PreflightContext const& ctx)
 {
-#if ! RIPPLE_ENABLE_TICKETS
-    if (! (ctx.flags & tapENABLE_TESTING))
+    if (! ctx.rules.enabled(featureTickets,
+            ctx.app.config().features))
         return temDISABLED;
-#endif
 
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))

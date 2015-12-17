@@ -17,6 +17,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>     // jss:: definitions
+#include <ripple/protocol/Feature.h>
 #include <ripple/test/jtx.h>
 
 namespace ripple {
@@ -38,7 +39,7 @@ public:
     void test_noReserve()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::secp256k1};
 
         // Pay alice enough to meet the initial reserve, but not enough to
@@ -86,7 +87,7 @@ public:
     void test_signerListSet()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
 
@@ -131,7 +132,7 @@ public:
     void test_phantomSigners()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -225,22 +226,15 @@ public:
         env.fund(XRP(1000), alice);
         env.close();
 
-        // Add a signer list to alice.  Should succeed.
-        env(signers(alice, 1, {{bogie, 1}}));
+        // Make sure multisign is disabled in production.
+        // NOTE: These six tests will fail when multisign is default enabled.
+        env.disable_testing();
+        env(signers(alice, 1, {{bogie, 1}}), ter(temDISABLED));
         env.close();
-        env.require (owners (alice, 3));
+        env.require (owners (alice, 0));
 
-        // alice multisigns a transaction.  Should succeed.
         std::uint32_t aliceSeq = env.seq (alice);
         auto const baseFee = env.app().config().FEE_DEFAULT;
-        env(noop(alice), msig(bogie), fee(2 * baseFee));
-        env.close();
-        expect (env.seq(alice) == aliceSeq + 1);
-
-        // Make sure multisign is disabled in production.
-        // NOTE: These four tests will fail when multisign is default enabled.
-        env.disable_testing();
-        aliceSeq = env.seq (alice);
         env(noop(alice), msig(bogie), fee(2 * baseFee), ter(temINVALID));
         env.close();
         expect (env.seq(alice) == aliceSeq);
@@ -253,7 +247,7 @@ public:
     void test_fee ()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -303,7 +297,7 @@ public:
     void test_misorderedSigners()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
         env.close();
@@ -325,7 +319,7 @@ public:
     void test_masterSigners()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::ed25519};
         Account const becky {"becky", KeyType::secp256k1};
         Account const cheri {"cheri", KeyType::ed25519};
@@ -377,7 +371,7 @@ public:
     void test_regularSigners()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -436,7 +430,7 @@ public:
     void test_heterogeneousSigners()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const cheri {"cheri", KeyType::secp256k1};
@@ -551,7 +545,7 @@ public:
     void test_keyDisable()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
 
@@ -626,7 +620,7 @@ public:
     void test_regKey()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::secp256k1};
         env.fund(XRP(1000), alice);
 
@@ -658,7 +652,7 @@ public:
     void test_txTypes()
     {
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, features(featureMultiSign));
         Account const alice {"alice", KeyType::secp256k1};
         Account const becky {"becky", KeyType::ed25519};
         Account const zelda {"zelda", KeyType::secp256k1};
