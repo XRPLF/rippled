@@ -59,7 +59,7 @@ setupConfigForUnitTests (Config& config)
     config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
 
     config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
-    config.legacy("database_path", "DummyForUnitTests");
+    config.legacy("database_path", "");
 
     config.RUN_STANDALONE = true;
     config["server"].append("port_peer");
