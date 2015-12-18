@@ -35,25 +35,25 @@
 #include <boost/format.hpp>
 #include <array>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace ripple {
 
-STTx::STTx (TxType type)
-    : STObject (sfTransaction)
-    , tx_type_ (type)
+static
+auto getTxFormat (TxType type)
 {
     auto format = TxFormats::getInstance().findByType (type);
 
     if (format == nullptr)
     {
-        WriteLog (lsWARNING, STTx) <<
-            "Transaction type: " << type;
-        Throw<std::runtime_error> ("invalid transaction type");
+        Throw<std::runtime_error> (
+            "Invalid transaction type " +
+            std::to_string (
+                static_cast<std::underlying_type_t<TxType>>(type)));
     }
 
-    set (format->elements);
-    setFieldU16 (sfTransactionType, format->getType ());
+    return format;
 }
 
 STTx::STTx (STObject&& object)
@@ -61,21 +61,8 @@ STTx::STTx (STObject&& object)
 {
     tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
-    auto format = TxFormats::getInstance().findByType (tx_type_);
-
-    if (!format)
-    {
-        WriteLog (lsWARNING, STTx) <<
-            "Transaction type: " << tx_type_;
-        Throw<std::runtime_error> ("invalid transaction type");
-    }
-
-    if (!setType (format->elements))
-    {
-        WriteLog (lsWARNING, STTx) <<
-            "Transaction not legal for format";
+    if (!setType (getTxFormat (tx_type_)->elements))
         Throw<std::runtime_error> ("transaction not valid");
-    }
 
     tid_ = getHash(HashPrefix::transactionID);
 }
@@ -86,30 +73,33 @@ STTx::STTx (SerialIter& sit)
     int length = sit.getBytesLeft ();
 
     if ((length < Protocol::txMinSizeBytes) || (length > Protocol::txMaxSizeBytes))
-    {
-        WriteLog (lsERROR, STTx) <<
-            "Transaction has invalid length: " << length;
         Throw<std::runtime_error> ("Transaction length invalid");
-    }
 
     set (sit);
     tx_type_ = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
-    auto format = TxFormats::getInstance().findByType (tx_type_);
-
-    if (!format)
-    {
-        WriteLog (lsWARNING, STTx) <<
-            "Invalid transaction type: " << tx_type_;
-        Throw<std::runtime_error> ("invalid transaction type");
-    }
-
-    if (!setType (format->elements))
-    {
-        WriteLog (lsWARNING, STTx) <<
-            "Transaction not legal for format";
+    if (!setType (getTxFormat (tx_type_)->elements))
         Throw<std::runtime_error> ("transaction not valid");
-    }
+
+    tid_ = getHash(HashPrefix::transactionID);
+}
+
+STTx::STTx (
+        TxType type,
+        std::function<void(STObject&)> assembler)
+    : STObject (sfTransaction)
+{
+    auto format = getTxFormat (type);
+
+    set (format->elements);
+    setFieldU16 (sfTransactionType, format->getType ());
+
+    assembler (*this);
+
+    tx_type_ = static_cast<TxType>(getFieldU16 (sfTransactionType));
+
+    if (tx_type_ != type)
+        LogicError ("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::transactionID);
 }
@@ -163,15 +153,6 @@ STTx::getSigningHash () const
     return STObject::getSigningHash (HashPrefix::txSign);
 }
 
-uint256
-STTx::getTransactionID () const
-{
-    assert(tid_);
-    if (! tid_)
-        LogicError("digest is undefined");
-    return *tid_;
-}
-
 Blob STTx::getSignature () const
 {
     try
@@ -214,11 +195,6 @@ bool STTx::checkSign(bool allowMultiSign) const
     {
     }
     return sigGood;
-}
-
-void STTx::setSigningPubKey (RippleAddress const& naSignPubKey)
-{
-    setFieldVL (sfSigningPubKey, naSignPubKey.getAccountPublic ());
 }
 
 Json::Value STTx::getJson (int) const

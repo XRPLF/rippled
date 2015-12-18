@@ -272,22 +272,25 @@ public:
         // Inject appropriate pseudo-transactions
         for (auto const& it : actions)
         {
-            STTx trans (ttAMENDMENT);
-            trans.setAccountID (sfAccount, AccountID());
-            trans.setFieldH256 (sfAmendment, it.first);
-            trans.setFieldU32 (sfLedgerSequence, lastClosedLedger->seq() + 1);
+            STTx amendTx (ttAMENDMENT,
+                [&it, seq = lastClosedLedger->seq() + 1](auto& obj)
+                {
+                    obj.setAccountID (sfAccount, AccountID());
+                    obj.setFieldH256 (sfAmendment, it.first);
+                    obj.setFieldU32 (sfLedgerSequence, seq);
 
-            if (it.second != 0)
-                trans.setFieldU32 (sfFlags, it.second);
+                    if (it.second != 0)
+                        obj.setFieldU32 (sfFlags, it.second);
+                });
 
             Serializer s;
-            trans.add (s);
+            amendTx.add (s);
 
         #if ! RIPPLE_PROPOSE_AMENDMENTS
             return;
         #endif
 
-            uint256 txID = trans.getTransactionID();
+            uint256 txID = amendTx.getTransactionID();
             auto tItem = std::make_shared <SHAMapItem> (txID, s.peekData());
             initialPosition->addGiveItem (tItem, true, false);
         }

@@ -38,10 +38,13 @@ public:
         RippleAddress publicAcct = RippleAddress::createAccountPublic (generator, 1);
         RippleAddress privateAcct = RippleAddress::createAccountPrivate (generator, seed, 1);
 
-        STTx j (ttACCOUNT_SET);
-        j.setAccountID (sfAccount, calcAccountID(publicAcct));
-        j.setSigningPubKey (publicAcct);
-        j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
+        STTx j (ttACCOUNT_SET,
+            [&publicAcct](auto& obj)
+            {
+                obj.setAccountID (sfAccount, calcAccountID(publicAcct));
+                obj.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
+                obj.setFieldVL (sfSigningPubKey, publicAcct.getAccountPublic ());
+            });
         j.sign (privateAcct);
 
         unexpected (!j.checkSign (true), "Transaction fails signature test");
@@ -92,12 +95,14 @@ public:
         // VFALCO Use PublicKey here
         RippleAddress txnPublicAcct = txnSeed.createAccountPublic (txnGenerator, 1);
 
-        STTx txn (ttACCOUNT_SET);
-        txn.setAccountID (sfAccount, calcAccountID(txnPublicAcct));
-        txn.setSigningPubKey (txnPublicAcct);
-        txn.setFieldVL (sfMessageKey, txnPublicAcct.getAccountPublic ());
-        Blob const emptyBlob;  // Make empty signature for multi-signing
-        txn.setFieldVL (sfSigningPubKey, emptyBlob);
+        STTx txn (ttACCOUNT_SET,
+            [&txnPublicAcct](auto& obj)
+            {
+                obj.setAccountID (sfAccount, calcAccountID(txnPublicAcct));
+                obj.setFieldVL (sfMessageKey, txnPublicAcct.getAccountPublic ());
+                // Make empty signature for multi-signing
+                obj.setFieldVL (sfSigningPubKey, {});
+            });
 
         // Create fields for a SigningAccount
         RippleAddress saSeed;

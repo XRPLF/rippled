@@ -24,7 +24,7 @@
 #include <ripple/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
 #include <boost/logic/tribool.hpp>
-#include <boost/optional.hpp>
+#include <functional>
 
 namespace ripple {
 
@@ -54,9 +54,18 @@ public:
 
     explicit STTx (SerialIter& sit);
     explicit STTx (SerialIter&& sit) : STTx(sit) {}
-    explicit STTx (TxType type);
 
     explicit STTx (STObject&& object);
+
+    /** Constructs a transaction.
+
+        The returned transaction will have the specified type and
+        any fields that the callback function adds to the object
+        that's passed in.
+    */
+    STTx (
+        TxType type,
+        std::function<void(STObject&)> assembler);
 
     STBase*
     copy (std::size_t n, void* buf) const override
@@ -91,7 +100,6 @@ public:
     {
         return getFieldVL (sfSigningPubKey);
     }
-    void setSigningPubKey (const RippleAddress & naSignPubKey);
 
     std::uint32_t getSequence () const
     {
@@ -105,7 +113,10 @@ public:
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    uint256 getTransactionID () const;
+    uint256 getTransactionID () const
+    {
+        return tid_;
+    }
 
     Json::Value getJson (int options) const override;
     Json::Value getJson (int options, bool binary) const;
@@ -132,7 +143,7 @@ private:
     bool checkSingleSign () const;
     bool checkMultiSign () const;
 
-    boost::optional<uint256> tid_;
+    uint256 tid_;
     TxType tx_type_;
 };
 

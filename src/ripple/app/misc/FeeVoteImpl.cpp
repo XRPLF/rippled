@@ -201,6 +201,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     std::uint64_t const baseFee = baseFeeVote.getVotes ();
     std::uint32_t const baseReserve = baseReserveVote.getVotes ();
     std::uint32_t const incReserve = incReserveVote.getVotes ();
+    std::uint32_t const feeUnits = target_.reference_fee_units;
 
     // add transactions to our position
     if ((baseFee != lastClosedLedger->fees().base) ||
@@ -212,20 +213,23 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
             "/" << baseReserve <<
             "/" << incReserve;
 
-        STTx trans (ttFEE);
-        trans[sfAccount] = AccountID();
-        trans[sfBaseFee] = baseFee;
-        trans[sfReferenceFeeUnits] = target_.reference_fee_units;
-        trans[sfReserveBase] = baseReserve;
-        trans[sfReserveIncrement] = incReserve;
+        STTx feeTx (ttFEE,
+            [baseFee,baseReserve,incReserve,feeUnits](auto& obj)
+            {
+                obj[sfAccount] = AccountID();
+                obj[sfBaseFee] = baseFee;
+                obj[sfReserveBase] = baseReserve;
+                obj[sfReserveIncrement] = incReserve;
+                obj[sfReferenceFeeUnits] = feeUnits;
+            });
 
-        uint256 txID = trans.getTransactionID ();
+        uint256 txID = feeTx.getTransactionID ();
 
         if (journal_.warning)
             journal_.warning << "Vote: " << txID;
 
         Serializer s;
-        trans.add (s);
+        feeTx.add (s);
 
         auto tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
 
