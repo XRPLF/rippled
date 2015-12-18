@@ -38,7 +38,7 @@ getSociSqliteInit (std::string const& name,
                    std::string const& dir,
                    std::string const& ext)
 {
-    if (dir.empty () || name.empty ())
+    if (name.empty ())
     {
         Throw<std::runtime_error> (
             "Sqlite databases must specify a dir and a name. Name: " +
