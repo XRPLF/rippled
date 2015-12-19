@@ -2841,6 +2841,9 @@
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\LocalValue.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
