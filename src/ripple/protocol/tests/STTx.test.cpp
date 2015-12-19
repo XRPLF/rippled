@@ -39,7 +39,7 @@ public:
         RippleAddress privateAcct = RippleAddress::createAccountPrivate (generator, seed, 1);
 
         STTx j (ttACCOUNT_SET,
-            [&publicAcct](STObject& obj)
+            [&publicAcct](auto& obj)
             {
                 obj.setAccountID (sfAccount, calcAccountID(publicAcct));
                 obj.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
@@ -96,7 +96,7 @@ public:
         RippleAddress txnPublicAcct = txnSeed.createAccountPublic (txnGenerator, 1);
 
         STTx txn (ttACCOUNT_SET,
-            [&txnPublicAcct](STObject& obj)
+            [&txnPublicAcct](auto& obj)
             {
                 obj.setAccountID (sfAccount, calcAccountID(txnPublicAcct));
                 obj.setFieldVL (sfMessageKey, txnPublicAcct.getAccountPublic ());

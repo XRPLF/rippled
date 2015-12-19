@@ -214,7 +214,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
             "/" << incReserve;
 
         STTx feeTx (ttFEE,
-            [baseFee,baseReserve,incReserve,feeUnits](STObject& obj)
+            [baseFee,baseReserve,incReserve,feeUnits](auto& obj)
             {
                 obj[sfAccount] = AccountID();
                 obj[sfBaseFee] = baseFee;

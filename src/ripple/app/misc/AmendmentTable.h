@@ -273,7 +273,7 @@ public:
         for (auto const& it : actions)
         {
             STTx amendTx (ttAMENDMENT,
-                [&it, seq = lastClosedLedger->seq() + 1](STObject& obj)
+                [&it, seq = lastClosedLedger->seq() + 1](auto& obj)
                 {
                     obj.setAccountID (sfAccount, AccountID());
                     obj.setFieldH256 (sfAmendment, it.first);
