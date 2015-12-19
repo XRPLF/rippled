@@ -60,13 +60,15 @@ JobCoro::post()
     jq_.addJob(type_, name_,
         [this, sp = shared_from_this()](Job&)
         {
+            auto saved = detail::getLocalValues().release();
+            detail::getLocalValues().reset(&lvs_);
             std::lock_guard<std::mutex> lock(mutex_);
-            context_sp().reset(&ctx_);
             coro_();
+            detail::getLocalValues().release();
+            detail::getLocalValues().reset(saved);
             std::lock_guard<std::mutex> lk(mutex_run_);
             running_ = false;
             cv_.notify_all();
-            context_sp().reset(nullptr);
         });
 }
 

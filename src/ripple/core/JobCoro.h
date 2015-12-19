@@ -21,10 +21,12 @@
 #define RIPPLE_CORE_JOBCORO_H_INCLUDED
 
 #include <ripple/core/Job.h>
+#include <ripple/basics/LocalValue.h>
 #include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
 #include <condition_variable>
 #include <string>
+#include <memory>
 #include <mutex>
 
 namespace ripple {
@@ -40,6 +42,7 @@ struct JobCoro_create_t { };
 class JobCoro : public std::enable_shared_from_this<JobCoro>
 {
 private:
+    detail::LocalValues lvs_;
     JobQueue& jq_;
     JobType type_;
     std::string name_;
