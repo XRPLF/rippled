@@ -27,7 +27,6 @@
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/ConfigSections.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
@@ -109,43 +108,6 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 #endif
 
     return true;
-}
-
-void startServer (Application& app)
-{
-    //
-    // Execute start up rpc commands.
-    //
-    if (app.config().RPC_STARTUP.isArray ())
-    {
-        for (int i = 0; i != app.config().RPC_STARTUP.size (); ++i)
-        {
-            Json::Value const& jvCommand    = app.config().RPC_STARTUP[i];
-
-            if (!app.config().quiet())
-                std::cerr << "Startup RPC: " << jvCommand << std::endl;
-
-            Resource::Charge loadType = Resource::feeReferenceRPC;
-            Resource::Consumer c;
-            RPC::Context context {app.journal ("RPCHandler"), jvCommand, app,
-                loadType, app.getOPs (), app.getLedgerMaster(), c, Role::ADMIN};
-
-            Json::Value jvResult;
-            RPC::doCommand (context, jvResult);
-
-            if (!app.config().quiet())
-                std::cerr << "Result: " << jvResult << std::endl;
-        }
-    }
-
-    app.doStart();
-    // Block until we get a stop RPC.
-    app.run();
-
-    // Try to write out some entropy to use the next time we start.
-    auto entropy = getEntropyFile (app.config());
-    if (!entropy.empty ())
-        crypto_prng().save_state(entropy.string ());
 }
 
 void printHelp (const po::options_description& desc)
@@ -469,7 +431,12 @@ int run (int argc, char** argv)
             std::move(config),
             std::move(logs),
             std::move(timeKeeper));
-        app->setup ();
+
+        if (!app->setup ())
+        {
+            StopSustain();
+            return -1;
+        }
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
@@ -481,7 +448,17 @@ int run (int argc, char** argv)
             return -1;
         }
 
-        startServer (*app);
+        // Start the server
+        app->doStart();
+
+        // Block until we get a stop RPC.
+        app->run();
+
+        // Try to write out some entropy to use the next time we start.
+        auto entropy = getEntropyFile (app->config());
+        if (!entropy.empty ())
+            crypto_prng().save_state(entropy.string ());
+
         return 0;
     }
 
