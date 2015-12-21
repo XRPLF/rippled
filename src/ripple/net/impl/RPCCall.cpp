@@ -1089,18 +1089,16 @@ struct RPCCallImp
 };
 
 //------------------------------------------------------------------------------
-namespace RPCCall {
 
-int fromCommandLine (
-    Config const& config,
-    const std::vector<std::string>& vCmd,
-    Logs& logs)
+std::pair<int, Json::Value>
+rpcClient(std::vector<std::string> const& args,
+    Config const& config, Logs& logs)
 {
-    if (vCmd.empty ())
-        return 1;      // 1 = print usage.
+    if (args.empty ())
+        return { 1, {} }; // 1 = print usage
 
-    Json::Value jvOutput;
     int         nRet = 0;
+    Json::Value jvOutput;
     Json::Value jvRequest (Json::objectValue);
 
     auto rpcJ = logs.journal ("RPCParser");
@@ -1109,15 +1107,15 @@ int fromCommandLine (
         RPCParser   rpParser (rpcJ);
         Json::Value jvRpcParams (Json::arrayValue);
 
-        for (int i = 1; i != vCmd.size (); i++)
-            jvRpcParams.append (vCmd[i]);
+        for (int i = 1; i != args.size (); i++)
+            jvRpcParams.append (args[i]);
 
         Json::Value jvRpc   = Json::Value (Json::objectValue);
 
-        jvRpc["method"] = vCmd[0];
+        jvRpc["method"] = args[0];
         jvRpc[jss::params] = jvRpcParams;
 
-        jvRequest   = rpParser.parseCommand (vCmd[0], jvRpcParams, true);
+        jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
 
         JLOG (rpcJ.trace) << "RPC Request: " << jvRequest << std::endl;
 
@@ -1157,7 +1155,7 @@ int fromCommandLine (
 
             {
                 boost::asio::io_service isService;
-                fromNetwork (
+                RPCCall::fromNetwork (
                     isService,
                     setup.client.ip,
                     setup.client.port,
@@ -1165,7 +1163,7 @@ int fromCommandLine (
                     setup.client.password,
                     "",
                     jvRequest.isMember ("method")           // Allow parser to rewrite method.
-                        ? jvRequest["method"].asString () : vCmd[0],
+                        ? jvRequest["method"].asString () : args[0],
                     jvParams,                               // Parsed, execute.
                     setup.client.secure != 0,                // Use SSL
                     config.QUIET,
@@ -1219,9 +1217,24 @@ int fromCommandLine (
         nRet                    = rpcINTERNAL;
     }
 
-    std::cout << jvOutput.toStyledString ();
+    return { nRet, std::move(jvOutput) };
+}
 
-    return nRet;
+//------------------------------------------------------------------------------
+
+namespace RPCCall {
+
+int fromCommandLine (
+    Config const& config,
+    const std::vector<std::string>& vCmd,
+    Logs& logs)
+{
+    auto const result = rpcClient(vCmd, config, logs);
+
+    if (result.first != 1)
+        std::cout << result.second.toStyledString ();
+
+    return result.first;
 }
 
 //------------------------------------------------------------------------------
