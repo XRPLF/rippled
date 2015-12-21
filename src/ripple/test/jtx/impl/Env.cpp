@@ -36,6 +36,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/json/to_string.h>
+#include <ripple/net/HTTPClient.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
@@ -62,6 +63,8 @@ setupConfigForUnitTests (Config& config)
     config.legacy("database_path", "");
 
     config.RUN_STANDALONE = true;
+    config.QUIET = true;
+    config.SILENT = true;
     config["server"].append("port_peer");
     config["port_peer"].set("ip", "127.0.0.1");
     config["port_peer"].set("port", "8080");
@@ -88,6 +91,8 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
+    // Hack so we dont have to call Config::setup
+    HTTPClient::initializeSSLContext(*config);
     owned = make_Application(std::move(config),
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();
@@ -258,14 +263,16 @@ Env::submit (JTx const& jt)
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
-        app().openLedger().modify(
-            [&](OpenView& view, beast::Journal j)
-            {
-                std::tie(ter_, didApply) = app().getTxQ().apply(
-                    app(), view, jt.stx, applyFlags(),
-                        beast::Journal{});
-                return didApply;
-            });
+        Serializer s;
+        jt.stx->add(s);
+        auto const result = rpc("submit", strHex(s.slice()));
+        if (result.first == rpcSUCCESS &&
+            result.second["result"].isMember("engine_result_code"))
+            ter_ = static_cast<TER>(
+                result.second["result"]["engine_result_code"].asInt());
+        else
+            ter_ = temINVALID;
+        didApply = isTesSuccess(ter_) || isTecClaim(ter_);
     }
     else
     {

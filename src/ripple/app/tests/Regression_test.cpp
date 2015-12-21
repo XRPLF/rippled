@@ -146,7 +146,7 @@ struct Regression_test : public beast::unit_test::suite
                 (sfSigningPubKey, std::move(pubKeyBlob.first));
             jt.stx.reset (secp256r1Sig.release());
 
-            env (jt, ter (temBAD_SIGNATURE));
+            env (jt, ter (temINVALID));
         };
 
         Account const alice {"alice", KeyType::secp256k1};

@@ -36,6 +36,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/CachedSLEs.h>
+#include <ripple/net/RPCCall.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
@@ -44,10 +45,12 @@
 #include <beast/is_call_possible.h>
 #include <beast/unit_test/suite.h>
 #include <functional>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <unordered_map>
+#include <vector>
 
 namespace ripple {
 namespace test {
@@ -420,6 +423,11 @@ public:
     std::shared_ptr<STObject const>
     meta();
 
+    /** Execute a client command */
+    template <class Arg, class... Args>
+    std::pair<int, Json::Value>
+    rpc (Arg&& arg0, Args&&... args);
+
 private:
     void
     fund (bool setDefaultRipple,
@@ -619,6 +627,18 @@ protected:
     std::unordered_map<
         AccountID, Account> map_;
 };
+
+//------------------------------------------------------------------------------
+
+template <class Arg, class... Args>
+std::pair<int, Json::Value>
+Env::rpc (Arg&& arg0, Args&&... args)
+{
+    std::vector<std::string> v({ std::forward<Arg>(arg0),
+        std::forward<Args>(args)... });
+    return rpcClient(v,
+        app().config(), app().logs());
+}
 
 } // jtx
 } // test
