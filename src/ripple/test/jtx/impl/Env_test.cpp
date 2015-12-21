@@ -290,20 +290,20 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
-        env(pay(env.master, "alice", XRP(1000)), fee(none),     ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), fee(1),        ter(telINSUF_FEE_P));
-        env(pay(env.master, "alice", XRP(1000)), seq(none),     ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), seq(2),        ter(terPRE_SEQ));
-        env(pay(env.master, "alice", XRP(1000)), sig(none),     ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), sig("bob"),    ter(tefBAD_AUTH_MASTER));
-
-        env(pay(env.master, "dilbert", XRP(1000)), sig(env.master));
-
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
         env.require(balance("alice", XRP(10000)));
         env.require(balance("bob", XRP(10000)));
         env.require(balance("carol", XRP(10000)));
         env.require(balance(gw, XRP(10000)));
+
+        env(pay(env.master, "alice", XRP(1000)), fee(none),     ter(temMALFORMED));
+        env(pay(env.master, "alice", XRP(1000)), fee(1),        ter(telINSUF_FEE_P));
+        env(pay(env.master, "alice", XRP(1000)), seq(none),     ter(temMALFORMED));
+        env(pay(env.master, "alice", XRP(1000)), seq(20),        ter(terPRE_SEQ));
+        env(pay(env.master, "alice", XRP(1000)), sig(none),     ter(temMALFORMED));
+        env(pay(env.master, "alice", XRP(1000)), sig("bob"),    ter(tefBAD_AUTH_MASTER));
+
+        env(pay(env.master, "dilbert", XRP(1000)), sig(env.master));
 
         env.trust(USD(100), "alice", "bob", "carol");
         env.require(owners("alice", 1), lines("alice", 1));
