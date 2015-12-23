@@ -23,6 +23,7 @@
 #include <ripple/core/Job.h>
 #include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
+#include <condition_variable>
 #include <string>
 #include <mutex>
 
@@ -42,7 +43,10 @@ private:
     JobQueue& jq_;
     JobType type_;
     std::string name_;
+    bool running_;
     std::mutex mutex_;
+    std::mutex mutex_run_;
+    std::condition_variable cv_;
     boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
     boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
 
@@ -60,9 +64,9 @@ public:
           The associated Job function returns.
           Undefined behavior if called consecutively without a corresponding post.
     */
-    void yield () const;
+    void yield() const;
 
-    /** Schedule coroutine execution
+    /** Schedule coroutine execution.
         Effects:
           Returns immediately.
           A new job is scheduled to resume the execution of the coroutine.
@@ -71,7 +75,18 @@ public:
             after the previous call to yield.
         Undefined behavior if called consecutively without a corresponding yield.
     */
-    void post ();
+    void post();
+
+    /** Waits until coroutine returns from the user function. */
+    void join()
+    {
+        std::unique_lock<std::mutex> lk(mutex_run_);
+        cv_.wait(lk,
+            [this]()
+            {
+                return running_ == false;
+            });
+    }
 };
 
 } // ripple

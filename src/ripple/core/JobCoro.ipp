@@ -28,6 +28,7 @@ JobCoro::JobCoro (detail::JobCoro_create_t, JobQueue& jq, JobType type,
     : jq_(jq)
     , type_(type)
     , name_(name)
+    , running_(false)
     , coro_(
         [this, fn = std::forward<F>(f)]
         (boost::coroutines::asymmetric_coroutine<void>::push_type& do_yield)
@@ -50,12 +51,22 @@ inline
 void
 JobCoro::post ()
 {
+    {
+        std::lock_guard<std::mutex> lk(mutex_run_);
+        running_ = true;
+    }
+
     // sp keeps 'this' alive
     jq_.addJob(type_, name_,
         [this, sp = shared_from_this()](Job&)
         {
-            std::lock_guard<std::mutex> lock (mutex_);
+            std::lock_guard<std::mutex> lock(mutex_);
+            context_sp().reset(&ctx_);
             coro_();
+            std::lock_guard<std::mutex> lk(mutex_run_);
+            running_ = false;
+            cv_.notify_all();
+            context_sp().reset(nullptr);
         });
 }
 
