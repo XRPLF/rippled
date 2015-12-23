@@ -50,6 +50,7 @@ public:
     TestFamily (beast::Journal j)
         : treecache_ ("TreeNodeCache", 65536, 60, clock_, j)
         , fullbelow_ ("full_below", clock_)
+        , j_ (j)
     {
         Section testSection;
         testSection.set("type", "memory");

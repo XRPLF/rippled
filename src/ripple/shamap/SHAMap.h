@@ -179,8 +179,6 @@ public:
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
     SHAMapAddNode addRootNode (SHAMapHash const& hash, Blob const& rootNode,
                                SHANodeFormat format, SHAMapSyncFilter * filter);
-    SHAMapAddNode addRootNode (Blob const& rootNode, SHANodeFormat format,
-                               SHAMapSyncFilter * filter);
     SHAMapAddNode addKnownNode (SHAMapNodeID const& nodeID, Blob const& rawNode,
                                 SHAMapSyncFilter * filter);
 

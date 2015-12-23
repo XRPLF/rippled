@@ -1386,6 +1386,7 @@ void LedgerConsensusImp::takeInitialPosition (
 {
     std::shared_ptr<SHAMap> initialSet = std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, app_.family());
+    initialSet->setUnbacked ();
 
     // Build SHAMap containing all transactions in our open ledger
     for (auto const& tx : initialLedger->txs)
@@ -1629,6 +1630,8 @@ void LedgerConsensusImp::updateOurPositions ()
 
     if (changes)
     {
+        ourPosition = ourPosition->snapShot (false);
+
         auto newHash = ourPosition->getHash ().as_uint256();
         JLOG (j_.info)
             << "Position change: CTime "

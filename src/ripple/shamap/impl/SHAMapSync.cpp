@@ -407,46 +407,6 @@ bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format) const
     return true;
 }
 
-SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode,
-    SHANodeFormat format, SHAMapSyncFilter* filter)
-{
-    // we already have a root_ node
-    if (root_->getNodeHash ().isNonZero ())
-    {
-        if (journal_.trace) journal_.trace <<
-            "got root node, already have one";
-        return SHAMapAddNode::duplicate ();
-    }
-
-    assert (seq_ >= 1);
-    auto node = SHAMapAbstractNode::make(
-        rootNode, 0, format, SHAMapHash{uZero}, false, f_.journal ());
-    if (!node || !node->isValid ())
-        return SHAMapAddNode::invalid ();
-
-#ifdef BEAST_DEBUG
-    node->dump (SHAMapNodeID (), journal_);
-#endif
-
-    if (backed_)
-        canonicalize (node->getNodeHash (), node);
-
-    root_ = node;
-
-    if (root_->isLeaf())
-        clearSynching ();
-
-    if (filter)
-    {
-        Serializer s;
-        root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash (),
-                         s.modData (), root_->getType ());
-    }
-
-    return SHAMapAddNode::useful ();
-}
-
 SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
