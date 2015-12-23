@@ -2120,6 +2120,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\LocalValue.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">

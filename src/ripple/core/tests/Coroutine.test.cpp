@@ -131,7 +131,7 @@ public:
         auto& jq = env.app().getJobQueue();
         jq.setThreadCount(0, false);
         static int const N = 4;
-        JobCoro::LocalValue<int> lv;
+        LocalValue<int> lv;
         std::array<std::shared_ptr<JobCoro>, N> a;
         // launch coroutines
         gate g;
@@ -140,20 +140,18 @@ public:
             jq.postCoro(jtCLIENT, "Coroutine-Test",
                 [&, id = i](auto const& jc)
                 {
-                    expect(JobCoro::onCoro());
-                    a[i] = jc;
+                    a[id] = jc;
                     g.signal();
                     jc->yield();
 
-                    expect(lv.get() == boost::none);
+                    this->expect(lv.get() == boost::none);
                     lv.get() = id;
-                    expect(lv.get() == id);
+                    this->expect(lv.get() == id);
                     g.signal();
                     jc->yield();
 
-                    expect(lv.get() == id);
+                    this->expect(lv.get() == id);
                 });
-            expect(! JobCoro::onCoro());
             expect(g.wait_for(1s));
             a[i]->join();
         }
