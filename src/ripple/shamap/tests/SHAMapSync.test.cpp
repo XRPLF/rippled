@@ -129,7 +129,8 @@ public:
 
         unexpected (gotNodes.size () < 1, "NodeSize");
 
-        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, nullptr).isGood(), "AddRootNode");
+        unexpected (!destination.addRootNode (source.getHash(),
+            *gotNodes.begin (), snfWIRE, nullptr).isGood(), "AddRootNode");
 
         nodeIDs.clear ();
         gotNodes.clear ();

@@ -930,6 +930,7 @@ SHAMap::preFlushNode (std::shared_ptr<Node> node) const
 
 int SHAMap::unshare ()
 {
+    // Don't share nodes wth parent map
     return walkSubTree (false, hotUNKNOWN, 0);
 }
 
@@ -952,13 +953,21 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
     if (root_->isLeaf())
     { // special case -- root_ is leaf
         root_ = preFlushNode (std::move(root_));
+        root_->updateHash();
         if (doWrite && backed_)
             root_ = writeNode(t, seq, std::move(root_));
+        else
+            root_->setSeq (0);
         return 1;
     }
+
     auto node = std::static_pointer_cast<SHAMapInnerNode>(root_);
-    if (node->isEmpty())
-        return flushed;
+
+    if (node->isEmpty ())
+    { // replace empty root with a new empty root
+        root_ = std::make_shared <SHAMapInnerNode> (0);
+        return 1;
+    }
 
     // Stack of {parent,index,child} pointers representing
     // inner nodes we are in the process of flushing
@@ -989,10 +998,11 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
                 {
                     // This is a node that needs to be flushed
 
+                    child = preFlushNode(std::move(child));
+
                     if (child->isInner ())
                     {
                         // save our place and work on this node
-                        child = preFlushNode(std::move(child));
 
                         stack.emplace (std::move (node), branch);
 
@@ -1004,13 +1014,13 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
                         // flush this leaf
                         ++flushed;
 
-                        child = preFlushNode(std::move(child));
-
                         assert (node->getSeq() == seq_);
                         child->updateHash();
 
                         if (doWrite && backed_)
                             child = writeNode(t, seq, std::move(child));
+                        else
+                            child->setSeq (0);
 
                         node->shareChild (branch, child);
                     }
@@ -1025,6 +1035,8 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
         if (doWrite && backed_)
             node = std::static_pointer_cast<SHAMapInnerNode>(writeNode(t, seq,
                                                                        std::move(node)));
+        else
+            node->setSeq (0);
 
         ++flushed;
 
