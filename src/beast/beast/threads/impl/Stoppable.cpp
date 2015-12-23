@@ -106,21 +106,28 @@ void Stoppable::startRecursive ()
         iter->stoppable->startRecursive ();
 }
 
-void Stoppable::stopAsyncRecursive ()
+void Stoppable::stopAsyncRecursive (Journal j)
 {
+    using namespace std::chrono;
+    auto const start = high_resolution_clock::now();
     onStop ();
+    auto const ms = duration_cast<milliseconds>(
+        high_resolution_clock::now() - start).count();
+    if (ms >= 10)
+        j.fatal << m_name << "::onStop took " << ms << "ms";
+
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-        iter->stoppable->stopAsyncRecursive ();
+        iter->stoppable->stopAsyncRecursive(j);
 }
 
-void Stoppable::stopRecursive (Journal journal)
+void Stoppable::stopRecursive (Journal j)
 {
     // Block on each child from the bottom of the tree up.
     //
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-        iter->stoppable->stopRecursive (journal);
+        iter->stoppable->stopRecursive (j);
 
     // if we get here then all children have stopped
     //
@@ -132,7 +139,7 @@ void Stoppable::stopRecursive (Journal journal)
     bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
     if (timedOut)
     {
-        journal.warning << "Waiting for '" << m_name << "' to stop";
+        j.warning << "Waiting for '" << m_name << "' to stop";
         m_stoppedEvent.wait ();
     }
 
@@ -171,25 +178,29 @@ void RootStoppable::start ()
         startRecursive ();
 }
 
-void RootStoppable::stop (Journal journal)
+void RootStoppable::stop (Journal j)
 {
     // Must have a prior call to start()
     bassert (m_started);
 
-    if (m_calledStop.exchange (true) == true)
     {
-        journal.warning << "Stoppable::stop called again";
-        return;
+        std::lock_guard<std::mutex> lock(m_);
+        if (m_calledStop)
+        {
+            j.warning << "Stoppable::stop called again";
+            return;
+        }
+        m_calledStop = true;
+        c_.notify_all();
     }
-
-    stopAsync ();
-    stopRecursive (journal);
+    stopAsync (j);
+    stopRecursive (j);
 }
 
-void RootStoppable::stopAsync ()
+void RootStoppable::stopAsync(Journal j)
 {
     if (m_calledStopAsync.exchange (true) == false)
-        stopAsyncRecursive ();
+        stopAsyncRecursive(j);
 }
 
 }

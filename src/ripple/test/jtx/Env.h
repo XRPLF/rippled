@@ -25,15 +25,18 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/app/paths/Pathfinder.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/CachedSLEs.h>
+#include <ripple/net/RPCCall.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
@@ -42,74 +45,38 @@
 #include <beast/is_call_possible.h>
 #include <beast/unit_test/suite.h>
 #include <functional>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <unordered_map>
+#include <vector>
 
 namespace ripple {
 namespace test {
+
+extern
+void
+setupConfigForUnitTests (Config& config);
+
+//------------------------------------------------------------------------------
+
 namespace jtx {
-
-namespace detail {
-
-#ifdef _MSC_VER
-
-// Workaround for C2797:
-// list initialization inside member initializer
-// list or non-static data member initializer is
-// not implemented
-//
-template <std::size_t N>
-struct noripple_helper
-{
-    std::array<Account, N> args;
-
-    template <class T, class ...Args>
-    std::array<Account, sizeof...(Args)>
-    flatten (Args&& ...args)
-    {
-        return std::array<T,
-            sizeof...(Args)> {
-                std::forward<Args>(args)...};
-    }
-
-    template <class... Args>
-    explicit
-    noripple_helper(Args const&... args_)
-        : args(flatten<Account>(args_...))
-    {
-    }
-};
-
-#else
-
-template <std::size_t N>
-struct noripple_helper
-{
-    std::array<Account, N> args;
-
-    template <class... Args>
-    explicit
-    noripple_helper(Args const&... args_)
-        : args { { args_... } }
-    {
-    }
-};
-
-#endif
-
-} // detail
 
 /** Designate accounts as no-ripple in Env::fund */
 template <class... Args>
-detail::noripple_helper<1 + sizeof...(Args)>
-noripple (Account const& account,
-    Args const&... args)
+std::array<Account, 1 + sizeof...(Args)>
+noripple (Account const& account, Args const&... args)
 {
-    return detail::noripple_helper<
-        1 + sizeof...(Args)>(
-            account, args...);
+    return {{account, args...}};
+}
+
+/** Activate features in the Env ctor */
+template <class... Args>
+std::array<uint256, 1 + sizeof...(Args)>
+features (uint256 const& key, Args const&... args)
+{
+    return {{key, args...}};
 }
 
 //------------------------------------------------------------------------------
@@ -118,16 +85,11 @@ noripple (Account const& account,
 class Env
 {
 public:
-    using clock_type = TestNetClock;
-
-    clock_type clock;
-
     beast::unit_test::suite& test;
 
     beast::Journal const journal;
 
-    /** The master account. */
-    Account const master;
+    Account const& master = Account::master;
 
 private:
     struct AppBundle
@@ -135,27 +97,70 @@ private:
         Application* app;
         std::unique_ptr<Logs> logs;
         std::unique_ptr<Application> owned;
-        
-        AppBundle (std::unique_ptr<Config const> config);
+        ManualTimeKeeper* timeKeeper;
+        std::thread thread;
+
+        AppBundle (std::unique_ptr<Config> config);
         AppBundle (Application* app_);
+        ~AppBundle();
     };
 
     AppBundle bundle_;
-    std::shared_ptr<Ledger const> closed_;
-    CachedSLEs cachedSLEs_;
     LogSquelcher logSquelcher_;
 
-public:
-    // Careful with this
-    OpenLedger openLedger;
+    inline
+    void
+    construct()
+    {
+    }
 
+    template <class Arg, class... Args>
+    void
+    construct (Arg&& arg, Args&&... args)
+    {
+        construct_arg(std::forward<Arg>(arg));
+        construct(std::forward<Args>(args)...);
+    }
+
+    template<std::size_t N>
+    void
+    construct_arg (
+        std::array<uint256, N> const& list)
+    {
+        for(auto const& key : list)
+            app().config().features.insert(key);
+    }
+
+public:
     Env() = delete;
     Env (Env const&) = delete;
     Env& operator= (Env const&) = delete;
 
+    // VFALCO Could wrap the suite::log in a Journal here
+    template <class... Args>
     Env (beast::unit_test::suite& test_,
-        std::unique_ptr<Config const> config);
-    Env (beast::unit_test::suite& test_);
+        std::unique_ptr<Config> config,
+            Args&&... args)
+        : test (test_)
+        , bundle_ (std::move(config))
+    {
+        memoize(Account::master);
+        Pathfinder::initPathTable();
+        construct(std::forward<Args>(args)...);
+    }
+
+    template <class... Args>
+    Env (beast::unit_test::suite& test_,
+            Args&&... args)
+        : Env(test_, []()
+            {
+                auto p = std::make_unique<Config>();
+                setupConfigForUnitTests(*p);
+                return p;
+            }(), std::forward<Args>(args)...)
+    {
+    }
+
 
     Application&
     app()
@@ -163,7 +168,24 @@ public:
         return *bundle_.app;
     }
 
-    /** Returns the open ledger.
+    Application const&
+    app() const
+    {
+        return *bundle_.app;
+    }
+
+    /** Returns the current Ripple Network Time
+
+        @note This is manually advanced when ledgers
+              close or by callers.
+    */
+    NetClock::time_point
+    now()
+    {
+        return app().timeKeeper().now();
+    }
+
+    /** Returns the current ledger.
 
         This is a non-modifiable snapshot of the
         open ledger at the moment of the call.
@@ -172,7 +194,10 @@ public:
 
     */
     std::shared_ptr<OpenView const>
-    open() const;
+    current() const
+    {
+        return app().openLedger().current();
+    }
 
     /** Returns the last closed ledger.
 
@@ -182,9 +207,13 @@ public:
         and a new open ledger takes its place.
     */
     std::shared_ptr<ReadView const>
-    closed() const;
+    closed();
 
     /** Close and advance the ledger.
+
+        The resulting close time will be different and
+        greater than the previous close time, and at or
+        after the passed-in close time.
 
         Effects:
 
@@ -194,11 +223,12 @@ public:
             All transactions that made it into the open
             ledger are applied to the closed ledger.
 
-            The Env clock is set to the new time.
+            The Application network time is set to
+            the close time of the resulting ledger.
     */
     void
-    close (NetClock::time_point const& closeTime,
-        OpenLedger::modify_type const& f = {});
+    close (NetClock::time_point closeTime,
+        boost::optional<std::chrono::milliseconds> consensusDelay = boost::none);
 
     /** Close and advance the ledger.
 
@@ -208,11 +238,10 @@ public:
     template <class Rep, class Period>
     void
     close (std::chrono::duration<
-        Rep, Period> const& elapsed,
-        OpenLedger::modify_type const& f = {})
+        Rep, Period> const& elapsed)
     {
-        stopwatch_.advance(elapsed);
-        close (clock.now() + elapsed, f);
+        // VFALCO Is this the correct time?
+        close (now() + elapsed);
     }
 
     /** Close and advance the ledger.
@@ -221,9 +250,10 @@ public:
         the previous ledger closing time.
     */
     void
-    close(OpenLedger::modify_type const& f = {})
+    close()
     {
-        close (std::chrono::seconds(5), f);
+        // VFALCO Is this the correct time?
+        close (std::chrono::seconds(5));
     }
 
     /** Turn on JSON tracing.
@@ -393,6 +423,11 @@ public:
     std::shared_ptr<STObject const>
     meta();
 
+    /** Execute a client command */
+    template <class T, class... Args>
+    std::pair<int, Json::Value>
+    rpc (T const& t, Args const&... args);
+
 private:
     void
     fund (bool setDefaultRipple,
@@ -417,9 +452,9 @@ private:
     template <std::size_t N>
     void
     fund_arg (STAmount const& amount,
-        detail::noripple_helper<N> const& list)
+        std::array<Account, N> const& list)
     {
-        for (auto const& account : list.args)
+        for (auto const& account : list)
             fund (false, amount, account);
     }
 public:
@@ -592,6 +627,37 @@ protected:
     std::unordered_map<
         AccountID, Account> map_;
 };
+
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+inline
+void
+collect_args (std::vector<std::string>& v)
+{
+}
+
+template <class T, class... Args>
+void
+collect_args (std::vector<std::string>& v,
+    T const& t, Args const&... args)
+{
+    v.emplace_back(t);
+    collect_args(v, args...);
+}
+
+} // detail
+
+template <class T, class... Args>
+std::pair<int, Json::Value>
+Env::rpc (T const& t, Args const&... args)
+{
+    std::vector<std::string> v;
+    detail::collect_args(v, t, args...);
+    return rpcClient(v,
+        app().config(), app().logs());
+}
 
 } // jtx
 } // test

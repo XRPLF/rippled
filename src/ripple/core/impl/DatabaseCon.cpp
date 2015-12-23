@@ -62,6 +62,11 @@ DatabaseCon::Setup setup_DatabaseCon (Config const& c)
     setup.startUp = c.START_UP;
     setup.standAlone = c.RUN_STANDALONE;
     setup.dataDir = c.legacy ("database_path");
+    if (!setup.standAlone && setup.dataDir.empty())
+    {
+        Throw<std::runtime_error>(
+            "database_path must be set.");
+    }
 
     return setup;
 }

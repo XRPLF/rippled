@@ -70,7 +70,8 @@ public:
         server in standalone mode and SHOULD NOT be used during the normal
         consensus process.
     */
-    virtual void simulate () = 0;
+    virtual void simulate (
+        boost::optional<std::chrono::milliseconds> consensusDelay) = 0;
 };
 
 //------------------------------------------------------------------------------

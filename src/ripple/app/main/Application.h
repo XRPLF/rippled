@@ -103,7 +103,7 @@ public:
     //
 
     virtual Logs& logs() = 0;
-    virtual Config const& config() const = 0;
+    virtual Config& config() = 0;
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual Family&                 family() = 0;
@@ -136,6 +136,7 @@ public:
     virtual PendingSaves&           pendingSaves() = 0;
     virtual AccountIDCache const&   accountIDCache() const = 0;
     virtual OpenLedger&             openLedger() = 0;
+    virtual OpenLedger const&       openLedger() const = 0;
     virtual DatabaseCon& getTxnDB () = 0;
     virtual DatabaseCon& getLedgerDB () = 0;
 
@@ -156,12 +157,9 @@ public:
 
 std::unique_ptr <Application>
 make_Application(
-    std::unique_ptr<Config const> config,
-    std::unique_ptr<Logs> logs);
-
-extern
-void
-setupConfigForUnitTests (Config& config);
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper);
 
 }
 

@@ -286,12 +286,12 @@ private:
     };
 
 public:
-    std::unique_ptr<Config const> config_;
+    std::unique_ptr<Config> config_;
     std::unique_ptr<Logs> logs_;
+    std::unique_ptr<TimeKeeper> timeKeeper_;
+
     beast::Journal m_journal;
     Application::MutexType m_masterMutex;
-
-    std::unique_ptr<TimeKeeper> timeKeeper_;
 
     // Required by the SHAMapStore
     TransactionMaster m_txMaster;
@@ -363,17 +363,16 @@ public:
     //--------------------------------------------------------------------------
 
     ApplicationImp (
-            std::unique_ptr<Config const> config,
-            std::unique_ptr<Logs> logs)
+            std::unique_ptr<Config> config,
+            std::unique_ptr<Logs> logs,
+            std::unique_ptr<TimeKeeper> timeKeeper)
         : RootStoppable ("Application")
         , BasicApp (numberOfThreads(*config))
         , config_ (std::move(config))
         , logs_ (std::move(logs))
+        , timeKeeper_ (std::move(timeKeeper))
 
         , m_journal (logs_->journal("Application"))
-
-        , timeKeeper_ (make_TimeKeeper(
-            logs_->journal("TimeKeeper")))
 
         , m_txMaster (*this)
 
@@ -518,8 +517,8 @@ public:
         return *logs_;
     }
 
-    Config const&
-    config() const override
+    Config&
+    config() override
     {
         return *config_;
     }
@@ -691,6 +690,12 @@ public:
         return *openLedger_;
     }
 
+    OpenLedger const&
+    openLedger() const override
+    {
+        return *openLedger_;
+    }
+
     Overlay& overlay () override
     {
         return *m_overlay;
@@ -847,15 +852,18 @@ public:
         {
             // VFALCO TODO Move all this into doSweep
 
-            boost::filesystem::space_info space =
-                    boost::filesystem::space (config_->legacy ("database_path"));
-
-            // VFALCO TODO Give this magic constant a name and move it into a well documented header
-            //
-            if (space.available < (512 * 1024 * 1024))
+            if (! config_->RUN_STANDALONE)
             {
-                m_journal.fatal << "Remaining free disk space is less than 512MB";
-                signalStop ();
+                boost::filesystem::space_info space =
+                        boost::filesystem::space (config_->legacy ("database_path"));
+
+                // VFALCO TODO Give this magic constant a name and move it into a well documented header
+                //
+                if (space.available < (512 * 1024 * 1024))
+                {
+                    m_journal.fatal << "Remaining free disk space is less than 512MB";
+                    signalStop ();
+                }
             }
 
             m_jobQueue->addJob(jtSWEEP, "sweep", [this] (Job&) { doSweep(); });
@@ -1673,21 +1681,13 @@ Application::Application ()
 
 std::unique_ptr<Application>
 make_Application (
-    std::unique_ptr<Config const> config,
-    std::unique_ptr<Logs> logs)
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper)
 {
     return std::make_unique<ApplicationImp> (
-        std::move(config), std::move(logs));
-}
-
-void
-setupConfigForUnitTests (Config& config)
-{
-    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
-    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
-
-    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
-    config.legacy("database_path", "DummyForUnitTests");
+        std::move(config), std::move(logs),
+            std::move(timeKeeper));
 }
 
 }

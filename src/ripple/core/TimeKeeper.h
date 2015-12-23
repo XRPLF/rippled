@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 
 #include <beast/chrono/abstract_clock.h>
+#include <beast/utility/Journal.h>
 #include <ripple/basics/chrono.h>
 #include <string>
 #include <vector>
@@ -90,7 +91,6 @@ public:
     virtual
     std::chrono::duration<std::int32_t>
     closeOffset() const = 0;
-
 };
 
 extern

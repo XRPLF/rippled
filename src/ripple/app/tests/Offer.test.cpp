@@ -149,8 +149,11 @@ public:
 
         auto const switchoverTime = STAmountCalcSwitchovers::enableUnderflowFixCloseTime ();
 
-        for (auto timeDelta : {-10s, 10s}){
-            NetClock::time_point const closeTime = switchoverTime + timeDelta;
+        for (auto timeDelta : {
+            - env.closed()->info().closeTimeResolution,
+                env.closed()->info().closeTimeResolution} )
+        {
+            auto const closeTime = switchoverTime + timeDelta;
             STAmountCalcSwitchovers switchover (closeTime);
             env.close (closeTime);
             // Will fail without the underflow fix

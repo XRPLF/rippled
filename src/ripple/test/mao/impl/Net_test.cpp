@@ -20,6 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/test/mao/Net.h>
+#include <ripple/test/jtx.h>
+#include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/net/RPCCall.h>
 #include <beast/unit_test/suite.h>
@@ -38,21 +40,13 @@ struct TestApp
     {
         auto config = std::make_unique<Config>();
         setupConfigForUnitTests(*config);
-        config->RUN_STANDALONE = true;
-        (*config)["server"].append("port_peer");
-        (*config)["port_peer"].set("ip", "127.0.0.1");
-        (*config)["port_peer"].set("port", "8080");
-        (*config)["port_peer"].set("protocol", "peer");
-        (*config)["server"].append("port_admin");
-        (*config)["port_admin"].set("ip", "127.0.0.1");
-        (*config)["port_admin"].set("port", "8081");
-        (*config)["port_admin"].set("protocol", "http");
-        (*config)["port_admin"].set("admin", "127.0.0.1");
         // Hack so we dont have to call Config::setup
         HTTPClient::initializeSSLContext(*config);
         auto logs = std::make_unique<Logs>();
-        instance = make_Application(
-            std::move(config), std::move(logs));
+        auto timeKeeper = std::make_unique<ManualTimeKeeper>();
+        timeKeeper_ = timeKeeper.get();
+        instance = make_Application(std::move(config),
+            std::move(logs), std::move(timeKeeper));
         instance->setup();
         thread_ = std::thread(
             [&]() { instance->run(); });
@@ -106,6 +100,7 @@ private:
         collect(v, args...);
     }
 
+    ManualTimeKeeper* timeKeeper_;
     std::unique_ptr<Application> instance;
     std::thread thread_;
     std::mutex mutex_;

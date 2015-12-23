@@ -32,7 +32,7 @@ struct Directory_test : public beast::unit_test::suite
         auto USD = gw["USD"];
 
         {
-            auto dir = Dir(*env.open(),
+            auto dir = Dir(*env.current(),
                 keylet::ownerDir(Account("alice")));
             expect(std::begin(dir) == std::end(dir));
             expect(std::end(dir) == dir.find(uint256(), uint256()));
@@ -46,13 +46,13 @@ struct Directory_test : public beast::unit_test::suite
         env(offer("bob", USD(500), XRP(10)));
 
         {
-            auto dir = Dir(*env.open(),
+            auto dir = Dir(*env.current(),
                 keylet::ownerDir(Account("bob")));
             expect(std::begin(dir)->get()->
                 getFieldAmount(sfTakerPays) == USD(500));
         }
 
-        auto dir = Dir(*env.open(),
+        auto dir = Dir(*env.current(),
             keylet::ownerDir(Account("alice")));
         i = 0;
         for (auto const& e : dir)

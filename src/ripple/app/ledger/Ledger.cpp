@@ -179,7 +179,7 @@ Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     info_.seq = 1;
     info_.drops = SYSTEM_CURRENCY_START;
     info_.closeTimeResolution = ledgerDefaultTimeResolution;
-    auto const id = calcAccountID(
+    static auto const id = calcAccountID(
         generateKeyPair(KeyType::secp256k1,
             generateSeed("masterpassphrase")).first);
     auto const sle = std::make_shared<SLE>(keylet::account(id));

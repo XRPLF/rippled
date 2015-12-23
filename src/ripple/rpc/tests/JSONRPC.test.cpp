@@ -22,6 +22,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/test/jtx.h>
 #include <beast/unit_test/suite.h>
@@ -1648,7 +1649,7 @@ public:
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
-        test::jtx::Env env(*this);
+        test::jtx::Env env(*this, test::jtx::features(featureMultiSign));
         env.fund(test::jtx::XRP(100000), a, g);
         env.close();
 
@@ -1658,7 +1659,7 @@ public:
         env(pay(g, env.master, USD(50)));
         env.close();
 
-        auto const ledger = env.open();
+        auto const ledger = env.current();
 
         ProcessTransactionFn processTxn = fakeProcessTransaction;
 

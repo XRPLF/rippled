@@ -131,8 +131,7 @@ namespace ripple {
 TER
 SusPayCreate::preflight (PreflightContext const& ctx)
 {
-    if (! (ctx.flags & tapENABLE_TESTING) &&
-        ! ctx.rules.enabled(featureSusPay,
+    if (! ctx.rules.enabled(featureSusPay,
             ctx.app.config().features))
         return temDISABLED;
 
@@ -168,8 +167,9 @@ SusPayCreate::doApply()
                            weeks{1}).time_since_epoch().count();
     if (ctx_.tx[~sfDigest])
     {
-        if (! ctx_.tx[~sfCancelAfter] ||
-                maxExpire <= ctx_.tx[sfCancelAfter])
+        if (! ctx_.tx[~sfCancelAfter])
+            return tecNO_PERMISSION;
+        if (maxExpire <= ctx_.tx[sfCancelAfter])
             return tecNO_PERMISSION;
     }
     else
@@ -250,8 +250,7 @@ SusPayCreate::doApply()
 TER
 SusPayFinish::preflight (PreflightContext const& ctx)
 {
-    if (! (ctx.flags & tapENABLE_TESTING) &&
-        ! ctx.rules.enabled(featureSusPay,
+    if (! ctx.rules.enabled(featureSusPay,
             ctx.app.config().features))
         return temDISABLED;
 
@@ -370,8 +369,7 @@ SusPayFinish::doApply()
 TER
 SusPayCancel::preflight (PreflightContext const& ctx)
 {
-    if (! (ctx.flags & tapENABLE_TESTING) &&
-        ! ctx.rules.enabled(featureSusPay,
+    if (! ctx.rules.enabled(featureSusPay,
             ctx.app.config().features))
         return temDISABLED;
 
