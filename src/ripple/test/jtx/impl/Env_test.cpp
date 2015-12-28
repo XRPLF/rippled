@@ -562,7 +562,7 @@ public:
     }
 
     // Test that jtx can re-sign a transaction that's already been signed.
-    void testSig()
+    void testResignSigned()
     {
         using namespace jtx;
         Env env(*this);
@@ -598,7 +598,7 @@ public:
         testAdvance();
         testClose();
         testPath();
-        testSig();
+        testResignSigned();
     }
 };
 
