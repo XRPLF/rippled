@@ -568,7 +568,7 @@ public:
         Env env(*this);
 
         env.fund(XRP(10000), "alice");
-        auto const baseFee = env.open()->fees().base;;
+        auto const baseFee = env.open()->fees().base;
         std::uint32_t const aliceSeq = env.seq ("alice");
         
         // Sign jsonNoop.
