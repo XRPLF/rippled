@@ -361,7 +361,7 @@ public:
             { { "bob", 1 }, { "carol", 2 } }));
         env(noop("alice"));
 
-        auto const baseFee = env.app().config().FEE_DEFAULT;
+        auto const baseFee = env.current()->fees().base;
         env(noop("alice"), msig("bob"), fee(2 * baseFee));
         env(noop("alice"), msig("carol"), fee(2 * baseFee));
         env(noop("alice"), msig("bob", "carol"), fee(3 * baseFee));
@@ -569,7 +569,7 @@ public:
         env.fund(XRP(10000), "alice");
         auto const baseFee = env.current()->fees().base;
         std::uint32_t const aliceSeq = env.seq ("alice");
-        
+
         // Sign jsonNoop.
         Json::Value jsonNoop = env.json (
             noop ("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
