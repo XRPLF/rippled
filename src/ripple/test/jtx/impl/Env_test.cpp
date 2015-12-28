@@ -561,17 +561,20 @@ public:
                 );
     }
 
+    // Test that jtx can re-sign a transaction that's already been signed.
     void testSig()
     {
         using namespace jtx;
         Env env(*this);
 
         env.fund(XRP(10000), "alice");
-        auto const baseFee = env.app().config().FEE_DEFAULT;
+        auto const baseFee = env.open()->fees().base;;
         std::uint32_t const aliceSeq = env.seq ("alice");
         
+        // Sign jsonNoop.
         Json::Value jsonNoop = env.json (
             noop ("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
+        // Re-sign jsonNoop.
         JTx jt = env.jt (jsonNoop);
         env (jt);
     }
