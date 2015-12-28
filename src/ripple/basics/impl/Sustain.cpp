@@ -70,6 +70,17 @@ std::string StopSustain ()
     return "Terminating monitor";
 }
 
+static
+bool checkChild(pid_t pid, int options)
+{
+    int i;
+
+    if (waitpid (pChild, &i, options) == -1)
+        return false;
+
+    return kill (pChild, options) == 0;
+}
+
 std::string DoSustain ()
 {
     pManager = getpid ();
@@ -78,7 +89,11 @@ std::string DoSustain ()
     signal (SIGUSR1, pass_signal);
     signal (SIGUSR2, pass_signal);
 
-    for (auto childCount = 1;; ++childCount)
+    // Number of times the child has exited in less than
+    // 15 seconds.
+    int fastExit = 0;
+
+    for (auto childCount = 1; ; ++childCount)
     {
         pChild = fork ();
 
@@ -100,17 +115,24 @@ std::string DoSustain ()
 
         sleep (sleepBeforeWaiting);
 
-        for (;;)
+        // If the child has already terminated count this
+        // as a fast exit and an indication that something
+        // went wrong:
+        if (!checkChild (pChild, WNOHANG))
         {
-            int i;
-            waitpid (pChild, &i, 0);
-            if (kill (pChild, 0))
-                break;
-            sleep (sleepBetweenWaits);
+            if (++fastExit == 5)
+                _exit (0);
         }
+        else
+        {
+            fastExit = 0;
 
-        auto pc = std::to_string (pChild);
-        rename ("core", ("core." + pc).c_str ());
+            while (checkChild (pChild, 0))
+                sleep(sleepBetweenWaits);
+
+            auto pc = std::to_string (pChild);
+            rename ("core", ("core." + pc).c_str ());
+        }
     }
 }
 

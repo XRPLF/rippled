@@ -331,7 +331,7 @@ int run (int argc, char** argv)
         std::string logMe = DoSustain ();
 
         if (!logMe.empty ())
-            std::cerr << logMe;
+            std::cerr << logMe << std::endl;
     }
 
     // Run the unit tests if requested.
