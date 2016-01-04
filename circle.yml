@@ -10,8 +10,10 @@ dependencies:
     - sudo apt-get update -qq
     - sudo apt-get purge -qq libboost1.48-dev
     - sudo apt-get install -qq libboost1.57-all-dev
-    - sudo apt-get install -qq clang-3.6 gcc-5 libobjc-5-dev libgcc-5-dev libstdc++-5-dev libclang1-3.6 libgcc1 libgomp1 libstdc++6 scons protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
-    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 99 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+    - sudo apt-get install -qq clang-3.6 gcc-5 g++-5 libobjc-5-dev libgcc-5-dev libstdc++-5-dev libclang1-3.6 libgcc1 libgomp1 libstdc++6 scons protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
+    - lsb_release -si -sr
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 99
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 99
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.6 99 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-3.6
     - gcc --version
     - clang --version
@@ -20,9 +22,9 @@ test:
     - scons clang.debug
   override:
     - | # create gdb script
-      echo "set env MALLOC_CHECK_=3" > script.gdb 
+      echo "set env MALLOC_CHECK_=3" > script.gdb
       echo "run" >> script.gdb
-      echo "backtrace full" >> script.gdb 
+      echo "backtrace full" >> script.gdb
       # gdb --help
     # gdb segfaults
     # - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args build/clang.debug/rippled --unittest
