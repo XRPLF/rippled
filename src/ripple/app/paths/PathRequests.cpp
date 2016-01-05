@@ -24,6 +24,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
+#include <algorithm>
 
 namespace ripple {
 
@@ -115,19 +116,21 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
             {
                 ScopedLockType sl (mLock);
 
-                // Remove any dangling weak pointers or weak pointers that refer to this path request.
-                std::vector<PathRequest::wptr>::iterator it = mRequests.begin();
-                while (it != mRequests.end())
-                {
-                    PathRequest::pointer itRequest = it->lock ();
-                    if (!itRequest || (itRequest == pRequest))
+                // Remove any dangling weak pointers or weak
+                // pointers that refer to this path request.
+                auto ret = std::remove_if (
+                    mRequests.begin(), mRequests.end(),
+                    [&removed,&pRequest](auto const& wl)
                     {
+                        auto r = wl.lock();
+
+                        if (r && r != pRequest)
+                            return false;
                         ++removed;
-                        it = mRequests.erase (it);
-                    }
-                    else
-                        ++it;
-                }
+                        return true;
+                    });
+
+                mRequests.erase (ret, mRequests.end());
             }
 
             mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
@@ -173,18 +176,19 @@ void PathRequests::insertPathRequest (PathRequest::pointer const& req)
 {
     ScopedLockType sl (mLock);
 
-    // Insert after any older unserviced requests but before any serviced requests
-    std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
-    while (it != mRequests.end ())
-    {
-        PathRequest::pointer r = it->lock ();
-        if (r && !r->isNew ())
-            break; // This request has been handled, we come before it
+    // Insert after any older unserviced requests but before
+    // any serviced requests
+    auto ret = std::find_if (
+        mRequests.begin(), mRequests.end(),
+        [](auto const& wl)
+        {
+            auto r = wl.lock();
 
-        // This is a newer request, we come after it
-        ++it;
-    }
-    mRequests.insert (it, PathRequest::wptr (req));
+            // This request has been handled, we come before it
+            return r && !r->isNew();
+        });
+
+    mRequests.insert (ret, PathRequest::wptr (req));
 }
 
 // Make a new-style path_find request
@@ -194,26 +198,19 @@ PathRequests::makePathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& requestJson)
 {
-    PathRequest::pointer req = std::make_shared<PathRequest> (
+    auto req = std::make_shared<PathRequest> (
         app_, subscriber, ++mLastIdentifier, *this, mJournal);
 
-    RippleLineCache::pointer cache;
+    auto result = req->doCreate (
+        getLineCache (inLedger, false), requestJson);
 
-    {
-        ScopedLockType sl (mLock);
-        cache = getLineCache (inLedger, false);
-    }
-
-    bool valid = false;
-    Json::Value result = req->doCreate (cache, requestJson, valid);
-
-    if (valid)
+    if (result.first)
     {
         subscriber->setPathRequest (req);
         insertPathRequest (req);
         app_.getLedgerMaster().newPathRequest();
     }
-    return result;
+    return result.second;
 }
 
 // Make an old-style ripple_path_find request
@@ -229,17 +226,10 @@ PathRequests::makeLegacyPathRequest(
     req = std::make_shared<PathRequest> (
         app_, completion, ++mLastIdentifier, *this, mJournal);
 
-    RippleLineCache::pointer cache;
+    auto result = req->doCreate (
+        getLineCache (inLedger, false), request);
 
-    {
-        ScopedLockType sl (mLock);
-        cache = getLineCache (inLedger, false);
-    }
-
-    bool valid = false;
-    Json::Value result = req->doCreate (cache, request, valid);
-
-    if (!valid)
+    if (!result.first)
     {
         req.reset();
     }
@@ -249,7 +239,7 @@ PathRequests::makeLegacyPathRequest(
         app_.getLedgerMaster().newPathRequest();
     }
 
-    return result;
+    return result.second;
 }
 
 } // ripple
