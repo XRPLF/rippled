@@ -124,7 +124,15 @@ Env::close(NetClock::time_point closeTime,
     // Round up to next distinguishable value
     closeTime += closed()->info().closeTimeResolution - 1s;
     bundle_.timeKeeper->set(closeTime);
-    app().getOPs().acceptLedger(consensusDelay);
+    // Go through the rpc interface unless we need to simulate
+    // a specific consensus delay.
+    if (consensusDelay)
+        app().getOPs().acceptLedger(consensusDelay);
+    else
+    {
+        auto const result = rpc("ledger_accept");
+        test.expect(result.first == rpcSUCCESS);
+    }
     bundle_.timeKeeper->set(
         closed()->info().closeTime);
 }
