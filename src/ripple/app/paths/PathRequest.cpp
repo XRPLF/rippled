@@ -241,12 +241,13 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
     If there's an error, we need to be sure to return it to the caller
     in all cases.
 */
-Json::Value PathRequest::doCreate (
+std::pair<bool, Json::Value>
+PathRequest::doCreate (
     RippleLineCache::ref& cache,
-    Json::Value const& value,
-    bool& valid)
+    Json::Value const& value)
 {
     Json::Value status;
+    bool valid;
 
     if (parseJson (value) != PFR_PJ_INVALID)
     {
@@ -264,10 +265,10 @@ Json::Value PathRequest::doCreate (
     {
         if (valid)
         {
-            m_journal.debug << iIdentifier
-                            << " valid: " << toBase58(*raSrcAccount);
-            m_journal.debug << iIdentifier
-                            << " Deliver: " << saDstAmount.getFullText ();
+            m_journal.debug << iIdentifier <<
+                " valid: " << toBase58(*raSrcAccount);
+            m_journal.debug << iIdentifier <<
+                " deliver: " << saDstAmount.getFullText ();
         }
         else
         {
@@ -275,7 +276,7 @@ Json::Value PathRequest::doCreate (
         }
     }
 
-    return status;
+    return { valid, std::move(status) };
 }
 
 int PathRequest::parseJson (Json::Value const& jvParams)
