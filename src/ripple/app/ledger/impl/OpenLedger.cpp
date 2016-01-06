@@ -19,6 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/app/main/Application.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/ledger/CachedView.h>
 #include <ripple/protocol/Feature.h>
@@ -108,13 +110,13 @@ OpenLedger::accept(Application& app, Rules const& rules,
                 return p.first;
             }),
                 retries, flags, j_);
-    // Apply local tx
-    for (auto const& item : locals)
-        ripple::apply(app, *next,
-            *item.second, flags, j_);
     // Call the modifier
     if (f)
         f(*next, j_);
+    // Apply local tx
+    for (auto const& item : locals)
+        app.getTxQ().apply(app, *next,
+            item.second, flags, j_);
     // Switch to the new open view
     std::lock_guard<
         std::mutex> lock2(current_mutex_);
