@@ -32,7 +32,7 @@
 namespace ripple {
 namespace test {
 
-class TxQ_test : public TestSuite
+class TxQ_test : public beast::unit_test::suite
 {
     void
     checkMetrics(
@@ -96,7 +96,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expectEquals(env.current()->fees().base, 10);
+        expect(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256, 500);
 
@@ -108,21 +108,11 @@ public:
         env(noop(alice), queued);
         checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
 
-        // Alice - Alice is already in the queue, so can't hold.
-        env(noop(alice), seq(env.seq(alice) + 1),
-            ter(telINSUF_FEE_P));
-        checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
-
-        auto openLedgerFee = 
+        auto openLedgerFee =
             [&]()
             {
                 return fee(txq.openLedgerFee(*env.current()));
             };
-        // Alice's next transaction -
-        // fails because the item in the TxQ hasn't applied.
-        env(noop(alice), openLedgerFee(),
-            seq(env.seq(alice) + 1), ter(terPRE_SEQ));
-        checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
 
         // Bob with really high fee - applies
         env(noop(bob), openLedgerFee());
@@ -248,13 +238,17 @@ public:
         // Queue is still full, of course, but the min fee has gone up
         checkMetrics(env, 6, 6, 4, 3, 410, lastMedian);
 
+        // Close out the ledger, the transactions are accepted, the
+        // queue is cleared, then the localTxs are retried. At this
+        // point, daria's transaction that was dropped from the queue
+        // is put back in. Neat.
         env.close();
         lastMedian = 500;
-        checkMetrics(env, 1, 8, 5, 4, 256, lastMedian);
+        checkMetrics(env, 2, 8, 5, 4, 256, lastMedian);
 
         lastMedian = 500;
         env.close();
-        checkMetrics(env, 0, 10, 1, 5, 256, lastMedian);
+        checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);
 
         //////////////////////////////////////////////////////////////
         // Cleanup:
@@ -281,6 +275,67 @@ public:
             metrics.txQMaxSize, metrics.txPerLedger + 1,
             metrics.txPerLedger,
             256, lastMedian);
+    }
+
+    void testLocalTxRetry()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env(*this, makeConfig(), features(featureFeeEscalation));
+
+        auto& txq = env.app().getTxQ();
+        txq.setMinimumTx(2);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        auto charlie = Account("charlie");
+
+        auto queued = ter(terQUEUED);
+
+        expect(env.current()->fees().base == 10);
+
+        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+
+        // Create several accounts while the fee is cheap so they all apply.
+        env.fund(XRP(50000), noripple(alice, bob, charlie));
+        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+
+        // Alice - price starts exploding: held
+        env(noop(alice), queued);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+
+        // Alice - Alice is already in the queue, so can't hold.
+        env(noop(alice), seq(env.seq(alice) + 1),
+            ter(telINSUF_FEE_P));
+        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+
+        auto openLedgerFee =
+            [&]()
+            {
+                return fee(txq.openLedgerFee(*env.current()));
+            };
+        // Alice's next transaction -
+        // fails because the item in the TxQ hasn't applied.
+        env(noop(alice), openLedgerFee(),
+            seq(env.seq(alice) + 1), ter(terPRE_SEQ));
+        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+
+        // Bob with really high fee - applies
+        env(noop(bob), openLedgerFee());
+        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+
+        // Daria with low fee: hold
+        env(noop(charlie), fee(1000), queued);
+        checkMetrics(env, 2, boost::none, 4, 2, 256, 500);
+
+        env.close();
+        // Verify that the held transactions got applied
+        auto lastMedian = 500;
+        // One of alice's bad transactions applied from the
+        // Local Txs. Since they both have the same seq,
+        // one succeeds, one fails. We don't care which.
+        checkMetrics(env, 0, 8, 3, 4, 256, lastMedian);
     }
 
     void testLastLedgerSeq()
@@ -481,6 +536,7 @@ public:
     void run()
     {
         testQueue();
+        testLocalTxRetry();
         testLastLedgerSeq();
         testZeroFeeTxn();
         testPreclaimFailures();
