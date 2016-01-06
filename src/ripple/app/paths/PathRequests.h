@@ -26,6 +26,7 @@
 #include <ripple/core/Job.h>
 #include <atomic>
 #include <mutex>
+#include <vector>
 
 namespace ripple {
 
@@ -79,7 +80,7 @@ private:
     beast::insight::Event            mFull;
 
     // Track all requests
-    std::vector<PathRequest::wptr>   mRequests;
+    std::vector<PathRequest::wptr> requests_;
 
     // Use a RippleLineCache
     RippleLineCache::pointer         mLineCache;
