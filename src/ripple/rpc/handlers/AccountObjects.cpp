@@ -35,7 +35,6 @@
 
 #include <string>
 #include <sstream>
-#include <vector>
 
 namespace ripple {
 
@@ -80,18 +79,19 @@ Json::Value doAccountObjects (RPC::Context& context)
     if (params.isMember (jss::type))
     {
         static
-        std::vector<std::pair<std::string, LedgerEntryType>> const
+        std::array<std::pair<char const *, LedgerEntryType>, 9> const
         types
-        {
-            { "account", ltACCOUNT_ROOT },
-            { "amendments", ltAMENDMENTS },
-            { "directory", ltDIR_NODE },
-            { "fee", ltFEE_SETTINGS },
-            { "hashes", ltLEDGER_HASHES },
-            { "offer", ltOFFER },
-            { "state", ltRIPPLE_STATE },
-            { "ticket", ltTICKET }
-        };
+        {{
+            { jss::account, ltACCOUNT_ROOT },
+            { jss::amendments, ltAMENDMENTS },
+            { jss::directory, ltDIR_NODE },
+            { jss::fee, ltFEE_SETTINGS },
+            { jss::hashes, ltLEDGER_HASHES },
+            { jss::offer, ltOFFER },
+            { jss::signer_list, ltSIGNER_LIST },
+            { jss::state, ltRIPPLE_STATE },
+            { jss::ticket, ltTICKET }
+        }};
 
         auto const& p = params[jss::type];
         if (! p.isString ())
