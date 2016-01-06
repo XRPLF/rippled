@@ -78,6 +78,7 @@ JSS ( affected );                   // out: AcceptedLedgerTx
 JSS ( age );                        // out: UniqueNodeList, NetworkOPs, Peers
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
+JSS ( amendments );                 // in: AccountObjects
 JSS ( asks );                       // out: Subscribe
 JSS ( assets );                     // out: GatewayBalances
 JSS ( authorized );                 // out: AccountLines
@@ -175,6 +176,7 @@ JSS ( generator );                  // in: LedgerEntry
 JSS ( good );                       // out: RPCVersion
 JSS ( hash );                       // out: NetworkOPs, InboundLedger,
                                     //      LedgerToJson, STTx; field
+JSS ( hashes );                     // in: AccountObjects
 JSS ( have_header );                // out: InboundLedger
 JSS ( have_state );                 // out: InboundLedger
 JSS ( have_transactions );          // out: InboundLedger
@@ -338,6 +340,7 @@ JSS ( server_state );               // out: NetworkOPs
 JSS ( server_status );              // out: NetworkOPs
 JSS ( severity );                   // in: LogLevel
 JSS ( signature );                  // out: NetworkOPs
+JSS ( signer_list );                // in: AccountObjects
 JSS ( snapshot );                   // in: Subscribe
 JSS ( source_account );             // in: PathRequest, RipplePathFind
 JSS ( source_amount );              // in: PathRequest, RipplePathFind
@@ -363,6 +366,7 @@ JSS ( taker_gets_funded );          // out: NetworkOPs
 JSS ( taker_pays );                 // in: Subscribe, Unsubscribe, BookOffers
 JSS ( taker_pays_funded );          // out: NetworkOPs
 JSS ( threshold );                  // in: Blacklist
+JSS ( ticket );                     // in: AccountObjects
 JSS ( timeouts );                   // out: InboundLedger
 JSS ( traffic );                    // out: Overlay
 JSS ( totalCoins );                 // out: LedgerToJson
