@@ -301,14 +301,13 @@ public:
             [ptr] (Job&) { ConnectionImpl <WebSocket>::destroy(ptr); });
     }
 
-    void message_job(std::string const& name,
-                     connection_ptr const& cpClient)
+    void message_job(std::string const& name, connection_ptr const& cpClient)
     {
         app_.getJobQueue().postCoro(jtCLIENT, "WSClient",
             [this, cpClient]
-            (std::shared_ptr<JobCoro> jc)
+            (auto const& jc)
             {
-                do_messages(jc, cpClient);
+                this->do_messages(jc, cpClient);
             });
     }
 
@@ -367,22 +366,18 @@ public:
         for (int i = 0; i < 3; ++i)
         {
             message_ptr msg = ptr->getMessage ();
-
-            if (!msg)
+            if (! msg)
                 return;
 
-            if (!do_message (jc, cpClient, ptr, msg))
-            {
-                ptr->returnMessage(msg);
-                return;
-            }
+            do_message(jc, cpClient, ptr, msg);
         }
 
         if (ptr->checkMessage ())
             message_job("more", cpClient);
     }
 
-    bool do_message (std::shared_ptr<JobCoro> const& jc,
+    void
+    do_message (std::shared_ptr<JobCoro> const& jc,
         const connection_ptr cpClient, wsc_ptr conn,
             const message_ptr& mpMessage)
     {
@@ -436,8 +431,6 @@ public:
                     (buffer.size()));
             send (cpClient, buffer, false);
         }
-
-        return true;
     }
 
     boost::asio::ssl::context&

@@ -241,18 +241,6 @@ typename WebSocket::MessagePtr ConnectionImpl <WebSocket>::getMessage ()
 }
 
 template <class WebSocket>
-void ConnectionImpl <WebSocket>::returnMessage (message_ptr const& ptr)
-{
-    ScopedLockType sl (m_receiveQueueMutex);
-
-    if (!m_isDead)
-    {
-        m_receiveQueue.push_front (ptr);
-        m_receiveQueueRunning = false;
-    }
-}
-
-template <class WebSocket>
 Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     Json::Value const& jvRequest, std::shared_ptr<JobCoro> jobCoro)
 {
