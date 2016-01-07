@@ -39,6 +39,7 @@ namespace ripple {
 //           if true, only allow public keys and addresses. false, default.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
+//   signer_lists : <true | false>  // optional -- if true return SignerList(s)
 // }
 
 // TODO(tom): what is that "default"?
@@ -72,6 +73,24 @@ Json::Value doAccountInfo (RPC::Context& context)
     {
         RPC::injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
+
+        // Return SignerList(s) if that is requested.
+        if (params.isMember (jss::signer_lists) &&
+            params[jss::signer_lists].asBool ())
+        {
+            // We put the SignerList in an array because of an anticipated
+            // future when we support multiple signer lists on one account.
+            auto& jvSignerList = result[jss::account_data][jss::signer_lists];
+            jvSignerList = Json::arrayValue;
+
+            // This code will need to be revisited if in the future we support
+            // multiple SignerLists on one account.
+            auto const sleSigners = ledger->read (keylet::signers (accountID));
+            if (sleSigners)
+            {
+                auto& listJson = jvSignerList.append (sleSigners->getJson (0));
+            }
+        }
     }
     else
     {

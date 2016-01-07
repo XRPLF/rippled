@@ -99,6 +99,7 @@
 #include <ripple/rpc/impl/TransactionSign.cpp>
 #include <ripple/rpc/impl/RPCVersion.cpp>
 
+#include <ripple/rpc/tests/AccountInfo_test.cpp>
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
 #include <ripple/rpc/tests/KeyGeneration.test.cpp>
 #include <ripple/rpc/tests/Status.test.cpp>

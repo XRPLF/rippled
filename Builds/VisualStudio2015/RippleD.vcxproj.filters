@@ -3762,6 +3762,9 @@
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\AccountInfo_test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JSONRPC.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
