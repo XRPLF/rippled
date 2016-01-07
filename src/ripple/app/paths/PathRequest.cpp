@@ -276,7 +276,7 @@ PathRequest::doCreate (
         }
     }
 
-    return { valid, status };
+    return { valid, std::move(status) };
 }
 
 int PathRequest::parseJson (Json::Value const& jvParams)
