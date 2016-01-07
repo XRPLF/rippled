@@ -304,8 +304,12 @@ public:
     void message_job(std::string const& name,
                      connection_ptr const& cpClient)
     {
-        auto msgs = [this, cpClient] (Job& j) { do_messages(j, cpClient); };
-        app_.getJobQueue ().addJob (jtCLIENT, "WSClient::" + name, msgs);
+        app_.getJobQueue().postCoro(jtCLIENT, "WSClient",
+            [this, cpClient]
+            (std::shared_ptr<JobCoro> jc)
+            {
+                do_messages(jc, cpClient);
+            });
     }
 
     void on_message (connection_ptr cpClient, message_ptr mpMessage) override
@@ -342,7 +346,8 @@ public:
             message_job("command", cpClient);
     }
 
-    void do_messages (Job& job, connection_ptr const& cpClient)
+    void do_messages (std::shared_ptr<JobCoro> const& jc,
+        connection_ptr const& cpClient)
     {
         wsc_ptr ptr;
         {
@@ -366,7 +371,7 @@ public:
             if (!msg)
                 return;
 
-            if (!do_message (job, cpClient, ptr, msg))
+            if (!do_message (jc, cpClient, ptr, msg))
             {
                 ptr->returnMessage(msg);
                 return;
@@ -377,8 +382,9 @@ public:
             message_job("more", cpClient);
     }
 
-    bool do_message (Job& job, const connection_ptr cpClient,
-                     wsc_ptr conn, const message_ptr& mpMessage)
+    bool do_message (std::shared_ptr<JobCoro> const& jc,
+        const connection_ptr cpClient, wsc_ptr conn,
+            const message_ptr& mpMessage)
     {
         Json::Value jvRequest;
         Json::Reader jrReader;
@@ -417,30 +423,18 @@ public:
         }
         else
         {
-            if (jvRequest.isMember (jss::command))
-            {
-                Json::Value& jCmd = jvRequest[jss::command];
-                if (jCmd.isString())
-                    job.rename ("WSClient::" + jCmd.asString());
-            }
-
-            app_.getJobQueue().postCoro(jtCLIENT, "WSClient",
-                [this, conn, cpClient, jvRequest = std::move(jvRequest)]
-                (std::shared_ptr<JobCoro> jc)
-                {
-                    using namespace std::chrono;
-                    auto const start = high_resolution_clock::now();
-                    auto buffer = to_string(conn->invokeCommand(jvRequest, jc));
-                    rpc_time_.notify (
-                        static_cast <beast::insight::Event::value_type> (
-                            duration_cast <milliseconds> (
-                                high_resolution_clock::now () - start)));
-                    ++rpc_requests_;
-                    rpc_size_.notify (
-                        static_cast <beast::insight::Event::value_type>
-                            (buffer.size()));
-                    send (cpClient, buffer, false);
-                });
+            using namespace std::chrono;
+            auto const start = high_resolution_clock::now();
+            auto buffer = to_string(conn->invokeCommand(jvRequest, jc));
+            rpc_time_.notify (
+                static_cast <beast::insight::Event::value_type> (
+                    duration_cast <milliseconds> (
+                        high_resolution_clock::now () - start)));
+            ++rpc_requests_;
+            rpc_size_.notify (
+                static_cast <beast::insight::Event::value_type>
+                    (buffer.size()));
+            send (cpClient, buffer, false);
         }
 
         return true;
