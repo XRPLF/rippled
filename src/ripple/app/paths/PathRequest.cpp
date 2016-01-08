@@ -169,7 +169,6 @@ void PathRequest::updateComplete ()
 
 bool PathRequest::isValid (RippleLineCache::ref crCache)
 {
-    ScopedLockType sl (mLock);
     if (! raSrcAccount || ! raDstAccount)
         return false;
 
@@ -246,19 +245,13 @@ PathRequest::doCreate (
     RippleLineCache::ref& cache,
     Json::Value const& value)
 {
-    Json::Value status;
-    bool valid;
+    bool valid = false;
 
     if (parseJson (value) != PFR_PJ_INVALID)
     {
         valid = isValid (cache);
-        if (! hasCompletion())
-            status = valid ? doUpdate(cache, true) : jvStatus;
-    }
-    else
-    {
-        valid = false;
-        status = jvStatus;
+        if (! hasCompletion() && valid)
+            doUpdate(cache, true);
     }
 
     if (m_journal.debug)
@@ -276,7 +269,7 @@ PathRequest::doCreate (
         }
     }
 
-    return { valid, std::move(status) };
+    return { valid, jvStatus };
 }
 
 int PathRequest::parseJson (Json::Value const& jvParams)
@@ -611,28 +604,31 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
     m_journal.debug << iIdentifier << " update " << (fast ? "fast" : "normal");
 
-    ScopedLockType sl (mLock);
+    {
+        ScopedLockType sl (mLock);
 
-    if (!isValid (cache))
-        return jvStatus;
-    jvStatus = Json::objectValue;
+        if (!isValid (cache))
+            return jvStatus;
+    }
+
+    Json::Value newStatus = Json::objectValue;
 
     if (hasCompletion ())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destCurrencies = (jvStatus[jss::destination_currencies] = Json::arrayValue);
+        auto& destCurrencies = (newStatus[jss::destination_currencies] = Json::arrayValue);
         auto usCurrencies = accountDestCurrencies (*raDstAccount, cache, true);
         for (auto const& c : usCurrencies)
             destCurrencies.append (to_string (c));
     }
 
-    jvStatus[jss::source_account] = app_.accountIDCache().toBase58(*raSrcAccount);
-    jvStatus[jss::destination_account] = app_.accountIDCache().toBase58(*raDstAccount);
-    jvStatus[jss::destination_amount] = saDstAmount.getJson (0);
-    jvStatus[jss::full_reply] = ! fast;
+    newStatus[jss::source_account] = app_.accountIDCache().toBase58(*raSrcAccount);
+    newStatus[jss::destination_account] = app_.accountIDCache().toBase58(*raDstAccount);
+    newStatus[jss::destination_amount] = saDstAmount.getJson (0);
+    newStatus[jss::full_reply] = ! fast;
 
     if (jvId)
-        jvStatus["id"] = jvId;
+        newStatus["id"] = jvId;
 
     int iLevel = iLastLevel;
     bool loaded = app_.getFeeTrack().isLoadedLocal();
@@ -670,7 +666,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     m_journal.debug << iIdentifier << " processing at level " << iLevel;
 
-    Json::Value jvArray = Json::arrayValue;
+    Json::Value& jvArray = (newStatus[jss::alternatives] = Json::arrayValue);
     findPaths(cache, iLevel, jvArray);
     bLastSuccess = jvArray.size();
     iLastLevel = iLevel;
@@ -686,8 +682,13 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         mOwner.reportFull ((ptFullReply-ptCreated).total_milliseconds());
     }
 
-    jvStatus[jss::alternatives] = jvArray;
-    return jvStatus;
+    {
+        ScopedLockType sl (mLock);
+
+        jvStatus = newStatus;
+    }
+
+    return newStatus;
 }
 
 InfoSub::pointer PathRequest::getSubscriber ()
