@@ -181,9 +181,9 @@ void STTx::sign (
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-bool STTx::checkSign(bool allowMultiSign) const
+std::pair<bool, std::string> STTx::checkSign(bool allowMultiSign) const
 {
-    bool sigGood = false;
+    std::pair<bool, std::string> ret {false, ""};
     try
     {
         if (allowMultiSign)
@@ -192,18 +192,19 @@ bool STTx::checkSign(bool allowMultiSign) const
             // at the SigningPubKey.  It it's empty we must be
             // multi-signing.  Otherwise we're single-signing.
             Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
-            sigGood = signingPubKey.empty () ?
+            ret = signingPubKey.empty () ?
                 checkMultiSign () : checkSingleSign ();
         }
         else
         {
-            sigGood = checkSingleSign ();
+            ret = checkSingleSign ();
         }
     }
     catch (std::exception const&)
     {
+        ret = {false, "Internal signature check failure."};
     }
-    return sigGood;
+    return ret;
 }
 
 Json::Value STTx::getJson (int) const
@@ -261,14 +262,13 @@ STTx::getMetaSQL (Serializer rawTxn,
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 
-bool
-STTx::checkSingleSign () const
+std::pair<bool, std::string> STTx::checkSingleSign () const
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
     // fields are present the signature is invalid.
     if (isFieldPresent (sfSigners))
-        return false;
+        return {false, "Cannot both single- and multi-sign."};
 
     bool validSig = false;
     try
@@ -293,27 +293,29 @@ STTx::checkSingleSign () const
         // Assume it was a signature failure.
         validSig = false;
     }
-    return validSig;
+    if (validSig == false)
+        return {false, "Invalid signature."};
+
+    return {true, ""};
 }
 
-bool
-STTx::checkMultiSign () const
+std::pair<bool, std::string> STTx::checkMultiSign () const
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
     if (!isFieldPresent (sfSigners))
-        return false;
+        return {false, "Empty SigningPubKey."};
 
     // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
     // being present would indicate that the transaction is signed both ways.
     if (isFieldPresent (sfTxnSignature))
-        return false;
+        return {false, "Cannot both single- and multi-sign."};
 
     STArray const& signers {getFieldArray (sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
     if (signers.size() < minMultiSigners || signers.size() > maxMultiSigners)
-        return false;
+        return {false, "Invalid Signers array size."};
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -335,11 +337,15 @@ STTx::checkMultiSign () const
 
         // The account owner may not multisign for themselves.
         if (accountID == txnAccountID)
-            return false;
+            return {false, "Invalid multisigner."};
+
+        // No duplicate signers allowed.
+        if (lastAccountID == accountID)
+            return {false, "Duplicate Signers not allowed."};
 
         // Accounts must be in order by account ID.  No duplicates allowed.
-        if (lastAccountID >= accountID)
-            return false;
+        if (lastAccountID > accountID)
+            return {false, "Unsorted Signers array."};
 
         // The next signature must be greater than this one.
         lastAccountID = accountID;
@@ -371,11 +377,12 @@ STTx::checkMultiSign () const
             validSig = false;
         }
         if (!validSig)
-            return false;
+            return {false, std::string("Invalid signature on account ") +
+                toBase58(accountID)  + "."};
     }
 
     // All signatures verified.
-    return true;
+    return {true, ""};
 }
 
 //------------------------------------------------------------------------------

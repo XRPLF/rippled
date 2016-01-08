@@ -52,7 +52,7 @@ public:
             });
         j.sign (keypair.first, keypair.second);
 
-        unexpected (!j.checkSign (true), "Transaction fails signature test");
+        unexpected (!j.checkSign (true).first, "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add (rawTxn);
