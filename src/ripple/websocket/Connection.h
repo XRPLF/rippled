@@ -94,7 +94,7 @@ public:
 
     void onPong (std::string const&);
     void rcvMessage (message_ptr const&, bool& msgRejected, bool& runQueue);
-    message_ptr getMessage ();
+    boost::optional <std::string>  getMessage ();
     bool checkMessage ();
     void returnMessage (message_ptr const&);
     Json::Value invokeCommand (Json::Value const& jvRequest,
@@ -112,7 +112,7 @@ private:
     std::string const m_forwardedFor;
     std::string const m_user;
     std::mutex m_receiveQueueMutex;
-    std::deque <message_ptr> m_receiveQueue;
+    std::deque <std::string> m_receiveQueue;
     NetworkOPs& m_netOPs;
     boost::asio::io_service& m_io_service;
     boost::asio::deadline_timer m_pingTimer;
@@ -188,7 +188,8 @@ void ConnectionImpl <WebSocket>::rcvMessage (
     }
 
     if ((m_receiveQueue.size () >= 1000) ||
-        (msg->get_payload().size() > 1000000))
+        (msg->get_payload().size() > 1000000) ||
+        ! WebSocket::isTextMessage (*msg))
     {
         msgRejected = true;
         runQueue = false;
@@ -196,7 +197,7 @@ void ConnectionImpl <WebSocket>::rcvMessage (
     else
     {
         msgRejected = false;
-        m_receiveQueue.push_back (msg);
+        m_receiveQueue.push_back (msg->get_payload ());
 
         if (m_receiveQueueRunning)
             runQueue = false;
@@ -225,19 +226,20 @@ bool ConnectionImpl <WebSocket>::checkMessage ()
 }
 
 template <class WebSocket>
-typename WebSocket::MessagePtr ConnectionImpl <WebSocket>::getMessage ()
+boost::optional <std::string>
+ConnectionImpl <WebSocket>::getMessage ()
 {
     ScopedLockType sl (m_receiveQueueMutex);
 
     if (m_isDead || m_receiveQueue.empty ())
     {
         m_receiveQueueRunning = false;
-        return message_ptr ();
+        return boost::none;
     }
 
-    message_ptr m = m_receiveQueue.front ();
+    boost::optional <std::string> ret (std::move (m_receiveQueue.front ()));
     m_receiveQueue.pop_front ();
-    return m;
+    return ret;
 }
 
 template <class WebSocket>

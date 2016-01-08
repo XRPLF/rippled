@@ -365,11 +365,11 @@ public:
         //
         for (int i = 0; i < 3; ++i)
         {
-            message_ptr msg = ptr->getMessage ();
+            boost::optional <std::string> msg = ptr->getMessage ();
             if (! msg)
                 return;
 
-            do_message(jc, cpClient, ptr, msg);
+            do_message(jc, cpClient, ptr, *msg);
         }
 
         if (ptr->checkMessage ())
@@ -379,7 +379,7 @@ public:
     void
     do_message (std::shared_ptr<JobCoro> const& jc,
         const connection_ptr cpClient, wsc_ptr conn,
-            const message_ptr& mpMessage)
+            const std::string& message)
     {
         Json::Value jvRequest;
         Json::Reader jrReader;
@@ -389,30 +389,20 @@ public:
             JLOG (j_.debug)
                     << "Ws:: Receiving("
                     << cpClient->get_socket ().remote_endpoint ()
-                    << ") '" << mpMessage->get_payload () << "'";
+                    << ") '" << message << "'";
         }
         catch (std::exception const&)
         {
         }
 
-        if (!WebSocket::isTextMessage (*mpMessage))
-        {
-            Json::Value jvResult (Json::objectValue);
-
-            jvResult[jss::type]    = jss::error;
-            jvResult[jss::error]   = "wsTextRequired";
-            // We only accept text messages.
-
-            send (cpClient, jvResult, false);
-        }
-        else if (!jrReader.parse (mpMessage->get_payload (), jvRequest) ||
+        if (!jrReader.parse (message, jvRequest) ||
                  ! jvRequest || !jvRequest.isObject ())
         {
             Json::Value jvResult (Json::objectValue);
 
             jvResult[jss::type]    = jss::error;
             jvResult[jss::error]   = "jsonInvalid";    // Received invalid json.
-            jvResult[jss::value]   = mpMessage->get_payload ();
+            jvResult[jss::value]   = message;
 
             send (cpClient, jvResult, false);
         }
