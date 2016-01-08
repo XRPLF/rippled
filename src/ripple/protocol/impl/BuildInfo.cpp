@@ -41,9 +41,21 @@ char const* getRawVersionString ()
     //
     //  http://semver.org/
     //
+
+#if defined(DEBUG) || defined(SANITIZER)
+       "+"
 #ifdef DEBUG
-        "+DEBUG"
+        "DEBUG"
+#ifdef SANITIZER
+        "."
 #endif
+#endif
+
+#ifdef SANITIZER
+        BEAST_PP_STR1_(SANITIZER)
+#endif
+#endif
+
     //--------------------------------------------------------------------------
     ;
 
