@@ -43,9 +43,6 @@ TER PathCursor::deliverNodeForward (
     // Zeroed in reverse pass.
     node().directory.restart(multiQuality_);
 
-    STAmountCalcSwitchovers amountCalcSwitchovers (
-        rippleCalc_.view.info ().parentCloseTime);
-
     saInAct.clear (saInReq);
     saInFees.clear (saInReq);
 
@@ -110,11 +107,11 @@ TER PathCursor::deliverNodeForward (
                 saOutPassFunded,
                 node().saOfrRate,
                 node().saTakerPays.issue (),
-                true, amountCalcSwitchovers);
+                true);
 
             // Offer maximum in with fees.
             auto saInTotal = mulRound (saInFunded, saInFeeRate,
-                saInFunded.issue (), true, amountCalcSwitchovers);
+                saInFunded.issue (), true);
             auto saInRemaining = saInReq - saInAct - saInFees;
 
             if (saInRemaining < zero)
@@ -126,13 +123,11 @@ TER PathCursor::deliverNodeForward (
             // In without fees.
             auto saInPassAct = std::min (
                 node().saTakerPays, divRound (
-                    saInSum, saInFeeRate, saInSum.issue (), true,
-                        amountCalcSwitchovers));
+                    saInSum, saInFeeRate, saInSum.issue (), true));
 
             // Out limited by in remaining.
             auto outPass = divRound (
-                saInPassAct, node().saOfrRate, node().saTakerGets.issue (), true,
-                amountCalcSwitchovers);
+                saInPassAct, node().saOfrRate, node().saTakerGets.issue (), true);
             STAmount saOutPassMax    = std::min (saOutPassFunded, outPass);
 
             STAmount saInPassFeesMax = saInSum - saInPassAct;
@@ -248,12 +243,10 @@ TER PathCursor::deliverNodeForward (
 
                     assert (saOutPassAct < saOutPassMax);
                     auto inPassAct = mulRound (
-                        saOutPassAct, node().saOfrRate, saInReq.issue (), true,
-                        amountCalcSwitchovers);
+                        saOutPassAct, node().saOfrRate, saInReq.issue (), true);
                     saInPassAct = std::min (node().saTakerPays, inPassAct);
                     auto inPassFees = mulRound (
-                        saInPassAct, saInFeeRate, saInPassAct.issue (), true,
-                        amountCalcSwitchovers);
+                        saInPassAct, saInFeeRate, saInPassAct.issue (), true);
                     saInPassFees    = std::min (saInPassFeesMax, inPassFees);
                 }
 
