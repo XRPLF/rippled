@@ -123,7 +123,9 @@ public:
 
     void sign (RippleAddress const& private_key);
 
-    bool checkSign(bool allowMultiSign) const;
+    // Returned bool indicates success/failure.
+    // Returned string indicates reason for failure.
+    std::pair<bool, std::string> checkSign(bool allowMultiSign) const;
 
     // SQL Functions with metadata.
     static
@@ -140,8 +142,8 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    bool checkSingleSign () const;
-    bool checkMultiSign () const;
+    std::pair<bool, std::string> checkSingleSign () const;
+    std::pair<bool, std::string> checkMultiSign () const;
 
     uint256 tid_;
     TxType tx_type_;
