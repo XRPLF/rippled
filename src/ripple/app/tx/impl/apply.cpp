@@ -46,16 +46,16 @@ checkValidity(HashRouter& router,
     auto const flags = router.getFlags(id);
     if (flags & SF_SIGBAD)
         // Signature is known bad
-        return std::make_pair(Validity::SigBad,
-            "Transaction has bad signature.");
+        return {Validity::SigBad, "Transaction has bad signature."};
+
     if (!(flags & SF_SIGGOOD))
     {
         // Don't know signature state. Check it.
-        if (!tx.checkSign(allowMultiSign))
+        auto const sigVerify = tx.checkSign(allowMultiSign);
+        if (! sigVerify.first)
         {
             router.setFlags(id, SF_SIGBAD);
-            return std::make_pair(Validity::SigBad,
-                "Transaction has bad signature.");
+            return {Validity::SigBad, sigVerify.second};
         }
         router.setFlags(id, SF_SIGGOOD);
     }
@@ -64,22 +64,22 @@ checkValidity(HashRouter& router,
     if (flags & SF_LOCALBAD)
         // ...but the local checks
         // are known bad.
-        return std::make_pair(Validity::SigGoodOnly,
-            "Local checks failed.");
+        return {Validity::SigGoodOnly, "Local checks failed."};
+
     if (flags & SF_LOCALGOOD)
         // ...and the local checks
         // are known good.
-        return std::make_pair(Validity::Valid, "");
+        return {Validity::Valid, ""};
 
     // Do the local checks
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
         router.setFlags(id, SF_LOCALBAD);
-        return std::make_pair(Validity::SigGoodOnly, reason);
+        return {Validity::SigGoodOnly, reason};
     }
     router.setFlags(id, SF_LOCALGOOD);
-    return std::make_pair(Validity::Valid, "");
+    return {Validity::Valid, ""};
 }
 
 void

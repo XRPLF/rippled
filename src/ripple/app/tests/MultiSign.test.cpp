@@ -173,36 +173,6 @@ public:
         env.close();
         expect (env.seq(alice) == aliceSeq);
 
-        // Multisign, but leave a nonempty sfSigningPubKey.  Should fail.
-        {
-            aliceSeq = env.seq (alice);
-            Json::Value multiSig =
-                env.json (noop (alice), msig(bogie), fee(2 * baseFee));
-            env (env.jt (multiSig), ter (temINVALID));
-            env.close();
-            expect (env.seq(alice) == aliceSeq);
-        }
-        // Attach both Signers and a TxnSignature with an empty sfPubKey.
-        // Should fail.
-        {
-            aliceSeq = env.seq (alice);
-            Json::Value multiSig = env.json (noop (alice),
-                fee(2 * baseFee), seq(aliceSeq), sig(alice), msig(bogie));
-            JTx jt = env.jt (multiSig);
-            jt.fill_fee = false;
-            jt.fill_seq = false;
-            jt.fill_sig = false;
-            jt.jv["SigningPubKey"] = "";
-
-            auto noSigPubKey = std::make_unique<STTx>(*(jt.stx));
-            noSigPubKey->setFieldVL (sfSigningPubKey, Blob());
-            jt.stx.reset (noSigPubKey.release());
-
-            env (jt, ter (temINVALID));
-            env.close();
-            expect (env.seq(alice) == aliceSeq);
-        }
-
         // Don't meet the quorum.  Should fail.
         env(signers(alice, 2, {{bogie, 1}, {demon, 1}}));
         aliceSeq = env.seq (alice);
@@ -424,7 +394,6 @@ public:
             msig(msig::Reg{becky, beck}, msig::Reg{cheri, cher}));
         env.close();
         expect (env.seq(alice) == aliceSeq + 1);
-
     }
 
     void test_heterogeneousSigners()
@@ -731,6 +700,130 @@ public:
         env.require (owners (alice, 6));
     }
 
+    void test_badSignatureText()
+    {
+        // Verify that the text returned for signature failures is correct.
+        using namespace jtx;
+
+        Env env(*this, features(featureMultiSign));
+
+        // lambda that submits an STTx and returns the resulting JSON.
+        auto submitSTTx = [&env] (STTx const& stx)
+        {
+            Json::Value jvResult;
+            jvResult[jss::tx_blob] = strHex (stx.getSerializer().slice());
+            return env.rpc ("json", "submit", jvResult.toStyledString());
+        };
+
+        Account const alice {"alice"};
+        env.fund(XRP(1000), alice);
+        env(signers(alice, 1, {{bogie, 1}, {demon, 1}}), sig (alice));
+
+        auto const baseFee = env.current()->fees().base;
+        {
+            // Single-sign, but leave an empty SigningPubKey.
+            JTx tx = env.jt (noop (alice), sig(alice));
+            STTx local = *(tx.stx);
+            local.setFieldVL (sfSigningPubKey, Blob()); // Empty SigningPubKey
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Empty SigningPubKey.");
+        }
+        {
+            // Single-sign, but invalidate the signature.
+            JTx tx = env.jt (noop (alice), sig(alice));
+            STTx local = *(tx.stx);
+            // Flip some bits in the signature.
+            auto badSig = local.getFieldVL (sfTxnSignature);
+            badSig[20] ^= 0xAA;
+            local.setFieldVL (sfTxnSignature, badSig);
+            // Signature should fail.
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                    "fails local checks: Invalid signature.");
+        }
+        {
+            // Multisign, but leave a nonempty sfSigningPubKey.
+            JTx tx = env.jt (noop (alice), fee(2 * baseFee), msig(bogie));
+            STTx local = *(tx.stx);
+            local[sfSigningPubKey] = alice.pk(); // Insert sfSigningPubKey
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Cannot both single- and multi-sign.");
+        }
+        {
+            // Both multi- and single-sign with an empty SigningPubKey.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee), msig(bogie));
+            STTx local = *(tx.stx);
+            local.sign (alice.pk(), alice.sk());
+            local.setFieldVL (sfSigningPubKey, Blob()); // Empty SigningPubKey
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Cannot both single- and multi-sign.");
+        }
+        {
+            // Multisign but invalidate one of the signatures.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee), msig(bogie));
+            STTx local = *(tx.stx);
+            // Flip some bits in the signature.
+            auto& signer = local.peekFieldArray (sfSigners).back();
+            auto badSig = signer.getFieldVL (sfTxnSignature);
+            badSig[20] ^= 0xAA;
+            signer.setFieldVL (sfTxnSignature, badSig);
+            // Signature should fail.
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception].asString().
+                find ("Invalid signature on account r") != std::string::npos);
+        }
+        {
+            // Multisign with an empty signers array should fail.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee), msig(bogie));
+            STTx local = *(tx.stx);
+            local.peekFieldArray (sfSigners).clear(); // Empty Signers array.
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                    "fails local checks: Invalid Signers array size.");
+        }
+        {
+            // Multisign 9 times should fail.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee),
+                msig(bogie, bogie, bogie,
+                    bogie, bogie, bogie, bogie, bogie, bogie));
+            STTx local = *(tx.stx);
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid Signers array size.");
+        }
+        {
+            // The account owner may not multisign for themselves.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee), msig(alice));
+            STTx local = *(tx.stx);
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid multisigner.");
+        }
+        {
+            // No duplicate multisignatures allowed.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee), msig(bogie, bogie));
+            STTx local = *(tx.stx);
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Duplicate Signers not allowed.");
+        }
+        {
+            // Multisignatures must be submitted in sorted order.
+            JTx tx = env.jt (noop(alice), fee(2 * baseFee), msig(bogie, demon));
+            STTx local = *(tx.stx);
+            // Unsort the Signers array.
+            auto& signers = local.peekFieldArray (sfSigners);
+            std::reverse (signers.begin(), signers.end());
+            // Signature should fail.
+            auto const info = submitSTTx (local);
+            expect (info[jss::result][jss::error_exception] ==
+                "fails local checks: Unsorted Signers array.");
+        }
+    }
+
     void run() override
     {
         test_noReserve();
@@ -745,6 +838,7 @@ public:
         test_keyDisable();
         test_regKey();
         test_txTypes();
+        test_badSignatureText();
     }
 };
 
