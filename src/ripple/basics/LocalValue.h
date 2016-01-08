@@ -44,7 +44,7 @@ struct LocalValues
         T t_;
 
         Value() = default;
-        Value(T const& t) : t_(t) {}
+        explicit Value(T const& t) : t_(t) {}
 
         void* get() override
         {
@@ -52,6 +52,7 @@ struct LocalValues
         }
     };
 
+    // Keys are the address of a LocalValue.
     std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
 
     static

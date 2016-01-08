@@ -147,18 +147,16 @@ public:
         for (int i=0;i<101;++i)
             env (offer (carol, USD (1), EUR (2)));
 
-        auto const switchoverTime = STAmountCalcSwitchovers::enableUnderflowFixCloseTime ();
-
         for (auto timeDelta : {
             - env.closed()->info().closeTimeResolution,
                 env.closed()->info().closeTimeResolution} )
         {
-            auto const closeTime = switchoverTime + timeDelta;
-            STAmountCalcSwitchovers switchover (closeTime);
+            auto const closeTime = STAmountSO::soTime + timeDelta;
             env.close (closeTime);
+            *stAmountCalcSwitchover = closeTime <= STAmountSO::soTime;
             // Will fail without the underflow fix
-            auto expectedResult = switchover.enableUnderflowFix () ?
-                    tesSUCCESS : tecPATH_PARTIAL;
+            auto expectedResult = *stAmountCalcSwitchover ?
+                tesSUCCESS : tecPATH_PARTIAL;
             env (pay ("alice", "bob", EUR (epsilon)), path (~EUR),
                 sendmax (USD (100)), ter (expectedResult));
         }

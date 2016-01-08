@@ -78,8 +78,7 @@ private:
     std::pair<bool, Quality>
     select_path (
         bool have_direct, OfferStream const& direct,
-        bool have_bridge, OfferStream const& leg1, OfferStream const& leg2,
-        STAmountCalcSwitchovers const& amountCalcSwitchovers);
+        bool have_bridge, OfferStream const& leg1, OfferStream const& leg2);
 
     std::pair<TER, Amounts>
     bridged_cross (
