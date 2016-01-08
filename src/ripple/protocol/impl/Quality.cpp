@@ -67,13 +67,12 @@ Quality::operator-- (int)
 }
 
 Amounts
-Quality::ceil_in (Amounts const& amount, STAmount const& limit,
-                  STAmountCalcSwitchovers const& switchovers) const
+Quality::ceil_in (Amounts const& amount, STAmount const& limit) const
 {
     if (amount.in > limit)
     {
         Amounts result (limit, divRound (
-            limit, rate(), amount.out.issue (), true, switchovers));
+            limit, rate(), amount.out.issue (), true));
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
@@ -85,13 +84,12 @@ Quality::ceil_in (Amounts const& amount, STAmount const& limit,
 }
 
 Amounts
-Quality::ceil_out (Amounts const& amount, STAmount const& limit,
-                   STAmountCalcSwitchovers const& switchovers) const
+Quality::ceil_out (Amounts const& amount, STAmount const& limit) const
 {
     if (amount.out > limit)
     {
         Amounts result (mulRound (
-            limit, rate(), amount.in.issue (), true, switchovers), limit);
+            limit, rate(), amount.in.issue (), true), limit);
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
@@ -103,8 +101,7 @@ Quality::ceil_out (Amounts const& amount, STAmount const& limit,
 }
 
 Quality
-composed_quality (Quality const& lhs, Quality const& rhs,
-                  STAmountCalcSwitchovers const& switchovers)
+composed_quality (Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate (lhs.rate ());
     assert (lhs_rate != zero);
@@ -113,7 +110,7 @@ composed_quality (Quality const& lhs, Quality const& rhs,
     assert (rhs_rate != zero);
 
     STAmount const rate (mulRound (
-        lhs_rate, rhs_rate, lhs_rate.issue (), true, switchovers));
+        lhs_rate, rhs_rate, lhs_rate.issue (), true));
 
     std::uint64_t const stored_exponent (rate.exponent () + 100);
     std::uint64_t const stored_mantissa (rate.mantissa());

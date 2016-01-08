@@ -85,7 +85,7 @@ class Taker_test : public beast::unit_test::suite
         {
             /* check if composed quality should be rejected */
             Quality const quality (composed_quality (
-                quality1, quality2, STAmountCalcSwitchovers{false}));
+                quality1, quality2));
 
             if (reject (quality))
                 return std::make_pair(

@@ -115,6 +115,7 @@ apply (Application& app, OpenView& view,
     STTx const& tx, ApplyFlags flags,
         beast::Journal j)
 {
+    disableUnderflowFix(view.info().parentCloseTime);
     auto pfresult = preflight(app, view.rules(),
         tx, flags, j);
     auto pcresult = preclaim(pfresult, app, view);
