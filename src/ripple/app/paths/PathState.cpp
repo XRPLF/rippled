@@ -596,7 +596,7 @@ TER PathState::expandPath (
         }
     }
 
-    JLOG (j_.debug)
+    JLOG (j_.trace)
         << "expandPath:"
         << " in=" << uMaxCurrencyID
         << "/" << uMaxIssuerID
