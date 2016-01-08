@@ -32,7 +32,7 @@ namespace version {
 
 using VersionNumber = unsigned long long;
 
-const char boostMinimal[] = "1.55.0";
+const char boostMinimal[] = "1.57.0";
 const char openSSLMinimal[] = "1.0.1-g";
 
 std::string boostVersion(VersionNumber boostVersion)
