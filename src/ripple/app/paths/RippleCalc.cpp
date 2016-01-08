@@ -70,6 +70,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     Logs& l,
     Input const* const pInputs)
 {
+    enableUnderflowFix(view.info().parentCloseTime);
     RippleCalc rc (
         view,
         saMaxAmountReq,

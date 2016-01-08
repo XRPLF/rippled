@@ -2685,6 +2685,9 @@
     <ClInclude Include="..\..\src\ripple\basics\KeyCache.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\LocalValue.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -2839,9 +2842,6 @@
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\LocalValue.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
