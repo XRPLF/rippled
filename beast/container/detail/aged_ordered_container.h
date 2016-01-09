@@ -199,9 +199,7 @@ private:
         , public std::binary_function <Key, element, bool>
     {
     public:
-        KeyValueCompare ()
-        {
-        }
+        KeyValueCompare () = default;
 
         KeyValueCompare (Compare const& compare)
             : empty_base_optimization <Compare> (compare)
@@ -234,6 +232,11 @@ private:
             return this->member() (extract (e.value), k);
         }
 
+        bool operator() (element const& x, element const& y) const
+        {
+            return this->member() (extract (x.value), extract (y.value));
+        }
+
         Compare& compare()
         {
             return empty_base_optimization <Compare>::member();
@@ -251,10 +254,12 @@ private:
     using cont_type = typename std::conditional <
         IsMulti,
         typename boost::intrusive::make_multiset <element,
-            boost::intrusive::constant_time_size <true>
+            boost::intrusive::constant_time_size <true>,
+            boost::intrusive::compare<KeyValueCompare>
                 >::type,
         typename boost::intrusive::make_set <element,
-            boost::intrusive::constant_time_size <true>
+            boost::intrusive::constant_time_size <true>,
+            boost::intrusive::compare<KeyValueCompare>
                 >::type
         >::type;
 
@@ -1254,6 +1259,7 @@ aged_ordered_container (
     clock_type& clock,
     Compare const& comp)
     : m_config (clock, comp)
+    , m_cont (comp)
 {
 }
 
@@ -1275,6 +1281,7 @@ aged_ordered_container (
     Compare const& comp,
     Allocator const& alloc)
     : m_config (clock, comp, alloc)
+    , m_cont (comp)
 {
 }
 
@@ -1297,6 +1304,7 @@ aged_ordered_container (InputIt first, InputIt last,
     clock_type& clock,
     Compare const& comp)
     : m_config (clock, comp)
+    , m_cont (comp)
 {
     insert (first, last);
 }
@@ -1322,6 +1330,7 @@ aged_ordered_container (InputIt first, InputIt last,
     Compare const& comp,
     Allocator const& alloc)
     : m_config (clock, comp, alloc)
+    , m_cont (comp)
 {
     insert (first, last);
 }
@@ -1331,6 +1340,7 @@ template <bool IsMulti, bool IsMap, class Key, class T,
 aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 aged_ordered_container (aged_ordered_container const& other)
     : m_config (other.m_config)
+    , m_cont (other.m_cont.comp())
 {
     insert (other.cbegin(), other.cend());
 }
@@ -1341,6 +1351,7 @@ aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 aged_ordered_container (aged_ordered_container const& other,
     Allocator const& alloc)
     : m_config (other.m_config, alloc)
+    , m_cont (other.m_cont.comp())
 {
     insert (other.cbegin(), other.cend());
 }
@@ -1361,6 +1372,7 @@ aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
 aged_ordered_container (aged_ordered_container&& other,
     Allocator const& alloc)
     : m_config (std::move (other.m_config), alloc)
+    , m_cont (std::move(other.m_cont.comp()))
 {
     insert (other.cbegin(), other.cend());
     other.clear ();
@@ -1383,6 +1395,7 @@ aged_ordered_container (std::initializer_list <value_type> init,
     clock_type& clock,
     Compare const& comp)
     : m_config (clock, comp)
+    , m_cont (comp)
 {
     insert (init.begin(), init.end());
 }
@@ -1406,6 +1419,7 @@ aged_ordered_container (std::initializer_list <value_type> init,
     Compare const& comp,
     Allocator const& alloc)
     : m_config (clock, comp, alloc)
+    , m_cont (comp)
 {
     insert (init.begin(), init.end());
 }
