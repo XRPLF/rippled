@@ -47,7 +47,7 @@ public:
             });
         j.sign (privateAcct);
 
-        unexpected (!j.checkSign (true), "Transaction fails signature test");
+        unexpected (!j.checkSign (true).first, "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add (rawTxn);
