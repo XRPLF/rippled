@@ -400,7 +400,7 @@ def add_static_libs(env, static_libs, dyn_libs=None):
     for k,l in [('STATICLIBS', static_libs or []), ('DYNAMICLIBS', dyn_libs or [])]:
         c = env.get(k, '')
         for f in l:
-            c += ' -l' + f 
+            c += ' -l' + f
         env[k] = c
 
 def get_libs(lib, static):
@@ -451,7 +451,7 @@ def config_env(toolchain, variant, env):
         if Beast.system.linux:
             link_static = should_link_static()
             for l in ['openssl', 'protobuf']:
-                static, dynamic = get_libs(l, link_static) 
+                static, dynamic = get_libs(l, link_static)
                 if link_static:
                     add_static_libs(env, static, dynamic)
                 else:
@@ -643,6 +643,7 @@ def config_env(toolchain, variant, env):
             '_SCL_SECURE_NO_WARNINGS',
             '_CRT_SECURE_NO_WARNINGS',
             'WIN32_CONSOLE',
+            'NOMINMAX'
             ])
         if variant == 'debug':
             env.Append(LIBS=[
