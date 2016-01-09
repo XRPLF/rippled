@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ThreadName.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/basics/random.h>
 #include <ripple/core/impl/SNTPClock.h>
 #include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
@@ -351,12 +351,16 @@ public:
             return;
         }
 
-        ip::udp::resolver::iterator sel = it;
+        assert (it != ip::udp::resolver::iterator());
+
+        auto sel = it;
         int i = 1;
 
         while (++it != ip::udp::resolver::iterator())
-            if ((rand () % ++i) == 0)
+        {
+            if (rand_int (i++) == 0)
                 sel = it;
+        }
 
         if (sel != ip::udp::resolver::iterator ())
         {
@@ -374,7 +378,7 @@ public:
 
             query.replied = false;
             query.sent = now;
-            random_fill (&query.nonce);
+            query.nonce = rand_int<std::uint32_t>();
             reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
             reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.nonce;
             socket_.async_send_to(buffer(SNTPQueryData, 48),

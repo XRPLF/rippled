@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/random.h>
 #include <ripple/crypto/CBigNum.h>
 #include <ripple/protocol/STAmount.h>
 #include <beast/unit_test/suite.h>
@@ -407,9 +408,7 @@ public:
 
         for (int i = 0; i < 16; ++i)
         {
-            std::uint64_t r = rand ();
-            r <<= 32;
-            r |= rand ();
+            std::uint64_t r = rand_int<std::uint64_t>();
             b.setuint64 (r);
 
             if (b.getuint64 () != r)
@@ -458,7 +457,11 @@ public:
         roundTest (7, 11, 44);
 
         for (int i = 0; i <= 100000; ++i)
-            mulTest (rand () % 10000000, rand () % 10000000);
+        {
+            mulTest (
+                rand_int(10000000),
+                rand_int(10000000));
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -483,12 +486,6 @@ public:
         STAmount bigDsmall = divide (smallValue, bigValue, noIssue());
 
         expect (bigDsmall == zero, "small/big != 0: " + bigDsmall.getText ());
-
-#if 0
-        // TODO(tom): this test makes no sense - we should have no way to have
-        // the currency not be XRP while the account is XRP.
-        bigDsmall = divide (smallValue, bigNative, noCurrency(), xrpAccount ());
-#endif
 
         expect (bigDsmall == zero,
             "small/bigNative != 0: " + bigDsmall.getText ());

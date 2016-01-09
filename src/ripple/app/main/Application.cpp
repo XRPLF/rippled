@@ -70,7 +70,7 @@
 #include <ripple/shamap/Family.h>
 #include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
@@ -844,7 +844,7 @@ public:
     {
         if (timer == m_entropyTimer)
         {
-            add_entropy (nullptr, 0);
+            crypto_prng().mix_entropy ();
             return;
         }
 
