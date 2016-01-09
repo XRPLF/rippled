@@ -24,8 +24,8 @@
 #include <beast/hash/siphash.h>
 #include <beast/hash/xxhasher.h>
 #include <beast/chrono/chrono_io.h>
-#include <beast/random/rngfill.h>
-#include <beast/random/xor_shift_engine.h>
+#include <beast/rngfill.h>
+#include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <array>
 #include <chrono>

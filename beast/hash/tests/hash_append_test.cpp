@@ -25,6 +25,7 @@
 #include <beast/hash/tests/hash_metrics.h>
 #include <beast/hash/hash_append.h>
 #include <beast/chrono/chrono_io.h>
+#include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <beast/utility/type_name.h>
 #include <array>
@@ -284,7 +285,7 @@ private:
 public:
     SlowKey()
     {
-        static std::mt19937_64 eng;
+        static beast::xor_shift_engine eng;
         std::uniform_int_distribution<short> yeardata(1900, 2014);
         std::uniform_int_distribution<unsigned> monthdata(1, 12);
         std::uniform_int_distribution<unsigned> daydata(1, 28);
@@ -331,8 +332,7 @@ private:
 public:
     FastKey()
     {
-        static std::conditional_t <sizeof(std::size_t)==sizeof(std::uint64_t),
-            std::mt19937_64, std::mt19937> eng;
+        static beast::xor_shift_engine eng;
         for (auto& v : m_values)
             v = eng();
     }

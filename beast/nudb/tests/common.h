@@ -24,7 +24,7 @@
 #include <beast/nudb/identity.h>
 #include <beast/nudb/tests/fail_file.h>
 #include <beast/hash/xxhasher.h>
-#include <beast/random/xor_shift_engine.h>
+#include <beast/xor_shift_engine.h>
 #include <cstdint>
 #include <iomanip>
 #include <memory>

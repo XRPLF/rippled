@@ -21,7 +21,6 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/threads/impl/RecursiveMutex.cpp>
 #include <beast/threads/impl/Stoppable.cpp>
 #include <beast/threads/impl/Stoppable.test.cpp>
 #include <beast/threads/impl/Thread.cpp>

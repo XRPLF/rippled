@@ -73,7 +73,7 @@ void beast_threadEntryPoint (void* userData)
 //==============================================================================
 void Thread::startThread()
 {
-    const RecursiveMutex::ScopedLockType  sl (startStopLock);
+    std::lock_guard<std::recursive_mutex> sl (startStopLock);
 
     shouldExit = false;
 
@@ -103,7 +103,7 @@ void Thread::waitForThreadToExit () const
 
 void Thread::stopThread ()
 {
-    const RecursiveMutex::ScopedLockType sl (startStopLock);
+    std::lock_guard<std::recursive_mutex> sl (startStopLock);
 
     if (isThreadRunning())
     {
@@ -115,7 +115,7 @@ void Thread::stopThread ()
 
 void Thread::stopThreadAsync ()
 {
-    const RecursiveMutex::ScopedLockType sl (startStopLock);
+    std::lock_guard<std::recursive_mutex> sl (startStopLock);
 
     if (isThreadRunning())
     {
