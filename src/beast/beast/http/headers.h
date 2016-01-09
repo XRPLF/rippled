@@ -64,6 +64,9 @@ private:
         template <class String>
         bool
         operator() (element const& lhs, String const& rhs) const;
+
+        bool
+        operator() (element const& lhs, element const& rhs) const;
     };
 
     struct transform
@@ -81,7 +84,8 @@ private:
             >::type;
 
     using set_t = boost::intrusive::make_set <element,
-        boost::intrusive::constant_time_size <true>
+        boost::intrusive::constant_time_size <true>,
+        boost::intrusive::compare<less>
             >::type;
 
     list_t list_;
@@ -185,6 +189,14 @@ headers::less::operator() (
     element const& lhs, String const& rhs) const
 {
     return beast::ci_less::operator() (lhs.data.first, rhs);
+}
+
+inline
+bool
+headers::less::operator() (
+    element const& lhs, element const& rhs) const
+{
+    return beast::ci_less::operator() (lhs.data.first, rhs.data.first);
 }
 
 //------------------------------------------------------------------------------
