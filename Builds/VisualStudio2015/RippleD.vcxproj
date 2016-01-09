@@ -653,11 +653,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\maths\Random.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Random.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -861,9 +856,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\win32_file.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
+    <ClInclude Include="..\..\src\beast\beast\rngfill.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
     </ClInclude>
@@ -918,9 +911,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\Threads.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\RecursiveMutex.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -933,8 +923,6 @@
     <ClCompile Include="..\..\src\beast\beast\threads\impl\WaitableEvent.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\RecursiveMutex.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\ScopedWrapperContext.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
@@ -1048,6 +1036,8 @@
     <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\xor_shift_engine.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>

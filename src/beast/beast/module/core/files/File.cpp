@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <random>
 
 namespace beast {
 
@@ -512,12 +513,17 @@ bool File::appendText (const String& text,
 //==============================================================================
 File File::createTempFile (const String& fileNameEnding)
 {
-    const File tempFile (getSpecialLocation (tempDirectory)
-                            .getChildFile ("temp_" + String::toHexString (Random::getSystemRandom().nextInt()))
-                            .withFileExtension (fileNameEnding));
+    auto const tempDir = getSpecialLocation (tempDirectory);
+    std::random_device rng;
+    File tempFile;
 
-    if (tempFile.exists())
-        return createTempFile (fileNameEnding);
+    do
+    {
+        tempFile = tempDir.getChildFile (
+            "temp_" + std::to_string(rng()))
+                .withFileExtension (fileNameEnding);
+    }
+    while (tempFile.exists());
 
     return tempFile;
 }

@@ -20,7 +20,7 @@
 #include <beast/nudb/tests/common.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 #include <beast/module/core/files/File.h>
-#include <beast/random/xor_shift_engine.h>
+#include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
 #include <cstring>

@@ -24,9 +24,9 @@
 #ifndef BEAST_THREADS_THREAD_H_INCLUDED
 #define BEAST_THREADS_THREAD_H_INCLUDED
 
-#include <beast/threads/RecursiveMutex.h>
 #include <beast/threads/WaitableEvent.h>
 
+#include <mutex>
 #include <string>
 
 namespace beast {
@@ -168,7 +168,7 @@ private:
     //==============================================================================
     std::string const threadName;
     void* volatile threadHandle;
-    RecursiveMutex startStopLock;
+    std::recursive_mutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
     bool volatile shouldExit;
 

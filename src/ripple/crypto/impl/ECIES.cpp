@@ -23,7 +23,7 @@
 #include <ripple/crypto/impl/ec_key.h>
 #include <ripple/crypto/impl/ECDSAKey.h>
 #include <ripple/crypto/csprng.h>
-#include <beast/random/rngfill.h>
+#include <beast/rngfill.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/hmac.h>

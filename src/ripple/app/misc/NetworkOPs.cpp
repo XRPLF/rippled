@@ -71,7 +71,7 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
-#include <beast/random/rngfill.h>
+#include <beast/rngfill.h>
 #include <beast/utility/make_lock.h>
 #include <boost/optional.hpp>
 #include <condition_variable>
