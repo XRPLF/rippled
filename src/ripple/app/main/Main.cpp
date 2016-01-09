@@ -29,7 +29,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/TimeKeeper.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/resource/Fees.h>
@@ -44,7 +44,6 @@
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
 #include <cstdlib>
-#include <thread>
 #include <utility>
 
 #if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
@@ -113,7 +112,7 @@ void startServer (Application& app)
     // Try to write out some entropy to use the next time we start.
     auto entropy = getEntropyFile (app.config());
     if (!entropy.empty ())
-        stir_entropy (entropy.string ());
+        crypto_prng().save_state(entropy.string ());
 }
 
 void printHelp (const po::options_description& desc)
@@ -188,30 +187,6 @@ int run (int argc, char** argv)
     using namespace std;
 
     setCallingThreadName ("main");
-
-    {
-        // We want to seed the RNG early. We acquire a small amount of
-        // questionable quality entropy from the current time and our
-        // environment block which will get stirred into the RNG pool
-        // along with high-quality entropy from the system.
-        struct entropy_t
-        {
-            std::uint64_t timestamp;
-            std::size_t tid;
-            std::uintptr_t ptr[4];
-        };
-
-        auto entropy = std::make_unique<entropy_t> ();
-
-        entropy->timestamp = beast::Time::currentTimeMillis ();
-        entropy->tid = std::hash <std::thread::id>() (std::this_thread::get_id ());
-        entropy->ptr[0] = reinterpret_cast<std::uintptr_t>(entropy.get ());
-        entropy->ptr[1] = reinterpret_cast<std::uintptr_t>(&argc);
-        entropy->ptr[2] = reinterpret_cast<std::uintptr_t>(argv);
-        entropy->ptr[3] = reinterpret_cast<std::uintptr_t>(argv[0]);
-
-        add_entropy (entropy.get (), sizeof (entropy_t));
-    }
 
     po::variables_map vm;
 
@@ -333,10 +308,12 @@ int run (int argc, char** argv)
         config->LEDGER_HISTORY = 0;
     }
 
-    // Use any previously available entropy to stir the pool
-    auto entropy = getEntropyFile (*config);
-    if (!entropy.empty ())
-        stir_entropy (entropy.string ());
+    {
+        // Stir any previously saved entropy into the pool:
+        auto entropy = getEntropyFile (*config);
+        if (!entropy.empty ())
+            crypto_prng().load_state(entropy.string ());
+    }
 
     if (vm.count ("start"))
         config->START_UP = Config::FRESH;

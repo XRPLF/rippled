@@ -1964,6 +1964,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\qalloc.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\random.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">
     </ClInclude>
     <None Include="..\..\src\ripple\basics\README.md">
@@ -2156,6 +2158,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CBigNum.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\csprng.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSA.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
@@ -2173,6 +2177,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\csprng.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2214,17 +2222,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\crypto\impl\openssl.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\RandomNumbers.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\RFC1751.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\crypto\KeyType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\RandomNumbers.h">
     </ClInclude>
     <None Include="..\..\src\ripple\crypto\README.md">
     </None>

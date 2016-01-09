@@ -33,31 +33,31 @@ class NodeStoreBasic_test : public TestBase
 {
 public:
     // Make sure predictable object generation works!
-    void testBatches (std::int64_t const seedValue)
+    void testBatches (std::uint64_t const seedValue)
     {
         testcase ("batch");
 
-        Batch batch1;
-        createPredictableBatch (batch1, numObjectsToTest, seedValue);
+        auto batch1 = createPredictableBatch (
+            numObjectsToTest, seedValue);
 
-        Batch batch2;
-        createPredictableBatch (batch2, numObjectsToTest, seedValue);
+        auto batch2 = createPredictableBatch (
+            numObjectsToTest, seedValue);
 
         expect (areBatchesEqual (batch1, batch2), "Should be equal");
 
-        Batch batch3;
-        createPredictableBatch (batch3, numObjectsToTest, seedValue+1);
+        auto batch3 = createPredictableBatch (
+            numObjectsToTest, seedValue + 1);
 
         expect (! areBatchesEqual (batch1, batch3), "Should not be equal");
     }
 
     // Checks encoding/decoding blobs
-    void testBlobs (std::int64_t const seedValue)
+    void testBlobs (std::uint64_t const seedValue)
     {
         testcase ("encoding");
 
-        Batch batch;
-        createPredictableBatch (batch, numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch (
+            numObjectsToTest, seedValue);
 
         EncodedBlob encoded;
         for (int i = 0; i < batch.size (); ++i)
@@ -79,7 +79,7 @@ public:
 
     void run ()
     {
-        std::int64_t const seedValue = 50;
+        std::uint64_t const seedValue = 50;
 
         testBatches (seedValue);
 

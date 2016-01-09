@@ -32,6 +32,7 @@
 #include <ripple/app/misc/Validations.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
@@ -546,7 +547,7 @@ PeerImp::onTimer (error_code const& ec)
     {
         // Make sequence unpredictable enough that a peer
         // can't fake their latency
-        lastPingSeq_ = (rand() % 65536);
+        lastPingSeq_ = rand_int (65535);
         lastPingTime_ = clock_type::now();
 
         protocol::TMPing message;
@@ -2371,23 +2372,21 @@ PeerImp::getScore (bool haveItem) const
 {
    // Random component of score, used to break ties and avoid
    // overloading the "best" peer
-   static const int spRandom   =   10000;
+   static const int spRandomMax = 9999;
 
    // Score for being very likely to have the thing we are
-   // look for
-   // Should be roughly spRandom
-   static const int spHaveItem =   10000;
+   // look for; should be roughly spRandomMax
+   static const int spHaveItem = 10000;
 
-   // Score reduction for each millisecond of latency
-   // Should be roughly spRandom divided by
-   // the maximum reasonable latency
-   static const int spLatency  =      30;
+   // Score reduction for each millisecond of latency; should
+   // be roughly spRandomMax divided by the maximum reasonable
+   // latency
+   static const int spLatency = 30;
 
-   // Penalty for unknown latency
-   // Should be roughly spRandom
-   static const int spNoLatency =   8000;
+   // Penalty for unknown latency; should be roughly spRandomMax
+   static const int spNoLatency = 8000;
 
-   int score = rand() % spRandom;
+   int score = rand_int(spRandomMax);
 
    if (haveItem)
        score += spHaveItem;
@@ -2395,9 +2394,9 @@ PeerImp::getScore (bool haveItem) const
    std::chrono::milliseconds latency;
    {
        std::lock_guard<std::mutex> sl (recentLock_);
-
        latency = latency_;
    }
+
    if (latency != std::chrono::milliseconds (-1))
        score -= latency.count() * spLatency;
    else

@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 
+#include <ripple/basics/random.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/Slot.h>
 #include <ripple/peerfinder/impl/Tuning.h>
-#include <random>
 
 namespace ripple {
 namespace PeerFinder {
@@ -46,14 +46,9 @@ public:
         , m_acceptCount (0)
         , m_closingCount (0)
     {
-#if 1
-        std::random_device rd;
-        std::mt19937 gen (rd());
         m_roundingThreshold =
-            std::generate_canonical <double, 10> (gen);
-#else
-        m_roundingThreshold = Random::getSystemRandom().nextDouble();
-#endif
+            std::generate_canonical <double, 10> (
+                default_prng());
     }
 
     //--------------------------------------------------------------------------

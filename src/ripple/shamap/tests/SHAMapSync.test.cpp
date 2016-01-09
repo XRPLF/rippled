@@ -21,10 +21,10 @@
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/tests/common.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/UInt160.h>
 #include <beast/unit_test/suite.h>
-#include <openssl/rand.h> // DEPRECATED
 
 namespace ripple {
 namespace tests {
@@ -40,7 +40,8 @@ public:
     {
         Serializer s;
 
-        for (int d = 0; d < 3; ++d) s.add32 (rand ());
+        for (int d = 0; d < 3; ++d)
+            s.add32 (rand_int<std::uint32_t>());
 
         return std::make_shared<SHAMapItem>(
             s.getSHA512Half(), s.peekData ());
@@ -92,13 +93,7 @@ public:
 
     void run ()
     {
-        unsigned int seed;
-
-        // VFALCO DEPRECATED Should use C++11
-        RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
-        srand (seed);
-
-        beast::Journal const j;                            // debug journal
+        beast::Journal const j; // debug journal
         TestFamily f(j);
         SHAMap source (SHAMapType::FREE, f);
         SHAMap destination (SHAMapType::FREE, f);
@@ -123,9 +118,9 @@ public:
 
         destination.setSynching ();
 
-        unexpected (!source.getNodeFat (SHAMapNodeID (), nodeIDs, gotNodes,
-            (rand () % 2) == 0, rand () % 3),
-            "GetNodeFat");
+        unexpected (!source.getNodeFat (
+            SHAMapNodeID (), nodeIDs, gotNodes,
+            rand_bool(), rand_int(2)), "GetNodeFat");
 
         unexpected (gotNodes.size () < 1, "NodeSize");
 
@@ -153,7 +148,7 @@ public:
             for (nodeIDIterator = nodeIDs.begin (); nodeIDIterator != nodeIDs.end (); ++nodeIDIterator)
             {
                 if (!source.getNodeFat (*nodeIDIterator, gotNodeIDs, gotNodes,
-                    (rand () % 2) == 0, rand () % 3))
+                    rand_bool(), rand_int(2)))
                 {
                     fail ("GetNodeFat");
                 }

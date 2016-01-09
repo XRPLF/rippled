@@ -19,9 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/random.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/chrono_io.h>
-#include <beast/module/core/maths/Random.h>
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {
@@ -60,16 +60,15 @@ public:
 
     void createGossip (Gossip& gossip)
     {
-        beast::Random r;
-        int const v (10 + r.nextInt (10));
-        int const n (10 + r.nextInt (10));
+        int const v (10 + rand_int(9));
+        int const n (10 + rand_int(9));
         gossip.items.reserve (n);
         for (int i = 0; i < n; ++i)
         {
             Gossip::Item item;
-            item.balance = 100 + r.nextInt (500);
+            item.balance = 100 + rand_int(499);
             item.address = beast::IP::Endpoint (
-                beast::IP::AddressV4 (207, 127, 82, v + i));
+                beast::IP::AddressV4 (192, 0, 2, v + i));
             gossip.items.push_back (item);
         }
     }
@@ -84,7 +83,7 @@ public:
 
         Charge const fee (dropThreshold + 1);
         beast::IP::Endpoint const addr (
-            beast::IP::Endpoint::from_string ("207.127.82.2"));
+            beast::IP::Endpoint::from_string ("192.0.2.2"));
 
         {
             Consumer c (logic.newInboundEndpoint (addr));
@@ -191,7 +190,7 @@ public:
         Gossip::Item item;
         item.balance = 100;
         item.address = beast::IP::Endpoint (
-            beast::IP::AddressV4 (207, 127, 82, 1));
+            beast::IP::AddressV4 (192, 0, 2, 1));
         g.items.push_back (item);
 
         logic.importConsumers ("g", g);
@@ -206,7 +205,7 @@ public:
         TestLogic logic (j);
 
         {
-            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("207.127.82.1"));
+            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("192.0.2.1"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
             j.info <<
@@ -222,7 +221,7 @@ public:
         }
 
         {
-            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("207.127.82.2"));
+            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("192.0.2.2"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
             j.info <<
