@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
+#include <beast/xor_shift_engine.h>
 
 namespace beast {
 
@@ -25,9 +26,9 @@ class LexicalCast_test : public unit_test::suite
 {
 public:
     template <class IntType>
-    static IntType nextRandomInt (Random& r)
+    static IntType nextRandomInt (xor_shift_engine& r)
     {
-        return static_cast <IntType> (r.nextInt64 ());
+        return static_cast <IntType> (r());
     }
 
     template <class IntType>
@@ -42,7 +43,7 @@ public:
     }
 
     template <class IntType>
-    void testIntegers (Random& r)
+    void testIntegers (xor_shift_engine& r)
     {
         {
             std::stringstream ss;
@@ -254,7 +255,7 @@ public:
     {
         std::int64_t const seedValue = 50;
 
-        Random r (seedValue);
+        xor_shift_engine r (seedValue);
 
         testIntegers <int> (r);
         testIntegers <unsigned int> (r);

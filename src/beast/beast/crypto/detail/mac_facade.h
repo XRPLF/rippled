@@ -39,9 +39,11 @@ public:
     static beast::endian const endian =
         beast::endian::native;
 
+    static std::size_t const digest_size =
+        Context::digest_size;
+
     using result_type =
-        std::array<std::uint8_t,
-            Context::digest_size>;
+        std::array<std::uint8_t, digest_size>;
 
     mac_facade() noexcept
     {

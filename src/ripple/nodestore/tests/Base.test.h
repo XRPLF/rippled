@@ -24,8 +24,8 @@
 #include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <beast/unit_test/suite.h>
-#include <beast/random/rngfill.h>
-#include <beast/random/xor_shift_engine.h>
+#include <beast/rngfill.h>
+#include <beast/xor_shift_engine.h>
 #include <boost/algorithm/string.hpp>
 #include <iomanip>
 

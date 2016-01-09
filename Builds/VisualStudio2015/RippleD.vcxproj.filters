@@ -103,9 +103,6 @@
     <Filter Include="beast\module\core\logging">
       <UniqueIdentifier>{E2E1AA2E-7817-DCA7-66A3-DBC4BAB06D5C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\module\core\maths">
-      <UniqueIdentifier>{85C3F5F1-0A60-FF1F-2FE4-AD0868832D6B}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\module\core\memory">
       <UniqueIdentifier>{EE59B06D-092E-4C80-21B1-3781040C8FF3}</UniqueIdentifier>
     </Filter>
@@ -153,9 +150,6 @@
     </Filter>
     <Filter Include="beast\nudb\tests">
       <UniqueIdentifier>{ACEF9E32-BEA2-86E3-BDE3-E772564EA55B}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\random">
-      <UniqueIdentifier>{94B0990A-9ABE-B1EC-C220-83FD8C2F529F}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\smart_ptr">
       <UniqueIdentifier>{C8013957-E624-4A24-C0F8-CBAAC144AF09}</UniqueIdentifier>
@@ -1206,12 +1200,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
       <Filter>beast\module\core\logging</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\maths\Random.cpp">
-      <Filter>beast\module\core\maths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Random.h">
-      <Filter>beast\module\core\maths</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.cpp">
       <Filter>beast\module\core\memory</Filter>
     </ClCompile>
@@ -1470,11 +1458,8 @@
     <ClInclude Include="..\..\src\beast\beast\nudb\win32_file.h">
       <Filter>beast\nudb</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\random\rngfill.h">
-      <Filter>beast\random</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\random\xor_shift_engine.h">
-      <Filter>beast\random</Filter>
+    <ClInclude Include="..\..\src\beast\beast\rngfill.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
       <Filter>beast</Filter>
@@ -1548,9 +1533,6 @@
     <ClInclude Include="..\..\src\beast\beast\Threads.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\RecursiveMutex.cpp">
-      <Filter>beast\threads\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
@@ -1563,9 +1545,6 @@
     <ClCompile Include="..\..\src\beast\beast\threads\impl\WaitableEvent.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\RecursiveMutex.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\ScopedWrapperContext.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
@@ -1717,6 +1696,9 @@
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\xor_shift_engine.h">
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">

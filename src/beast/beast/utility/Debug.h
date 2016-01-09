@@ -29,12 +29,6 @@ namespace beast {
 namespace Debug
 {
 
-/** Break to debugger if a debugger is attached to a debug build.
-
-    Does nothing if no debugger is attached, or the build is not a debug build.
-*/
-extern void breakPoint ();
-
 /** Given a file and line number this formats a suitable string.
     Usually you will pass __FILE__ and __LINE__ here.
 */

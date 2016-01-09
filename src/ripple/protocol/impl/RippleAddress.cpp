@@ -33,7 +33,7 @@
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/RipplePublicKey.h>
 #include <ripple/protocol/types.h>
-#include <beast/random/rngfill.h>
+#include <beast/rngfill.h>
 #include <beast/unit_test/suite.h>
 #include <ed25519-donna/ed25519.h>
 #include <openssl/ripemd.h>
