@@ -1395,6 +1395,7 @@ aged_ordered_container (std::initializer_list <value_type> init,
     clock_type& clock,
     Compare const& comp)
     : m_config (clock, comp)
+    , m_cont (comp)
 {
     insert (init.begin(), init.end());
 }
@@ -1418,6 +1419,7 @@ aged_ordered_container (std::initializer_list <value_type> init,
     Compare const& comp,
     Allocator const& alloc)
     : m_config (clock, comp, alloc)
+    , m_cont (comp)
 {
     insert (init.begin(), init.end());
 }
