@@ -167,7 +167,7 @@ public:
         It is always at the original offer quality (quality_)
     */
     Amounts
-    remaining_offer (STAmountCalcSwitchovers const& amountCalcSwitchovers) const;
+    remaining_offer () const;
 
     /** Returns the amount that the offer was originally placed at. */
     Amounts const&

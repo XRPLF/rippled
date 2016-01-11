@@ -35,6 +35,8 @@
 
 namespace ripple {
 
+LocalValue<bool> stAmountCalcSwitchover;
+
 static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
 static const std::uint64_t tenTo17 = tenTo14 * 1000;
@@ -1139,9 +1141,8 @@ canonicalizeRound (bool native, std::uint64_t& value, int& offset, bool roundUp)
 }
 
 STAmount
-mulRound (STAmount const& v1, STAmount const& v2,
-    Issue const& issue, bool roundUp,
-        STAmountCalcSwitchovers const& switchovers)
+mulRound (STAmount const& v1, STAmount const& v2, Issue const& issue,
+    bool roundUp)
 {
     if (v1 == zero || v2 == zero)
         return {issue};
@@ -1205,20 +1206,22 @@ mulRound (STAmount const& v1, STAmount const& v2,
     canonicalizeRound (
         isXRP (issue), amount, offset, resultNegative != roundUp);
     STAmount result (issue, amount, offset, resultNegative);
-    if (switchovers.enableUnderflowFix () && roundUp && !resultNegative && !result)
+    // Control when bugfixes that require switchover dates are enabled
+    if (roundUp && !resultNegative && !result &&
+        (stAmountCalcSwitchover.get() == boost::none ||
+            stAmountCalcSwitchover.get() == true))
     {
         // return the smallest value above zero
         amount = STAmount::cMinValue;
         offset = STAmount::cMinOffset;
-        return STAmount (issue, amount, offset, resultNegative);
+        return STAmount(issue, amount, offset, resultNegative);
     }
     return result;
 }
 
 STAmount
 divRound (STAmount const& num, STAmount const& den,
-    Issue const& issue, bool roundUp,
-        STAmountCalcSwitchovers const& switchovers)
+    Issue const& issue, bool roundUp)
 {
     if (den == zero)
         Throw<std::runtime_error> ("division by zero");
@@ -1265,7 +1268,10 @@ divRound (STAmount const& num, STAmount const& den,
     canonicalizeRound (
         isXRP (issue), amount, offset, resultNegative != roundUp);
     STAmount result (issue, amount, offset, resultNegative);
-    if (switchovers.enableUnderflowFix () && roundUp && !resultNegative && !result)
+    // Control when bugfixes that require switchover dates are enabled
+    if (roundUp && !resultNegative && !result &&
+        (stAmountCalcSwitchover.get() == boost::none ||
+            stAmountCalcSwitchover.get() == true))
     {
         // return the smallest value above zero
         amount = STAmount::cMinValue;
@@ -1276,22 +1282,18 @@ divRound (STAmount const& num, STAmount const& den,
 }
 
 NetClock::time_point
-STAmountCalcSwitchovers::enableUnderflowFixCloseTime ()
+underflowSwitchTime()
 {
     using namespace std::chrono_literals;
     // Mon Dec 28, 2015 10:00:00am PST
-    return NetClock::time_point{504640800s};
+    static NetClock::time_point const switchover{504640800s};
+    return switchover;
 }
 
-STAmountCalcSwitchovers::STAmountCalcSwitchovers (NetClock::time_point parentCloseTime)
+void
+enableUnderflowFix(NetClock::time_point parentCloseTime)
 {
-    enableUnderflowFix_ = parentCloseTime > enableUnderflowFixCloseTime();
-}
-
-
-bool STAmountCalcSwitchovers::enableUnderflowFix () const
-{
-    return enableUnderflowFix_;
+    stAmountCalcSwitchover.get() = parentCloseTime > underflowSwitchTime();
 }
 
 } // ripple

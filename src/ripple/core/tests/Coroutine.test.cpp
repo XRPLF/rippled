@@ -24,7 +24,6 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
-#include <thread>
 
 namespace ripple {
 namespace test {
@@ -32,82 +31,149 @@ namespace test {
 class Coroutine_test : public beast::unit_test::suite
 {
 public:
+    class gate
+    {
+    private:
+        std::condition_variable cv_;
+        std::mutex mutex_;
+        bool signaled_ = false;
+
+    public:
+        // Block until signaled.
+        void
+        wait()
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            cv_.wait(lk, [=]{ return signaled_; });
+            signaled_ = false;
+        }
+
+        // Returns `true` if signaled.
+        template <class Rep, class Period>
+        bool
+        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            auto b = cv_.wait_for(lk, rel_time, [=]{ return signaled_; });
+            signaled_ = false;
+            return b;
+        }
+
+        // Returns `true` if signaled.
+        template <class Clock, class Duration>
+        bool
+        wait_until(std::chrono::time_point<Clock, Duration> const& when)
+        {
+            std::unique_lock<std::mutex> lk(mutex_);
+            auto b = cv_.wait_until(lk, when, [=]{ return signaled_; });
+            signaled_ = false;
+            return b;
+        }
+
+        void
+        signal()
+        {
+            std::lock_guard<std::mutex> lk(mutex_);
+            signaled_ = true;
+            cv_.notify_all();
+        }
+    };
+
     void
-    test_coroutine()
+    correct_order()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
-        std::atomic<int> i{0};
-        std::condition_variable cv;
         auto& jq = env.app().getJobQueue();
         jq.setThreadCount(0, false);
+        gate g1, g2;
+        std::shared_ptr<JobCoro> jc;
         jq.postCoro(jtCLIENT, "Coroutine-Test",
-            [&](std::shared_ptr<JobCoro> jc)
+            [&](auto const& jcr)
             {
-                std::thread t(
-                    [&i, jc]()
-                    {
-                        std::this_thread::sleep_for(20ms);
-                        ++i;
-                        jc->post();
-                    });
+                jc = jcr;
+                g1.signal();
                 jc->yield();
-                t.join();
-                ++i;
-                cv.notify_one();
+                g2.signal();
             });
-
-        {
-            std::mutex m;
-            std::unique_lock<std::mutex> lk(m);
-            expect(cv.wait_for(lk, 1s,
-                [&]()
-                {
-                    return i == 2;
-                }));
-        }
-        jq.shutdown();
-        expect(i == 2);
+        expect(g1.wait_for(1s));
+        jc->join();
+        jc->post();
+        expect(g2.wait_for(1s));
     }
 
     void
-    test_incorrect_order()
+    incorrect_order()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
-        std::atomic<int> i{0};
-        std::condition_variable cv;
         auto& jq = env.app().getJobQueue();
         jq.setThreadCount(0, false);
+        gate g;
         jq.postCoro(jtCLIENT, "Coroutine-Test",
-            [&](std::shared_ptr<JobCoro> jc)
+            [&](auto const& jc)
             {
                 jc->post();
                 jc->yield();
-                ++i;
-                cv.notify_one();
+                g.signal();
             });
+        expect(g.wait_for(1s));
+    }
 
+    void
+    thread_specific_storage()
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this);
+        auto& jq = env.app().getJobQueue();
+        jq.setThreadCount(0, false);
+        static int const N = 4;
+        LocalValue<int> lv;
+        std::array<std::shared_ptr<JobCoro>, N> a;
+        // launch coroutines
+        gate g;
+        for(int i = 0; i < N; ++i)
         {
-            std::mutex m;
-            std::unique_lock<std::mutex> lk(m);
-            expect(cv.wait_for(lk, 1s,
-                [&]()
+            jq.postCoro(jtCLIENT, "Coroutine-Test",
+                [&, id = i](auto const& jc)
                 {
-                    return i == 1;
-                }));
+                    a[id] = jc;
+                    g.signal();
+                    jc->yield();
+
+                    this->expect(lv.get() == boost::none);
+                    lv.get() = id;
+                    this->expect(lv.get() == id);
+                    g.signal();
+                    jc->yield();
+
+                    this->expect(lv.get() == id);
+                });
+            expect(g.wait_for(1s));
+            a[i]->join();
         }
-        jq.shutdown();
-        expect(i == 1);
+        for(auto const& jc : a)
+        {
+            jc->post();
+            expect(g.wait_for(1s));
+            jc->join();
+        }
+        for(auto const& jc : a)
+        {
+            jc->post();
+            jc->join();
+        }
     }
 
     void
     run()
     {
-        test_coroutine();
-        test_incorrect_order();
+        correct_order();
+        incorrect_order();
+        thread_specific_storage();
     }
 };
 

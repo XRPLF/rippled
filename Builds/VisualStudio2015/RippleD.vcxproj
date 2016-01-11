@@ -1956,6 +1956,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\KeyCache.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\LocalValue.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">

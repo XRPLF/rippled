@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/LocalValue.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STBase.h>
@@ -378,32 +379,22 @@ divide (STAmount const& v1, STAmount const& v2, Issue const& issue);
 STAmount
 multiply (STAmount const& v1, STAmount const& v2, Issue const& issue);
 
+// Required by the offer test
+NetClock::time_point
+underflowSwitchTime();
+
 /** Control when bugfixes that require switchover dates are enabled */
-class STAmountCalcSwitchovers
-{
-    bool enableUnderflowFix_ {false};
-  public:
-    STAmountCalcSwitchovers () = delete;
-    explicit
-    STAmountCalcSwitchovers (NetClock::time_point parentCloseTime);
-    explicit
-    STAmountCalcSwitchovers (bool enableAll)
-        : enableUnderflowFix_ (enableAll) {}
-    bool enableUnderflowFix () const;
-    // for tests
-    static NetClock::time_point enableUnderflowFixCloseTime ();
-};
+void
+enableUnderflowFix(NetClock::time_point parentCloseTime);
 
 // multiply, or divide rounding result in specified direction
 STAmount
 mulRound (STAmount const& v1, STAmount const& v2,
-    Issue const& issue, bool roundUp,
-        STAmountCalcSwitchovers const& switchovers);
+    Issue const& issue, bool roundUp);
 
 STAmount
 divRound (STAmount const& v1, STAmount const& v2,
-    Issue const& issue, bool roundUp,
-        STAmountCalcSwitchovers const& switchovers);
+    Issue const& issue, bool roundUp);
 
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
@@ -417,6 +408,8 @@ inline bool isXRP(STAmount const& amount)
 {
     return isXRP (amount.issue().currency);
 }
+
+extern LocalValue<bool> stAmountCalcSwitchover;
 
 } // ripple
 
