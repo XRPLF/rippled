@@ -30,7 +30,7 @@
 #include <ripple/crypto/impl/GenerateDeterministicKey.cpp>
 #include <ripple/crypto/impl/KeyType.cpp>
 #include <ripple/crypto/impl/openssl.cpp>
-#include <ripple/crypto/impl/RandomNumbers.cpp>
+#include <ripple/crypto/impl/csprng.cpp>
 #include <ripple/crypto/impl/RFC1751.cpp>
 
 #include <ripple/crypto/tests/CKey.test.cpp>

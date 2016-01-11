@@ -23,8 +23,8 @@
 #include <beast/container/fnv1a.h>
 #include <beast/container/siphash.h>
 #include <beast/container/xxhasher.h>
-#include <beast/random/rngfill.h>
-#include <beast/random/xor_shift_engine.h>
+#include <beast/rngfill.h>
+#include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <array>
 #include <chrono>

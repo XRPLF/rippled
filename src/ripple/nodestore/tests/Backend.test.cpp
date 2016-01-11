@@ -22,6 +22,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
+#include <algorithm>
 
 namespace ripple {
 namespace NodeStore {
@@ -31,8 +32,10 @@ namespace NodeStore {
 class Backend_test : public TestBase
 {
 public:
-    void testBackend (std::string const& type, std::int64_t const seedValue,
-                      int numObjectsToTest = 2000)
+    void testBackend (
+        std::string const& type,
+        std::uint64_t const seedValue,
+        int numObjectsToTest = 2000)
     {
         DummyScheduler scheduler;
 
@@ -43,9 +46,11 @@ public:
         params.set ("type", type);
         params.set ("path", path.getFullPathName ().toStdString ());
 
+        beast::xor_shift_engine rng (seedValue);
+
         // Create a batch
-        Batch batch;
-        createPredictableBatch (batch, numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch (
+            numObjectsToTest, rng());
 
         beast::Journal j;
 
@@ -66,8 +71,11 @@ public:
 
             {
                 // Reorder and read the copy again
+                std::shuffle (
+                    batch.begin(),
+                    batch.end(),
+                    rng);
                 Batch copy;
-                beast::UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
                 fetchCopyOfBatch (*backend, &copy, batch);
                 expect (areBatchesEqual (batch, copy), "Should be equal");
             }
@@ -92,7 +100,7 @@ public:
 
     void run ()
     {
-        int const seedValue = 50;
+        std::uint64_t const seedValue = 50;
 
         testBackend ("nudb", seedValue);
 

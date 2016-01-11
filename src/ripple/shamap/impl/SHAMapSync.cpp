@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/random.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>
@@ -162,7 +163,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
         // (randomly selected) inner node.  This increases the likelihood
         // that the two threads will produce different request sets (which is
         // more efficient than sending identical requests).
-        int firstChild = rand() % 256;
+        int firstChild = rand_int(255);
         int currentChild = 0;
         bool fullBelow = true;
 
@@ -212,7 +213,7 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                             // Switch to processing the child node
                             node = static_cast<SHAMapInnerNode*>(d);
                             nodeID = childID;
-                            firstChild = rand() % 256;
+                            firstChild = rand_int(255);
                             currentChild = 0;
                             fullBelow = true;
                         }

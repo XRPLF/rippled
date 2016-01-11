@@ -25,18 +25,6 @@ namespace beast {
 
 namespace Debug {
 
-void breakPoint ()
-{
-#if BEAST_DEBUG
-    if (beast_isRunningUnderDebugger ())
-        beast_breakDebugger;
-
-#else
-    bassertfalse;
-
-#endif
-}
-
 //------------------------------------------------------------------------------
 
 #if BEAST_MSVC && defined (_DEBUG)

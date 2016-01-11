@@ -18,12 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/basics/base_uint.h>
+#include <beast/rngfill.h>
 
 namespace ripple {
 
@@ -42,7 +43,10 @@ Json::Value doRandom (RPC::Context& context)
     try
     {
         uint256 rand;
-        random_fill (rand.begin (), rand.size ());
+        beast::rngfill (
+            rand.begin(),
+            rand.size(),
+            crypto_prng());
 
         Json::Value jvResult;
         jvResult[jss::random]  = to_string (rand);

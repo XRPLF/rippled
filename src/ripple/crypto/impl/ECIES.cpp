@@ -22,7 +22,8 @@
 #include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/impl/ec_key.h>
 #include <ripple/crypto/impl/ECDSAKey.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
+#include <beast/rngfill.h>
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/hmac.h>
@@ -142,7 +143,10 @@ Blob encryptECIES (uint256 const& secretKey, Blob const& publicKey, Blob const& 
 {
 
     ECIES_ENC_IV_TYPE iv;
-    random_fill (iv.begin (), ECIES_ENC_BLK_SIZE);
+    beast::rngfill (
+        iv.begin (),
+        ECIES_ENC_BLK_SIZE,
+        crypto_prng());
 
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;

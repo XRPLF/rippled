@@ -45,6 +45,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/Time.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
@@ -53,7 +54,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/json/to_string.h>
 #include <ripple/overlay/ClusterNode.h>
@@ -70,6 +71,7 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
+#include <beast/rngfill.h>
 #include <beast/utility/make_lock.h>
 #include <boost/optional.hpp>
 #include <condition_variable>
@@ -2528,7 +2530,10 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
         jvResult[jss::stand_alone] = m_standalone;
 
     // CHECKME: is it necessary to provide a random number here?
-    random_fill (uRandom.begin (), uRandom.size ());
+    beast::rngfill (
+        uRandom.begin(),
+        uRandom.size(),
+        crypto_prng());
 
     jvResult[jss::random]          = to_string (uRandom);
     jvResult[jss::server_status]   = strOperatingMode ();

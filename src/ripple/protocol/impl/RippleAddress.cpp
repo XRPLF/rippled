@@ -20,11 +20,12 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/crypto/ECDSA.h>
 #include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/JsonFields.h>
@@ -32,6 +33,7 @@
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/RipplePublicKey.h>
 #include <ripple/protocol/types.h>
+#include <beast/rngfill.h>
 #include <beast/unit_test/suite.h>
 #include <ed25519-donna/ed25519.h>
 #include <openssl/ripemd.h>
@@ -740,7 +742,10 @@ void RippleAddress::setSeedRandom ()
     // XXX Maybe we should call MakeNewKey
     uint128 key;
 
-    random_fill (key.begin (), key.size ());
+    beast::rngfill (
+        key.begin(),
+        key.size(),
+        crypto_prng());
 
     RippleAddress::setSeed (key);
 }

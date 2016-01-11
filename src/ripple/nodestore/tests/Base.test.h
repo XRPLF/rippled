@@ -21,9 +21,11 @@
 #define RIPPLE_NODESTORE_BASE_H_INCLUDED
 
 #include <ripple/nodestore/Database.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <beast/unit_test/suite.h>
-#include <beast/module/core/maths/Random.h>
+#include <beast/rngfill.h>
+#include <beast/xor_shift_engine.h>
 #include <boost/algorithm/string.hpp>
 #include <iomanip>
 
@@ -66,61 +68,47 @@ class TestBase : public beast::unit_test::suite
 public:
     // Tunable parameters
     //
-    enum
-    {
-        maxPayloadBytes = 2000,
-        numObjectsToTest = 2000
-    };
-
-    // Creates predictable objects
-    class PredictableObjectFactory
-    {
-    public:
-        explicit PredictableObjectFactory (std::int64_t seedValue)
-            : r (seedValue)
-        {
-        }
-
-        std::shared_ptr<NodeObject> createObject ()
-        {
-            NodeObjectType type;
-            switch (r.nextInt (4))
-            {
-            case 0: type = hotLEDGER; break;
-            case 2: type = hotACCOUNT_NODE; break;
-            case 3: type = hotTRANSACTION_NODE; break;
-            default:
-            case 1: // was hotTRANSACTION
-                type = hotUNKNOWN;
-                break;
-            };
-
-            uint256 hash;
-            r.fillBitsRandomly (hash.begin (), hash.size ());
-
-            int const payloadBytes = 1 + r.nextInt (maxPayloadBytes);
-
-            Blob data (payloadBytes);
-
-            r.fillBitsRandomly (data.data (), payloadBytes);
-
-            return NodeObject::createObject(type, std::move(data), hash);
-        }
-
-    private:
-        beast::Random r;
-    };
+    static std::size_t const minPayloadBytes = 1;
+    static std::size_t const maxPayloadBytes = 2000;
+    static int const numObjectsToTest = 2000;
 
 public:
- // Create a predictable batch of objects
- static void createPredictableBatch(Batch& batch, int numObjects,
-                                    std::int64_t seedValue) {
+    // Create a predictable batch of objects
+    static
+    Batch createPredictableBatch(
+        int numObjects, std::uint64_t seed)
+    {
+        Batch batch;
         batch.reserve (numObjects);
 
-        PredictableObjectFactory factory (seedValue);
+        beast::xor_shift_engine rng (seed);
 
         for (int i = 0; i < numObjects; ++i)
-            batch.push_back (factory.createObject ());
+        {
+            NodeObjectType type;
+
+            switch (rand_int(rng, 3))
+            {
+            case 0: type = hotLEDGER; break;
+            case 1: type = hotACCOUNT_NODE; break;
+            case 2: type = hotTRANSACTION_NODE; break;
+            case 3: type = hotUNKNOWN; break;
+            }
+
+            uint256 hash;
+            beast::rngfill (hash.begin(), hash.size(), rng);
+
+            Blob blob (
+                rand_int(rng,
+                    minPayloadBytes, maxPayloadBytes));
+            beast::rngfill (blob.data(), blob.size(), rng);
+
+            batch.push_back (
+                NodeObject::createObject(
+                    type, std::move(blob), hash));
+        }
+
+        return batch;
     }
 
     // Compare two batches for equality

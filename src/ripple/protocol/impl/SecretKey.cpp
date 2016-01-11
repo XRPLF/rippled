@@ -23,8 +23,9 @@
 #include <ripple/protocol/impl/secp256k1.h>
 #include <ripple/basics/contract.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
-#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/csprng.h>
 #include <beast/crypto/secure_erase.h>
+#include <beast/rngfill.h>
 #include <ed25519-donna/ed25519.h>
 #include <cstring>
 
@@ -150,7 +151,10 @@ Seed
 randomSeed()
 {
     std::uint8_t buf[16];
-    random_fill(buf, sizeof(buf));
+    beast::rngfill(
+        buf,
+        sizeof(buf),
+        crypto_prng());
     Seed seed(Slice{ buf, sizeof(buf) });
     beast::secure_erase(buf, sizeof(buf));
     return seed;
@@ -170,7 +174,10 @@ SecretKey
 randomSecretKey()
 {
     std::uint8_t buf[32];
-    random_fill(buf, sizeof(buf));
+    beast::rngfill(
+        buf,
+        sizeof(buf),
+        crypto_prng());
     SecretKey sk(Slice{ buf, sizeof(buf) });
     beast::secure_erase(buf, sizeof(buf));
     return sk;

@@ -22,6 +22,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
+#include <algorithm>
 
 namespace ripple {
 namespace NodeStore {
@@ -40,8 +41,8 @@ public:
         srcParams.set ("path", node_db.getFullPathName ().toStdString ());
 
         // Create a batch
-        Batch batch;
-        createPredictableBatch (batch, numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch (
+            numObjectsToTest, seedValue);
 
         beast::Journal j;
 
@@ -102,9 +103,11 @@ public:
         nodeParams.set ("type", type);
         nodeParams.set ("path", node_db.getFullPathName ().toStdString ());
 
+        beast::xor_shift_engine rng (seedValue);
+
         // Create a batch
-        Batch batch;
-        createPredictableBatch (batch, numObjectsToTest, seedValue);
+        auto batch = createPredictableBatch (
+            numObjectsToTest, rng());
 
         beast::Journal j;
 
@@ -125,8 +128,11 @@ public:
 
             {
                 // Reorder and read the copy again
+                std::shuffle (
+                    batch.begin(),
+                    batch.end(),
+                    rng);
                 Batch copy;
-                beast::UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
                 fetchCopyOfBatch (*db, &copy, batch);
                 expect (areBatchesEqual (batch, copy), "Should be equal");
             }

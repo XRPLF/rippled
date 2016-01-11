@@ -24,7 +24,7 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/unity/rocksdb.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
-#include <beast/random/xor_shift_engine.h>
+#include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <beast/unit_test/thread.h>
 #include <boost/algorithm/string.hpp>
