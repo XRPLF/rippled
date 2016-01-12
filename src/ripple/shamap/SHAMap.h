@@ -79,9 +79,6 @@ using MissingNodeHandler = std::function <void (std::uint32_t refNum)>;
 class SHAMap
 {
 private:
-    using NodeStack = std::stack<std::pair<SHAMapAbstractNode*, SHAMapNodeID>,
-                    std::vector<std::pair<SHAMapAbstractNode*, SHAMapNodeID>>>;
-
     Family&                         f_;
     beast::Journal                  journal_;
     std::uint32_t                   seq_;
@@ -243,7 +240,7 @@ private:
     /** Walk towards the specified id, returning the node.  Caller must check
         if the return is nullptr, and if not, if the node->peekItem()->key() == id */
     SHAMapTreeNode*
-        walkTowardsKey(uint256 const& id, NodeStack* stack = nullptr) const;
+        walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack = nullptr) const;
     /** Return nullptr if key not found */
     SHAMapTreeNode*
         findKey(uint256 const& id) const;
@@ -263,7 +260,8 @@ private:
         writeNode(NodeObjectType t, std::uint32_t seq,
                   std::shared_ptr<SHAMapAbstractNode> node) const;
 
-    SHAMapTreeNode* firstBelow (SHAMapAbstractNode*, NodeStack& stack) const;
+    SHAMapTreeNode* firstBelow (std::shared_ptr<SHAMapAbstractNode>,
+                                SharedPtrNodeStack& stack) const;
 
     // Simple descent
     // Get a child of the specified node
@@ -291,8 +289,8 @@ private:
     bool hasInnerNode (SHAMapNodeID const& nodeID, SHAMapHash const& hash) const;
     bool hasLeafNode (uint256 const& tag, SHAMapHash const& hash) const;
 
-    SHAMapItem const* peekFirstItem(NodeStack& stack) const;
-    SHAMapItem const* peekNextItem(uint256 const& id, NodeStack& stack) const;
+    SHAMapItem const* peekFirstItem(SharedPtrNodeStack& stack) const;
+    SHAMapItem const* peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const;
     bool walkBranch (SHAMapAbstractNode* node,
                      std::shared_ptr<SHAMapItem const> const& otherMapItem,
                      bool isFirstMap, Delta & differences, int & maxCount) const;
@@ -361,9 +359,9 @@ public:
     using pointer           = value_type const*;
 
 private:
-    NodeStack     stack_;
-    SHAMap const* map_  = nullptr;
-    pointer       item_ = nullptr;
+    SharedPtrNodeStack stack_;
+    SHAMap const*      map_  = nullptr;
+    pointer            item_ = nullptr;
 
 public:
     const_iterator() = default;
@@ -377,7 +375,7 @@ public:
 private:
     explicit const_iterator(SHAMap const* map);
     const_iterator(SHAMap const* map, pointer item);
-    const_iterator(SHAMap const* map, pointer item, NodeStack&& stack);
+    const_iterator(SHAMap const* map, pointer item, SharedPtrNodeStack&& stack);
 
     friend bool operator==(const_iterator const& x, const_iterator const& y);
     friend class SHAMap;
@@ -399,7 +397,7 @@ SHAMap::const_iterator::const_iterator(SHAMap const* map, pointer item)
 
 inline
 SHAMap::const_iterator::const_iterator(SHAMap const* map, pointer item,
-                                       NodeStack&& stack)
+                                       SharedPtrNodeStack&& stack)
     : stack_(std::move(stack))
     , map_(map)
     , item_(item)

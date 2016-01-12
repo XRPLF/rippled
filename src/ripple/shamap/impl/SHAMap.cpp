@@ -145,10 +145,10 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
 }
 
 SHAMapTreeNode*
-SHAMap::walkTowardsKey(uint256 const& id, NodeStack* stack) const
+SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 {
     assert(stack == nullptr || stack->empty());
-    auto inNode = root_.get();
+    auto inNode = root_;
     SHAMapNodeID nodeID;
     if (stack != nullptr)
         stack->push({inNode, nodeID});
@@ -156,7 +156,7 @@ SHAMap::walkTowardsKey(uint256 const& id, NodeStack* stack) const
     while (inNode->isInner())
     {
         auto const branch = nodeID.selectBranch (id);
-        auto const inner = static_cast<SHAMapInnerNode*>(inNode);
+        auto const inner = std::static_pointer_cast<SHAMapInnerNode>(inNode);
         if (inner->isEmptyBranch (branch))
             return nullptr;
 
@@ -165,7 +165,7 @@ SHAMap::walkTowardsKey(uint256 const& id, NodeStack* stack) const
         if (stack != nullptr)
             stack->push({inNode, nodeID});
     }
-    return static_cast<SHAMapTreeNode*>(inNode);
+    return static_cast<SHAMapTreeNode*>(inNode.get());
 }
 
 SHAMapTreeNode*
@@ -430,12 +430,13 @@ SHAMap::unshareNode (std::shared_ptr<Node> node, SHAMapNodeID const& nodeID)
 }
 
 SHAMapTreeNode*
-SHAMap::firstBelow(SHAMapAbstractNode* node, NodeStack& stack) const
+SHAMap::firstBelow(std::shared_ptr<SHAMapAbstractNode> node,
+                   SharedPtrNodeStack& stack) const
 {
     // Return the first item at or below this node
     if (node->isLeaf())
-        return static_cast<SHAMapTreeNode*>(node);
-    auto inner = static_cast<SHAMapInnerNode*>(node);
+        return static_cast<SHAMapTreeNode*>(node.get());
+    auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
     for (int i = 0; i < 16;)
     {
         if (!inner->isEmptyBranch(i))
@@ -444,8 +445,8 @@ SHAMap::firstBelow(SHAMapAbstractNode* node, NodeStack& stack) const
             assert(!stack.empty());
             stack.push({node, stack.top().second.getChildNodeID(i)});
             if (node->isLeaf())
-                return static_cast<SHAMapTreeNode*>(node);
-            inner = static_cast<SHAMapInnerNode*>(node);
+                return static_cast<SHAMapTreeNode*>(node.get());
+            inner = std::static_pointer_cast<SHAMapInnerNode>(node);
             i = 0;  // scan all 16 branches of this new node
         }
         else
@@ -497,11 +498,11 @@ static std::shared_ptr<
     SHAMapItem const> const nullConstSHAMapItem;
 
 SHAMapItem const*
-SHAMap::peekFirstItem(NodeStack& stack) const
+SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 {
     assert(stack.empty());
-    stack.push({root_.get(), SHAMapNodeID{}});
-    SHAMapTreeNode* node = firstBelow(root_.get(), stack);
+    stack.push({root_, SHAMapNodeID{}});
+    SHAMapTreeNode* node = firstBelow(root_, stack);
     if (!node)
     {
         while (!stack.empty())
@@ -512,7 +513,7 @@ SHAMap::peekFirstItem(NodeStack& stack) const
 }
 
 SHAMapItem const*
-SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
+SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
 {
     assert(!stack.empty());
     assert(stack.top().first->isLeaf());
@@ -522,7 +523,7 @@ SHAMap::peekNextItem(uint256 const& id, NodeStack& stack) const
         auto node = stack.top().first;
         auto nodeID = stack.top().second;
         assert(!node->isLeaf());
-        auto inner = static_cast<SHAMapInnerNode*>(node);
+        auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         for (auto i = nodeID.selectBranch(id) + 1; i < 16; ++i)
         {
             if (!inner->isEmptyBranch(i))
@@ -583,22 +584,22 @@ SHAMap::upper_bound(uint256 const& id) const
 {
     // Get a const_iterator to the next item in the tree after a given item
     // item need not be in tree
-    NodeStack stack;
+    SharedPtrNodeStack stack;
     walkTowardsKey(id, &stack);
-    SHAMapAbstractNode* node;
+    std::shared_ptr<SHAMapAbstractNode> node;
     SHAMapNodeID nodeID;
     while (!stack.empty())
     {
         std::tie(node, nodeID) = stack.top();
         if (node->isLeaf())
         {
-            auto leaf = static_cast<SHAMapTreeNode*>(node);
+            auto leaf = static_cast<SHAMapTreeNode*>(node.get());
             if (leaf->peekItem()->key() > id)
                 return const_iterator(this, leaf->peekItem().get(), std::move(stack));
         }
         else
         {
-            auto inner = static_cast<SHAMapInnerNode*>(node);
+            auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
             for (auto branch = nodeID.selectBranch(id) + 1; branch < 16; ++branch)
             {
                 if (!inner->isEmptyBranch(branch))
