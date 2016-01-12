@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/impl/LedgerCleaner.h>
+#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -26,6 +26,7 @@
 #include <beast/threads/Thread.h>
 
 namespace ripple {
+namespace detail {
 
 /*
 
@@ -502,4 +503,5 @@ make_LedgerCleaner (Application& app,
     return std::make_unique<LedgerCleanerImp>(app, parent, journal);
 }
 
+} // detail
 } // ripple

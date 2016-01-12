@@ -28,6 +28,7 @@
 #include <memory>
 
 namespace ripple {
+namespace detail {
 
 /** Check the ledger/transaction databases to make sure they have continuity */
 class LedgerCleaner
@@ -58,6 +59,7 @@ std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner (Application& app,
     beast::Stoppable& parent, beast::Journal journal);
 
+} // detail
 } // ripple
 
 #endif
