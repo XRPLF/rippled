@@ -274,8 +274,7 @@ CreateOffer::dry_offer (ApplyView& view, Offer const& offer)
 std::pair<bool, Quality>
 CreateOffer::select_path (
     bool have_direct, OfferStream const& direct,
-    bool have_bridge, OfferStream const& leg1, OfferStream const& leg2,
-    STAmountCalcSwitchovers const& amountCalcSwitchovers)
+    bool have_bridge, OfferStream const& leg1, OfferStream const& leg2)
 {
     // If we don't have any viable path, why are we here?!
     assert (have_direct || have_bridge);
@@ -285,7 +284,7 @@ CreateOffer::select_path (
         return std::make_pair (true, direct.tip ().quality ());
 
     Quality const bridged_quality (composed_quality (
-        leg1.tip ().quality (), leg2.tip ().quality (), amountCalcSwitchovers));
+        leg1.tip ().quality (), leg2.tip ().quality ()));
 
     if (have_direct)
     {
@@ -352,9 +351,6 @@ CreateOffer::bridged_cross (
 
     auto viewJ = ctx_.app.journal ("View");
 
-    STAmountCalcSwitchovers amountCalcSwitchovers (
-        view.info ().parentCloseTime);
-
     // Modifying the order or logic of the operations in the loop will cause
     // a protocol breaking change.
     while (have_direct || have_bridge)
@@ -368,8 +364,7 @@ CreateOffer::bridged_cross (
 
         std::tie (use_direct, quality) = select_path (
             have_direct, offers_direct,
-            have_bridge, offers_leg1, offers_leg2,
-            amountCalcSwitchovers);
+            have_bridge, offers_leg1, offers_leg2);
 
 
         // We are always looking at the best quality; we are done with
@@ -473,7 +468,7 @@ CreateOffer::bridged_cross (
             Throw<std::logic_error> ("bridged crossing: nothing was fully consumed.");
     }
 
-    return std::make_pair(cross_result, taker.remaining_offer (amountCalcSwitchovers));
+    return std::make_pair(cross_result, taker.remaining_offer ());
 }
 
 std::pair<TER, Amounts>
@@ -554,8 +549,7 @@ CreateOffer::direct_cross (
             Throw<std::logic_error> ("direct crossing: nothing was fully consumed.");
     }
 
-    STAmountCalcSwitchovers amountCalcSwitchovers (view.info ().parentCloseTime);
-    return std::make_pair(cross_result, taker.remaining_offer (amountCalcSwitchovers));
+    return std::make_pair(cross_result, taker.remaining_offer ());
 }
 
 // Step through the stream for as long as possible, skipping any offers
@@ -598,7 +592,6 @@ CreateOffer::cross (
     Taker taker (cross_type_, view, account_, taker_amount,
         ctx_.tx.getFlags(), beast::Journal (takerSink));
 
-    STAmountCalcSwitchovers amountCalcSwitchovers (view.info ().parentCloseTime);
     try
     {
         if (cross_type_ == CrossType::IouToIou)
@@ -609,7 +602,7 @@ CreateOffer::cross (
     catch (std::exception const& e)
     {
         j_.error << "Exception during offer crossing: " << e.what ();
-        return std::make_pair (tecINTERNAL, taker.remaining_offer (amountCalcSwitchovers));
+        return std::make_pair (tecINTERNAL, taker.remaining_offer ());
     }
 }
 

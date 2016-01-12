@@ -150,9 +150,6 @@ TER PathCursor::forwardLiquidityForAccount () const
                 << " previousNode.saFwdRedeem:" << previousNode().saFwdRedeem
                 << " previousNode.saFwdIssue:" << previousNode().saFwdIssue;
 
-            STAmountCalcSwitchovers amountCalcSwitchovers (
-                rippleCalc_.view.info ().parentCloseTime);
-
             // Last node. Accept all funds. Calculate amount actually to credit.
 
             auto& saCurReceive = pathState_.outPass();
@@ -162,7 +159,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                           previousNode().saFwdIssue,
                           amountFromRate (uQualityIn),
                           previousNode().saFwdIssue.issue (),
-                          true, amountCalcSwitchovers); // Amount to credit.
+                          true); // Amount to credit.
 
             // Amount to credit. Credit for less than received as a surcharge.
             pathState_.setOutPass (previousNode().saFwdRedeem + saIssueCrd);
