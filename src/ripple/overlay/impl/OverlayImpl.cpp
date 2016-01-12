@@ -232,31 +232,26 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     }
 
     handoff.moved = true;
-    bool success = true;
 
-    protocol::TMHello hello;
-    std::tie(hello, success) = parseHello (request, journal);
-    if(! success)
+    auto hello = parseHello (request, journal);
+    if(! hello)
         return handoff;
 
-    uint256 sharedValue;
-    std::tie(sharedValue, success) = makeSharedValue(
+    auto sharedValue = makeSharedValue(
         ssl_bundle->stream.native_handle(), journal);
-    if(! success)
+    if(! sharedValue)
         return handoff;
 
-    RippleAddress publicKey;
-    std::tie(publicKey, success) = verifyHello (hello,
-        sharedValue,
+    auto publicKey = verifyHello (*hello,
+        *sharedValue,
         setup_.public_ip,
         beast::IPAddressConversion::from_asio(
             remote_endpoint), journal, app_);
-    if(! success)
+    if(! publicKey)
         return handoff;
 
-    auto const result = m_peerFinder->activate (slot,
-        publicKey.toPublicKey(),
-        static_cast<bool>(app_.cluster().member(publicKey)));
+    auto const result = m_peerFinder->activate (slot, *publicKey,
+        static_cast<bool>(app_.cluster().member(*publicKey)));
     if (result != PeerFinder::Result::success)
     {
         m_peerFinder->on_closed(slot);
@@ -270,8 +265,8 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     }
 
     auto const peer = std::make_shared<PeerImp>(app_, id,
-        remote_endpoint, slot, std::move(request), hello, publicKey,
-            consumer, std::move(ssl_bundle), *this);
+        remote_endpoint, slot, std::move(request), *hello,
+            *publicKey, consumer, std::move(ssl_bundle), *this);
     {
         // As we are not on the strand, run() must be called
         // while holding the lock, otherwise new I/O can be
@@ -403,8 +398,10 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
 
     journal_.debug <<
         "activated " << peer->getRemoteAddress() <<
-        " (" << peer->id() <<
-        ":" << peer->getNodePublic().toPublicKey() << ")";
+        " (" << peer->id() << ":" <<
+        toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            peer->getNodePublic()) << ")";
 
     // As we are not on the strand, run() must be called
     // while holding the lock, otherwise new I/O can be
@@ -463,7 +460,10 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         s = beast::base64_decode(s);
         if (auto mo = make_Manifest (std::move (s)))
         {
-            manifestCache_.configManifest (std::move (*mo), app_.getUNL (), journal_);
+            manifestCache_.configManifest (
+                std::move (*mo),
+                app_.validators(),
+                journal_);
         }
         else
         {
@@ -476,7 +476,10 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
             journal_.warning << "No [validation_manifest] section in config";
     }
 
-    manifestCache_.load (db, app_.getUNL(), journal_);
+    manifestCache_.load (
+        db,
+        app_.validators(),
+        journal_);
 }
 
 void
@@ -646,7 +649,9 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
     journal_.debug <<
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() <<
-        ":" << peer->getNodePublic().toPublicKey() << ")";
+        ":" << toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            peer->getNodePublic()) << ")";
 
     // We just accepted this peer so we have non-zero active peers
     assert(size() != 0);
@@ -654,7 +659,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
 
 void
 OverlayImpl::onPeerDeactivate (Peer::id_t id,
-    RippleAddress const& publicKey)
+    PublicKey const& publicKey)
 {
     std::lock_guard <decltype(mutex_)> lock (mutex_);
     m_shortIdMap.erase(id);
@@ -685,8 +690,10 @@ OverlayImpl::onManifests (
                 continue;
 
             auto const serialized = mo->serialized;
-            auto const result =
-                manifestCache_.applyManifest (std::move(*mo), app_.getUNL(), journal);
+            auto const result = manifestCache_.applyManifest (
+                std::move(*mo),
+                app_.validators(),
+                journal);
 
             if (result == ManifestDisposition::accepted)
             {
@@ -796,8 +803,8 @@ OverlayImpl::crawl()
         {
             auto& pv = av.append(Json::Value(Json::objectValue));
             pv[jss::public_key] = beast::base64_encode(
-                sp->getNodePublic().getNodePublic().data(),
-                    sp->getNodePublic().getNodePublic().size());
+                sp->getNodePublic().data(),
+                    sp->getNodePublic().size());
             pv[jss::type] = sp->slot()->inbound() ?
                 "in" : "out";
             pv[jss::uptime] =

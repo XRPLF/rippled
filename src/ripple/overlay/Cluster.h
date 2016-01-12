@@ -23,9 +23,9 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/core/Config.h>
+#include <ripple/basics/BasicConfig.h>
 #include <ripple/overlay/ClusterNode.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
 #include <beast/hash/uhash.h>
 #include <beast/utility/Journal.h>
 #include <functional>
@@ -54,14 +54,14 @@ private:
         bool
         operator() (
             ClusterNode const& lhs,
-            RippleAddress const& rhs) const
+            PublicKey const& rhs) const
         {
             return lhs.identity() < rhs;
         }
 
         bool
         operator() (
-            RippleAddress const& lhs,
+            PublicKey const& lhs,
             ClusterNode const& rhs) const
         {
             return lhs < rhs.identity();
@@ -76,12 +76,12 @@ public:
     Cluster (beast::Journal j);
 
     /** Determines whether a node belongs in the cluster
-        @return empty optional if the node isn't a member,
-                otherwise, the node's name (which may be
-                empty).
+        @return boost::none if the node isn't a member,
+                otherwise, the comment associated with the
+                node (which may be an empty string).
     */
     boost::optional<std::string>
-    member (RippleAddress const& node) const;
+    member (PublicKey const& node) const;
 
     /** The number of nodes in the cluster list. */
     std::size_t
@@ -94,7 +94,7 @@ public:
     */
     bool
     update (
-        RippleAddress const& identity,
+        PublicKey const& identity,
         std::string name,
         std::uint32_t loadFee = 0,
         NetClock::time_point reportTime = NetClock::time_point{});
@@ -106,10 +106,20 @@ public:
     void
     for_each (
         std::function<void(ClusterNode const&)> func) const;
-};
 
-std::unique_ptr<Cluster>
-make_Cluster (Config const& config, beast::Journal j);
+    /** Load the list of cluster nodes.
+
+        The section contains entries consisting of a base58
+        encoded node public key, optionally followed by
+        a comment.
+
+        @return false if an entry could not be parsed or
+                contained an invalid node public key,
+                true otherwise.
+    */
+    bool
+    load (Section const& nodes);
+};
 
 } // ripple
 

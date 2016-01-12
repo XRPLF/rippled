@@ -20,43 +20,45 @@
 #include <BeastConfig.h>
 #include <beast/utility/make_lock.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/json/json_value.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 
 namespace ripple {
 
 // {
-//   node: <domain>|<node_public>,
+//   node: <node_public>,
 //   comment: <comment>             // optional
 // }
 Json::Value doUnlAdd (RPC::Context& context)
 {
     auto lock = beast::make_lock(context.app.getMasterMutex());
 
-    std::string strNode = context.params.isMember (jss::node)
-            ? context.params[jss::node].asString () : "";
-    std::string strComment = context.params.isMember (jss::comment)
-            ? context.params[jss::comment].asString () : "";
+    if (!context.params.isMember (jss::node))
+        return rpcError (rpcINVALID_PARAMS);
 
-    RippleAddress raNodePublic;
+    auto const id = parseBase58<PublicKey>(
+        TokenType::TOKEN_NODE_PUBLIC,
+        context.params[jss::node].asString ());
 
-    if (raNodePublic.setNodePublic (strNode))
-    {
-        context.app.getUNL ().nodeAddPublic (
-            raNodePublic, UniqueNodeList::vsManual, strComment);
-        return RPC::makeObjectValue ("adding node by public key");
-    }
-    else
-    {
-        context.app.getUNL ().nodeAddDomain (
-            strNode, UniqueNodeList::vsManual, strComment);
-        return RPC::makeObjectValue ("adding node by domain");
-    }
+    if (!id)
+        return rpcError (rpcINVALID_PARAMS);
+
+    auto const added = context.app.validators().insertPermanentKey (
+        *id,
+        context.params.isMember (jss::comment)
+            ? context.params[jss::comment].asString ()
+            : "");
+
+    Json::Value ret (Json::objectValue);
+    ret[jss::pubkey_validator] = context.params[jss::node];
+    ret[jss::status] = added ? "added" : "already present";
+    return ret;
 }
 
 } // ripple

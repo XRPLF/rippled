@@ -19,10 +19,11 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <beast/utility/make_lock.h>
@@ -39,19 +40,20 @@ Json::Value doUnlDelete (RPC::Context& context)
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);
 
-    auto strNode = context.params[jss::node].asString ();
-    RippleAddress raNodePublic;
+    auto const id = parseBase58<PublicKey>(
+        TokenType::TOKEN_NODE_PUBLIC,
+        context.params[jss::node].asString ());
 
-    if (raNodePublic.setNodePublic (strNode))
-    {
-        context.app.getUNL ().nodeRemovePublic (raNodePublic);
-        return RPC::makeObjectValue ("removing node by public key");
-    }
-    else
-    {
-        context.app.getUNL ().nodeRemoveDomain (strNode);
-        return RPC::makeObjectValue ("removing node by domain");
-    }
+    if (!id)
+        return rpcError (rpcINVALID_PARAMS);
+
+    auto const removed =
+        context.app.validators().removePermanentKey (*id);
+
+    Json::Value ret (Json::objectValue);
+    ret[jss::pubkey_validator] = context.params[jss::node];
+    ret[jss::status] = removed ? "removed" : "not present";
+    return ret;
 }
 
 } // ripple

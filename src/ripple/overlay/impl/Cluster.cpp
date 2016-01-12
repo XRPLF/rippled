@@ -20,12 +20,12 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/regex.hpp>
 #include <memory.h>
@@ -38,7 +38,7 @@ Cluster::Cluster (beast::Journal j)
 }
 
 boost::optional<std::string>
-Cluster::member (RippleAddress const& identity) const
+Cluster::member (PublicKey const& identity) const
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -52,12 +52,13 @@ std::size_t
 Cluster::size() const
 {
     std::lock_guard<std::mutex> lock(mutex_);
+
     return nodes_.size();
 }
 
 bool
 Cluster::update (
-    RippleAddress const& identity,
+    PublicKey const& identity,
     std::string name,
     std::uint32_t loadFee,
     NetClock::time_point reportTime)
@@ -93,51 +94,53 @@ Cluster::for_each (
         func (ni);
 }
 
-std::unique_ptr<Cluster>
-make_Cluster (Config const& config, beast::Journal j)
+bool
+Cluster::load (Section const& nodes)
 {
     static boost::regex const re (
-        "^"                         // start of line
-        "(?:\\s*)"                  // whitespace (optional)
-        "([a-zA-Z0-9]*)"            // Node identity
-        "(?:\\s*)"                  // whitespace (optional)
-        "(.*\\S*)"                  // <value>
-        "(?:\\s*)"                  // whitespace (optional)
+        "[[:space:]]*"            // skip leading whitespace
+        "([[:alnum:]]+)"          // node identity
+        "(?:"                     // begin optional comment block
+        "[[:space:]]+"            // (skip all leading whitespace)
+        "(?:"                     // begin optional comment
+        "(.*[^[:space:]]+)"       // the comment
+        "[[:space:]]*"            // (skip all trailing whitespace)
+        ")?"                      // end optional comment
+        ")?"                      // end optional comment block
     );
 
-    auto cluster = std::make_unique<Cluster> (j);
-
-    for (auto const& n : config.CLUSTER_NODES)
+    for (auto const& n : nodes.values())
     {
         boost::smatch match;
 
         if (!boost::regex_match (n, match, re))
         {
-            JLOG (j.error) <<
+            JLOG (j_.error) <<
                 "Malformed entry: '" << n << "'";
-            continue;
+            return false;
         }
 
-        auto const nid = RippleAddress::createNodePublic (match[1]);
+        auto const id = parseBase58<PublicKey>(
+            TokenType::TOKEN_NODE_PUBLIC, match[1]);
 
-        if (!nid.isValid())
+        if (!id)
         {
-            JLOG (j.error) <<
+            JLOG (j_.error) <<
                 "Invalid node identity: " << match[1];
-            continue;
+            return false;
         }
 
-        if (cluster->member (nid))
+        if (member (*id))
         {
-            JLOG (j.warning) <<
+            JLOG (j_.warning) <<
                 "Duplicate node identity: " << match[1];
             continue;
         }
 
-        cluster->update(nid, match[2]);
+        update(*id, trim_whitespace(match[2]));
     }
 
-    return cluster;
+    return true;
 }
 
 } // ripple

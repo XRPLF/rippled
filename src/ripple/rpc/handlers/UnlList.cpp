@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
 #include <beast/utility/make_lock.h>
@@ -31,7 +31,22 @@ Json::Value doUnlList (RPC::Context& context)
     auto lock = beast::make_lock(context.app.getMasterMutex());
     Json::Value obj (Json::objectValue);
 
-    obj[jss::unl] = context.app.getUNL ().getUnlJson ();
+    context.app.validators().for_each (
+        [&unl = obj[jss::unl]](
+            PublicKey const& publicKey,
+            std::string const& comment,
+            bool ephemeral)
+        {
+            Json::Value node (Json::objectValue);
+
+            node[jss::pubkey_validator] = toBase58(
+                TokenType::TOKEN_NODE_PUBLIC, publicKey);
+            node[jss::ephemeral] = ephemeral;
+            if (!comment.empty())
+                node[jss::comment] = comment;
+
+            unl.append (node);
+        });
 
     return obj;
 }

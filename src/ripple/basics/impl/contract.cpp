@@ -21,6 +21,7 @@
 #include <ripple/basics/contract.h>
 #include <cstdlib>
 #include <exception>
+#include <iostream>
 
 namespace ripple {
 
@@ -40,8 +41,9 @@ accessViolation() noexcept
 
 [[noreturn]]
 void
-LogicError (std::string const&) noexcept
+LogicError (std::string const& s) noexcept
 {
+    std::cerr << "Logic error: " << s << std::endl;
     detail::accessViolation();
 }
 

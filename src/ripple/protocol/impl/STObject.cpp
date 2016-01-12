@@ -657,6 +657,12 @@ void STObject::setFieldVL (SField const& field, Blob const& v)
     setFieldUsingSetValue <STBlob> (field, Buffer(v.data (), v.size ()));
 }
 
+void STObject::setFieldVL (SField const& field, Slice const& s)
+{
+    setFieldUsingSetValue <STBlob>
+            (field, Buffer(s.data(), s.size()));
+}
+
 void STObject::setFieldAmount (SField const& field, STAmount const& v)
 {
     setFieldUsingAssignment (field, v);

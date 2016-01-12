@@ -25,7 +25,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
-#include <ripple/rpc/impl/KeypairForSignature.h>
+#include <ripple/rpc/KeypairForSignature.h>
 
 namespace ripple {
 
@@ -155,101 +155,7 @@ public:
     }
 };
 
-class KeypairForSignature_test : public ripple::TestSuite
-{
-public:
-    void testEmpty()
-    {
-        Json::Value params;
-        Json::Value error;
-
-        (void) keypairForSignature (params, error);
-
-        expect (contains_error (error) );
-    }
-
-    void testSecretWallet (Json::Value const& params, key_strings const& s)
-    {
-        Json::Value error;
-        KeyPair keypair = keypairForSignature (params, error);
-
-        uint256 secret_key = keypair.secretKey.getAccountPrivate();
-        Blob    public_key = keypair.publicKey.getAccountPublic();
-
-        std::string secret_key_hex = strHex (secret_key.data(), secret_key.size());
-        std::string public_key_hex = strHex (public_key.data(), public_key.size());
-
-        expectEquals (secret_key_hex, s.secret_key_hex);
-        expectEquals (public_key_hex, s.public_key_hex);
-    }
-
-    void testLegacySecret (char const* value)
-    {
-        testcase (value);
-
-        Json::Value params;
-        params[jss::secret] = value;
-
-        testSecretWallet (params, secp256k1_strings);
-    }
-
-    void testLegacySecret()
-    {
-        testLegacySecret (common::passphrase);
-        testLegacySecret (secp256k1_strings.master_key);
-        testLegacySecret (secp256k1_strings.master_seed);
-        testLegacySecret (secp256k1_strings.master_seed_hex);
-    }
-
-    void testInvalidKeyType (char const* keyType)
-    {
-        testcase (keyType);
-
-        Json::Value params;
-        params[jss::key_type] = keyType;
-        params[jss::passphrase] = common::passphrase;
-
-        Json::Value error;
-        keypairForSignature (params, error);
-
-        expect (contains_error (error));
-    }
-
-    void testKeyType (char const* keyType, key_strings const& strings)
-    {
-        testcase (keyType);
-
-        Json::Value params;
-        params[jss::key_type] = keyType;
-        params[jss::passphrase] = common::passphrase;
-
-        testSecretWallet (params, strings);
-
-        params[jss::seed] = strings.master_seed;
-
-        // Secret fields are mutually exclusive.
-        Json::Value error;
-        keypairForSignature (params, error);
-
-        expect (contains_error (error));
-
-        params.removeMember (jss::passphrase);
-
-        testSecretWallet (params, strings);
-    }
-
-    void run()
-    {
-        testEmpty();
-        testLegacySecret();
-        testInvalidKeyType ("caesarsalad");
-        testKeyType ("secp256k1", secp256k1_strings);
-        testKeyType ("ed25519",   ed25519_strings);
-    }
-};
-
 BEAST_DEFINE_TESTSUITE(WalletPropose,ripple_basics,ripple);
-BEAST_DEFINE_TESTSUITE(KeypairForSignature,ripple_basics,ripple);
 
 } // RPC
 } // ripple

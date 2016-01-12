@@ -75,7 +75,7 @@ JSS ( action );
 JSS ( acquiring );                  // out: LedgerRequest
 JSS ( address );                    // out: PeerImp
 JSS ( affected );                   // out: AcceptedLedgerTx
-JSS ( age );                        // out: UniqueNodeList, NetworkOPs, Peers
+JSS ( age );                        // out: NetworkOPs, Peers
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( asks );                       // out: Subscribe
@@ -145,6 +145,7 @@ JSS ( enabled );                    // out: AmendmentTable
 JSS ( engine_result );              // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_code );         // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_message );      // out: NetworkOPs, TransactionSign, Submit
+JSS ( ephemeral );                  // out: UnlList
 JSS ( error );                      // out: error
 JSS ( error_code );                 // out: error
 JSS ( error_exception );            // out: Submit

@@ -29,7 +29,8 @@ namespace ripple {
 STValidation::STValidation (SerialIter& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
 {
-    mNodeID = RippleAddress::createNodePublic (getFieldVL (sfSigningPubKey)).getNodeID ();
+    mNodeID = calcNodeID(
+        PublicKey(makeSlice (getFieldVL (sfSigningPubKey))));
     assert (mNodeID.isNonZero ());
 
     if  (checkSignature && !isValid ())
@@ -40,8 +41,10 @@ STValidation::STValidation (SerialIter& sit, bool checkSignature)
 }
 
 STValidation::STValidation (
-    uint256 const& ledgerHash, NetClock::time_point signTime,
-    RippleAddress const& raPub, bool isFull)
+        uint256 const& ledgerHash,
+        NetClock::time_point signTime,
+        PublicKey const& publicKey,
+        bool isFull)
     : STObject (getFormat (), sfValidation)
     , mSeen (signTime)
 {
@@ -49,23 +52,21 @@ STValidation::STValidation (
     setFieldH256 (sfLedgerHash, ledgerHash);
     setFieldU32 (sfSigningTime, signTime.time_since_epoch().count());
 
-    setFieldVL (sfSigningPubKey, raPub.getNodePublic ());
-    mNodeID = raPub.getNodeID ();
+    setFieldVL (sfSigningPubKey, publicKey.slice());
+    mNodeID = calcNodeID(publicKey);
     assert (mNodeID.isNonZero ());
 
     if (!isFull)
         setFlag (kFullFlag);
 }
 
-uint256 STValidation::sign (RippleAddress const& raPriv)
+uint256 STValidation::sign (SecretKey const& secretKey)
 {
     setFlag (vfFullyCanonicalSig);
 
-    auto signingHash = getSigningHash ();
-    Blob signature;
-    raPriv.signNodePrivate (signingHash, signature);
-    setFieldVL (sfSignature, signature);
-
+    auto const signingHash = getSigningHash();
+    setFieldVL (sfSignature,
+        signDigest (getSignerPublic(), secretKey, signingHash));
     return signingHash;
 }
 
@@ -104,11 +105,10 @@ bool STValidation::isValid (uint256 const& signingHash) const
 {
     try
     {
-        const ECDSA fullyCanonical = getFlags () & vfFullyCanonicalSig ?
-                                            ECDSA::strict : ECDSA::not_strict;
-        RippleAddress   raPublicKey = RippleAddress::createNodePublic (getFieldVL (sfSigningPubKey));
-        return raPublicKey.isValid () &&
-            raPublicKey.verifyNodePublic (signingHash, getFieldVL (sfSignature), fullyCanonical);
+        return verifyDigest (getSignerPublic(),
+            signingHash,
+            makeSlice(getFieldVL (sfSignature)),
+            getFlags () & vfFullyCanonicalSig);
     }
     catch (std::exception const&)
     {
@@ -117,11 +117,9 @@ bool STValidation::isValid (uint256 const& signingHash) const
     }
 }
 
-RippleAddress STValidation::getSignerPublic () const
+PublicKey STValidation::getSignerPublic () const
 {
-    RippleAddress a;
-    a.setNodePublic (getFieldVL (sfSigningPubKey));
-    return a;
+    return PublicKey(makeSlice (getFieldVL (sfSigningPubKey)));
 }
 
 bool STValidation::isFull () const

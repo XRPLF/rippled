@@ -22,7 +22,6 @@
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/tests/common.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/UInt160.h>
 #include <beast/unit_test/suite.h>
 #include <openssl/rand.h> // DEPRECATED
 

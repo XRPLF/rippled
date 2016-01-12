@@ -22,6 +22,8 @@
 
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/rpc/impl/Tuning.h>
+#include <ripple/protocol/Seed.h>
+#include <boost/optional.hpp>
 
 namespace Json {
 class Value;

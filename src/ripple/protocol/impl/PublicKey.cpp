@@ -79,64 +79,6 @@ sigPart (Slice& buf)
     return number;
 }
 
-template <std::size_t N>
-void
-swizzle (void* p);
-
-template<>
-void
-swizzle<4>(void* p)
-{
-    (*reinterpret_cast<std::uint32_t*>(p))=
-        beast::ByteOrder::swapIfLittleEndian(
-            *reinterpret_cast<std::uint32_t*>(p));
-}
-
-template<>
-void
-swizzle<8>(void* p)
-{
-    (*reinterpret_cast<std::uint64_t*>(p))=
-        beast::ByteOrder::swapIfLittleEndian(
-            *reinterpret_cast<std::uint64_t*>(p));
-}
-
-template <class Number>
-static
-void
-load (Number& mp, Slice const& buf)
-{
-    assert(buf.size() != 0);
-    auto& b = mp.backend();         // backend
-    auto const a = &b.limbs()[0];   // limb array
-    using Limb = std::decay_t<
-        decltype(a[0])>;            // word type
-    b.resize((buf.size() + sizeof(Limb) - 1) / sizeof(Limb), 1);
-    std::memset(&a[0], 0,
-        b.size() * sizeof(Limb));   // zero fill
-    auto n =
-        buf.size() / sizeof(Limb);
-    auto s = reinterpret_cast<Limb const*>(
-        buf.data() + buf.size() - sizeof(Limb));
-    auto d = a;
-    while(n--)
-    {
-        *d = *s;
-        swizzle<sizeof(Limb)>(d);
-        d++;
-        s--;
-    }
-    auto const r =
-        buf.size() % sizeof(Limb);
-    if (r > 0)
-    {
-        std::memcpy(
-            reinterpret_cast<std::uint8_t*>(d) + sizeof(Limb) - r,
-                buf.data(), r);
-        swizzle<sizeof(Limb)>(d);
-    }
-}
-
 static
 std::string
 sliceToHex (Slice const& slice)
@@ -189,15 +131,9 @@ ecdsaCanonicality (Slice const& sig)
     auto s = sigPart(p);
     if (! r || ! s || ! p.empty())
         return boost::none;
-#if 0
-    uint264 R;
-    uint264 S;
-    load(R, *r);
-    load(S, *s);
-#else
+
     uint264 R(sliceToHex(*r));
     uint264 S(sliceToHex(*s));
-#endif
 
     if (R >= G)
         return boost::none;
@@ -260,48 +196,6 @@ PublicKey::operator=(
     return *this;
 }
 
-KeyType
-PublicKey::type() const
-{
-    auto const result =
-        publicKeyType(Slice{ buf_, size_ });
-    if (! result)
-        LogicError("PublicKey::type: invalid type");
-    return *result;
-}
-
-bool
-PublicKey::verify (Slice const& m,
-    Slice const& sig, bool mustBeFullyCanonical) const
-{
-    switch(type())
-    {
-    case KeyType::secp256k1:
-    {
-        auto const digest = sha512Half(m);
-        auto const canonicality = ecdsaCanonicality(sig);
-        if (! canonicality)
-            return false;
-        if (mustBeFullyCanonical && canonicality !=
-                ECDSACanonicality::fullyCanonical)
-            return false;
-        return secp256k1_ecdsa_verify(
-            secp256k1Context(), secpp(digest.data()),
-                secpp(sig.data()), sig.size(),
-                    secpp(buf_), size_) == 1;
-    }
-    default:
-    case KeyType::ed25519:
-    {
-        if (! ed25519Canonical(sig))
-            return false;
-        return ed25519_sign_open(
-            m.data(), m.size(), buf_ + 1,
-                sig.data()) == 0;
-    }
-    }
-}
-
 //------------------------------------------------------------------------------
 
 boost::optional<KeyType>
@@ -318,31 +212,54 @@ publicKeyType (Slice const& slice)
 }
 
 bool
-verify (PublicKey const& pk,
-    Slice const& m, Slice const& sig)
+verifyDigest (PublicKey const& publicKey,
+    uint256 const& digest,
+    Slice const& sig,
+    bool mustBeFullyCanonical)
 {
-    switch(pk.type())
+    if (publicKeyType(publicKey) != KeyType::secp256k1)
+        LogicError("sign: secp256k1 required for digest signing");
+
+    auto const canonicality = ecdsaCanonicality(sig);
+    if (! canonicality)
+        return false;
+    if (mustBeFullyCanonical &&
+        (*canonicality != ECDSACanonicality::fullyCanonical))
+        return false;
+    return secp256k1_ecdsa_verify(
+        secp256k1Context(), secpp(digest.data()),
+            secpp(sig.data()), sig.size(),
+                secpp(publicKey.data()), publicKey.size()) == 1;
+}
+
+bool
+verify (PublicKey const& publicKey,
+    Slice const& m,
+    Slice const& sig,
+    bool mustBeFullyCanonical)
+{
+    if (auto const type = publicKeyType(publicKey))
     {
-    default:
-    case KeyType::secp256k1:
-    {
-        sha512_half_hasher h;
-        h(m.data(), m.size());
-        auto const digest =
-            sha512_half_hasher::result_type(h);
-        return secp256k1_ecdsa_verify(
-            secp256k1Context(), digest.data(),
-                sig.data(), sig.size(),
-                    pk.data(), pk.size()) == 1;
+        if (*type == KeyType::secp256k1)
+        {
+            return verifyDigest (publicKey,
+                sha512Half(m), sig, mustBeFullyCanonical);
+        }
+        else if (*type == KeyType::ed25519)
+        {
+            if (! ed25519Canonical(sig))
+                return false;
+
+            // We internally prefix Ed25519 keys with a 0xED
+            // byte to distinguish them from secp256k1 keys
+            // so when verifying the signature, we need to
+            // first strip that prefix.
+            return ed25519_sign_open(
+                m.data(), m.size(), publicKey.data() + 1,
+                    sig.data()) == 0;
+        }
     }
-    case KeyType::ed25519:
-    {
-        if (sig.size() != 64)
-            return false;
-        return ed25519_sign_open(m.data(),
-            m.size(), pk.data(), sig.data()) == 0;
-    }
-    }
+    return false;
 }
 
 NodeID

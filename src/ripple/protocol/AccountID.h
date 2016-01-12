@@ -84,8 +84,6 @@ template<>
 boost::optional<AccountID>
 parseHexOrBase58 (std::string const& s);
 
-// VFALCO NOTE These help transition away from RippleAddress
-
 /** Compute AccountID from public key.
 
     The account ID is computed as the 160-bit hash of the

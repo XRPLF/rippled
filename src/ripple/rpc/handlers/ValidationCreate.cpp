@@ -22,37 +22,44 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/Seed.h>
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
+
+static
+boost::optional<Seed>
+validationSeed (Json::Value const& params)
+{
+    if (!params.isMember (jss::secret))
+        return randomSeed ();
+
+    return parseGenericSeed (params[jss::secret].asString ());
+}
 
 // {
 //   secret: <string>   // optional
 // }
 //
-// This command requires Role::ADMIN access because it makes no sense to ask
-// an untrusted server for this.
+// This command requires Role::ADMIN access because it makes
+// no sense to ask an untrusted server for this.
 Json::Value doValidationCreate (RPC::Context& context)
 {
-    RippleAddress   raSeed;
     Json::Value     obj (Json::objectValue);
 
-    if (!context.params.isMember (jss::secret))
-    {
-        JLOG (context.j.debug) << "Creating random validation seed.";
+    auto seed = validationSeed(context.params);
 
-        raSeed.setSeedRandom ();                // Get a random seed.
-    }
-    else if (!raSeed.setSeedGeneric (context.params[jss::secret].asString ()))
-    {
+    if (!seed)
         return rpcError (rpcBAD_SEED);
-    }
 
-    obj[jss::validation_public_key]
-            = RippleAddress::createNodePublic (raSeed).humanNodePublic ();
-    obj[jss::validation_seed] = raSeed.humanSeed ();
-    obj[jss::validation_key] = raSeed.humanSeed1751 ();
+    obj[jss::validation_public_key] = toBase58 (
+        TokenType::TOKEN_NODE_PUBLIC,
+        derivePublicKey (
+            KeyType::secp256k1,
+            generateSecretKey (KeyType::secp256k1, *seed)));
+
+    obj[jss::validation_seed] = toBase58 (*seed);
+    obj[jss::validation_key] = seedAs1751 (*seed);
 
     return obj;
 }

@@ -73,6 +73,14 @@ preflight1 (PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    auto const spk = ctx.tx.getSigningPubKey();
+
+    if (!spk.empty () && !publicKeyType (makeSlice (spk)))
+    {
+        JLOG(ctx.j.debug) << "preflight1: invalid signing key";
+        return temBAD_SIGNATURE;
+    }
+
     return tesSUCCESS;
 }
 
@@ -317,12 +325,8 @@ Transactor::checkSign (PreclaimContext const& ctx)
     if ((ctx.view.rules().enabled(featureMultiSign,
             ctx.app.config().features)))
     {
-        auto pk =
-            RippleAddress::createAccountPublic(
-                ctx.tx.getSigningPubKey());
-
         // If the pk is empty, then we must be multi-signing.
-        if (pk.getAccountPublic ().empty ())
+        if (ctx.tx.getSigningPubKey().empty ())
             return checkMultiSign (ctx);
     }
 
@@ -340,10 +344,17 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
 
     // Consistency: Check signature
     // Verify the transaction's signing public key is authorized for signing.
-    auto const pk =
-        RippleAddress::createAccountPublic(
-            ctx.tx.getSigningPubKey());
-    auto const pkAccount = calcAccountID(pk);
+    auto const spk = ctx.tx.getSigningPubKey();
+    if (!publicKeyType (makeSlice (spk)))
+    {
+        JLOG(ctx.j.trace) <<
+            "checkSingleSign: signing public key type is unknown";
+        return tefBAD_AUTH; // FIXME: should be better error!
+    }
+
+    auto const pkAccount = calcAccountID (
+        PublicKey (makeSlice (spk)));
+
     if (pkAccount == id)
     {
         // Authorized to continue.
@@ -358,13 +369,13 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     else if (hasAuthKey)
     {
         JLOG(ctx.j.trace) <<
-            "applyTransaction: Delay: Not authorized to use account.";
+            "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
         JLOG(ctx.j.trace) <<
-            "applyTransaction: Invalid: Not authorized to use account.";
+            "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;
     }
 
@@ -431,9 +442,17 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
         // We found the SigningAccount in the list of valid signers.  Now we
         // need to compute the accountID that is associated with the signer's
         // public key.
+        auto const spk = txSigner.getFieldVL (sfSigningPubKey);
+
+        if (!publicKeyType (makeSlice(spk)))
+        {
+            JLOG(ctx.j.trace) <<
+                "checkMultiSign: signing public key type is unknown";
+            return tefBAD_SIGNATURE;
+        }
+
         AccountID const signingAcctIDFromPubKey =
-            calcAccountID(RippleAddress::createAccountPublic (
-                txSigner.getFieldVL (sfSigningPubKey)));
+            calcAccountID(PublicKey (makeSlice(spk)));
 
         // Verify that the signingAcctID and the signingAcctIDFromPubKey
         // belong together.  Here is are the rules:

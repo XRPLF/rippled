@@ -72,7 +72,7 @@ public:
     void
     storeProposal (
         LedgerProposal::ref proposal,
-        RippleAddress const& peerPublic) override;
+        NodeID const& nodeID) override;
 
     void
     setProposing (bool p, bool v);

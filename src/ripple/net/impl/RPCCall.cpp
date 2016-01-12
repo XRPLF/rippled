@@ -585,11 +585,9 @@ private:
         if (bPeer && iCursor >= 2)
             strPeer = jvParams[iCursor].asString ();
 
-        RippleAddress   raAddress;
-
-        if (! raAddress.setAccountPublic (strIdent) &&
+        if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strIdent) &&
             ! parseBase58<AccountID>(strIdent) &&
-                ! raAddress.setSeedGeneric (strIdent))
+            ! parseGenericSeed(strIdent))
             return rpcError (rpcACT_MALFORMED);
 
         // Get info on account.
@@ -602,11 +600,9 @@ private:
 
         if (!strPeer.empty ())
         {
-            RippleAddress   raPeer;
-
-            if (! raPeer.setAccountPublic (strPeer) &&
+            if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strPeer) &&
                 ! parseBase58<AccountID>(strPeer) &&
-                    ! raPeer.setSeedGeneric (strPeer))
+                ! parseGenericSeed (strPeer))
                 return rpcError (rpcACT_MALFORMED);
 
             jvRequest["peer"]   = strPeer;
@@ -729,8 +725,6 @@ private:
     {
         std::string strNode     = jvParams[0u].asString ();
         std::string strComment  = (jvParams.size () == 2) ? jvParams[1u].asString () : "";
-
-        RippleAddress   naNodePublic;
 
         if (strNode.length ())
         {
@@ -953,10 +947,6 @@ public:
             {   "unl_add",              &RPCParser::parseUnlAdd,                1,  2   },
             {   "unl_delete",           &RPCParser::parseUnlDelete,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },
-            {   "unl_load",             &RPCParser::parseAsIs,                  0,  0   },
-            {   "unl_network",          &RPCParser::parseAsIs,                  0,  0   },
-            {   "unl_reset",            &RPCParser::parseAsIs,                  0,  0   },
-            {   "unl_score",            &RPCParser::parseAsIs,                  0,  0   },
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
             {   "version",              &RPCParser::parseAsIs,                  0,  0   },

@@ -22,7 +22,6 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
-#include <ripple/protocol/RippleAddress.h>
 #include <ripple/resource/Consumer.h>
 #include <ripple/protocol/Book.h>
 #include <beast/threads/Stoppable.h>

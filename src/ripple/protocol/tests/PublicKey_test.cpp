@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
 #include <beast/unit_test/suite.h>
 #include <vector>
 
@@ -80,8 +81,10 @@ public:
             answer;
     }
 
-    void run() override
+    void testCanonical()
     {
+        testcase ("Canonical");
+
         // Fully canonical
         expect (check(ECDSACanonicality::fullyCanonical,
             "3045"
@@ -223,6 +226,167 @@ public:
             "3045"
             "02205990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba6105"
             "0221002d5876262c288beb511d061691bf26777344b702b00f8fe28621fe4e566695ed"));
+    }
+
+    void testBase58 (KeyType keyType)
+    {
+        // Try converting short, long and malformed data
+        expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, ""));
+        expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, " "));
+        expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, "!ty89234gh45"));
+
+        auto const good = toBase58 (
+            TokenType::TOKEN_NODE_PUBLIC,
+            derivePublicKey (
+                keyType,
+                randomSecretKey()));
+
+        // Short (non-empty) strings
+        {
+            auto s = good;
+
+            // Remove all characters from the string in random order:
+            std::hash<std::string> r;
+
+            while (!s.empty())
+            {
+                s.erase (r(s) % s.size(), 1);
+                expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+            }
+        }
+
+        // Long strings
+        for (std::size_t i = 1; i != 16; i++)
+        {
+            auto s = good;
+            s.resize (s.size() + i, s[i % s.size()]);
+            expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+        }
+
+        // Strings with invalid Base58 characters
+        for (auto c : std::string ("0IOl"))
+        {
+            for (std::size_t i = 0; i != good.size(); ++i)
+            {
+                auto s = good;
+                s[i % s.size()] = c;
+                expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+            }
+        }
+
+        // Strings with incorrect prefix
+        {
+            auto s = good;
+
+            for (auto c : std::string("apsrJqtv7"))
+            {
+                s[0] = c;
+                expect (!parseBase58<PublicKey> (TOKEN_NODE_PUBLIC, s));
+            }
+        }
+
+        // Try some random secret keys
+        std::array <PublicKey, 32> keys;
+
+        for (std::size_t i = 0; i != keys.size(); ++i)
+            keys[i] = derivePublicKey (keyType, randomSecretKey());
+
+        for (std::size_t i = 0; i != keys.size(); ++i)
+        {
+            auto const si = toBase58 (
+                TokenType::TOKEN_NODE_PUBLIC,
+                keys[i]);
+            expect (!si.empty());
+
+            auto const ski = parseBase58<PublicKey> (
+                TOKEN_NODE_PUBLIC, si);
+            expect (ski && (keys[i] == *ski));
+
+            for (std::size_t j = i; j != keys.size(); ++j)
+            {
+                expect ((keys[i] == keys[j]) == (i == j));
+
+                auto const sj = toBase58 (
+                    TokenType::TOKEN_NODE_PUBLIC,
+                    keys[j]);
+
+                expect ((si == sj) == (i == j));
+
+                auto const skj = parseBase58<PublicKey> (
+                    TOKEN_NODE_PUBLIC, sj);
+                expect (skj && (keys[j] == *skj));
+
+                expect ((*ski == *skj) == (i == j));
+            }
+        }
+    }
+
+    void testBase58 ()
+    {
+        testcase ("Base58: secp256k1");
+
+        {
+            auto const pk1 = derivePublicKey (
+                KeyType::secp256k1,
+                generateSecretKey (
+                    KeyType::secp256k1,
+                    generateSeed ("masterpassphrase")));
+
+            auto const pk2 = parseBase58<PublicKey> (
+                TOKEN_NODE_PUBLIC,
+                "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
+            expect (pk2);
+
+            expect (pk1 == *pk2);
+        }
+
+        testBase58 (KeyType::secp256k1);
+
+        testcase ("Base58: ed25519");
+
+        {
+            auto const pk1 = derivePublicKey (
+                KeyType::ed25519,
+                generateSecretKey (
+                    KeyType::ed25519,
+                    generateSeed ("masterpassphrase")));
+
+            auto const pk2 = parseBase58<PublicKey> (
+                TOKEN_NODE_PUBLIC,
+                "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
+            expect (pk2);
+
+            expect (pk1 == *pk2);
+        }
+
+        testBase58 (KeyType::ed25519);
+    }
+
+    void testMiscOperations ()
+    {
+        testcase ("Miscellaneous operations");
+
+        auto const pk1 = derivePublicKey (
+            KeyType::secp256k1,
+            generateSecretKey (
+                KeyType::secp256k1,
+                generateSeed ("masterpassphrase")));
+
+        PublicKey pk2 (pk1);
+        expect (pk1 == pk2);
+        expect (pk2 == pk1);
+
+        PublicKey pk3;
+        pk3 = pk2;
+        expect (pk3 == pk2);
+        expect (pk1 == pk3);
+    }
+
+    void run() override
+    {
+        testBase58();
+        testCanonical();
+        testMiscOperations();
     }
 };
 

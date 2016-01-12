@@ -44,8 +44,6 @@ class Family;
 class HashRouter;
 class Logs;
 class LoadFeeTrack;
-class LocalCredentials;
-class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
 class InboundTransactions;
@@ -64,6 +62,7 @@ class TimeKeeper;
 class TransactionMaster;
 class TxQ;
 class Validations;
+class ValidatorList;
 class Cluster;
 
 class DatabaseCon;
@@ -117,7 +116,7 @@ public:
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;
     virtual TxQ&                    getTxQ() = 0;
-    virtual UniqueNodeList&         getUNL () = 0;
+    virtual ValidatorList&          validators () = 0;
     virtual Cluster&                cluster () = 0;
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;
@@ -129,7 +128,11 @@ public:
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
-    virtual LocalCredentials&       getLocalCredentials () = 0;
+
+    virtual
+    std::pair<PublicKey, SecretKey> const&
+    nodeIdentity () = 0;
+
     virtual Resource::Manager&      getResourceManager () = 0;
     virtual PathRequests&           getPathRequests () = 0;
     virtual SHAMapStore&            getSHAMapStore () = 0;

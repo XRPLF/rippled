@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2015 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,29 +17,24 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/UniqueNodeList.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/rpc/impl/Handler.h>
-#include <beast/utility/make_lock.h>
+#ifndef RIPPLE_RPC_SIGNATUREKEYPAIR_H_INCLUDED
+#define RIPPLE_RPC_SIGNATUREKEYPAIR_H_INCLUDED
+
+#include <ripple/json/json_reader.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/Seed.h>
 
 namespace ripple {
+namespace RPC {
 
-// Populate the UNL from a local validators.txt file.
-Json::Value doUnlLoad (RPC::Context& context)
-{
-    auto lock = beast::make_lock(context.app.getMasterMutex());
+boost::optional<Seed>
+getSeedFromRPC (Json::Value const& params);
 
-    if (context.app.config().VALIDATORS_FILE.empty ()
-        || !context.app.getUNL ().nodeLoad (context.app.config().VALIDATORS_FILE))
-    {
-        return rpcError (rpcLOAD_FAILED);
-    }
+std::pair<PublicKey, SecretKey>
+keypairForSignature (Json::Value const& params, Json::Value& error);
 
-    return RPC::makeObjectValue ("loading");
-}
-
+} // RPC
 } // ripple
+
+#endif

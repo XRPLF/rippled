@@ -179,12 +179,11 @@ SetAccount::doApply ()
     bool sigWithMaster = false;
 
     {
-        auto const blob = ctx_.tx.getSigningPubKey();
+        auto const spk = ctx_.tx.getSigningPubKey();
 
-        if (!blob.empty ())
+        if (publicKeyType (makeSlice (spk)))
         {
-            auto const signingPubKey =
-                RippleAddress::createAccountPublic(blob);
+            PublicKey const signingPubKey (makeSlice (spk));
 
             if (calcAccountID(signingPubKey) == account_)
                 sigWithMaster = true;

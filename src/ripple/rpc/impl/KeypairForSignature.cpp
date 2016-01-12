@@ -22,68 +22,116 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/RippleAddress.h>
-#include <ripple/rpc/impl/KeypairForSignature.h>
+#include <ripple/rpc/KeypairForSignature.h>
 
 namespace ripple {
 namespace RPC {
 
-KeyPair keypairForSignature (Json::Value const& params, Json::Value& error)
+boost::optional<Seed>
+getSeedFromRPC (Json::Value const& params)
 {
-    bool const has_key_type   = params.isMember (jss::key_type);
-    bool const has_passphrase = params.isMember (jss::passphrase);
-    bool const has_secret     = params.isMember (jss::secret);
-    bool const has_seed       = params.isMember (jss::seed);
-    bool const has_seed_hex   = params.isMember (jss::seed_hex);
+    // This function is only called when `key_type` is present.
+    assert (params.isMember (jss::key_type));
 
-    int const n_secrets = has_passphrase + has_secret + has_seed + has_seed_hex;
+    bool const hasPassphrase = params.isMember (jss::passphrase);
+    bool const hasSeed       = params.isMember (jss::seed);
+    bool const hasHexSeed    = params.isMember (jss::seed_hex);
+
+    int const count =
+        (hasPassphrase ? 1 : 0) +
+        (hasSeed ? 1 : 0) +
+        (hasHexSeed ? 1 : 0);
+
+    if (count == 1)
+    {
+        if (hasSeed)
+            return parseBase58<Seed> (params[jss::seed].asString());
+
+        if (hasPassphrase)
+            return generateSeed (params[jss::passphrase].asString());
+
+        if (hasHexSeed)
+        {
+            uint128 seed;
+
+            if (seed.SetHexExact (params[jss::seed_hex].asString()))
+                return Seed { Slice(seed.data(), seed.size()) };
+
+            return boost::none;
+        }
+    }
+
+    return boost::none;
+}
+
+std::pair<PublicKey, SecretKey>
+keypairForSignature (Json::Value const& params, Json::Value& error)
+{
+    bool const has_key_type  = params.isMember (jss::key_type);
+    bool const hasPassphrase = params.isMember (jss::passphrase);
+    bool const hasSecret     = params.isMember (jss::secret);
+    bool const hasSeed       = params.isMember (jss::seed);
+    bool const hasSeedHex    = params.isMember (jss::seed_hex);
+
+    int const n_secrets =
+        (hasPassphrase ? 1 : 0) +
+        (hasSecret ? 1 : 0) +
+        (hasSeed ? 1 : 0) +
+        (hasSeedHex ? 1 : 0);
 
     if (n_secrets == 0)
     {
         error = RPC::missing_field_error (jss::secret);
-        return KeyPair();
+        return { };
     }
 
     if (n_secrets > 1)
     {
         // `passphrase`, `secret`, `seed`, and `seed_hex` are mutually exclusive.
         error = rpcError (rpcBAD_SECRET);
-        return KeyPair();
+        return { };
     }
 
-    if (has_key_type  &&  has_secret)
+    if (has_key_type && hasSecret)
     {
         // `secret` is deprecated.
         error = rpcError (rpcBAD_SECRET);
-        return KeyPair();
+        return { };
     }
 
-    KeyType type = KeyType::secp256k1;
-
-    RippleAddress seed;
+    KeyType keyType = KeyType::secp256k1;
+    boost::optional<Seed> seed;
 
     if (has_key_type)
     {
-        // `key_type` must be valid if present.
+        keyType = keyTypeFromString (
+            params[jss::key_type].asString());
 
-        type = keyTypeFromString (params[jss::key_type].asString());
-
-        if (type == KeyType::invalid)
+        if (keyType == KeyType::invalid)
         {
             error = rpcError (rpcBAD_SEED);
-            return KeyPair();
+            return { };
         }
 
         seed = getSeedFromRPC (params);
     }
     else
-    if (! seed.setSeedGeneric (params[jss::secret].asString ()))
+    {
+        seed = parseGenericSeed (
+            params[jss::secret].asString ());
+    }
+
+    if (!seed)
     {
         error = RPC::make_error (rpcBAD_SEED,
             RPC::invalid_field_message (jss::secret));
+        return { };
     }
 
-    return generateKeysFromSeed (type, seed);
+    if (keyType != KeyType::secp256k1 && keyType != KeyType::ed25519)
+        LogicError ("keypairForSignature: invalid key type");
+
+    return generateKeyPair (keyType, *seed);
 }
 
 } // RPC

@@ -26,7 +26,6 @@
 #include <ripple/overlay/impl/TMHello.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/Message.h>
-#include <ripple/app/misc/UniqueNodeList.h> // move to .cpp
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/asio/placeholders.h>

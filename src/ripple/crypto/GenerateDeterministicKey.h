@@ -29,12 +29,24 @@
 
 namespace ripple {
 
-Blob generateRootDeterministicPublicKey (const uint128& passPhrase);
-uint256 generateRootDeterministicPrivateKey (const uint128& passPhrase);
+Blob
+generateRootDeterministicPublicKey (
+    uint128 const& seed);
 
-Blob generatePublicDeterministicKey (Blob const& generator, int n);
-uint256 generatePrivateDeterministicKey (
-    Blob const& family, uint128 const& seed, int n);
+uint256
+generateRootDeterministicPrivateKey (
+    uint128 const& seed);
+
+Blob
+generatePublicDeterministicKey (
+    Blob const& generator,
+    int n);
+
+uint256
+generatePrivateDeterministicKey (
+    Blob const& family,
+    uint128 const& seed,
+    int n);
 
 } // ripple
 

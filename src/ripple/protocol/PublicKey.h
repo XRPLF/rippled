@@ -69,14 +69,10 @@ public:
     /** Create a public key.
 
         Preconditions:
-
             publicKeyType(Slice(data, size)) != boost::none
     */
     explicit
     PublicKey (Slice const& slice);
-
-    KeyType
-    type() const;
 
     std::uint8_t const*
     data() const noexcept
@@ -100,10 +96,6 @@ public:
     {
         return slice();
     }
-
-    bool
-    verify (Slice const& message, Slice const& sig,
-        bool mustBeFullyCanonical) const;
 };
 
 inline
@@ -206,21 +198,37 @@ ecdsaCanonicality (Slice const& sig);
 
 /** Returns the type of public key.
 
-    @return boost::none If the public key does
-            not represent a known type.
+    @return boost::none If the public key does not
+            represent a known type.
 */
+/** @{ */
 boost::optional<KeyType>
 publicKeyType (Slice const& slice);
 
-/** Verify a signature.
+inline
+boost::optional<KeyType>
+publicKeyType (PublicKey const& publicKey)
+{
+    return publicKeyType (publicKey.slice());
+}
+/** @} */
 
-    The algorithm is specific to Ripple:
-        secp256k1 signatures are computed
-        on the SHA512-Half of the message.
+/** Verify a secp256k1 signature on the digest of a message. */
+bool
+verifyDigest (PublicKey const& publicKey,
+    uint256 const& digest,
+    Slice const& sig,
+    bool mustBeFullyCanonical = true);
+
+/** Verify a signature on a message.
+    With secp256k1 signatures, the data is first hashed with
+    SHA512-Half, and the resulting digest is signed.
 */
 bool
-verify (PublicKey const& pk,
-    Slice const& message, Slice const& signature);
+verify (PublicKey const& publicKey,
+    Slice const& m,
+    Slice const& sig,
+    bool mustBeFullyCanonical = true);
 
 /** Calculate the 160-bit node ID from a node public key. */
 NodeID

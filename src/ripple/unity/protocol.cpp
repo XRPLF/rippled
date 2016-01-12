@@ -34,8 +34,8 @@
 #include <ripple/protocol/impl/PublicKey.cpp>
 #include <ripple/protocol/impl/Quality.cpp>
 #include <ripple/protocol/impl/Rate2.cpp>
-#include <ripple/protocol/impl/RippleAddress.cpp>
 #include <ripple/protocol/impl/SecretKey.cpp>
+#include <ripple/protocol/impl/Seed.cpp>
 #include <ripple/protocol/impl/Serializer.cpp>
 #include <ripple/protocol/impl/SField.cpp>
 #include <ripple/protocol/impl/Sign.cpp>
@@ -70,8 +70,9 @@
 #include <ripple/protocol/tests/Issue.test.cpp>
 #include <ripple/protocol/tests/PublicKey_test.cpp>
 #include <ripple/protocol/tests/Quality.test.cpp>
-#include <ripple/protocol/tests/RippleAddress.test.cpp>
 #include <ripple/protocol/tests/STAccount.test.cpp>
+#include <ripple/protocol/tests/Seed_test.cpp>
+#include <ripple/protocol/tests/SecretKey_test.cpp>
 #include <ripple/protocol/tests/STAmount.test.cpp>
 #include <ripple/protocol/tests/STObject.test.cpp>
 #include <ripple/protocol/tests/STTx.test.cpp>

@@ -35,10 +35,7 @@
 #include <boost/regex.hpp>
 #include <fstream>
 #include <iostream>
-
-#ifndef DUMP_CONFIG
-#define DUMP_CONFIG 0
-#endif
+#include <iterator>
 
 namespace ripple {
 
@@ -110,15 +107,6 @@ getIniFileSection (IniFileSections& secSource, std::string const& strSection)
     return smtResult;
 }
 
-int
-countSectionEntries (IniFileSections& secSource, std::string const& strSection)
-{
-    IniFileSections::mapped_type* pmtEntries =
-        getIniFileSection (secSource, strSection);
-
-    return pmtEntries ? pmtEntries->size () : 0;
-}
-
 bool getSingleSection (IniFileSections& secSource,
     std::string const& strSection, std::string& strValue, beast::Journal j)
 {
@@ -140,51 +128,15 @@ bool getSingleSection (IniFileSections& secSource,
     return bSingle;
 }
 
-/** Parses a set of strings into IP::Endpoint
-      Strings which fail to parse are not included in the output. If a stream is
-      provided, human readable diagnostic error messages are written for each
-      failed parse.
-      @param out An OutputSequence to store the IP::Endpoint list
-      @param first The begining of the string input sequence
-      @param last The one-past-the-end of the string input sequence
-*/
-template <class OutputSequence, class InputIterator>
-void
-parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
-    beast::Journal::Stream stream = beast::Journal::Stream ())
-{
-    while (first != last)
-    {
-        auto const str (*first);
-        ++first;
-        {
-            beast::IP::Endpoint const addr (
-                beast::IP::Endpoint::from_string (str));
-            if (! is_unspecified (addr))
-            {
-                out.push_back (addr);
-                continue;
-            }
-        }
-        {
-            beast::IP::Endpoint const addr (
-                beast::IP::Endpoint::from_string_altform (str));
-            if (! is_unspecified (addr))
-            {
-                out.push_back (addr);
-                continue;
-            }
-        }
-        if (stream) stream <<
-            "Config: \"" << str << "\" is not a valid IP address.";
-    }
-}
-
 //------------------------------------------------------------------------------
 //
 // Config (DEPRECATED)
 //
 //------------------------------------------------------------------------------
+
+char const* const Config::configFileName = "rippled.cfg";
+char const* const Config::databaseDirName = "db";
+char const* const Config::validatorsFileName = "validators.txt";
 
 static
 std::string
@@ -203,23 +155,23 @@ getEnvVar (char const* name)
 void Config::setup (std::string const& strConf, bool bQuiet)
 {
     boost::filesystem::path dataDir;
-    boost::system::error_code   ec;
-    std::string                 strDbPath, strConfFile;
+    boost::system::error_code ec;
+    std::string strDbPath, strConfFile;
 
-    //
     // Determine the config and data directories.
-    // If the config file is found in the current working directory, use the current working directory as the config directory and
-    // that with "db" as the data directory.
-    //
+    // If the config file is found in the current working
+    // directory, use the current working directory as the
+    // config directory and that with "db" as the data
+    // directory.
 
-    QUIET       = bQuiet;
+    QUIET = bQuiet;
 
-    strDbPath           = Helpers::getDatabaseDirName ();
-    strConfFile         = strConf.empty () ? Helpers::getConfigFileName () : strConf;
+    strDbPath = databaseDirName;
 
-    VALIDATORS_BASE     = Helpers::getValidatorsFileName ();
-
-    VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
+    if (!strConf.empty())
+        strConfFile = strConf;
+    else
+        strConfFile = configFileName;
 
     if (!strConf.empty ())
     {
@@ -328,12 +280,6 @@ void Config::loadFromString (std::string const& fileContents)
 
     build (secConfig);
 
-    if (auto s = getIniFileSection (secConfig, SECTION_VALIDATORS))
-        validators  = *s;
-
-    if (auto s = getIniFileSection (secConfig, SECTION_CLUSTER_NODES))
-        CLUSTER_NODES = *s;
-
     if (auto s = getIniFileSection (secConfig, SECTION_IPS))
         IPS = *s;
 
@@ -371,8 +317,6 @@ void Config::loadFromString (std::string const& fileContents)
                    boost::filesystem::absolute (p).string ());
         }
     }
-
-    (void) getSingleSection (secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE, j_);
 
     std::string strTemp;
 
@@ -419,24 +363,19 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_VALIDATION_SEED, strTemp, j_))
     {
-        VALIDATION_SEED.setSeedGeneric (strTemp);
-
-        if (VALIDATION_SEED.isValid ())
-        {
-            VALIDATION_PUB = RippleAddress::createNodePublic (VALIDATION_SEED);
-            VALIDATION_PRIV = RippleAddress::createNodePrivate (VALIDATION_SEED);
-        }
+        auto const seed = parseBase58<Seed>(strTemp);
+        if (!seed)
+            throw std::runtime_error (
+                "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
+        VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
+        VALIDATION_PUB = derivePublicKey (KeyType::secp256k1, VALIDATION_PRIV);
     }
 
-    if (getSingleSection (secConfig, SECTION_NODE_SEED, strTemp, j_))
+    if (getSingleSection (secConfig, SECTION_NODE_SEED, NODE_SEED, j_))
     {
-        NODE_SEED.setSeedGeneric (strTemp);
-
-        if (NODE_SEED.isValid ())
-        {
-            NODE_PUB = RippleAddress::createNodePublic (NODE_SEED);
-            NODE_PRIV = RippleAddress::createNodePrivate (NODE_SEED);
-        }
+        if (!parseBase58<Seed>(NODE_SEED))
+            throw std::runtime_error (
+                "Invalid seed specified in [" SECTION_NODE_SEED "]");
     }
 
     if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
@@ -489,9 +428,86 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_PATH_SEARCH_MAX, strTemp, j_))
         PATH_SEARCH_MAX     = beast::lexicalCastThrow <int> (strTemp);
 
+    // If a file was explicitly specified, then warn if the
+    // path is malformed or if the file does not exist or is
+    // not a file.
+    // If no path was specified, then look for validators.txt
+    // in the same path as the config file but don't complain
+    // if we can't find it.
+    boost::filesystem::path validatorsFile;
+
     if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))
     {
-        VALIDATORS_FILE     = strTemp;
+        validatorsFile = strTemp;
+
+        if (validatorsFile.empty ())
+        {
+            JLOG (j_.error) <<
+                "[" SECTION_VALIDATORS_FILE "]" <<
+                ": " << strTemp <<
+                " is not a valid path";
+            validatorsFile.clear ();
+        }
+        else if (!boost::filesystem::exists (validatorsFile))
+        {
+            JLOG (j_.error) <<
+                "[" SECTION_VALIDATORS_FILE "]" <<
+                ": the file " << validatorsFile <<
+                " does not exist";
+            validatorsFile.clear ();
+        }
+        else if (!boost::filesystem::is_regular_file (validatorsFile))
+        {
+            JLOG (j_.error) <<
+                "[" SECTION_VALIDATORS_FILE "]" <<
+                ": the file " << validatorsFile <<
+                " is not a regular file";
+            validatorsFile.clear ();
+        }
+    }
+    else
+    {
+        validatorsFile = CONFIG_DIR / validatorsFileName;
+
+        if (!validatorsFile.empty ())
+        {
+            if(!boost::filesystem::exists (validatorsFile))
+                validatorsFile.clear();
+            else if (!boost::filesystem::is_regular_file (validatorsFile))
+                validatorsFile.clear();
+        }
+    }
+
+    if (!validatorsFile.empty () &&
+            boost::filesystem::exists (validatorsFile) &&
+            boost::filesystem::is_regular_file (validatorsFile))
+    {
+        std::ifstream ifsDefault (validatorsFile.native().c_str());
+
+        std::string data;
+
+        data.assign (
+            std::istreambuf_iterator<char>(ifsDefault),
+            std::istreambuf_iterator<char>());
+
+        auto iniFile = parseIniFile (data, true);
+
+        auto entries = getIniFileSection (
+            iniFile,
+            SECTION_VALIDATORS);
+
+        if (!entries)
+        {
+            JLOG (j_.error) <<
+                "[" SECTION_VALIDATORS_FILE "]" <<
+                ": the file " << validatorsFile <<
+                " does not contain a [" SECTION_VALIDATORS <<
+                "] section";
+        }
+        else
+        {
+            section (SECTION_VALIDATORS).append (*entries);
+        }
     }
 
     if (getSingleSection (secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
@@ -573,37 +589,6 @@ boost::filesystem::path Config::getDebugLogFile () const
     }
 
     return log_file;
-}
-
-beast::File Config::getConfigDir () const
-{
-    beast::String const s (CONFIG_FILE.native().c_str ());
-    if (s.isNotEmpty ())
-        return beast::File (s).getParentDirectory ();
-    return beast::File::nonexistent ();
-}
-
-beast::File Config::getValidatorsFile () const
-{
-    beast::String const s (VALIDATORS_FILE.native().c_str());
-    if (s.isNotEmpty() && getConfigDir() != beast::File::nonexistent())
-        return getConfigDir().getChildFile (s);
-    return beast::File::nonexistent ();
-}
-
-beast::URL Config::getValidatorsURL () const
-{
-    return beast::parse_URL (VALIDATORS_SITE).second;
-}
-
-beast::File Config::getModuleDatabasePath () const
-{
-    boost::filesystem::path dbPath (legacy ("database_path"));
-
-    beast::String const s (dbPath.native ().c_str ());
-    if (s.isNotEmpty ())
-        return beast::File (s);
-    return beast::File::nonexistent ();
 }
 
 } // ripple

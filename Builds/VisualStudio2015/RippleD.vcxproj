@@ -1486,16 +1486,16 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\LoadManager.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\LocalCredentials.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\LocalCredentials.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\main\NodeIdentity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\main\NodeIdentity.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\NodeStoreScheduler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1542,6 +1542,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorList.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1562,17 +1566,13 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\TxQ.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\UniqueNodeList.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\UniqueNodeList.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -1747,6 +1747,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\TxQ_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\ValidatorList_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2150,15 +2154,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\Base58.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\Base58Data.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CAutoBN_CTX.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CBigNum.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\ECDSA.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECIES.h">
     </ClInclude>
@@ -2168,19 +2166,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSA.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2231,10 +2217,6 @@
     <ClInclude Include="..\..\src\ripple\crypto\RFC1751.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\tests\CKey.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\tests\ECDSACanonical.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2854,13 +2836,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\impl\secp256k1.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\protocol\impl\SecretKey.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Seed.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -2980,13 +2962,11 @@
     </ClInclude>
     <None Include="..\..\src\ripple\protocol\README.md">
     </None>
-    <ClInclude Include="..\..\src\ripple\protocol\RippleAddress.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\RippleLedgerHash.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\RipplePublicKey.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\SecretKey.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\Seed.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Serializer.h">
     </ClInclude>
@@ -3060,7 +3040,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\tests\RippleAddress.test.cpp">
+    <ClCompile Include="..\..\src\ripple\protocol\tests\SecretKey_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\tests\Seed_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3095,8 +3079,6 @@
     <ClInclude Include="..\..\src\ripple\protocol\TxFormats.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\types.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\UInt160.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\UintTypes.h">
     </ClInclude>
@@ -3379,22 +3361,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlLoad.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlNetwork.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlReset.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlScore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Unsubscribe.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3425,12 +3391,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\AccountFromString.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Accounts.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\Accounts.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\GetAccountObjects.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3447,8 +3407,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\KeypairForSignature.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\LegacyPathFind.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3494,6 +3452,8 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\Utilities.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\KeypairForSignature.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
     </ClInclude>

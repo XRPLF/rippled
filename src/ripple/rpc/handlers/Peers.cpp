@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/main/LocalCredentials.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Cluster.h>
@@ -32,7 +31,6 @@ namespace ripple {
 
 Json::Value doPeers (RPC::Context& context)
 {
-
     Json::Value jvResult (Json::objectValue);
 
     {
@@ -41,7 +39,7 @@ Json::Value doPeers (RPC::Context& context)
         jvResult[jss::peers] = context.app.overlay ().json ();
 
         auto const now = context.app.timeKeeper().now();
-        auto const self = context.app.getLocalCredentials().getNodePublic();
+        auto const self = context.app.nodeIdentity().first;
 
         Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
         std::uint32_t ref = context.app.getFeeTrack().getLoadBase();
@@ -52,7 +50,10 @@ Json::Value doPeers (RPC::Context& context)
                 if (node.identity() == self)
                     return;
 
-                Json::Value& json = cluster[node.identity().humanNodePublic()];
+                Json::Value& json = cluster[
+                    toBase58(
+                        TokenType::TOKEN_NODE_PUBLIC,
+                        node.identity())];
 
                 if (!node.name().empty())
                     json[jss::tag] = node.name();

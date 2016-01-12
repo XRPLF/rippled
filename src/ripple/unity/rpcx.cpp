@@ -83,10 +83,6 @@
 #include <ripple/rpc/handlers/UnlAdd.cpp>
 #include <ripple/rpc/handlers/UnlDelete.cpp>
 #include <ripple/rpc/handlers/UnlList.cpp>
-#include <ripple/rpc/handlers/UnlLoad.cpp>
-#include <ripple/rpc/handlers/UnlNetwork.cpp>
-#include <ripple/rpc/handlers/UnlReset.cpp>
-#include <ripple/rpc/handlers/UnlScore.cpp>
 #include <ripple/rpc/handlers/Unsubscribe.cpp>
 #include <ripple/rpc/handlers/ValidationCreate.cpp>
 #include <ripple/rpc/handlers/ValidationSeed.cpp>
@@ -94,7 +90,6 @@
 #include <ripple/rpc/handlers/WalletSeed.cpp>
 
 #include <ripple/rpc/impl/AccountFromString.cpp>
-#include <ripple/rpc/impl/Accounts.cpp>
 #include <ripple/rpc/impl/GetAccountObjects.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/KeypairForSignature.cpp>

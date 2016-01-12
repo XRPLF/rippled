@@ -23,10 +23,14 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/Seed.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/KeypairForSignature.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ed25519-donna/ed25519.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -40,73 +44,44 @@ Json::Value doWalletPropose (RPC::Context& context)
 
 Json::Value walletPropose (Json::Value const& params)
 {
-    RippleAddress   naSeed;
-    RippleAddress   naAccount;
+    boost::optional<Seed> seed;
 
-    KeyType type = KeyType::secp256k1;
+    KeyType keyType = KeyType::secp256k1;
 
-    bool const has_key_type   = params.isMember (jss::key_type);
-    bool const has_passphrase = params.isMember (jss::passphrase);
-
-    if (has_key_type)
+    if (params.isMember (jss::key_type))
     {
-        // `key_type` must be valid if present.
+        keyType = keyTypeFromString (
+            params[jss::key_type].asString());
 
-        type = keyTypeFromString (params[jss::key_type].asString());
+        if (keyType == KeyType::invalid)
+            return rpcError(rpcINVALID_PARAMS);
 
-        if (type == KeyType::invalid)
-        {
-            return rpcError (rpcBAD_SEED);
-        }
-
-        naSeed = getSeedFromRPC (params);
+        seed = RPC::getSeedFromRPC (params);
     }
-    else if (has_passphrase)
+    else if (params.isMember (jss::passphrase))
     {
-        naSeed.setSeedGeneric (params[jss::passphrase].asString());
+        seed = parseGenericSeed (
+            params[jss::passphrase].asString());
     }
     else
     {
-        naSeed.setSeedRandom();
+        seed = randomSeed ();
     }
 
-    if (!naSeed.isSet())
-    {
+    if (!seed)
         return rpcError(rpcBAD_SEED);
-    }
 
-    if (type == KeyType::secp256k1)
-    {
-        RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
-        naAccount.setAccountPublic (naGenerator, 0);
-    }
-    else if (type == KeyType::ed25519)
-    {
-        uint256 secretkey = keyFromSeed (naSeed.getSeed());
-
-        Blob publickey (33);
-        publickey[0] = 0xED;
-        ed25519_publickey (secretkey.data(), &publickey[1]);
-        secretkey.zero();  // security erase
-
-        naAccount.setAccountPublic (publickey);
-    }
-    else
-    {
-        assert (false);  // not reached
-    }
+    auto const publicKey = generateKeyPair (keyType, *seed).first;
 
     Json::Value obj (Json::objectValue);
 
-    obj[jss::master_seed] = naSeed.humanSeed ();
-    obj[jss::master_seed_hex] = to_string (naSeed.getSeed ());
-    obj[jss::master_key] = naSeed.humanSeed1751();
-    obj[jss::account_id] = toBase58(calcAccountID(naAccount));
-    obj[jss::public_key] = naAccount.humanAccountPublic();
-    obj[jss::key_type] = to_string (type);
-
-    auto acct = naAccount.getAccountPublic();
-    obj[jss::public_key_hex] = strHex(acct.begin(), acct.size());
+    obj[jss::master_seed] = toBase58 (*seed);
+    obj[jss::master_seed_hex] = strHex (seed->data(), seed->size());
+    obj[jss::master_key] = seedAs1751 (*seed);
+    obj[jss::account_id] = toBase58(calcAccountID(publicKey));
+    obj[jss::public_key] = toBase58(TOKEN_ACCOUNT_PUBLIC, publicKey);
+    obj[jss::key_type] = to_string (keyType);
+    obj[jss::public_key_hex] = strHex (publicKey.data(), publicKey.size());
 
     return obj;
 }

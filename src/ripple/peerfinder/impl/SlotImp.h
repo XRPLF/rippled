@@ -78,7 +78,7 @@ public:
         return m_local_endpoint;
     }
 
-    boost::optional <RipplePublicKey> const& public_key () const
+    boost::optional <PublicKey> const& public_key () const
     {
         return m_public_key;
     }
@@ -106,7 +106,7 @@ public:
         m_remote_endpoint = endpoint;
     }
 
-    void public_key (RipplePublicKey const& key)
+    void public_key (PublicKey const& key)
     {
         m_public_key = key;
     }
@@ -160,7 +160,7 @@ private:
     State m_state;
     beast::IP::Endpoint m_remote_endpoint;
     boost::optional <beast::IP::Endpoint> m_local_endpoint;
-    boost::optional <RipplePublicKey> m_public_key;
+    boost::optional <PublicKey> m_public_key;
 
     static std::int32_t BEAST_CONSTEXPR unknownPort = -1;
     std::atomic <std::int32_t> m_listening_port;

@@ -94,7 +94,7 @@ public:
     std::multiset <beast::IP::Address> connectedAddresses_;
 
     // Set of public keys belonging to active peers
-    std::set <RipplePublicKey> keys_;
+    std::set <PublicKey> keys_;
 
     // A list of dynamic sources to consult as a fallback
     std::vector <beast::SharedPtr <Source>> m_sources;
@@ -371,7 +371,7 @@ public:
 
     Result
     activate (SlotImp::ptr const& slot,
-        RipplePublicKey const& key, bool cluster)
+        PublicKey const& key, bool cluster)
     {
         if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Logic handshake " << slot->remote_endpoint () <<
