@@ -239,7 +239,6 @@ private:
         JLOG (j_.trace) << "VC: " << ledger << "f:" << full << " p:" << partial;
     }
 
-
     int getTrustedValidationCount (uint256 const& ledger) override
     {
         int trusted = 0;

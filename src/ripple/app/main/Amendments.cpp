@@ -17,14 +17,32 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <string>
+#include <vector>
 
-#include <ripple/app/main/BasicApp.cpp>
-#include <ripple/app/main/Amendments.cpp>
-#include <ripple/app/main/Application.cpp>
-#include <ripple/app/main/CollectorManager.cpp>
-#include <ripple/app/main/Main.cpp>
-#include <ripple/app/main/NodeStoreScheduler.cpp>
-#include <ripple/app/main/DBInit.cpp>
-#include <ripple/app/main/LoadManager.cpp>
-#include <ripple/app/main/LocalCredentials.cpp>
+namespace ripple {
+
+namespace detail {
+
+/** Amendments that this server supports and enables by default */
+std::vector<std::string>
+preEnabledAmendments ()
+{
+    return
+    {
+    };
+}
+
+/** Amendments that this server supports, but doesn't enable by default */
+std::vector<std::string>
+supportedAmendments ()
+{
+    return
+    {
+    };
+}
+
+}
+
+}
+
