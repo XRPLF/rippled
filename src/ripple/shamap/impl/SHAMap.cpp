@@ -80,37 +80,6 @@ SHAMap::snapShot (bool isMutable) const
     return ret;
 }
 
-SHAMap::SharedPtrNodeStack
-SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf) const
-{
-    // Walk the tree as far as possible to the specified identifier
-    // produce a stack of nodes along the way, with the terminal node at the top
-    SharedPtrNodeStack stack;
-
-    std::shared_ptr<SHAMapAbstractNode> node = root_;
-    SHAMapNodeID nodeID;
-
-    while (!node->isLeaf ())
-    {
-        stack.push ({node, nodeID});
-
-        int branch = nodeID.selectBranch (id);
-        assert (branch >= 0);
-        auto inner = std::static_pointer_cast<SHAMapInnerNode>(std::move(node));
-        if (inner->isEmptyBranch (branch))
-            return stack;
-
-        node = descendThrow (inner, branch);
-        nodeID = nodeID.getChildNodeID (branch);
-    }
-
-    if (include_nonmatching_leaf ||
-        (std::static_pointer_cast<SHAMapTreeNode>(node)->peekItem()->key() == id))
-        stack.push ({node, nodeID});
-
-    return stack;
-}
-
 void
 SHAMap::dirtyUp (SharedPtrNodeStack& stack,
                  uint256 const& target, std::shared_ptr<SHAMapAbstractNode> child)
@@ -156,7 +125,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     while (inNode->isInner())
     {
         auto const branch = nodeID.selectBranch (id);
-        auto const inner = std::static_pointer_cast<SHAMapInnerNode>(inNode);
+        auto const inner = std::static_pointer_cast<SHAMapInnerNode>(std::move(inNode));
         if (inner->isEmptyBranch (branch))
             return nullptr;
 
@@ -632,7 +601,8 @@ bool SHAMap::delItem (uint256 const& id)
     // delete the item with this ID
     assert (state_ != SHAMapState::Immutable);
 
-    auto stack = getStack (id, true);
+    SharedPtrNodeStack stack;
+    walkTowardsKey(id, &stack);
 
     if (stack.empty ())
         Throw<SHAMapMissingNode> (type_, id);
@@ -720,7 +690,8 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
 
     assert (state_ != SHAMapState::Immutable);
 
-    auto stack = getStack (tag, true);
+    SharedPtrNodeStack stack;
+    walkTowardsKey(tag, &stack);
 
     if (stack.empty ())
         Throw<SHAMapMissingNode> (type_, tag);
@@ -817,7 +788,8 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
 
     assert (state_ != SHAMapState::Immutable);
 
-    auto stack = getStack (tag, true);
+    SharedPtrNodeStack stack;
+    walkTowardsKey(tag, &stack);
 
     if (stack.empty ())
         Throw<SHAMapMissingNode> (type_, tag);

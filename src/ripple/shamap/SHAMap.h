@@ -233,10 +233,6 @@ private:
     void dirtyUp (SharedPtrNodeStack& stack,
                   uint256 const& target, std::shared_ptr<SHAMapAbstractNode> terminal);
 
-    /** Get the path from the root to the specified node */
-    SharedPtrNodeStack
-        getStack (uint256 const& id, bool include_nonmatching_leaf) const;
-
     /** Walk towards the specified id, returning the node.  Caller must check
         if the return is nullptr, and if not, if the node->peekItem()->key() == id */
     SHAMapTreeNode*
