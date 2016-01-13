@@ -557,6 +557,13 @@ public:
         return *m_networkOPs;
     }
 
+    std::unique_ptr<Config>
+    swapConfigForTest(std::unique_ptr<Config> c) override
+    {
+        config_.swap(c);
+        return c;
+    }
+
     boost::asio::io_service& getIOService () override
     {
         return get_io_service();

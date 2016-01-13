@@ -156,6 +156,9 @@ public:
     //        NOTE This will be replaced by class Validators
     //
     virtual DatabaseCon& getWalletDB () = 0;
+
+    virtual std::unique_ptr<Config>
+    swapConfigForTest(std::unique_ptr<Config>) = 0;
 };
 
 std::unique_ptr <Application>
