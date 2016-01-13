@@ -170,6 +170,21 @@ suite('JSON-RPC', function() {
     });
   });
 
+  test('subscribe manifests', function(done) {
+    var rippled_config = testutils.get_server_config(config);
+    var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
+    var http_config    = config.http_servers["zed"];
+
+    client.call('subscribe', [{
+      'url' :  "http://" + http_config.ip + ":" + http_config.port,
+      'streams' : [ 'manifests' ],
+    }], function (result) {
+      assert(typeof result === 'object');
+      assert(result.status === 'success');
+      done();
+    });
+  });
+
   test('subscribe validations', function(done) {
     var rippled_config = testutils.get_server_config(config);
     var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
@@ -179,7 +194,6 @@ suite('JSON-RPC', function() {
       'url' :  "http://" + http_config.ip + ":" + http_config.port,
       'streams' : [ 'validations' ],
     }], function (result) {
-      // console.log(JSON.stringify(result, undefined, 2));
       assert(typeof result === 'object');
       assert(result.status === 'success');
       done();

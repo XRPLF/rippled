@@ -77,6 +77,10 @@ Json::Value doUnsubscribe (RPC::Context& context)
             {
                 context.netOps.unsubLedger (ispSub->getSeq ());
             }
+            else if (streamName == "manifests")
+            {
+                context.netOps.unsubManifests (ispSub->getSeq ());
+            }
             else if (streamName == "transactions")
             {
                 context.netOps.unsubTransactions (ispSub->getSeq ());

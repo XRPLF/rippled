@@ -14,6 +14,10 @@ class test_Sign(TestCase):
         'JAAAABdxIe2DIKUZd9jDjKikknxnDfWCHkSXYZReFenvsmoVCdIw6nMhAnZ2dnZ2'
         'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkDOjlWtQSvRTjuwe+4iNusg0sJM'
         'zqkBJwDz30b2SkxZ7Fte/Vx4htM/kkfUfJCaxmxE5N4dHSKuiO9iDHsktqIA')
+    VALIDATOR_KEY_HUMAN = 'n9JijuoCv8ubEy5ag3LiX3hyq27GaLJsitZPbQ6APkwx2MkUXq8E'
+    SIGNATURE_HEX = (
+        '0a1546caa29c887f9fcb5e6143ea101b31fb5895a5cdfa24939301c66ff51794'
+        'a0b729e0ebbf576f2cc7cdb9f68c2366324a53b8e1ecf16f3c17bebbdb8d7102')
 
     def setUp(self):
         self.results = []
@@ -96,6 +100,11 @@ class test_Sign(TestCase):
             'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkDOjlWtQSvRTjuwe+4iNusg0sJM'
             'zqkBJwDz30b2SkxZ7Fte/Vx4htM/kkfUfJCaxmxE5N4dHSKuiO9iDHsktqIA')
 
+    def test_verify_signature(self):
+        Sign.verify_signature(self.SEQUENCE, self.VALIDATOR_KEY_HUMAN,
+            'nHUUaKHpxyRP4TZZ79tTpXuTpoM8pRNs5crZpGVA5jdrjib5easY',
+            self.SIGNATURE_HEX)
+
     def test_check(self):
         public = Base58.encode_version(Base58.VER_NODE_PRIVATE, 32 * 'k')
         Sign.perform_check(public, self.print)
@@ -125,3 +134,8 @@ class test_Sign(TestCase):
                'Z2dnZ2dkDOjlWtQSvRTjuwe+4iNusg0sJMzqkBJwDz30b2S\n'
                'kxZ7Fte/Vx4htM/kkfUfJCaxmxE5N4dHSKuiO9iDHsktqIA'],
               {}]])
+
+    def test_verify(self):
+        Sign.perform_verify(self.SEQUENCE, self.VALIDATOR_KEY_HUMAN,
+            'nHUUaKHpxyRP4TZZ79tTpXuTpoM8pRNs5crZpGVA5jdrjib5easY',
+            self.SIGNATURE_HEX, print=self.print)

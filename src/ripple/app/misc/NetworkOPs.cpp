@@ -436,6 +436,10 @@ public:
     bool subBook (InfoSub::ref ispListener, Book const&) override;
     bool unsubBook (std::uint64_t uListener, Book const&) override;
 
+    bool subManifests (InfoSub::ref ispListener) override;
+    bool unsubManifests (std::uint64_t uListener) override;
+    void pubManifest (Manifest const&) override;
+
     bool subTransactions (InfoSub::ref ispListener) override;
     bool unsubTransactions (std::uint64_t uListener) override;
 
@@ -526,6 +530,7 @@ private:
     subRpcMapType mRpcSubMap;
 
     SubMapType mSubLedger;            // Accepted ledgers.
+    SubMapType mSubManifests;         // Received validator manifests.
     SubMapType mSubServer;            // When server changes connectivity state.
     SubMapType mSubTransactions;      // All accepted transactions.
     SubMapType mSubRTTransactions;    // All proposed and accepted transactions.
@@ -1507,6 +1512,36 @@ void NetworkOPsImp::consensusViewChange ()
         setMode (omCONNECTED);
 }
 
+void NetworkOPsImp::pubManifest (Manifest const& mo)
+{
+    // VFALCO consider std::shared_mutex
+    ScopedLockType sl (mSubLock);
+
+    if (!mSubManifests.empty ())
+    {
+        Json::Value jvObj (Json::objectValue);
+
+        jvObj [jss::type]        = "manifestReceived";
+        jvObj [jss::master_key]  = toBase58(TokenType::TOKEN_NODE_PUBLIC, mo.masterKey);
+        jvObj [jss::signing_key] = toBase58(TokenType::TOKEN_NODE_PUBLIC, mo.signingKey);
+        jvObj [jss::seq]         = Json::UInt (mo.sequence);
+        jvObj [jss::signature]   = strHex (mo.getSignature ());
+
+        for (auto i = mSubManifests.begin (); i != mSubManifests.end (); )
+        {
+            if (auto p = i->second.lock())
+            {
+                p->send (jvObj, true);
+                ++i;
+            }
+            else
+            {
+                i = mSubManifests.erase (i);
+            }
+        }
+    }
+}
+
 void NetworkOPsImp::pubServer ()
 {
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
@@ -1568,9 +1603,7 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
 
         for (auto i = mSubValidations.begin (); i != mSubValidations.end (); )
         {
-            InfoSub::pointer p = i->second.lock ();
-
-            if (p)
+            if (auto p = i->second.lock())
             {
                 p->send (jvObj, true);
                 ++i;
@@ -2536,6 +2569,20 @@ bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 {
     ScopedLockType sl (mSubLock);
     return mSubLedger.erase (uSeq);
+}
+
+// <-- bool: true=added, false=already there
+bool NetworkOPsImp::subManifests (InfoSub::ref isrListener)
+{
+    ScopedLockType sl (mSubLock);
+    return mSubManifests.emplace (isrListener->getSeq (), isrListener).second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool NetworkOPsImp::unsubManifests (std::uint64_t uSeq)
+{
+    ScopedLockType sl (mSubLock);
+    return mSubManifests.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there

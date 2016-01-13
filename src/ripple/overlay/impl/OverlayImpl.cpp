@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
@@ -694,6 +695,10 @@ OverlayImpl::onManifests (
                 std::move(*mo),
                 app_.validators(),
                 journal);
+
+            if (result == ManifestDisposition::accepted ||
+                    result == ManifestDisposition::untrusted)
+                app_.getOPs().pubManifest (*make_Manifest(serialized));
 
             if (result == ManifestDisposition::accepted)
             {

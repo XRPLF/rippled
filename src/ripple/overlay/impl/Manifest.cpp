@@ -119,6 +119,14 @@ bool Manifest::revoked () const
     return sequence == std::numeric_limits<std::uint32_t>::max ();
 }
 
+Blob Manifest::getSignature () const
+{
+    STObject st (sfGeneric);
+    SerialIter sit (serialized.data (), serialized.size ());
+    st.set (sit);
+    return st.getFieldVL (sfSignature);
+}
+
 void
 ManifestCache::configValidatorKey(
     std::string const& line, beast::Journal journal)

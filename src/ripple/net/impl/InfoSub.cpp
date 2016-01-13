@@ -56,6 +56,7 @@ InfoSub::~InfoSub ()
     m_source.unsubTransactions (mSeq);
     m_source.unsubRTTransactions (mSeq);
     m_source.unsubLedger (mSeq);
+    m_source.unsubManifests (mSeq);
     m_source.unsubServer (mSeq);
     m_source.unsubValidations (mSeq);
     m_source.unsubPeerStatus (mSeq);
