@@ -30,6 +30,7 @@
 #include <map>
 #include <mutex>
 #include <set>
+#include <utility>
 
 namespace ripple {
 
@@ -79,10 +80,10 @@ public:
     void        updateComplete ();
     Json::Value getStatus ();
 
-    Json::Value doCreate (
+    std::pair<bool, Json::Value> doCreate (
         const RippleLineCache::pointer&,
-        Json::Value const&,
-        bool&);
+        Json::Value const&);
+
     Json::Value doClose (Json::Value const&);
     Json::Value doStatus (Json::Value const&);
 
