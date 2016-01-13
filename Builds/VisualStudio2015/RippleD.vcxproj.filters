@@ -424,12 +424,6 @@
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\unl">
-      <UniqueIdentifier>{843C622F-AA52-E6C5-D3EB-D4B6D564B395}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\unl\tests">
-      <UniqueIdentifier>{2C910562-8D0A-B115-B829-556779436F2F}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\websocket">
       <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
     </Filter>
@@ -4245,6 +4239,12 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\test\impl\BasicNetwork_test.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
@@ -4539,41 +4539,11 @@
     <ClCompile Include="..\..\src\ripple\unity\test.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\unl.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\websocket04.cpp">
       <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\tests\BasicNetwork.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\tests\Consensus_test.cpp">
-      <Filter>ripple\unl\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\tests\metrics.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\tests\Network_test.cpp">
-      <Filter>ripple\unl\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unl\tests\Sim1.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\tests\Sim2.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\tests\Sim3.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\unl\tests\Sim4.h">
-      <Filter>ripple\unl\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unl\tests\SlotPeer_test.cpp">
-      <Filter>ripple\unl\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
       <Filter>ripple\websocket</Filter>

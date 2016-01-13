@@ -884,7 +884,6 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
-    append_sources(result, *list_sources('src/ripple/unl', '.cpp'))
 
     if use_shp(toolchain):
         cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
@@ -928,7 +927,6 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/test.cpp',
-        'src/ripple/unity/unl.cpp',
     )
 
     if use_shp(toolchain):
