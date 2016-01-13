@@ -22,6 +22,9 @@ Usage:
     sign <sequence> <validator-public> <master-secret>
         Create a new signed manifest with the given sequence
         number, validator public key, and master secret key.
+
+    verify <sequence> <validator-public> <signature> <master-public>
+        Verify hex-encoded manifest signature with master public key.
     """
 
 def prepend_length_byte(b):
@@ -113,6 +116,16 @@ def get_signature(seq, validator_public_key_human, private_key_human):
     m1 = sign_manifest(m, private_key, pk)
     return base64.b64encode(m1)
 
+def verify_signature(seq, validator_public_key_human, public_key_human, signature):
+    v, validator_public_key = Base58.decode_version(validator_public_key_human)
+    check_validator_public(v, validator_public_key)
+
+    v, public_key = Base58.decode_version(public_key_human)
+
+    m = make_manifest(public_key, validator_public_key, seq)
+    public_key = public_key[1:]     # Remove ED25519_BYTE
+    sig = signature.decode('hex')
+    ed25519.checkvalid(sig, 'MAN\0' + m, public_key)
 
 # Testable versions of functions.
 def perform_create(urandom=os.urandom, print=print):
@@ -131,6 +144,12 @@ def perform_sign(
     print(wrap(get_signature(
         int(seq), validator_public_key_human, private_key_human)))
 
+def perform_verify(
+        seq, validator_public_key_human, public_key_human, signature, print=print):
+    verify_signature(
+        int(seq), validator_public_key_human, public_key_human, signature)
+    print('Signature valid for', public_key_human)
+
 # Externally visible versions of functions.
 def create():
     perform_create()
@@ -141,6 +160,8 @@ def check(s):
 def sign(seq, validator_public_key_human, private_key_human):
     perform_sign(seq, validator_public_key_human, private_key_human)
 
+def verify(seq, validator_public_key_human, public_key_human, signature):
+    perform_verify(seq, validator_public_key_human, public_key_human, signature)
 
 def usage(*errors):
     if errors:
@@ -148,7 +169,7 @@ def usage(*errors):
     print(USAGE)
     return not errors
 
-_COMMANDS = dict((f.__name__, f) for f in (create, check, sign))
+_COMMANDS = dict((f.__name__, f) for f in (create, check, sign, verify))
 
 def run_command(args):
     if not args:

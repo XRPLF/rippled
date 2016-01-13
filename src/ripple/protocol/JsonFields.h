@@ -341,6 +341,7 @@ JSS ( server_state );               // out: NetworkOPs
 JSS ( server_status );              // out: NetworkOPs
 JSS ( severity );                   // in: LogLevel
 JSS ( signature );                  // out: NetworkOPs
+JSS ( signing_key );                // out: NetworkOPs
 JSS ( signer_list );                // in: AccountObjects
 JSS ( snapshot );                   // in: Subscribe
 JSS ( source_account );             // in: PathRequest, RipplePathFind

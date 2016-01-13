@@ -22,6 +22,7 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
+#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/resource/Consumer.h>
 #include <ripple/protocol/Book.h>
 #include <beast/threads/Stoppable.h>
@@ -83,6 +84,10 @@ public:
         // VFALCO TODO Document the bool return value
         virtual bool subLedger (ref ispListener, Json::Value& jvResult) = 0;
         virtual bool unsubLedger (std::uint64_t uListener) = 0;
+
+        virtual bool subManifests (ref ispListener) = 0;
+        virtual bool unsubManifests (std::uint64_t uListener) = 0;
+        virtual void pubManifest (Manifest const&) = 0;
 
         virtual bool subServer (ref ispListener, Json::Value& jvResult,
             bool admin) = 0;

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/core/DatabaseCon.h>
@@ -93,9 +94,9 @@ public:
         auto const pk = derivePublicKey(type, sk);
 
         STObject st(sfGeneric);
-        set(st, sfSequence, seq);
-        set(st, sfPublicKey, pk);
-        set(st, sfSigningPubKey, spk);
+        st[sfSequence] = seq;
+        st[sfPublicKey] = pk;
+        st[sfSigningPubKey] = spk;
 
         sign(st, HashPrefix::manifest, type, sk);
         expect(verify(st, HashPrefix::manifest, pk, true));
@@ -179,6 +180,26 @@ public:
                                    boost::filesystem::path (dbName));
     }
 
+    void testGetSignature()
+    {
+        testcase ("getSignature");
+        auto const sk = randomSecretKey();
+        auto const pk = derivePublicKey(KeyType::ed25519, sk);
+        auto const kp = randomKeyPair(KeyType::secp256k1);
+        auto const m = make_Manifest (KeyType::ed25519, sk, kp.first, 0);
+
+        STObject st(sfGeneric);
+        st[sfSequence] = 0;
+        st[sfPublicKey] = pk;
+        st[sfSigningPubKey] = kp.first;
+        Serializer ss;
+        ss.add32(HashPrefix::manifest);
+        st.addWithoutSigningFields(ss);
+        auto const sig = sign(KeyType::ed25519, sk, ss.slice());
+
+        expect (strHex(sig) == strHex(m.getSignature()));
+    }
+
     void
     run() override
     {
@@ -227,6 +248,7 @@ public:
             expect (cache.applyManifest (clone (s_b2), *unl, journal) == invalid);
         }
         testLoadStore (cache, *unl);
+        testGetSignature ();
     }
 };
 

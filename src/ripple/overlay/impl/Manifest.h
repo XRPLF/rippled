@@ -98,6 +98,7 @@ struct Manifest
     bool verify () const;
     uint256 hash () const;
     bool revoked () const;
+    Blob getSignature () const;
 };
 
 boost::optional<Manifest> make_Manifest(std::string s);
