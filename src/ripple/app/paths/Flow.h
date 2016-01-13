@@ -23,7 +23,6 @@
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/protocol/Quality.h>
-
 namespace ripple
 {
 struct FlowParams
@@ -36,7 +35,7 @@ struct FlowParams
     boost::optional<STAmount> sendMax;
 };
 
-void
+std::vector<Strand>
 flow (PaymentSandbox& view,
     STAmount const& deliver,
     AccountID const& src,

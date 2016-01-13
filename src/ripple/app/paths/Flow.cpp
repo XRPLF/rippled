@@ -32,7 +32,7 @@
 
 namespace ripple {
 
-void
+std::vector<Strand>
 flow (
     PaymentSandbox& sb,
     STAmount const& deliver,
@@ -64,7 +64,7 @@ flow (
     if (sr.first != tesSUCCESS)
     {
         result.setResult (sr.first);
-        return;
+        return std::move (sr.second);
     }
 
     auto& strands = sr.second;
@@ -140,6 +140,8 @@ flow (
 
     if (strandSB)
         strandSB->apply (sb);
+
+    return std::move (strands);
 }
 
 } // ripple
