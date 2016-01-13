@@ -134,23 +134,28 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         sink.severity (beast::Journal::kTrace);
         auto j = l.journal ("Flow");
 
-        try
+        auto strands = [&]
         {
-            flow (newFlowSB, saDstAmountReq, uSrcAccountID, uDstAccountID,
-                spsPaths, flowParams, newFlowOut, l);
-        }
-        catch (std::exception& e)
-        {
-            j.trace << "Exception from flow" << e.what ();
-            if (!useOldFlowOutput)
-                throw;
-        }
-        catch (...)
-        {
-            j.trace << "Unknown exception from flow";
-            if (!useOldFlowOutput)
-                throw;
-        }
+            try
+            {
+                return flow (newFlowSB, saDstAmountReq, uSrcAccountID,
+                    uDstAccountID, spsPaths, flowParams, newFlowOut, l);
+            }
+            catch (std::exception& e)
+            {
+                j.trace << "Exception from flow" << e.what ();
+                if (!useOldFlowOutput)
+                    throw;
+                return std::vector<Strand>{};
+            }
+            catch (...)
+            {
+                j.trace << "Unknown exception from flow";
+                if (!useOldFlowOutput)
+                    throw;
+                return std::vector<Strand>{};
+            }
+        }();
 
         if (newFlowOut.result () != oldFlowOut.result () ||
             (newFlowOut.result () == tesSUCCESS &&
