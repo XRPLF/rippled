@@ -75,8 +75,8 @@ public:
             sMap.setUnbacked ();
 
         SHAMapItem i1 (h1, IntToVUC (1)), i2 (h2, IntToVUC (2)), i3 (h3, IntToVUC (3)), i4 (h4, IntToVUC (4)), i5 (h5, IntToVUC (5));
-        unexpected (!sMap.addItem (i2, true, false), "no add");
-        unexpected (!sMap.addItem (i1, true, false), "no add");
+        unexpected (!sMap.addItem (SHAMapItem{i2}, true, false), "no add");
+        unexpected (!sMap.addItem (SHAMapItem{i1}, true, false), "no add");
 
         auto i = sMap.begin();
         auto e = sMap.end();
@@ -85,9 +85,9 @@ public:
         unexpected (i == e || (*i != i2), "bad traverse");
         ++i;
         unexpected (i != e, "bad traverse");
-        sMap.addItem (i4, true, false);
+        sMap.addItem (SHAMapItem{i4}, true, false);
         sMap.delItem (i2.key());
-        sMap.addItem (i3, true, false);
+        sMap.addItem (SHAMapItem{i3}, true, false);
         i = sMap.begin();
         e = sMap.end();
         unexpected (i == e || (*i != i1), "bad traverse");
@@ -110,6 +110,7 @@ public:
         unexpected (!sMap.delItem (sMap.begin()->key()), "bad mod");
         unexpected (sMap.getHash () == mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
+        sMap.dump();
 
         if (backed)
             testcase ("build/tear backed");
@@ -144,7 +145,7 @@ public:
             for (int i = 0; i < keys.size(); ++i)
             {
                 SHAMapItem item (keys[i], IntToVUC (i));
-                expect (map.addItem (item, true, false), "unable to add item");
+                expect (map.addItem (std::move(item), true, false), "unable to add item");
                 expect (map.getHash().as_uint256() == hashes[i], "bad buildup map hash");
             }
             for (int i = keys.size() - 1; i >= 0; --i)

@@ -137,7 +137,6 @@ public:
     // normal hash access functions
     bool hasItem (uint256 const& id) const;
     bool delItem (uint256 const& id);
-    bool addItem (SHAMapItem const& i, bool isTransaction, bool hasMeta);
     bool addItem (SHAMapItem&& i, bool isTransaction, bool hasMeta);
     SHAMapHash getHash () const;
 
@@ -193,11 +192,9 @@ public:
 
     int flushDirty (NodeObjectType t, std::uint32_t seq);
     void walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) const;
-    bool deepCompare (SHAMap & other) const;
+    bool deepCompare (SHAMap & other) const;  // Intended for debug/test only
 
     using fetchPackEntry_t = std::pair <uint256, Blob>;
-
-    void visitDifferences(SHAMap* have, std::function<bool(SHAMapAbstractNode&)>) const;
 
     void getFetchPack (SHAMap * have, bool includeLeaves, int max,
         std::function<void (SHAMapHash const&, const Blob&)>) const;
@@ -212,6 +209,7 @@ private:
     using DeltaRef = std::pair<std::shared_ptr<SHAMapItem const> const&,
                                std::shared_ptr<SHAMapItem const> const&>;
 
+    void visitDifferences(SHAMap* have, std::function<bool(SHAMapAbstractNode&)>) const;
     int unshare ();
 
      // tree node cache operations
