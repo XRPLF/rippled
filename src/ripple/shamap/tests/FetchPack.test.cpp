@@ -103,7 +103,7 @@ public:
         {
             std::shared_ptr <SHAMapItem> item (
                 make_random_item (r));
-            auto const result (t.addItem (*item, false, false));
+            auto const result (t.addItem (std::move(*item), false, false));
             assert (result);
             (void) result;
         }

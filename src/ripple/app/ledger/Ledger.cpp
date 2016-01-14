@@ -416,7 +416,7 @@ Ledger::setAccepted(NetClock::time_point closeTime,
 bool Ledger::addSLE (SLE const& sle)
 {
     SHAMapItem item (sle.getIndex(), sle.getSerializer());
-    return stateMap_->addItem(item, false, false);
+    return stateMap_->addItem(std::move(item), false, false);
 }
 
 //------------------------------------------------------------------------------

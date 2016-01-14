@@ -755,11 +755,6 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     return true;
 }
 
-bool SHAMap::addItem (const SHAMapItem& i, bool isTransaction, bool hasMetaData)
-{
-    return addGiveItem(std::make_shared<SHAMapItem const>(i), isTransaction, hasMetaData);
-}
-
 bool
 SHAMap::addItem(SHAMapItem&& i, bool isTransaction, bool hasMetaData)
 {

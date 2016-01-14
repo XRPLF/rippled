@@ -59,7 +59,7 @@ public:
             std::shared_ptr<SHAMapItem> item = makeRandomAS ();
             items.push_back (item->key());
 
-            if (!map.addItem (*item, false, false))
+            if (!map.addItem (std::move(*item), false, false))
             {
                 log <<
                     "Unable to add item to map";
@@ -99,7 +99,7 @@ public:
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
-            source.addItem (*makeRandomAS (), false, false);
+            source.addItem (std::move(*makeRandomAS ()), false, false);
 
         unexpected (!confuseMap (source, 500), "ConfuseMap");
 
