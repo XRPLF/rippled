@@ -96,7 +96,6 @@ public:
     void rcvMessage (message_ptr const&, bool& msgRejected, bool& runQueue);
     boost::optional <std::string>  getMessage ();
     bool checkMessage ();
-    void returnMessage (message_ptr const&);
     Json::Value invokeCommand (Json::Value const& jvRequest,
         std::shared_ptr<JobCoro> jobCoro);
 
