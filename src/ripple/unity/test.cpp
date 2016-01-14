@@ -50,3 +50,4 @@
 
 #include <ripple/test/impl/BasicNetwork_test.cpp>
 #include <ripple/test/impl/ManualTimeKeeper.cpp>
+#include <ripple/test/impl/wsc_test.cpp>
