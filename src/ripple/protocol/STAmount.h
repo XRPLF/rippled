@@ -379,14 +379,6 @@ divide (STAmount const& v1, STAmount const& v2, Issue const& issue);
 STAmount
 multiply (STAmount const& v1, STAmount const& v2, Issue const& issue);
 
-// Required by the offer test
-NetClock::time_point
-underflowSwitchTime();
-
-/** Control when bugfixes that require switchover dates are disabled */
-void
-disableUnderflowFix(NetClock::time_point parentCloseTime);
-
 // multiply, or divide rounding result in specified direction
 STAmount
 mulRound (STAmount const& v1, STAmount const& v2,
@@ -410,6 +402,28 @@ inline bool isXRP(STAmount const& amount)
 }
 
 extern LocalValue<bool> stAmountCalcSwitchover;
+
+/** RAII class to set and restore the STAmount calc switchover.*/
+class STAmountSO
+{
+public:
+    explicit STAmountSO(NetClock::time_point const closeTime)
+        : saved_(*stAmountCalcSwitchover)
+    {
+        *stAmountCalcSwitchover = closeTime <= soTime;
+    }
+
+    ~STAmountSO()
+    {
+        *stAmountCalcSwitchover = saved_;
+    }
+
+    // Mon Dec 28, 2015 10:00:00am PST
+    static NetClock::time_point const soTime;
+
+private:
+    bool saved_;
+};
 
 } // ripple
 

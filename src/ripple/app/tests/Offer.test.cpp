@@ -151,9 +151,9 @@ public:
             - env.closed()->info().closeTimeResolution,
                 env.closed()->info().closeTimeResolution} )
         {
-            auto const closeTime = underflowSwitchTime() + timeDelta;
+            auto const closeTime = STAmountSO::soTime + timeDelta;
             env.close (closeTime);
-            disableUnderflowFix(closeTime);
+            *stAmountCalcSwitchover = closeTime <= STAmountSO::soTime;
             // Will fail without the underflow fix
             auto expectedResult = *stAmountCalcSwitchover ?
                 tesSUCCESS : tecPATH_PARTIAL;

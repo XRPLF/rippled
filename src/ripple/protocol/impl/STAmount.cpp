@@ -36,6 +36,8 @@
 namespace ripple {
 
 LocalValue<bool> stAmountCalcSwitchover(true);
+using namespace std::chrono_literals;
+const NetClock::time_point STAmountSO::soTime{504640800s};
 
 static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
@@ -1275,21 +1277,6 @@ divRound (STAmount const& num, STAmount const& den,
         return STAmount (issue, amount, offset, resultNegative);
     }
     return result;
-}
-
-NetClock::time_point
-underflowSwitchTime()
-{
-    using namespace std::chrono_literals;
-    // Mon Dec 28, 2015 10:00:00am PST
-    static NetClock::time_point const switchover{504640800s};
-    return switchover;
-}
-
-void
-disableUnderflowFix(NetClock::time_point parentCloseTime)
-{
-    *stAmountCalcSwitchover = parentCloseTime <= underflowSwitchTime();
 }
 
 } // ripple
