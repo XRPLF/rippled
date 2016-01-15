@@ -51,23 +51,8 @@ enum class Validity
 */
 std::pair<Validity, std::string>
 checkValidity(HashRouter& router,
-    STTx const& tx,
-        bool allowMultiSign);
-
-/** Checks transaction signature and local checks. Returns
-    a Validity enum representing how valid the STTx is
-    and, if not Valid, a reason string.
-    Results are cached internally, so tests will not be
-    repeated over repeated calls, unless cache expires.
-
-    @return std::pair, where `.first` is the status, and
-            `.second` is the reason if appropriate.
-*/
-std::pair<Validity, std::string>
-checkValidity(HashRouter& router,
     STTx const& tx, Rules const& rules,
-        Config const& config,
-            ApplyFlags const& flags = tapNONE);
+        Config const& config);
 
 
 /** Sets the validity of a given transaction in the cache.

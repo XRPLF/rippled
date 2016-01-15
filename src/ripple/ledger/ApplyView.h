@@ -32,12 +32,6 @@ enum ApplyFlags
     // Signature already checked
     tapNO_CHECK_SIGN    = 0x01,
 
-    // Enable supressed features for testing.
-    // This lets unit tests exercise code that
-    // is not turned on for production.
-    //
-    tapENABLE_TESTING   = 0x02,
-
     // We expect the transaction to have a later
     // sequence number than the account in the ledger
     tapPOST_SEQ         = 0x04,
@@ -47,7 +41,7 @@ enum ApplyFlags
     tapRETRY            = 0x20,
 
     // Transaction came from a privileged source
-    tapUNLIMITED            = 0x400,
+    tapUNLIMITED        = 0x400,
 };
 
 inline

@@ -66,7 +66,7 @@ Json::Value checkFee (
     bool doAutoFill,
     Config const& config,
     LoadFeeTrack const& feeTrack,
-    std::shared_ptr<ReadView const>& ledger);
+    std::shared_ptr<ReadView const> const& ledger);
 
 // Return a std::function<> that calls NetworkOPs::processTransaction.
 using ProcessTransactionFn =
@@ -89,8 +89,7 @@ Json::Value transactionSign (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ApplyFlags flags = tapNONE);
+    std::shared_ptr<ReadView const> const& ledger);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSubmit (
@@ -99,9 +98,8 @@ Json::Value transactionSubmit (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction,
-    ApplyFlags flags = tapNONE);
+    std::shared_ptr<ReadView const> const& ledger,
+    ProcessTransactionFn const& processTransaction);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSignFor (
@@ -110,8 +108,7 @@ Json::Value transactionSignFor (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ApplyFlags flags = tapNONE);
+    std::shared_ptr<ReadView const> const& ledger);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSubmitMultiSigned (
@@ -120,9 +117,8 @@ Json::Value transactionSubmitMultiSigned (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction,
-    ApplyFlags flags = tapNONE);
+    std::shared_ptr<ReadView const> const& ledger,
+    ProcessTransactionFn const& processTransaction);
 
 } // RPC
 } // ripple

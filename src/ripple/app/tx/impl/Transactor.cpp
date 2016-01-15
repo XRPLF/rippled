@@ -90,8 +90,7 @@ preflight2 (PreflightContext const& ctx)
 {
     if(!( ctx.flags & tapNO_CHECK_SIGN) &&
         checkValidity(ctx.app.getHashRouter(),
-            ctx.tx, ctx.rules, ctx.app.config(),
-                ctx.flags).first == Validity::SigBad)
+            ctx.tx, ctx.rules, ctx.app.config()).first == Validity::SigBad)
     {
         JLOG(ctx.j.debug) << "preflight2: bad signature";
         return temINVALID;

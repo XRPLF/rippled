@@ -34,8 +34,14 @@ namespace ripple {
 //------------------------------------------------------------------------------
 
 std::pair<Validity, std::string>
-checkValidity(HashRouter& router, STTx const& tx, bool allowMultiSign)
+checkValidity(HashRouter& router,
+    STTx const& tx, Rules const& rules,
+        Config const& config)
 {
+    auto const allowMultiSign =
+        rules.enabled(featureMultiSign,
+            config.features);
+
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
     if (flags & SF_SIGBAD)
@@ -74,19 +80,6 @@ checkValidity(HashRouter& router, STTx const& tx, bool allowMultiSign)
     }
     router.setFlags(id, SF_LOCALGOOD);
     return std::make_pair(Validity::Valid, "");
-}
-
-std::pair<Validity, std::string>
-checkValidity(HashRouter& router,
-    STTx const& tx, Rules const& rules,
-        Config const& config,
-            ApplyFlags const& flags)
-{
-    auto const allowMultiSign =
-        rules.enabled(featureMultiSign,
-            config.features);
-
-    return checkValidity(router, tx, allowMultiSign);
 }
 
 void

@@ -1826,8 +1826,7 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            std::shared_ptr<ReadView const> ledger,
-            ApplyFlags flags);
+            std::shared_ptr<ReadView const> const& ledger);
 
         using submitFunc = Json::Value (*) (
             Json::Value params,
@@ -1835,9 +1834,8 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            std::shared_ptr<ReadView const> ledger,
-            ProcessTransactionFn const& processTransaction,
-            ApplyFlags flags);
+            std::shared_ptr<ReadView const> const& ledger,
+            ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
             std::tuple <signFunc, submitFunc, char const*, unsigned int>;
@@ -1877,8 +1875,7 @@ public:
                             testRole,
                             1s,
                             env.app(),
-                            ledger,
-                            tapENABLE_TESTING);
+                            ledger);
                     }
                     else
                     {
@@ -1891,8 +1888,7 @@ public:
                             1s,
                             env.app(),
                             ledger,
-                            processTxn,
-                            tapENABLE_TESTING);
+                            processTxn);
                     }
 
                     std::string errStr;
