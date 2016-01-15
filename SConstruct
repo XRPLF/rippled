@@ -430,6 +430,7 @@ def get_libs(lib, static):
 
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
+    env.Append(CPPDEFINES=['RIPPLE_NEW_FLOW'])
     if is_debug_variant(variant):
         env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
 

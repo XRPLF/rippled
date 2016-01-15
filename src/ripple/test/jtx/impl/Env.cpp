@@ -236,10 +236,11 @@ Env::fund (bool setDefaultRipple,
 
 void
 Env::trust (STAmount const& amount,
-    Account const& account)
+    Account const& account,
+        std::uint32_t flags)
 {
     auto const start = balance(account);
-    apply(jtx::trust(account, amount),
+    apply(jtx::trust(account, amount, flags),
         jtx::seq(jtx::autofill),
             fee(jtx::autofill),
                 sig(jtx::autofill));

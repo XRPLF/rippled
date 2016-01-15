@@ -20,7 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
+#include <ripple/protocol/AmountSpec.h>
+#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/XRPAmount.h>
+
 #include <cstdint>
 #include <ostream>
 
@@ -35,11 +39,18 @@ namespace ripple {
     For offers, "in" is always TakerPays and "out" is
     always TakerGets.
 */
-struct Amounts
+template<class TIn, class TOut>
+struct TAmounts
 {
-    Amounts() = default;
+    TAmounts() = default;
 
-    Amounts (STAmount const& in_, STAmount const& out_)
+    TAmounts (beast::Zero, beast::Zero)
+        : in (beast::zero)
+        , out (beast::zero)
+    {
+    }
+
+    TAmounts (TIn const& in_, TOut const& out_)
         : in (in_)
         , out (out_)
     {
@@ -52,20 +63,49 @@ struct Amounts
         return in <= zero || out <= zero;
     }
 
-    STAmount in;
-    STAmount out;
+    TAmounts& operator+=(TAmounts const& rhs)
+    {
+        in += rhs.in;
+        out += rhs.out;
+        return *this;
+    }
+
+    TAmounts& operator-=(TAmounts const& rhs)
+    {
+        in -= rhs.in;
+        out -= rhs.out;
+        return *this;
+    }
+
+    TIn in;
+    TOut out;
 };
 
-inline
+template<class TIn, class TOut>
+TAmounts<TIn, TOut> make_Amounts(TIn const& in, TOut const& out)
+{
+    return TAmounts<TIn, TOut>(in, out);
+}
+
+using Amounts = TAmounts<STAmount, STAmount>;
+using AmountII = TAmounts<IOUAmount, IOUAmount>;
+using AmountXI = TAmounts<XRPAmount, IOUAmount>;
+using AmountIX = TAmounts<IOUAmount, XRPAmount>;
+
+template<class TIn, class TOut>
 bool
-operator== (Amounts const& lhs, Amounts const& rhs) noexcept
+operator== (
+    TAmounts<TIn, TOut> const& lhs,
+    TAmounts<TIn, TOut> const& rhs) noexcept
 {
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-inline
+template<class TIn, class TOut>
 bool
-operator!= (Amounts const& lhs, Amounts const& rhs) noexcept
+operator!= (
+    TAmounts<TIn, TOut> const& lhs,
+    TAmounts<TIn, TOut> const& rhs) noexcept
 {
     return ! (lhs == rhs);
 }
@@ -101,6 +141,13 @@ public:
     explicit
     Quality (Amounts const& amount);
 
+    /** Create a quality from the ratio of two amounts. */
+    template<class TIn, class TOut>
+    Quality (TOut const& out, TIn const& in)
+        : Quality (Amounts (toSTAmount (in),
+                            toSTAmount (out)))
+    {}
+
     /** Advances to the next higher quality level. */
     /** @{ */
     Quality&
@@ -134,6 +181,21 @@ public:
     ceil_in (Amounts const& amount, STAmount const& limit,
              STAmountCalcSwitchovers const& switchovers) const;
 
+    template<class TIn, class TOut>
+    TAmounts<TIn, TOut>
+    ceil_in (TAmounts<TIn, TOut> const& amount, TIn const& limit) const
+    {
+        if (amount.in <= limit)
+            return amount;
+
+        // swd TBD - temp implementation using STAmount - REPLACE ME
+        Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
+        STAmount stLim (toSTAmount (limit));
+        STAmountCalcSwitchovers switchover{true};
+        auto const stRes = ceil_in (stAmt, stLim, switchover);
+        return TAmounts<TIn, TOut> (toAmount<TIn> (stRes.in), toAmount<TOut> (stRes.out));
+    }
+
     /** Returns the scaled amount with out capped.
         Math is avoided if the result is exact. The input is clamped
         to prevent money creation.
@@ -141,6 +203,21 @@ public:
     Amounts
     ceil_out (Amounts const& amount, STAmount const& limit,
               STAmountCalcSwitchovers const& switchovers) const;
+
+    template<class TIn, class TOut>
+    TAmounts<TIn, TOut>
+    ceil_out (TAmounts<TIn, TOut> const& amount, TOut const& limit) const
+    {
+        if (amount.out <= limit)
+            return amount;
+
+        // swd TBD - temp implementation using STAmount - REPLACE ME
+        Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
+        STAmount stLim (toSTAmount (limit));
+        STAmountCalcSwitchovers switchover{true};
+        auto const stRes = ceil_out (stAmt, stLim, switchover);
+        return TAmounts<TIn, TOut> (toAmount<TIn> (stRes.in), toAmount<TOut> (stRes.out));
+    }
 
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
@@ -151,6 +228,13 @@ public:
     operator< (Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.m_value > rhs.m_value;
+    }
+
+    friend
+    bool
+    operator> (Quality const& lhs, Quality const& rhs) noexcept
+    {
+        return lhs.m_value < rhs.m_value;
     }
 
     friend

@@ -17,30 +17,34 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
-#define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
+#ifndef RIPPLE_APP_PATHS_FLOW_H_INCLUDED
+#define RIPPLE_APP_PATHS_FLOW_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <string>
+#include <ripple/app/paths/impl/Steps.h>
+#include <ripple/app/paths/RippleCalc.h>
+#include <ripple/protocol/Quality.h>
+namespace ripple
+{
+struct FlowParams
+{
+    bool defaultPaths = true;
+    bool deleteUnfunded = false;
+    bool partialPayment = false;
 
-namespace ripple {
+    boost::optional<Quality> limitQuality;
+    boost::optional<STAmount> sendMax;
+};
 
-/** Convert feature description to feature id. */
-/** @{ */
-uint256
-feature (std::string const& name);
+std::vector<Strand>
+flow (PaymentSandbox& view,
+    STAmount const& deliver,
+    AccountID const& src,
+    AccountID const& dst,
+    STPathSet const& paths,
+    FlowParams const& flowParams,
+    path::RippleCalc::Output& result,
+    Logs& logs);
 
-uint256
-feature (const char* name);
-/** @} */
-
-extern uint256 const featureMultiSign;
-extern uint256 const featureTickets;
-extern uint256 const featureSusPay;
-extern uint256 const featureTrustSetAuth;
-extern uint256 const featureFeeEscalation;
-extern uint256 const featureNewFlow;
-
-} // ripple
+}  // ripple
 
 #endif

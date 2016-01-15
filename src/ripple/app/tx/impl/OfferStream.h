@@ -29,24 +29,8 @@
 
 namespace ripple {
 
-/** Presents and consumes the offers in an order book.
-
-    Two `ApplyView` objects accumulate changes to the ledger. `view`
-    is applied when the calling transaction succeeds. If the calling
-    transaction fails, then `view_cancel` is applied.
-
-    Certain invalid offers are automatically removed:
-        - Offers with missing ledger entries
-        - Offers that expired
-        - Offers found unfunded:
-            An offer is found unfunded when the corresponding balance is zero
-            and the caller has not modified the balance. This is accomplished
-            by also looking up the balance in the cancel view.
-
-    When an offer is removed, it is removed from both views. This grooms the
-    order book regardless of whether or not the transaction is successful.
-*/
-class OfferStream
+template<class TIn=STAmount, class TOut=STAmount>
+class TOfferStreamBase
 {
 public:
     class StepCounter
@@ -77,21 +61,25 @@ public:
         }
     };
 
-private:
+protected:
     beast::Journal j_;
     ApplyView& view_;
     ApplyView& cancelView_;
     Book book_;
     NetClock::time_point const expire_;
     BookTip tip_;
-    Offer offer_;
+    TOffer<TIn, TOut> offer_;
+    boost::optional<TOut> ownerFunds_;
     StepCounter& counter_;
 
     void
     erase (ApplyView& view);
 
+    virtual
+    void
+    permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j) = 0;
 public:
-    OfferStream (ApplyView& view, ApplyView& cancelView,
+    TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
         Book const& book, NetClock::time_point when,
             StepCounter& counter, beast::Journal journal);
 
@@ -99,10 +87,10 @@ public:
         Offers are always presented in decreasing quality.
         Only valid if step() returned `true`.
     */
-    Offer const&
+    TOffer<TIn, TOut>&
     tip () const
     {
-        return offer_;
+        return const_cast<TOfferStreamBase*>(this)->offer_;
     }
 
     /** Advance to the next valid offer.
@@ -114,8 +102,75 @@ public:
     */
     bool
     step (Logs& l);
+
+    TOut ownerFunds () const
+    {
+        return *ownerFunds_;
+    }
 };
 
+/** Presents and consumes the offers in an order book.
+
+    Two `ApplyView` objects accumulate changes to the ledger. `view`
+    is applied when the calling transaction succeeds. If the calling
+    transaction fails, then `view_cancel` is applied.
+
+    Certain invalid offers are automatically removed:
+    - Offers with missing ledger entries
+    - Offers that expired
+    - Offers found unfunded:
+    An offer is found unfunded when the corresponding balance is zero
+    and the caller has not modified the balance. This is accomplished
+    by also looking up the balance in the cancel view.
+
+    When an offer is removed, it is removed from both views. This grooms the
+    order book regardless of whether or not the transaction is successful.
+*/
+class OfferStream : public TOfferStreamBase<>
+{
+protected:
+    virtual
+    void
+    permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j) override;
+public:
+    using TOfferStreamBase<>::TOfferStreamBase;
+};
+
+/** Presents and consumes the offers in an order book.
+
+    The `view_' ` `ApplyView` accumulates changes to the ledger.
+    The `cancelView_` is used to determine if an offer is found
+    unfunded or became unfunded.
+    The `toRemove` collection identifies offers that should be
+    removed even if the strand associated with this OfferStream
+    is not applied.
+
+    Certain invalid offers are added to the `toRemove` collection:
+    - Offers with missing ledger entries
+    - Offers that expired
+    - Offers found unfunded:
+    An offer is found unfunded when the corresponding balance is zero
+    and the caller has not modified the balance. This is accomplished
+    by also looking up the balance in the cancel view.
+*/
+template <class TIn, class TOut>
+class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
+{
+private:
+    std::vector<uint256> toRemove_;
+protected:
+    virtual
+    void
+    permRmOffer (std::shared_ptr<SLE> const& sle, beast::Journal j) override;
+
+public:
+    using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
+
+    std::vector<uint256> const& toRemove () const
+    {
+        return toRemove_;
+    };
+};
 }
 
 #endif

@@ -87,6 +87,31 @@ public:
         expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
             isOffer (env, "carol", BTC (49), XRP (49)));
     }
+    void testQualityLimit ()
+    {
+        using namespace jtx;
+        Env env (*this);
+        auto const gw = Account ("gateway");
+        auto const alice = Account ("alice");
+        auto const bob = Account ("bob");
+        auto const carol = Account ("carol");
+
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        env.fund (XRP (10000), alice, bob, carol, gw);
+        env.trust (USD (100), alice, bob, carol);
+        env.trust (EUR (100), alice, bob, carol);
+
+        env (pay (gw, alice, USD (50)));
+        env (pay (gw, bob, EUR (50)));
+
+        env (offer (bob, USD (1), EUR (25)));
+        env (offer (bob, USD (25), EUR (1)));
+
+        env (pay (alice, carol, EUR (50)), path (~EUR), sendmax (USD (40)),
+             txflags (tfLimitQuality | tfPartialPayment | tfNoRippleDirect));
+    }
     void testCanceledOffer ()
     {
         using namespace jtx;
@@ -165,6 +190,7 @@ public:
     }
     void run ()
     {
+        testQualityLimit ();
         testCanceledOffer ();
         testRmFundedOffer ();
         testTinyPayment ();

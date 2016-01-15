@@ -169,4 +169,9 @@
 #define RIPPLE_USE_OPENSSL 1
 #endif
 
+// Enables the experimental NewFlow payment processing
+#ifndef RIPPLE_NEW_FLOW
+#define RIPPLE_NEW_FLOW 0
+#endif
+
 #endif
