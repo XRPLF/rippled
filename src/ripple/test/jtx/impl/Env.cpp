@@ -387,8 +387,6 @@ ApplyFlags
 Env::applyFlags() const
 {
     ApplyFlags flags = tapNONE;
-    if (testing_)
-        flags = flags | tapENABLE_TESTING;
     if (nosig_)
         flags = flags | tapNO_CHECK_SIGN;
     return flags;

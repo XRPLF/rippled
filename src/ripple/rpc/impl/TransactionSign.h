@@ -89,8 +89,7 @@ Json::Value transactionSign (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ApplyFlags flags = tapNONE);
+    std::shared_ptr<ReadView const> ledger);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSubmit (
@@ -100,8 +99,7 @@ Json::Value transactionSubmit (
     std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction,
-    ApplyFlags flags = tapNONE);
+    ProcessTransactionFn const& processTransaction);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSignFor (
@@ -110,8 +108,7 @@ Json::Value transactionSignFor (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ApplyFlags flags = tapNONE);
+    std::shared_ptr<ReadView const> ledger);
 
 /** Returns a Json::objectValue. */
 Json::Value transactionSubmitMultiSigned (
@@ -121,8 +118,7 @@ Json::Value transactionSubmitMultiSigned (
     std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction,
-    ApplyFlags flags = tapNONE);
+    ProcessTransactionFn const& processTransaction);
 
 } // RPC
 } // ripple

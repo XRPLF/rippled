@@ -515,7 +515,7 @@ transactionPreProcessImpl (
 static
 std::pair <Json::Value, Transaction::pointer>
 transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
-    Rules const& rules, Application& app, ApplyFlags flags)
+    Rules const& rules, Application& app)
 {
     std::pair <Json::Value, Transaction::pointer> ret;
 
@@ -547,7 +547,7 @@ transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
             // Check the signature if that's called for.
             auto sttxNew = std::make_shared<STTx const> (sit);
             if (checkValidity(app.getHashRouter(),
-                *sttxNew, rules, app.config(), flags).first != Validity::Valid)
+                *sttxNew, rules, app.config()).first != Validity::Valid)
             {
                 ret.first = RPC::make_error (rpcINTERNAL,
                     "Invalid signature.");
@@ -696,8 +696,7 @@ Json::Value transactionSign (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ApplyFlags flags)
+    std::shared_ptr<ReadView const> ledger)
 {
     using namespace detail;
 
@@ -716,7 +715,7 @@ Json::Value transactionSign (
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
         transactionConstructImpl (
-            preprocResult.second, ledger->rules(), app, flags);
+            preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
@@ -732,8 +731,7 @@ Json::Value transactionSubmit (
     std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction,
-    ApplyFlags flags)
+    ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
 
@@ -752,7 +750,7 @@ Json::Value transactionSubmit (
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
         transactionConstructImpl (
-            preprocResult.second, ledger->rules(), app, flags);
+            preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
@@ -857,8 +855,7 @@ Json::Value transactionSignFor (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
-    ApplyFlags flags)
+    std::shared_ptr<ReadView const> ledger)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSignFor: " << jvRequest;
@@ -953,8 +950,7 @@ Json::Value transactionSignFor (
 
     // Make sure the STTx makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (
-            sttx, ledger->rules(), app, flags);
+        transactionConstructImpl (sttx, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
@@ -970,8 +966,7 @@ Json::Value transactionSubmitMultiSigned (
     std::chrono::seconds validatedLedgerAge,
     Application& app,
     std::shared_ptr<ReadView const> ledger,
-    ProcessTransactionFn const& processTransaction,
-    ApplyFlags flags)
+    ProcessTransactionFn const& processTransaction)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug)
@@ -1125,7 +1120,7 @@ Json::Value transactionSubmitMultiSigned (
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair <Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl (stpTrans, ledger->rules(), app, flags);
+        transactionConstructImpl (stpTrans, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;
