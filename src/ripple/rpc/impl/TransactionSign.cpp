@@ -144,7 +144,7 @@ static Json::Value checkPayment(
     AccountID const& srcAddressID,
     Role const role,
     Application& app,
-    std::shared_ptr<ReadView const>& ledger,
+    std::shared_ptr<ReadView const> const& ledger,
     bool doPath)
 {
     // Only path find for Payments.
@@ -339,7 +339,7 @@ transactionPreProcessImpl (
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> const& ledger)
 {
     auto j = app.journal ("RPCHandler");
 
@@ -624,7 +624,7 @@ Json::Value checkFee (
     bool doAutoFill,
     Config const& config,
     LoadFeeTrack const& feeTrack,
-    std::shared_ptr<ReadView const>& ledger)
+    std::shared_ptr<ReadView const> const& ledger)
 {
     Json::Value& tx (request[jss::tx_json]);
     if (tx.isMember (jss::Fee))
@@ -696,7 +696,7 @@ Json::Value transactionSign (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> const& ledger)
 {
     using namespace detail;
 
@@ -730,7 +730,7 @@ Json::Value transactionSubmit (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
+    std::shared_ptr<ReadView const> const& ledger,
     ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
@@ -855,7 +855,7 @@ Json::Value transactionSignFor (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger)
+    std::shared_ptr<ReadView const> const& ledger)
 {
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSignFor: " << jvRequest;
@@ -965,7 +965,7 @@ Json::Value transactionSubmitMultiSigned (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> ledger,
+    std::shared_ptr<ReadView const> const& ledger,
     ProcessTransactionFn const& processTransaction)
 {
     auto j = app.journal ("RPCHandler");

@@ -1826,7 +1826,7 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            std::shared_ptr<ReadView const> ledger);
+            std::shared_ptr<ReadView const> const& ledger);
 
         using submitFunc = Json::Value (*) (
             Json::Value params,
@@ -1834,7 +1834,7 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            std::shared_ptr<ReadView const> ledger,
+            std::shared_ptr<ReadView const> const& ledger,
             ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
