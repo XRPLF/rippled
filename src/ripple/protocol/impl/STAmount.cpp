@@ -1019,7 +1019,7 @@ divide (STAmount const& num, STAmount const& den, Issue const& issue)
 
     if ((BN_add_word64 (&v, numVal) != 1) ||
             (BN_mul_word64 (&v, tenTo17) != 1) ||
-            (BN_div_word64 (&v, denVal) == ((std::uint64_t) - 1)))
+            (BN_div_word64 (&v, denVal) != 1))
     {
         Throw<std::runtime_error> ("internal bn error");
     }
@@ -1084,7 +1084,7 @@ multiply (STAmount const& v1, STAmount const& v2, Issue const& issue)
 
     if ((BN_add_word64 (&v, value1) != 1) ||
             (BN_mul_word64 (&v, value2) != 1) ||
-            (BN_div_word64 (&v, tenTo14) == ((std::uint64_t) - 1)))
+            (BN_div_word64 (&v, tenTo14) != 1))
     {
         Throw<std::runtime_error> ("internal bn error");
     }
@@ -1197,7 +1197,7 @@ mulRound (STAmount const& v1, STAmount const& v2, Issue const& issue,
     if (resultNegative != roundUp) // rounding down is automatic when we divide
         BN_add_word64 (&v, tenTo14m1);
 
-    if  (BN_div_word64 (&v, tenTo14) == ((std::uint64_t) - 1))
+    if  (BN_div_word64 (&v, tenTo14) != 1)
         Throw<std::runtime_error> ("internal bn error");
 
     // 10^16 <= product <= 10^18
@@ -1257,7 +1257,7 @@ divRound (STAmount const& num, STAmount const& den,
     if (resultNegative != roundUp) // Rounding down is automatic when we divide
         BN_add_word64 (&v, denVal - 1);
 
-    if (BN_div_word64 (&v, denVal) == ((std::uint64_t) - 1))
+    if (BN_div_word64 (&v, denVal) != 1)
         Throw<std::runtime_error> ("internal bn error");
 
     // 10^16 <= quotient <= 10^18

@@ -50,6 +50,7 @@ public:
     CBigNum (unsigned long long n);
     explicit CBigNum (uint256 n);
     explicit CBigNum (Blob const& vch);
+    explicit CBigNum (BIGNUM const* b);
     CBigNum (unsigned char const* begin, unsigned char const* end);
     ~CBigNum ();
 
@@ -82,10 +83,6 @@ public:
     const CBigNum operator++ (int);
     const CBigNum operator-- (int);
 
-    friend inline const CBigNum operator- (const CBigNum& a, const CBigNum& b);
-    friend inline const CBigNum operator/ (const CBigNum& a, const CBigNum& b);
-    friend inline const CBigNum operator% (const CBigNum& a, const CBigNum& b);
-
 private:
     // private because the size of an unsigned long varies by platform
 
@@ -111,11 +108,11 @@ bool operator> (const CBigNum& a, const CBigNum& b);
 
 //------------------------------------------------------------------------------
 
-// VFALCO I believe only STAmount uses these
+// Only STAmount uses these (January 2016).
 int BN_add_word64 (BIGNUM* a, std::uint64_t w);
 int BN_sub_word64 (BIGNUM* a, std::uint64_t w);
 int BN_mul_word64 (BIGNUM* a, std::uint64_t w);
-std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w);
+int BN_div_word64 (BIGNUM* a, std::uint64_t w);
 
 }
 

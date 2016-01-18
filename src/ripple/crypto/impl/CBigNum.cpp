@@ -38,15 +38,8 @@ CBigNum::CBigNum ()
 }
 
 CBigNum::CBigNum (const CBigNum& b)
-{
-    BN_init (this);
-
-    if (!BN_copy (this, &b))
-    {
-        BN_clear_free (this);
-        Throw<std::runtime_error> ("CBigNum::CBigNum(const CBigNum&) : BN_copy failed");
-    }
-}
+: CBigNum (&b)
+{ }
 
 CBigNum& CBigNum::operator= (const CBigNum& b)
 {
@@ -124,6 +117,17 @@ CBigNum::CBigNum (Blob const& vch)
 {
     BN_init (this);
     setvch (&vch.front(), &vch.back()+1);
+}
+
+CBigNum::CBigNum (BIGNUM const* b)
+{
+    BN_init (this);
+
+    if (!BN_copy (this, b))
+    {
+        BN_clear_free (this);
+        Throw<std::runtime_error> ("CBigNum::CBigNum(BIGNUM const* b) : BN_copy failed");
+    }
 }
 
 CBigNum::CBigNum (unsigned char const* begin, unsigned char const* end)
@@ -643,9 +647,12 @@ int BN_mul_word64 (BIGNUM* bn, std::uint64_t word)
     return BN_mul_word (bn, word);
 }
 
-std::uint64_t BN_div_word64 (BIGNUM* bn, std::uint64_t word)
+// This function returns 1 on success like the three preceding functions.
+// In contrast, BN_div_word returns ( BN_ULONG )-1 on error.
+int BN_div_word64 (BIGNUM* bn, std::uint64_t word)
 {
-    return BN_div_word (bn, word);
+    BN_ULONG const remainder {BN_div_word (bn, word)};
+    return remainder == static_cast<BN_ULONG>(-1) ? 0 : 1;
 }
 
 #else
@@ -653,27 +660,28 @@ std::uint64_t BN_div_word64 (BIGNUM* bn, std::uint64_t word)
 int BN_add_word64 (BIGNUM* a, std::uint64_t w)
 {
     CBigNum bn (w);
-    return BN_add (a, &bn, a);
+    return BN_add (a, a, &bn);
 }
 
 int BN_sub_word64 (BIGNUM* a, std::uint64_t w)
 {
     CBigNum bn (w);
-    return BN_sub (a, &bn, a);
+    return BN_sub (a, a, &bn);
 }
 
 int BN_mul_word64 (BIGNUM* a, std::uint64_t w)
 {
     CBigNum bn (w);
     CAutoBN_CTX ctx;
-    return BN_mul (a, &bn, a, ctx);
+    return BN_mul (a, a, &bn, ctx);
 }
 
-std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w)
+int BN_div_word64 (BIGNUM* a, std::uint64_t w)
 {
     CBigNum bn (w);
+    CBigNum temp (a); // Copy a.  Destination may not be the same as dividend.
     CAutoBN_CTX ctx;
-    return (BN_div (a, nullptr, a, &bn, ctx) == 1) ? 0 : ((std::uint64_t) - 1);
+    return BN_div (a, nullptr, &temp, &bn, ctx);
 }
 
 #endif
