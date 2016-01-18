@@ -50,6 +50,7 @@ public:
     CBigNum (unsigned long long n);
     explicit CBigNum (uint256 n);
     explicit CBigNum (Blob const& vch);
+    explicit CBigNum (BIGNUM const* b);
     CBigNum (unsigned char const* begin, unsigned char const* end);
     ~CBigNum ();
 
@@ -81,10 +82,6 @@ public:
     CBigNum& operator-- ();
     const CBigNum operator++ (int);
     const CBigNum operator-- (int);
-
-    friend inline const CBigNum operator- (const CBigNum& a, const CBigNum& b);
-    friend inline const CBigNum operator/ (const CBigNum& a, const CBigNum& b);
-    friend inline const CBigNum operator% (const CBigNum& a, const CBigNum& b);
 
 private:
     // private because the size of an unsigned long varies by platform

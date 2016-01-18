@@ -30,6 +30,7 @@
 #include <ripple/crypto/impl/csprng.cpp>
 #include <ripple/crypto/impl/RFC1751.cpp>
 
+#include <ripple/crypto/tests/CBigNum_test.cpp>
 #include <ripple/crypto/tests/CKey.test.cpp>
 
 #if DOXYGEN
