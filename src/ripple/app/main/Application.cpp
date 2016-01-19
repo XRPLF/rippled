@@ -506,6 +506,7 @@ public:
     //--------------------------------------------------------------------------
 
     void setup() override;
+    void doStart() override;
     void run() override;
     bool isShutdown() override;
     void signalStop() override;
@@ -1095,17 +1096,15 @@ void ApplicationImp::setup()
 }
 
 void
-ApplicationImp::run()
+ApplicationImp::doStart()
 {
-    // VFALCO NOTE I put this here in the hopes that when unit tests run (which
-    //             tragically require an Application object to exist or else they
-    //             crash), the run() function will not get called and we will
-    //             avoid doing silly things like contacting the SNTP server, or
-    //             running the various logic threads like Validators, PeerFinder, etc.
     prepare ();
     start ();
+}
 
-
+void
+ApplicationImp::run()
+{
     {
         if (!config_->RUN_STANDALONE)
         {

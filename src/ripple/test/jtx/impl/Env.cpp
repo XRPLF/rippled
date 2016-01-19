@@ -99,6 +99,7 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
     app->setup();
     timeKeeper->set(
         app->getLedgerMaster().getClosedLedger()->info().closeTime);
+    app->doStart();
     thread = std::thread(
         [&](){ app->run(); });
 }
