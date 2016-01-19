@@ -106,8 +106,9 @@ void startServer (Application& app)
         }
     }
 
+    app.doStart();
     // Block until we get a stop RPC.
-    app.run ();
+    app.run();
 
     // Try to write out some entropy to use the next time we start.
     auto entropy = getEntropyFile (app.config());
