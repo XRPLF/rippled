@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/core/LoadMonitor.h>
+#include <cassert>
 
 namespace ripple {
 
@@ -86,7 +87,7 @@ void LoadEvent::start ()
 
 void LoadEvent::stop ()
 {
-    bassert (m_isRunning);
+    assert (m_isRunning);
 
     m_timeStopped = beast::RelativeTime::fromStartup();
     m_secondsRunning += (m_timeStopped - m_timeStarted).inSeconds();

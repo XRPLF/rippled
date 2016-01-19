@@ -90,7 +90,6 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
             beast::PropertyStream::Map item (set);
 
             item ["id"] = stat.id;
-            item ["when"] = stat.when;
 
             {
                 std::stringstream ss;

@@ -22,6 +22,7 @@
 
 #include <ripple/json/json_value.h>
 #include <beast/utility/Journal.h>
+#include <algorithm>
 #include <cstdint>
 #include <mutex>
 

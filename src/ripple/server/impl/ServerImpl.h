@@ -45,7 +45,6 @@ class Door;
 struct Stat
 {
     std::size_t id;
-    std::string when;
     std::chrono::seconds elapsed;
     int requests;
     std::size_t bytes_in;

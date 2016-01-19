@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <cassert>
 
 namespace ripple {
 namespace RPC {

@@ -21,9 +21,10 @@
 #define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
 
 #include <ripple/json/json_forwards.h>
-#include <beast/strings/String.h>
+#include <cstring>
 #include <functional>
 #include <map>
+#include <string>
 #include <vector>
 
 /** \brief JSON (JavaScript Object Notation).
@@ -89,26 +90,26 @@ private:
     const char* str_;
 };
 
-inline bool operator!= (StaticString x, StaticString y)
+inline bool operator== (StaticString x, StaticString y)
 {
     // TODO(tom): could I use x != y here because StaticStrings are supposed to
     // be unique?
-    return strcmp (x, y);
+    return strcmp (x.c_str(), y.c_str()) == 0;
 }
 
-inline bool operator== (StaticString x, StaticString y)
+inline bool operator!= (StaticString x, StaticString y)
 {
-    return ! (x != y);
+    return ! (x == y);
 }
 
 inline bool operator== (std::string const& x, StaticString y)
 {
-    return x == y.c_str();
+    return strcmp(x.c_str(), y.c_str()) == 0;
 }
 
 inline bool operator!= (std::string const& x, StaticString y)
 {
-    return x != y.c_str();
+    return ! (x == y);
 }
 
 inline bool operator== (StaticString x, std::string const& y)
@@ -118,7 +119,7 @@ inline bool operator== (StaticString x, std::string const& y)
 
 inline bool operator!= (StaticString x, std::string const& y)
 {
-    return y != x;
+    return ! (y == x);
 }
 
 /** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
@@ -228,8 +229,6 @@ public:
      */
     Value ( const StaticString& value );
     Value ( std::string const& value );
-    // VFALCO DEPRECATED Avoid this conversion
-    Value (beast::String const& beastString);
     Value ( bool value );
     Value ( const Value& other );
     ~Value ();
