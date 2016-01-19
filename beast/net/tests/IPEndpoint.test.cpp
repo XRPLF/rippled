@@ -197,6 +197,98 @@ public:
         expect (! is_multicast (ep));
         expect (! is_loopback (ep));
         expect (to_string (ep) == "166.78.151.147");
+
+        {
+            ep = Endpoint::from_string ("192.0.2.112");
+            expect (! is_unspecified (ep));
+            expect (ep == Endpoint::from_string_altform ("192.0.2.112"));
+
+            auto const ep1 = Endpoint::from_string ("192.0.2.112:2016");
+            expect (! is_unspecified (ep1));
+            expect (ep.address() == ep1.address());
+            expect (ep1.port() == 2016);
+
+            auto const ep2 =
+                Endpoint::from_string_altform ("192.0.2.112:2016");
+            expect (! is_unspecified (ep2));
+            expect (ep.address() == ep2.address());
+            expect (ep2.port() == 2016);
+            expect (ep1 == ep2);
+
+            auto const ep3 =
+                Endpoint::from_string_altform ("192.0.2.112 2016");
+            expect (! is_unspecified (ep3));
+            expect (ep.address() == ep3.address());
+            expect (ep3.port() == 2016);
+            expect (ep2 == ep3);
+
+            auto const ep4 =
+                Endpoint::from_string_altform ("192.0.2.112     2016");
+            expect (! is_unspecified (ep4));
+            expect (ep.address() == ep4.address());
+            expect (ep4.port() == 2016);
+            expect (ep3 == ep4);
+
+            expect (to_string(ep1) == to_string(ep2));
+            expect (to_string(ep1) == to_string(ep3));
+            expect (to_string(ep1) == to_string(ep4));
+        }
+
+        // Failures:
+        expect (is_unspecified (
+            Endpoint::from_string ("192.0.2.112:port")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform ("192.0.2.112:port")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform ("192.0.2.112 port")));
+
+        expect (is_unspecified (
+            Endpoint::from_string ("ip:port")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform ("ip:port")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform ("ip port")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("255")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("255")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("512")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("512")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("1.2.3.256")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3.256")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("1.2.3:80")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3:80")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3 80")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("1.2.3.4:65536")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3:65536")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3 65536")));
+
+        expect (is_unspecified (
+            Endpoint::from_string("1.2.3.4:89119")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3:89119")));
+        expect (is_unspecified (
+            Endpoint::from_string_altform("1.2.3 89119")));
     }
 
     //--------------------------------------------------------------------------
@@ -241,6 +333,8 @@ public:
         shouldFail <T> ("512");
         shouldFail <T> ("1.2.3.256");
         shouldFail <T> ("1.2.3:80");
+        shouldFail <T> ("1.2.3:65536");
+        shouldFail <T> ("1.2.3:72131");
     }
 
     void run ()
