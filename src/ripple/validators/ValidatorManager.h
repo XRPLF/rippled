@@ -25,7 +25,6 @@
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/http/URL.h>
-#include <beast/module/core/files/File.h>
 #include <beast/utility/PropertyStream.h>
 
 namespace ripple {

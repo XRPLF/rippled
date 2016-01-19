@@ -21,6 +21,7 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <beast/ByteOrder.h>
 #include <algorithm>
+#include <cassert>
 
 namespace ripple {
 namespace NodeStore {
@@ -73,7 +74,7 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 
 std::shared_ptr<NodeObject> DecodedBlob::createObject ()
 {
-    bassert (m_success);
+    assert (m_success);
 
     std::shared_ptr<NodeObject> object;
 

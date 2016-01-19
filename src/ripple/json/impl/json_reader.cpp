@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/json/json_reader.h>
+#include <algorithm>
 #include <string>
 #include <cctype>
 

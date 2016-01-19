@@ -23,6 +23,7 @@
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/foreach.hpp>
+#include <cassert>
 #include <cstdint>
 
 namespace ripple {
@@ -121,7 +122,7 @@ std::uint32_t RangeSet::prevMissing (std::uint32_t v) const
         }
     }
 
-    bassert (result == absent || !hasValue (result));
+    assert (result == absent || !hasValue (result));
 
     return result;
 }

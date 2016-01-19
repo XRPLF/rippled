@@ -25,7 +25,6 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/basics/Resolver.h>
 #include <beast/threads/Stoppable.h>
-#include <beast/module/core/files/File.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl/context.hpp>
 

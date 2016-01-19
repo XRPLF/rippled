@@ -28,7 +28,6 @@
 #include <ripple/json/json_value.h>
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>
-#include <beast/module/core/files/File.h>
 #include <beast/utility/ci_char_traits.h>
 #include <beast/utility/Journal.h>
 #include <boost/asio/ip/tcp.hpp> // VFALCO FIX: This include should not be here

@@ -28,7 +28,6 @@
 #include <beast/asio/error.h> // for is_short_read?
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-#include <beast/module/core/time/Time.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -104,7 +103,6 @@ protected:
     boost::system::error_code ec_;
 
     clock_type::time_point when_;
-    std::string when_str_;
     int request_count_ = 0;
     std::size_t bytes_in_ = 0;
     std::size_t bytes_out_ = 0;
@@ -248,8 +246,6 @@ Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
     if (journal_.trace) journal_.trace << id_ <<
         "accept:    " << remote_address_.address();
     when_ = clock_type::now();
-    when_str_ = beast::Time::getCurrentTime().formatted (
-        "%Y-%b-%d %H:%M:%S").toStdString();
 }
 
 template <class Impl>
@@ -257,7 +253,6 @@ Peer<Impl>::~Peer()
 {
     Stat stat;
     stat.id = nid_;
-    stat.when = std::move (when_str_);
     stat.elapsed = std::chrono::duration_cast <
         std::chrono::seconds> (clock_type::now() - when_);
     stat.requests = request_count_;

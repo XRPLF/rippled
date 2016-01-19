@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/NodeStoreScheduler.h>
+#include <cassert>
 
 namespace ripple {
 
@@ -40,7 +41,7 @@ void NodeStoreScheduler::onStop ()
 
 void NodeStoreScheduler::onChildrenStopped ()
 {
-    bassert (m_taskCount == 0);
+    assert (m_taskCount == 0);
     stopped ();
 }
 

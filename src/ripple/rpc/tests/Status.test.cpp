@@ -21,6 +21,7 @@
 #include <ripple/rpc/Status.h>
 #include <ripple/basics/contract.h>
 #include <beast/unit_test/suite.h>
+#include <algorithm>
 
 namespace ripple {
 namespace RPC {

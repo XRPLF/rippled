@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <cassert>
 #include <unordered_map>
 #include <utility>
 

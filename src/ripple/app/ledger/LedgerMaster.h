@@ -32,8 +32,8 @@
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
 #include <beast/insight/Collector.h>
+#include <beast/module/core/threads/ScopedLock.h>
 #include <beast/threads/Stoppable.h>
-#include <beast/threads/UnlockGuard.h>
 #include <beast/utility/PropertyStream.h>
 #include <mutex>
 

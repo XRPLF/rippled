@@ -25,6 +25,7 @@
 #include <ripple/resource/impl/Tuning.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/intrusive/List.h>
+#include <cassert>
 
 namespace ripple {
 namespace Resource {
@@ -58,7 +59,7 @@ struct Entry
         case kindOutbound:  return key->address.to_string();
         case kindUnlimited: return std::string ("\"") + key->name + "\"";
         default:
-            bassertfalse;
+            assert(false);
         }
 
         return "(undefined)";

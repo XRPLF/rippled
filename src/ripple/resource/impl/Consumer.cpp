@@ -21,6 +21,7 @@
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/impl/Entry.h>
 #include <ripple/resource/impl/Logic.h>
+#include <cassert>
 
 namespace ripple {
 namespace Resource {
@@ -97,31 +98,31 @@ Disposition Consumer::disposition() const
 
 Disposition Consumer::charge (Charge const& what)
 {
-    bassert (m_entry != nullptr);
+    assert (m_entry != nullptr);
     return m_logic->charge (*m_entry, what);
 }
 
 bool Consumer::warn ()
 {
-    bassert (m_entry != nullptr);
+    assert (m_entry != nullptr);
     return m_logic->warn (*m_entry);
 }
 
 bool Consumer::disconnect ()
 {
-    bassert (m_entry != nullptr);
+    assert (m_entry != nullptr);
     return m_logic->disconnect (*m_entry);
 }
 
 int Consumer::balance()
 {
-    bassert (m_entry != nullptr);
+    assert (m_entry != nullptr);
     return m_logic->balance (*m_entry);
 }
 
 Entry& Consumer::entry()
 {
-    bassert (m_entry != nullptr);
+    assert (m_entry != nullptr);
     return *m_entry;
 }
 

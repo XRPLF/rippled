@@ -30,6 +30,7 @@
 #include <beast/chrono/abstract_clock.h>
 #include <beast/Insight.h>
 #include <beast/utility/PropertyStream.h>
+#include <cassert>
 #include <mutex>
 
 namespace ripple {
@@ -429,7 +430,7 @@ public:
                     admin_.iterator_to (entry));
                 break;
             default:
-                bassertfalse;
+                assert(false);
                 break;
             }
             inactive_.push_back (entry);
