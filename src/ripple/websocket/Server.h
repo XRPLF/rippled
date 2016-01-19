@@ -23,7 +23,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/websocket/WebSocket.h>
 #include <beast/threads/Thread.h>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 namespace ripple {
@@ -38,7 +40,6 @@ private:
     std::thread thread_;
     beast::Journal j_;
     typename WebSocket::EndpointPtr endpoint_;
-
 public:
     Server (ServerDescription const& desc)
         : beast::Stoppable (WebSocket::versionName(), desc.source)
@@ -61,15 +62,6 @@ private:
         beast::Thread::setCurrentThreadName ("WebSocket");
 
         JLOG (j_.warning)
-            << "Websocket: creating endpoint " << desc_.port;
-
-        {
-            auto handler = WebSocket::makeHandler (desc_);
-            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
-            endpoint_ = WebSocket::makeEndpoint (std::move (handler));
-        }
-
-        JLOG (j_.warning)
             << "Websocket: listening on " << desc_.port;
 
         listen();
@@ -88,7 +80,25 @@ private:
 
     void onStart () override
     {
+        JLOG (j_.warning)
+                << "Websocket: creating endpoint " << desc_.port;
+
+        {
+            auto handler = WebSocket::makeHandler (desc_);
+            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            endpoint_ = WebSocket::makeEndpoint (std::move (handler));
+        }
+
         thread_ = std::thread {&Server<WebSocket>::run, this};
+
+        auto ep = [&]
+        {
+            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            return endpoint_;
+        }();
+
+        if (ep)
+            ep->wait_for_listen();
     }
 
     void onStop () override
@@ -96,11 +106,11 @@ private:
         JLOG (j_.warning)
             << "Websocket: onStop " << desc_.port;
 
-        typename WebSocket::EndpointPtr endpoint;
+        auto endpoint = [&]
         {
             std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
-            endpoint = endpoint_;
-        }
+            return endpoint_;
+        }();
 
         if (endpoint)
             endpoint->stop ();
