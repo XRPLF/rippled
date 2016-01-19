@@ -27,16 +27,7 @@ namespace websocket {
 
 std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const& desc)
 {
-    auto version = get<std::string> (
-        desc.config["server"], "websocket_version");
-    if (version.empty())
-        version = WebSocket02::versionName();
-
-    JLOG (desc.app.journal("WebSocket").warning) << "Websocket version " << version;
-    if (version == WebSocket02::versionName())
-        return makeServer02 (desc);
-    assert (version == "04");
-    return makeServer04 (desc);
+    return makeServer02 (desc);
 }
 
 } // websocket
