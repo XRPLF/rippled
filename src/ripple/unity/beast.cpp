@@ -40,7 +40,6 @@
 #include <beast/net/Net.unity.cpp>
 //#include <beast/nudb/nudb.cpp>
 #include <beast/streams/streams.unity.cpp>
-#include <beast/strings/Strings.unity.cpp>
 #include <beast/threads/Threads.unity.cpp>
 #include <beast/utility/Utility.unity.cpp>
 
