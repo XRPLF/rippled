@@ -52,13 +52,13 @@ Json::Value doLedgerRequest (RPC::Context& context)
     {
         auto const& jsonHash = context.params[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
-            return RPC::invalid_field_message (jss::ledger_hash);
+            return RPC::invalid_field_error (jss::ledger_hash);
     }
     else
     {
         auto const& jsonIndex = context.params[jss::ledger_index];
         if (!jsonIndex.isNumeric ())
-            return RPC::invalid_field_message (jss::ledger_index);
+            return RPC::invalid_field_error (jss::ledger_index);
 
         // We need a validated ledger to get the hash from the sequence
         if (ledgerMaster.getValidatedLedgerAge() >
@@ -70,6 +70,8 @@ Json::Value doLedgerRequest (RPC::Context& context)
 
         if (ledgerIndex >= ledger->info().seq)
             return RPC::make_param_error("Ledger index too large");
+        if (ledgerIndex <= 0)
+            return RPC::make_param_error("Ledger index too small");
 
         auto const j = context.app.journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated ledger
