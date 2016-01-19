@@ -132,6 +132,9 @@ public:
 
         Json::Value params;
         params[jss::key_type] = keyType;
+
+        expect (! contains_error (walletPropose (params)));
+
         params[jss::passphrase] = common::passphrase;
 
         testSecretWallet (params, strings);
