@@ -62,6 +62,8 @@ setupConfigForUnitTests (Config& config)
     config.legacy("database_path", "");
 
     config.RUN_STANDALONE = true;
+    config.QUIET = true;
+    config.SILENT = true;
     config["server"].append("port_peer");
     config["port_peer"].set("ip", "127.0.0.1");
     config["port_peer"].set("port", "8080");
