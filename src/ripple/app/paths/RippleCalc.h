@@ -106,10 +106,10 @@ public:
     PaymentSandbox& view;
 
     // If the transaction fails to meet some constraint, still need to delete
-    // unfunded offers.
+    // unfunded offers in a deterministic order (hence the ordered container).
     //
     // Offers that were found unfunded.
-    path::OfferSet permanentlyUnfundedOffers_;
+    std::set<uint256> permanentlyUnfundedOffers_;
 
     // First time working in reverse a funding source was mentioned.  Source may
     // only be used there.
