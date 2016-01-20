@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
+#include <cassert>
 
 namespace beast {
 
@@ -108,7 +109,7 @@ void Workers::pauseAllThreadsAndWait ()
 
     m_allPaused.wait ();
 
-    bassert (numberOfCurrentlyRunningTasks () == 0);
+    assert (numberOfCurrentlyRunningTasks () == 0);
 }
 
 void Workers::addTask ()

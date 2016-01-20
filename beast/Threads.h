@@ -20,15 +20,9 @@
 #ifndef BEAST_THREADS_H_INCLUDED
 #define BEAST_THREADS_H_INCLUDED
 
-#include <beast/threads/UnlockGuard.h>
-#include <beast/threads/TryLockGuard.h>
-#include <beast/threads/SharedLockGuard.h>
-#include <beast/threads/SharedMutexAdapter.h>
-#include <beast/threads/SpinLock.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/Thread.h>
 #include <beast/threads/WaitableEvent.h>
-#include <beast/threads/ScopedWrapperContext.h>
 
 #include <beast/threads/semaphore.h>
 

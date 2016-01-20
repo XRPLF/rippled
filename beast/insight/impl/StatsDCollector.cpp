@@ -218,7 +218,7 @@ private:
         }
 
         // VFALCO TODO IPv6 support
-        bassertfalse;
+        assert(false);
         return boost::asio::ip::udp::endpoint (
             boost::asio::ip::address_v6 (), 0);
     }

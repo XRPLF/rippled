@@ -20,6 +20,8 @@
 #ifndef BEAST_MODULE_CORE_THREAD_DEADLINETIMER_H_INCLUDED
 #define BEAST_MODULE_CORE_THREAD_DEADLINETIMER_H_INCLUDED
 
+#include <beast/chrono/RelativeTime.h>
+
 namespace beast {
 
 /** Provides periodic or one time notifications at a specified time interval.

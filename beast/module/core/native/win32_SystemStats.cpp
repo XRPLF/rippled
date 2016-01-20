@@ -30,12 +30,6 @@ void outputDebugString (std::string const& text)
 }
 
 //==============================================================================
-bool beast_isRunningUnderDebugger()
-{
-    return IsDebuggerPresent() != FALSE;
-}
-
-//==============================================================================
 std::string getComputerName()
 {
     char text [MAX_COMPUTERNAME_LENGTH + 2] = { 0 };

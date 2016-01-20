@@ -21,6 +21,7 @@
 #include <beast/module/core/text/LexicalCast.h>
 
 #include <algorithm>
+#include <cassert>
 
 namespace beast {
 
@@ -291,7 +292,7 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
 
             if (isNumeric (left))
             {
-                bassert (isNumeric (right));
+                assert(isNumeric (right));
 
                 int const iLeft (lexicalCastThrow <int> (left));
                 int const iRight (lexicalCastThrow <int> (right));
@@ -303,7 +304,7 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
             }
             else
             {
-                bassert (! isNumeric (right));
+                assert (! isNumeric (right));
 
                 int result = left.compare (right);
 

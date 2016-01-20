@@ -20,6 +20,7 @@
 #include <beast/utility/PropertyStream.h>
 #include <beast/unit_test/suite.h>
 
+#include <cassert>
 #include <limits>
 #include <iostream>
 
@@ -197,7 +198,7 @@ void PropertyStream::Source::add (Source& source)
     std::lock_guard<std::recursive_mutex> lk1(lock_, std::adopt_lock);
     std::lock_guard<std::recursive_mutex> lk2(source.lock_, std::adopt_lock);
 
-    bassert (source.parent_ == nullptr);
+    assert (source.parent_ == nullptr);
     children_.push_back (source.item_);
     source.parent_ = this;
 }
@@ -208,7 +209,7 @@ void PropertyStream::Source::remove (Source& child)
     std::lock_guard<std::recursive_mutex> lk1(lock_, std::adopt_lock);
     std::lock_guard<std::recursive_mutex> lk2(child.lock_, std::adopt_lock);
 
-    bassert (child.parent_ == this);
+    assert (child.parent_ == this);
     children_.erase (
         children_.iterator_to (
             child.item_));

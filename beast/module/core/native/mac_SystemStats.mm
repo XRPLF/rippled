@@ -62,28 +62,13 @@ static RLimitInitialiser rLimitInitialiser;
 #endif
 
 //==============================================================================
-bool beast_isRunningUnderDebugger()
-{
-    static char testResult = 0;
-
-    if (testResult == 0)
-    {
-        struct kinfo_proc info;
-        int m[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
-        size_t sz = sizeof (info);
-        sysctl (m, 4, &info, &sz, 0, 0);
-        testResult = ((info.kp_proc.p_flag & P_TRACED) != 0) ? 1 : -1;
-    }
-
-    return testResult > 0;
-}
-
-//==============================================================================
 std::string getComputerName()
 {
+    // FIXME: Remove ".local" from the name
     char name [256] = { 0 };
+
     if (gethostname (name, sizeof (name) - 1) == 0)
-        return String (name).upToLastOccurrenceOf (".local", false, true).toStdString();
+        return name;
 
     return std::string{};
 }

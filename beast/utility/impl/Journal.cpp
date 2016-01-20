@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <beast/utility/Journal.h>
+#include <cassert>
 
 namespace beast {
 
@@ -179,7 +180,7 @@ Journal::Stream::Stream (Sink& sink, Severity level, bool active)
     , m_level (level)
     , m_disabled (! active)
 {
-    bassert (level != kDisabled);
+    assert (level != kDisabled);
 }
 
 Journal::Stream::Stream (Stream const& stream, bool active)

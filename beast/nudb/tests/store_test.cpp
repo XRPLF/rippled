@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <beast/nudb/tests/common.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
-#include <beast/module/core/files/File.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
@@ -46,12 +45,11 @@ public:
         std::size_t block_size, float load_factor)
     {
         testcase (abort_on_fail);
-        std::string const path =
-            beast::UnitTestUtilities::TempDirectory(
-                "test_db").getFullPathName().toStdString();
-        auto const dp = path + ".dat";
-        auto const kp = path + ".key";
-        auto const lp = path + ".log";
+        beast::UnitTestUtilities::TempDirectory tempDir;
+
+        auto const dp = tempDir.file ("nudb.dat");
+        auto const kp = tempDir.file ("nudb.key");
+        auto const lp = tempDir.file ("nudb.log");
         Sequence seq;
         test_api::store db;
         try
