@@ -3768,6 +3768,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\KeyGeneration.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\LedgerRequestRPC.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
