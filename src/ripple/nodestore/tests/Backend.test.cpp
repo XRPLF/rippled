@@ -42,9 +42,9 @@ public:
         testcase ("Backend type=" + type);
 
         Section params;
-        beast::UnitTestUtilities::TempDirectory path ("node_db");
+        beast::UnitTestUtilities::TempDirectory tempDir;
         params.set ("type", type);
-        params.set ("path", path.getFullPathName ().toStdString ());
+        params.set ("path", tempDir.path());
 
         beast::xor_shift_engine rng (seedValue);
 
