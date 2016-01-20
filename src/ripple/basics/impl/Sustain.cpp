@@ -78,7 +78,7 @@ bool checkChild(pid_t pid, int options)
     if (waitpid (pChild, &i, options) == -1)
         return false;
 
-    return kill (pChild, options) == 0;
+    return kill (pChild, 0) == 0;
 }
 
 std::string DoSustain ()
