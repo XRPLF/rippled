@@ -134,24 +134,9 @@
 #include <beast/module/core/diagnostic/SemanticVersion.cpp>
 #include <beast/module/core/diagnostic/UnitTestUtilities.cpp>
 
-#include <beast/module/core/files/DirectoryIterator.cpp>
-#include <beast/module/core/files/File.cpp>
-#include <beast/module/core/files/FileInputStream.cpp>
-#include <beast/module/core/files/FileOutputStream.cpp>
-
-#include <beast/module/core/memory/MemoryBlock.cpp>
-
-#include <beast/module/core/misc/Result.cpp>
-
-#include <beast/module/core/streams/InputStream.cpp>
-#include <beast/module/core/streams/MemoryOutputStream.cpp>
-#include <beast/module/core/streams/OutputStream.cpp>
-
 #include <beast/module/core/system/SystemStats.cpp>
 
 #include <beast/module/core/text/LexicalCast.cpp>
-#include <beast/module/core/text/StringArray.cpp>
-#include <beast/module/core/text/StringPairArray.cpp>
 
 #include <beast/module/core/thread/DeadlineTimer.cpp>
 #include <beast/module/core/thread/Workers.cpp>
@@ -166,26 +151,16 @@
 #include "native/android_JNIHelpers.h"
 #endif
 
-#if ! BEAST_WINDOWS
-#include <beast/module/core/native/posix_SharedCode.h>
-#endif
-
 #if BEAST_MAC || BEAST_IOS
-#include <beast/module/core/native/mac_Files.mm>
-#include <beast/module/core/native/mac_Strings.mm>
 #include <beast/module/core/native/mac_SystemStats.mm>
 
 #elif BEAST_WINDOWS
-#include <beast/module/core/native/win32_Files.cpp>
 #include <beast/module/core/native/win32_SystemStats.cpp>
-#include <beast/module/core/native/win32_Threads.cpp>
 
 #elif BEAST_LINUX
-#include <beast/module/core/native/linux_Files.cpp>
 #include <beast/module/core/native/linux_SystemStats.cpp>
 
 #elif BEAST_BSD
-#include <beast/module/core/native/bsd_Files.cpp>
 #include <beast/module/core/native/bsd_SystemStats.cpp>
 
 #elif BEAST_ANDROID
@@ -195,17 +170,6 @@
 #include "native/android_Threads.cpp"
 
 #endif
-
-// Has to be outside the beast namespace
-extern "C" {
-void beast_reportFatalError (char const* message, char const* fileName, int lineNumber)
-{
-    if (beast::beast_isRunningUnderDebugger())
-        beast_breakDebugger;
-    beast::FatalError (message, fileName, lineNumber);
-    BEAST_ANALYZER_NORETURN
-}
-}
 
 #ifdef _CRTDBG_MAP_ALLOC
 #pragma pop_macro("calloc")

@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <beast/module/core/thread/DeadlineTimer.h>
+#include <cassert>
+#include <mutex>
+
 namespace beast
 {
 
@@ -24,7 +28,6 @@ class DeadlineTimer::Manager
     : protected Thread
 {
 private:
-    using LockType = CriticalSection;
     using Items = List <DeadlineTimer>;
 
 public:
@@ -38,7 +41,7 @@ public:
         signalThreadShouldExit ();
         notify ();
         waitForThreadToExit ();
-        bassert (m_items.empty ());
+        assert (m_items.empty ());
     }
 
     static
@@ -55,9 +58,9 @@ public:
     void activate (DeadlineTimer& timer,
         double secondsRecurring, RelativeTime const& when)
     {
-        bassert (secondsRecurring >= 0);
+        assert (secondsRecurring >= 0);
 
-        std::lock_guard <LockType> lock (m_mutex);
+        std::lock_guard <std::recursive_mutex> lock (m_mutex);
 
         if (timer.m_isActive)
         {
@@ -80,7 +83,7 @@ public:
     //
     void deactivate (DeadlineTimer& timer)
     {
-        std::lock_guard <LockType> lock (m_mutex);
+        std::lock_guard <std::recursive_mutex> lock (m_mutex);
 
         if (timer.m_isActive)
         {
@@ -103,7 +106,7 @@ public:
             DeadlineTimer* timer (nullptr);
 
             {
-                std::lock_guard <LockType> lock (m_mutex);
+                std::lock_guard <std::recursive_mutex> lock (m_mutex);
 
                 // See if a timer expired
                 if (! m_items.empty ())
@@ -114,7 +117,7 @@ public:
                     if (timer->m_notificationTime <= currentTime)
                     {
                         // Expired, remove it from the list.
-                        bassert (timer->m_isActive);
+                        assert (timer->m_isActive);
                         m_items.pop_front ();
 
                         // Is the timer recurring?
@@ -144,7 +147,7 @@ public:
                             timer->m_notificationTime - currentTime).inSeconds ();
 
                         // Can't be zero and come into the else clause.
-                        bassert (seconds != 0);
+                        assert (seconds != 0);
 
                         // Don't call the listener
                         timer = nullptr;
@@ -160,7 +163,7 @@ public:
                 //
                 int const milliSeconds (std::max (
                     static_cast <int> (seconds * 1000 + 0.5), 1));
-                bassert (milliSeconds > 0);
+                assert (milliSeconds > 0);
                 wait (milliSeconds);
             }
             else if (seconds == 0)
@@ -209,7 +212,7 @@ public:
     }
 
 private:
-    CriticalSection m_mutex;
+    std::recursive_mutex m_mutex;
     Items m_items;
 };
 
@@ -233,7 +236,7 @@ void DeadlineTimer::cancel ()
 
 void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 {
-    bassert (secondsUntilDeadline != 0);
+    assert (secondsUntilDeadline != 0);
 
     RelativeTime const when (
         RelativeTime::fromStartup() + secondsUntilDeadline);
@@ -243,7 +246,7 @@ void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 
 void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
 {
-    bassert (secondsUntilDeadline != 0);
+    assert (secondsUntilDeadline != 0);
 
     RelativeTime const when (
         RelativeTime::fromStartup() + secondsUntilDeadline);

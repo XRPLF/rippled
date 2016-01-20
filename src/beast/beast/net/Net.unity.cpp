@@ -19,7 +19,6 @@
 
 #include <beast/Config.h>
 
-#include <beast/net/impl/DynamicBuffer.cpp>
 #include <beast/net/impl/IPAddressV4.cpp>
 #include <beast/net/impl/IPAddressV6.cpp>
 #include <beast/net/impl/IPEndpoint.cpp>

@@ -23,16 +23,6 @@
 
 #include <beast/chrono/RelativeTime.h>
 
-// VFALCO TODO Migrate the localizable strings interfaces for this file
-
-#ifndef NEEDS_TRANS
-#define NEEDS_TRANS(s) (s)
-#endif
-
-#ifndef TRANS
-#define TRANS(s) (s)
-#endif
-
 namespace beast {
 
 RelativeTime::RelativeTime (const RelativeTime::value_type secs) noexcept
@@ -173,86 +163,6 @@ bool operator>= (RelativeTime t1, RelativeTime t2) noexcept
 bool operator<= (RelativeTime t1, RelativeTime t2) noexcept
 {
     return t1.inSeconds() <= t2.inSeconds();
-}
-
-//==============================================================================
-
-static void translateTimeField (String& result, int n, const char* singular, const char* plural)
-{
-    result << TRANS (String((n == 1) ? singular : plural))
-                .replace (n == 1 ? "1" : "2", String (n))
-           << ' ';
-}
-
-String RelativeTime::getDescription (const String& returnValueForZeroTime) const
-{
-    if (numSeconds < 0.001 && numSeconds > -0.001)
-        return returnValueForZeroTime;
-
-    String result;
-    result.preallocateBytes (32);
-
-    if (numSeconds < 0)
-        result << '-';
-
-    int fieldsShown = 0;
-    int n = std::abs ((int) inWeeks());
-    if (n > 0)
-    {
-        translateTimeField (result, n, NEEDS_TRANS("1 week"), NEEDS_TRANS("2 weeks"));
-        ++fieldsShown;
-    }
-
-    n = std::abs ((int) inDays()) % 7;
-    if (n > 0)
-    {
-        translateTimeField (result, n, NEEDS_TRANS("1 day"), NEEDS_TRANS("2 days"));
-        ++fieldsShown;
-    }
-
-    if (fieldsShown < 2)
-    {
-        n = std::abs ((int) inHours()) % 24;
-        if (n > 0)
-        {
-            translateTimeField (result, n, NEEDS_TRANS("1 hour"), NEEDS_TRANS("2 hours"));
-            ++fieldsShown;
-        }
-
-        if (fieldsShown < 2)
-        {
-            n = std::abs ((int) inMinutes()) % 60;
-            if (n > 0)
-            {
-                translateTimeField (result, n, NEEDS_TRANS("1 minute"), NEEDS_TRANS("2 minutes"));
-                ++fieldsShown;
-            }
-
-            if (fieldsShown < 2)
-            {
-                n = std::abs ((int) inSeconds()) % 60;
-                if (n > 0)
-                {
-                    translateTimeField (result, n, NEEDS_TRANS("1 seconds"), NEEDS_TRANS("2 seconds"));
-                    ++fieldsShown;
-                }
-
-                if (fieldsShown == 0)
-                {
-                    n = std::abs ((int) inMilliseconds()) % 1000;
-                    if (n > 0)
-                        result << n << ' ' << TRANS ("ms");
-                }
-            }
-        }
-    }
-
-    return result.trimEnd();
-}
-
-std::string RelativeTime::to_string () const
-{
-    return getDescription ().toStdString();
 }
 
 }

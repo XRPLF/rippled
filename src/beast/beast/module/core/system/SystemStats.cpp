@@ -49,7 +49,7 @@ getStackBacktrace()
     std::vector <std::string> result;
 
 #if BEAST_ANDROID || BEAST_MINGW || BEAST_BSD
-    bassertfalse; // sorry, not implemented yet!
+    assert(false); // sorry, not implemented yet!
 
 #elif BEAST_WINDOWS
     HANDLE process = GetCurrentProcess();

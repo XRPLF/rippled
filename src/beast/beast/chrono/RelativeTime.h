@@ -25,7 +25,6 @@
 #define BEAST_CHRONO_RELATIVETIME_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/strings/String.h>
 
 #include <string>
 #include <sstream>
@@ -145,24 +144,6 @@ public:
     */
     value_type inWeeks() const noexcept;
 
-    /** Returns a readable textual description of the time.
-
-        The exact format of the string returned will depend on
-        the magnitude of the time - e.g.
-
-        "1 min 4 secs", "1 hr 45 mins", "2 weeks 5 days", "140 ms"
-
-        so that only the two most significant units are printed.
-
-        The returnValueForZeroTime value is the result that is returned if the
-        length is zero. Depending on your application you might want to use this
-        to return something more relevant like "empty" or "0 secs", etc.
-
-        @see inMilliseconds, inSeconds, inMinutes, inHours, inDays, inWeeks
-    */
-    String getDescription (const String& returnValueForZeroTime = "0") const;
-    std::string to_string () const;
-
     template <typename Number>
     RelativeTime operator+ (Number seconds) const noexcept
         { return RelativeTime (numSeconds + seconds); }
@@ -203,12 +184,6 @@ RelativeTime operator+ (RelativeTime t1, RelativeTime t2) noexcept;
 
 /** Subtracts two RelativeTimes. */
 RelativeTime operator- (RelativeTime t1, RelativeTime t2) noexcept;
-
-inline std::ostream& operator<< (std::ostream& os, RelativeTime const& diff)
-{
-    os << diff.to_string();
-    return os;
-}
 
 }
 

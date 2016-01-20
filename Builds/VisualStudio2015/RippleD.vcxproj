@@ -236,8 +236,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -311,8 +309,6 @@
     <ClInclude Include="..\..\src\beast\beast\config\CompilerConfig.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\config\ConfigCheck.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\ContractChecks.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\config\PlatformConfig.h">
     </ClInclude>
@@ -551,63 +547,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Memory.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\asio.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\asio\AsyncObject.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPField.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPField.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPHeaders.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPHeaders.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPMessage.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPMessage.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPParser.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPParser.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPParserImpl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPRequest.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPRequest.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPRequestParser.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPRequestParser.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPResponse.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPResponse.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPResponseParser.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPResponseParser.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPVersion.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPVersion.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\Array.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\ArrayAllocationBase.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\ElementComparator.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\core.h">
     </ClInclude>
@@ -631,88 +571,23 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\diagnostic\UnitTestUtilities.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\DirectoryIterator.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\DirectoryIterator.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\File.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\File.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\FileInputStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\FileInputStream.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\FileOutputStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\FileOutputStream.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\misc\Result.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\misc\Result.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\BasicNativeHeaders.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_Files.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_Files.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_SystemStats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <None Include="..\..\src\beast\beast\module\core\native\mac_Files.mm">
-    </None>
-    <None Include="..\..\src\beast\beast\module\core\native\mac_Strings.mm">
-    </None>
     <None Include="..\..\src\beast\beast\module\core\native\mac_SystemStats.mm">
     </None>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\osx_ObjCHelpers.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\native\posix_SharedCode.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Files.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Threads.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\streams\InputSource.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\streams\InputStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\streams\InputStream.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\streams\MemoryOutputStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\streams\MemoryOutputStream.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\streams\OutputStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\streams\OutputStream.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\system\StandardIncludes.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\system\SystemStats.cpp">
@@ -725,26 +600,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\text\LexicalCast.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\text\StringArray.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\text\StringArray.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\text\StringPairArray.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\thread\MutexTraits.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\Workers.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -758,11 +619,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\net\detail\Parse.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\net\DynamicBuffer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\DynamicBuffer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV4.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -880,35 +736,6 @@
     <ClCompile Include="..\..\src\beast\beast\streams\tests\basic_abstract_ostream.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\Strings.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\CharacterFunctions.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\CharPointer_ASCII.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\CharPointer_UTF16.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\CharPointer_UTF32.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\CharPointer_UTF8.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\strings\impl\CharacterFunctions.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\strings\impl\String.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\strings\NewLine.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\String.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\StringCharPointerType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\StringFromNumber.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\strings\Strings.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\Threads.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
@@ -923,15 +750,7 @@
     <ClCompile Include="..\..\src\beast\beast\threads\impl\WaitableEvent.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\ScopedWrapperContext.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SharedLockGuard.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SharedMutexAdapter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SpinLock.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
     </ClInclude>
@@ -940,10 +759,6 @@
     <ClCompile Include="..\..\src\beast\beast\threads\Threads.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\TryLockGuard.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\UnlockGuard.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
@@ -1004,9 +819,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\bassert.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\empty_base_optimization.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

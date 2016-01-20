@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <beast/threads/Stoppable.h>
+#include <cassert>
 
 namespace beast {
 
@@ -40,7 +41,7 @@ Stoppable::Stoppable (char const* name, Stoppable& parent)
     , m_childrenStopped (false)
 {
     // Must not have stopping parent.
-    bassert (! parent.isStopping());
+    assert (! parent.isStopping());
 
     parent.m_children.push_front (&m_child);
 }
@@ -48,7 +49,7 @@ Stoppable::Stoppable (char const* name, Stoppable& parent)
 Stoppable::~Stoppable ()
 {
     // Children must be stopped.
-    bassert (!m_started || m_childrenStopped);
+    assert (!m_started || m_childrenStopped);
 }
 
 bool Stoppable::isStopping() const
@@ -181,7 +182,7 @@ void RootStoppable::start ()
 void RootStoppable::stop (Journal j)
 {
     // Must have a prior call to start()
-    bassert (m_started);
+    assert (m_started);
 
     {
         std::lock_guard<std::mutex> lock(m_);

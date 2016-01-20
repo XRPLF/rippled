@@ -29,7 +29,6 @@
 
 // Include this to get all the basic includes included, to prevent errors
 #include <beast/module/core/core.unity.cpp>
-#include <beast/module/asio/asio.unity.cpp>
 
 #include <beast/asio/Asio.unity.cpp>
 #include <beast/boost/Boost.unity.cpp>

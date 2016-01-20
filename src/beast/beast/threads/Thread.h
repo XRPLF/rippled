@@ -39,7 +39,7 @@ namespace beast {
     do their business. The thread can then be started with the startThread() method
     and controlled with various other methods.
 
-    @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
+    @see WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
 class Thread

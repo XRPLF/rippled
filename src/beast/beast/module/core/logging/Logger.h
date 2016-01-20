@@ -24,8 +24,6 @@
 #ifndef BEAST_MODULE_CORE_LOGGING_LOGGER_H_INCLUDED
 #define BEAST_MODULE_CORE_LOGGING_LOGGER_H_INCLUDED
 
-#include <beast/strings/String.h>
-
 namespace beast
 {
 
