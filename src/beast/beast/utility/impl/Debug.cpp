@@ -109,40 +109,6 @@ void checkHeap ()
 
 #endif
 
-//------------------------------------------------------------------------------
-
-String getSourceLocation (char const* fileName, int lineNumber,
-                          int numberOfParents)
-{
-    return getFileNameFromPath (fileName, numberOfParents) +
-        "(" + String::fromNumber (lineNumber) + ")";
-}
-
-String getFileNameFromPath (const char* sourceFileName, int numberOfParents)
-{
-    String fullPath (sourceFileName);
-
-#if BEAST_WINDOWS
-    // Convert everything to forward slash
-    fullPath = fullPath.replaceCharacter ('\\', '/');
-#endif
-
-    String path;
-
-    int chopPoint = fullPath.lastIndexOfChar ('/');
-    path = fullPath.substring (chopPoint + 1);
-
-    while (chopPoint >= 0 && numberOfParents > 0)
-    {
-        --numberOfParents;
-        fullPath = fullPath.substring (0, chopPoint);
-        chopPoint = fullPath.lastIndexOfChar ('/');
-        path = fullPath.substring (chopPoint + 1) + '/' + path;
-    }
-
-    return path;
-}
-
 }
 
 //------------------------------------------------------------------------------
@@ -181,28 +147,14 @@ public:
 
     void run ()
     {
-        log <<
-            "_DEBUG                           = " <<
-            String::fromNumber (envDebug ());
-
-        log <<
-            "BEAST_DEBUG                      = " <<
-            String::fromNumber (beastDebug ());
-
-        log <<
-            "BEAST_FORCE_DEBUG                = " <<
-            String::fromNumber (beastForceDebug ());
-
-        log <<
-            "sizeof(std::size_t)              = " <<
-            String::fromNumber (sizeof(std::size_t));
-
-        bassertfalse;
-
-        fail ();
+        log << "_DEBUG              = " << envDebug ();
+        log << "BEAST_DEBUG         = " << beastDebug ();
+        log << "BEAST_FORCE_DEBUG   = " << beastForceDebug ();
+        log << "sizeof(std::size_t) = " << sizeof(std::size_t);
+        pass ();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Debug,utility,beast);
+BEAST_DEFINE_TESTSUITE(Debug,utility,beast);
 
 }

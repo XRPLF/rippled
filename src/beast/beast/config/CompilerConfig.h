@@ -50,107 +50,6 @@
 # define BEAST_CONSTEXPR constexpr
 #endif
 
-
-// Debugging and assertion macros
-
-#if BEAST_LOG_ASSERTIONS || BEAST_DEBUG
-#define beast_LogCurrentAssertion    beast::logAssertion (__FILE__, __LINE__);
-#else
-#define beast_LogCurrentAssertion
-#endif
-
-#if BEAST_IOS || BEAST_LINUX || BEAST_ANDROID || BEAST_PPC
-/** This will try to break into the debugger if the app is currently being debugged.
-    If called by an app that's not being debugged, the behaiour isn't defined - it may crash or not, depending
-    on the platform.
-    @see bassert()
-*/
-# define beast_breakDebugger        { ::kill (0, SIGTRAP); }
-#elif BEAST_USE_INTRINSICS
-# ifndef __INTEL_COMPILER
-#  pragma intrinsic (__debugbreak)
-# endif
-# define beast_breakDebugger        { __debugbreak(); }
-#elif BEAST_GCC || BEAST_MAC
-# if BEAST_NO_INLINE_ASM
-#  define beast_breakDebugger       { }
-# else
-#  define beast_breakDebugger       { asm ("int $3"); }
-# endif
-#else
-#  define beast_breakDebugger       { __asm int 3 }
-#endif
-
-#if BEAST_CLANG && defined (__has_feature) && ! defined (BEAST_ANALYZER_NORETURN)
-# if __has_feature (attribute_analyzer_noreturn)
-   inline void __attribute__((analyzer_noreturn)) beast_assert_noreturn() {}
-#  define BEAST_ANALYZER_NORETURN beast_assert_noreturn();
-# endif
-#endif
-
-#ifndef BEAST_ANALYZER_NORETURN
-#define BEAST_ANALYZER_NORETURN
-#endif
-
-//------------------------------------------------------------------------------
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-/** Report a fatal error message and terminate the application.
-    Normally you won't call this directly.
-*/
-extern void beast_reportFatalError (char const* message, char const* fileName, int lineNumber);
-#ifdef __cplusplus
-}
-#endif
-
-#if BEAST_DEBUG || DOXYGEN
-
-/** Writes a string to the standard error stream.
-    This is only compiled in a debug build.
-*/
-#define BDBG(dbgtext) { \
-    beast::String tempDbgBuf; \
-    tempDbgBuf << dbgtext; \
-    beast::outputDebugString (tempDbgBuf.toStdString ()); \
-}
-
-#if 0
-/** This will always cause an assertion failure.
-    It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
-    @see bassert
-*/
-#define bassertfalse          { beast_LogCurrentAssertion; if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; BEAST_ANALYZER_NORETURN }
-
-/** Platform-independent assertion macro.
-    This macro gets turned into a no-op when you're building with debugging turned off, so be
-    careful that the expression you pass to it doesn't perform any actions that are vital for the
-    correct behaviour of your program!
-    @see bassertfalse
-  */
-#define bassert(expression)   { if (! (expression)) beast_reportFatalError(#expression,__FILE__,__LINE__); }
-#else
-
-#define bassertfalse assert(false)
-#define bassert(expression) assert(expression)
-#endif
-
-#else
-
-// If debugging is disabled, these dummy debug and assertion macros are used..
-
-#define BDBG(dbgtext)
-#define bassertfalse              { beast_LogCurrentAssertion }
-
-# if BEAST_LOG_ASSERTIONS
-#  define bassert(expression)      { if (! (expression)) bassertfalse; }
-# else
-#  define bassert(a)               {}
-# endif
-
-#endif
-
 //------------------------------------------------------------------------------
 
 #if ! DOXYGEN
@@ -191,17 +90,6 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
  #define BEAST_DEPRECATED(functionDef) functionDef __attribute__ ((deprecated))
 #else
  #define BEAST_DEPRECATED(functionDef) functionDef
-#endif
-
-//------------------------------------------------------------------------------
-
-#if BEAST_ANDROID && ! DOXYGEN
-# define BEAST_MODAL_LOOPS_PERMITTED 0
-#elif ! defined (BEAST_MODAL_LOOPS_PERMITTED)
- /** Some operating environments don't provide a modal loop mechanism, so this
-     flag can be used to disable any functions that try to run a modal loop.
- */
- #define BEAST_MODAL_LOOPS_PERMITTED 1
 #endif
 
 //------------------------------------------------------------------------------
@@ -258,13 +146,6 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 #else
 # define BEAST_MOVE_ARG(type) type
 # define BEAST_MOVE_CAST(type) type
-#endif
-
-#ifdef __cplusplus
-namespace beast {
-bool beast_isRunningUnderDebugger();
-void logAssertion (char const* file, int line);
-}
 #endif
 
 #endif

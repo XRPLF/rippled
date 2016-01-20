@@ -25,6 +25,7 @@
 #define BEAST_SMART_PTR_SHAREDOBJECT_H_INCLUDED
 
 #include <atomic>
+#include <cassert>
 
 #include <beast/Config.h>
 
@@ -78,7 +79,7 @@ public:
     /** Decreases the object's reference count. */
     void decReferenceCount () const
     {
-        bassert (getReferenceCount() > 0);
+        assert (getReferenceCount() > 0);
         if (--refCount == 0)
             destroy ();
     }
@@ -104,7 +105,7 @@ protected:
     virtual ~SharedObject()
     {
         // it's dangerous to delete an object that's still referenced by something else!
-        bassert (getReferenceCount() == 0);
+        assert (getReferenceCount() == 0);
     }
 
     /** Destroy the object.

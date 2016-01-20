@@ -19,7 +19,6 @@
 
 #include <beast/nudb/tests/common.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
-#include <beast/module/core/files/File.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
@@ -98,10 +97,9 @@ public:
         };
 
         testcase (abort_on_fail);
-        path_type const path =
-            beast::UnitTestUtilities::TempDirectory(
-                "nudb").getFullPathName().toStdString();
-        do_test (N, path);
+
+        beast::UnitTestUtilities::TempDirectory tempDir;
+        do_test (N, tempDir.path());
     }
 };
 

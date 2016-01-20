@@ -25,7 +25,6 @@
 #include <beast/utility/impl/Journal.cpp>
 #include <beast/utility/impl/PropertyStream.cpp>
 
-#include <beast/utility/tests/bassert.test.cpp>
 #include <beast/utility/tests/empty_base_optimization.test.cpp>
 #include <beast/utility/tests/Journal.test.cpp>
 #include <beast/utility/tests/tagged_integer.test.cpp>

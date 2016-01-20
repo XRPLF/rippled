@@ -24,7 +24,6 @@
 #include <beast/threads/Thread.h>
 #include <beast/smart_ptr/SharedObject.h>
 #include <beast/smart_ptr/SharedPtr.h>
-#include <beast/module/core/time/Time.h>
 
 #include <cassert>
 #include <thread>
@@ -275,7 +274,7 @@ void Thread::setCurrentThreadName (std::string const& name)
    #if BEAST_IOS || (BEAST_MAC && defined (MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
     BEAST_AUTORELEASEPOOL
     {
-        [[NSThread currentThread] setName: beastStringToNS (beast::String (name))];
+        [[NSThread currentThread] setName: stringToNS (name)];
     }
    #elif BEAST_LINUX
     #if (__GLIBC__ * 1000 + __GLIBC_MINOR__) >= 2012

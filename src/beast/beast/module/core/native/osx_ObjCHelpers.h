@@ -24,6 +24,9 @@
 #ifndef BEAST_MODULE_CORE_NATIVE_OSX_OBJCHELPERS_H_INCLUDED
 #define BEAST_MODULE_CORE_NATIVE_OSX_OBJCHELPERS_H_INCLUDED
 
+#include <cassert>
+#include <string>
+
 namespace beast
 {
 
@@ -32,25 +35,17 @@ namespace beast
 */
 namespace
 {
-    //==============================================================================
-    static inline String nsStringToBeast (NSString* s)
+    static inline NSString* stringToNS (std::string const& s)
     {
-        return CharPointer_UTF8 ([s UTF8String]);
-    }
+#ifndef NDEBUG
+        // The UTF-8 encoding function for ASCII characters
+        // in the range [0-127] is the identity. We are more
+        // strict and require only printable characters.
+        for (auto const& c : s)
+            assert (isprint(c));
+#endif
 
-    static inline NSString* beastStringToNS (const String& s)
-    {
-        return [NSString stringWithUTF8String: s.toUTF8()];
-    }
-
-    static inline NSString* nsStringLiteral (const char* const s) noexcept
-    {
-        return [NSString stringWithUTF8String: s];
-    }
-
-    static inline NSString* nsEmptyString() noexcept
-    {
-        return [NSString string];
+        return [NSString stringWithUTF8String: s.c_str()];
     }
 }
 
