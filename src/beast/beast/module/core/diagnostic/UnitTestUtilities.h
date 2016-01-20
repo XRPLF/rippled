@@ -20,7 +20,8 @@
 #ifndef BEAST_MODULE_CORE_DIAGNOSTIC_UNITTESTUTILITIES_H_INCLUDED
 #define BEAST_MODULE_CORE_DIAGNOSTIC_UNITTESTUTILITIES_H_INCLUDED
 
-#include <beast/module/core/files/File.h>
+#include <boost/filesystem.hpp>
+#include <string>
 
 namespace beast {
 namespace UnitTestUtilities {
@@ -28,26 +29,42 @@ namespace UnitTestUtilities {
 class TempDirectory
 {
 public:
-    explicit TempDirectory (std::string const& root)
-            : directory (File::createTempFile (root))
+    TempDirectory ()
     {
+        auto const tempDir =
+            boost::filesystem::temp_directory_path();
+
+        do
+        {
+            tempPath =
+                tempDir / boost::filesystem::unique_path();
+        } while (boost::filesystem::exists(tempPath));
+
+        boost::filesystem::create_directory (tempPath);
     }
 
     ~TempDirectory()
     {
-        directory.deleteRecursively();
+        boost::filesystem::remove_all (tempPath);
     }
 
-    String const& getFullPathName() const
+    /** Returns the native path for the temporary folder */
+    std::string path() const
     {
-        return directory.getFullPathName();
+        return tempPath.string();
+    }
+
+    /** Returns the native for the given file */
+    std::string file (std::string const& name) const
+    {
+        return (tempPath / name).string();
     }
 
     TempDirectory(const TempDirectory&) = delete;
     TempDirectory& operator=(const TempDirectory&) = delete;
 
 private:
-    File const directory;
+    boost::filesystem::path tempPath;
 };
 
 } // UnitTestUtilities

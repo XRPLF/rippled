@@ -679,10 +679,9 @@ public:
             params.threads = threads;
             for (auto i = default_repeat; i--;)
             {
+                beast::UnitTestUtilities::TempDirectory tempDir;
                 Section config = parse(config_string);
-                config.set ("path",
-                    beast::UnitTestUtilities::TempDirectory(
-                        "test_db").getFullPathName().toStdString());
+                config.set ("path", tempDir.path());
                 std::stringstream ss;
                 ss << std::left << setw(10) <<
                     get(config, "type", std::string()) << std::right;
