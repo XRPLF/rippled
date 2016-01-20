@@ -21,9 +21,12 @@
 #define RIPPLE_CORE_JOBCORO_H_INCLUDED
 
 #include <ripple/core/Job.h>
+#include <ripple/basics/LocalValue.h>
 #include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
+#include <condition_variable>
 #include <string>
+#include <memory>
 #include <mutex>
 
 namespace ripple {
@@ -39,17 +42,21 @@ struct JobCoro_create_t { };
 class JobCoro : public std::enable_shared_from_this<JobCoro>
 {
 private:
+    detail::LocalValues lvs_;
     JobQueue& jq_;
     JobType type_;
     std::string name_;
+    bool running_;
     std::mutex mutex_;
+    std::mutex mutex_run_;
+    std::condition_variable cv_;
     boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
     boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
 
 public:
     // Private: Used in the implementation
     template <class F>
-    JobCoro (detail::JobCoro_create_t, JobQueue&, JobType,
+    JobCoro(detail::JobCoro_create_t, JobQueue&, JobType,
         std::string const&, F&&);
 
     /** Suspend coroutine execution.
@@ -60,9 +67,9 @@ public:
           The associated Job function returns.
           Undefined behavior if called consecutively without a corresponding post.
     */
-    void yield () const;
+    void yield() const;
 
-    /** Schedule coroutine execution
+    /** Schedule coroutine execution.
         Effects:
           Returns immediately.
           A new job is scheduled to resume the execution of the coroutine.
@@ -71,7 +78,10 @@ public:
             after the previous call to yield.
         Undefined behavior if called consecutively without a corresponding yield.
     */
-    void post ();
+    void post();
+
+    /** Waits until coroutine returns from the user function. */
+    void join();
 };
 
 } // ripple
