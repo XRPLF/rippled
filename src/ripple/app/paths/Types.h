@@ -30,8 +30,6 @@ namespace path {
 
 using NodeIndex = unsigned int;
 
-using OfferSet = hash_set <uint256>;
-
 }
 
 using AccountIssueToNodeIndex = hash_map <AccountIssue, path::NodeIndex>;

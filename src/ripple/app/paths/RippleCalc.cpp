@@ -32,7 +32,7 @@ namespace {
 static
 TER
 deleteOffers (ApplyView& view,
-    OfferSet const& offers, beast::Journal j)
+    std::set<uint256> const& offers, beast::Journal j)
 {
     for (auto& e: offers)
         if (TER r = offerDelete (view,
@@ -201,7 +201,7 @@ TER RippleCalc::rippleCalculate ()
             getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
 
     // Offers that became unfunded.
-    OfferSet unfundedOffersFromBestPaths;
+    std::set<uint256> unfundedOffersFromBestPaths;
 
     int iPass = 0;
 
