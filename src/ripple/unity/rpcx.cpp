@@ -100,5 +100,6 @@
 #include <ripple/rpc/impl/RPCVersion.cpp>
 
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
+#include <ripple/rpc/tests/LedgerRequestRPC.test.cpp>
 #include <ripple/rpc/tests/KeyGeneration.test.cpp>
 #include <ripple/rpc/tests/Status.test.cpp>
