@@ -132,9 +132,19 @@ shouldCloseLedger (
 }
 
 bool
-checkConsensusReached (int agreeing, int proposing)
+checkConsensusReached (int agreeing, int total, bool count_self)
 {
-    int currentPercentage = (agreeing * 100) / (proposing + 1);
+    // If we are alone, we have a consensus
+    if (total == 0)
+        return true;
+
+    if (count_self)
+    {
+        ++agreeing;
+        ++total;
+    }
+
+    int currentPercentage = (agreeing * 100) / total;
 
     return currentPercentage > minimumConsensusPercentage;
 }
@@ -167,6 +177,7 @@ checkConsensus (
     int currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
+    bool proposing,
     beast::Journal j)
 {
     JLOG (j.trace) <<
@@ -192,7 +203,7 @@ checkConsensus (
 
     // Have we, together with the nodes on our UNL list, reached the treshold
     // to declare consensus?
-    if (checkConsensusReached (currentAgree + 1, currentProposers))
+    if (checkConsensusReached (currentAgree, currentProposers, proposing))
     {
         JLOG (j.debug) << "normal consensus";
         return ConsensusState::Yes;
@@ -200,7 +211,7 @@ checkConsensus (
 
     // Have sufficient nodes on our UNL list moved on and reached the threshold
     // to declare consensus?
-    if (checkConsensusReached (currentFinished, currentProposers))
+    if (checkConsensusReached (currentFinished, currentProposers, false))
     {
         JLOG (j.warning) <<
             "We see no consensus, but 80% of nodes have moved on";
@@ -645,7 +656,10 @@ void LedgerConsensusImp::timerEntry ()
         using namespace std::chrono;
         mCurrentMSeconds = duration_cast<milliseconds>
                            (steady_clock::now() - mConsensusStartTime);
-        mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
+
+        mClosePercent = mCurrentMSeconds * 100 /
+            std::max<milliseconds> (
+                mPreviousMSeconds, AV_MIN_CONSENSUS_TIME);
 
         switch (state_)
         {
@@ -796,7 +810,7 @@ bool LedgerConsensusImp::haveConsensus ()
 
     // Determine if we actually have consensus or not
     auto ret = checkConsensus (mPreviousProposers, agree + disagree, agree,
-        currentValidations, mPreviousMSeconds, mCurrentMSeconds,
+        currentValidations, mPreviousMSeconds, mCurrentMSeconds, mProposing,
         app_.journal ("LedgerTiming"));
 
     if (ret == ConsensusState::No)
