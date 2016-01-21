@@ -39,6 +39,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(OfferStream,tx,ripple);
+BEAST_DEFINE_TESTSUITE(OfferStream,tx,ripple);
 
 }
