@@ -28,6 +28,7 @@
 #include <ripple/test/jtx/seq.h>
 #include <ripple/test/jtx/sig.h>
 #include <ripple/test/jtx/utility.h>
+#include <ripple/test/DirectClient.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -83,6 +84,7 @@ namespace jtx {
 Env::AppBundle::AppBundle(Application* app_)
     : app (app_)
 {
+    client = makeDirectClient(*app);
 }
 
 Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
@@ -102,10 +104,12 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
     app->doStart();
     thread = std::thread(
         [&](){ app->run(); });
+    client = makeDirectClient(*app);
 }
 
 Env::AppBundle::~AppBundle()
 {
+    client.reset();
     app->signalStop();
     thread.join();
 }
