@@ -562,7 +562,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(import,NodeStore,ripple);
+BEAST_DEFINE_TESTSUITE(import,NodeStore,ripple);
 
 #endif
 
@@ -748,7 +748,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(rekey,NodeStore,ripple);
+BEAST_DEFINE_TESTSUITE(rekey,NodeStore,ripple);
 
 //------------------------------------------------------------------------------
 
@@ -996,7 +996,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(update,NodeStore,ripple);
+BEAST_DEFINE_TESTSUITE(update,NodeStore,ripple);
 
 }
 }

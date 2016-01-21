@@ -133,7 +133,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Net,mao,ripple)
+BEAST_DEFINE_TESTSUITE(Net,mao,ripple)
 
 } // mao
 } // test
