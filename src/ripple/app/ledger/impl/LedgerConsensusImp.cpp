@@ -132,9 +132,20 @@ shouldCloseLedger (
 }
 
 bool
-checkConsensusReached (int agreeing, int proposing)
+checkConsensusReached (int agreeing, int proposing, bool validating)
 {
-    int currentPercentage = (agreeing * 100) / (proposing + 1);
+    // If we are alone, we have a consensus
+    if (proposing == 0)
+        return true;
+
+    // If we are a validator, count ourselves
+    if (validating)
+    {
+        ++agreeing;
+        ++proposing;
+    }
+
+    int currentPercentage = (agreeing * 100) / proposing;
 
     return currentPercentage > minimumConsensusPercentage;
 }
@@ -167,6 +178,7 @@ checkConsensus (
     int currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
+    bool validating,
     beast::Journal j)
 {
     JLOG (j.trace) <<
@@ -192,7 +204,7 @@ checkConsensus (
 
     // Have we, together with the nodes on our UNL list, reached the treshold
     // to declare consensus?
-    if (checkConsensusReached (currentAgree + 1, currentProposers))
+    if (checkConsensusReached (currentAgree, currentProposers, validating))
     {
         JLOG (j.debug) << "normal consensus";
         return ConsensusState::Yes;
@@ -200,7 +212,7 @@ checkConsensus (
 
     // Have sufficient nodes on our UNL list moved on and reached the threshold
     // to declare consensus?
-    if (checkConsensusReached (currentFinished, currentProposers))
+    if (checkConsensusReached (currentFinished, currentProposers, validating))
     {
         JLOG (j.warning) <<
             "We see no consensus, but 80% of nodes have moved on";
@@ -640,7 +652,11 @@ void LedgerConsensusImp::timerEntry ()
         using namespace std::chrono;
         mCurrentMSeconds = duration_cast<milliseconds>
                            (steady_clock::now() - mConsensusStartTime);
-        mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
+
+        mClosePercent = mCurrentMSeconds * 100 /
+            std::min (
+                mPreviousMSeconds,
+                duration_cast<milliseconds>(AV_MIN_CONSENSUS_TIME));
 
         switch (state_)
         {
@@ -791,7 +807,7 @@ bool LedgerConsensusImp::haveConsensus ()
 
     // Determine if we actually have consensus or not
     auto ret = checkConsensus (mPreviousProposers, agree + disagree, agree,
-        currentValidations, mPreviousMSeconds, mCurrentMSeconds,
+        currentValidations, mPreviousMSeconds, mCurrentMSeconds, mValidating,
         app_.journal ("LedgerTiming"));
 
     if (ret == ConsensusState::No)
