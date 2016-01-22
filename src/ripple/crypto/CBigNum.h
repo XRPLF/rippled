@@ -108,11 +108,11 @@ bool operator> (const CBigNum& a, const CBigNum& b);
 
 //------------------------------------------------------------------------------
 
-// VFALCO I believe only STAmount uses these
+// Only STAmount uses these (January 2016).
 int BN_add_word64 (BIGNUM* a, std::uint64_t w);
 int BN_sub_word64 (BIGNUM* a, std::uint64_t w);
 int BN_mul_word64 (BIGNUM* a, std::uint64_t w);
-std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w);
+int BN_div_word64 (BIGNUM* a, std::uint64_t w);
 
 }
 

@@ -647,9 +647,12 @@ int BN_mul_word64 (BIGNUM* bn, std::uint64_t word)
     return BN_mul_word (bn, word);
 }
 
-std::uint64_t BN_div_word64 (BIGNUM* bn, std::uint64_t word)
+// This function returns 1 on success like the three preceding functions.
+// In contrast, BN_div_word returns ( BN_ULONG )-1 on error.
+int BN_div_word64 (BIGNUM* bn, std::uint64_t word)
 {
-    return BN_div_word (bn, word);
+    BN_ULONG const remainder {BN_div_word (bn, word)};
+    return remainder == static_cast<BN_ULONG>(-1) ? 0 : 1;
 }
 
 #else
@@ -673,13 +676,12 @@ int BN_mul_word64 (BIGNUM* a, std::uint64_t w)
     return BN_mul (a, a, &bn, ctx);
 }
 
-std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w)
+int BN_div_word64 (BIGNUM* a, std::uint64_t w)
 {
     CBigNum bn (w);
     CBigNum temp (a); // Copy a.  Destination may not be the same as dividend.
-    CBigNum r;
     CAutoBN_CTX ctx;
-    return (BN_div (a, &r, &temp, &bn, ctx) == 1) ? r.getuint64() : 0;
+    return BN_div (a, nullptr, &temp, &bn, ctx);
 }
 
 #endif

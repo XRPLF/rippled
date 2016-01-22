@@ -550,19 +550,27 @@ public:
             expect (BN_set_word (&b, 0x00FFFFFFFFFFFFFFull) == 1);
             expect (BN_cmp (&a, &b) == 0);
 
-            expect (BN_mul_word64 (&a, 0x10));
+            expect (BN_mul_word64 (&a, 0x10) == 1);
             expect (BN_set_word (&b, 0x0FFFFFFFFFFFFFF0ull) == 1);
             expect (BN_cmp (&a, &b) == 0);
 
-            auto remainder = BN_div_word64 (&a, 0x10);
-            expect (remainder == 0);
+            expect (BN_div_word64 (&a, 0x10) == 1);
             expect (BN_set_word (&b, 0x00FFFFFFFFFFFFFFull) == 1);
             expect (BN_cmp (&a, &b) == 0);
 
-            remainder = BN_div_word64 (&a, 0x200);
-            expect (remainder == 0x1FF);
+            expect (BN_div_word64 (&a, 0x200) == 1);
             expect (BN_set_word (&b, 0x00007FFFFFFFFFFFull) == 1);
             expect (BN_cmp (&a, &b) == 0);
+
+            a *= -1;
+            expect (a < 0);
+            expect (BN_div_word64 (&a, 0x400) == 1);
+            expect (BN_set_word (&b, 0x0000001FFFFFFFFFull) == 1);
+            b *= -1;
+            expect (a == b);
+
+            // Divide by 0 should return an error.
+            expect (BN_div_word64 (&a, 0) != 1);
         }
     }
 };
