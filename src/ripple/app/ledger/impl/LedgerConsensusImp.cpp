@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+///------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -132,20 +132,19 @@ shouldCloseLedger (
 }
 
 bool
-checkConsensusReached (int agreeing, int proposing, bool validating)
+checkConsensusReached (int agreeing, int total, bool count_self)
 {
     // If we are alone, we have a consensus
-    if (proposing == 0)
+    if (total == 0)
         return true;
 
-    // If we are a validator, count ourselves
-    if (validating)
+    if (count_self)
     {
         ++agreeing;
-        ++proposing;
+        ++total;
     }
 
-    int currentPercentage = (agreeing * 100) / proposing;
+    int currentPercentage = (agreeing * 100) / total;
 
     return currentPercentage > minimumConsensusPercentage;
 }
@@ -178,7 +177,7 @@ checkConsensus (
     int currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
-    bool validating,
+    bool proposing,
     beast::Journal j)
 {
     JLOG (j.trace) <<
@@ -204,7 +203,7 @@ checkConsensus (
 
     // Have we, together with the nodes on our UNL list, reached the treshold
     // to declare consensus?
-    if (checkConsensusReached (currentAgree, currentProposers, validating))
+    if (checkConsensusReached (currentAgree, currentProposers, proposing))
     {
         JLOG (j.debug) << "normal consensus";
         return ConsensusState::Yes;
@@ -212,7 +211,7 @@ checkConsensus (
 
     // Have sufficient nodes on our UNL list moved on and reached the threshold
     // to declare consensus?
-    if (checkConsensusReached (currentFinished, currentProposers, validating))
+    if (checkConsensusReached (currentFinished, currentProposers, false))
     {
         JLOG (j.warning) <<
             "We see no consensus, but 80% of nodes have moved on";
@@ -807,7 +806,7 @@ bool LedgerConsensusImp::haveConsensus ()
 
     // Determine if we actually have consensus or not
     auto ret = checkConsensus (mPreviousProposers, agree + disagree, agree,
-        currentValidations, mPreviousMSeconds, mCurrentMSeconds, mValidating,
+        currentValidations, mPreviousMSeconds, mCurrentMSeconds, mProposing,
         app_.journal ("LedgerTiming"));
 
     if (ret == ConsensusState::No)
