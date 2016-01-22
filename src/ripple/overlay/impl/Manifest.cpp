@@ -19,9 +19,9 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/crypto/Base58.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
@@ -134,35 +134,21 @@ ManifestCache::configValidatorKey(
     auto const words = beast::rfc2616::split(line.begin(), line.end(), ' ');
 
     if (words.size () != 2)
-    {
         Throw<std::runtime_error> ("[validator_keys] format is `<key> <comment>");
-    }
 
-    Blob key;
-    if (! Base58::decodeWithCheck (words[0], key))
-    {
+    auto const masterKey = parseBase58<PublicKey>(
+        TokenType::TOKEN_NODE_PUBLIC, words[0]);
+
+    if (!masterKey)
         Throw<std::runtime_error> ("Error decoding validator key");
-    }
-    if (key.size() != 34)
-    {
-        Throw<std::runtime_error> ("Expected 34-byte validator key");
-    }
-    if (key[0] != TOKEN_NODE_PUBLIC)
-    {
-        Throw<std::runtime_error> ("Expected TOKEN_NODE_PUBLIC (28)");
-    }
-    if (key[1] != 0xED)
-    {
-        Throw<std::runtime_error> ("Expected Ed25519 key (0xED)");
-    }
 
-    auto const masterKey = PublicKey (Slice(key.data() + 1, key.size() - 1));
-    std::string comment = std::move(words[1]);
+    if (publicKeyType(*masterKey) != KeyType::ed25519)
+        Throw<std::runtime_error> ("Validator key must use Ed25519");
 
-    if (journal.debug) journal.debug
-        << toBase58(TokenType::TOKEN_NODE_PUBLIC, masterKey) << " " << comment;
+    JLOG (journal.debug) << "Loaded key: " <<
+        toBase58(TokenType::TOKEN_NODE_PUBLIC, *masterKey);
 
-    addTrustedKey (masterKey, std::move(comment));
+    addTrustedKey (*masterKey, std::move(words[1]));
 }
 
 void

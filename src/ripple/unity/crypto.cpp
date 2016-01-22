@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/crypto/impl/Base58.cpp>
 #include <ripple/crypto/impl/CBigNum.cpp>
 #include <ripple/crypto/impl/ec_key.cpp>
 #include <ripple/crypto/impl/ECDSAKey.cpp>
