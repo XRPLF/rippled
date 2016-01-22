@@ -34,7 +34,8 @@ public:
     */
     virtual
     Json::Value
-    rpc(Json::Value const&) = 0;
+    rpc(std::string const& cmd,
+        Json::Value const& params) = 0;
 };
 
 } // test

@@ -105,7 +105,7 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
     app->doStart();
     thread = std::thread(
         [&](){ app->run(); });
-#if 1
+#if 0
     client = makeDirectClient(*app);
 #else
     client = makeHTTPClient(app->config());
@@ -283,6 +283,7 @@ Env::submit (JTx const& jt)
         txid_ = jt.stx->getTransactionID();
         Serializer s;
         jt.stx->add(s);
+#if 0
         auto const result = rpc("submit", strHex(s.slice()));
         if (result.first == rpcSUCCESS &&
             result.second["result"].isMember("engine_result_code"))
@@ -290,6 +291,17 @@ Env::submit (JTx const& jt)
                 result.second["result"]["engine_result_code"].asInt());
         else
             ter_ = temINVALID;
+#else
+        auto jp = Json::Value();
+        jp["tx_blob"] = strHex(s.slice());
+        auto const jr =
+            client().rpc("submit", jp);
+        if (jr["result"].isMember("engine_result_code"))
+            ter_ = static_cast<TER>(
+                jr["result"]["engine_result_code"].asInt());
+        else
+            ter_ = temINVALID;
+#endif
         didApply = isTesSuccess(ter_) || isTecClaim(ter_);
     }
     else

@@ -36,14 +36,19 @@ public:
     }
 
     Json::Value
-    rpc(Json::Value const& jv) override
+    rpc(std::string const& cmd,
+        Json::Value const& params) override
     {
+#if 0
         auto loadType = Resource::feeReferenceRPC;
         RPC::Context ctx { app_.journal ("RPCHandler"), jv, app_,
             loadType, app_.getOPs (), app_.getLedgerMaster(), Role::ADMIN };
         Json::Value jr;
         RPC::doCommand(ctx, jr);
         return jr;
+#else
+        return {};
+#endif
     }
 };
 

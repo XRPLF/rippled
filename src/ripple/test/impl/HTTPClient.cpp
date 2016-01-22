@@ -19,7 +19,11 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/HTTPClient.h>
+#include <ripple/json/to_string.h>
+#include <ripple/server/Port.h>
+#include <beast/asio/streambuf.h>
 #include <boost/asio.hpp>
+#include <string>
 
 namespace ripple {
 namespace test {
@@ -30,52 +34,58 @@ class HTTPClient : public AbstractClient
     boost::asio::ip::tcp::endpoint
     getEndpoint(BasicConfig const& cfg)
     {
-#if 0
-        auto const& names = config.section("server").values();
-        result.reserve(names.size());
+        auto& log = std::cerr;
+        ParsedPort common;
+        parse_Port (common, cfg["server"], log);
         for (auto const& name : cfg.section("server").values())
         {
             if (! cfg.exists(name))
                 continue;
-            ParsedPort parsed = common;
-            parsed.name = name;
-            parse_Port(parsed, config[name], log);
-            result.push_back(to_Port(parsed, log));
+            ParsedPort pp;
+            parse_Port(pp, cfg[name], log);
+            if(pp.protocol.count("http") == 0)
+                continue;
+            using boost::asio::ip::address_v4;
+            if(*pp.ip == address_v4{0x00000000})
+                *pp.ip = address_v4{0x7f000001};
+            return { *pp.ip, *pp.port };
         }
-        auto iter = ;
-        for (iter = setup.ports.cbegin();
-                iter != setup.ports.cend(); ++iter)
-            if (iter->protocol.count("http") > 0 ||
-                    iter->protocol.count("https") > 0)
-                break;
-        if (iter == setup.ports.cend())
-            return;
-        setup.client.secure =
-            iter->protocol.count("https") > 0;
-        setup.client.ip = iter->ip.to_string();
-        // VFALCO HACK! to make localhost work
-        if (setup.client.ip == "0.0.0.0")
-            setup.client.ip = "127.0.0.1";
-        setup.client.port = iter->port;
-        setup.client.user = iter->user;
-        setup.client.password = iter->password;
-        setup.client.admin_user = iter->admin_user;
-        setup.client.admin_password = iter->admin_password;
-#endif
+        throw std::runtime_error("Missing HTTP port");
     }
 
-    //boost::asio::ip::tcp::socket sock_;
+    boost::asio::io_service ios_;
+    boost::asio::ip::tcp::socket stream_;
 
 public:
     explicit
     HTTPClient(Config const& cfg)
+        : stream_(ios_)
     {
-
+        stream_.connect(getEndpoint(cfg));
     }
 
     Json::Value
-    rpc(Json::Value const& jv) override
+    rpc(std::string const& cmd,
+        Json::Value const& params) override
     {
+        std::string s;
+        {
+            Json::Value jr;
+            jr["method"] = cmd;
+            jr["params"] = params;
+            s = to_string(jr);
+        }
+        
+        using namespace boost::asio;
+        using namespace std::string_literals;
+        std::string r;
+        r =
+            "GET / HTTP/1.1\r\n"
+            "Connection: Keep-Alive\r\n"s +
+            "Content-Length: " + std::to_string(s.size()) +
+            "\r\n";
+        write(stream_, buffer(r));
+        write(stream_, buffer(s));
         return {};
     }
 };
