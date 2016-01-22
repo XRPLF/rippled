@@ -334,18 +334,23 @@ public:
     void close_all(close::status::value code = close::status::GOING_AWAY,
                    const std::string& reason = "")
     {
-        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
+        auto connections = [&, this]
+        {
+            boost::lock_guard<boost::recursive_mutex> lock (m_lock);
 
-        m_alog->at(log::alevel::ENDPOINT)
-        << "Endpoint received signal to close all connections cleanly with code "
-        << code << " and reason " << reason << log::endl;
+            m_alog->at (log::alevel::ENDPOINT)
+                << "Endpoint received signal to close all connections cleanly "
+                   "with code "
+                << code << " and reason " << reason << log::endl;
+            return m_connections;
+        }();
 
         // TODO: is there a more elegant way to do this? In some code paths
         // close can call terminate immediately which removes the connection
         // from m_connections, invalidating the iterator.
         typename std::set<connection_ptr>::iterator it;
 
-        for (it = m_connections.begin(); it != m_connections.end();) {
+        for (it = connections.begin(); it != connections.end();) {
             const connection_ptr con = *it++;
             con->close(code,reason);
         }
@@ -378,15 +383,18 @@ public:
               close::status::value code = close::status::GOING_AWAY,
               const std::string& reason = "")
     {
-        boost::lock_guard<boost::recursive_mutex> lock(m_lock);
 
         if (clean) {
-            m_alog->at(log::alevel::ENDPOINT)
-                << "Endpoint is stopping cleanly" << log::endl;
+            {
+                boost::lock_guard<boost::recursive_mutex> lock(m_lock);
+                m_alog->at(log::alevel::ENDPOINT)
+                        << "Endpoint is stopping cleanly" << log::endl;
 
-            m_state = STOPPING;
+                m_state = STOPPING;
+            }
             close_all(code,reason);
         } else {
+            boost::lock_guard<boost::recursive_mutex> lock(m_lock);
             m_alog->at(log::alevel::ENDPOINT)
                 << "Endpoint is stopping immediately" << log::endl;
 

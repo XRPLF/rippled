@@ -3596,13 +3596,31 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\AbstractClient.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\DirectClient.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\HTTPClient.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\impl\BasicNetwork_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\DirectClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\HTTPClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\wsc_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3920,21 +3938,11 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\websocket04.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\websocketpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Config04.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\Connection.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\Handler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Logger.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\websocket\LogWebsockets.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3952,11 +3960,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\WebSocket04.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\WebSocket04.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -4830,128 +4833,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\sqlite\sqlite\sqlite3.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\base64\base64.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\close.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\connection_hdl.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\cpp11.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\functional.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\md5.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\memory.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\network.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\platforms.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\stdint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\system_error.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\thread.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\common\time.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\concurrency\basic.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\config\core.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\connection.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\connection_base.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\endpoint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\endpoint_base.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\error.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\extensions\extension.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\extensions\permessage_deflate\disabled.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\frame.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\constants.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\impl\parser.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\impl\request.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\impl\response.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\parser.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\request.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\http\response.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\impl\connection_impl.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\impl\endpoint_impl.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\impl\utilities_impl.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\logger\basic.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\logger\levels.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\message_buffer\alloc.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\message_buffer\message.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\processors\base.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\processors\hybi00.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\processors\hybi07.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\processors\hybi08.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\processors\hybi13.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\processors\processor.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\random\none.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\roles\server_endpoint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\server.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\sha1\sha1.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\asio\base.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\asio\connection.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\asio\endpoint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\asio\security\base.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\asio\security\none.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\base\connection.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\base\endpoint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\iostream\base.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\iostream\connection.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\transport\iostream\endpoint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\uri.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\utf8_validator.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\utilities.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp\websocketpp\version.hpp">
     </ClInclude>
     <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

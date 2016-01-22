@@ -93,6 +93,7 @@ public:
     virtual ~Application () = default;
 
     virtual void setup() = 0;
+    virtual void doStart() = 0;
     virtual void run() = 0;
     virtual bool isShutdown () = 0;
     virtual void signalStop () = 0;

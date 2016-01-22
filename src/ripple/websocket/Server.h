@@ -23,7 +23,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/websocket/WebSocket.h>
 #include <beast/threads/Thread.h>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 namespace ripple {
@@ -37,8 +39,9 @@ private:
     std::recursive_mutex endpointMutex_;  // TODO: why is this recursive?
     std::thread thread_;
     beast::Journal j_;
+    bool started_ = false;
     typename WebSocket::EndpointPtr endpoint_;
-
+    std::condition_variable_any cv_;
 public:
     Server (ServerDescription const& desc)
         : beast::Stoppable (WebSocket::versionName(), desc.source)
@@ -66,7 +69,9 @@ private:
         {
             auto handler = WebSocket::makeHandler (desc_);
             std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            started_ = true;
             endpoint_ = WebSocket::makeEndpoint (std::move (handler));
+            cv_.notify_all();
         }
 
         JLOG (j_.warning)
@@ -89,6 +94,19 @@ private:
     void onStart () override
     {
         thread_ = std::thread {&Server<WebSocket>::run, this};
+
+        {
+            std::unique_lock<std::recursive_mutex> lock (endpointMutex_);
+            cv_.wait(lock, [&]{ return started_; });
+        }
+
+        typename WebSocket::EndpointPtr ep;
+        {
+            std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
+            ep = endpoint_;
+        }
+        if(ep)
+            ep->wait_for_listen();
     }
 
     void onStop () override
