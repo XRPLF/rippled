@@ -271,16 +271,33 @@ Env::submit (JTx const& jt)
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
-        Serializer s;
-        jt.stx->add(s);
-        auto const result = rpc("submit", strHex(s.slice()));
-        if (result.first == rpcSUCCESS &&
-            result.second["result"].isMember("engine_result_code"))
-            ter_ = static_cast<TER>(
-                result.second["result"]["engine_result_code"].asInt());
+        auto const flags = applyFlags();
+        if (flags == tapNONE)
+        {
+            // Normal transaction flow. Submit over RPC.
+            Serializer s;
+            jt.stx->add(s);
+            auto const result = rpc("submit", strHex(s.slice()));
+            if (result.first == rpcSUCCESS &&
+                result.second["result"].isMember("engine_result_code"))
+                ter_ = static_cast<TER>(
+                    result.second["result"]["engine_result_code"].asInt());
+            else
+                ter_ = temINVALID;
+            didApply = isTesSuccess(ter_) || isTecClaim(ter_);
+        }
         else
-            ter_ = temINVALID;
-        didApply = isTesSuccess(ter_) || isTecClaim(ter_);
+        {
+            // Something unusual going on, modify the openLedger directly.
+            app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j)
+                 {
+                    std::tie(ter_, didApply) = app().getTxQ().apply(
+                        app(), view, jt.stx, flags,
+                        beast::Journal{});
+                    return didApply;
+                });
+        }
     }
     else
     {
