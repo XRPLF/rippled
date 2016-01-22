@@ -53,10 +53,10 @@ PathRequest::PathRequest (
         , iLastLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
+        , created_ (std::chrono::steady_clock::now())
 {
     if (m_journal.debug)
         m_journal.debug << iIdentifier << " created";
-    ptCreated = boost::posix_time::microsec_clock::universal_time ();
 }
 
 PathRequest::PathRequest (
@@ -75,45 +75,36 @@ PathRequest::PathRequest (
         , iLastLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
+        , created_ (std::chrono::steady_clock::now())
 {
     if (m_journal.debug)
         m_journal.debug << iIdentifier << " created";
-    ptCreated = boost::posix_time::microsec_clock::universal_time ();
-}
-
-static std::string const get_milli_diff (
-    boost::posix_time::ptime const& after,
-    boost::posix_time::ptime
-    const& before)
-{
-    return beast::lexicalCastThrow <std::string> (
-        static_cast <unsigned> ((after - before).total_milliseconds()));
-}
-
-static std::string const get_milli_diff (boost::posix_time::ptime const& before)
-{
-    return get_milli_diff(
-        boost::posix_time::microsec_clock::universal_time(), before);
 }
 
 PathRequest::~PathRequest()
 {
+    using namespace std::chrono;
+    if (! m_journal.info)
+        return;
+
     std::string fast, full;
-    if (!ptQuickReply.is_not_a_date_time())
+    if (quick_reply_ != steady_clock::time_point{})
     {
         fast = " fast:";
-        fast += get_milli_diff (ptQuickReply, ptCreated);
+        fast += std::to_string(
+            duration_cast<milliseconds>(quick_reply_ - created_).count());
         fast += "ms";
     }
-    if (!ptFullReply.is_not_a_date_time())
+    if (full_reply_ != steady_clock::time_point{})
     {
         full = " full:";
-        full += get_milli_diff (ptFullReply, ptCreated);
+        full += std::to_string(
+            duration_cast<milliseconds>(full_reply_ - created_).count());
         full += "ms";
     }
-    if (m_journal.info)
-        m_journal.info << iIdentifier << " complete:" << fast << full <<
-        " total:" << get_milli_diff(ptCreated) << "ms";
+    m_journal.info << iIdentifier << " complete:" << fast << full <<
+    " total:" << duration_cast<milliseconds>(steady_clock::now() -
+        created_).count() << "ms";
 }
 
 bool PathRequest::isNew ()
@@ -599,6 +590,7 @@ PathRequest::findPaths (RippleLineCache::ref cache, int const level,
 
 Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
+    using namespace std::chrono;
     m_journal.debug << iIdentifier << " update " << (fast ? "fast" : "normal");
 
     {
@@ -670,15 +662,15 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     bLastSuccess = jvArray.size();
     iLastLevel = iLevel;
 
-    if (fast && ptQuickReply.is_not_a_date_time())
+    if (fast && quick_reply_ == steady_clock::time_point{})
     {
-        ptQuickReply = boost::posix_time::microsec_clock::universal_time();
-        mOwner.reportFast ((ptQuickReply-ptCreated).total_milliseconds());
+        quick_reply_ = steady_clock::now();
+        mOwner.reportFast(duration_cast<milliseconds>(quick_reply_ - created_));
     }
-    else if (! fast && ptFullReply.is_not_a_date_time())
+    else if (! fast && full_reply_ == steady_clock::time_point{})
     {
-        ptFullReply = boost::posix_time::microsec_clock::universal_time();
-        mOwner.reportFull ((ptFullReply-ptCreated).total_milliseconds());
+        full_reply_ = steady_clock::now();
+        mOwner.reportFull(duration_cast<milliseconds>(full_reply_ - created_));
     }
 
     {

@@ -144,9 +144,9 @@ private:
 
     int iIdentifier;
 
-    boost::posix_time::ptime ptCreated;
-    boost::posix_time::ptime ptQuickReply;
-    boost::posix_time::ptime ptFullReply;
+    std::chrono::steady_clock::time_point const created_;
+    std::chrono::steady_clock::time_point quick_reply_;
+    std::chrono::steady_clock::time_point full_reply_;
 
     static unsigned int const max_paths_ = 4;
 };
