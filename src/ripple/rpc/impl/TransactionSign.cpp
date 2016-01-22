@@ -546,6 +546,9 @@ transactionConstructImpl (std::shared_ptr<STTx const> const& stpTrans,
 
             // Check the signature if that's called for.
             auto sttxNew = std::make_shared<STTx const> (sit);
+            if (!app.checkSigs())
+                forceValidity(app.getHashRouter(),
+                    sttxNew->getTransactionID(), Validity::SigGoodOnly);
             if (checkValidity(app.getHashRouter(),
                 *sttxNew, rules, app.config()).first != Validity::Valid)
             {
