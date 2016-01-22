@@ -305,7 +305,9 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
 {
     if (jt.ter && ! test.expect(ter == *jt.ter,
         "apply: " + transToken(ter) +
-            " (" + transHuman(ter) + ")"))
+            " (" + transHuman(ter) + ") != " +
+                transToken(*jt.ter) + " (" +
+                    transHuman(*jt.ter) + ")"))
     {
         test.log << pretty(jt.jv);
         // Don't check postconditions if
@@ -340,7 +342,7 @@ Env::autofill_sig (JTx& jt)
         return;
     auto const account =
         lookup(jv[jss::Account].asString());
-    if (nosig_)
+    if (!app().checkSigs())
     {
         jv[jss::SigningPubKey] =
             strHex(account.pk().slice());
@@ -404,15 +406,6 @@ Env::st (JTx const& jt)
     {
     }
     return nullptr;
-}
-
-ApplyFlags
-Env::applyFlags() const
-{
-    ApplyFlags flags = tapNONE;
-    if (nosig_)
-        flags = flags | tapNO_CHECK_SIGN;
-    return flags;
 }
 
 Json::Value

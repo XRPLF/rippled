@@ -343,6 +343,8 @@ public:
     boost::asio::signal_set m_signals;
     beast::WaitableEvent m_stop;
 
+    std::atomic<bool> checkSigs_;
+
     std::unique_ptr <ResolverAsio> m_resolver;
 
     io_latency_sampler m_io_latency_sampler;
@@ -474,6 +476,8 @@ public:
 
         , m_signals (get_io_service())
 
+        , checkSigs_(true)
+
         , m_resolver (ResolverAsio::New (get_io_service(), logs_->journal("Resolver")))
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
@@ -510,6 +514,8 @@ public:
     void run() override;
     bool isShutdown() override;
     void signalStop() override;
+    bool checkSigs() const override;
+    void checkSigs(bool) override;
 
     //--------------------------------------------------------------------------
 
@@ -1138,6 +1144,16 @@ ApplicationImp::isShutdown()
 {
     // from Stoppable mixin
     return isStopped();
+}
+
+bool ApplicationImp::checkSigs() const
+{
+    return checkSigs_;
+}
+
+void ApplicationImp::checkSigs(bool check)
+{
+    checkSigs_ = check;
 }
 
 //------------------------------------------------------------------------------

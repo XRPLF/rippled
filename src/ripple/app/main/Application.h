@@ -97,6 +97,8 @@ public:
     virtual void run() = 0;
     virtual bool isShutdown () = 0;
     virtual void signalStop () = 0;
+    virtual bool checkSigs() const = 0;
+    virtual void checkSigs(bool) = 0;
 
     //
     // ---

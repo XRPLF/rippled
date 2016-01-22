@@ -54,13 +54,28 @@ public:
     }
 
     void
-    run()
+    run() override
     {
         test(10000);
     }
 };
 
 BEAST_DEFINE_TESTSUITE_MANUAL(PlumpBook,tx,ripple);
+
+//------------------------------------------------------------------------------
+
+// Ensure that unsigned transactions succeed during automatic test runs.
+class ThinBook_test : public PlumpBook_test
+{
+public:
+    void
+        run() override
+    {
+        test(1);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(ThinBook, tx, ripple);
 
 //------------------------------------------------------------------------------
 

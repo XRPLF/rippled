@@ -299,7 +299,7 @@ public:
     void
     disable_sigs()
     {
-        nosig_ = true;
+        app().checkSigs(false);
     }
 
     /** Associate AccountID with account. */
@@ -540,7 +540,6 @@ public:
 protected:
     int trace_ = 0;
     bool testing_ = true;
-    bool nosig_ = false;
     TestStopwatch stopwatch_;
     uint256 txid_;
     TER ter_ = tesSUCCESS;
@@ -564,9 +563,6 @@ protected:
     */
     std::shared_ptr<STTx const>
     st (JTx const& jt);
-
-    ApplyFlags
-    applyFlags() const;
 
     inline
     void

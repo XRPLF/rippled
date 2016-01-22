@@ -82,7 +82,11 @@ Json::Value doSubmit (RPC::Context& context)
         return jvResult;
     }
 
+
     {
+        if (!context.app.checkSigs())
+            forceValidity(context.app.getHashRouter(),
+                stpTrans->getTransactionID(), Validity::SigGoodOnly);
         auto validity = checkValidity(context.app.getHashRouter(),
             *stpTrans, context.ledgerMaster.getCurrentLedger()->rules(),
                 context.app.config());
