@@ -2589,9 +2589,6 @@
     <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\Base58.h">
-      <Filter>ripple\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CAutoBN_CTX.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
@@ -2607,9 +2604,6 @@
     <ClInclude Include="..\..\src\ripple\crypto\GenerateDeterministicKey.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\Base58.cpp">
-      <Filter>ripple\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>

@@ -1962,8 +1962,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\crypto\Base58.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CAutoBN_CTX.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\CBigNum.h">
@@ -1974,10 +1972,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\GenerateDeterministicKey.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\Base58.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
