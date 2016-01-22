@@ -22,6 +22,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/server/Port.h>
 #include <beast/asio/streambuf.h>
+#include <beast/http/parser.h>
 #include <boost/asio.hpp>
 #include <string>
 
@@ -55,6 +56,8 @@ class HTTPClient : public AbstractClient
 
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
+    boost::asio::streambuf bin_;
+    beast::asio::streambuf bout_;
 
 public:
     explicit
@@ -82,10 +85,33 @@ public:
         r =
             "GET / HTTP/1.1\r\n"
             "Connection: Keep-Alive\r\n"s +
-            "Content-Length: " + std::to_string(s.size()) +
+            "Content-Length: " + std::to_string(s.size()) + "\r\n"
             "\r\n";
         write(stream_, buffer(r));
         write(stream_, buffer(s));
+
+        read_until(stream_, bin_, "\r\n\r\n");
+        beast::asio::streambuf body;
+        beast::http::message m;
+        beast::http::parser p(
+            [&](void const* data, std::size_t size)
+            {
+                body.commit(buffer_copy(
+                    body.prepare(size), const_buffer(data, size)));
+            }, m, false);
+
+        for(;;)
+        {
+            auto const result = p.write(bin_.data());
+            if (result.first)
+                throw result.first;
+            bin_.consume(result.second);
+            if(p.complete())
+                break;
+            bin_.commit(stream_.read_some(
+                bin_.prepare(1024)));
+        }
+ 
         return {};
     }
 };
