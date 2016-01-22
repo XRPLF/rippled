@@ -53,7 +53,7 @@ PathRequest::PathRequest (
         , iLastLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
-        , created_ (std::chrono::high_resolution_clock::now())
+        , created_ (std::chrono::steady_clock::now())
 {
     if (m_journal.debug)
         m_journal.debug << iIdentifier << " created";
@@ -75,7 +75,7 @@ PathRequest::PathRequest (
         , iLastLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
-        , created_ (std::chrono::high_resolution_clock::now())
+        , created_ (std::chrono::steady_clock::now())
 {
     if (m_journal.debug)
         m_journal.debug << iIdentifier << " created";
@@ -88,22 +88,22 @@ PathRequest::~PathRequest()
         return;
 
     std::string fast, full;
-    if (quick_reply_ != high_resolution_clock::time_point{})
+    if (quick_reply_ != steady_clock::time_point{})
     {
         fast = " fast:";
-        fast += to_string(
+        fast += std::to_string(
             duration_cast<milliseconds>(quick_reply_ - created_).count());
         fast += "ms";
     }
-    if (full_reply_ != high_resolution_clock::time_point{})
+    if (full_reply_ != steady_clock::time_point{})
     {
         full = " full:";
-        full += to_string(
+        full += std::to_string(
             duration_cast<milliseconds>(full_reply_ - created_).count());
         full += "ms";
     }
     m_journal.info << iIdentifier << " complete:" << fast << full <<
-    " total:" << duration_cast<milliseconds>(high_resolution_clock::now() -
+    " total:" << duration_cast<milliseconds>(steady_clock::now() -
         created_).count() << "ms";
 }
 
@@ -662,17 +662,15 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     bLastSuccess = jvArray.size();
     iLastLevel = iLevel;
 
-    if (fast && quick_reply_ == high_resolution_clock::time_point{})
+    if (fast && quick_reply_ == steady_clock::time_point{})
     {
-        quick_reply_ = high_resolution_clock::now();
-        mOwner.reportFast (duration_cast<milliseconds>(
-            quick_reply_ - created_).count());
+        quick_reply_ = steady_clock::now();
+        mOwner.reportFast(duration_cast<milliseconds>(quick_reply_ - created_));
     }
-    else if (! fast && full_reply_ == high_resolution_clock::time_point{})
+    else if (! fast && full_reply_ == steady_clock::time_point{})
     {
-        full_reply_ = high_resolution_clock::now();
-        mOwner.reportFull(duration_cast<milliseconds>(
-            full_reply_ - created_).count());
+        full_reply_ = steady_clock::now();
+        mOwner.reportFull(duration_cast<milliseconds>(full_reply_ - created_));
     }
 
     {

@@ -60,14 +60,14 @@ public:
         std::shared_ptr<ReadView const> const& inLedger,
         Json::Value const& request);
 
-    void reportFast (int milliseconds)
+    void reportFast (std::chrono::milliseconds ms)
     {
-        mFast.notify (static_cast < beast::insight::Event::value_type> (milliseconds));
+        mFast.notify (ms);
     }
 
-    void reportFull (int milliseconds)
+    void reportFull (std::chrono::milliseconds ms)
     {
-        mFull.notify (static_cast < beast::insight::Event::value_type> (milliseconds));
+        mFull.notify (ms);
     }
 
 private:
