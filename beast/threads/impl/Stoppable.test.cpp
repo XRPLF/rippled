@@ -169,7 +169,7 @@ class Stoppable_test
     class A
         : public Stoppable
     {
-        enum {running, please_stop, have_stopped};
+        enum {running, please_stop, stopping, stopped};
         D d_;
         E e_;
         F f_;
@@ -184,12 +184,17 @@ class Stoppable_test
             , test_(test)
             , stop_(running)
         {}
+        ~A()
+        {
+            while (stop_ != stopped)
+                ;
+        }
 
         void run()
         {
             while (stop_ == running)
                 ;
-            stop_ = have_stopped;
+            stop_ = stopping;
         }
 
         void onPrepare() override
@@ -210,10 +215,11 @@ class Stoppable_test
         void onChildrenStopped() override
         {
             stop_ = please_stop;
-            while (stop_ != have_stopped)
+            while (stop_ != stopping)
                 ;
             Stoppable::stopped();
             test_.expect(--test_.count == 1, "A::onChildrenStopped called out of order");
+            stop_ = stopped;
         }
     };
 
