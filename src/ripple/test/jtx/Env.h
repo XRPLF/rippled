@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/test/AbstractClient.h>
 #include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
@@ -99,6 +100,7 @@ private:
         std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper;
         std::thread thread;
+        std::unique_ptr<AbstractClient> client;
 
         AppBundle (std::unique_ptr<Config> config);
         AppBundle (Application* app_);
@@ -161,7 +163,6 @@ public:
     {
     }
 
-
     Application&
     app()
     {
@@ -183,6 +184,13 @@ public:
     now()
     {
         return app().timeKeeper().now();
+    }
+
+    /** Returns the connected client. */
+    AbstractClient&
+    client()
+    {
+        return *bundle_.client;
     }
 
     /** Returns the current ledger.
