@@ -3406,9 +3406,15 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\AbstractClient.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\impl\BasicNetwork_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\JSONRPCClient.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -3416,6 +3422,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\test\JSONRPCClient.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Account.h">
