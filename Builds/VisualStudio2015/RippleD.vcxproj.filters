@@ -3915,15 +3915,24 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\AbstractClient.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
       <Filter>ripple\test</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\impl\BasicNetwork_test.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\JSONRPCClient.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\test\JSONRPCClient.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx.h">
       <Filter>ripple\test</Filter>
     </ClInclude>
