@@ -48,4 +48,5 @@
 #include <ripple/test/mao/impl/Net.cpp>
 
 #include <ripple/test/impl/BasicNetwork_test.cpp>
+#include <ripple/test/impl/JSONRPCClient.cpp>
 #include <ripple/test/impl/ManualTimeKeeper.cpp>
