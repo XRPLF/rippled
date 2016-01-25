@@ -92,8 +92,9 @@ template <typename level_type>
 class logger {
 public:
     template <typename T>
-    logger<level_type>& operator<<(T a) {
-            m_oss << a; // For now, make this unconditional DJS
+    logger<level_type>& operator<<(T a)
+    {
+        // VFALCO Logging disabled (can cause a crash)
         return *this;
     }
 
@@ -130,18 +131,8 @@ public:
         }
     }
 
-    logger<level_type>& print() {
-            websocketLog(m_write_level, m_oss.str()); // Hand to our logger DJS
-            m_oss.str("");
-#if 0
-        if (test_level(m_write_level)) {
-            std::cout << m_prefix <<
-                boost::posix_time::to_iso_extended_string(
-                    boost::posix_time::second_clock::local_time()
-                ) << " [" << m_write_level << "] " << m_oss.str() << std::endl;
-            m_oss.str("");
-        }
-#endif
+    logger<level_type>& print()
+    {
        return *this;
     }
 
@@ -150,7 +141,6 @@ public:
         return *this;
     }
 private:
-    std::ostringstream m_oss;
     level_type m_write_level;
     level_type m_level;
     std::string m_prefix;
