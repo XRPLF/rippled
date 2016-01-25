@@ -1114,11 +1114,6 @@ for tu_style in ['classic', 'unity']:
                 ]
             )
 
-            object_builder.add_source_files(
-                'src/ripple/unity/websocket04.cpp',
-                CPPPATH='src/websocketpp',
-            )
-
             if toolchain == "clang" and Beast.system.osx:
                 object_builder.add_source_files('src/ripple/unity/beastobjc.mm')
 

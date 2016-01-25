@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -18,17 +18,45 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/websocket/MakeServer.h>
-#include <ripple/websocket/WebSocket.h>
+#include <ripple/test/DirectClient.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/RPCHandler.h>
 
 namespace ripple {
-namespace websocket {
+namespace test {
 
-std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const& desc)
+class DirectClient : public AbstractClient
 {
-    return makeServer02 (desc);
+    Application& app_;
+
+public:
+    DirectClient(Application& app)
+        : app_(app)
+    {
+    }
+
+    Json::Value
+    rpc(std::string const& cmd,
+        Json::Value const& params) override
+    {
+#if 0
+        auto loadType = Resource::feeReferenceRPC;
+        RPC::Context ctx { app_.journal ("RPCHandler"), jv, app_,
+            loadType, app_.getOPs (), app_.getLedgerMaster(), Role::ADMIN };
+        Json::Value jr;
+        RPC::doCommand(ctx, jr);
+        return jr;
+#else
+        return {};
+#endif
+    }
+};
+
+std::unique_ptr<AbstractClient>
+makeDirectClient(Application& app)
+{
+    return std::make_unique<DirectClient>(app);
 }
 
-} // websocket
+} // test
 } // ripple

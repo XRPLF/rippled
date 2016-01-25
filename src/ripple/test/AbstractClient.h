@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,18 +17,30 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/websocket/MakeServer.h>
-#include <ripple/websocket/WebSocket.h>
+#ifndef RIPPLE_TEST_ABSTRACTCLIENT_H_INCLUDED
+#define RIPPLE_TEST_ABSTRACTCLIENT_H_INCLUDED
+
+#include <ripple/json/json_value.h>
 
 namespace ripple {
-namespace websocket {
+namespace test {
 
-std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const& desc)
+/* Abstract Ripple RPC Client interface. */
+class AbstractClient
 {
-    return makeServer02 (desc);
-}
+public:
+    virtual ~AbstractClient() = default;
 
-} // websocket
+    /** Submit an RPC command synchronously.
+        @return The server response.
+    */
+    virtual
+    Json::Value
+    rpc(std::string const& cmd,
+        Json::Value const& params) = 0;
+};
+
+} // test
 } // ripple
+
+#endif
