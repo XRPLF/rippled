@@ -3915,13 +3915,34 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\AbstractClient.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\DirectClient.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\HTTPClient.h">
       <Filter>ripple\test</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\impl\BasicNetwork_test.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\DirectClient.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\HTTPClient.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\WSClient.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\wsc_test.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\test\jtx.h">
@@ -4106,6 +4127,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\test\mao\Net.h">
       <Filter>ripple\test\mao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\WSClient.h">
+      <Filter>ripple\test</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
