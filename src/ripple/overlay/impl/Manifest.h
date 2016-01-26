@@ -162,7 +162,10 @@ public:
     ManifestCache& operator= (ManifestCache const&) = delete;
     ~ManifestCache() = default;
 
-    void configValidatorKey(std::string const& line, beast::Journal journal);
+    bool loadValidatorKeys(
+        Section const& keys,
+        beast::Journal journal);
+
     void configManifest (Manifest m, ValidatorList& unl, beast::Journal journal);
 
     void addTrustedKey (PublicKey const& pk, std::string comment);

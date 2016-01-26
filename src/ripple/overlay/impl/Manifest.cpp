@@ -25,7 +25,7 @@
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
-#include <beast/http/rfc2616.h>
+#include <boost/regex.hpp>
 #include <stdexcept>
 
 namespace ripple {
@@ -127,28 +127,66 @@ Blob Manifest::getSignature () const
     return st.getFieldVL (sfSignature);
 }
 
-void
-ManifestCache::configValidatorKey(
-    std::string const& line, beast::Journal journal)
+bool
+ManifestCache::loadValidatorKeys(
+    Section const& keys,
+    beast::Journal journal)
 {
-    auto const words = beast::rfc2616::split(line.begin(), line.end(), ' ');
+    static boost::regex const re (
+        "[[:space:]]*"            // skip leading whitespace
+        "([[:alnum:]]+)"          // node identity
+        "(?:"                     // begin optional comment block
+        "[[:space:]]+"            // (skip all leading whitespace)
+        "(?:"                     // begin optional comment
+        "(.*[^[:space:]]+)"       // the comment
+        "[[:space:]]*"            // (skip all trailing whitespace)
+        ")?"                      // end optional comment
+        ")?"                      // end optional comment block
+    );
 
-    if (words.size () != 2)
-        Throw<std::runtime_error> ("[validator_keys] format is `<key> <comment>");
+    JLOG (journal.debug) <<
+        "Loading configured validator keys";
 
-    auto const masterKey = parseBase58<PublicKey>(
-        TokenType::TOKEN_NODE_PUBLIC, words[0]);
+    std::size_t count = 0;
 
-    if (!masterKey)
-        Throw<std::runtime_error> ("Error decoding validator key");
+    for (auto const& line : keys.lines())
+    {
+        boost::smatch match;
 
-    if (publicKeyType(*masterKey) != KeyType::ed25519)
-        Throw<std::runtime_error> ("Validator key must use Ed25519");
+        if (!boost::regex_match (line, match, re))
+        {
+            JLOG (journal.error) <<
+                "Malformed entry: '" << line << "'";
+            return false;
+        }
 
-    JLOG (journal.debug) << "Loaded key: " <<
-        toBase58(TokenType::TOKEN_NODE_PUBLIC, *masterKey);
+        auto const key = parseBase58<PublicKey>(
+            TokenType::TOKEN_NODE_PUBLIC, match[1]);
 
-    addTrustedKey (*masterKey, std::move(words[1]));
+        if (!key)
+        {
+            JLOG (journal.error) <<
+                "Error decoding validator key: " << match[1];
+            return false;
+        }
+
+        if (publicKeyType(*key) != KeyType::ed25519)
+        {
+            JLOG (journal.error) <<
+                "Validator key not using Ed25519: " << match[1];
+            return false;
+        }
+
+        JLOG (journal.debug) << "Loaded key: " << match[1];
+
+        addTrustedKey (*key, match[2]);
+        ++count;
+    }
+
+    JLOG (journal.debug) <<
+        "Loaded " << count << " entries";
+
+    return true;
 }
 
 void
