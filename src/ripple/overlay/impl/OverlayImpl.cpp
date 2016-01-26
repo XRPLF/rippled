@@ -437,21 +437,15 @@ void
 OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
                                          DatabaseCon& db)
 {
-    auto const validator_keys = config.section ("validator_keys");
-    auto const validation_manifest = config.section ("validation_manifest");
+    auto const loaded = manifestCache_.loadValidatorKeys (
+        config.section ("validator_keys"),
+        journal_);
 
-    if (! validator_keys.lines().empty())
-    {
-        for (auto const& line : validator_keys.lines())
-        {
-            manifestCache_.configValidatorKey (line, journal_);
-        }
-    }
-    else
-    {
-        if (journal_.warning)
-            journal_.warning << "[validator_keys] is empty";
-    }
+    if (!loaded)
+        Throw<std::runtime_error> ("Unable to load validator keys");
+
+    auto const validation_manifest =
+        config.section ("validation_manifest");
 
     if (! validation_manifest.lines().empty())
     {
@@ -473,8 +467,8 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
     }
     else
     {
-        if (journal_.warning)
-            journal_.warning << "No [validation_manifest] section in config";
+        if (journal_.debug)
+            journal_.debug << "No [validation_manifest] section in config";
     }
 
     manifestCache_.load (
