@@ -412,16 +412,14 @@ void LedgerConsensusImp::mapCompleteInternal (
         // this will create disputed transactions
         auto it2 = mAcquired.find (mOurPosition->getCurrentHash ());
 
-        if (it2 != mAcquired.end ())
-        {
-            assert ((it2->first == mOurPosition->getCurrentHash ())
-                && it2->second);
-            mCompares.insert(hash);
-            // Our position is not the same as the acquired position
-            createDisputes (it2->second, map);
-        }
-        else
-            assert (false); // We don't have our own position?!
+        if (it2 == mAcquired.end())
+            LogicError ("We cannot find our own position!");
+
+        assert ((it2->first == mOurPosition->getCurrentHash ())
+            && it2->second);
+        mCompares.insert(hash);
+        // Our position is not the same as the acquired position
+        createDisputes (it2->second, map);
     }
     else if (!mOurPosition)
         JLOG (j_.debug)
@@ -437,9 +435,10 @@ void LedgerConsensusImp::mapCompleteInternal (
 
     // Adjust tracking for each peer that takes this position
     std::vector<NodeID> peers;
+    auto const mapHash = map->getHash ().as_uint256();
     for (auto& it : mPeerPositions)
     {
-        if (it.second->getCurrentHash () == map->getHash ().as_uint256())
+        if (it.second->getCurrentHash () == mapHash)
             peers.push_back (it.second->getPeerID ());
     }
 
