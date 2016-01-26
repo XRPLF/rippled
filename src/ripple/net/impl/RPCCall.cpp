@@ -26,6 +26,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
+#include <ripple/json/Object.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -1080,6 +1081,55 @@ struct RPCCallImp
 
 //------------------------------------------------------------------------------
 
+// Used internally by rpcClient.
+static Json::Value
+rpcCmdLineToJson (std::vector<std::string> const& args,
+    Json::Value& retParams, beast::Journal j)
+{
+    Json::Value jvRequest (Json::objectValue);
+
+    RPCParser   rpParser (j);
+    Json::Value jvRpcParams (Json::arrayValue);
+
+    for (int i = 1; i != args.size (); i++)
+        jvRpcParams.append (args[i]);
+
+    retParams = Json::Value (Json::objectValue);
+
+    retParams["method"] = args[0];
+    retParams[jss::params] = jvRpcParams;
+
+    jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
+
+    JLOG (j.trace) << "RPC Request: " << jvRequest << std::endl;
+
+    return jvRequest;
+}
+
+Json::Value
+cmdLineToJSONRPC (std::vector<std::string> const& args, beast::Journal j)
+{
+    Json::Value jv = Json::Value (Json::objectValue);
+    auto const paramsObj = rpcCmdLineToJson (args, jv, j);
+
+    // Re-use jv to return our formatted result.
+    jv.clear();
+
+    // Allow parser to rewrite method.
+    jv[jss::method] = paramsObj.isMember (jss::method) ?
+        paramsObj[jss::method].asString() : args[0];
+
+    // If paramsObj is not empty, put it in a [params] array.
+    if (paramsObj.begin() != paramsObj.end())
+    {
+        auto& paramsArray = Json::setArray (jv, jss::params);
+        paramsArray.append (paramsObj);
+    }
+    return jv;
+}
+
+//------------------------------------------------------------------------------
+
 std::pair<int, Json::Value>
 rpcClient(std::vector<std::string> const& args,
     Config const& config, Logs& logs)
@@ -1093,23 +1143,10 @@ rpcClient(std::vector<std::string> const& args,
     Json::Value jvOutput;
     Json::Value jvRequest (Json::objectValue);
 
-    auto rpcJ = logs.journal ("RPCParser");
     try
     {
-        RPCParser   rpParser (rpcJ);
-        Json::Value jvRpcParams (Json::arrayValue);
-
-        for (int i = 1; i != args.size (); i++)
-            jvRpcParams.append (args[i]);
-
         Json::Value jvRpc   = Json::Value (Json::objectValue);
-
-        jvRpc["method"] = args[0];
-        jvRpc[jss::params] = jvRpcParams;
-
-        jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
-
-        JLOG (rpcJ.trace) << "RPC Request: " << jvRequest << std::endl;
+        jvRequest = rpcCmdLineToJson (args, jvRpc, logs.journal ("RPCParser"));
 
         if (jvRequest.isMember (jss::error))
         {
@@ -1182,7 +1219,7 @@ rpcClient(std::vector<std::string> const& args,
                 jvOutput["result"]  = jvRpcError;
             }
 
-            // If had an error, supply invokation in result.
+            // If had an error, supply invocation in result.
             if (jvOutput.isMember (jss::error))
             {
                 jvOutput["rpc"]             = jvRpc;            // How the command was seen as method + params.
@@ -1280,6 +1317,6 @@ void fromNetwork (
         logs);
 }
 
-}
+} // RPCCall
 
 } // ripple
