@@ -799,6 +799,19 @@ TER PathState::checkNoRipple (
             if (terStatus != tesSUCCESS)
                 return terStatus;
         }
+
+        if (!nodes_[i - 1].isAccount() &&
+            nodes_[i].isAccount() &&
+            nodes_[i + 1].isAccount() &&
+            nodes_[i -1].issue_.account != nodes_[i].account_)
+        { // offer -> account -> account
+            auto const& currencyID = nodes_[i].issue_.currency;
+            terStatus = checkNoRipple (
+                nodes_[i-1].issue_.account, nodes_[i].account_, nodes_[i+1].account_,
+                currencyID);
+            if (terStatus != tesSUCCESS)
+                return terStatus;
+        }
     }
 
     return tesSUCCESS;
