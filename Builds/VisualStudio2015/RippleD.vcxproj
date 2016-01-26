@@ -3293,6 +3293,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handoff.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BaseHTTPPeer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3303,9 +3305,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\impl\JSONRPCUtil.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\impl\Peer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\impl\PlainPeer.h">
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainHTTPPeer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3323,7 +3323,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\impl\SSLPeer.h">
+    <ClInclude Include="..\..\src\ripple\server\impl\SSLHTTPPeer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
     </ClInclude>
