@@ -20,8 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/server/impl/Door.h>
-#include <ripple/server/impl/PlainPeer.h>
-#include <ripple/server/impl/SSLPeer.h>
+#include <ripple/server/impl/PlainHTTPPeer.h>
+#include <ripple/server/impl/SSLHTTPPeer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl_bundle.h>
@@ -277,14 +277,14 @@ Door::create (bool ssl, ConstBufferSequence const& buffers,
 
     if (ssl)
     {
-        auto const peer = std::make_shared <SSLPeer> (*this,
+        auto const peer = std::make_shared <SSLHTTPPeer> (*this,
             server_.journal(), remote_address, buffers,
                 std::move(socket));
         add(peer);
         return peer->run();
     }
 
-    auto const peer = std::make_shared <PlainPeer> (*this,
+    auto const peer = std::make_shared <PlainHTTPPeer> (*this,
         server_.journal(), remote_address, buffers,
             std::move(socket));
     add(peer);
