@@ -100,8 +100,10 @@ private:
         ManualTimeKeeper* timeKeeper;
         std::thread thread;
 
-        AppBundle (std::unique_ptr<Config> config);
-        AppBundle (Application* app_);
+        AppBundle (beast::unit_test::suite& suite,
+            std::unique_ptr<Config> config);
+        AppBundle (beast::unit_test::suite& suite,
+            Application* app_);
         ~AppBundle();
     };
 
@@ -138,11 +140,11 @@ public:
 
     // VFALCO Could wrap the suite::log in a Journal here
     template <class... Args>
-    Env (beast::unit_test::suite& test_,
+    Env (beast::unit_test::suite& suite_,
         std::unique_ptr<Config> config,
             Args&&... args)
-        : test (test_)
-        , bundle_ (std::move(config))
+        : test (suite_)
+        , bundle_ (suite_, std::move(config))
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
@@ -150,9 +152,9 @@ public:
     }
 
     template <class... Args>
-    Env (beast::unit_test::suite& test_,
+    Env (beast::unit_test::suite& suite_,
             Args&&... args)
-        : Env(test_, []()
+        : Env(suite_, []()
             {
                 auto p = std::make_unique<Config>();
                 setupConfigForUnitTests(*p);
