@@ -25,6 +25,7 @@
 #include <beast/utility/Journal.h>
 #include <boost/filesystem.hpp>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <utility>
 
@@ -145,7 +146,9 @@ private:
     };
 
     std::mutex mutable mutex_;
-    std::map <std::string, Sink, beast::ci_less> sinks_;
+    std::map <std::string,
+        std::unique_ptr<beast::Journal::Sink>,
+            beast::ci_less> sinks_;
     beast::Journal::Severity level_;
     File file_;
     bool silent_ = false;
@@ -159,10 +162,10 @@ public:
     bool
     open (boost::filesystem::path const& pathToLogFile);
 
-    Sink&
+    beast::Journal::Sink&
     get (std::string const& name);
 
-    Sink&
+    beast::Journal::Sink&
     operator[] (std::string const& name);
 
     beast::Journal
@@ -194,6 +197,11 @@ public:
     {
         silent_ = bSilent;
     }
+
+    virtual
+    std::unique_ptr<beast::Journal::Sink>
+    makeSink(std::string const& partition,
+        beast::Journal::Severity startingLevel);
 
 public:
     static

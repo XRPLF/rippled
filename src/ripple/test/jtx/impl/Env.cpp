@@ -85,14 +85,69 @@ setupConfigForUnitTests (Config& cfg)
 
 namespace jtx {
 
-Env::AppBundle::AppBundle(Application* app_)
-    : app (app_)
+class SuiteSink : public beast::Journal::Sink
+{
+    std::string partition_;
+    beast::unit_test::suite& suite_;
+
+public:
+    SuiteSink(std::string const& partition,
+            beast::unit_test::suite& suite)
+        : partition_(partition + " ")
+        , suite_ (suite)
+    {
+    }
+
+    void
+    write(beast::Journal::Severity level,
+        std::string const& text) override
+    {
+        std::string s;
+        switch(level)
+        {
+        case beast::Journal::kTrace:    s = "TRC:"; break;
+        case beast::Journal::kDebug:    s = "DBG:"; break;
+        case beast::Journal::kInfo:     s = "INF:"; break;
+        case beast::Journal::kWarning:  s = "WRN:"; break;
+        case beast::Journal::kError:    s = "ERR:"; break;
+        default:
+        case beast::Journal::kFatal:    s = "FTL:"; break;
+        }
+        suite_.log << s << partition_ << text;
+    }
+};
+
+class SuiteLogs : public Logs
+{
+    beast::unit_test::suite& suite_;
+
+public:
+    explicit
+    SuiteLogs(beast::unit_test::suite& suite)
+        : suite_(suite)
+    {
+    }
+
+    std::unique_ptr<beast::Journal::Sink>
+    makeSink(std::string const& partition,
+        beast::Journal::Severity startingLevel) override
+    {
+        return std::make_unique<SuiteSink>(partition, suite_);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+Env::AppBundle::AppBundle(beast::unit_test::suite&,
+        Application* app_)
+    : app(app_)
 {
 }
 
-Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
+Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
+    std::unique_ptr<Config> config)
 {
-    auto logs = std::make_unique<Logs>();
+    auto logs = std::make_unique<SuiteLogs>(suite);
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
@@ -101,6 +156,7 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
     owned = make_Application(std::move(config),
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();
+    app->logs().severity(beast::Journal::kError);
     app->setup();
     timeKeeper->set(
         app->getLedgerMaster().getClosedLedger()->info().closeTime);

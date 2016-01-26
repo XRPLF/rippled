@@ -119,17 +119,16 @@ Logs::open (boost::filesystem::path const& pathToLogFile)
     return file_.open(pathToLogFile);
 }
 
-Logs::Sink&
+beast::Journal::Sink&
 Logs::get (std::string const& name)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    auto const result (sinks_.emplace (std::piecewise_construct,
-        std::forward_as_tuple(name), std::forward_as_tuple (name,
-            level_, *this)));
-    return result.first->second;
+    auto const result =
+        sinks_.emplace(name, makeSink(name, level_));
+    return *result.first->second;
 }
 
-Logs::Sink&
+beast::Journal::Sink&
 Logs::operator[] (std::string const& name)
 {
     return get(name);
@@ -153,7 +152,7 @@ Logs::severity (beast::Journal::Severity level)
     std::lock_guard <std::mutex> lock (mutex_);
     level_ = level;
     for (auto& sink : sinks_)
-        sink.second.severity (level);
+        sink.second->severity (level);
 }
 
 std::vector<std::pair<std::string, std::string>>
@@ -164,7 +163,7 @@ Logs::partition_severities() const
     list.reserve (sinks_.size());
     for (auto const& e : sinks_)
         list.push_back(std::make_pair(e.first,
-            toString(fromSeverity(e.second.severity()))));
+            toString(fromSeverity(e.second->severity()))));
     return list;
 }
 
@@ -191,6 +190,14 @@ Logs::rotate()
     if (wasOpened)
         return "The log file was closed and reopened.";
     return "The log file could not be closed and reopened.";
+}
+
+std::unique_ptr<beast::Journal::Sink>
+Logs::makeSink(std::string const& name,
+    beast::Journal::Severity startingLevel)
+{
+    return std::make_unique<Sink>(
+        name, startingLevel, *this);
 }
 
 LogSeverity
