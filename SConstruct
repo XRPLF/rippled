@@ -114,7 +114,13 @@ AddOption('--ninja', dest='ninja', action='store_true',
           help='generate ninja build file build.ninja')
 
 def parse_time(t):
-    return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
+    l = len(t.split())
+    if l==5:
+        return time.strptime(t, '%a %b %d %H:%M:%S %Y')
+    elif l==3:
+        return time.strptime(t, '%d %b %Y')
+    else:
+        return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
 
 CHECK_PLATFORMS = 'Debian', 'Ubuntu'
 CHECK_COMMAND = 'openssl version -a'
@@ -126,17 +132,24 @@ UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
 USE_CPP_14 = os.getenv('RIPPLED_USE_CPP_14')
 
 def check_openssl():
-    if Beast.system.platform in CHECK_PLATFORMS:
-        for line in subprocess.check_output(CHECK_COMMAND.split()).splitlines():
-            if line.startswith(CHECK_LINE):
-                line = line[len(CHECK_LINE):]
-                if parse_time(line) < parse_time(BUILD_TIME):
-                    raise Exception(OPENSSL_ERROR % (line, BUILD_TIME))
-                else:
-                    break
-        else:
-            raise Exception("Didn't find any '%s' line in '$ %s'" %
-                            (CHECK_LINE, CHECK_COMMAND))
+    if Beast.system.platform not in ['Debian', 'Ubuntu']:
+        return
+    line = subprocess.check_output('openssl version -b'.split()).strip()
+    check_line = 'built on: '
+    if not line.startswith(check_line):
+        raise Exception("Didn't find any '%s' line in '$ %s'" %
+                        (check_line, 'openssl version -b'))
+    d = line[len(check_line):]
+    if 'date unspecified' in d:
+        words = subprocess.check_output('openssl version'.split()).split()
+        if len(words)!=5:
+            raise Exception("Didn't find version date in '$ openssl version'")
+        d = ' '.join(words[-3:])
+    build_time = 'Mon Apr  7 20:33:19 UTC 2014'
+    if parse_time(d) < parse_time(build_time):
+        raise Exception('Your openSSL was built on %s; '
+                        'rippled needs a version built on or after %s.'
+                        % (line, build_time))
 
 
 def set_implicit_cache():
