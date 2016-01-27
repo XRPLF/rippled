@@ -74,7 +74,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         {
             auto const result = env.rpc("tx", to_string(tx1.stx->getTransactionID()));
-            expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            if(! expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS"))
+                log << pretty(result);
         }
         {
             auto const result = env.rpc("tx", to_string(tx2.stx->getTransactionID()));

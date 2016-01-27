@@ -431,6 +431,7 @@ Json::Value
 Env::do_rpc(std::vector<std::string> const& args)
 {
     auto const jv = rpcCmdLineToJson(args, journal);
+//test.log << pretty(jv);
     return client().rpc(jv["method"].asString(),
         jv["params"][0U]);
 }
