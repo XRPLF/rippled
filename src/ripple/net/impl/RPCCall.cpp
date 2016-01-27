@@ -1100,6 +1100,9 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
 
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
 
+    if(! jvRequest.isMember("method"))
+        jvRequest["method"] = args[0];
+
     JLOG (j.trace) << "RPC Request: " << jvRequest << std::endl;
 
     return jvRequest;
