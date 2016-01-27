@@ -89,6 +89,18 @@ private:
     bool                            backed_ = true; // Map is backed by the database
 
 public:
+    class version
+    {
+        int v_;
+    public:
+        explicit version(int v) : v_(v) {}
+
+        friend bool operator==(version const& x, version const& y)
+            {return x.v_ == y.v_;}
+        friend bool operator!=(version const& x, version const& y)
+            {return !(x == y);}
+    };
+
     using DeltaItem = std::pair<std::shared_ptr<SHAMapItem const>,
                                 std::shared_ptr<SHAMapItem const>>;
     using Delta     = std::map<uint256, DeltaItem>;
@@ -101,13 +113,14 @@ public:
     SHAMap (
         SHAMapType t,
         Family& f,
-        std::uint32_t seq = 1
+        version v
         );
 
     SHAMap (
         SHAMapType t,
         uint256 const& hash,
-        Family& f);
+        Family& f,
+        version v);
 
     Family&
     family()
@@ -209,8 +222,14 @@ public:
         std::function<void (SHAMapHash const&, const Blob&)>) const;
 
     void setUnbacked ();
+    bool is_v2() const;
+    version get_version() const;
+    std::shared_ptr<SHAMap> make_v1() const;
+    std::shared_ptr<SHAMap> make_v2() const;
+    int unshare ();
 
     void dump (bool withHashes = false) const;
+    void invariants() const;
 
 private:
     using SharedPtrNodeStack =
@@ -219,7 +238,6 @@ private:
                                std::shared_ptr<SHAMapItem const> const&>;
 
     void visitDifferences(SHAMap const* have, std::function<bool(SHAMapAbstractNode&)>) const;
-    int unshare ();
 
      // tree node cache operations
     std::shared_ptr<SHAMapAbstractNode> getCache (SHAMapHash const& hash) const;
@@ -263,7 +281,7 @@ private:
                   std::shared_ptr<SHAMapAbstractNode> node) const;
 
     SHAMapTreeNode* firstBelow (std::shared_ptr<SHAMapAbstractNode>,
-                                SharedPtrNodeStack& stack) const;
+                                SharedPtrNodeStack& stack, int branch = 0) const;
 
     // Simple descent
     // Get a child of the specified node
@@ -291,8 +309,8 @@ private:
     bool hasInnerNode (SHAMapNodeID const& nodeID, SHAMapHash const& hash) const;
     bool hasLeafNode (uint256 const& tag, SHAMapHash const& hash) const;
 
-    SHAMapItem const* peekFirstItem(SharedPtrNodeStack& stack) const;
-    SHAMapItem const* peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const;
+    SHAMapTreeNode const* peekFirstItem(SharedPtrNodeStack& stack) const;
+    SHAMapTreeNode const* peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const;
     bool walkBranch (SHAMapAbstractNode* node,
                      std::shared_ptr<SHAMapItem const> const& otherMapItem,
                      bool isFirstMap, Delta & differences, int & maxCount) const;
@@ -349,6 +367,13 @@ SHAMap::setUnbacked ()
     backed_ = false;
 }
 
+inline
+bool
+SHAMap::is_v2() const
+{
+    return std::dynamic_pointer_cast<SHAMapInnerNodeV2>(root_) != nullptr;
+}
+
 //------------------------------------------------------------------------------
 
 class SHAMap::const_iterator
@@ -386,8 +411,11 @@ private:
 inline
 SHAMap::const_iterator::const_iterator(SHAMap const* map)
     : map_(map)
-    , item_(map_->peekFirstItem(stack_))
+    , item_(nullptr)
 {
+    auto temp = map_->peekFirstItem(stack_);
+    if (temp)
+        item_ = temp->peekItem().get();
 }
 
 inline
@@ -424,7 +452,11 @@ inline
 SHAMap::const_iterator&
 SHAMap::const_iterator::operator++()
 {
-    item_ = map_->peekNextItem(item_->key(), stack_);
+    auto temp = map_->peekNextItem(item_->key(), stack_);
+    if (temp)
+        item_ = temp->peekItem().get();
+    else
+        item_ = nullptr;
     return *this;
 }
 

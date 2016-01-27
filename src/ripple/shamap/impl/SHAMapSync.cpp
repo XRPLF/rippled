@@ -25,27 +25,17 @@
 
 namespace ripple {
 
-// VFALCO TODO tidy up this global
-
-static const uint256 uZero;
-
-static bool visitLeavesHelper (
-    std::function <void (std::shared_ptr<SHAMapItem const> const&)> const& function,
-    SHAMapAbstractNode& node)
-{
-    // Adapt visitNodes to visitLeaves
-    if (!node.isInner ())
-        function (static_cast<SHAMapTreeNode&>(node).peekItem ());
-
-    return false;
-}
-
 void
 SHAMap::visitLeaves(
     std::function<void(std::shared_ptr<SHAMapItem const> const& item)> const& leafFunction) const
 {
-    visitNodes (std::bind (visitLeavesHelper,
-            std::cref (leafFunction), std::placeholders::_1));
+    visitNodes(
+        [&leafFunction](SHAMapAbstractNode& node)
+        {
+            if (!node.isInner())
+                leafFunction(static_cast<SHAMapTreeNode&>(node).peekItem());
+            return false;
+        });
 }
 
 void SHAMap::visitNodes(std::function<bool (SHAMapAbstractNode&)> const& function) const
@@ -216,7 +206,10 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
 
                             // Switch to processing the child node
                             node = static_cast<SHAMapInnerNode*>(d);
-                            nodeID = childID;
+                            if (auto v2Node = dynamic_cast<SHAMapInnerNodeV2*>(node))
+                                nodeID = SHAMapNodeID{v2Node->depth(), v2Node->key()};
+                            else
+                                nodeID = childID;
                             firstChild = rand_int(255);
                             currentChild = 0;
                             fullBelow = true;
@@ -340,13 +333,20 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
             return false;
 
         node = descendThrow(inner, branch);
-        nodeID = nodeID.getChildNodeID (branch);
+        if (auto v2Node = dynamic_cast<SHAMapInnerNodeV2*>(node))
+            nodeID = SHAMapNodeID{v2Node->depth(), v2Node->key()};
+        else
+            nodeID = nodeID.getChildNodeID (branch);
     }
 
-    if (!node || (nodeID != wanted))
+    if (node == nullptr ||
+           (dynamic_cast<SHAMapInnerNodeV2*>(node) != nullptr &&
+                !wanted.has_common_prefix(nodeID)) ||
+           (dynamic_cast<SHAMapInnerNodeV2*>(node) == nullptr && wanted != nodeID))
     {
-        JLOG(journal_.warn()) <<
-            "peer requested node that is not in the map: " << wanted;
+        JLOG(journal_.warn())
+            << "peer requested node that is not in the map:\n"
+            << wanted << " but found\n" << nodeID;
         return false;
     }
 
@@ -383,8 +383,12 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
                 {
                     if (! inner->isEmptyBranch (i))
                     {
-                        auto childID = nodeID.getChildNodeID (i);
                         auto childNode = descendThrow (inner, i);
+                        SHAMapNodeID childID;
+                        if (auto v2Node = dynamic_cast<SHAMapInnerNodeV2*>(childNode))
+                            childID = SHAMapNodeID{v2Node->depth(), v2Node->key()};
+                        else
+                            childID = nodeID.getChildNodeID (i);
 
                         if (childNode->isInner () &&
                             ((depth > 1) || (bc == 1)))
@@ -430,7 +434,7 @@ SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode,
 
     assert (seq_ >= 1);
     auto node = SHAMapAbstractNode::make(
-        rootNode, 0, format, SHAMapHash{uZero}, false, f_.journal ());
+        rootNode, 0, format, SHAMapHash{}, false, f_.journal ());
     if (!node || !node->isValid() || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
 
@@ -467,6 +471,8 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
     }
 
     std::uint32_t generation = f_.fullbelow().getGeneration();
+    auto newNode = SHAMapAbstractNode::make(rawNode, 0, snfWIRE,
+                      SHAMapHash{}, false, f_.journal(), node);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 
@@ -490,9 +496,10 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
         auto prevNode = inner;
         std::tie(iNode, iNodeID) = descend(inner, iNodeID, branch, filter);
 
-        if (!iNode)
+        if (iNode == nullptr)
         {
-            if (iNodeID != node)
+            if ((std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && !iNodeID.has_common_prefix(node)) ||
+               (!std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && iNodeID != node))
             {
                 // Either this node is broken or we didn't request it (yet)
                 JLOG(journal_.warn()) << "unable to hook node " << node;
@@ -502,9 +509,6 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                         ", walked to= " << iNodeID.getDepth ();
                 return SHAMapAddNode::invalid ();
             }
-
-            auto newNode = SHAMapAbstractNode::make(
-                rawNode, 0, snfWIRE, SHAMapHash{uZero}, false, f_.journal ());
 
             if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
             {
@@ -519,9 +523,15 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                 return SHAMapAddNode::useful ();
             }
 
+#ifndef NDEBUG
+            if (newNode && newNode->isInner())
+            {
+                bool isv2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) != nullptr;
+                assert(isv2 == is_v2());
+            }
+#endif
             if (backed_)
                 canonicalize (childHash, newNode);
-
             newNode = prevNode->canonicalizeChild (branch, std::move(newNode));
 
             if (filter)
@@ -674,6 +684,11 @@ There's no point in including the leaves of transaction trees.
 void SHAMap::getFetchPack (SHAMap const* have, bool includeLeaves, int max,
                            std::function<void (SHAMapHash const&, const Blob&)> func) const
 {
+    if (have != nullptr && have->is_v2() != is_v2())
+    {
+        JLOG(journal_.info()) << "Can not get fetch pack when versions are different.";
+        return;
+    }
     visitDifferences (have,
         [includeLeaves, &max, &func] (SHAMapAbstractNode& smn) -> bool
         {

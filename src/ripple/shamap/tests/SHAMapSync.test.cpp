@@ -80,20 +80,53 @@ public:
         return true;
     }
 
-    void run ()
+    void run()
+    {
+        std::cerr << "Run, version 1" << std::endl;
+        run(SHAMap::version{1});
+
+        std::cerr << "Run, version 2" << std::endl;
+        run(SHAMap::version{2});
+    }
+
+    void run(SHAMap::version v)
     {
         beast::Journal const j; // debug journal
         TestFamily f(j);
-        SHAMap source (SHAMapType::FREE, f);
-        SHAMap destination (SHAMapType::FREE, f);
+        SHAMap source (SHAMapType::FREE, f, v);
+        SHAMap destination (SHAMapType::FREE, f, v);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
+        {
             source.addItem (std::move(*makeRandomAS ()), false, false);
+            if (i % 100 == 0)
+                source.invariants();
+        }
 
+        source.invariants();
         expect (confuseMap (source, 500), "ConfuseMap");
+        source.invariants();
 
         source.setImmutable ();
+
+        int count = 0;
+        source.visitLeaves([&count](auto const& item)
+            {
+                ++count;
+            });
+        expect(count == items, "These must be equal");
+
+        std::vector<SHAMapMissingNode> missingNodes;
+        source.walkMap(missingNodes, 2048);
+        expect(missingNodes.empty(), "should be empty");
+
+        std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
+        std::vector< Blob > gotNodes;
+        std::vector<uint256> hashes;
+
+        std::vector<SHAMapNodeID>::iterator nodeIDIterator;
+        std::vector< Blob >::iterator rawNodeIterator;
 
         destination.setSynching ();
 
@@ -158,6 +191,9 @@ public:
         destination.clearSynching ();
 
         expect (source.deepCompare (destination), "Deep Compare");
+
+        std::cerr << "Checking destination invariants" << std::endl;
+        destination.invariants();
     }
 };
 

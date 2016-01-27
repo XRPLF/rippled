@@ -38,6 +38,7 @@ private:
 
 public:
     SHAMapNodeID ();
+    SHAMapNodeID (int depth, uint256 const& hash);
     SHAMapNodeID (void const* ptr, int len);
 
     bool isValid () const;
@@ -64,10 +65,9 @@ public:
     SHAMapNodeID getChildNodeID (int m) const;
     int selectBranch (uint256 const& hash) const;
     int getDepth () const;
+    bool has_common_prefix(SHAMapNodeID const& other) const;
 
 private:
-    SHAMapNodeID (int depth, uint256 const& hash);
-
     static uint256 const& Masks (int depth);
 
     friend std::ostream& operator<< (std::ostream& out, SHAMapNodeID const& node);

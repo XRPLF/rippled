@@ -175,7 +175,7 @@ nodeobject_decompress (void const* in,
             p, in_size, bf);
         break;
     }
-    case 2: // inner node
+    case 2: // compressed v1 inner node
     {
         auto const hs =
             field<std::uint16_t>::size; // Mask
@@ -218,7 +218,7 @@ nodeobject_decompress (void const* in,
                 "nodeobject codec: long inner node");
         break;
     }
-    case 3: // full inner node
+    case 3: // full v1 inner node
     {
         if (in_size != 16 * 32) // hashes
             Throw<codec_error> (
@@ -233,6 +233,80 @@ nodeobject_decompress (void const* in,
         write<std::uint8_t> (os, hotUNKNOWN);
         write<std::uint32_t>(os, HashPrefix::innerNode);
         write(os, is(512), 512);
+        break;
+    }
+    case 5: // compressed v2 inner node
+    {
+        auto const hs =
+            field<std::uint16_t>::size; // Mask size
+        if (in_size < hs + 65)
+            Throw<codec_error> (
+                "nodeobject codec: short inner node");
+        istream is(p, in_size);
+        std::uint16_t mask;
+        read<std::uint16_t>(is, mask);  // Mask
+        in_size -= hs;
+        std::uint8_t depth;
+        read<std::uint8_t>(is, depth);
+        in_size -= 1;
+        result.second = 525 + 1 + (depth+1)/2;
+        void* const out = bf(result.second);
+        result.first = out;
+        ostream os(out, result.second);
+        write<std::uint32_t>(os, 0);
+        write<std::uint32_t>(os, 0);
+        write<std::uint8_t> (os, hotUNKNOWN);
+        write<std::uint32_t>(os, HashPrefix::innerNodeV2);
+        if (mask == 0)
+            Throw<codec_error> (
+                "nodeobject codec: empty inner node");
+        std::uint16_t bit = 0x8000;
+        for (int i = 16; i--; bit >>= 1)
+        {
+            if (mask & bit)
+            {
+                if (in_size < 32)
+                    Throw<codec_error> (
+                        "nodeobject codec: short inner node");
+                std::memcpy(os.data(32), is(32), 32);
+                in_size -= 32;
+            }
+            else
+            {
+                std::memset(os.data(32), 0, 32);
+            }
+        }
+        write<std::uint8_t>(os, depth);
+        if (in_size < (depth+1)/2)
+            Throw<codec_error> (
+                "nodeobject codec: short inner node");
+        std::memcpy(os.data((depth+1)/2), is((depth+1)/2), (depth+1)/2);
+        in_size -= (depth+1)/2;
+        if (in_size > 0)
+            Throw<codec_error> (
+                "nodeobject codec: long inner node");
+        break;
+    }
+    case 6: // full v2 inner node
+    {
+        istream is(p, in_size);
+        std::uint8_t depth;
+        read<std::uint8_t>(is, depth);
+        in_size -= 1;
+        result.second = 525 + 1 + (depth+1)/2;
+        if (in_size != 16 * 32 + (depth+1)/2) // hashes and common
+            Throw<codec_error> (
+                "nodeobject codec: short full inner node");
+        void* const out = bf(result.second);
+        result.first = out;
+        ostream os(out, result.second);
+        write<std::uint32_t>(os, 0);
+        write<std::uint32_t>(os, 0);
+        write<std::uint8_t> (os, hotUNKNOWN);
+        write<std::uint32_t>(os, HashPrefix::innerNodeV2);
+        write(os, is(512), 512);
+        write<std::uint8_t>(os, depth);
+        write(os, is((depth+1)/2), (depth+1)/2);
         break;
     }
     default:
@@ -266,7 +340,7 @@ nodeobject_compress (void const* in,
     using namespace beast::nudb::detail;
 
     std::size_t type = 1;
-    // Check for inner node
+    // Check for inner node v1
     if (in_size == 525)
     {
         istream is(in, in_size);
@@ -300,7 +374,7 @@ nodeobject_compress (void const* in,
                 std::size_t> result;
             if (n < 16)
             {
-                // 2 = inner node compressed
+                // 2 = v1 inner node compressed
                 auto const type = 2U;
                 auto const vs = size_varint(type);
                 result.second =
@@ -316,7 +390,7 @@ nodeobject_compress (void const* in,
                 write(os, vh.data(), n * 32);
                 return result;
             }
-            // 3 = full inner node
+            // 3 = full v1 inner node
             auto const type = 3U;
             auto const vs = size_varint(type);
             result.second =
@@ -328,6 +402,87 @@ nodeobject_compress (void const* in,
             ostream os(out, result.second);
             write<varint>(os, type);
             write(os, vh.data(), n * 32);
+            return result;
+        }
+    }
+
+    // Check for inner node v2
+    if (526 <= in_size && in_size <= 556)
+    {
+        istream is(in, in_size);
+        std::uint32_t index;
+        std::uint32_t unused;
+        std::uint8_t  kind;
+        std::uint32_t prefix;
+        read<std::uint32_t>(is, index);
+        read<std::uint32_t>(is, unused);
+        read<std::uint8_t> (is, kind);
+        read<std::uint32_t>(is, prefix);
+        if (prefix == HashPrefix::innerNodeV2)
+        {
+            std::size_t n = 0;
+            std::uint16_t mask = 0;
+            std::array<
+                std::uint8_t, 512> vh;
+            for (unsigned bit = 0x8000;
+                bit; bit >>= 1)
+            {
+                void const* const h = is(32);
+                if (std::memcmp(
+                        h, zero32(), 32) == 0)
+                    continue;
+                std::memcpy(
+                    vh.data() + 32 * n, h, 32);
+                mask |= bit;
+                ++n;
+            }
+            std::uint8_t depth;
+            read<std::uint8_t>(is, depth);
+            std::array<std::uint8_t, 32> common{};
+            for (unsigned d = 0; d < (depth+1)/2; ++d)
+                read<std::uint8_t>(is, common[d]);
+            std::pair<void const*,
+                std::size_t> result;
+            if (n < 16)
+            {
+                // 5 = v2 inner node compressed
+                auto const type = 5U;
+                auto const vs = size_varint(type);
+                result.second =
+                    vs +
+                    field<std::uint16_t>::size +    // mask
+                    n * 32 +                        // hashes
+                    1 +                             // depth
+                    (depth+1)/2;                    // common prefix
+                std::uint8_t* out = reinterpret_cast<
+                    std::uint8_t*>(bf(result.second));
+                result.first = out;
+                ostream os(out, result.second);
+                write<varint>(os, type);
+                write<std::uint16_t>(os, mask);
+                write<std::uint8_t>(os, depth);
+                write(os, vh.data(), n * 32);
+                for (unsigned d = 0; d < (depth+1)/2; ++d)
+                    write<std::uint8_t>(os, common[d]);
+                return result;
+            }
+            // 6 = full v2 inner node
+            auto const type = 6U;
+            auto const vs = size_varint(type);
+            result.second =
+                vs +
+                n * 32 +                        // hashes
+                1 +                             // depth
+                (depth+1)/2;                    // common prefix
+            std::uint8_t* out = reinterpret_cast<
+                std::uint8_t*>(bf(result.second));
+            result.first = out;
+            ostream os(out, result.second);
+            write<varint>(os, type);
+            write<std::uint8_t>(os, depth);
+            write(os, vh.data(), n * 32);
+            for (unsigned d = 0; d < (depth+1)/2; ++d)
+                write<std::uint8_t>(os, common[d]);
             return result;
         }
     }

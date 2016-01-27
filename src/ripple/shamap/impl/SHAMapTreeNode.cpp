@@ -46,7 +46,31 @@ SHAMapInnerNode::clone(std::uint32_t seq) const
     std::memcpy(p->mHashes, mHashes, sizeof(mHashes));
     std::unique_lock <std::mutex> lock(childLock);
     for (int i = 0; i < 16; ++i)
+    {
         p->mChildren[i] = mChildren[i];
+        assert(std::dynamic_pointer_cast<SHAMapInnerNodeV2>(p->mChildren[i]) == nullptr);
+    }
+    return std::move(p);
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapInnerNodeV2::clone(std::uint32_t seq) const
+{
+    auto p = std::make_shared<SHAMapInnerNodeV2>(seq);
+    p->mHash = mHash;
+    p->mIsBranch = mIsBranch;
+    p->mFullBelowGen = mFullBelowGen;
+    std::memcpy(p->mHashes, mHashes, sizeof(mHashes));
+    p->common_ = common_;
+    p->depth_ = depth_;
+    std::unique_lock <std::mutex> lock(childLock);
+    for (int i = 0; i < 16; ++i)
+    {
+        p->mChildren[i] = mChildren[i];
+        if (p->mChildren[i] != nullptr)
+            assert(std::dynamic_pointer_cast<SHAMapInnerNodeV2>(p->mChildren[i]) != nullptr ||
+                   std::dynamic_pointer_cast<SHAMapTreeNode>(p->mChildren[i]) != nullptr);
+    }
     return std::move(p);
 }
 
@@ -75,7 +99,8 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
 
 std::shared_ptr<SHAMapAbstractNode>
 SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
-                         SHAMapHash const& hash, bool hashValid, beast::Journal j)
+                         SHAMapHash const& hash, bool hashValid, beast::Journal j,
+                         SHAMapNodeID const& id)
 {
     if (format == snfWIRE)
     {
@@ -86,9 +111,8 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         int type = rawNode.back ();
         int len = s.getLength ();
 
-        if ((type < 0) || (type > 4))
+        if ((type < 0) || (type > 6))
             return {};
-
         if (type == 0)
         {
             // transaction
@@ -176,6 +200,49 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_MD, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_MD, seq);
         }
+        else if (type == 5)
+        {
+            // full inner
+            if (len != 512)
+                Throw<std::runtime_error> ("invalid FI node");
+
+            auto ret = std::make_shared<SHAMapInnerNodeV2>(seq);
+            for (int i = 0; i < 16; ++i)
+            {
+                s.get256 (ret->mHashes[i].as_uint256(), i * 32);
+
+                if (ret->mHashes[i].isNonZero ())
+                    ret->mIsBranch |= (1 << i);
+            }
+            ret->set_common(id.getDepth(), id.getNodeID());
+            if (hashValid)
+                ret->mHash = hash;
+            else
+                ret->updateHash();
+            return ret;
+        }
+        else if (type == 6)
+        {
+            auto ret = std::make_shared<SHAMapInnerNodeV2>(seq);
+            // compressed inner
+            for (int i = 0; i < (len / 33); ++i)
+            {
+                int pos;
+                if (! s.get8 (pos, 32 + (i * 33)))
+                    Throw<std::runtime_error> ("short CI node");
+                if ((pos < 0) || (pos >= 16))
+                    Throw<std::runtime_error> ("invalid CI node");
+                s.get256 (ret->mHashes[pos].as_uint256(), i * 33);
+                if (ret->mHashes[pos].isNonZero ())
+                    ret->mIsBranch |= (1 << pos);
+            }
+            ret->set_common(id.getDepth(), id.getNodeID());
+            if (hashValid)
+                ret->mHash = hash;
+            else
+                ret->updateHash();
+            return ret;
+        }
     }
 
     else if (format == snfPREFIX)
@@ -224,17 +291,42 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
                 return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq);
         }
-        else if (prefix == HashPrefix::innerNode)
+        else if ((prefix == HashPrefix::innerNode) || (prefix == HashPrefix::innerNodeV2))
         {
-            if (s.getLength () != 512)
+            auto len = s.getLength();
+            bool isV2 = (prefix == HashPrefix::innerNodeV2);
+
+            if ((len < 512) || (!isV2 && (len != 512)))
                 Throw<std::runtime_error> ("invalid PIN node");
-            auto ret = std::make_shared<SHAMapInnerNode>(seq);
+
+            std::shared_ptr<SHAMapInnerNode> ret;
+            if (isV2)
+                ret = std::make_shared<SHAMapInnerNodeV2>(seq);
+            else
+                ret = std::make_shared<SHAMapInnerNode>(seq);
+
             for (int i = 0; i < 16; ++i)
             {
                 s.get256 (ret->mHashes[i].as_uint256(), i * 32);
 
                 if (ret->mHashes[i].isNonZero ())
                     ret->mIsBranch |= (1 << i);
+            }
+
+            if (isV2)
+            {
+                auto temp = std::static_pointer_cast<SHAMapInnerNodeV2>(ret);
+                s.get8(temp->depth_, 512);
+                auto n = (temp->depth_ + 1) / 2;
+                if (len != 512 + 1 + n)
+                    Throw<std::runtime_error> ("invalid PIN node");
+                auto x = temp->common_.begin();
+                for (auto i = 0; i < n; ++i, ++x)
+                {
+                    int byte;
+                    s.get8(byte, 512+1+i);
+                    *x = byte;
+                }
             }
             if (hashValid)
                 ret->mHash = hash;
@@ -349,7 +441,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             for (int i = 0; i < 16; ++i)
                 s.add256 (mHashes[i].as_uint256());
         }
-        else
+        else  // format == snfWIRE
         {
             if (getBranchCount () < 12)
             {
@@ -374,6 +466,33 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
     }
     else
         assert (false);
+}
+
+void
+SHAMapInnerNodeV2::addRaw(Serializer& s, SHANodeFormat format) const
+{
+    if (format == snfPREFIX)
+    {
+        s.add32 (HashPrefix::innerNodeV2);
+
+        for (int i = 0 ; i < 16; ++i)
+            s.add256 (mHashes[i].as_uint256());
+
+        s.add8(depth_);
+
+        auto x = common_.begin();
+        for (auto i = 0; i < (depth_+1)/2; ++i, ++x)
+            s.add8(*x);
+    }
+    else
+    {
+        SHAMapInnerNode::addRaw(s, format);
+        if (format == snfWIRE)
+        {
+            auto& data = s.modData();
+            data.back() += 3;
+        }
+    }
 }
 
 void
@@ -593,5 +712,187 @@ SHAMapInnerNode::canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractNod
     return node;
 }
 
+bool
+SHAMapInnerNodeV2::has_common_prefix(uint256 const& key) const
+{
+    auto x = common_.begin();
+    auto y = key.begin();
+    for (unsigned i = 0; i < depth_/2; ++i, ++x, ++y)
+    {
+        if (*x != *y)
+            return false;
+    }
+    if (depth_ & 1)
+    {
+        auto i = depth_/2;
+        return (*(common_.begin() + i) & 0xF0) == (*(key.begin() + i) & 0xF0);
+    }
+    return true;
+}
+
+int
+SHAMapInnerNodeV2::get_common_prefix(uint256 const& key) const
+{
+    auto x = common_.begin();
+    auto y = key.begin();
+    auto r = 0;
+    for (unsigned i = 0; i < depth_/2; ++i, ++x, ++y, r += 2)
+    {
+        if (*x != *y)
+        {
+            if ((*x & 0xF0) == (*y & 0xF0))
+                ++r;
+            return r;
+        }
+    }
+    if (depth_ & 1)
+    {
+        auto i = depth_/2;
+        if ((*(common_.begin() + i) & 0xF0) == (*(key.begin() + i) & 0xF0))
+            ++r;
+    }
+    return r;
+}
+
+void
+SHAMapInnerNodeV2::setChildren(std::shared_ptr<SHAMapTreeNode> const& child1,
+                               std::shared_ptr<SHAMapTreeNode> const& child2)
+{
+    assert(child1->peekItem()->key() != child2->peekItem()->key());
+    auto k1 = child1->peekItem()->key().begin();
+    auto k2 = child2->peekItem()->key().begin();
+    auto k = common_.begin();
+    for (depth_ = 0; *k1 == *k2; ++depth_, ++k1, ++k2, ++k)
+        *k = *k1;
+    unsigned b1;
+    unsigned b2;
+    if ((*k1 & 0xF0) == (*k2 & 0xF0))
+    {
+        *k = *k1 & 0xF0;
+        b1 = *k1 & 0x0F;
+        b2 = *k2 & 0x0F;
+        depth_ = 2*depth_ + 1;
+    }
+    else
+    {
+        b1 = *k1 >> 4;
+        b2 = *k2 >> 4;
+        depth_ = 2*depth_;
+    }
+    mChildren[b1] = child1;
+    mIsBranch |= 1 << b1;
+    mChildren[b2] = child2;
+    mIsBranch |= 1 << b2;
+}
+
+void
+SHAMapInnerNodeV2::set_common(int depth, uint256 const& common)
+{
+    depth_ = depth;
+    common_ = common;
+}
+
+uint256 const&
+SHAMapInnerNode::key() const
+{
+    Throw<std::logic_error>("SHAMapInnerNode::key() should never be called");
+    static uint256 x;
+    return x;
+}
+
+uint256 const&
+SHAMapInnerNodeV2::key() const
+{
+    return common_;
+}
+
+uint256 const&
+SHAMapTreeNode::key() const
+{
+    return mItem->key();
+}
+
+void
+SHAMapInnerNode::invariants(bool is_v2, bool is_root) const
+{
+    assert(!is_v2);
+    assert(mType == tnINNER);
+    unsigned count = 0;
+    for (int i = 0; i < 16; ++i)
+    {
+        if (mHashes[i].isNonZero())
+        {
+            assert((mIsBranch & (1 << i)) != 0);
+            if (mChildren[i] != nullptr)
+                mChildren[i]->invariants(is_v2);
+            ++count;
+        }
+        else
+        {
+            assert((mIsBranch & (1 << i)) == 0);
+        }
+    }
+    if (!is_root)
+    {
+        assert(mHash.isNonZero());
+        assert(count >= 1);
+    }
+    assert((count == 0) ? mHash.isZero() : mHash.isNonZero());
+}
+
+void
+SHAMapInnerNodeV2::invariants(bool is_v2, bool is_root) const
+{
+    assert(is_v2);
+    assert(mType == tnINNER);
+    unsigned count = 0;
+    for (int i = 0; i < 16; ++i)
+    {
+        if (mHashes[i].isNonZero())
+        {
+            assert((mIsBranch & (1 << i)) != 0);
+            if (mChildren[i] != nullptr)
+            {
+                assert(mHashes[i] == mChildren[i]->getNodeHash());
+#ifndef NDEBUG
+                auto const& childID = mChildren[i]->key();
+
+                // Make sure this child it attached to the correct branch
+                SHAMapNodeID nodeID {depth(), common()};
+                assert (i == nodeID.selectBranch(childID));
+#endif
+                assert(has_common_prefix(childID));
+                mChildren[i]->invariants(is_v2);
+            }
+            ++count;
+        }
+        else
+        {
+            assert((mIsBranch & (1 << i)) == 0);
+        }
+    }
+    if (!is_root)
+    {
+        assert(mHash.isNonZero());
+        assert(count >= 2);
+        assert(depth_ > 0);
+    }
+    else
+    {
+        assert(depth_ == 0);
+    }
+    if (count == 0)
+        assert(mHash.isZero());
+    else
+        assert(mHash.isNonZero());
+}
+
+void
+SHAMapTreeNode::invariants(bool, bool) const
+{
+    assert(mType >= tnTRANSACTION_NM);
+    assert(mHash.isNonZero());
+    assert(mItem != nullptr);
+}
 
 } // ripple

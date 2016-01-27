@@ -981,6 +981,12 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         auto buildLCL = std::make_shared<Ledger>(
             *mPreviousLedger,
             app_.timeKeeper().closeTime());
+        auto constexpr v2_ledger_seq_switch = 40'000'000;
+        if (buildLCL->info().seq > v2_ledger_seq_switch &&
+           !buildLCL->stateMap().is_v2())
+        {
+            buildLCL->make_v2();
+        }
 
         // Set up to write SHAMap changes to our database,
         //   perform updates, extract changes
@@ -1015,6 +1021,14 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         // to the ledger.
 
         buildLCL->updateSkipList ();
+
+        // unshare in case a nodestore load changed the
+        // version back, otherwise the map is inconsistent
+        if (buildLCL->info().seq > v2_ledger_seq_switch &&
+            !buildLCL->stateMap().is_v2())
+        {
+            buildLCL->unshare();
+        }
 
         {
             int asf = buildLCL->stateMap().flushDirty (
@@ -1407,7 +1421,7 @@ void LedgerConsensusImp::takeInitialPosition (
     std::shared_ptr<ReadView const> const& initialLedger)
 {
     std::shared_ptr<SHAMap> initialSet = std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, app_.family());
+        SHAMapType::TRANSACTION, app_.family(), SHAMap::version{1});
     initialSet->setUnbacked ();
 
     // Build SHAMap containing all transactions in our open ledger

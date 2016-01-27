@@ -259,9 +259,11 @@ public:
                 if (!node.has_nodeid () || !node.has_nodedata ())
                     return;
 
+                auto id_string = node.nodeid();
                 auto newNode = SHAMapAbstractNode::make(
                     Blob (node.nodedata().begin(), node.nodedata().end()),
-                    0, snfWIRE, SHAMapHash{uZero}, false, app_.journal ("SHAMapNodeID"));
+                    0, snfWIRE, SHAMapHash{uZero}, false, app_.journal ("SHAMapNodeID"),
+                    SHAMapNodeID(id_string.data(), id_string.size()));
 
                 if (!newNode)
                     return;
