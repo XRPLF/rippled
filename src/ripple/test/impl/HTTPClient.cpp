@@ -86,6 +86,12 @@ public:
         //stream_.close();
     }
 
+    /*
+        Return value is an Object type with up to three keys:
+            status
+            error
+            result
+    */
     Json::Value
     rpc(std::string const& cmd,
         Json::Value const& params) override
@@ -140,6 +146,10 @@ public:
         Json::Reader jr;
         Json::Value jv;
         jr.parse(buffer_string(body.data()), jv);
+        if(jv["result"]["error"])
+            jv["error"] = jv["result"]["error"];
+        if(jv["result"]["status"])
+            jv["status"] = jv["result"]["status"];
         return jv;
     }
 };
