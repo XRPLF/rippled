@@ -121,7 +121,7 @@ public:
         beast::Journal const j;                            // debug journal
         TestFamily f(j);
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
-            SHAMapType::FREE, f));
+            SHAMapType::FREE, f, SHAMap::version{2}));
 
         pass ();
 
