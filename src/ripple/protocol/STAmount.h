@@ -410,7 +410,7 @@ public:
     explicit STAmountSO(NetClock::time_point const closeTime)
         : saved_(*stAmountCalcSwitchover)
     {
-        *stAmountCalcSwitchover = closeTime <= soTime;
+        *stAmountCalcSwitchover = closeTime > soTime;
     }
 
     ~STAmountSO()
