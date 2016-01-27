@@ -51,6 +51,9 @@ STUInt8::getText () const
 
         if (transResultInfo (static_cast<TER> (value_), token, human))
             return human;
+
+        JLOG (debugJournal().warning)
+            << "Unknown result code in metadata: " << value_;
     }
 
     return beast::lexicalCastThrow <std::string> (value_);
@@ -66,9 +69,9 @@ STUInt8::getJson (int) const
 
         if (transResultInfo (static_cast<TER> (value_), token, human))
             return token;
-        else
-            WriteLog (lsWARNING, STBase)
-                << "Unknown result code in metadata: " << value_;
+
+        JLOG (debugJournal().warning)
+            << "Unknown result code in metadata: " << value_;
     }
 
     return value_;

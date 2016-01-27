@@ -337,10 +337,13 @@ TER PathCursor::deliverNodeReverseImpl (
         previousNode().saRevDeliver += saInPassAct;
     }
 
-    CondLog (saOutAct > saOutReq, lsWARNING, RippleCalc)
-        << "deliverNodeReverse: TOO MUCH:"
-        << " saOutAct=" << saOutAct
-        << " saOutReq=" << saOutReq;
+    if (saOutAct > saOutReq)
+    {
+        JLOG (j_.warning)
+            << "deliverNodeReverse: TOO MUCH:"
+            << " saOutAct=" << saOutAct
+            << " saOutReq=" << saOutReq;
+    }
 
     assert(saOutAct <= saOutReq);
 

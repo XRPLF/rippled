@@ -225,6 +225,7 @@ int run (int argc, char** argv)
     ("ledgerfile", po::value<std::string> (), "Load the specified ledger file.")
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
+    ("debug", "Enable normally suppressed debug logging")
     ("fg", "Run in the foreground.")
     ("import", importText.c_str ())
     ("version", "Display the build version.")
@@ -421,8 +422,6 @@ int run (int argc, char** argv)
     if (!vm.count ("parameters"))
     {
         auto logs = std::make_unique<Logs>();
-        auto timeKeeper = make_TimeKeeper(
-            logs->journal("TimeKeeper"));
 
         if (vm.count ("quiet"))
             logs->severity (beast::Journal::kFatal);
@@ -430,6 +429,12 @@ int run (int argc, char** argv)
             logs->severity (beast::Journal::kTrace);
         else
             logs->severity (beast::Journal::kInfo);
+
+        if (vm.count ("debug"))
+            setDebugJournalSink (logs->get("Debug"));
+
+        auto timeKeeper = make_TimeKeeper(
+            logs->journal("TimeKeeper"));
 
         auto app = make_Application(
             std::move(config),

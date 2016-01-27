@@ -367,15 +367,17 @@ void LedgerConsensusImp::mapCompleteInternal (
     std::shared_ptr<SHAMap> const& map,
     bool acquired)
 {
-    CondLog (acquired, lsDEBUG, LedgerConsensus)
-        << "We have acquired TXS " << hash;
+    if (acquired)
+    {
+        JLOG (j_.trace) << "We have acquired txs " << hash;
+    }
 
     if (!map)  // If the map was invalid
     {
-        // this is an invalid/corrupt map
-        mAcquired[hash] = map;
         JLOG (j_.warning)
-            << "A trusted node directed us to acquire an invalid TXN map";
+            << "Tried to acquire invalid transaction map: "
+            << hash;
+        mAcquired[hash] = map;
         return;
     }
 
@@ -387,9 +389,7 @@ void LedgerConsensusImp::mapCompleteInternal (
     if (it != mAcquired.end ())
     {
         if (it->second)
-        {
             return; // we already have this map
-        }
 
         // We previously failed to acquire this map, now we have it
         mAcquired.erase (hash);
@@ -422,14 +422,20 @@ void LedgerConsensusImp::mapCompleteInternal (
         createDisputes (it2->second, map);
     }
     else if (!mOurPosition)
+    {
         JLOG (j_.debug)
             << "Not creating disputes: no position yet.";
+    }
     else if (mOurPosition->isBowOut ())
+    {
         JLOG (j_.warning)
             << "Not creating disputes: not participating.";
+    }
     else
+    {
         JLOG (j_.debug)
             << "Not creating disputes: identical position.";
+    }
 
     mAcquired[hash] = map;
 
@@ -446,11 +452,11 @@ void LedgerConsensusImp::mapCompleteInternal (
     {
         adjustCount (map, peers);
     }
-    else
+    else if (acquired)
     {
-        CondLog (acquired, lsWARNING, LedgerConsensus)
-            << "By the time we got the map "
-            << hash << " no peers were proposing it";
+        JLOG (j_.warning)
+            << "By the time we got the map " << hash
+            << " no peers were proposing it";
     }
 }
 
@@ -1606,10 +1612,14 @@ void LedgerConsensusImp::updateOurPositions ()
             }
         }
 
-        CondLog (!mHaveCloseTimeConsensus, lsDEBUG, LedgerConsensus)
-            << "No CT consensus: Proposers:" << mPeerPositions.size ()
-            << " Proposing:" << (mProposing ? "yes" : "no") << " Thresh:"
-            << threshConsensus << " Pos:" << closeTime.time_since_epoch().count();
+        if (!mHaveCloseTimeConsensus)
+        {
+            JLOG (j_.debug) << "No CT consensus:"
+                << " Proposers:" << mPeerPositions.size ()
+                << " Proposing:" << (mProposing ? "yes" : "no")
+                << " Thresh:" << threshConsensus
+                << " Pos:" << closeTime.time_since_epoch().count();
+        }
     }
 
     // Temporarily send a new proposal if there's any change to our

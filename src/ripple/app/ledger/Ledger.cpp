@@ -790,12 +790,10 @@ bool Ledger::walkLedger (beast::Journal j) const
         stateMap_->walkMap (missingNodes1, 32);
     }
 
-    if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty ())
+    if (j.info && !missingNodes1.empty ())
     {
-        JLOG (j.info)
-            << missingNodes1.size () << " missing account node(s)";
-        JLOG (j.info)
-            << "First: " << missingNodes1[0];
+        j.info << missingNodes1.size () << " missing account node(s)";
+        j.info << "First: " << missingNodes1[0];
     }
 
     if (txMap_->getHash().isZero() &&
@@ -809,12 +807,10 @@ bool Ledger::walkLedger (beast::Journal j) const
         txMap_->walkMap (missingNodes2, 32);
     }
 
-    if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty ())
+    if (j.info && !missingNodes2.empty ())
     {
-        JLOG (j.info)
-            << missingNodes2.size () << " missing transaction node(s)";
-        JLOG (j.info)
-            << "First: " << missingNodes2[0];
+        j.info << missingNodes2.size () << " missing transaction node(s)";
+        j.info << "First: " << missingNodes2[0];
     }
 
     return missingNodes1.empty () && missingNodes2.empty ();
@@ -1057,16 +1053,15 @@ static bool saveValidatedLedger (
                     sql += ")";
                 }
                 sql += ";";
-                if (ShouldLog (lsTRACE, Ledger))
-                {
-                    JLOG (j.trace) << "ActTx: " << sql;
-                }
+                JLOG (j.trace) << "ActTx: " << sql;
                 *db << sql;
             }
             else
+            {
                 JLOG (j.warning)
                     << "Transaction in ledger " << seq
                     << " affects no accounts";
+            }
 
             *db <<
                (STTx::getMetaSQLInsertReplaceHeader () +

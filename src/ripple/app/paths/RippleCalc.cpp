@@ -248,7 +248,7 @@ TER RippleCalc::rippleCalculate ()
                     // This should never happen. Consider the path dry
 
                     JLOG (j_.warning)
-                        << "rippelCalc: Non-dry path moves no funds";
+                        << "rippleCalc: Non-dry path moves no funds";
 
                     assert (false);
 
@@ -257,13 +257,15 @@ TER RippleCalc::rippleCalculate ()
                 }
                 else
                 {
-                    CondLog (!pathState->inPass() || !pathState->outPass(),
-                             lsDEBUG, RippleCalc)
-                        << "rippleCalc: better:"
-                        << " uQuality="
-                        << amountFromRate (pathState->quality())
-                        << " inPass()=" << pathState->inPass()
-                        << " saOutPass=" << pathState->outPass();
+                    if (!pathState->inPass() || !pathState->outPass())
+                    {
+                        JLOG (j_.debug)
+                            << "rippleCalc: better:"
+                            << " uQuality="
+                            << amountFromRate (pathState->quality())
+                            << " inPass()=" << pathState->inPass()
+                            << " saOutPass=" << pathState->outPass();
+                    }
 
                     assert (pathState->inPass() && pathState->outPass());
 
@@ -293,16 +295,17 @@ TER RippleCalc::rippleCalculate ()
         }
 
         ++iPass;
-        if (ShouldLog (lsDEBUG, RippleCalc))
+
+        if (j_.debug)
         {
-            JLOG (j_.debug)
+            j_.debug
                 << "rippleCalc: Summary:"
                 << " Pass: " << iPass
                 << " Dry: " << iDry
                 << " Paths: " << pathStateList_.size ();
             for (auto pathState: pathStateList_)
             {
-                JLOG (j_.debug)
+                j_.debug
                     << "rippleCalc: "
                     << "Summary: " << pathState->index()
                     << " rate: "

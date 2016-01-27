@@ -26,30 +26,33 @@ namespace log {
 void websocketLog (
     websocketpp_02::log::alevel::value v, std::string const& entry)
 {
-    using namespace ripple;
-    auto isTrace = v == websocketpp_02::log::alevel::DEVEL ||
-            v == websocketpp_02::log::alevel::DEBUG_CLOSE;
+    auto const isTrace =
+        v == websocketpp_02::log::alevel::DEVEL ||
+        v == websocketpp_02::log::alevel::DEBUG_CLOSE;
 
-    WriteLog(isTrace ? lsTRACE : lsDEBUG, WebSocket) << entry;
+    auto journal = ripple::debugJournal();
+
+    if (isTrace)
+        JLOG (journal.trace) << entry;
+    else
+        JLOG (journal.debug) << entry;
 }
 
 void websocketLog (
     websocketpp_02::log::elevel::value v, std::string const& entry)
 {
-    using namespace ripple;
-
-    LogSeverity s = lsDEBUG;
+    auto journal = ripple::debugJournal();
 
     if ((v & websocketpp_02::log::elevel::INFO) != 0)
-        s = lsINFO;
+        JLOG (journal.info) << entry;
     else if ((v & websocketpp_02::log::elevel::FATAL) != 0)
-        s = lsFATAL;
+        JLOG (journal.fatal) << entry;
     else if ((v & websocketpp_02::log::elevel::RERROR) != 0)
-        s = lsERROR;
+        JLOG (journal.error) << entry;
     else if ((v & websocketpp_02::log::elevel::WARN) != 0)
-        s = lsWARNING;
-
-    WriteLog(s, WebSocket) << entry;
+        JLOG (journal.warning) << entry;
+    else
+        JLOG (journal.debug) << entry;
 }
 
 }

@@ -338,10 +338,13 @@ TER PathCursor::deliverNodeForward (
             }
             else
             {
-                CondLog (saOutPassAct >= saOutFunded, lsWARNING, RippleCalc)
-                    << "deliverNodeForward: TOO MUCH:"
-                    << " saOutPassAct=" << saOutPassAct
-                    << " saOutFunded=" << saOutFunded;
+                if (saOutPassAct >= saOutFunded)
+                {
+                    JLOG (j_.warning)
+                        << "deliverNodeForward: TOO MUCH:"
+                        << " saOutPassAct=" << saOutPassAct
+                        << " saOutFunded=" << saOutFunded;
+                }
 
                 assert (saOutPassAct < saOutFunded);
             }

@@ -812,12 +812,6 @@ amountFromJson (SField const& name, Json::Value const& v)
 
     if (v.isObject ())
     {
-        WriteLog (lsTRACE, STAmount) <<
-            "value='" << v[jss::value].asString () <<
-            "', currency='" << v["currency"].asString () <<
-            "', issuer='" << v["issuer"].asString () <<
-            "')";
-
         value       = v[jss::value];
         currency    = v[jss::currency];
         issuer      = v[jss::issuer];
@@ -916,7 +910,7 @@ amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource)
     }
     catch (const std::exception& e)
     {
-        WriteLog (lsDEBUG, STAmount) <<
+        JLOG (debugJournal().debug) <<
             "amountFromJsonNoThrow: caught: " << e.what ();
     }
     return false;
@@ -1104,9 +1098,6 @@ canonicalizeRound (bool native, std::uint64_t& value, int& offset, bool roundUp)
     if (!roundUp) // canonicalize already rounds down
         return;
 
-    WriteLog (lsTRACE, STAmount)
-        << "canonicalizeRound< " << value << ":" << offset;
-
     if (native)
     {
         if (offset < 0)
@@ -1137,9 +1128,6 @@ canonicalizeRound (bool native, std::uint64_t& value, int& offset, bool roundUp)
         value /= 10;
         ++offset;
     }
-
-    WriteLog (lsTRACE, STAmount)
-        << "canonicalizeRound> " << value << ":" << offset;
 }
 
 STAmount

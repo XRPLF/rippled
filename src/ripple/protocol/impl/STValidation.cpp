@@ -35,7 +35,8 @@ STValidation::STValidation (SerialIter& sit, bool checkSignature)
 
     if  (checkSignature && !isValid ())
     {
-        WriteLog (lsTRACE, Ledger) << "Invalid validation " << getJson (0);
+        JLOG (debugJournal().trace)
+            << "Invalid validation" << getJson (0);
         Throw<std::runtime_error> ("Invalid validation");
     }
 }
@@ -112,7 +113,8 @@ bool STValidation::isValid (uint256 const& signingHash) const
     }
     catch (std::exception const&)
     {
-        WriteLog (lsINFO, Ledger) << "exception validating validation";
+        JLOG (debugJournal().info)
+            << "Exception validating validation";
         return false;
     }
 }

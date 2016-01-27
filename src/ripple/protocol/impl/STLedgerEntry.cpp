@@ -78,9 +78,12 @@ void STLedgerEntry::setSLEType ()
     type_ = mFormat->getType ();
     if (!setType (mFormat->elements))
     {
-        WriteLog (lsWARNING, SerializedLedger)
-            << "Ledger entry not valid for type " << mFormat->getName ();
-        WriteLog (lsWARNING, SerializedLedger) << getJson (0);
+        if (auto j = debugJournal().warning)
+        {
+            j << "Ledger entry not valid for type " << mFormat->getName ();
+            j << "Object: " << getJson (0);
+        }
+
         Throw<std::runtime_error> ("ledger entry not valid for type");
     }
 }
@@ -137,7 +140,9 @@ bool STLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
                                     uint256& prevTxID, std::uint32_t& prevLedgerID)
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
-    WriteLog (lsTRACE, SerializedLedger) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
+
+    JLOG (debugJournal().trace)
+        << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 
     if (oldPrevTxID == txID)
     {

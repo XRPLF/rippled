@@ -39,31 +39,23 @@ void PathCursor::nextIncrement () const
 {
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
-    // VFALCO-FIXME this generates errors
-    // JLOG (j_.trace)
-    //     << "nextIncrement: Path In: " << pathState_.getJson ();
 
     auto status = liquidity();
 
     if (status == tesSUCCESS)
     {
-        auto isDry = pathState_.isDry();
-        CondLog (isDry, lsDEBUG, RippleCalc)
-            << "nextIncrement: Error forwardLiquidity reported success"
-            << " on dry path:"
-            << " saOutPass=" << pathState_.outPass()
-            << " inPass()=" << pathState_.inPass();
-
-        if (isDry)
+        if (pathState_.isDry())
+        {
+            JLOG (j_.debug)
+                << "nextIncrement: success on dry path:"
+                << " outPass=" << pathState_.outPass()
+                << " inPass=" << pathState_.inPass();
             Throw<std::runtime_error> ("Made no progress.");
+        }
 
         // Calculate relative quality.
         pathState_.setQuality(getRate (
             pathState_.outPass(), pathState_.inPass()));
-
-        // VFALCO-FIXME this generates errors
-        // JLOG (j_.trace)
-        //     << "nextIncrement: Path after forward: " << pathState_.getJson ();
     }
     else
     {

@@ -64,8 +64,8 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
         {
             if (path.empty ())
             {
-                WriteLog (lsINFO, STBase)
-                    << "STPathSet: Empty path.";
+                JLOG (debugJournal().info)
+                    << "Empty path in pathset";
                 Throw<std::runtime_error> ("empty path");
             }
 
@@ -77,9 +77,8 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
         }
         else if (iType & ~STPathElement::typeAll)
         {
-            WriteLog (lsINFO, STBase)
-                << "STPathSet: Bad path element: " << iType;
-
+            JLOG (debugJournal().info)
+                << "Bad path element " << iType << " in pathset";
             Throw<std::runtime_error> ("bad path element");
         }
         else
