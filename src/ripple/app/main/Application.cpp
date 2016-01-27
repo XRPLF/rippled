@@ -100,6 +100,22 @@ private:
     std::uint32_t maxSeq = 0;
     std::mutex maxSeqLock;
 
+    void acquire (
+        uint256 const& hash,
+        std::uint32_t seq)
+    {
+        if (hash.isNonZero())
+        {
+            auto j = app_.journal ("Ledger");
+
+            JLOG (j.error) <<
+                "Missing node in " << to_string (hash);
+
+            app_.getInboundLedgers ().acquire (
+                hash, seq, InboundLedger::fcGENERIC);
+        }
+    }
+
 public:
     AppFamily (AppFamily const&) = delete;
     AppFamily& operator= (AppFamily const&) = delete;
@@ -162,7 +178,10 @@ public:
     void
     missing_node (std::uint32_t seq) override
     {
-        WriteLog (lsERROR, Ledger) << "Missing node in " << seq;
+        auto j = app_.journal ("Ledger");
+
+        JLOG (j.error) <<
+            "Missing node in " << seq;
 
         // prevent recursive invocation
         std::unique_lock <std::mutex> lock (maxSeqLock);
@@ -179,11 +198,9 @@ public:
                 lock.unlock();
 
                 // This can invoke the missing node handler
-                uint256 hash = app_.getLedgerMaster().getHashBySeq (seq);
-
-                if (hash.isNonZero())
-                    app_.getInboundLedgers().acquire (
-                        hash, seq, InboundLedger::fcGENERIC);
+                acquire (
+                    app_.getLedgerMaster().getHashBySeq (seq),
+                    seq);
 
                 lock.lock();
             }
@@ -191,7 +208,8 @@ public:
         }
         else if (maxSeq < seq)
         {
-            // We found a more recent ledger with a missing node
+            // We found a more recent ledger with a
+            // missing node
             maxSeq = seq;
         }
     }
@@ -199,14 +217,7 @@ public:
     void
     missing_node (uint256 const& hash) override
     {
-        if (hash.isNonZero())
-        {
-            WriteLog (lsERROR, Ledger) << "Missing node in "
-                << to_string (hash);
-
-            app_.getInboundLedgers ().acquire (
-                hash, 0, InboundLedger::fcGENERIC);
-        }
+        acquire (hash, 0);
     }
 };
 

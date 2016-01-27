@@ -52,10 +52,12 @@ T rangeCheckedCast (C c)
          std::numeric_limits<C>::is_signed &&
          c < std::numeric_limits<T>::lowest ()))
     {
-        WriteLog (lsERROR, RangeCheckedCast)
-            << "Range error. Min: " << std::numeric_limits<T>::lowest ()
-            << " Max: " << std::numeric_limits<T>::max () << " Got: " << c;
+        JLOG (debugJournal().error) << "rangeCheckedCast domain error:"
+          << " value = " << c
+          << " min = " << std::numeric_limits<T>::lowest ()
+          << " max: " << std::numeric_limits<T>::max ();
     }
+
     return static_cast<T>(c);
 }
 

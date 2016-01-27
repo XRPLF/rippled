@@ -893,10 +893,10 @@ public:
     // <-- { method: xyz, params: [... ] } or { error: ..., ... }
     Json::Value parseCommand (std::string strMethod, Json::Value jvParams, bool allowAnyCommand)
     {
-        if (ShouldLog (lsTRACE, RPCParser))
+        if (j_.trace)
         {
-            JLOG (j_.trace) << "RPC method:" << strMethod;
-            JLOG (j_.trace) << "RPC params:" << jvParams;
+            j_.trace << "Method: '" << strMethod << "'";
+            j_.trace << "Params: " << jvParams;
         }
 
         struct Command

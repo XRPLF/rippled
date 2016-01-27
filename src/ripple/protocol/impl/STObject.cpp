@@ -113,9 +113,9 @@ bool STObject::setType (const SOTemplate& type)
         {
             if ((e->flags == SOE_DEFAULT) && iter->get().isDefault())
             {
-                WriteLog (lsWARNING, STObject) <<
-                    "setType( " << getFName ().getName () <<
-                    " ) invalid default " << e->e_field.fieldName;
+                JLOG (debugJournal().warning)
+                    << "setType(" << getFName().getName()
+                    << "): explicit default " << e->e_field.fieldName;
                 valid = false;
             }
             v.emplace_back(std::move(*iter));
@@ -125,9 +125,9 @@ bool STObject::setType (const SOTemplate& type)
         {
             if (e->flags == SOE_REQUIRED)
             {
-                WriteLog (lsWARNING, STObject) <<
-                    "setType( " << getFName ().getName () <<
-                    " ) invalid missing " << e->e_field.fieldName;
+                JLOG (debugJournal().warning)
+                    << "setType(" << getFName().getName()
+                    << "): missing " << e->e_field.fieldName;
                 valid = false;
             }
             v.emplace_back(detail::nonPresentObject, e->e_field);
@@ -138,9 +138,9 @@ bool STObject::setType (const SOTemplate& type)
         // Anything left over in the object must be discardable
         if (! e->getFName().isDiscardable())
         {
-            WriteLog (lsWARNING, STObject) <<
-                "setType( " << getFName ().getName () <<
-                " ) invalid leftover " << e->getFName ().getName ();
+            JLOG (debugJournal().warning)
+                << "setType(" << getFName().getName()
+                << "): non-discardable leftover " << e->getFName().getName ();
             valid = false;
         }
     }
@@ -208,8 +208,8 @@ bool STObject::set (SerialIter& sit, int depth)
 
         if ((type == STI_ARRAY) && (field == 1))
         {
-            WriteLog (lsWARNING, STObject) <<
-                "Encountered object with end of array marker";
+            JLOG (debugJournal().warning)
+                << "Encountered object with end of array marker";
             Throw<std::runtime_error> ("Illegal terminator in object");
         }
 
@@ -221,9 +221,9 @@ bool STObject::set (SerialIter& sit, int depth)
 
             if (fn.isInvalid ())
             {
-                WriteLog (lsWARNING, STObject) <<
-                    "Unknown field: field_type=" << type <<
-                    ", field_name=" << field;
+                JLOG (debugJournal().warning)
+                    << "Unknown field: field_type=" << type
+                    << ", field_name=" << field;
                 Throw<std::runtime_error> ("Unknown field");
             }
 
@@ -304,11 +304,7 @@ bool STObject::isEquivalent (const STBase& t) const
     const STObject* v = dynamic_cast<const STObject*> (&t);
 
     if (!v)
-    {
-        WriteLog (lsDEBUG, STObject) <<
-            "notEquiv " << getFullText() << " not object";
         return false;
-    }
 
     if (mType != nullptr && (v->mType == mType))
         return equivalentSTObjectSameTemplate (*this, *v);
@@ -727,12 +723,7 @@ bool STObject::operator== (const STObject& obj) const
             }
 
             if (!match)
-            {
-                WriteLog (lsTRACE, STObject) <<
-                    "STObject::operator==: no match for " <<
-                    t1->getFName ().getName ();
                 return false;
-            }
         }
     }
 
@@ -744,11 +735,7 @@ bool STObject::operator== (const STObject& obj) const
     }
 
     if (fields != matches)
-    {
-        WriteLog (lsTRACE, STObject) << "STObject::operator==: " <<
-            fields << " fields, " << matches << " matches";
         return false;
-    }
 
     return true;
 }

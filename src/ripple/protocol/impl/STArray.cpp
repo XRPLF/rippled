@@ -76,7 +76,7 @@ STArray::STArray (SerialIter& sit, SField const& f)
 
         if ((type == STI_OBJECT) && (field == 1))
         {
-            WriteLog (lsWARNING, STObject) <<
+            JLOG (debugJournal().warning) <<
                 "Encountered array with end of object marker";
             Throw<std::runtime_error> ("Illegal terminator in array");
         }
@@ -85,14 +85,15 @@ STArray::STArray (SerialIter& sit, SField const& f)
 
         if (fn.isInvalid ())
         {
-            WriteLog (lsTRACE, STObject) <<
+            JLOG (debugJournal().trace) <<
                 "Unknown field: " << type << "/" << field;
             Throw<std::runtime_error> ("Unknown field");
         }
 
         if (fn.fieldType != STI_OBJECT)
         {
-            WriteLog (lsTRACE, STObject) << "Array contains non-object";
+            JLOG (debugJournal().trace) <<
+                "Array contains non-object";
             Throw<std::runtime_error> ("Non-object in array");
         }
 
@@ -172,16 +173,8 @@ void STArray::add (Serializer& s) const
 
 bool STArray::isEquivalent (const STBase& t) const
 {
-    const STArray* v = dynamic_cast<const STArray*> (&t);
-
-    if (!v)
-    {
-        WriteLog (lsDEBUG, STObject) <<
-            "notEquiv " << getFullText() << " not array";
-        return false;
-    }
-
-    return v_ == v->v_;
+    auto v = dynamic_cast<const STArray*> (&t);
+    return v != nullptr && v_ == v->v_;
 }
 
 void STArray::sort (bool (*compare) (const STObject&, const STObject&))

@@ -237,6 +237,22 @@ private:
 #endif
 
 //------------------------------------------------------------------------------
+// Debug logging:
+
+/** Returns the debug journal. The journal may drain to a null sink. */
+beast::Journal const&
+debugJournal();
+
+/** Set the sink for the debug journal
+
+    This operation is not thread safe and should only be called
+    from a controlled context, when no other threads are in a
+    call to debugJournal.
+*/
+void
+setDebugJournalSink(beast::Journal::Sink& sink);
+
+//------------------------------------------------------------------------------
 // VFALCO DEPRECATED Temporary transition function until interfaces injected
 inline
 Logs&
@@ -264,25 +280,6 @@ public:
 private:
     beast::Journal::Severity const severity_;
 };
-
-// VFALCO DEPRECATED Inject beast::Journal instead
-#define ShouldLog(s, k) \
-    ::ripple::deprecatedLogs()[#k].active(::ripple::Logs::toSeverity (s))
-
-// DEPRECATED
-#define WriteLog(s, k)                                              \
-    if (!ShouldLog(s, k))                                           \
-        do {} while (0);                                            \
-    else                                                            \
-        ::beast::Journal::Stream (::ripple::deprecatedLogs()[#k],   \
-                                  ::ripple::Logs::toSeverity(s))
-// DEPRECATED
-#define CondLog(c, s, k) \
-     if (!ShouldLog(s, k) || !(c))                                  \
-         do {} while(0);                                            \
-     else                                                           \
-         ::beast::Journal::Stream (::ripple::deprecatedLogs()[#k],  \
-                                  ::ripple::Logs::toSeverity(s))
 
 } // ripple
 

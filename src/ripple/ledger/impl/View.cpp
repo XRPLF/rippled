@@ -1435,7 +1435,7 @@ accountSend (ApplyView& view,
         ? view.peek (keylet::account(uReceiverID))
         : SLE::pointer ();
 
-    if (ShouldLog (lsTRACE, View))
+    if (j.trace)
     {
         std::string sender_bal ("-");
         std::string receiver_bal ("-");
@@ -1446,7 +1446,7 @@ accountSend (ApplyView& view,
         if (receiver)
             receiver_bal = receiver->getFieldAmount (sfBalance).getFullText ();
 
-        JLOG (j.trace) << "accountSend> " <<
+       j.trace << "accountSend> " <<
             to_string (uSenderID) << " (" << sender_bal <<
             ") -> " << to_string (uReceiverID) << " (" << receiver_bal <<
             ") : " << saAmount.getFullText ();
@@ -1479,7 +1479,7 @@ accountSend (ApplyView& view,
         view.update (receiver);
     }
 
-    if (ShouldLog (lsTRACE, View))
+    if (j.trace)
     {
         std::string sender_bal ("-");
         std::string receiver_bal ("-");
@@ -1490,7 +1490,7 @@ accountSend (ApplyView& view,
         if (receiver)
             receiver_bal = receiver->getFieldAmount (sfBalance).getFullText ();
 
-        JLOG (j.trace) << "accountSend< " <<
+        j.trace << "accountSend< " <<
             to_string (uSenderID) << " (" << sender_bal <<
             ") -> " << to_string (uReceiverID) << " (" << receiver_bal <<
             ") : " << saAmount.getFullText ();

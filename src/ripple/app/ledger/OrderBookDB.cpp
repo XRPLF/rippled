@@ -130,7 +130,7 @@ void OrderBookDB::update(
     }
     catch (const SHAMapMissingNode&)
     {
-        JLOG (j_.info) 
+        JLOG (j_.info)
             << "OrderBookDB::update encountered a missing node";
         std::lock_guard <std::recursive_mutex> sl (mLock);
         mSeq = 0;

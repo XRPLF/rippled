@@ -329,4 +329,22 @@ Logs::format (std::string& output, std::string const& message,
     }
 }
 
+//------------------------------------------------------------------------------
+static std::unique_ptr<beast::Journal> debugJournal_;
+
+beast::Journal const&
+debugJournal()
+{
+    if (!debugJournal_)
+        debugJournal_ = std::make_unique<beast::Journal>();
+
+    return *debugJournal_;
+}
+
+void
+setDebugJournalSink(beast::Journal::Sink& sink)
+{
+    debugJournal_ = std::make_unique<beast::Journal>(sink);
+}
+
 } // ripple

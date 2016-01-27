@@ -151,7 +151,6 @@ public:
     bool getVL (Blob& objectVL, int offset, int& length) const;
     bool getVLLength (int& length, int offset) const;
 
-    bool getFieldID (int& type, int& name, int offset) const;
     int addFieldID (int type, int name);
     int addFieldID (SerializedTypeID type, int name)
     {

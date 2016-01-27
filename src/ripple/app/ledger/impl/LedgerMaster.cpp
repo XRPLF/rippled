@@ -596,9 +596,14 @@ LedgerMaster::fixMismatch (Ledger::ref ledger)
                 if (otherLedger && (otherLedger->getHash () == *hash))
                 {
                     // we closed the seam
-                    CondLog (invalidate != 0, lsWARNING, LedgerMaster) <<
-                        "Match at " << lSeq << ", " << invalidate <<
-                        " prior ledgers invalidated";
+                    if (invalidate != 0)
+                    {
+                        JLOG (m_journal.warning)
+                            << "Match at " << lSeq
+                            << ", " << invalidate
+                            << " prior ledgers invalidated";
+                    }
+
                     return;
                 }
             }
@@ -609,8 +614,11 @@ LedgerMaster::fixMismatch (Ledger::ref ledger)
     }
 
     // all prior ledgers invalidated
-    CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " <<
-        invalidate << " prior ledgers invalidated";
+    if (invalidate != 0)
+    {
+        JLOG (m_journal.warning) <<
+            "All " << invalidate << " prior ledgers invalidated";
+    }
 }
 
 void
