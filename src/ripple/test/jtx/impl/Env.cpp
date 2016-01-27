@@ -28,6 +28,7 @@
 #include <ripple/test/jtx/seq.h>
 #include <ripple/test/jtx/sig.h>
 #include <ripple/test/jtx/utility.h>
+#include <ripple/test/HTTPClient.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -37,6 +38,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/HTTPClient.h>
+#include <ripple/net/RPCCall.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
@@ -54,26 +56,29 @@ namespace ripple {
 namespace test {
 
 void
-setupConfigForUnitTests (Config& config)
+setupConfigForUnitTests (Config& cfg)
 {
-    config.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
-    config.overwrite (ConfigSection::nodeDatabase (), "path", "main");
-
-    config.deprecatedClearSection (ConfigSection::importNodeDatabase ());
-    config.legacy("database_path", "");
-
-    config.RUN_STANDALONE = true;
-    config.QUIET = true;
-    config.SILENT = true;
-    config["server"].append("port_peer");
-    config["port_peer"].set("ip", "127.0.0.1");
-    config["port_peer"].set("port", "8080");
-    config["port_peer"].set("protocol", "peer");
-    config["server"].append("port_admin");
-    config["port_admin"].set("ip", "127.0.0.1");
-    config["port_admin"].set("port", "8081");
-    config["port_admin"].set("protocol", "http");
-    config["port_admin"].set("admin", "127.0.0.1");
+    cfg.overwrite (ConfigSection::nodeDatabase (), "type", "memory");
+    cfg.overwrite (ConfigSection::nodeDatabase (), "path", "main");
+    cfg.deprecatedClearSection (ConfigSection::importNodeDatabase ());
+    cfg.legacy("database_path", "");
+    cfg.RUN_STANDALONE = true;
+    cfg.QUIET = true;
+    cfg.SILENT = true;
+    cfg["server"].append("port_peer");
+    cfg["port_peer"].set("ip", "127.0.0.1");
+    cfg["port_peer"].set("port", "8080");
+    cfg["port_peer"].set("protocol", "peer");
+    cfg["server"].append("port_http");
+    cfg["port_http"].set("ip", "127.0.0.1");
+    cfg["port_http"].set("port", "8081");
+    cfg["port_http"].set("protocol", "http");
+    cfg["port_http"].set("admin", "127.0.0.1");
+    cfg["server"].append("port_ws");
+    cfg["port_ws"].set("ip", "127.0.0.1");
+    cfg["port_ws"].set("port", "8082");
+    cfg["port_ws"].set("protocol", "ws");
+    cfg["port_ws"].set("admin", "127.0.0.1");
 }
 
 //------------------------------------------------------------------------------
@@ -102,10 +107,13 @@ Env::AppBundle::AppBundle(std::unique_ptr<Config> config)
     app->doStart();
     thread = std::thread(
         [&](){ app->run(); });
+
+    client = makeHTTPClient(app->config());
 }
 
 Env::AppBundle::~AppBundle()
 {
+    client.reset();
     app->signalStop();
     thread.join();
 }
@@ -131,8 +139,7 @@ Env::close(NetClock::time_point closeTime,
         app().getOPs().acceptLedger(consensusDelay);
     else
     {
-        auto const result = rpc("ledger_accept");
-        test.expect(result.first == rpcSUCCESS);
+        auto const result = client().rpc("ledger_accept");
     }
     bundle_.timeKeeper->set(
         closed()->info().closeTime);
@@ -274,6 +281,7 @@ Env::submit (JTx const& jt)
         txid_ = jt.stx->getTransactionID();
         Serializer s;
         jt.stx->add(s);
+#if 0
         auto const result = rpc("submit", strHex(s.slice()));
         if (result.first == rpcSUCCESS &&
             result.second["result"].isMember("engine_result_code"))
@@ -281,6 +289,17 @@ Env::submit (JTx const& jt)
                 result.second["result"]["engine_result_code"].asInt());
         else
             ter_ = temINVALID;
+#else
+        auto jp = Json::Value();
+        jp["tx_blob"] = strHex(s.slice());
+        auto const jr =
+            client().rpc("submit", jp);
+        if (jr["result"].isMember("engine_result_code"))
+            ter_ = static_cast<TER>(
+                jr["result"]["engine_result_code"].asInt());
+        else
+            ter_ = temINVALID;
+#endif
         didApply = isTesSuccess(ter_) || isTecClaim(ter_);
     }
     else
@@ -406,6 +425,15 @@ Env::applyFlags() const
     if (nosig_)
         flags = flags | tapNO_CHECK_SIGN;
     return flags;
+}
+
+Json::Value
+Env::do_rpc(std::vector<std::string> const& args)
+{
+    auto const jv = rpcCmdLineToJson(args, journal);
+//test.log << pretty(jv);
+    return client().rpc(jv["method"].asString(),
+        jv["params"][0U]);
 }
 
 } // jtx
