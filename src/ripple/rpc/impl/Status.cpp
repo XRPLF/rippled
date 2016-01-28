@@ -54,8 +54,6 @@ std::string Status::codeString () const
 
 void Status::fillJson (Json::Value& value)
 {
-    static const std::string separator = ": ";
-
     if (!*this)
         return;
 

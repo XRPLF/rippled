@@ -365,7 +365,7 @@ void Config::loadFromString (std::string const& fileContents)
     {
         auto const seed = parseBase58<Seed>(strTemp);
         if (!seed)
-            throw std::runtime_error (
+            Throw<std::runtime_error> (
                 "Invalid seed specified in [" SECTION_VALIDATION_SEED "]");
         VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
         VALIDATION_PUB = derivePublicKey (KeyType::secp256k1, VALIDATION_PRIV);
@@ -374,7 +374,7 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_NODE_SEED, NODE_SEED, j_))
     {
         if (!parseBase58<Seed>(NODE_SEED))
-            throw std::runtime_error (
+            Throw<std::runtime_error> (
                 "Invalid seed specified in [" SECTION_NODE_SEED "]");
     }
 

@@ -31,6 +31,7 @@ private:
     boost::optional<uint256> digest_;
 
 public:
+    explicit
     Impl (DigestAwareReadView const& ledger)
     {
         auto const k = keylet::amendments();

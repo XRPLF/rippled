@@ -1009,13 +1009,13 @@ void ApplicationImp::setup()
     if (!cluster_->load (config().section(SECTION_CLUSTER_NODES)))
     {
         m_journal.fatal << "Invalid entry in cluster configuration.";
-        throw std::exception();
+        Throw<std::exception>();
     }
 
     if (!validators_->load (config().section (SECTION_VALIDATORS)))
     {
         m_journal.fatal << "Invalid entry in validator configuration.";
-        throw std::exception();
+        Throw<std::exception>();
     }
 
     if (validators_->size () == 0 && !config_->RUN_STANDALONE)

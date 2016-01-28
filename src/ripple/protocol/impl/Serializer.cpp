@@ -448,7 +448,7 @@ void
 SerialIter::skip (int length)
 {
     if (remain_ < length)
-        throw std::runtime_error(
+        Throw<std::runtime_error> (
             "invalid SerialIter skip");
     p_ += length;
     used_ += length;

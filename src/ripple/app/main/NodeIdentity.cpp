@@ -38,7 +38,7 @@ loadNodeIdentity (Application& app)
             app.config().NODE_SEED);
 
         if (!seed)
-            throw std::runtime_error (
+            Throw<std::runtime_error>(
                 "NodeIdentity: Bad [node_seed] specified");
 
         auto secretKey =

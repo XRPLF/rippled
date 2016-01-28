@@ -76,6 +76,7 @@ size_t lengthWithoutTrailingZeros (std::string const& s)
 class Writer::Impl
 {
 public:
+    explicit
     Impl (Output const& output) : output_(output) {}
     ~Impl() = default;
 

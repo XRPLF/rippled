@@ -132,10 +132,7 @@ std::string const& getFullVersionString ()
 {
     struct PrettyPrinter
     {
-        PrettyPrinter ()
-        {
-            fullVersionString = "rippled-" + getVersionString ();
-        }
+        PrettyPrinter () : fullVersionString ("rippled-" + getVersionString ()){}
 
         std::string fullVersionString;
     };

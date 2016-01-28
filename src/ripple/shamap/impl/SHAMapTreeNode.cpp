@@ -147,7 +147,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
                 if (! s.get8 (pos, 32 + (i * 33)))
                     Throw<std::runtime_error> ("short CI node");
                 if ((pos < 0) || (pos >= 16))
-                Throw<std::runtime_error> ("invalid CI node");
+                    Throw<std::runtime_error> ("invalid CI node");
                 s.get256 (ret->mHashes[pos].as_uint256(), i * 33);
                 if (ret->mHashes[pos].isNonZero ())
                     ret->mIsBranch |= (1 << pos);
