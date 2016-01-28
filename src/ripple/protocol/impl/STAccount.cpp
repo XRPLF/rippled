@@ -48,7 +48,7 @@ STAccount::STAccount (SField const& n, Buffer&& v)
     // which throws.  If STVar can throw in its constructor, then so can
     // STAccount.
     if (v.size() != uint160::bytes)
-        throw std::runtime_error ("Invalid STAccount size");
+        Throw<std::runtime_error> ("Invalid STAccount size");
 
     default_ = false;
     memcpy (value_.begin(), v.data (), uint160::bytes);

@@ -1066,7 +1066,7 @@ setup_Overlay (BasicConfig const& config)
 
     set (setup.ipLimit, "ip_limit", section);
     if (setup.ipLimit < 0)
-        throw std::runtime_error ("Configured IP limit is invalid");
+        Throw<std::runtime_error> ("Configured IP limit is invalid");
 
     std::string ip;
     set (ip, "public_ip", section);

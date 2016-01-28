@@ -40,6 +40,7 @@ namespace ripple {
 class HTTPClientSSLContext
 {
 public:
+    explicit
     HTTPClientSSLContext (Config const& config)
         : m_context (boost::asio::ssl::context::sslv23)
         , verify_ (config.SSL_VERIFY)

@@ -74,6 +74,7 @@ private:
     }
 
 public:
+    explicit
     ValidationsImp (Application& app)
         : app_ (app)
         , mValidations ("Validations", 4096, 600, stopwatch(),

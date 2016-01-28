@@ -1782,7 +1782,6 @@ void LedgerConsensusImp::beginAccept (bool synchronous)
         JLOG (j_.fatal)
             << "We don't have a consensus set";
         abort ();
-        return;
     }
 
     consensus_.newLCL (mPeerPositions.size (), mCurrentMSeconds);

@@ -341,7 +341,6 @@ public:
                 ledgerHashes.emplace_back(lh);
                 ledgerIndexes.emplace_back(i);
             }
-            std::string slh (lh);
             s << "INSERT INTO Ledgers (LedgerHash, LedgerSeq) VALUES "
                  "(:lh, :li);",
                 soci::use (ledgerHashes), soci::use (ledgerIndexes);

@@ -59,6 +59,7 @@ Status handle (Context& context, Object& object)
 class HandlerTable {
   public:
     template<std::size_t N>
+    explicit
     HandlerTable (const Handler(&entries)[N])
     {
         for (std::size_t i = 0; i < N; ++i)

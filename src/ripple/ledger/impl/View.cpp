@@ -1360,9 +1360,8 @@ rippleSend (ApplyView& view,
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
-        // VFALCO Why do we need this bCheckIssuer?
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        terResult   = rippleCredit (view, uSenderID, uReceiverID, saAmount, false, j);
+        rippleCredit (view, uSenderID, uReceiverID, saAmount, false, j);
         saActual    = saAmount;
         terResult   = tesSUCCESS;
     }
