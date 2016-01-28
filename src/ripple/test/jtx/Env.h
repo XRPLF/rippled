@@ -199,7 +199,7 @@ public:
     */
     template<class... Args>
     Json::Value
-    rpc(std::string const& cmd, Args const&... args);
+    rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
 
@@ -644,9 +644,10 @@ protected:
 
 template<class... Args>
 Json::Value
-Env::rpc(std::string const& cmd, Args const&... args)
+Env::rpc(std::string const& cmd, Args&&... args)
 {
-    std::vector<std::string> vs{cmd, args...};
+    std::vector<std::string> vs{cmd,
+        std::forward<Args>(args)...};
     return do_rpc(vs);
 }
 
