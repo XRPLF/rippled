@@ -1158,6 +1158,7 @@ ApplicationImp::startGenesisLedger()
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, cachedSLEs_,
         logs_->journal("OpenLedger"));
+    m_ledgerMaster->storeLedger(next);
     m_ledgerMaster->switchLCL (next);
 }
 

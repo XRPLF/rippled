@@ -25,6 +25,7 @@
 #include <ripple/test/jtx/JTx.h>
 #include <ripple/test/jtx/require.h>
 #include <ripple/test/jtx/tags.h>
+#include <ripple/test/AbstractClient.h>
 #include <ripple/test/ManualTimeKeeper.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
@@ -36,7 +37,6 @@
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/CachedSLEs.h>
-#include <ripple/net/RPCCall.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
@@ -99,6 +99,7 @@ private:
         std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper;
         std::thread thread;
+        std::unique_ptr<AbstractClient> client;
 
         AppBundle (std::unique_ptr<Config> config);
         AppBundle (Application* app_);
@@ -161,7 +162,6 @@ public:
     {
     }
 
-
     Application&
     app()
     {
@@ -184,6 +184,22 @@ public:
     {
         return app().timeKeeper().now();
     }
+
+    /** Returns the connected client. */
+    AbstractClient&
+    client()
+    {
+        return *bundle_.client;
+    }
+
+    /** Execute an RPC command.
+
+        The command is examined and used to build
+        the correct JSON as per the arguments.
+    */
+    template<class... Args>
+    Json::Value
+    rpc(std::string const& cmd, Args&&... args);
 
     /** Returns the current ledger.
 
@@ -423,11 +439,6 @@ public:
     std::shared_ptr<STObject const>
     meta();
 
-    /** Execute a client command */
-    template <class Arg, class... Args>
-    std::pair<int, Json::Value>
-    rpc (Arg&& arg0, Args&&... args);
-
 private:
     void
     fund (bool setDefaultRipple,
@@ -534,6 +545,9 @@ protected:
     uint256 txid_;
     TER ter_ = tesSUCCESS;
 
+    Json::Value
+    do_rpc(std::vector<std::string> const& args);
+
     void
     autofill_sig (JTx& jt);
 
@@ -628,16 +642,13 @@ protected:
         AccountID, Account> map_;
 };
 
-//------------------------------------------------------------------------------
-
-template <class Arg, class... Args>
-std::pair<int, Json::Value>
-Env::rpc (Arg&& arg0, Args&&... args)
+template<class... Args>
+Json::Value
+Env::rpc(std::string const& cmd, Args&&... args)
 {
-    std::vector<std::string> v({ std::forward<Arg>(arg0),
-        std::forward<Args>(args)... });
-    return rpcClient(v,
-        app().config(), app().logs());
+    std::vector<std::string> vs{cmd,
+        std::forward<Args>(args)...};
+    return do_rpc(vs);
 }
 
 } // jtx

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_PORT_H_INCLUDED
 #define RIPPLE_SERVER_PORT_H_INCLUDED
 
+#include <ripple/basics/BasicConfig.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/ci_char_traits.h>
 #include <boost/asio/ip/address.hpp>
@@ -99,6 +100,30 @@ std::ostream&
 operator<< (std::ostream& os, Port const& p);
 
 } // HTTP
+
+//------------------------------------------------------------------------------
+
+struct ParsedPort
+{
+    std::string name;
+    std::set<std::string, beast::ci_less> protocol;
+    std::string user;
+    std::string password;
+    std::string admin_user;
+    std::string admin_password;
+    std::string ssl_key;
+    std::string ssl_cert;
+    std::string ssl_chain;
+
+    boost::optional<boost::asio::ip::address> ip;
+    boost::optional<std::uint16_t> port;
+    boost::optional<std::vector<beast::IP::Address>> admin_ip;
+    boost::optional<std::vector<beast::IP::Address>> secure_gateway_ip;
+};
+
+void
+parse_Port (ParsedPort& port, Section const& section, std::ostream& log);
+
 } // ripple
 
 #endif
