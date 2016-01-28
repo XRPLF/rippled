@@ -21,7 +21,6 @@
 #define BEAST_UNIT_TEST_SUITE_H_INCLUDED
 
 #include <beast/unit_test/runner.h>
-
 #include <string>
 #include <sstream>
 
@@ -150,12 +149,21 @@ public:
     /** Memberspace for declaring test cases. */
     testcase_t testcase;
 
+    /** Returns the "current" running suite.
+        If no suite is running, nullptr is returned.
+    */
+    static suite* this_suite()
+    {
+        return *p_this_suite();
+    }
+
     /** Invokes the test using the specified runner.
         Data members are set up here instead of the constructor as a
         convenience to writing the derived class to avoid repetition of
         forwarded constructor arguments to the base.
         Normally this is called by the framework for you.
     */
+    template<class = void>
     void
     operator() (runner& r);
 
@@ -253,12 +261,19 @@ public:
 private:
     friend class thread;
 
+    static
+    suite**
+    p_this_suite()
+    {
+        static suite* pts = nullptr;
+        return &pts;
+    }
+
     /** Runs the suite. */
     virtual
     void
     run() = 0;
 
-    template <class = void>
     void
     propagate_abort();
 
@@ -366,7 +381,7 @@ suite::testcase_t::operator() (abort_t abort)
     return { suite_, &ss_ };
 }
 
-template <class T>
+template<class T>
 inline
 suite::scoped_testcase
 suite::testcase_t::operator<< (T const& t)
@@ -376,11 +391,21 @@ suite::testcase_t::operator<< (T const& t)
 
 //------------------------------------------------------------------------------
 
-inline
+template<class>
 void
-suite::operator() (runner& r)
+suite::operator()(runner& r)
 {
-    run (r);
+    *p_this_suite() = this;
+    try
+    {
+        run(r);
+        *p_this_suite() = nullptr;
+    }
+    catch(...)
+    {
+        *p_this_suite() = nullptr;
+        throw;
+    }
 }
 
 template <class Condition, class String>
@@ -485,7 +510,7 @@ suite::fail (std::string const& reason)
     }
 }
 
-template <class>
+inline
 void
 suite::propagate_abort()
 {
