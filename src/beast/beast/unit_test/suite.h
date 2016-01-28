@@ -21,7 +21,6 @@
 #define BEAST_UNIT_TEST_SUITE_H_INCLUDED
 
 #include <beast/unit_test/runner.h>
-
 #include <string>
 #include <sstream>
 
@@ -150,6 +149,14 @@ public:
     /** Memberspace for declaring test cases. */
     testcase_t testcase;
 
+    /** Returns the "current" runnin suite.
+        If no suite is running, nullptr is returned.
+    */
+    static suite* this_suite()
+    {
+        return *p_this_suite();
+    }
+
     /** Invokes the test using the specified runner.
         Data members are set up here instead of the constructor as a
         convenience to writing the derived class to avoid repetition of
@@ -253,12 +260,19 @@ public:
 private:
     friend class thread;
 
+    static
+    suite**
+    p_this_suite()
+    {
+        static suite* pts = nullptr;
+        return &pts;
+    }
+
     /** Runs the suite. */
     virtual
     void
     run() = 0;
 
-    template <class = void>
     void
     propagate_abort();
 
@@ -380,7 +394,9 @@ inline
 void
 suite::operator() (runner& r)
 {
+    *p_this_suite() = this;
     run (r);
+    *p_this_suite() = nullptr;
 }
 
 template <class Condition, class String>
@@ -485,7 +501,7 @@ suite::fail (std::string const& reason)
     }
 }
 
-template <class>
+inline
 void
 suite::propagate_abort()
 {
