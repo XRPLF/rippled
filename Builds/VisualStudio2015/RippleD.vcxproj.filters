@@ -3765,6 +3765,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\Subscribe.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
       <Filter>ripple\rpc\tests</Filter>
     </ClInclude>
