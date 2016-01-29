@@ -30,7 +30,7 @@ test:
     # gdb segfaults
     # - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args build/clang.debug/rippled --unittest
     - build/clang.debug/rippled --unittest
-    - npm install
+    - npm install --progress=false
     # Use build/(gcc|clang).debug/rippled
     - |
       echo "exports.default_server_config = {\"rippled_path\" : \"$HOME/rippled/build/clang.debug/rippled\"};" > test/config.js
