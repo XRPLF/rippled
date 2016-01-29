@@ -37,5 +37,5 @@ else
 fi
 
 # Run NPM tests
-npm install
+npm install --progress=false
 npm test --rippled=$RIPPLED_PATH

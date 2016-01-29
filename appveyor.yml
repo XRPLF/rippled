@@ -83,5 +83,5 @@ test_script:
   - build\\rippled --unittest
 
   # Run the integration tests
-  - npm install
+  - npm install --progress=false
   - npm test
