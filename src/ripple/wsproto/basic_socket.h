@@ -133,7 +133,7 @@ decode_fh1(frame_header& fh, std::uint8_t const* p)
         default:
             need = 0;
     }
-    if(fh.mask = p[1] & 0x80)
+    if((fh.mask = (p[1] & 0x80)))
         need += 4;
     fh.op   = p[0] & 0x0f;
     fh.fin  = p[0] & 0x80;
@@ -340,7 +340,7 @@ public:
         read_fh_op* op)
     {
         return (op->d_->state != 0) ? true :
-            : boost_asio_handler_cont_helpers::
+            boost_asio_handler_cont_helpers::
                 is_continuation(op->d_->h);
     }
 
@@ -431,9 +431,8 @@ public:
     auto asio_handler_is_continuation(
         read_op* op)
     {
-        return (op->d_->state != 0) ? true :
-            : boost_asio_handler_cont_helpers::
-                is_continuation(op->d_->h);
+        return boost_asio_handler_cont_helpers::
+            is_continuation(op->d_->h);
     }
 
     template <class Function>
@@ -486,13 +485,6 @@ public:
 
     ~basic_socket()
     {
-#if 0
-        using namespace boost::asio;
-        std::array<std::uint8_t, 2> buf;
-        buf[0] = 0x88;
-        buf[1] = 0;
-        boost::asio::write(s_, buffer(buf));
-#endif
     }
 
     boost::asio::io_service&
@@ -540,7 +532,6 @@ public:
             "Upgrade: websocket\r\n"
             "Connection: Upgrade\r\n"
             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-            //"Sec-WebSocket-Protocol: chat, superchat\r\n"
             "Sec-WebSocket-Version: 13\r\n"
             "\r\n"), ec);
         if(ec)
@@ -555,7 +546,6 @@ public:
         if (result.first || ! p.complete())
             throw std::runtime_error(result.first.message());
         sb.consume(result.second);
-//beast::unit_test::suite::this_suite()->log << to_string(m);
     }
 
     // write a text message
@@ -576,7 +566,7 @@ public:
     {
         static_assert(beast::is_call_possible<Handler,
             void(error_code)>::value,
-                "Type does not meet the requirements of ReadHeaderHandler");
+                "Type does not meet the handler requirements");
         detail::read_fh_op<Stream, Handler>{
             s_, fh, std::forward<Handler>(h)};
     }
@@ -590,7 +580,7 @@ public:
     {
         static_assert(beast::is_call_possible<Handler,
             void(error_code)>::value,
-                "Type does not meet the requirements of ReadHandler");
+                "Type does not meet the handler requirements");
         detail::read_op<Stream, MutableBuffers, Handler>{
             s_, fh, b, std::forward<Handler>(h)};
     }
