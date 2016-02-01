@@ -134,7 +134,7 @@ auto constexpr AV_CT_CONSENSUS_PCT = 75;
 // to have taken. This ensures that there is an opportunity
 // for a round at each avalanche threshold even if the
 // previous consensus was very fast. This should be at least
-// twice the interval between proposals (0.7) divided by
+// twice the interval between proposals (0.7s) divided by
 // the interval between mid and late consensus ([85-50]/100).
 auto constexpr AV_MIN_CONSENSUS_TIME = 5s;
 
