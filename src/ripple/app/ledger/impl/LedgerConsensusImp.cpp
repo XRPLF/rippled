@@ -653,9 +653,8 @@ void LedgerConsensusImp::timerEntry ()
                            (steady_clock::now() - mConsensusStartTime);
 
         mClosePercent = mCurrentMSeconds * 100 /
-            std::max (
-                mPreviousMSeconds,
-                duration_cast<milliseconds>(AV_MIN_CONSENSUS_TIME));
+            std::max<milliseconds> (
+                mPreviousMSeconds, AV_MIN_CONSENSUS_TIME);
 
         switch (state_)
         {
