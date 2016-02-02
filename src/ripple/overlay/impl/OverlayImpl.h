@@ -276,7 +276,7 @@ public:
         int bytes);
 
 private:
-    std::shared_ptr<HTTP::Writer>
+    std::shared_ptr<Writer>
     makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
         beast::http::message const& request, address_type remote_address);
 

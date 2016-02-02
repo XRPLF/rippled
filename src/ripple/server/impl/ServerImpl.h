@@ -36,7 +36,6 @@
 #include <thread>
 
 namespace ripple {
-namespace HTTP {
 
 class BasicPeer;
 class Door;
@@ -78,7 +77,7 @@ private:
 
     std::mutex mutable mutex_;
     std::condition_variable cond_;
-    std::vector<std::shared_ptr<Door>> list_;
+    std::vector<std::unique_ptr<Door>> list_;
     std::size_t accepting_ = 0;
     std::deque <Stat> stats_;
     int high_ = 0;
@@ -107,10 +106,10 @@ public:
     close() override;
 
 public:
-    Handler&
+    Handler*
     handler()
     {
-        return *handler_;
+        return handler_;
     }
 
     boost::asio::io_service&
@@ -135,7 +134,6 @@ private:
 };
 
 
-}
-}
+} // ripple
 
 #endif

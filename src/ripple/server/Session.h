@@ -32,10 +32,6 @@
 
 namespace ripple {
 
-namespace HTTP {
-
-class Session;
-
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
     Some fields are input parameters, some are output parameters,
@@ -151,7 +147,6 @@ public:
     close (bool graceful) = 0;
 };
 
-}  // namespace HTTP
 }  // ripple
 
 #endif

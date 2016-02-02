@@ -883,6 +883,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/protocol', '.cpp'))
     append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/server', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
 
     if use_shp(toolchain):
@@ -926,6 +927,7 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/protocol.cpp',
         'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
+        'src/ripple/unity/server.cpp',
         'src/ripple/unity/test.cpp',
     )
 
@@ -1071,7 +1073,6 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/protobuf.cpp',
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
-                'src/ripple/unity/server.cpp',
                 'src/ripple/unity/websocket02.cpp',
                 **cc_flags
             )
