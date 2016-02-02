@@ -104,7 +104,7 @@ public:
 
 private:
     Application& app_;
-    HTTP::Port const& m_port;
+    Port const& m_port;
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     beast::IP::Endpoint const m_remoteAddress;

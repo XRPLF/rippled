@@ -20,15 +20,14 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/server/impl/Door.h>
-#include <ripple/server/impl/PlainPeer.h>
-#include <ripple/server/impl/SSLPeer.h>
+#include <ripple/server/impl/PlainHTTPPeer.h>
+#include <ripple/server/impl/SSLHTTPPeer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl_bundle.h>
 #include <functional>
 
 namespace ripple {
-namespace HTTP {
 
 /** Detect SSL client handshakes.
     Analyzes the bytes in the provided buffer to detect the SSL client
@@ -225,7 +224,7 @@ void
 Door::run()
 {
     boost::asio::spawn (strand_, std::bind (&Door::do_accept,
-        shared_from_this(), std::placeholders::_1));
+        this, std::placeholders::_1));
 }
 
 void
@@ -233,7 +232,7 @@ Door::close()
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
-            &Door::close, shared_from_this()));
+            &Door::close, this));
     error_code ec;
     acceptor_.close(ec);
     // Close all detector, Peer objects
@@ -259,7 +258,9 @@ void
 Door::remove (Child& c)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    list_.erase(&c);
+    auto const n = list_.erase(&c);
+    if(n != 1)
+        Throw<std::runtime_error>("missing child");
     if (list_.empty())
         cond_.notify_all();
 }
@@ -283,14 +284,14 @@ Door::create (bool ssl, ConstBufferSequence const& buffers,
 
     if (ssl)
     {
-        auto const peer = std::make_shared <SSLPeer> (*this,
+        auto const peer = std::make_shared <SSLHTTPPeer> (*this,
             server_.journal(), remote_address, buffers,
                 std::move(socket));
         add(peer);
         return peer->run();
     }
 
-    auto const peer = std::make_shared <PlainPeer> (*this,
+    auto const peer = std::make_shared <PlainHTTPPeer> (*this,
         server_.journal(), remote_address, buffers,
             std::move(socket));
     add(peer);
@@ -330,6 +331,4 @@ Door::do_accept (boost::asio::yield_context yield)
     server_.remove();
 }
 
-}
 } // ripple
-
