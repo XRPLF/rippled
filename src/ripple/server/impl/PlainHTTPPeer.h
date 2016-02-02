@@ -24,7 +24,6 @@
 #include <memory>
 
 namespace ripple {
-namespace HTTP {
 
 class PlainHTTPPeer
     : public BaseHTTPPeer<PlainHTTPPeer>
@@ -109,7 +108,6 @@ PlainHTTPPeer::do_close()
     stream_.shutdown (socket_type::shutdown_send, ec);
 }
 
-}
-}
+} // ripple
 
 #endif

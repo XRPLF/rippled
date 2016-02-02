@@ -37,7 +37,6 @@
 #include <thread>
 
 namespace ripple {
-namespace HTTP {
 
 class BasicPeer;
 class Door;
@@ -142,7 +141,6 @@ private:
 };
 
 
-}
-}
+} // ripple
 
 #endif

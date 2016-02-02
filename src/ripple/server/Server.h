@@ -25,7 +25,6 @@
 #include <beast/utility/PropertyStream.h>
 
 namespace ripple {
-namespace HTTP {
 
 /** Multi-threaded, asynchronous HTTP server. */
 class Server
@@ -67,7 +66,6 @@ public:
     close() = 0;
 };
 
-} // HTTP
 } // ripple
 
 #endif

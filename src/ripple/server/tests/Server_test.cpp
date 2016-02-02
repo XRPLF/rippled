@@ -19,10 +19,12 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/server/Handler.h>
+#include <ripple/server/make_Server.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <beast/unit_test/suite.h>
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <chrono>
@@ -30,14 +32,14 @@
 #include <thread>
 
 namespace ripple {
-namespace HTTP {
+namespace test {
 
 class Server_test : public beast::unit_test::suite
 {
 public:
     enum
     {
-        testPort = 1001
+        testPort = 40000
     };
 
     class TestThread
@@ -310,7 +312,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Server,http,ripple);
+BEAST_DEFINE_TESTSUITE(Server,http,ripple);
 
-}
-}
+} // test
+} // ripple
+

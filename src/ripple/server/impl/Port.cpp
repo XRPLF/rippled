@@ -21,8 +21,30 @@
 #include <beast/http/rfc2616.h>
 
 namespace ripple {
-namespace HTTP {
         
+bool
+Port::websockets() const
+{
+    return protocol.count("ws") > 0 || protocol.count("wss") > 0;
+}
+
+bool
+Port::secure() const
+{
+    return protocol.count("peer") > 0 ||
+        protocol.count("https") > 0 || protocol.count("wss") > 0;
+}
+
+std::string
+Port::protocols() const
+{
+    std::string s;
+    for (auto iter = protocol.cbegin();
+            iter != protocol.cend(); ++iter)
+        s += (iter != protocol.cbegin() ? "," : "") + *iter;
+    return s;
+}
+
 std::ostream&
 operator<< (std::ostream& os, Port const& p)
 {
@@ -45,8 +67,6 @@ operator<< (std::ostream& os, Port const& p)
     os << p.protocols () << ")";
     return os;
 }
-
-} // HTTP
 
 //------------------------------------------------------------------------------
 

@@ -28,7 +28,6 @@
 #include <functional>
 
 namespace ripple {
-namespace HTTP {
 
 /** Detect SSL client handshakes.
     Analyzes the bytes in the provided buffer to detect the SSL client
@@ -323,5 +322,5 @@ Door::do_accept (boost::asio::yield_context yield)
     }
 }
 
-}
-}
+} // ripple
+

@@ -29,4 +29,5 @@
 #include <ripple/server/impl/Role.cpp>
 #include <ripple/server/impl/ServerImpl.cpp>
 #include <ripple/server/impl/ServerHandlerImp.cpp>
-#include <ripple/server/tests/Server.test.cpp>
+
+#include <ripple/server/tests/Server_test.cpp>

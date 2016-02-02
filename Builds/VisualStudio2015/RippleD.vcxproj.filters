@@ -3849,7 +3849,7 @@
     <ClInclude Include="..\..\src\ripple\server\Session.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\server\tests\Server.test.cpp">
+    <ClCompile Include="..\..\src\ripple\server\tests\Server_test.cpp">
       <Filter>ripple\server\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">

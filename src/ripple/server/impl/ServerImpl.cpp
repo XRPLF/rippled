@@ -33,7 +33,6 @@
 #include <time.h>
 
 namespace ripple {
-namespace HTTP {
 
 ServerImpl::ServerImpl (Handler& handler,
         boost::asio::io_service& io_service, beast::Journal journal)
@@ -61,7 +60,7 @@ void
 ServerImpl::ports (std::vector<Port> const& ports)
 {
     if (closed())
-        Throw<std::logic_error> ("ports() on closed HTTP::Server");
+        Throw<std::logic_error> ("ports() on closed Server");
     for(auto const& _ : ports)
         if (! _.websockets())
             std::make_shared<Door>(
@@ -209,5 +208,5 @@ make_Server (Handler& handler,
     return std::make_unique<ServerImpl>(handler, io_service, journal);
 }
 
-}
-}
+} // ripple
+

@@ -33,7 +33,6 @@
 #include <mutex>
 
 namespace ripple {
-namespace HTTP {
 
 /** A listening socket. */
 class Door
@@ -140,7 +139,6 @@ private:
     void do_accept (yield_context yield);
 };
 
-}
-}
+} // ripple
 
 #endif

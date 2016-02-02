@@ -42,7 +42,6 @@
 #include <type_traits>
 
 namespace ripple {
-namespace HTTP {
 
 /** Represents an active connection. */
 template <class Impl>
@@ -589,7 +588,6 @@ BaseHTTPPeer<Impl>::close (bool graceful)
     impl().stream_.lowest_layer().close (ec);
 }
 
-}
-}
+} // ripple
 
 #endif

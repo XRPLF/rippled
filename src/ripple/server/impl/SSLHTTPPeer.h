@@ -25,7 +25,6 @@
 #include <memory>
 
 namespace ripple {
-namespace HTTP {
 
 class SSLHTTPPeer
     : public BaseHTTPPeer<SSLHTTPPeer>
@@ -140,7 +139,6 @@ SSLHTTPPeer::on_shutdown (error_code ec)
     stream_.lowest_layer().close(ec);
 }
 
-}
-}
+} // ripple
 
 #endif

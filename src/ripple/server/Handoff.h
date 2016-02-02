@@ -36,7 +36,7 @@ struct Handoff
     bool keep_alive = false;
 
     // When set, this will be sent back
-    std::shared_ptr<HTTP::Writer> response;
+    std::shared_ptr<Writer> response;
 
     bool handled() const
     {
