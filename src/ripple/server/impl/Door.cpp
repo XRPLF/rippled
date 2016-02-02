@@ -170,8 +170,6 @@ Door::Door (boost::asio::io_service& io_service,
         //port_->protocol.count("ws") > 0 ||
         port_->protocol.count("http") > 0)
 {
-    server_.add (*this);
-
     error_code ec;
     endpoint_type const local_address =
         endpoint_type(port.ip, port.port);
@@ -221,7 +219,6 @@ Door::~Door()
         while (! list_.empty())
             cond_.wait(lock);
     }
-    server_.remove (*this);
 }
 
 void
@@ -240,12 +237,21 @@ Door::close()
     error_code ec;
     acceptor_.close(ec);
     // Close all detector, Peer objects
-    std::lock_guard<std::mutex> lock(mutex_);
-    for(auto& _ : list_)
+    std::vector<std::shared_ptr<Child>> v;
     {
-        auto const peer = _.second.lock();
-        if (peer != nullptr)
-            peer->close();
+        std::lock_guard<std::mutex> lock(mutex_);
+        for(auto& p : list_)
+        {
+            auto const peer = p.second.lock();
+            if (peer != nullptr)
+            {
+                peer->close();
+                // Must destroy shared_ptr outside the
+                // lock otherwise deadlock from the
+                // managed object's destructor.
+                v.emplace_back(std::move(peer));
+            }
+        }
     }
 }
 
@@ -321,7 +327,9 @@ Door::do_accept (boost::asio::yield_context yield)
                 std::move(socket), remote_address);
         }
     }
+    server_.remove();
 }
 
 }
-}
+} // ripple
+
