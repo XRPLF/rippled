@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,16 +17,9 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/server/README.md>
+#ifndef RIPPLE_WSPROTO_H_INCLUDED
+#define RIPPLE_WSPROTO_H_INCLUDED
+
+#include <ripple/wsproto/basic_socket.h>
+
 #endif
-
-#include <BeastConfig.h>
-
-#include <ripple/server/impl/Door.cpp>
-#include <ripple/server/impl/JSONRPCUtil.cpp>
-#include <ripple/server/impl/Port.cpp>
-#include <ripple/server/impl/Role.cpp>
-#include <ripple/server/impl/ServerImpl.cpp>
-#include <ripple/server/impl/ServerHandlerImp.cpp>
-#include <ripple/server/tests/Server.test.cpp>
