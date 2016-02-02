@@ -551,41 +551,6 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
 }
 
 void
-SHAMapStoreImp::clearSql(DatabaseCon& database,
-    std::string const& deleteQuery)
-{
-    auto const deleteBatch = setup_.deleteBatch;
-    auto const continueLimit = (deleteBatch + 1) / 2;
-    auto const formattedDeleteQuery =
-        boost::str(boost::format(deleteQuery) % deleteBatch);
-
-    JLOG(journal_.debug) <<
-        "start: " << deleteQuery << " of " << deleteBatch << " rows.";
-    long long totalRowsAffected = 0;
-    long long rowsAffected;
-    do
-    {
-        {
-            auto db = database.checkoutDb();
-            soci::statement st = (db->prepare << formattedDeleteQuery);
-            st.execute(true);
-            rowsAffected = st.get_affected_rows();
-            totalRowsAffected += rowsAffected;
-            JLOG(journal_.trace) << "step: deleted " <<
-                rowsAffected << " rows.";
-        }
-        if (health())
-            return;
-        if (rowsAffected >= continueLimit)
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(setup_.backOff));
-    }
-    while (rowsAffected && rowsAffected >= continueLimit);
-    JLOG(journal_.debug) << "finished: " << deleteQuery <<
-        ". Deleted " << totalRowsAffected << " rows.";
-}
-
-void
 SHAMapStoreImp::clearCaches (LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior (validatedSeq);
@@ -619,18 +584,53 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
     if (health())
         return;
 
-    clearSql (*ledgerDb_,
-        "DELETE FROM Validations WHERE LedgerHash IN "
-        "( "
-        "SELECT v.LedgerHash "
-        "FROM Validations v "
-        "LEFT OUTER JOIN Ledgers l "
-        "ON v.LedgerHash = l.LedgerHash "
-        "WHERE l.LedgerHash is NULL "
-        "LIMIT %u "
-        ") "
-        ";"
-        );
+    {
+        auto const deleteBatch = setup_.deleteBatch;
+        auto const continueLimit = (deleteBatch + 1) / 2;
+
+        // This does make the sql harder to read
+        std::string const deleteQuery (
+            R"sql(
+            DELETE FROM Validations WHERE LedgerHash IN
+            (
+            SELECT v.LedgerHash
+            FROM Validations v
+            LEFT OUTER JOIN Ledgers l
+            ON v.LedgerHash = l.LedgerHash
+            WHERE l.LedgerHash is NULL
+            LIMIT )sql" + std::to_string (deleteBatch)
+            + ");");
+
+        JLOG (journal_.debug) << "start: " << deleteQuery << " of "
+                              << deleteBatch << " rows.";
+        long long totalRowsAffected = 0;
+        long long rowsAffected;
+        soci::statement st = [&]
+        {
+            auto db = ledgerDb_->checkoutDb ();
+            return (db->prepare << deleteQuery);
+        }();
+        do
+        {
+            {
+                // Note: We may not need to lock the db before executing the statement, but I
+                // couldn't find documentation that said it was safe, so locking
+                auto db = ledgerDb_->checkoutDb ();
+                st.execute (true);
+                rowsAffected = st.get_affected_rows ();
+                totalRowsAffected += rowsAffected;
+                JLOG (journal_.trace) << "step: deleted " << rowsAffected
+                                      << " rows.";
+            }
+            if (health ())
+                return;
+            if (rowsAffected >= continueLimit)
+                std::this_thread::sleep_for (
+                    std::chrono::milliseconds (setup_.backOff));
+        } while (rowsAffected && rowsAffected >= continueLimit);
+        JLOG (journal_.debug) << "finished: " << deleteQuery << ". Deleted "
+                              << totalRowsAffected << " rows.";
+    }
 
     if (health())
         return;

@@ -214,11 +214,9 @@ private:
      */
     void clearSql (DatabaseCon& database, LedgerIndex lastRotated,
                    std::string const& minQuery, std::string const& deleteQuery);
-    void clearSql(DatabaseCon& database, std::string const& deleteQuery);
     void clearCaches (LedgerIndex validatedSeq);
     void freshenCaches();
     void clearPrior (LedgerIndex lastRotated);
-private:
 
     // If rippled is not healthy, defer rotate-delete.
     // If already unhealthy, do not change state on further check.
