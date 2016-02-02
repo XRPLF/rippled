@@ -42,7 +42,7 @@ protected:
 public:
     struct Setup
     {
-        std::vector<HTTP::Port> ports;
+        std::vector<Port> ports;
 
         // Memberspace
         struct client_t

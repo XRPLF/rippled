@@ -3789,6 +3789,9 @@
     <ClInclude Include="..\..\src\ripple\server\Handoff.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BaseHTTPPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
       <Filter>ripple\server\impl</Filter>
     </ClCompile>
@@ -3801,10 +3804,7 @@
     <ClInclude Include="..\..\src\ripple\server\impl\JSONRPCUtil.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\impl\Peer.h">
-      <Filter>ripple\server\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\impl\PlainPeer.h">
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainHTTPPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
@@ -3825,7 +3825,7 @@
     <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\impl\SSLPeer.h">
+    <ClInclude Include="..\..\src\ripple\server\impl\SSLHTTPPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
@@ -3855,7 +3855,7 @@
     <ClInclude Include="..\..\src\ripple\server\Session.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\server\tests\Server.test.cpp">
+    <ClCompile Include="..\..\src\ripple\server\tests\Server_test.cpp">
       <Filter>ripple\server\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">

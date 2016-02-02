@@ -19,10 +19,12 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/server/Handler.h>
+#include <ripple/server/make_Server.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <beast/unit_test/suite.h>
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <chrono>
@@ -30,14 +32,14 @@
 #include <thread>
 
 namespace ripple {
-namespace HTTP {
+namespace test {
 
 class Server_test : public beast::unit_test::suite
 {
 public:
     enum
     {
-        testPort = 1001
+        testPort = 40000
     };
 
     class TestThread
@@ -283,8 +285,7 @@ public:
         }
     }
 
-    void
-    run()
+    void basicTests()
     {
         TestSink sink {*this};
         TestThread thread;
@@ -308,9 +309,83 @@ public:
 
         pass();
     }
+
+    void stressTest()
+    {
+        struct NullHandler : Handler
+        {
+            void
+            onAccept (Session& session) override
+            {
+            }
+
+            bool
+            onAccept (Session& session,
+                boost::asio::ip::tcp::endpoint endpoint) override
+            {
+                return true;
+            }
+
+            Handoff
+            onHandoff (Session& session,
+                std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+                    beast::http::message&& request,
+                        boost::asio::ip::tcp::endpoint remote_address) override
+            {
+                return Handoff{};
+            }
+
+            Handoff
+            onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
+                beast::http::message&& request,
+                    boost::asio::ip::tcp::endpoint remote_address) override
+            {
+                return Handoff{};
+            }
+
+            void
+            onRequest (Session& session) override
+            {
+            }
+
+            void
+            onClose (Session& session,
+                boost::system::error_code const&) override
+            {
+            }
+
+            void
+            onStopped (Server& server) override
+            {
+            }
+        };
+
+        NullHandler h;
+        for(int i = 0; i < 10000; ++i)
+        {
+            TestThread thread;
+            auto s = make_Server(h,
+                thread.get_io_service(), {});
+            std::vector<Port> list;
+            list.resize(1);
+            list.back().port = testPort;
+            list.back().ip = boost::asio::ip::address::from_string (
+                "127.0.0.1");
+            list.back().protocol.insert("http");
+            s->ports (list);
+        }
+    }
+
+    void
+    run()
+    {
+        basicTests();
+        stressTest();
+    }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Server,http,ripple);
+BEAST_DEFINE_TESTSUITE(Server,http,ripple);
 
-}
-}
+} // test
+} // ripple
+

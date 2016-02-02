@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_PEER_H_INCLUDED
-#define RIPPLE_SERVER_PEER_H_INCLUDED
+#ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
+#define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/Session.h>
@@ -42,11 +42,10 @@
 #include <type_traits>
 
 namespace ripple {
-namespace HTTP {
 
 /** Represents an active connection. */
 template <class Impl>
-class Peer
+class BaseHTTPPeer
     : public Door::Child
     , public Session
 {
@@ -109,12 +108,12 @@ protected:
 
 public:
     template <class ConstBufferSequence>
-    Peer (Door& door, boost::asio::io_service& io_service,
+    BaseHTTPPeer (Door& door, boost::asio::io_service& io_service,
         beast::Journal journal, endpoint_type remote_address,
             ConstBufferSequence const& buffers);
 
     virtual
-    ~Peer();
+    ~BaseHTTPPeer();
 
     Session&
     session()
@@ -214,7 +213,7 @@ protected:
 
 template <class Impl>
 template <class ConstBufferSequence>
-Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
+BaseHTTPPeer<Impl>::BaseHTTPPeer (Door& door, boost::asio::io_service& io_service,
     beast::Journal journal, endpoint_type remote_address,
         ConstBufferSequence const& buffers)
     : Child(door)
@@ -235,7 +234,7 @@ Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
 }
 
 template <class Impl>
-Peer<Impl>::~Peer()
+BaseHTTPPeer<Impl>::~BaseHTTPPeer()
 {
     Stat stat;
     stat.id = nid_;
@@ -246,7 +245,8 @@ Peer<Impl>::~Peer()
     stat.bytes_out = bytes_out_;
     stat.ec = std::move (ec_);
     door_.server().report (std::move (stat));
-    door_.server().handler().onClose (session(), ec_);
+    if(door_.server().handler())
+        door_.server().handler()->onClose(session(), ec_);
     if (journal_.trace) journal_.trace << id_ <<
         "destroyed: " << request_count_ <<
             ((request_count_ == 1) ? " request" : " requests");
@@ -254,11 +254,11 @@ Peer<Impl>::~Peer()
 
 template <class Impl>
 void
-Peer<Impl>::close()
+BaseHTTPPeer<Impl>::close()
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
-            (void(Peer::*)(void))&Peer::close,
+            (void(BaseHTTPPeer::*)(void))&BaseHTTPPeer::close,
                 impl().shared_from_this()));
     error_code ec;
     impl().stream_.lowest_layer().close(ec);
@@ -268,7 +268,7 @@ Peer<Impl>::close()
 
 template <class Impl>
 void
-Peer<Impl>::fail (error_code ec, char const* what)
+BaseHTTPPeer<Impl>::fail (error_code ec, char const* what)
 {
     if (! ec_ && ec != boost::asio::error::operation_aborted)
     {
@@ -281,21 +281,21 @@ Peer<Impl>::fail (error_code ec, char const* what)
 
 template <class Impl>
 void
-Peer<Impl>::start_timer()
+BaseHTTPPeer<Impl>::start_timer()
 {
     error_code ec;
     timer_.expires_from_now (std::chrono::seconds(timeoutSeconds), ec);
     if (ec)
         return fail (ec, "start_timer");
     timer_.async_wait (strand_.wrap (std::bind (
-        &Peer<Impl>::on_timer, impl().shared_from_this(),
+        &BaseHTTPPeer<Impl>::on_timer, impl().shared_from_this(),
             beast::asio::placeholders::error)));
 }
 
 // Convenience for discarding the error code
 template <class Impl>
 void
-Peer<Impl>::cancel_timer()
+BaseHTTPPeer<Impl>::cancel_timer()
 {
     error_code ec;
     timer_.cancel(ec);
@@ -304,7 +304,7 @@ Peer<Impl>::cancel_timer()
 // Called when session times out
 template <class Impl>
 void
-Peer<Impl>::on_timer (error_code ec)
+BaseHTTPPeer<Impl>::on_timer (error_code ec)
 {
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -318,7 +318,7 @@ Peer<Impl>::on_timer (error_code ec)
 
 template <class Impl>
 void
-Peer<Impl>::do_read (yield_context yield)
+BaseHTTPPeer<Impl>::do_read (yield_context yield)
 {
     complete_ = false;
 
@@ -385,7 +385,7 @@ Peer<Impl>::do_read (yield_context yield)
 // The write queue must not be empty upon entry.
 template <class Impl>
 void
-Peer<Impl>::do_write (yield_context yield)
+BaseHTTPPeer<Impl>::do_write (yield_context yield)
 {
     error_code ec;
     std::size_t bytes = 0;
@@ -429,13 +429,13 @@ Peer<Impl>::do_write (yield_context yield)
     if (graceful_)
         return do_close();
 
-    boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
+    boost::asio::spawn (strand_, std::bind (&BaseHTTPPeer<Impl>::do_read,
         impl().shared_from_this(), std::placeholders::_1));
 }
 
 template <class Impl>
 void
-Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
+BaseHTTPPeer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
     bool keep_alive, yield_context yield)
 {
     std::function <void(void)> resume;
@@ -445,7 +445,7 @@ Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
             [this, p, writer, keep_alive]()
             {
                 boost::asio::spawn (strand_, std::bind (
-                    &Peer<Impl>::do_writer, p, writer, keep_alive,
+                    &BaseHTTPPeer<Impl>::do_writer, p, writer, keep_alive,
                         std::placeholders::_1));
             });
     }
@@ -468,7 +468,7 @@ Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
     if (! keep_alive)
         return do_close();
 
-    boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
+    boost::asio::spawn (strand_, std::bind (&BaseHTTPPeer<Impl>::do_read,
         impl().shared_from_this(), std::placeholders::_1));
 }
 
@@ -477,7 +477,7 @@ Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
 // Send a copy of the data.
 template <class Impl>
 void
-Peer<Impl>::write (void const* buffer, std::size_t bytes)
+BaseHTTPPeer<Impl>::write (void const* buffer, std::size_t bytes)
 {
     if (bytes == 0)
         return;
@@ -490,17 +490,17 @@ Peer<Impl>::write (void const* buffer, std::size_t bytes)
     }
 
     if (empty)
-        boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_write,
+        boost::asio::spawn (strand_, std::bind (&BaseHTTPPeer<Impl>::do_write,
             impl().shared_from_this(), std::placeholders::_1));
 }
 
 template <class Impl>
 void
-Peer<Impl>::write (std::shared_ptr <Writer> const& writer,
+BaseHTTPPeer<Impl>::write (std::shared_ptr <Writer> const& writer,
     bool keep_alive)
 {
     boost::asio::spawn (strand_, std::bind (
-        &Peer<Impl>::do_writer, impl().shared_from_this(),
+        &BaseHTTPPeer<Impl>::do_writer, impl().shared_from_this(),
             writer, keep_alive, std::placeholders::_1));
 }
 
@@ -508,7 +508,7 @@ Peer<Impl>::write (std::shared_ptr <Writer> const& writer,
 // Make the Session asynchronous
 template <class Impl>
 std::shared_ptr<Session>
-Peer<Impl>::detach()
+BaseHTTPPeer<Impl>::detach()
 {
     return impl().shared_from_this();
 }
@@ -517,10 +517,10 @@ Peer<Impl>::detach()
 // Called to indicate the response has been written (but not sent)
 template <class Impl>
 void
-Peer<Impl>::complete()
+BaseHTTPPeer<Impl>::complete()
 {
     if (! strand_.running_in_this_thread())
-        return strand_.post(std::bind (&Peer<Impl>::complete,
+        return strand_.post(std::bind (&BaseHTTPPeer<Impl>::complete,
             impl().shared_from_this()));
 
     message_ = beast::http::message{};
@@ -533,7 +533,7 @@ Peer<Impl>::complete()
     }
 
     // keep-alive
-    boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
+    boost::asio::spawn (strand_, std::bind (&BaseHTTPPeer<Impl>::do_read,
         impl().shared_from_this(), std::placeholders::_1));
 }
 
@@ -541,11 +541,11 @@ Peer<Impl>::complete()
 // Called from the Handler to close the session.
 template <class Impl>
 void
-Peer<Impl>::close (bool graceful)
+BaseHTTPPeer<Impl>::close (bool graceful)
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
-            (void(Peer::*)(bool))&Peer<Impl>::close,
+            (void(BaseHTTPPeer::*)(bool))&BaseHTTPPeer<Impl>::close,
                 impl().shared_from_this(), graceful));
 
     complete_ = true;
@@ -564,7 +564,6 @@ Peer<Impl>::close (bool graceful)
     impl().stream_.lowest_layer().close (ec);
 }
 
-}
-}
+} // ripple
 
 #endif

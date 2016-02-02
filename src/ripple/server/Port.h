@@ -32,7 +32,6 @@
 namespace boost { namespace asio { namespace ssl { class context; } } }
 
 namespace ripple {
-namespace HTTP {
 
 /** Configuration information for a Server listening port. */
 struct Port
@@ -53,53 +52,17 @@ struct Port
     std::shared_ptr<boost::asio::ssl::context> context;
 
     // Returns `true` if any websocket protocols are specified
-    template <class = void>
-    bool
-    websockets() const;
+    bool websockets() const;
 
     // Returns `true` if any secure protocols are specified
-    template <class = void>
-    bool
-    secure() const;
+    bool secure() const;
 
     // Returns a string containing the list of protocols
-    template <class = void>
-    std::string
-    protocols() const;
+    std::string protocols() const;
 };
-
-//------------------------------------------------------------------------------
-
-template <class>
-bool
-Port::websockets() const
-{
-    return protocol.count("ws") > 0 || protocol.count("wss") > 0;
-}
-
-template <class>
-bool
-Port::secure() const
-{
-    return protocol.count("peer") > 0 ||
-        protocol.count("https") > 0 || protocol.count("wss") > 0;
-}
-
-template <class>
-std::string
-Port::protocols() const
-{
-    std::string s;
-    for (auto iter = protocol.cbegin();
-            iter != protocol.cend(); ++iter)
-        s += (iter != protocol.cbegin() ? "," : "") + *iter;
-    return s;
-}
 
 std::ostream&
 operator<< (std::ostream& os, Port const& p);
-
-} // HTTP
 
 //------------------------------------------------------------------------------
 
