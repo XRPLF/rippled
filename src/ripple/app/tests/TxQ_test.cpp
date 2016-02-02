@@ -313,24 +313,24 @@ public:
         env.fund(XRP(50000), noripple(alice, bob, charlie));
         checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
 
-        // Alice - price starts exploding: held
-        env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
-
-        // Alice - Alice is already in the queue, so can't hold.
-        env(noop(alice), seq(env.seq(alice) + 1),
-            ter(telINSUF_FEE_P));
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
-
         auto openLedgerFee =
             [&]()
             {
                 return fee(txq.openLedgerFee(*env.current()));
             };
-        // Alice's next transaction -
-        // fails because the item in the TxQ hasn't applied.
+        // Future transaction for Alice - fails
         env(noop(alice), openLedgerFee(),
             seq(env.seq(alice) + 1), ter(terPRE_SEQ));
+        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+
+        // Current transaction for Alice: held
+        env(noop(alice), queued);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+
+        // Alice - fee does not include the multi-transaction
+        // factor, so won't queue.
+        env(noop(alice), seq(env.seq(alice) + 1),
+            ter(telINSUF_FEE_P));
         checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
 
         // Bob with really high fee - applies
@@ -344,9 +344,8 @@ public:
         env.close();
         // Verify that the held transactions got applied
         auto lastMedian = 500;
-        // One of alice's bad transactions applied from the
-        // Local Txs. Since they both have the same seq,
-        // one succeeds, one fails. We don't care which.
+        // Alice's bad transaction applied from the
+        // Local Txs.
         checkMetrics(env, 0, 8, 3, 4, 256, lastMedian);
     }
 
@@ -502,25 +501,17 @@ public:
             seq(seqCarol), ter(terPRE_SEQ));
 
         env.close();
-        // Ironically, though, bob's transaction is stuck
-        // because of the missing sequence numbers now.
-        checkMetrics(env, 2, 10, 6, 5, 256, 500);
+        // All the "lost" transactions are reapplied
+        // to the queue from the Local Txs.
+        checkMetrics(env, 7, 10, 6, 5, 256, 500);
 
         env.close();
         auto lastMedian = 3520;
-        checkMetrics(env, 1, 12, 1, 6, 256, lastMedian);
-
-        // Fill in the missing seqs
-        for (int i = 0; i < 4; ++i)
-            env(noop(bob));
-        env(noop(bob), ter(telINSUF_FEE_P));
-        checkMetrics(env, 1, 12, 5, 6, 256, lastMedian);
+        checkMetrics(env, 0, 12, 8, 6, 256, lastMedian);
 
         env.close();
-        lastMedian = 500;
-        checkMetrics(env, 0, 12, 1, 6, 256, lastMedian);
-        env.close();
-        checkMetrics(env, 0, 12, 0, 6, 256, lastMedian);
+        lastMedian = 1395;
+        checkMetrics(env, 0, 16, 0, 8, 256, lastMedian);
     }
 
     void testPreclaimFailures()
@@ -704,7 +695,8 @@ public:
         // but you can't force your own earlier txn off the
         // queue.
         env(noop(alice), seq(aliceSeq),
-            fee(aliceFee), ter(terPRE_SEQ));
+            json(jss::LastLedgerSequence, lastLedgerSeq + 7),
+                fee(aliceFee), ter(terPRE_SEQ));
         checkMetrics(env, 8, 8, 5, 4, 257, lastMedian);
 
         // Charlie - add another item to the queue, which
@@ -724,16 +716,10 @@ public:
 
         env.close();
         lastMedian = 500;
-        // Alice's transactions stayed in the queue
-        checkMetrics(env, 6, 10, 2, 5, 256, lastMedian);
-
-        // Since we lost a transaction, make a new one.
-        // (We could have replayed.)
-        // Note that there is nothing special about this
-        // txn because it uses the "next" sequence number,
-        // and it succeeds because the ledger is open.
-        env(noop(alice));
-        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+        // Alice's transactions stayed in the queue,
+        // and the lost ones are replayed and added back
+        // to the queue or open ledger.
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Try to replace a middle item in the queue
         // without enough fee.
@@ -746,7 +732,7 @@ public:
         ++aliceFee;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), queued);
-        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Try to replace the next item in the queue
         // without enough fee. This time, we also pay
@@ -760,7 +746,7 @@ public:
         ++aliceFee;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), queued);
-        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Replace that item again with a transaction that will
         // bankrupt Alice
@@ -768,34 +754,38 @@ public:
             - (14 + aliceFee);
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), queued);
-        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Alice - Attempt to queue a last transaction, but it
         // fails because the intermediate transactions can't
         // apply to the test view.
-        env(noop(alice), seq(env.seq(alice) + 6),
-            fee(72), ter(terPRE_SEQ));
-        checkMetrics(env, 6, 10, 3, 5, 256, lastMedian);
+        env(noop(alice), seq(env.seq(alice) + 7),
+            fee(73), ter(terPRE_SEQ));
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         env.close();
         // Some of Alice's transactions applied, but the others
         // get terINSUF_FEE_B and are stuck until Alice
         // gets funded again.
         lastMedian = 768;
-        checkMetrics(env, 2, 10, 4, 5, 256, lastMedian);
+        checkMetrics(env, 3, 10, 4, 5, 256, lastMedian);
 
         env.close();
         lastMedian = 576;
-        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
 
         env.close();
         lastMedian = 500;
-        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
 
         env.close();
-        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
+        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
 
         env.close();
+        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
+
+        env.close();
+        // LastLedgerSequence starts expiring
         checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
 
         env.close();
@@ -870,10 +860,8 @@ public:
 
         checkMetrics(env, 0, boost::none, 2, 1, 256, lastMedian);
         env.close();
-        checkMetrics(env, 0, 4, 0, 2, 256, lastMedian);
-
-        // Now it succeeds.
-        env(noop(alice), json(R"({"AccountTxnID": "0"})"));
+        // The failed transaction is retried from LocalTx
+        // and succeeds.
         checkMetrics(env, 0, 4, 1, 2, 256, lastMedian);
 
         env(noop(alice));
