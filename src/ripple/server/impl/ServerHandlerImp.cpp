@@ -204,9 +204,30 @@ void
 ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
     std::shared_ptr<JobCoro> jobCoro)
 {
+    auto forwarded_for =
+        [&]
+        {
+            auto const iter =
+                session->request().headers.find(
+                    "X-Forwarded-For");
+            if(iter != session->request().headers.end())
+                return iter->second;
+            return std::string{};
+        }();
+    auto user =
+        [&]
+        {
+            auto const iter =
+                session->request().headers.find(
+                    "X-User");
+            if(iter != session->request().headers.end())
+                return iter->second;
+            return std::string{};
+        }();
+
     processRequest (session->port(), to_string (session->body()),
         session->remoteAddress().at_port (0), makeOutput (*session), jobCoro,
-        session->forwarded_for(), session->user());
+        forwarded_for, user);
 
     if (session->request().keep_alive())
         session->complete();

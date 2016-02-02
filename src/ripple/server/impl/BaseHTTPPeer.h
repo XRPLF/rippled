@@ -85,8 +85,6 @@ protected:
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
     endpoint_type remote_address_;
-    std::string forwarded_for_;
-    std::string user_;
     beast::Journal journal_;
 
     std::string id_;
@@ -180,18 +178,6 @@ protected:
     remoteAddress() override
     {
         return beast::IPAddressConversion::from_asio(remote_address_);
-    }
-
-    std::string
-    user() override
-    {
-        return user_;
-    }
-
-    std::string
-    forwarded_for() override
-    {
-        return forwarded_for_;
     }
 
     beast::http::message&
@@ -385,20 +371,9 @@ BaseHTTPPeer<Impl>::do_read (yield_context yield)
         if (! ec)
         {
             if (parser.complete())
-            {
-                auto const iter = message_.headers.find ("X-Forwarded-For");
-                if (iter != message_.headers.end())
-                    forwarded_for_ = iter->second;
-                auto const iter2 = message_.headers.find ("X-User");
-                if (iter2 != message_.headers.end())
-                    user_ = iter2->second;
-
                 return do_request();
-            }
-            else if (eof)
-            {
+            if (eof)
                 ec = boost::asio::error::eof; // incomplete request
-            }
         }
 
         if (ec)
