@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/server/impl/ServerImpl.h>
-#include <ripple/server/impl/Peer.h>
+#include <ripple/server/impl/BaseHTTPPeer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -33,7 +33,6 @@
 #include <time.h>
 
 namespace ripple {
-namespace HTTP {
 
 ServerImpl::ServerImpl (Handler& handler,
         boost::asio::io_service& io_service, beast::Journal journal)
@@ -63,13 +62,13 @@ void
 ServerImpl::ports (std::vector<Port> const& ports)
 {
     if (closed())
-        Throw<std::logic_error> ("ports() on closed HTTP::Server");
+        Throw<std::logic_error> ("ports() on closed Server");
     for(auto const& port : ports)
     {
         if (! port.websockets())
         {
             ++accepting_;
-            list_.emplace_back(std::make_shared<Door>(
+            list_.emplace_back(std::make_unique<Door>(
                 io_service_, *this, port));
         }
     }
@@ -214,5 +213,5 @@ make_Server (Handler& handler,
     return std::make_unique<ServerImpl>(handler, io_service, journal);
 }
 
-}
-}
+} // ripple
+

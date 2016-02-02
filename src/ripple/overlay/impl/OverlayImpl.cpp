@@ -304,7 +304,7 @@ OverlayImpl::makePrefix (std::uint32_t id)
     return ss.str();
 }
 
-std::shared_ptr<HTTP::Writer>
+std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     beast::http::message const& request, address_type remote_address)
 {
@@ -326,7 +326,7 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     {
         //?
     }
-    auto const response = HTTP::make_JsonWriter (m, json);
+    auto const response = make_JsonWriter (m, json);
     return response;
 }
 
@@ -851,7 +851,7 @@ OverlayImpl::processRequest (beast::http::message const& req,
     resp.reason("OK");
     Json::Value v;
     v["overlay"] = crawl();
-    handoff.response = HTTP::make_JsonWriter(resp, v);
+    handoff.response = make_JsonWriter(resp, v);
     return true;
 }
 

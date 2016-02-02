@@ -101,7 +101,7 @@ public:
     HandlerImpl(HandlerImpl const&) = delete;
     HandlerImpl& operator= (HandlerImpl const&) = delete;
 
-    HTTP::Port const&
+    Port const&
     port() const
     {
         return desc_.port;

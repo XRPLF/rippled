@@ -28,6 +28,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/json/to_string.h>
 #include <ripple/server/make_Server.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/ResourceManager.h>
@@ -62,7 +63,7 @@ ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     , m_resourceManager (resourceManager)
     , m_journal (app_.journal("Server"))
     , m_networkOPs (networkOPs)
-    , m_server (HTTP::make_Server(
+    , m_server (make_Server(
         *this, io_service, app_.journal("Server")))
     , m_jobQueue (jobQueue)
 {
@@ -95,19 +96,19 @@ ServerHandlerImp::onStop()
 //------------------------------------------------------------------------------
 
 void
-ServerHandlerImp::onAccept (HTTP::Session& session)
+ServerHandlerImp::onAccept (Session& session)
 {
 }
 
 bool
-ServerHandlerImp::onAccept (HTTP::Session& session,
+ServerHandlerImp::onAccept (Session& session,
     boost::asio::ip::tcp::endpoint endpoint)
 {
     return true;
 }
 
 auto
-ServerHandlerImp::onHandoff (HTTP::Session& session,
+ServerHandlerImp::onHandoff (Session& session,
     std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
@@ -129,7 +130,7 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
 }
 
 auto
-ServerHandlerImp::onHandoff (HTTP::Session& session,
+ServerHandlerImp::onHandoff (Session& session,
     boost::asio::ip::tcp::socket&& socket,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
@@ -148,7 +149,7 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
 }
 
 static inline
-Json::Output makeOutput (HTTP::Session& session)
+Json::Output makeOutput (Session& session)
 {
     return [&](boost::string_ref const& b)
     {
@@ -157,7 +158,7 @@ Json::Output makeOutput (HTTP::Session& session)
 }
 
 void
-ServerHandlerImp::onRequest (HTTP::Session& session)
+ServerHandlerImp::onRequest (Session& session)
 {
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 &&
@@ -185,13 +186,13 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
 }
 
 void
-ServerHandlerImp::onClose (HTTP::Session& session,
+ServerHandlerImp::onClose (Session& session,
     boost::system::error_code const&)
 {
 }
 
 void
-ServerHandlerImp::onStopped (HTTP::Server&)
+ServerHandlerImp::onStopped (Server&)
 {
     stopped();
 }
@@ -200,7 +201,7 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 
 // Run as a couroutine.
 void
-ServerHandlerImp::processSession (std::shared_ptr<HTTP::Session> const& session,
+ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
     std::shared_ptr<JobCoro> jobCoro)
 {
     processRequest (session->port(), to_string (session->body()),
@@ -231,7 +232,7 @@ ServerHandlerImp::processSession (std::shared_ptr<HTTP::Session> const& session,
 }
 
 void
-ServerHandlerImp::processRequest (HTTP::Port const& port,
+ServerHandlerImp::processRequest (Port const& port,
     std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
         Output&& output, std::shared_ptr<JobCoro> jobCoro,
         std::string forwardedFor, std::string user)
@@ -426,7 +427,7 @@ ServerHandlerImp::isWebsocketUpgrade (beast::http::message const& request)
 
 // VFALCO TODO Rewrite to use beast::http::headers
 bool
-ServerHandlerImp::authorized (HTTP::Port const& port,
+ServerHandlerImp::authorized (Port const& port,
     std::map<std::string, std::string> const& h)
 {
     if (port.user.empty() || port.password.empty())
@@ -487,10 +488,10 @@ ServerHandler::Setup::makeContexts()
 }
 
 static
-HTTP::Port
+Port
 to_Port(ParsedPort const& parsed, std::ostream& log)
 {
-    HTTP::Port p;
+    Port p;
     p.name = parsed.name;
 
     if (! parsed.ip)
@@ -543,12 +544,12 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
 }
 
 static
-std::vector<HTTP::Port>
+std::vector<Port>
 parse_Ports (
     Config const& config,
     std::ostream& log)
 {
-    std::vector<HTTP::Port> result;
+    std::vector<Port> result;
 
     if (! config.exists("server"))
     {
@@ -596,7 +597,7 @@ parse_Ports (
     {
         auto const count = std::count_if (
             result.cbegin(), result.cend(),
-            [](HTTP::Port const& p)
+            [](Port const& p)
             {
                 return p.protocol.count("peer") != 0;
             });
@@ -647,7 +648,7 @@ setup_Overlay (ServerHandler::Setup& setup)
 {
     auto const iter = std::find_if(
         setup.ports.cbegin(), setup.ports.cend(),
-        [](HTTP::Port const& port)
+        [](Port const& port)
         {
             return port.protocol.count("peer") != 0;
         });

@@ -33,12 +33,10 @@
 #include <mutex>
 
 namespace ripple {
-namespace HTTP {
 
 /** A listening socket. */
 class Door
     : public ServerImpl::Child
-    , public std::enable_shared_from_this <Door>
 {
 public:
     class Child
@@ -140,7 +138,6 @@ private:
     void do_accept (yield_context yield);
 };
 
-}
-}
+} // ripple
 
 #endif

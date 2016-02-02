@@ -51,14 +51,14 @@ enum class Role
     validate the credentials.
 */
 Role
-requestRole (Role const& required, HTTP::Port const& port,
+requestRole (Role const& required, Port const& port,
     Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp,
     std::string const& user);
 
 Resource::Consumer
 requestInboundEndpoint (Resource::Manager& manager,
     beast::IP::Endpoint const& remoteAddress,
-        HTTP::Port const& port, std::string const& user);
+        Port const& port, std::string const& user);
 
 /**
  * Check if the role entitles the user to unlimited resources.
@@ -71,7 +71,7 @@ isUnlimited (Role const& role);
  * configured as secure_gateway, then the user can be positively identified.
  */
 bool
-isIdentified (HTTP::Port const& port, beast::IP::Address const& remoteIp,
+isIdentified (Port const& port, beast::IP::Address const& remoteIp,
         std::string const& user);
 
 } // ripple
