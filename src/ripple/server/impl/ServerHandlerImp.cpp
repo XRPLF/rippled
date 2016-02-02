@@ -205,7 +205,24 @@ ServerHandlerImp::processSession (std::shared_ptr<HTTP::Session> const& session,
 {
     processRequest (session->port(), to_string (session->body()),
         session->remoteAddress().at_port (0), makeOutput (*session), jobCoro,
-        session->forwarded_for(), session->user());
+        [&]
+        {
+            auto const iter =
+                session->request().headers.find(
+                    "X-Forwarded-For");
+            if(iter != session->request().headers.end())
+                return iter->second;
+            return std::string{};
+        }(),
+        [&]
+        {
+            auto const iter =
+                session->request().headers.find(
+                    "X-User");
+            if(iter != session->request().headers.end())
+                return iter->second;
+            return std::string{};
+        }());
 
     if (session->request().keep_alive())
         session->complete();
