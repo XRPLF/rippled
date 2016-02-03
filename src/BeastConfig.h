@@ -149,13 +149,6 @@
 #define RIPPLE_USE_VALIDATORS 0
 #endif
 
-/** Config: RIPPLE_PROPOSE_FEATURES
-    This determines whether to add any features to the proposed transaction set.
-*/
-#ifndef RIPPLE_PROPOSE_AMENDMENTS
-#define RIPPLE_PROPOSE_AMENDMENTS 0
-#endif
-
 /** Config: RIPPLE_SINGLE_IO_SERVICE_THREAD
     When set, restricts the number of threads calling io_service::run to one.
     This is useful when debugging.
