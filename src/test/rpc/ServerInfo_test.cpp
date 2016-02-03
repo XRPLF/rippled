@@ -31,15 +31,15 @@ namespace test {
 namespace validator {
 static auto const seed = "ss7t3J9dYentEFgKdPA3q6eyxtrLB";
 static auto const master_key =
-    "nHU4LxxrSQsRTKy5uZbX95eYowoamUEPCcWraxoiCNbtDaUr1V34";
+    "nHUYwQk8AyQ8pW9p4SvrWC2hosvaoii9X54uGLDYGBtEFwWFHsJK";
 static auto const signing_key =
     "n9LHPLA36SBky1YjbaVEApQQ3s9XcpazCgfAG7jsqBb1ugDAosbm";
 // Format manifest string to test trim()
 static auto const manifest =
-    "    JAAAAAFxIe2FwblmJwz4pVYXHLJSzSBgIK7mpQuHNQ88CxW\n"
-    " \tjIN7q4nMhAuUTyasIhvj2KPfNRbmmIBnqNUzidgkKb244eP     \n"
-    "\t794ZpMdkC+8l5n3R/CHP6SAwhYDOaqub0Cs2NjjewBnp1mf\n"
-    "\t 23rhAzdcjRuWzm0IT12eduZ0DwcF5Ng8rAelaYP1iT93ScE\t  \t";
+    "    JAAAAAFxIe2cDLvm5IqpeGFlMTD98HCqv7+GE54anRD/zbvGNYtOsXMhAuUTyasIhvj2KPfN\n"
+    " \tRbmmIBnqNUzidgkKb244eP794ZpMdkYwRAIgNVq8SYP7js0C/GAGMKVYXiCGUTIL7OKPSBLS     \n"
+    "\t7LTyrL4CIE+s4Tsn/FrrYj0nMEV1Mvf7PMRYCxtEERD3PG/etTJ3cBJAbwWWofHqg9IACoYV\n"
+    "\t +n9ulZHSVRajo55EkZYw0XUXDw8zcI4gD58suOSLZTG/dXtZp17huIyHgxHbR2YeYjQpCw==\t  \t";
 static auto sequence = 1;
 }
 

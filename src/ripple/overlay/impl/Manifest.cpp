@@ -42,7 +42,8 @@ make_Manifest (std::string s)
         auto const opt_spk = get<PublicKey>(st, sfSigningPubKey);
         auto const opt_seq = get (st, sfSequence);
         auto const opt_sig = get (st, sfSignature);
-        if (!opt_pk || !opt_spk || !opt_seq || !opt_sig)
+        auto const opt_msig = get (st, sfMasterSignature);
+        if (!opt_pk || !opt_spk || !opt_seq || !opt_sig || !opt_msig)
         {
             return boost::none;
         }
@@ -99,7 +100,11 @@ bool Manifest::verify () const
     STObject st (sfGeneric);
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
-    return ripple::verify (st, HashPrefix::manifest, masterKey, true);
+    if (! ripple::verify (st, HashPrefix::manifest, signingKey, true))
+        return false;
+
+    return ripple::verify (
+        st, HashPrefix::manifest, masterKey, true, sfMasterSignature);
 }
 
 uint256 Manifest::hash () const
@@ -125,6 +130,14 @@ Blob Manifest::getSignature () const
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
     return st.getFieldVL (sfSignature);
+}
+
+Blob Manifest::getMasterSignature () const
+{
+    STObject st (sfGeneric);
+    SerialIter sit (serialized.data (), serialized.size ());
+    st.set (sit);
+    return st.getFieldVL (sfMasterSignature);
 }
 
 bool
@@ -415,7 +428,9 @@ void ManifestCache::load (
         {
             if (!mo->verify())
             {
-                Throw<std::runtime_error> ("Unverifiable manifest in db");
+                JLOG(journal.warn())
+                    << "Unverifiable manifest in db";
+                continue;
             }
 
             if (trusted(mo->masterKey) || unl.trusted(mo->masterKey))
@@ -444,13 +459,15 @@ void ManifestCache::save (DatabaseCon& dbCon) const
     *db << "DELETE FROM ValidatorManifests";
     static const char* const sql =
         "INSERT INTO ValidatorManifests (RawData) VALUES (:rawData);";
-    // soci does not support bulk insertion of blob data
-    soci::blob rawData(*db);
     for (auto const& v : map_)
     {
         if (!v.second.m)
             continue;
 
+        // soci does not support bulk insertion of blob data
+        // Do not reuse blob because manifest ecdsa signatures vary in length
+        // but blob write length is expected to be >= the last write
+        soci::blob rawData(*db);
         convert (v.second.m->serialized, rawData);
         *db << sql,
             soci::use (rawData);

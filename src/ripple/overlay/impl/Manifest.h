@@ -99,6 +99,9 @@ struct Manifest
     uint256 hash () const;
     bool revoked () const;
     Blob getSignature () const;
+
+    /// Returns manifest master key signature
+    Blob getMasterSignature () const;
 };
 
 boost::optional<Manifest> make_Manifest(std::string s);

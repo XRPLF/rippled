@@ -10,14 +10,7 @@ BINARY = 'nN9kfUnKTf7PpgLG'
 
 class test_Sign(TestCase):
     SEQUENCE = 23
-    SIGNATURE = (
-        'JAAAABdxIe2DIKUZd9jDjKikknxnDfWCHkSXYZReFenvsmoVCdIw6nMhAnZ2dnZ2'
-        'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkDOjlWtQSvRTjuwe+4iNusg0sJM'
-        'zqkBJwDz30b2SkxZ7Fte/Vx4htM/kkfUfJCaxmxE5N4dHSKuiO9iDHsktqIA')
     VALIDATOR_KEY_HUMAN = 'n9JijuoCv8ubEy5ag3LiX3hyq27GaLJsitZPbQ6APkwx2MkUXq8E'
-    SIGNATURE_HEX = (
-        '0a1546caa29c887f9fcb5e6143ea101b31fb5895a5cdfa24939301c66ff51794'
-        'a0b729e0ebbf576f2cc7cdb9f68c2366324a53b8e1ecf16f3c17bebbdb8d7102')
 
     def setUp(self):
         self.results = []
@@ -59,13 +52,17 @@ class test_Sign(TestCase):
             '\xef*\x97\x16n<\xa6\xf2\xe4\xfb\xfc\xcd\x80P[\xf1s\x06verify')
 
     def test_sign_manifest(self):
+        ssk, spk = Sign.make_ecdsa_keypair(self.urandom)
         sk, pk = Sign.make_ed25519_keypair(self.urandom)
-        s = Sign.sign_manifest('manifest', sk, pk)
+        s = Sign.sign_manifest('manifest', ssk, sk, pk)
         self.assertEquals(
-            s, 'manifestv@\xe5\x84\xbe\xc4\x80N\xa0v"\xb2\x80A\x88\x06\xc0'
-            '\xd2\xbae\x92\x89\xa8\'!\xdd\x00\x88\x06s\xe0\xf74\xe3Yg\xad{$'
-            '\x17\xd3\x99\xaa\x16\xb0\xeaZ\xd7]\r\xb3\xdc\x1b\x8f\xc1Z\xdfHU'
-            '\xb5\x92\xac\x82jI\x02')
+            s, 'manifestvF0D\x02 \x04\x85\x95p\x0f\xb8\x17\x7f\xdf\xdd\x04'
+            '\xaa+\x16q1W\xf6\xfd\xe8X\xb12l\xd5\xc3\xf1\xd6\x05\x1b\x1c\x9a'
+            '\x02 \x18\\.(o\xa8 \xeb\x87\xfa&~\xbd\xe6,\xfb\xa61\xd1\xcd\xcd'
+            '\xc8\r\x16[\x81\x9a\x19\xda\x93i\xcdp\x12@\xe5\x84\xbe\xc4\x80N'
+            '\xa0v"\xb2\x80A\x88\x06\xc0\xd2\xbae\x92\x89\xa8\'!\xdd\x00\x88'
+            '\x06s\xe0\xf74\xe3Yg\xad{$\x17\xd3\x99\xaa\x16\xb0\xeaZ\xd7]\r'
+            '\xb3\xdc\x1b\x8f\xc1Z\xdfHU\xb5\x92\xac\x82jI\x02')
 
     def test_wrap(self):
         wrap = lambda s: Sign.wrap(s, 5)
@@ -93,23 +90,21 @@ class test_Sign(TestCase):
         public = (Base58.VER_NODE_PUBLIC, '\x02' + (32 * 'v'))
         private = (Base58.VER_NODE_PRIVATE, 32 * 'k')
 
-        Sign.check_validator_public(*public)
-        Sign.check_master_secret(*private)
+        Sign.check_validation_public_key(*public)
+        Sign.check_secret_key(*private)
 
         return (Base58.encode_version(*public), Base58.encode_version(*private))
 
     def test_get_signature(self):
-        signature = Sign.get_signature(self.SEQUENCE, *self.get_test_keypair())
+        pk, sk = self.get_test_keypair()
+        signature = Sign.get_signature(self.SEQUENCE, pk, sk, sk)
         self.assertEquals(
             signature,
             'JAAAABdxIe2DIKUZd9jDjKikknxnDfWCHkSXYZReFenvsmoVCdIw6nMhAnZ2dnZ2'
-            'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkDOjlWtQSvRTjuwe+4iNusg0sJM'
-            'zqkBJwDz30b2SkxZ7Fte/Vx4htM/kkfUfJCaxmxE5N4dHSKuiO9iDHsktqIA')
-
-    def test_verify_signature(self):
-        Sign.verify_signature(self.SEQUENCE, self.VALIDATOR_KEY_HUMAN,
-            'nHUUaKHpxyRP4TZZ79tTpXuTpoM8pRNs5crZpGVA5jdrjib5easY',
-            self.SIGNATURE_HEX)
+            'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkYwRAIgXyobHA8sDQxmDJNLE6HI'
+            'aARlzvcd79/wT068e113gUkCIHkI540JQT2LHwAD7/y3wFE5X3lEXMfgZRkpLZTx'
+            'kpticBJAzo5VrUEr0U47sHvuIjbrINLCTM6pAScA899G9kpMWexbXv1ceIbTP5JH'
+            '1HyQmsZsROTeHR0irojvYgx7JLaiAA==')
 
     def test_check(self):
         public = Base58.encode_version(Base58.VER_NODE_PRIVATE, 32 * 'k')
@@ -143,17 +138,12 @@ class test_Sign(TestCase):
 
     def test_sign(self):
         public, private = self.get_test_keypair()
-        Sign.perform_sign(self.SEQUENCE, public, private, print=self.print)
+        Sign.perform_sign(self.SEQUENCE, public, private, private, print=self.print)
         self.assertEquals(
             self.results,
             [[['[validation_manifest]'], {}],
-             [['JAAAABdxIe2DIKUZd9jDjKikknxnDfWCHkSXYZReFenvsmo\n'
-               'VCdIw6nMhAnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dn\n'
-               'Z2dnZ2dkDOjlWtQSvRTjuwe+4iNusg0sJMzqkBJwDz30b2S\n'
-               'kxZ7Fte/Vx4htM/kkfUfJCaxmxE5N4dHSKuiO9iDHsktqIA'],
+             [['JAAAABdxIe2DIKUZd9jDjKikknxnDfWCHkSXYZReFenvsmoVCdIw6nMhAnZ2dnZ2dnZ2dnZ2\n'
+               'dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dnZ2dkYwRAIgXyobHA8sDQxmDJNLE6HIaARlzvcd79/wT068\n'
+               'e113gUkCIHkI540JQT2LHwAD7/y3wFE5X3lEXMfgZRkpLZTxkpticBJAzo5VrUEr0U47sHvu\n'
+               'IjbrINLCTM6pAScA899G9kpMWexbXv1ceIbTP5JH1HyQmsZsROTeHR0irojvYgx7JLaiAA=='],
               {}]])
-
-    def test_verify(self):
-        Sign.perform_verify(self.SEQUENCE, self.VALIDATOR_KEY_HUMAN,
-            'nHUUaKHpxyRP4TZZ79tTpXuTpoM8pRNs5crZpGVA5jdrjib5easY',
-            self.SIGNATURE_HEX, print=self.print)

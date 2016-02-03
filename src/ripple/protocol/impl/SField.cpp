@@ -199,9 +199,11 @@ SF_Blob const sfMemoType        = make::one<SF_Blob::type>(&sfMemoType,      STI
 SF_Blob const sfMemoData        = make::one<SF_Blob::type>(&sfMemoData,      STI_VL, 13, "MemoData");
 SF_Blob const sfMemoFormat      = make::one<SF_Blob::type>(&sfMemoFormat,    STI_VL, 14, "MemoFormat");
 
+
 // variable length (uncommon)
 //                                                                                   16 has not been used yet...
-SF_Blob const sfProof          = make::one<SF_Blob::type>(&sfProof,          STI_VL, 17, "Proof");
+SF_Blob const sfProof           = make::one<SF_Blob::type>(&sfProof,           STI_VL, 17, "Proof");
+SF_Blob const sfMasterSignature = make::one<SF_Blob::type>(&sfMasterSignature, STI_VL, 18, "MasterSignature", SField::sMD_Default, SField::notSigning);
 
 // account
 SF_Account const sfAccount     = make::one<SF_Account::type>(&sfAccount,     STI_ACCOUNT, 1, "Account");

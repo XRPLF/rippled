@@ -102,18 +102,23 @@ public:
 
     Manifest
     make_Manifest
-        (KeyType type, SecretKey const& sk, PublicKey const& spk, int seq,
-         bool broken = false)
+        (SecretKey const& sk, KeyType type, SecretKey const& ssk, KeyType stype,
+         int seq, bool broken = false)
     {
         auto const pk = derivePublicKey(type, sk);
+        auto const spk = derivePublicKey(stype, ssk);
 
         STObject st(sfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
 
-        sign(st, HashPrefix::manifest, type, sk);
-        BEAST_EXPECT(verify(st, HashPrefix::manifest, pk, true));
+        sign(st, HashPrefix::manifest, stype, ssk);
+        BEAST_EXPECT(verify(st, HashPrefix::manifest, spk, true));
+
+        sign(st, HashPrefix::manifest, type, sk, sfMasterSignature);
+        BEAST_EXPECT(verify(
+            st, HashPrefix::manifest, pk, true, sfMasterSignature));
 
         if (broken)
         {
@@ -227,7 +232,8 @@ public:
 
         auto const sk = randomSecretKey();
         auto const kp = randomKeyPair(KeyType::secp256k1);
-        auto const m  = make_Manifest (KeyType::ed25519, sk, kp.first, 0);
+        auto const m  = make_Manifest (
+            sk, KeyType::ed25519, kp.second, KeyType::secp256k1, 0);
 
         cache.configManifest (clone (m), *unl, journal);
         BEAST_EXPECT(cache.trusted (m.masterKey));
@@ -330,7 +336,8 @@ public:
         auto const sk = randomSecretKey();
         auto const pk = derivePublicKey(KeyType::ed25519, sk);
         auto const kp = randomKeyPair(KeyType::secp256k1);
-        auto const m = make_Manifest (KeyType::ed25519, sk, kp.first, 0);
+        auto const m = make_Manifest (
+            sk, KeyType::ed25519, kp.second, KeyType::secp256k1, 0);
 
         STObject st(sfGeneric);
         st[sfSequence] = 0;
@@ -339,9 +346,11 @@ public:
         Serializer ss;
         ss.add32(HashPrefix::manifest);
         st.addWithoutSigningFields(ss);
-        auto const sig = sign(KeyType::ed25519, sk, ss.slice());
-
+        auto const sig = sign(KeyType::secp256k1, kp.second, ss.slice());
         BEAST_EXPECT(strHex(sig) == strHex(m.getSignature()));
+
+        auto const masterSig = sign(KeyType::ed25519, sk, ss.slice());
+        BEAST_EXPECT(strHex(masterSig) == strHex(m.getMasterSignature()));
     }
 
     void
@@ -360,16 +369,21 @@ public:
             auto const sk_a = randomSecretKey();
             auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
             auto const kp_a = randomKeyPair(KeyType::secp256k1);
-            auto const s_a0 = make_Manifest (KeyType::ed25519, sk_a, kp_a.first, 0);
-            auto const s_a1 = make_Manifest (KeyType::ed25519, sk_a, kp_a.first, 1);
+            auto const s_a0 = make_Manifest (
+                sk_a, KeyType::ed25519, kp_a.second, KeyType::secp256k1, 0);
+            auto const s_a1 = make_Manifest (
+                sk_a, KeyType::ed25519, kp_a.second, KeyType::secp256k1, 1);
 
             auto const sk_b = randomSecretKey();
             auto const pk_b = derivePublicKey(KeyType::ed25519, sk_b);
             auto const kp_b = randomKeyPair(KeyType::secp256k1);
-            auto const s_b0 = make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 0);
-            auto const s_b1 = make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 1);
-            auto const s_b2 =
-                make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 2, true);  // broken
+            auto const s_b0 = make_Manifest (
+                sk_b, KeyType::ed25519, kp_b.second, KeyType::secp256k1, 0);
+            auto const s_b1 = make_Manifest (
+                sk_b, KeyType::ed25519, kp_b.second, KeyType::secp256k1, 1);
+            auto const s_b2 = make_Manifest (
+                sk_b, KeyType::ed25519, kp_b.second, KeyType::secp256k1, 2,
+                true);  // broken
             auto const fake = s_b1.serialized + '\0';
 
             BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == untrusted);
@@ -395,7 +409,8 @@ public:
             auto const sk_c = randomSecretKey();
             auto const pk_c = derivePublicKey(KeyType::ed25519, sk_c);
             auto const kp_c = randomKeyPair(KeyType::secp256k1);
-            auto const s_c0 = make_Manifest (KeyType::ed25519, sk_c, kp_c.first, 0);
+            auto const s_c0 = make_Manifest (
+                sk_c, KeyType::ed25519, kp_c.second, KeyType::secp256k1, 0);
             BEAST_EXPECT(unl->insertPermanentKey(pk_c, "trusted key"));
             BEAST_EXPECT(unl->trusted(pk_c));
             BEAST_EXPECT(!cache.trusted(pk_c));
