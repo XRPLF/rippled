@@ -141,12 +141,10 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
     }
     else
     {
-        std::vector<SHAMapNodeID> nodeIDs;
-        std::vector<uint256> nodeHashes;
         ConsensusTransSetSF sf (app_, app_.getTempNodeCache ());
-        mMap->getMissingNodes (nodeIDs, nodeHashes, 256, &sf);
+        auto nodes = mMap->getMissingNodes (256, &sf);
 
-        if (nodeIDs.empty ())
+        if (nodes.empty ())
         {
             if (mMap->isValid ())
                 mComplete = true;
@@ -164,9 +162,9 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
         if (getTimeouts () != 0)
             tmGL.set_querytype (protocol::qtINDIRECT);
 
-        for (SHAMapNodeID& it : nodeIDs)
+        for (auto const& node : nodes)
         {
-            *tmGL.add_nodeids () = it.getRawString ();
+            *tmGL.add_nodeids () = node.first.getRawString ();
         }
         sendRequest (tmGL, peer);
     }

@@ -115,12 +115,13 @@ void SHAMap::visitNodes(std::function<bool (SHAMapAbstractNode&)> const& functio
     but not available locally.  The filter can hold alternate sources of
     nodes that are not permanently stored locally
 */
-void
-SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes,
-                        int max, SHAMapSyncFilter* filter)
+std::vector<std::pair<SHAMapNodeID, uint256>>
+SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
 {
     assert (root_->isValid ());
     assert (root_->getNodeHash().isNonZero ());
+
+    std::vector<std::pair<SHAMapNodeID, uint256>> ret;
 
     std::uint32_t generation = f_.fullbelow().getGeneration();
 
@@ -130,13 +131,13 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
             clearSynching();
         else if (journal_.warning) journal_.warning <<
             "synching empty tree";
-        return;
+        return ret;
     }
 
     if (std::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow (generation))
     {
         clearSynching ();
-        return;
+        return ret;
     }
 
     int const maxDefer = f_.db().getDesiredAsyncReadCount ();
@@ -144,6 +145,8 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
     // Track the missing hashes we have found so far
     std::set <SHAMapHash> missingHashes;
 
+    // preallocate memory
+    ret.reserve (max);
 
     while (1)
     {
@@ -190,11 +193,12 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                         {
                             if (!pending)
                             { // node is not in the database
-                                nodeIDs.push_back (childID);
-                                hashes.push_back (childHash.as_uint256());
+                                ret.emplace_back (
+                                    childID,
+                                    childHash.as_uint256());
 
                                 if (--max <= 0)
-                                    return;
+                                    return ret;
                             }
                             else
                             {
@@ -274,8 +278,10 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
             }
             else if ((max > 0) && (missingHashes.insert (nodeHash).second))
             {
-                nodeIDs.push_back (nodeID);
-                hashes.push_back (nodeHash.as_uint256());
+                ret.push_back (
+                    std::make_pair (
+                        nodeID,
+                        nodeHash.as_uint256()));
 
                 --max;
             }
@@ -290,24 +296,27 @@ SHAMap::getMissingNodes(std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>
                 << elapsed.count() << " + " << process_time.count()  << " ms";
 
         if (max <= 0)
-            return;
+            return ret;
 
     }
 
-    if (nodeIDs.empty ())
+    if (ret.empty ())
         clearSynching ();
+
+    return ret;
 }
 
 std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
 {
-    std::vector<uint256> nodeHashes;
-    nodeHashes.reserve(max);
+    auto ret = getMissingNodes(max, filter);
 
-    std::vector<SHAMapNodeID> nodeIDs;
-    nodeIDs.reserve(max);
+    std::vector<uint256> hashes;
+    hashes.reserve (ret.size());
 
-    getMissingNodes(nodeIDs, nodeHashes, max, filter);
-    return nodeHashes;
+    for (auto const& n : ret)
+        hashes.push_back (n.second);
+
+    return hashes;
 }
 
 bool SHAMap::getNodeFat (SHAMapNodeID wanted,

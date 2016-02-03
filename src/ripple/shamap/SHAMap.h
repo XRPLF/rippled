@@ -163,8 +163,10 @@ public:
             std::function<void(std::shared_ptr<SHAMapItem const> const&)> const&) const;
 
     // comparison/sync functions
-    void getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
-                          SHAMapSyncFilter * filter);
+    std::vector<std::pair<SHAMapNodeID, uint256>>
+    getMissingNodes (
+        std::size_t max,
+        SHAMapSyncFilter *filter);
 
     bool getNodeFat (SHAMapNodeID node,
         std::vector<SHAMapNodeID>& nodeIDs,

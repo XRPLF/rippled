@@ -43,7 +43,7 @@ public:
     virtual Ledger::pointer acquire (uint256 const& hash,
         std::uint32_t seq, InboundLedger::fcReason) = 0;
 
-    virtual InboundLedger::pointer find (LedgerHash const& hash) = 0;
+    virtual std::shared_ptr<InboundLedger> find (LedgerHash const& hash) = 0;
 
     virtual bool hasLedger (LedgerHash const& ledgerHash) = 0;
 

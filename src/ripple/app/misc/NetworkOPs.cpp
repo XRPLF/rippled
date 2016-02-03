@@ -522,7 +522,7 @@ private:
     std::shared_ptr<LedgerConsensus> mLedgerConsensus;
 
     LedgerMaster& m_ledgerMaster;
-    InboundLedger::pointer mAcquiringLedger;
+    std::shared_ptr<InboundLedger> mAcquiringLedger;
 
     SubInfoMapType mSubAccount;
     SubInfoMapType mSubRTAccount;
