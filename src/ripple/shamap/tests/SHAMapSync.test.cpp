@@ -28,10 +28,6 @@
 namespace ripple {
 namespace tests {
 
-#ifdef BEAST_DEBUG
-//#define SMS_DEBUG
-#endif
-
 class sync_test : public beast::unit_test::suite
 {
 public:
@@ -61,29 +57,23 @@ public:
 
             if (!map.addItem (std::move(*item), false, false))
             {
-                log <<
-                    "Unable to add item to map";
-                assert (false);
+                log << "Unable to add item to map";
                 return false;
             }
         }
 
-        for (std::list<uint256>::iterator it = items.begin (); it != items.end (); ++it)
+        for (auto const& item : items)
         {
-            if (!map.delItem (*it))
+            if (!map.delItem (item))
             {
-                log <<
-                    "Unable to remove item from map";
-                assert (false);
+                log << "Unable to remove item from map";
                 return false;
             }
         }
 
         if (beforeHash != map.getHash ())
         {
-            log <<
-                "Hashes do not match " << beforeHash << " " << map.getHash ();
-            assert (false);
+            log << "Hashes do not match " << beforeHash << " " << map.getHash ();
             return false;
         }
 
@@ -101,119 +91,73 @@ public:
         for (int i = 0; i < items; ++i)
             source.addItem (std::move(*makeRandomAS ()), false, false);
 
-        unexpected (!confuseMap (source, 500), "ConfuseMap");
+        expect (confuseMap (source, 500), "ConfuseMap");
 
         source.setImmutable ();
 
-        std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
-        std::vector< Blob > gotNodes;
-        std::vector<uint256> hashes;
-
-        std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-        std::vector< Blob >::iterator rawNodeIterator;
-
-        int passes = 0;
-        int nodes = 0;
-
         destination.setSynching ();
 
-        unexpected (!source.getNodeFat (
-            SHAMapNodeID (), nodeIDs, gotNodes,
-            rand_bool(), rand_int(2)), "GetNodeFat");
+        {
+            std::vector<SHAMapNodeID> gotNodeIDs;
+            std::vector<Blob> gotNodes;
 
-        unexpected (gotNodes.size () < 1, "NodeSize");
+            expect (source.getNodeFat (
+                SHAMapNodeID (),
+                gotNodeIDs,
+                gotNodes,
+                rand_bool(),
+                rand_int(2)), "getNodeFat (1)");
 
-        unexpected (!destination.addRootNode (source.getHash(),
-            *gotNodes.begin (), snfWIRE, nullptr).isGood(), "AddRootNode");
+            unexpected (gotNodes.size () < 1, "NodeSize");
 
-        nodeIDs.clear ();
-        gotNodes.clear ();
-
-#ifdef SMS_DEBUG
-        int bytes = 0;
-#endif
+            expect (destination.addRootNode (
+                source.getHash(),
+                *gotNodes.begin (),
+                snfWIRE,
+                nullptr).isGood(), "addRootNode");
+        }
 
         do
         {
             f.clock().advance(std::chrono::seconds(1));
-            ++passes;
-            hashes.clear ();
 
             // get the list of nodes we know we need
-            destination.getMissingNodes (nodeIDs, hashes, 2048, nullptr);
+            auto nodesMissing = destination.getMissingNodes (2048, nullptr);
 
-            if (nodeIDs.empty ()) break;
+            if (nodesMissing.empty ())
+                break;
 
             // get as many nodes as possible based on this information
-            for (nodeIDIterator = nodeIDs.begin (); nodeIDIterator != nodeIDs.end (); ++nodeIDIterator)
+            std::vector<SHAMapNodeID> gotNodeIDs;
+            std::vector<Blob> gotNodes;
+
+            for (auto& it : nodesMissing)
             {
-                if (!source.getNodeFat (*nodeIDIterator, gotNodeIDs, gotNodes,
-                    rand_bool(), rand_int(2)))
-                {
-                    fail ("GetNodeFat");
-                }
-                else
-                {
-                    pass ();
-                }
+                expect (source.getNodeFat (
+                    it.first,
+                    gotNodeIDs,
+                    gotNodes,
+                    rand_bool(),
+                    rand_int(2)), "getNodeFat (2)");
             }
 
-            assert (gotNodeIDs.size () == gotNodes.size ());
-            nodeIDs.clear ();
-            hashes.clear ();
+            expect (gotNodeIDs.size () == gotNodes.size (), "Size mismatch");
+            expect (!gotNodeIDs.empty (), "Didn't get NodeID");
 
-            if (gotNodeIDs.empty ())
+            for (std::size_t i = 0; i < gotNodeIDs.size(); ++i)
             {
-                fail ("Got Node ID");
+                expect (
+                    destination.addKnownNode (
+                        gotNodeIDs[i],
+                        gotNodes[i],
+                        nullptr).isGood (), "addKnownNode");
             }
-            else
-            {
-                pass ();
-            }
-
-            for (nodeIDIterator = gotNodeIDs.begin (), rawNodeIterator = gotNodes.begin ();
-                    nodeIDIterator != gotNodeIDs.end (); ++nodeIDIterator, ++rawNodeIterator)
-            {
-                ++nodes;
-#ifdef SMS_DEBUG
-                bytes += rawNodeIterator->size ();
-#endif
-
-                if (!destination.addKnownNode (*nodeIDIterator, *rawNodeIterator, nullptr).isGood ())
-                {
-                    fail ("AddKnownNode");
-                }
-                else
-                {
-                    pass ();
-                }
-            }
-
-            gotNodeIDs.clear ();
-            gotNodes.clear ();
         }
         while (true);
 
         destination.clearSynching ();
 
-#ifdef SMS_DEBUG
-        log << "SYNCHING COMPLETE " << items << " items, " << nodes << " nodes, " <<
-                                  bytes / 1024 << " KB";
-#endif
-
-        if (!source.deepCompare (destination))
-        {
-            fail ("Deep Compare");
-        }
-        else
-        {
-            pass ();
-        }
-
-#ifdef SMS_DEBUG
-        log << "SHAMapSync test passed: " << items << " items, " <<
-            passes << " passes, " << nodes << " nodes";
-#endif
+        expect (source.deepCompare (destination), "Deep Compare");
     }
 };
 

@@ -569,22 +569,18 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
         }
         else
         {
-            std::vector<SHAMapNodeID> nodeIDs;
-            std::vector<uint256> nodeHashes;
-            nodeIDs.reserve (missingNodesFind);
-            nodeHashes.reserve (missingNodesFind);
             AccountStateSF filter(app_);
 
             // Release the lock while we process the large state map
             sl.unlock();
-            mLedger->stateMap().getMissingNodes (
-                nodeIDs, nodeHashes, missingNodesFind, &filter);
+            auto nodes = mLedger->stateMap().getMissingNodes (
+                missingNodesFind, &filter);
             sl.lock();
 
             // Make sure nothing happened while we released the lock
             if (!mFailed && !mComplete && !mHaveState)
             {
-                if (nodeIDs.empty ())
+                if (nodes.empty ())
                 {
                     if (!mLedger->stateMap().isValid ())
                         mFailed = true;
@@ -600,12 +596,6 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                 {
                     assert (nodeIDs.size() == nodeHashes.size());
 
-                    std::vector<std::pair<SHAMapNodeID, uint256>> nodes;
-                    nodes.reserve (nodeIDs.size());
-
-                    for (std::size_t i = 0; i < nodeIDs.size(); ++i)
-                        nodes.push_back (std::make_pair(nodeIDs[i], nodeHashes[i]));
-
                     filterNodes (nodes, reason);
 
                     if (!nodes.empty ())
@@ -617,9 +607,9 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                         }
 
                         if (m_journal.trace) m_journal.trace <<
-                            "Sending AS node " << nodes.size () <<
-                                " request to " << (
-                                    peer ? "selected peer" : "all peers");
+                            "Sending AS node request (" <<
+                            nodes.size () << ") to " <<
+                            (peer ? "selected peer" : "all peers");
                         if (nodes.size () == 1 && m_journal.trace)
                             m_journal.trace << "AS node: " << nodes[0].first;
                         sendRequest (tmGL, peer);
@@ -654,15 +644,12 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
         }
         else
         {
-            std::vector<SHAMapNodeID> nodeIDs;
-            std::vector<uint256> nodeHashes;
-            nodeIDs.reserve (missingNodesFind);
-            nodeHashes.reserve (missingNodesFind);
             TransactionStateSF filter(app_);
-            mLedger->txMap().getMissingNodes (
-                nodeIDs, nodeHashes, missingNodesFind, &filter);
 
-            if (nodeIDs.empty ())
+            auto nodes = mLedger->txMap().getMissingNodes (
+                missingNodesFind, &filter);
+
+            if (nodes.empty ())
             {
                 if (!mLedger->txMap().isValid ())
                     mFailed = true;
@@ -676,14 +663,6 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
             }
             else
             {
-                assert (nodeIDs.size() == nodeHashes.size());
-
-                std::vector<std::pair<SHAMapNodeID, uint256>> nodes;
-                nodes.reserve (nodeIDs.size());
-
-                for (std::size_t i = 0; i < nodeIDs.size(); ++i)
-                    nodes.push_back (std::make_pair(nodeIDs[i], nodeHashes[i]));
-
                 filterNodes (nodes, reason);
 
                 if (!nodes.empty ())
@@ -694,9 +673,11 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                         * (tmGL.add_nodeids ()) = n.first.getRawString ();
                     }
                     if (m_journal.trace) m_journal.trace <<
-                        "Sending TX node " << nodeIDs.size () <<
-                        " request to " << (
-                            peer ? "selected peer" : "all peers");
+                        "Sending TX node request (" <<
+                        nodes.size () << ") to " <<
+                        (peer ? "selected peer" : "all peers");
+                    if (nodes.size () == 1 && m_journal.trace)
+                        m_journal.trace << "AS node: " << nodes[0].first;
                     sendRequest (tmGL, peer);
                     return;
                 }
