@@ -61,10 +61,16 @@ The following environment variables modify the build environment:
       Path to the boost directory.
     OPENSSL_ROOT
       Path to the openssl directory.
-    PROTOBUF_DIR
-      Path to the protobuf directory. This is usually only needed when
-      the installed protobuf library uses a different ABI than clang
-      (as with ubuntu 15.10).
+    PROTOBUF_ROOT
+      Path to the protobuf directory.
+    CLANG_PROTOBUF_ROOT
+      Override the path to the protobuf directory for the clang toolset. This is
+      usually only needed when the installed protobuf library uses a different
+      ABI than clang (as with ubuntu 15.10).
+    CLANG_BOOST_ROOT
+      Override the path to the boost directory for the clang toolset. This is
+      usually only needed when the installed protobuf library uses a different
+      ABI than clang (as with ubuntu 15.10).
 
 The following extra options may be used:
     --ninja         Generate a `build.ninja` build file for the specified target
@@ -356,21 +362,6 @@ def config_base(env):
         ,'-DBOOST_NO_AUTO_PTR'
         ])
 
-    try:
-        BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
-        env.Append(LIBPATH=[
-            os.path.join(BOOST_ROOT, 'stage', 'lib'),
-            ])
-        env['BOOST_ROOT'] = BOOST_ROOT
-    except KeyError:
-        pass
-
-    try:
-        protobuf_dir = os.environ['PROTOBUF_DIR']
-        env.Append(LIBPATH=[protobuf_dir])
-    except KeyError:
-        pass
-
     if Beast.system.windows:
         try:
             OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
@@ -444,21 +435,52 @@ def add_sanitizer (toolchain, env):
     add_static_libs(env, [san_to_lib[san]])
     env.Append(CPPDEFINES=['SANITIZER='+san_to_lib[san].upper()])
 
-# Set toolchain and variant specific construction variables
-def config_env(toolchain, variant, env):
-    if is_debug_variant(variant):
-        env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
+def add_boost_and_protobuf(toolchain, env):
+    def get_environ_value(candidates):
+        for c in candidates:
+            try:
+                return os.environ[c]
+            except KeyError:
+                pass
+        raise KeyError('Environment variable not set')
 
-    elif variant == 'release' or variant == 'profile':
-        env.Append(CPPDEFINES=['NDEBUG'])
-
-    if 'BOOST_ROOT' in env:
+    try:
+        br_cands = ['CLANG_BOOST_ROOT'] if toolchain == 'clang' else []
+        br_cands.append('BOOST_ROOT')
+        BOOST_ROOT = os.path.normpath(get_environ_value(br_cands))
+        env.Append(LIBPATH=[
+            os.path.join(BOOST_ROOT, 'stage', 'lib'),
+            ])
+        env['BOOST_ROOT'] = BOOST_ROOT
         if toolchain == 'gcc':
             env.Append(CCFLAGS=['-isystem' + env['BOOST_ROOT']])
         else:
             env.Append(CPPPATH=[
                 env['BOOST_ROOT'],
                 ])
+    except KeyError:
+        pass
+
+    try:
+        pb_cands = ['CLANG_PROTOBUF_ROOT'] if toolchain == 'clang' else []
+        pb_cands.append('PROTOBUF_ROOT')
+        PROTOBUF_ROOT = os.path.normpath(get_environ_value(pb_cands))
+        env.Append(LIBPATH=[PROTOBUF_ROOT + '/src/.libs'])
+        if not should_link_static() and toolchain in['clang', 'gcc']:
+            env.Append(LINKFLAGS=['-Wl,-rpath,' + PROTOBUF_ROOT + '/src/.libs'])
+        env['PROTOBUF_ROOT'] = PROTOBUF_ROOT
+        env.Append(CPPPATH=[env['PROTOBUF_ROOT'] + '/src',])
+    except KeyError:
+        pass
+
+# Set toolchain and variant specific construction variables
+def config_env(toolchain, variant, env):
+    add_boost_and_protobuf(toolchain, env)
+    if is_debug_variant(variant):
+        env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
+
+    elif variant == 'release' or variant == 'profile':
+        env.Append(CPPDEFINES=['NDEBUG'])
 
     if should_link_static() and not Beast.system.linux:
         raise Exception("Static linking is only implemented for linux.")
