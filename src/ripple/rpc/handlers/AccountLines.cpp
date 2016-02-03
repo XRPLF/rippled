@@ -97,13 +97,9 @@ Json::Value doAccountLines (RPC::Context& context)
     std::string strIdent (params[jss::account].asString ());
     AccountID accountID;
 
-    if (auto jv = RPC::accountFromString (accountID, strIdent))
-    {
-        for (auto it = jv.begin (); it != jv.end (); ++it)
-            result[it.memberName ()] = it.key ();
-
+    // Intentional assignment in if.  Extra parentheses silence warning.
+    if ((result = RPC::accountFromString (accountID, strIdent)))
         return result;
-    }
 
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
@@ -116,10 +112,8 @@ Json::Value doAccountLines (RPC::Context& context)
     AccountID raPeerAccount;
     if (hasPeer)
     {
-        result[jss::peer] = context.app.accountIDCache().toBase58 (accountID);
-        result = RPC::accountFromString (raPeerAccount, strPeer);
-
-        if (result)
+        // Intentional assignment in if.  Extra parentheses silence warning.
+        if ((result = RPC::accountFromString (raPeerAccount, strPeer)))
             return result;
     }
 
