@@ -28,23 +28,34 @@
 
 namespace ripple {
 
-/** Sign a STObject using any secret key.
-    The signature is placed in sfSignature. If
-    a signature already exists, it is overwritten.
+/** Sign an STObject
+
+    @param st Object to sign
+    @param prefix Prefix to insert before serialized object when hashing
+    @param type Signing key type used to derive public key
+    @param sk Signing secret key
+    @param sigField Field in which to store the signature on the object.
+    If not specified the value defaults to `sfSignature`.
+
+    @note If a signature already exists, it is overwritten.
 */
 void
-sign (STObject& st,
-    HashPrefix const& prefix,
-        KeyType type, SecretKey const& sk);
+sign (STObject& st, HashPrefix const& prefix,
+    KeyType type, SecretKey const& sk,
+        SF_Blob const& sigField = sfSignature);
 
-/** Verify the signature on a STObject.
-    The signature must be contained in sfSignature.
+/** Returns `true` if STObject contains valid signature
+
+    @param st Signed object
+    @param prefix Prefix inserted before serialized object when hashing
+    @param pk Public key for verifying signature
+    @param sigField Object's field containing the signature.
+    If not specified the value defaults to `sfSignature`.
 */
 bool
-verify (STObject const& st,
-    HashPrefix const& prefix,
-        PublicKey const& pk,
-            bool mustBeFullyCanonical);
+verify (STObject const& st, HashPrefix const& prefix,
+    PublicKey const& pk, bool mustBeFullyCanonical,
+        SF_Blob const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */
 Serializer

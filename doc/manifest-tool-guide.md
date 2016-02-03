@@ -22,10 +22,10 @@ master key pair:
 Sample output:
 ```
   [validator_keys]
-  nHUSSzGw4A9zEmFtK2Q2NcWDH9xmGdXMHc1MsVej3QkLTgvDNeBr
+  nHDwNP6jbJgVKj5zSEjMn8SJhTnPV54Fx5sSiNpwqLbb42nmh3Ln
 
   [master_secret]
-  pnxayCakmZRQE2qhEVRbFjiWCunReSbN1z64vPL36qwyLgogyYc
+  paamfhAn5m1NM4UUu5mmvVaHQy8Fb65bkpbaNrvKwX3YMKdjzi2
 ```
 
 The first value is the master public key. Add the public key to the config
@@ -54,10 +54,11 @@ Sample output:
   Securely connecting to 127.0.0.1:5005
   {
      "result" : {
-      "status" : "success",
-      "validation_key" : "TOO EDNA SHUN FEUD STAB JOAN BIAS FLEA WISE BOHR LOSS WEEK",
-      "validation_public_key" : "n9JzKV3ZrcZ3DW5pwjakj4hpijJ9oMiyrPDGJc3mpsndL6Gf3zwd",
-      "validation_seed" : "sahzkAajS2dyhjXg2yovjdZhXmjsx"
+       "status" : "success",
+       "validation_key" : "MIN HEAT NUN FAWN HIP KAHN BORG PHI BALK ANN TWIG RACY",
+       "validation_private_key" : "pn6kTqE4WyeRQzZrRp5FnJ5J2vLdSCB5KD3DEyfVw6C9woDBfED",
+       "validation_public_key" : "n9LtZ9haqYMbzJ92cDd3pu3Lko6uEznrXuYea3ehuhVcwDHF5coX",
+       "validation_seed" : "sh8bLqqkGBknGcsgRTrFMxcciwytm"
      }
   }
 ```
@@ -68,36 +69,37 @@ number as a comment as well (sequence numbers are be explained below):
 
 ```
   [validation_seed]
-  sahzkAajS2dyhjXg2yovjdZhXmjsx
-  # validation_public_key: n9JzKV3ZrcZ3DW5pwjakj4hpijJ9oMiyrPDGJc3mpsndL6Gf3zwd
+  sh8bLqqkGBknGcsgRTrFMxcciwytm
+  # validation_public_key: n9LtZ9haqYMbzJ92cDd3pu3Lko6uEznrXuYea3ehuhVcwDHF5coX
   # sequence number: 1
 ```
 
 A manifest is a signed message used to inform other servers of this validator's
 ephemeral public key. A manifest contains a sequence number, the new ephemeral
-public key, and it is signed with the master secret key. The sequence number
-should be higher than the previous sequence number (if it is not, the manifest
-will be ignored). Usually the previous sequence number will be incremented by
-one. Use the `manifest` script to create a manifest. It has the form:
+public key, and it is signed with both the ephemeral and master secret keys.
+The sequence number should be higher than the previous sequence number (if it
+is not, the manifest will be ignored). Usually the previous sequence number
+will be incremented by one. Use the `manifest` script to create a manifest.
+It has the form:
 
 ```
- $ bin/manifest sign sequence_number validation_public_key master_secret
+ $ bin/manifest sign sequence validation_public_key validation_private_key master_secret
 ```
 
 For example:
 
 ```
-  $ bin/manifest sign 1 n9JzKV3Z...L6Gf3zwd pnxayCak...yLgogyYc
+  $ bin/manifest sign 1 n9LtZ9ha...wDHF5coX pn6kTqE4...9woDBfED paamfhAn...YMKdjzi2
 ```
 
 Sample output:
 
 ```
   [validation_manifest]
-  JAAAAAFxIe2PEzNhe996gykB1PJQNoDxvr/Y0XhDELw8d/i
-  Fcgz3A3MhAjqhKsgZTmK/3BPEI+kzjV1p9ip7pl/AtF7CKd
-  NSfAH9dkCxezV6apS4FLYzAcQilONx315HvebwAB/pLPaM4
-  2sWCEppSuLNKN/JJjTABOo9tmAiNnnstF83yvecKMJzniwN
+  JAAAAAFxIe3t8rIb4Ba8JHI97CbwpxmTq0LhN/7ZAbsNaSwrbHaypHMhAzTuu07YGOvVvB3+
+  aS0jhP+q0TVgTjGJKhx+yTY1Da3ddkYwRAIgDkmIt3dPNsfeCH3ApMZgpwqG4JwtIlKEymqK
+  S7v+VqkCIFQXg20ZMpXXT86vmLdlmPspgeUN1scWsuFoPYUUJywycBJAl93+/bZbfZ4quTeM
+  5y80/OSIcVoWPcHajwrAl68eiAW4MVFeJXvShXNfnT+XsxMjDh0VpOkhvyp971i1MgjBAA==
 ```  
 
 Copy this to the config for this validator. Don't forget to update the comment
@@ -107,4 +109,4 @@ noting the sequence number.
 
 If a master key is compromised, the key may be revoked permanently. To revoke a
 master key, sign a manifest with the highest possible sequence number:
-`4,294,967,295`
+`4294967295`
