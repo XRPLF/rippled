@@ -26,6 +26,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <mutex>
 #include <set>
+#include <utility>
 
 namespace ripple {
 
@@ -108,16 +109,15 @@ public:
 
     std::vector<neededHash_t> getNeededHashes ();
 
-    // VFALCO TODO Replace uint256 with something semanticallyh meaningful
-    void filterNodes (
-        std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& nodeHashes,
-        TriggerReason reason);
-
     /** Return a Json::objectValue. */
     Json::Value getJson (int);
     void runData ();
 
 private:
+    void filterNodes (
+        std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
+        TriggerReason reason);
+
     void done ();
 
     void onTimer (bool progress, ScopedLockType& peerSetLock);

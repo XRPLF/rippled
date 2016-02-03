@@ -598,22 +598,30 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                 }
                 else
                 {
-                    filterNodes (nodeIDs, nodeHashes, reason);
+                    assert (nodeIDs.size() == nodeHashes.size());
 
-                    if (!nodeIDs.empty ())
+                    std::vector<std::pair<SHAMapNodeID, uint256>> nodes;
+                    nodes.reserve (nodeIDs.size());
+
+                    for (std::size_t i = 0; i < nodeIDs.size(); ++i)
+                        nodes.push_back (std::make_pair(nodeIDs[i], nodeHashes[i]));
+
+                    filterNodes (nodes, reason);
+
+                    if (!nodes.empty ())
                     {
                         tmGL.set_itype (protocol::liAS_NODE);
-                        for (auto const& id : nodeIDs)
+                        for (auto const& id : nodes)
                         {
-                            * (tmGL.add_nodeids ()) = id.getRawString ();
+                            * (tmGL.add_nodeids ()) = id.first.getRawString ();
                         }
 
                         if (m_journal.trace) m_journal.trace <<
-                            "Sending AS node " << nodeIDs.size () <<
+                            "Sending AS node " << nodes.size () <<
                                 " request to " << (
                                     peer ? "selected peer" : "all peers");
-                        if (nodeIDs.size () == 1 && m_journal.trace)
-                            m_journal.trace << "AS node: " << nodeIDs[0];
+                        if (nodes.size () == 1 && m_journal.trace)
+                            m_journal.trace << "AS node: " << nodes[0].first;
                         sendRequest (tmGL, peer);
                         return;
                     }
@@ -668,14 +676,22 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
             }
             else
             {
-                filterNodes (nodeIDs, nodeHashes, reason);
+                assert (nodeIDs.size() == nodeHashes.size());
 
-                if (!nodeIDs.empty ())
+                std::vector<std::pair<SHAMapNodeID, uint256>> nodes;
+                nodes.reserve (nodeIDs.size());
+
+                for (std::size_t i = 0; i < nodeIDs.size(); ++i)
+                    nodes.push_back (std::make_pair(nodeIDs[i], nodeHashes[i]));
+
+                filterNodes (nodes, reason);
+
+                if (!nodes.empty ())
                 {
                     tmGL.set_itype (protocol::liTX_NODE);
-                    for (auto const& id : nodeIDs)
+                    for (auto const& n : nodes)
                     {
-                        * (tmGL.add_nodeids ()) = id.getRawString ();
+                        * (tmGL.add_nodeids ()) = n.first.getRawString ();
                     }
                     if (m_journal.trace) m_journal.trace <<
                         "Sending TX node " << nodeIDs.size () <<
@@ -702,25 +718,24 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
     }
 }
 
-void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
-    std::vector<uint256>& nodeHashes, TriggerReason reason)
+void InboundLedger::filterNodes (
+    std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
+    TriggerReason reason)
 {
     // ask for new nodes in preference to ones we've already asked for
-    assert (nodeIDs.size () == nodeHashes.size ());
-
     int const max = (reason == TriggerReason::trReply) ?
         reqNodesReply : reqNodes;
     bool const aggressive =
         (reason == TriggerReason::trTimeout);
 
     std::vector<bool> duplicates;
-    duplicates.reserve (nodeIDs.size ());
+    duplicates.reserve (nodes.size ());
 
     int dupCount = 0;
 
-    for (auto const& nodeHash : nodeHashes)
+    for (auto const& n : nodes)
     {
-        if (mRecentNodes.count (nodeHash) != 0)
+        if (mRecentNodes.count (n.second) != 0)
         {
             duplicates.push_back (true);
             ++dupCount;
@@ -729,15 +744,14 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
             duplicates.push_back (false);
     }
 
-    if (dupCount == nodeIDs.size ())
+    if (dupCount == nodes.size ())
     {
         // all duplicates
         // we don't want to send any query at all
         // except on a timeout, where we need to query everyone
         if (! aggressive)
         {
-            nodeIDs.clear ();
-            nodeHashes.clear ();
+            nodes.clear ();
             if (m_journal.trace) m_journal.trace <<
                 "filterNodes: all are duplicates";
             return;
@@ -748,36 +762,29 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
         // some, but not all, duplicates
         int insertPoint = 0;
 
-        for (unsigned int i = 0; i < nodeIDs.size (); ++i)
+        for (unsigned int i = 0; i < nodes.size (); ++i)
+        {
             if (!duplicates[i])
             {
                 // Keep this node
                 if (insertPoint != i)
-                {
-                    nodeIDs[insertPoint] = nodeIDs[i];
-                    nodeHashes[insertPoint] = nodeHashes[i];
-                }
+                    nodes[insertPoint] = nodes[i];
 
                 if (++insertPoint >= max)
                     break;
             }
+        }
 
         if (m_journal.trace) m_journal.trace <<
-            "filterNodes " << nodeIDs.size () << " to " << insertPoint;
-        nodeIDs.resize (insertPoint);
-        nodeHashes.resize (insertPoint);
+            "filterNodes " << nodes.size () << " to " << insertPoint;
+        nodes.resize (insertPoint);
     }
 
-    if (nodeIDs.size () > max)
-    {
-        nodeIDs.resize (max);
-        nodeHashes.resize (max);
-    }
+    if (nodes.size () > max)
+        nodes.resize (max);
 
-    for (auto const& nodeHash : nodeHashes)
-    {
-        mRecentNodes.insert (nodeHash);
-    }
+    for (auto const& n : nodes)
+        mRecentNodes.insert (n.second);
 }
 
 /** Take ledger header data
