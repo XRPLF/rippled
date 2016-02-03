@@ -33,6 +33,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/nodestore/Database.h>
+#include <algorithm>
 
 namespace ripple {
 
@@ -703,63 +704,33 @@ void InboundLedger::filterNodes (
     std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
     TriggerReason reason)
 {
-    // ask for new nodes in preference to ones we've already asked for
+    // ask for new nodes in preference to ones we've
+    // already asked for
     int const max = (reason == TriggerReason::trReply) ?
         reqNodesReply : reqNodes;
     bool const aggressive =
         (reason == TriggerReason::trTimeout);
 
-    std::vector<bool> duplicates;
-    duplicates.reserve (nodes.size ());
-
-    int dupCount = 0;
-
-    for (auto const& n : nodes)
-    {
-        if (mRecentNodes.count (n.second) != 0)
+    auto ret = std::stable_partition (
+        nodes.begin(), nodes.end(),
+        [this](auto const& item)
         {
-            duplicates.push_back (true);
-            ++dupCount;
-        }
-        else
-            duplicates.push_back (false);
-    }
+            return mRecentNodes.count (item.second) == 0;
+        });
 
-    if (dupCount == nodes.size ())
+    // If everything is a duplicate we don't want to send
+    // any query at all except on a timeout where we need
+    // to query everyone:
+    if (!aggressive && ret == nodes.begin())
     {
-        // all duplicates
-        // we don't want to send any query at all
-        // except on a timeout, where we need to query everyone
-        if (! aggressive)
-        {
-            nodes.clear ();
-            if (m_journal.trace) m_journal.trace <<
-                "filterNodes: all are duplicates";
-            return;
-        }
-    }
-    else if (dupCount > 0)
-    {
-        // some, but not all, duplicates
-        int insertPoint = 0;
-
-        for (unsigned int i = 0; i < nodes.size (); ++i)
-        {
-            if (!duplicates[i])
-            {
-                // Keep this node
-                if (insertPoint != i)
-                    nodes[insertPoint] = nodes[i];
-
-                if (++insertPoint >= max)
-                    break;
-            }
-        }
-
         if (m_journal.trace) m_journal.trace <<
-            "filterNodes " << nodes.size () << " to " << insertPoint;
-        nodes.resize (insertPoint);
+            "filterNodes: all are duplicates";
+        return;
     }
+
+    // Remove any duplicates
+    if (ret != nodes.end())
+        nodes.erase (ret, nodes.end());
 
     if (nodes.size () > max)
         nodes.resize (max);
