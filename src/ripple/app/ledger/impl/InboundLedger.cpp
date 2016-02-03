@@ -141,7 +141,7 @@ void InboundLedger::init (ScopedLockType& collectionLock)
     }
     else if (!isFailed ())
     {
-        if (m_journal.debug) m_journal.debug <<
+        JLOG (m_journal.debug) <<
             "Acquiring ledger we already have locally: " << getHash ();
         mLedger->setClosed ();
         mLedger->setImmutable (app_.config());
@@ -178,7 +178,7 @@ bool InboundLedger::tryLocal ()
             if (!app_.getLedgerMaster ().getFetchPack (mHash, data))
                 return false;
 
-            if (m_journal.trace) m_journal.trace <<
+            JLOG (m_journal.trace) <<
                 "Ledger header found in fetch pack";
             mLedger = std::make_shared<Ledger> (
                 data.data(), data.size(), true,
@@ -196,7 +196,7 @@ bool InboundLedger::tryLocal ()
         if (mLedger->getHash () != mHash)
         {
             // We know for a fact the ledger can never be acquired
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 mHash << " cannot be a ledger";
             mFailed = true;
             return true;
@@ -209,7 +209,7 @@ bool InboundLedger::tryLocal ()
     {
         if (mLedger->info().txHash.isZero ())
         {
-            if (m_journal.trace) m_journal.trace <<
+            JLOG (m_journal.trace) <<
                 "No TXNs to fetch";
             mHaveTransactions = true;
         }
@@ -224,7 +224,7 @@ bool InboundLedger::tryLocal ()
 
                 if (h.empty ())
                 {
-                    if (m_journal.trace) m_journal.trace <<
+                    JLOG (m_journal.trace) <<
                         "Had full txn map locally";
                     mHaveTransactions = true;
                 }
@@ -236,7 +236,7 @@ bool InboundLedger::tryLocal ()
     {
         if (mLedger->info().accountHash.isZero ())
         {
-            if (m_journal.fatal) m_journal.fatal <<
+            JLOG (m_journal.fatal) <<
                 "We are acquiring a ledger with a zero account hash";
             mFailed = true;
             return true;
@@ -252,7 +252,7 @@ bool InboundLedger::tryLocal ()
 
                 if (h.empty ())
                 {
-                    if (m_journal.trace) m_journal.trace <<
+                    JLOG (m_journal.trace) <<
                         "Had full AS map locally";
                     mHaveState = true;
                 }
@@ -262,7 +262,7 @@ bool InboundLedger::tryLocal ()
 
     if (mHaveTransactions && mHaveState)
     {
-        if (m_journal.debug) m_journal.debug <<
+        JLOG (m_journal.debug) <<
             "Had everything locally";
         mComplete = true;
         mLedger->setClosed ();
@@ -280,7 +280,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 
     if (isDone())
     {
-        if (m_journal.info) m_journal.info <<
+        JLOG (m_journal.info) <<
             "Already done " << mHash;
         return;
     }
@@ -289,12 +289,12 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
     {
         if (mSeq != 0)
         {
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 getTimeouts() << " timeouts for ledger " << mSeq;
         }
         else
         {
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 getTimeouts() << " timeouts for ledger " << mHash;
         }
         setFailed ();
@@ -416,7 +416,7 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
 
     if (isDone ())
     {
-        if (m_journal.debug) m_journal.debug <<
+        JLOG (m_journal.debug) <<
             "Trigger on ledger: " << mHash << (mAborted ? " aborted" : "") <<
                 (mComplete ? " completed" : "") << (mFailed ? " failed" : "");
         return;
@@ -446,7 +446,7 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
 
         if (mFailed)
         {
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 " failed local for " << mHash;
             return;
         }
@@ -472,8 +472,8 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                 bool typeSet = false;
                 for (auto& p : need)
                 {
-                    if (m_journal.warning) m_journal.warning
-                        << "Want: " << p.second;
+                    JLOG (m_journal.warning) <<
+                        "Want: " << p.second;
 
                     if (!typeSet)
                     {
@@ -504,12 +504,12 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                         }
                     }
                 }
-                if (m_journal.info) m_journal.info <<
+                JLOG (m_journal.info) <<
                     "Attempting by hash fetch for ledger " << mHash;
             }
             else
             {
-                if (m_journal.info) m_journal.info <<
+                JLOG (m_journal.info) <<
                     "getNeededHashes says acquire is complete";
                 mHaveHeader = true;
                 mHaveTransactions = true;
@@ -524,9 +524,9 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
     if (!mHaveHeader && !mFailed)
     {
         tmGL.set_itype (protocol::liBASE);
-        if (m_journal.trace) m_journal.trace
-             << "Sending header request to "
-             << (peer ? "selected peer" : "all peers");
+        JLOG (m_journal.trace) <<
+            "Sending header request to " <<
+             (peer ? "selected peer" : "all peers");
         sendRequest (tmGL, peer);
         return;
     }
@@ -562,9 +562,9 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
             // we need the root node
             tmGL.set_itype (protocol::liAS_NODE);
             *tmGL.add_nodeids () = SHAMapNodeID ().getRawString ();
-            if (m_journal.trace) m_journal.trace
-                << "Sending AS root request to "
-                << (peer ? "selected peer" : "all peers");
+            JLOG (m_journal.trace) <<
+                "Sending AS root request to " <<
+                (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
             return;
         }
@@ -607,18 +607,18 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                             * (tmGL.add_nodeids ()) = id.first.getRawString ();
                         }
 
-                        if (m_journal.trace) m_journal.trace <<
+                        JLOG (m_journal.trace) <<
                             "Sending AS node request (" <<
                             nodes.size () << ") to " <<
                             (peer ? "selected peer" : "all peers");
-                        if (nodes.size () == 1 && m_journal.trace)
-                            m_journal.trace << "AS node: " << nodes[0].first;
                         sendRequest (tmGL, peer);
                         return;
                     }
                     else
-                        if (m_journal.trace) m_journal.trace <<
+                    {
+                        JLOG (m_journal.trace) <<
                             "All AS nodes filtered";
+                    }
                 }
             }
         }
@@ -637,7 +637,7 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
             // we need the root node
             tmGL.set_itype (protocol::liTX_NODE);
             * (tmGL.add_nodeids ()) = SHAMapNodeID ().getRawString ();
-            if (m_journal.trace) m_journal.trace <<
+            JLOG (m_journal.trace) <<
                 "Sending TX root request to " << (
                     peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
@@ -673,25 +673,25 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                     {
                         * (tmGL.add_nodeids ()) = n.first.getRawString ();
                     }
-                    if (m_journal.trace) m_journal.trace <<
+                    JLOG (m_journal.trace) <<
                         "Sending TX node request (" <<
                         nodes.size () << ") to " <<
                         (peer ? "selected peer" : "all peers");
-                    if (nodes.size () == 1 && m_journal.trace)
-                        m_journal.trace << "AS node: " << nodes[0].first;
                     sendRequest (tmGL, peer);
                     return;
                 }
                 else
-                    if (m_journal.trace) m_journal.trace <<
+                {
+                    JLOG (m_journal.trace) <<
                         "All TX nodes filtered";
+                }
             }
         }
     }
 
     if (mComplete || mFailed)
     {
-        if (m_journal.debug) m_journal.debug <<
+        JLOG (m_journal.debug) <<
             "Done:" << (mComplete ? " complete" : "") <<
                 (mFailed ? " failed " : " ") <<
             mLedger->info().seq;
@@ -723,7 +723,7 @@ void InboundLedger::filterNodes (
     // to query everyone:
     if (!aggressive && ret == nodes.begin())
     {
-        if (m_journal.trace) m_journal.trace <<
+        JLOG (m_journal.trace) <<
             "filterNodes: all are duplicates";
         return;
     }
@@ -746,7 +746,7 @@ void InboundLedger::filterNodes (
 bool InboundLedger::takeHeader (std::string const& data)
 {
     // Return value: true=normal, false=bad data
-    if (m_journal.trace) m_journal.trace <<
+    JLOG (m_journal.trace) <<
         "got header acquiring ledger " << mHash;
 
     if (mComplete || mFailed || mHaveHeader)
@@ -758,10 +758,9 @@ bool InboundLedger::takeHeader (std::string const& data)
 
     if (mLedger->getHash () != mHash)
     {
-        if (m_journal.warning) m_journal.warning <<
-            "Acquire hash mismatch";
-        if (m_journal.warning) m_journal.warning <<
-            mLedger->getHash () << "!=" << mHash;
+        JLOG (m_journal.warning) <<
+            "Acquire hash mismatch: " << mLedger->getHash () <<
+            "!=" << mHash;
         mLedger.reset ();
         return false;
     }
@@ -792,7 +791,7 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
 {
     if (!mHaveHeader)
     {
-        if (m_journal.warning) m_journal.warning <<
+        JLOG (m_journal.warning) <<
             "TX node without header";
         san.incInvalid();
         return false;
@@ -849,8 +848,9 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
 bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
     const std::vector< Blob >& data, SHAMapAddNode& san)
 {
-    if (m_journal.trace) m_journal.trace <<
-        "got ASdata (" << nodeIDs.size () << ") acquiring ledger " << mHash;
+    JLOG (m_journal.trace) <<
+        "got ASdata (" << nodeIDs.size () <<
+        ") acquiring ledger " << mHash;
     if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
         "got AS node: " << nodeIDs.front ();
 
@@ -858,7 +858,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     if (!mHaveHeader)
     {
-        if (m_journal.warning) m_journal.warning <<
+        JLOG (m_journal.warning) <<
             "Don't have ledger header";
         san.incInvalid();
         return false;
@@ -882,7 +882,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
                 SHAMapHash{mLedger->info().accountHash}, *nodeDatait, snfWIRE, &tFilter);
             if (!san.isGood ())
             {
-                if (m_journal.warning) m_journal.warning <<
+                JLOG (m_journal.warning) <<
                     "Bad ledger header";
                 return false;
             }
@@ -893,7 +893,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
                 *nodeIDit, *nodeDatait, &tFilter);
             if (!san.isGood ())
             {
-                if (m_journal.warning) m_journal.warning <<
+                JLOG (m_journal.warning) <<
                     "Unable to add AS node";
                 return false;
             }
@@ -1037,7 +1037,7 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
     {
         if (packet.nodes_size () < 1)
         {
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 "Got empty header data";
             peer->charge (Resource::feeInvalidRequest);
             return -1;
@@ -1051,7 +1051,7 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
                 san.incUseful ();
             else
             {
-                if (m_journal.warning) m_journal.warning <<
+                JLOG (m_journal.warning) <<
                     "Got invalid header data";
                 peer->charge (Resource::feeInvalidRequest);
                 return -1;
@@ -1062,14 +1062,14 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
         if (!mHaveState && (packet.nodes ().size () > 1) &&
             !takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
         {
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 "Included AS root invalid";
         }
 
         if (!mHaveTransactions && (packet.nodes ().size () > 2) &&
             !takeTxRootNode (strCopy (packet.nodes (2).nodedata ()), san))
         {
-            if (m_journal.warning) m_journal.warning <<
+            JLOG (m_journal.warning) <<
                 "Included TX root invalid";
         }
 
@@ -1085,7 +1085,7 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
     {
         if (packet.nodes ().size () == 0)
         {
-            if (m_journal.info) m_journal.info <<
+            JLOG (m_journal.info) <<
                 "Got response with no nodes";
             peer->charge (Resource::feeInvalidRequest);
             return -1;
@@ -1102,7 +1102,7 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
 
             if (!node.has_nodeid () || !node.has_nodedata ())
             {
-                if (m_journal.warning) m_journal.warning <<
+                JLOG (m_journal.warning) <<
                     "Got bad node";
                 peer->charge (Resource::feeInvalidRequest);
                 return -1;
@@ -1119,13 +1119,13 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
         if (packet.type () == protocol::liTX_NODE)
         {
             takeTxNode (nodeIDs, nodeData, san);
-            if (m_journal.debug) m_journal.debug <<
+            JLOG (m_journal.debug) <<
                 "Ledger TX node stats: " << san.get();
         }
         else
         {
             takeAsNode (nodeIDs, nodeData, san);
-            if (m_journal.debug) m_journal.debug <<
+            JLOG (m_journal.debug) <<
                 "Ledger AS node stats: " << san.get();
         }
 
