@@ -595,8 +595,6 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                 }
                 else
                 {
-                    assert (nodeIDs.size() == nodeHashes.size());
-
                     filterNodes (nodes, reason);
 
                     if (!nodes.empty ())
