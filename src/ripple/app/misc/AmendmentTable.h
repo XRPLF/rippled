@@ -115,7 +115,6 @@ public:
             getMajorityAmendments(*lastClosedLedger),
             parentValidations);
 
-#if RIPPLE_PROPOSE_AMENDMENTS
         // Inject appropriate pseudo-transactions
         for (auto const& it : actions)
         {
@@ -140,7 +139,6 @@ public:
                 true,
                 false);
         }
-#endif
     }
 
 };

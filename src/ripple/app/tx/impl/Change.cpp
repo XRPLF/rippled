@@ -167,6 +167,13 @@ Change::applyAmendment()
         entry.emplace_back (STHash256 (sfAmendment, amendment));
         entry.emplace_back (STUInt32 (sfCloseTime,
             view().parentCloseTime().time_since_epoch().count()));
+
+        if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
+        {
+            JLOG (j_.warning) <<
+                "Unsupported amendment " << amendment <<
+                " received a majority.";
+        }
     }
     else if (!lostMajority)
     {
@@ -177,7 +184,12 @@ Change::applyAmendment()
         ctx_.app.getAmendmentTable ().enable (amendment);
 
         if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
+        {
+            JLOG (j_.error) <<
+                "Unsupported amendment " << amendment <<
+                " activated: server blocked.";
             ctx_.app.getOPs ().setAmendmentBlocked ();
+        }
     }
 
     if (newMajorities.empty ())
@@ -203,10 +215,6 @@ Change::applyFee()
         view().insert(feeObject);
     }
 
-    // VFALCO-FIXME this generates errors
-    // j_.trace <<
-    //     "Previous fee object: " << feeObject->getJson (0);
-
     feeObject->setFieldU64 (
         sfBaseFee, ctx_.tx.getFieldU64 (sfBaseFee));
     feeObject->setFieldU32 (
@@ -218,9 +226,6 @@ Change::applyFee()
 
     view().update (feeObject);
 
-    // VFALCO-FIXME this generates errors
-    // j_.trace <<
-    //     "New fee object: " << feeObject->getJson (0);
     j_.warning << "Fees have been changed";
     return tesSUCCESS;
 }

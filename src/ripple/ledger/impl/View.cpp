@@ -476,12 +476,11 @@ getEnabledAmendments (ReadView const& view)
 
     if (auto const sle = view.read(keylet::amendments()))
     {
-        if (!sle->isFieldPresent (sfAmendments))
-            LogicError ("No amendments field is present");
-
-        auto const& v = sle->getFieldV256 (sfAmendments);
-
-        amendments.insert (v.begin(), v.end());
+        if (sle->isFieldPresent (sfAmendments))
+        {
+            auto const& v = sle->getFieldV256 (sfAmendments);
+            amendments.insert (v.begin(), v.end());
+        }
     }
 
     return amendments;
@@ -517,7 +516,7 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
     // Easy cases...
     if (seq > ledger.seq())
     {
-        if (journal.warning) journal.warning <<
+        JLOG (journal.warning) <<
             "Can't get seq " << seq <<
             " from " << ledger.seq() << " future";
         return boost::none;
@@ -541,21 +540,21 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
                 STVector256 vec = hashIndex->getFieldV256 (sfHashes);
                 if (vec.size () >= diff)
                     return vec[vec.size () - diff];
-                if (journal.warning) journal.warning <<
+                JLOG (journal.warning) <<
                     "Ledger " << ledger.seq() <<
                     " missing hash for " << seq <<
                     " (" << vec.size () << "," << diff << ")";
             }
             else
             {
-                if (journal.warning) journal.warning <<
+                JLOG (journal.warning) <<
                     "Ledger " << ledger.seq() <<
                     ":" << ledger.info().hash << " missing normal list";
             }
         }
         if ((seq & 0xff) != 0)
         {
-            if (journal.debug) journal.debug <<
+            JLOG (journal.debug) <<
                 "Can't get seq " << seq <<
                 " from " << ledger.seq() << " past";
             return boost::none;
@@ -576,7 +575,7 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
         if (vec.size () > diff)
             return vec[vec.size () - diff - 1];
     }
-    if (journal.warning) journal.warning <<
+    JLOG (journal.warning) <<
         "Can't get seq " << seq <<
         " from " << ledger.seq() << " error";
     return boost::none;

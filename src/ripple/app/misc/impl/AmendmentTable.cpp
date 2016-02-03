@@ -227,33 +227,44 @@ AmendmentTableImpl::AmendmentTableImpl (
 
     for (auto const& a : parseSection(supported))
     {
-        auto s = add (a.first);
+        if (auto s = add (a.first))
+        {
+            JLOG (j_.debug) <<
+                "Amendment " << a.first << " is supported.";
 
-        if (!a.second.empty ())
-            s->name = a.second;
+            if (!a.second.empty ())
+                s->name = a.second;
 
-        s->supported = true;
+            s->supported = true;
+        }
     }
 
     for (auto const& a : parseSection (enabled))
     {
-        auto s = add (a.first);
+        if (auto s = add (a.first))
+        {
+            JLOG (j_.debug) <<
+                "Amendment " << a.first << " is enabled.";
 
-        if (!a.second.empty ())
-            s->name = a.second;
-        s->supported = true;
-        s->enabled = true;
+            if (!a.second.empty ())
+                s->name = a.second;
+
+            s->supported = true;
+            s->enabled = true;
+        }
     }
 
     for (auto const& a : parseSection (vetoed))
     {
         // Unknown amendments are effectively vetoed already
-        auto s = get (a.first);
-
-        if (s)
+        if (auto s = get (a.first))
         {
+            JLOG (j_.info) <<
+                "Amendment " << a.first << " is vetoed.";
+
             if (!a.second.empty ())
                 s->name = a.second;
+
             s->vetoed = true;
         }
     }
