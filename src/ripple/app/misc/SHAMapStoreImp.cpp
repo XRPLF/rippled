@@ -593,13 +593,14 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
             R"sql(
             DELETE FROM Validations WHERE LedgerHash IN
             (
-            SELECT v.LedgerHash
-            FROM Validations v
-            LEFT OUTER JOIN Ledgers l
-            ON v.LedgerHash = l.LedgerHash
-            WHERE l.LedgerHash is NULL
-            LIMIT )sql" + std::to_string (deleteBatch)
-            + ");");
+                SELECT v.LedgerHash
+                FROM Validations v
+                LEFT OUTER JOIN Ledgers l
+                ON v.LedgerHash = l.LedgerHash
+                WHERE l.LedgerHash is NULL
+                LIMIT )sql" +
+                std::to_string (deleteBatch) +
+            ");");
 
         JLOG (journal_.debug) << "start: " << deleteQuery << " of "
                               << deleteBatch << " rows.";
@@ -610,11 +611,11 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
             auto db = ledgerDb_->checkoutDb ();
             return (db->prepare << deleteQuery);
         }();
+        if (health())
+            return;
         do
         {
             {
-                // Note: We may not need to lock the db before executing the statement, but I
-                // couldn't find documentation that said it was safe, so locking
                 auto db = ledgerDb_->checkoutDb ();
                 st.execute (true);
                 rowsAffected = st.get_affected_rows ();
