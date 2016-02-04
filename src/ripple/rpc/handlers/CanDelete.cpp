@@ -70,10 +70,11 @@ Json::Value doCanDelete (RPC::Context& context)
             {
                 canDeleteSeq = context.app.getSHAMapStore().getLastRotated();
                 if (!canDeleteSeq)
-                    return RPC::make_error (rpcNOT_READY);            }
-                else if (canDeleteStr.size() == 64 &&
-                    canDeleteStr.find_first_not_of("0123456789abcdef") ==
-                    std::string::npos)
+                    return RPC::make_error (rpcNOT_READY);
+            }
+            else if (canDeleteStr.size() == 64 &&
+                canDeleteStr.find_first_not_of("0123456789abcdef") ==
+                std::string::npos)
             {
                 auto ledger = context.ledgerMaster.getLedgerByHash (
                     from_hex_text<uint256>(canDeleteStr));

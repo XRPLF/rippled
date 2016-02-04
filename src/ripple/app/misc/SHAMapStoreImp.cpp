@@ -179,21 +179,24 @@ SHAMapStoreImp::SHAMapStoreImp (
     , scheduler_ (scheduler)
     , journal_ (journal)
     , nodeStoreJournal_ (nodeStoreJournal)
+    , rotating_(false)
     , transactionMaster_ (transactionMaster)
     , canDelete_ (std::numeric_limits <LedgerIndex>::max())
 {
     if (setup_.deleteInterval)
     {
-        if (setup_.deleteInterval < minimumDeletionInterval_)
+        auto const minInterval = setup.standalone ?
+            minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+        if (setup_.deleteInterval < minInterval)
         {
             Throw<std::runtime_error> ("online_delete must be at least " +
-                std::to_string (minimumDeletionInterval_));
+                std::to_string (minInterval));
         }
 
         if (setup_.ledgerHistory > setup_.deleteInterval)
         {
             Throw<std::runtime_error> (
-                "online_delete must be less than ledger_history (currently " +
+                "online_delete must be greater than ledger_history (currently " +
                 std::to_string (setup_.ledgerHistory) + ")");
         }
 
@@ -282,7 +285,8 @@ SHAMapStoreImp::run()
     while (1)
     {
         healthy_ = true;
-        validatedLedger_.reset();
+        Ledger::pointer validatedLedger;
+        rotating_ = false;
 
         {
             std::unique_lock <std::mutex> lock (mutex_);
@@ -293,12 +297,15 @@ SHAMapStoreImp::run()
             }
             cond_.wait (lock);
             if (newLedger_)
-                validatedLedger_ = std::move (newLedger_);
+            {
+                rotating_ = true;
+                validatedLedger = std::move(newLedger_);
+            }
             else
                 continue;
         }
 
-        LedgerIndex validatedSeq = validatedLedger_->info().seq;
+        LedgerIndex validatedSeq = validatedLedger->info().seq;
         if (!lastRotated)
         {
             lastRotated = validatedSeq;
@@ -309,7 +316,7 @@ SHAMapStoreImp::run()
         if (validatedSeq >= lastRotated + setup_.deleteInterval
                 && canDelete_ >= lastRotated - 1)
         {
-            journal_.debug << "rotating  validatedSeq " << validatedSeq
+            JLOG(journal_.debug) << "rotating  validatedSeq " << validatedSeq
                     << " lastRotated " << lastRotated << " deleteInterval "
                     << setup_.deleteInterval << " canDelete_ " << canDelete_;
 
@@ -339,11 +346,11 @@ SHAMapStoreImp::run()
             }
 
             std::uint64_t nodeCount = 0;
-            validatedLedger_->stateMap().snapShot (
+            validatedLedger->stateMap().snapShot (
                     false)->visitNodes (
                     std::bind (&SHAMapStoreImp::copyNode, this,
                     std::ref(nodeCount), std::placeholders::_1));
-            journal_.debug << "copied ledger " << validatedSeq
+            JLOG(journal_.debug) << "copied ledger " << validatedSeq
                     << " nodecount " << nodeCount;
             switch (health())
             {
@@ -358,7 +365,7 @@ SHAMapStoreImp::run()
             }
 
             freshenCaches();
-            journal_.debug << validatedSeq << " freshened caches";
+            JLOG(journal_.debug) << validatedSeq << " freshened caches";
             switch (health())
             {
                 case Health::stopping:
@@ -373,7 +380,7 @@ SHAMapStoreImp::run()
 
             std::shared_ptr <NodeStore::Backend> newBackend =
                     makeBackendRotating();
-            journal_.debug << validatedSeq << " new backend "
+            JLOG(journal_.debug) << validatedSeq << " new backend "
                     << newBackend->getName();
             std::shared_ptr <NodeStore::Backend> oldBackend;
 
@@ -401,7 +408,7 @@ SHAMapStoreImp::run()
                 clearCaches (validatedSeq);
                 oldBackend = database_->rotateBackends (newBackend);
             }
-            journal_.debug << "finished rotation " << validatedSeq;
+            JLOG(journal_.debug) << "finished rotation " << validatedSeq;
 
             oldBackend->setDeletePath();
         }
@@ -525,12 +532,11 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
 
     boost::format formattedDeleteQuery (deleteQuery);
 
-    if (journal_.debug) journal_.debug <<
+    JLOG(journal_.debug) <<
         "start: " << deleteQuery << " from " << min << " to " << lastRotated;
     while (min < lastRotated)
     {
-        min = (min + setup_.deleteBatch >= lastRotated) ? lastRotated :
-            min + setup_.deleteBatch;
+        min = std::min(lastRotated, min + setup_.deleteBatch);
         {
             auto db =  database.checkoutDb ();
             *db << boost::str (formattedDeleteQuery % min);
@@ -541,7 +547,7 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
             std::this_thread::sleep_for (
                     std::chrono::milliseconds (setup_.backOff));
     }
-    journal_.debug << "finished: " << deleteQuery;
+    JLOG(journal_.debug) << "finished: " << deleteQuery;
 }
 
 void
@@ -565,31 +571,68 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
 {
-    ledgerMaster_->clearPriorLedgers (lastRotated);
     if (health())
         return;
 
-    // TODO This won't remove validations for ledgers that do not get
-    // validated. That will likely require inserting LedgerSeq into
-    // the validations table.
-    //
-    // This query has poor performance with large data sets.
-    // The schema needs to be redesigned to avoid the JOIN, or an
-    // RDBMS that supports concurrency should be used.
-    /*
-    clearSql (*ledgerDb_, lastRotated,
-        "SELECT MIN(LedgerSeq) FROM Ledgers;",
-        "DELETE FROM Validations WHERE LedgerHash IN "
-        "(SELECT Ledgers.LedgerHash FROM Validations JOIN Ledgers ON "
-        "Validations.LedgerHash=Ledgers.LedgerHash WHERE Ledgers.LedgerSeq < %u);");
-     */
-
+    ledgerMaster_->clearPriorLedgers (lastRotated);
     if (health())
         return;
 
     clearSql (*ledgerDb_, lastRotated,
         "SELECT MIN(LedgerSeq) FROM Ledgers;",
         "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
+    if (health())
+        return;
+
+    {
+        auto const deleteBatch = setup_.deleteBatch;
+        auto const continueLimit = (deleteBatch + 1) / 2;
+
+        // This does make the sql harder to read
+        std::string const deleteQuery (
+            R"sql(
+            DELETE FROM Validations WHERE LedgerHash IN
+            (
+                SELECT v.LedgerHash
+                FROM Validations v
+                LEFT OUTER JOIN Ledgers l
+                ON v.LedgerHash = l.LedgerHash
+                WHERE l.LedgerHash is NULL
+                LIMIT )sql" +
+                std::to_string (deleteBatch) +
+            ");");
+
+        JLOG (journal_.debug) << "start: " << deleteQuery << " of "
+                              << deleteBatch << " rows.";
+        long long totalRowsAffected = 0;
+        long long rowsAffected;
+        soci::statement st = [&]
+        {
+            auto db = ledgerDb_->checkoutDb ();
+            return (db->prepare << deleteQuery);
+        }();
+        if (health())
+            return;
+        do
+        {
+            {
+                auto db = ledgerDb_->checkoutDb ();
+                st.execute (true);
+                rowsAffected = st.get_affected_rows ();
+                totalRowsAffected += rowsAffected;
+                JLOG (journal_.trace) << "step: deleted " << rowsAffected
+                                      << " rows.";
+            }
+            if (health ())
+                return;
+            if (rowsAffected >= continueLimit)
+                std::this_thread::sleep_for (
+                    std::chrono::milliseconds (setup_.backOff));
+        } while (rowsAffected && rowsAffected >= continueLimit);
+        JLOG (journal_.debug) << "finished: " << deleteQuery << ". Deleted "
+                              << totalRowsAffected << " rows.";
+    }
+
     if (health())
         return;
 
@@ -622,7 +665,7 @@ SHAMapStoreImp::health()
     auto age = ledgerMaster_->getValidatedLedgerAge();
     if (mode != NetworkOPs::omFULL || age.count() >= setup_.ageThreshold)
     {
-        journal_.warning << "Not deleting. state: " << mode
+        JLOG(journal_.warning) << "Not deleting. state: " << mode
                          << " age " << age.count()
                          << " age threshold " << setup_.ageThreshold;
         healthy_ = false;
@@ -673,6 +716,8 @@ SHAMapStore::Setup
 setup_SHAMapStore (Config const& c)
 {
     SHAMapStore::Setup setup;
+
+    setup.standalone = c.RUN_STANDALONE;
 
     // Get existing settings and add some default values if not specified:
     setup.nodeDatabase = c.section (ConfigSection::nodeDatabase ());
