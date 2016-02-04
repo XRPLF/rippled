@@ -272,7 +272,6 @@ void
 SHAMapStoreImp::run()
 {
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
-    Ledger::pointer validatedLedger;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
     fullBelowCache_ = &app_.family().fullbelow();
@@ -286,7 +285,7 @@ SHAMapStoreImp::run()
     while (1)
     {
         healthy_ = true;
-        validatedLedger.reset();
+        Ledger::pointer validatedLedger;
         rotating_ = false;
 
         {
