@@ -702,14 +702,9 @@ void InboundLedger::filterNodes (
     std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
     TriggerReason reason)
 {
-    // ask for new nodes in preference to ones we've
-    // already asked for
-    int const max = (reason == TriggerReason::trReply) ?
-        reqNodesReply : reqNodes;
-    bool const aggressive =
-        (reason == TriggerReason::trTimeout);
-
-    auto ret = std::stable_partition (
+    // Sort nodes so that the ones we haven't recently
+    // requested come before the ones we have.
+    auto dup = std::stable_partition (
         nodes.begin(), nodes.end(),
         [this](auto const& item)
         {
@@ -719,19 +714,31 @@ void InboundLedger::filterNodes (
     // If everything is a duplicate we don't want to send
     // any query at all except on a timeout where we need
     // to query everyone:
-    if (!aggressive && ret == nodes.begin())
+    if (dup == nodes.begin ())
     {
         JLOG (m_journal.trace) <<
-            "filterNodes: all are duplicates";
-        return;
+            "filterNodes: all duplicates";
+
+        if (reason != TriggerReason::trTimeout)
+        {
+            nodes.clear ();
+            return;
+        }
+    }
+    else
+    {
+        JLOG (m_journal.trace) <<
+            "filterNodes: pruning duplicates";
+
+        nodes.erase (dup, nodes.end());
     }
 
-    // Remove any duplicates
-    if (ret != nodes.end())
-        nodes.erase (ret, nodes.end());
+    std::size_t const limit = (reason == TriggerReason::trReply)
+        ? reqNodesReply
+        : reqNodes;
 
-    if (nodes.size () > max)
-        nodes.resize (max);
+    if (nodes.size () > limit)
+        nodes.resize (limit);
 
     for (auto const& n : nodes)
         mRecentNodes.insert (n.second);

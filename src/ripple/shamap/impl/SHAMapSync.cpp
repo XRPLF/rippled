@@ -193,10 +193,9 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
                         {
                             if (!pending)
                             { // node is not in the database
-                                ret.push_back (
-                                    std::make_pair (
-                                        childID,
-                                        childHash.as_uint256()));
+                                ret.emplace_back (
+                                    childID,
+                                    childHash.as_uint256());
 
                                 if (--max <= 0)
                                     return ret;
