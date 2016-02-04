@@ -179,9 +179,9 @@ SHAMapStoreImp::SHAMapStoreImp (
     , scheduler_ (scheduler)
     , journal_ (journal)
     , nodeStoreJournal_ (nodeStoreJournal)
+    , rotating_(false)
     , transactionMaster_ (transactionMaster)
     , canDelete_ (std::numeric_limits <LedgerIndex>::max())
-    , rotating_(false)
 {
     if (setup_.deleteInterval)
     {
