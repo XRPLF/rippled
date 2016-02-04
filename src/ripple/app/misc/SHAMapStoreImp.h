@@ -80,9 +80,9 @@ private:
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
     // minimum # of ledgers to maintain for health of network
-    std::uint32_t const minimumDeletionInterval_ = 256;
+    static std::uint32_t const minimumDeletionInterval_ = 256;
     // minimum # of ledgers required for standalone mode.
-    std::uint32_t const minimumDeletionIntervalSA_ = 8;
+    static std::uint32_t const minimumDeletionIntervalSA_ = 8;
 
     Setup setup_;
     NodeStore::Scheduler& scheduler_;

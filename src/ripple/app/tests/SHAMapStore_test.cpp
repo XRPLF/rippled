@@ -28,7 +28,7 @@ namespace test {
 
 class SHAMapStore_test : public beast::unit_test::suite
 {
-    static auto constexpr deleteInterval = 8;
+    static auto const deleteInterval = 8;
 
     static
     std::unique_ptr<Config>
@@ -136,12 +136,10 @@ class SHAMapStore_test : public beast::unit_test::suite
     {
         using namespace std::chrono_literals;
 
-        auto store = dynamic_cast<SHAMapStoreImp*>(
-            &env.app().getSHAMapStore());
-        expect(store);
+        auto& store = env.app().getSHAMapStore();
 
         int ledgerSeq = 3;
-        while (!store->getLastRotated())
+        while (!store.getLastRotated())
         {
             env.close();
             std::this_thread::sleep_for(100ms);
