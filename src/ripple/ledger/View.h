@@ -94,12 +94,6 @@ std::uint32_t
 rippleTransferRate (ReadView const& view,
     AccountID const& issuer);
 
-std::uint32_t
-rippleTransferRate (ReadView const& view,
-    AccountID const& uSenderID,
-        AccountID const& uReceiverID,
-            AccountID const& issuer);
-
 /** Returns `true` if the directory is empty
     @param key The key of the directory
 */
