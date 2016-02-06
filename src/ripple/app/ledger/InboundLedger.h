@@ -66,25 +66,13 @@ public:
     {
         return mHaveHeader;
     }
-    bool isAcctStComplete () const
-    {
-        return mHaveState;
-    }
-    bool isTransComplete () const
-    {
-        return mHaveTransactions;
-    }
     bool isDone () const
     {
-        return mAborted || isComplete () || isFailed ();
+        return isComplete () || isFailed ();
     }
     Ledger::ref getLedger () const
     {
         return mLedger;
-    }
-    void abort ()
-    {
-        mAborted = true;
     }
     std::uint32_t getSeq () const
     {

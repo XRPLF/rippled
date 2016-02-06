@@ -65,8 +65,6 @@ class InboundTransactionsImp
 public:
     Application& app_;
 
-    using u256_acq_pair = std::pair<uint256, TransactionAcquire::pointer>;
-
     InboundTransactionsImp (
             Application& app,
             clock_type& clock,

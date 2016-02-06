@@ -45,7 +45,10 @@ private:
     beast::Journal j_;
 
 public:
-    using u256_acq_pair = std::pair<uint256, InboundLedger::pointer>;
+    using u256_acq_pair = std::pair<
+        uint256,
+        std::shared_ptr <InboundLedger>>;
+
     // How long before we try again to acquire the same ledger
     static const std::chrono::minutes kReacquireInterval;
 
@@ -66,7 +69,7 @@ public:
     {
         assert (hash.isNonZero ());
         bool isNew = true;
-        InboundLedger::pointer inbound;
+        std::shared_ptr<InboundLedger> inbound;
         {
             ScopedLockType sl (mLock);
 
@@ -96,11 +99,11 @@ public:
         return {};
     }
 
-    InboundLedger::pointer find (uint256 const& hash)
+    std::shared_ptr<InboundLedger> find (uint256 const& hash)
     {
         assert (hash.isNonZero ());
 
-        InboundLedger::pointer ret;
+        std::shared_ptr<InboundLedger> ret;
 
         {
             ScopedLockType sl (mLock);
@@ -157,7 +160,7 @@ public:
             << "Got data (" << packet.nodes ().size ()
             << ") for acquiring ledger: " << hash;
 
-        InboundLedger::pointer ledger = find (hash);
+        auto ledger = find (hash);
 
         if (!ledger)
         {
@@ -230,9 +233,7 @@ public:
 
     void doLedgerData (LedgerHash hash)
     {
-        InboundLedger::pointer ledger = find (hash);
-
-        if (ledger)
+        if (auto ledger = find (hash))
             ledger->runData ();
     }
 
@@ -341,7 +342,7 @@ public:
 
     void gotFetchPack ()
     {
-        std::vector<InboundLedger::pointer> acquires;
+        std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
             ScopedLockType sl (mLock);
 
@@ -418,7 +419,7 @@ private:
     using ScopedLockType = std::unique_lock <std::recursive_mutex>;
     std::recursive_mutex mLock;
 
-    using MapType = hash_map <uint256, InboundLedger::pointer>;
+    using MapType = hash_map <uint256, std::shared_ptr<InboundLedger>>;
     MapType mLedgers;
 
     beast::aged_map <uint256, std::uint32_t> mRecentFailures;

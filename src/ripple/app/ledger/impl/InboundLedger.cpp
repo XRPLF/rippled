@@ -71,7 +71,6 @@ InboundLedger::InboundLedger (
     , mHaveHeader (false)
     , mHaveState (false)
     , mHaveTransactions (false)
-    , mAborted (false)
     , mSignaled (false)
     , mByHash (true)
     , mSeq (seq)
@@ -391,8 +390,9 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
     if (isDone ())
     {
         JLOG (m_journal.debug) <<
-            "Trigger on ledger: " << mHash << (mAborted ? " aborted" : "") <<
-                (mComplete ? " completed" : "") << (mFailed ? " failed" : "");
+            "Trigger on ledger: " << mHash <<
+            (mComplete ? " completed" : "") <<
+            (mFailed ? " failed" : "");
         return;
     }
 
@@ -1145,8 +1145,7 @@ void InboundLedger::runData ()
         // breaking ties in favor of the peer that responded first.
         for (auto& entry : data)
         {
-            Peer::ptr peer = entry.first.lock();
-            if (peer)
+            if (auto peer = entry.first.lock())
             {
                 int count = processData (peer, *(entry.second));
                 if (count > chosenPeerCount)
@@ -1187,9 +1186,6 @@ Json::Value InboundLedger::getJson (int)
         ret[jss::have_state] = mHaveState;
         ret[jss::have_transactions] = mHaveTransactions;
     }
-
-    if (mAborted)
-        ret[jss::aborted] = true;
 
     ret[jss::timeouts] = getTimeouts ();
 
