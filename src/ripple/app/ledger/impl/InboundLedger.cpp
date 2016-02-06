@@ -338,24 +338,6 @@ std::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
     return std::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
-/** Dispatch acquire completion
-*/
-static void LADispatch (
-    InboundLedger::pointer la,
-    std::vector< std::function<void (InboundLedger::pointer)> > trig)
-{
-    if (la->isComplete() && !la->isFailed())
-    {
-        la->app().getLedgerMaster().checkAccept(la->getLedger());
-        la->app().getLedgerMaster().tryAdvance();
-    }
-    else
-        la->app().getInboundLedgers().logFailure (la->getHash(), la->getSeq());
-
-    for (unsigned int i = 0; i < trig.size (); ++i)
-        trig[i] (la);
-}
-
 void InboundLedger::done ()
 {
     if (mSignaled)
@@ -374,12 +356,6 @@ void InboundLedger::done ()
 
     assert (isComplete () || isFailed ());
 
-    std::vector< std::function<void (InboundLedger::pointer)> > triggers;
-    {
-        ScopedLockType sl (mLock);
-        triggers.swap (mOnComplete);
-    }
-
     if (isComplete () && !isFailed () && mLedger)
     {
         mLedger->setClosed ();
@@ -390,22 +366,20 @@ void InboundLedger::done ()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    auto that = shared_from_this ();
     app_.getJobQueue ().addJob (
-        jtLEDGER_DATA, "triggers",
-        [that, triggers] (Job&) { LADispatch(that, triggers); });
-}
-
-bool InboundLedger::addOnComplete (
-    std::function <void (InboundLedger::pointer)> triggerFunc)
-{
-    ScopedLockType sl (mLock);
-
-    if (isDone ())
-        return false;
-
-    mOnComplete.push_back (triggerFunc);
-    return true;
+        jtLEDGER_DATA, "AcquisitionDone",
+        [self = shared_from_this()](Job&)
+        {
+            if (self->isComplete() && !self->isFailed())
+            {
+                self->app().getLedgerMaster().checkAccept(
+                    self->getLedger());
+                self->app().getLedgerMaster().tryAdvance();
+            }
+            else
+                self->app().getInboundLedgers().logFailure (
+                    self->getHash(), self->getSeq());
+        });
 }
 
 /** Request more nodes, perhaps from a specific peer

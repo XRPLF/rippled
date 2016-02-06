@@ -91,9 +91,6 @@ public:
         return mSeq;
     }
 
-    // VFALCO TODO Make this the Listener / Observer pattern
-    bool addOnComplete (std::function<void (InboundLedger::pointer)>);
-
     enum class TriggerReason { trAdded, trReply, trTimeout };
     void trigger (Peer::ptr const&, TriggerReason);
 
@@ -168,8 +165,6 @@ private:
     std::recursive_mutex mReceivedDataLock;
     std::vector <PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
-
-    std::vector <std::function <void (InboundLedger::pointer)> > mOnComplete;
 };
 
 } // ripple
