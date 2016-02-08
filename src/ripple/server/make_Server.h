@@ -26,14 +26,12 @@
 #include <boost/asio/io_service.hpp>
 
 namespace ripple {
-namespace HTTP {
 
 /** Create the HTTP server using the specified handler. */
 std::unique_ptr<Server>
 make_Server (Handler& handler,
     boost::asio::io_service& io_service, beast::Journal journal);
 
-} // HTTP
 } // ripple
 
 #endif

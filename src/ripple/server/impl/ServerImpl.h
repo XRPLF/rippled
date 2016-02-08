@@ -23,10 +23,10 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
+#include <ripple/server/impl/io_list.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
-#include <boost/intrusive/list.hpp>
 #include <boost/optional.hpp>
 #include <array>
 #include <chrono>
@@ -37,7 +37,6 @@
 #include <thread>
 
 namespace ripple {
-namespace HTTP {
 
 class BasicPeer;
 class Door;
@@ -55,17 +54,13 @@ struct Stat
 class ServerImpl : public Server
 {
 public:
-    class Child : public boost::intrusive::list_base_hook <
-        boost::intrusive::link_mode <boost::intrusive::normal_link>>
+    struct Child
     {
-    public:
+        virtual ~Child() = default;
         virtual void close() = 0;
     };
 
 private:
-    using list_type = boost::intrusive::make_list <Child,
-        boost::intrusive::constant_time_size <false>>::type;
-
     using clock_type = std::chrono::system_clock;
 
     enum
@@ -75,7 +70,7 @@ private:
 
     using Doors = std::vector <std::shared_ptr<Door>>;
 
-    Handler& handler_;
+    Handler* handler_;
     beast::Journal journal_;
     boost::asio::io_service& io_service_;
     boost::asio::io_service::strand strand_;
@@ -83,11 +78,13 @@ private:
 
     std::mutex mutable mutex_;
     std::condition_variable cond_;
-    list_type list_;
+    std::vector<std::unique_ptr<Door>> list_;
+    std::size_t accepting_ = 0;
     std::deque <Stat> stats_;
     int high_ = 0;
-
     std::array <std::size_t, 64> hist_;
+    
+    io_list ios_;
 
 public:
     ServerImpl (Handler& handler,
@@ -111,7 +108,7 @@ public:
     close() override;
 
 public:
-    Handler&
+    Handler*
     handler()
     {
         return handler_;
@@ -124,10 +121,7 @@ public:
     }
 
     void
-    add (Child& child);
-
-    void
-    remove (Child& child);
+    remove();
 
     bool
     closed();
@@ -142,7 +136,6 @@ private:
 };
 
 
-}
-}
+} // ripple
 
 #endif

@@ -25,7 +25,6 @@
 #include <vector>
 
 namespace ripple {
-namespace HTTP {
 
 class Writer
 {
@@ -58,7 +57,6 @@ public:
     data() = 0;
 };
 
-}
-}
+} // ripple
 
 #endif

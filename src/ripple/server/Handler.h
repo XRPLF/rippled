@@ -29,10 +29,9 @@
 #include <memory>
 
 namespace ripple {
-namespace HTTP {
 
-class Server;
 class Session;
+class Server;
 
 /** Processes all sessions.
     Thread safety:
@@ -91,7 +90,6 @@ struct Handler
     virtual void onStopped (Server& server) = 0;
 };
 
-} // HTTP
 } // ripple
 
 #endif

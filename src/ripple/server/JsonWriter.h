@@ -29,7 +29,6 @@
 #include <sstream>
 
 namespace ripple {
-namespace HTTP {
 
 namespace detail {
 
@@ -160,7 +159,6 @@ make_JsonWriter (beast::http::message& m, Json::Value const& json)
         std::move(prebody), std::move(body));
 }
 
-}
-}
+} // ripple
 
 #endif
