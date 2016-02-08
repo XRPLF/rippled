@@ -48,6 +48,7 @@ public:
 
 private:
     std::mutex m_;
+    std::size_t n_ = 0;
     bool closed_ = false;
     std::condition_variable cv_;
     std::unordered_map<work*,
@@ -81,6 +82,7 @@ public:
         std::lock_guard<std::mutex> lock(m_);
         if(closed_)
             throw std::logic_error("io_list closed");
+        ++n_;
         map_.emplace(sp.get(), sp);
         return sp;
     }
@@ -89,11 +91,16 @@ public:
     void
     close()
     {
-        std::lock_guard<std::mutex> lock(m_);
-        if(closed_)
-            return;
+        decltype(map_) map;
+        {
+            std::lock_guard<std::mutex> lock(m_);
+            if(closed_)
+                return;
+            closed_ = true;
+            map = std::move(map_);
+        }
         using namespace boost::adaptors;
-        for(auto wp : transform(map_,
+        for(auto wp : transform(map,
                 [](auto const& v){ return v.second; }))
             if(auto sp = wp.lock())
                 sp->close();
@@ -109,13 +116,12 @@ public:
 
 private:
     void
-    insert(work& w)
-    {
-    }
-
-    void
     erase(work& w)
     {
+        std::lock_guard<std::mutex> lock(m_);
+        map_.erase(&w);
+        if(--n_ == 0)
+            cv_.notify_all();
     }
 };
 
