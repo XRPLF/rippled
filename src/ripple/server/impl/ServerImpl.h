@@ -23,6 +23,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
+#include <ripple/server/impl/io_list.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
@@ -81,8 +82,9 @@ private:
     std::size_t accepting_ = 0;
     std::deque <Stat> stats_;
     int high_ = 0;
-
     std::array <std::size_t, 64> hist_;
+    
+    io_list ios_;
 
 public:
     ServerImpl (Handler& handler,

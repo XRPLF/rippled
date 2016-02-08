@@ -214,4 +214,3 @@ make_Server (Handler& handler,
 }
 
 } // ripple
-
