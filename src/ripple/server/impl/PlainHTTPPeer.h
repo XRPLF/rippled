@@ -37,8 +37,9 @@ private:
 
 public:
     template <class ConstBufferSequence>
-    PlainHTTPPeer (Door& door, beast::Journal journal, endpoint_type endpoint,
-        ConstBufferSequence const& buffers, socket_type&& socket);
+    PlainHTTPPeer (Port const& port, Handler& handler,
+        beast::Journal journal, endpoint_type remote_address,
+            ConstBufferSequence const& buffers, socket_type&& socket);
 
     void
     run();
@@ -54,10 +55,10 @@ private:
 //------------------------------------------------------------------------------
 
 template <class ConstBufferSequence>
-PlainHTTPPeer::PlainHTTPPeer (Door& door, beast::Journal journal,
-    endpoint_type remote_address, ConstBufferSequence const& buffers,
-        socket_type&& socket)
-    : BaseHTTPPeer (door, socket.get_io_service(), journal, remote_address, buffers)
+PlainHTTPPeer::PlainHTTPPeer (Port const& port, Handler& handler,
+    beast::Journal journal, endpoint_type remote_address,
+        ConstBufferSequence const& buffers, socket_type&& socket)
+    : BaseHTTPPeer(port, handler, socket.get_io_service(), journal, remote_address, buffers)
     , stream_(std::move(socket))
 {
 }
@@ -65,7 +66,7 @@ PlainHTTPPeer::PlainHTTPPeer (Door& door, beast::Journal journal,
 void
 PlainHTTPPeer::run ()
 {
-    door_.server().handler()->onAccept (session());
+    handler_.onAccept (session());
     if (! stream_.is_open())
         return;
 
@@ -77,7 +78,7 @@ void
 PlainHTTPPeer::do_request()
 {
     ++request_count_;
-    auto const what = door_.server().handler()->onHandoff (session(),
+    auto const what = handler_.onHandoff (session(),
         std::move(stream_), std::move(message_), remote_address_);
     if (what.moved)
         return;
@@ -98,7 +99,7 @@ PlainHTTPPeer::do_request()
     if (ec)
         return fail (ec, "request");
     // legacy
-    door_.server().handler()->onRequest (session());
+    handler_.onRequest (session());
 }
 
 void

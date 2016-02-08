@@ -118,13 +118,6 @@ private:
         std::shared_ptr<JobCoro> jobCoro,
         std::string forwardedFor, std::string user);
 
-    //
-    // PropertyStream
-    //
-
-    void
-    onWrite (beast::PropertyStream::Map& map) override;
-
 private:
     bool
     isWebsocketUpgrade (beast::http::message const& request);

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_DOOR_H_INCLUDED
 #define RIPPLE_SERVER_DOOR_H_INCLUDED
 
+#include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/streambuf.h>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -36,20 +37,9 @@ namespace ripple {
 
 /** A listening socket. */
 class Door
-    : public ServerImpl::Child
+    : public io_list::work
+    , public std::enable_shared_from_this<Door>
 {
-public:
-    class Child
-    {
-    protected:
-        Door& door_;
-
-    public:
-        Child (Door& door);
-        virtual ~Child();
-        virtual void close() = 0;
-    };
-
 private:
     using clock_type = std::chrono::steady_clock;
     using timer_type = boost::asio::basic_waitable_timer<clock_type>;
@@ -61,18 +51,23 @@ private:
     using socket_type = protocol_type::socket;
 
     // Detects SSL on a socket
-    class detector
-        : public Child
-        , public std::enable_shared_from_this <detector>
+    class Detector
+        : public io_list::work
+        , public std::enable_shared_from_this<Detector>
     {
     private:
+        Port const& port_;
+        Handler& handler_;
         socket_type socket_;
         timer_type timer_;
         endpoint_type remote_address_;
+        boost::asio::io_service::strand strand_;
+        beast::Journal j_;
 
     public:
-        detector (Door& door, socket_type&& socket,
-            endpoint_type remote_address);
+        Detector (Port const& port, Handler& handler,
+            socket_type&& socket, endpoint_type remote_address,
+                beast::Journal j);
         void run();
         void close() override;
 
@@ -81,39 +76,17 @@ private:
         void do_detect (yield_context yield);
     };
 
-    std::shared_ptr<Port> port_;
-    ServerImpl& server_;
+    beast::Journal j_;
+    Port const& port_;
+    Handler& handler_;
     acceptor_type acceptor_;
     boost::asio::io_service::strand strand_;
-    std::mutex mutex_;
-    std::condition_variable cond_;
-    boost::container::flat_map<
-        Child*, std::weak_ptr<Child>> list_;
     bool ssl_;
     bool plain_;
 
 public:
-    Door (boost::asio::io_service& io_service,
-        ServerImpl& server, Port const& port);
-
-    /** Destroy the door.
-        Blocks until there are no pending I/O completion
-        handlers, and all connections have been destroyed.
-        close() must be called before the destructor.
-    */
-    ~Door();
-
-    ServerImpl&
-    server()
-    {
-        return server_;
-    }
-
-    Port const&
-    port() const
-    {
-        return *port_;
-    }
+    Door(Handler& handler, boost::asio::io_service& io_service,
+        Port const& port, beast::Journal j);
 
     // Work-around because we can't call shared_from_this in ctor
     void run();
@@ -126,11 +99,7 @@ public:
     */
     void close();
 
-    void remove (Child& c);
-
 private:
-    void add (std::shared_ptr<Child> const& child);
-
     template <class ConstBufferSequence>
     void create (bool ssl, ConstBufferSequence const& buffers,
         socket_type&& socket, endpoint_type remote_address);

@@ -49,10 +49,6 @@ public:
     void
     ports (std::vector<Port> const& v) = 0;
 
-    virtual
-    void
-    onWrite (beast::PropertyStream::Map& map) = 0;
-
     /** Close the server.
         The close is performed asynchronously. The handler will be notified
         when the server has stopped. The server is considered stopped when

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/PlainHTTPPeer.h>
 #include <ripple/server/impl/SSLHTTPPeer.h>
@@ -35,7 +36,7 @@ namespace ripple {
     read from the stream until there is enough to determine a result.
     No bytes are discarded from buf. Any additional bytes read are retained.
     buf must provide an interface compatible with boost::asio::streambuf
-   http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
+    http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
     See
         http://www.ietf.org/rfc/rfc2246.txt
         Section 7.4. Handshake protocol
@@ -81,41 +82,33 @@ detect_ssl (Socket& socket, StreamBuf& buf, Yield yield)
 
 //------------------------------------------------------------------------------
 
-Door::Child::Child(Door& door)
-    : door_(door)
-{
-}
-
-Door::Child::~Child()
-{
-    door_.remove(*this);
-}
-
-//------------------------------------------------------------------------------
-
-Door::detector::detector (Door& door, socket_type&& socket,
-        endpoint_type remote_address)
-    : Child(door)
+Door::Detector::Detector(Port const& port,
+    Handler& handler, socket_type&& socket,
+        endpoint_type remote_address, beast::Journal j)
+    : port_(port)
+    , handler_(handler)
     , socket_(std::move(socket))
     , timer_(socket_.get_io_service())
     , remote_address_(remote_address)
+    , strand_(socket_.get_io_service())
+    , j_(j)
 {
 }
 
 void
-Door::detector::run()
+Door::Detector::run()
 {
     // do_detect must be called before do_timer or else
     // the timer can be canceled before it gets set.
-    boost::asio::spawn (door_.strand_, std::bind (&detector::do_detect,
+    boost::asio::spawn (strand_, std::bind (&Detector::do_detect,
         shared_from_this(), std::placeholders::_1));
 
-    boost::asio::spawn (door_.strand_, std::bind (&detector::do_timer,
+    boost::asio::spawn (strand_, std::bind (&Detector::do_timer,
         shared_from_this(), std::placeholders::_1));
 }
 
 void
-Door::detector::close()
+Door::Detector::close()
 {
     error_code ec;
     socket_.close(ec);
@@ -123,7 +116,7 @@ Door::detector::close()
 }
 
 void
-Door::detector::do_timer (yield_context yield)
+Door::Detector::do_timer (yield_context yield)
 {
     error_code ec; // ignored
     while (socket_.is_open())
@@ -135,7 +128,7 @@ Door::detector::do_timer (yield_context yield)
 }
 
 void
-Door::detector::do_detect (boost::asio::yield_context yield)
+Door::Detector::do_detect (boost::asio::yield_context yield)
 {
     bool ssl;
     error_code ec;
@@ -145,29 +138,45 @@ Door::detector::do_detect (boost::asio::yield_context yield)
     error_code unused;
     timer_.cancel(unused);
     if (! ec)
-        return door_.create(ssl, buf.data(),
-            std::move(socket_), remote_address_);
+    {
+        if (ssl)
+        {
+            if(auto sp = ios().emplace<SSLHTTPPeer>(port_, handler_,
+                j_, remote_address_, buf.data(),
+                    std::move(socket_)))
+                sp->run();
+            return;
+        }
+        if(auto sp = ios().emplace<PlainHTTPPeer>(port_, handler_,
+            j_, remote_address_, buf.data(),
+                std::move(socket_)))
+            sp->run();
+        return;
+    }
     if (ec != boost::asio::error::operation_aborted)
-        if (door_.server_.journal().trace) door_.server_.journal().trace <<
+    {
+        JLOG(j_.trace) <<
             "Error detecting ssl: " << ec.message() <<
                 " from " << remote_address_;
+    }
 }
 
 //------------------------------------------------------------------------------
 
-Door::Door (boost::asio::io_service& io_service,
-        ServerImpl& server, Port const& port)
-    : port_(std::make_shared<Port>(port))
-    , server_(server)
+Door::Door (Handler& handler, boost::asio::io_service& io_service,
+        Port const& port, beast::Journal j)
+    : j_(j)
+    , port_(port)
+    , handler_(handler)
     , acceptor_(io_service)
     , strand_(io_service)
     , ssl_ (
-        port_->protocol.count("https") > 0 ||
-        //port_->protocol.count("wss") > 0 ||
-        port_->protocol.count("peer") > 0)
+        port_.protocol.count("https") > 0 ||
+        //port_.protocol.count("wss") > 0 ||
+        port_.protocol.count("peer") > 0)
     , plain_ (
-        //port_->protocol.count("ws") > 0 ||
-        port_->protocol.count("http") > 0)
+        //port_.protocol.count("ws") > 0 ||
+        port_.protocol.count("http") > 0)
 {
     error_code ec;
     endpoint_type const local_address =
@@ -176,7 +185,7 @@ Door::Door (boost::asio::io_service& io_service,
     acceptor_.open(local_address.protocol(), ec);
     if (ec)
     {
-        if (server_.journal().error) server_.journal().error <<
+        JLOG(j_.error) <<
             "Open port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
@@ -185,7 +194,7 @@ Door::Door (boost::asio::io_service& io_service,
         boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
     if (ec)
     {
-        if (server_.journal().error) server_.journal().error <<
+        JLOG(j_.error) <<
             "Option for port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
@@ -193,7 +202,7 @@ Door::Door (boost::asio::io_service& io_service,
     acceptor_.bind(local_address, ec);
     if (ec)
     {
-        if (server_.journal().error) server_.journal().error <<
+        JLOG(j_.error) <<
             "Bind port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
@@ -201,30 +210,20 @@ Door::Door (boost::asio::io_service& io_service,
     acceptor_.listen(boost::asio::socket_base::max_connections, ec);
     if (ec)
     {
-        if (server_.journal().error) server_.journal().error <<
+        JLOG(j_.error) <<
             "Listen on port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
 
-    if (server_.journal().info) server_.journal().info <<
+    JLOG(j_.info) <<
         "Opened " << port;
-}
-
-Door::~Door()
-{
-    {
-        // Block until all detector, Peer objects destroyed
-        std::unique_lock<std::mutex> lock(mutex_);
-        while (! list_.empty())
-            cond_.wait(lock);
-    }
 }
 
 void
 Door::run()
 {
-    boost::asio::spawn (strand_, std::bind (&Door::do_accept,
-        this, std::placeholders::_1));
+    boost::asio::spawn (strand_, std::bind(&Door::do_accept,
+        shared_from_this(), std::placeholders::_1));
 }
 
 void
@@ -232,70 +231,30 @@ Door::close()
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
-            &Door::close, this));
+            &Door::close, shared_from_this()));
     error_code ec;
     acceptor_.close(ec);
-    // Close all detector, Peer objects
-    std::vector<std::shared_ptr<Child>> v;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for(auto& p : list_)
-        {
-            auto const peer = p.second.lock();
-            if (peer != nullptr)
-            {
-                peer->close();
-                // Must destroy shared_ptr outside the
-                // lock otherwise deadlock from the
-                // managed object's destructor.
-                v.emplace_back(std::move(peer));
-            }
-        }
-    }
-}
-
-void
-Door::remove (Child& c)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto const n = list_.erase(&c);
-    if(n != 1)
-        Throw<std::runtime_error>("missing child");
-    if (list_.empty())
-        cond_.notify_all();
 }
 
 //------------------------------------------------------------------------------
-
-void
-Door::add (std::shared_ptr<Child> const& child)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    list_.emplace(child.get(), child);
-}
 
 template <class ConstBufferSequence>
 void
 Door::create (bool ssl, ConstBufferSequence const& buffers,
     socket_type&& socket, endpoint_type remote_address)
 {
-    if (server_.closed())
-        return;
-
     if (ssl)
     {
-        auto const peer = std::make_shared <SSLHTTPPeer> (*this,
-            server_.journal(), remote_address, buffers,
-                std::move(socket));
-        add(peer);
-        return peer->run();
+        if(auto sp = ios().emplace<SSLHTTPPeer>(port_, handler_,
+            j_, remote_address, buffers,
+                std::move(socket)))
+            sp->run();
+        return;
     }
-
-    auto const peer = std::make_shared <PlainHTTPPeer> (*this,
-        server_.journal(), remote_address, buffers,
-            std::move(socket));
-    add(peer);
-    peer->run();
+    if(auto sp = ios().emplace<PlainHTTPPeer>(port_, handler_,
+        j_, remote_address, buffers,
+            std::move(socket)))
+        sp->run();
 }
 
 void
@@ -308,19 +267,19 @@ Door::do_accept (boost::asio::yield_context yield)
         socket_type socket (acceptor_.get_io_service());
         acceptor_.async_accept (socket, remote_address, yield[ec]);
         if (ec && ec != boost::asio::error::operation_aborted)
-            if (server_.journal().error) server_.journal().error <<
+            if (j_.error) j_.error <<
                 "accept: " << ec.message();
-        if (ec == boost::asio::error::operation_aborted || server_.closed())
+        if (ec == boost::asio::error::operation_aborted)
             break;
         if (ec)
             continue;
 
         if (ssl_ && plain_)
         {
-            auto const c = std::make_shared <detector> (
-                *this, std::move(socket), remote_address);
-            add(c);
-            c->run();
+            if(auto sp = ios().emplace<Detector>(port_,
+                handler_, std::move(socket), remote_address,
+                    j_))
+                sp->run();
         }
         else if (ssl_ || plain_)
         {
@@ -328,7 +287,6 @@ Door::do_accept (boost::asio::yield_context yield)
                 std::move(socket), remote_address);
         }
     }
-    server_.remove();
 }
 
 } // ripple

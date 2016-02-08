@@ -48,7 +48,6 @@ namespace ripple {
 
 ServerHandler::ServerHandler (Stoppable& parent)
     : Stoppable ("ServerHandler", parent)
-    , Source ("server")
 {
 }
 
@@ -445,14 +444,6 @@ ServerHandlerImp::authorized (Port const& port,
     std::string strUser = strUserPass.substr (0, nColon);
     std::string strPassword = strUserPass.substr (nColon + 1);
     return strUser == port.user && strPassword == port.password;
-}
-
-//------------------------------------------------------------------------------
-
-void
-ServerHandlerImp::onWrite (beast::PropertyStream::Map& map)
-{
-    m_server->onWrite (map);
 }
 
 //------------------------------------------------------------------------------
