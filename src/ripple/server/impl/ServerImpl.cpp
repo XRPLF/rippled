@@ -36,26 +36,20 @@ namespace ripple {
 
 ServerImpl::ServerImpl (Handler& handler,
         boost::asio::io_service& io_service, beast::Journal journal)
-    : handler_ (&handler)
-    , journal_ (journal)
-    , io_service_ (io_service)
-    , strand_ (io_service_)
-    , work_ (boost::in_place (std::ref(io_service)))
-    , hist_{}
+    : handler_(handler)
+    , j_(journal)
+    , io_service_(io_service)
+    , strand_(io_service_)
+    , work_(io_service_)
 {
 }
 
 ServerImpl::~ServerImpl()
 {
-    // Prevent call to handler
-    handler_ = nullptr;
-    close();
-    {
-        // Block until all Doors are done accepting
-        std::unique_lock<std::mutex> lock(mutex_);
-        while (accepting_ > 0)
-            cond_.wait(lock);
-    }
+    // Handler::onStopped will not be called
+    work_ = boost::none;
+    ios_.close();
+    ios_.join();
 }
 
 void
@@ -63,53 +57,18 @@ ServerImpl::ports (std::vector<Port> const& ports)
 {
     if (closed())
         Throw<std::logic_error> ("ports() on closed Server");
+    ports_.reserve(ports.size());
     for(auto const& port : ports)
     {
         if (! port.websockets())
         {
-            ++accepting_;
-            list_.emplace_back(std::make_unique<Door>(
-                io_service_, *this, port));
-        }
-    }
-    for(auto const& door : list_)
-        door->run();
-}
-
-void
-ServerImpl::onWrite (beast::PropertyStream::Map& map)
-{
-    std::lock_guard <std::mutex> lock (mutex_);
-    map ["active"] = list_.size();
-    {
-        std::string s;
-        for (int i = 0; i <= high_; ++i)
-        {
-            if (i)
-                s += ", ";
-            s += std::to_string (hist_[i]);
-        }
-        map ["hist"] = s;
-    }
-    {
-        beast::PropertyStream::Set set ("history", map);
-        for (auto const& stat : stats_)
-        {
-            beast::PropertyStream::Map item (set);
-
-            item ["id"] = stat.id;
-
+            ports_.push_back(port);
+            if(auto sp = ios_.emplace<Door>(handler_,
+                io_service_, ports_.back(), j_))
             {
-                std::stringstream ss;
-                ss << stat.elapsed;
-                item ["elapsed"] = ss.str();
+                list_.push_back(sp);
+                sp->run();
             }
-
-            item ["requests"] = stat.requests;
-            item ["bytes_in"] = stat.bytes_in;
-            item ["bytes_out"] = stat.bytes_out;
-            if (stat.ec)
-                item ["error"] = stat.ec.message();
         }
     }
 }
@@ -117,91 +76,18 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 void
 ServerImpl::close()
 {
-    Handler* h = nullptr;
+    ios_.close(
+    [&]
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (work_)
-        {
-            work_ = boost::none;
-            // Close all Door objects
-            if (accepting_ == 0)
-            {
-                std::swap (h, handler_);
-            }
-            else
-            {
-                for(auto& door : list_)
-                    door->close();
-            }
-        }
-    }
-    if (h)
-        h->onStopped(*this);
-}
-
-//--------------------------------------------------------------------------
-
-void
-ServerImpl::remove()
-{
-    Handler* h = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if(--accepting_ == 0)
-        {
-            cond_.notify_all();
-            std::swap (h, handler_);
-        }
-    }
-    if (h)
-        h->onStopped(*this);
+        work_ = boost::none;
+        handler_.onStopped(*this);
+    });
 }
 
 bool
 ServerImpl::closed()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return ! work_;
-}
-
-void
-ServerImpl::report (Stat&& stat)
-{
-    int const bucket = ceil_log2 (stat.requests);
-    std::lock_guard <std::mutex> lock (mutex_);
-    ++hist_[bucket];
-    high_ = std::max (high_, bucket);
-    if (stats_.size() >= historySize)
-        stats_.pop_back();
-    stats_.emplace_front (std::move(stat));
-}
-
-//--------------------------------------------------------------------------
-
-int
-ServerImpl::ceil_log2 (unsigned long long x)
-{
-    static const unsigned long long t[6] = {
-        0xFFFFFFFF00000000ull,
-        0x00000000FFFF0000ull,
-        0x000000000000FF00ull,
-        0x00000000000000F0ull,
-        0x000000000000000Cull,
-        0x0000000000000002ull
-    };
-
-    int y = (((x & (x - 1)) == 0) ? 0 : 1);
-    int j = 32;
-    int i;
-
-    for(i = 0; i < 6; i++) {
-        int k = (((x & t[i]) == 0) ? 0 : j);
-        y += k;
-        x >>= k;
-        j >>= 1;
-    }
-
-    return y;
+    return ios_.closed();
 }
 
 //--------------------------------------------------------------------------
@@ -214,4 +100,3 @@ make_Server (Handler& handler,
 }
 
 } // ripple
-

@@ -23,6 +23,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
+#include <ripple/server/impl/io_list.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
@@ -40,25 +41,8 @@ namespace ripple {
 class BasicPeer;
 class Door;
 
-struct Stat
-{
-    std::size_t id;
-    std::chrono::seconds elapsed;
-    int requests;
-    std::size_t bytes_in;
-    std::size_t bytes_out;
-    boost::system::error_code ec;
-};
-
 class ServerImpl : public Server
 {
-public:
-    struct Child
-    {
-        virtual ~Child() = default;
-        virtual void close() = 0;
-    };
-
 private:
     using clock_type = std::chrono::system_clock;
 
@@ -69,20 +53,19 @@ private:
 
     using Doors = std::vector <std::shared_ptr<Door>>;
 
-    Handler* handler_;
-    beast::Journal journal_;
+    Handler& handler_;
+    beast::Journal j_;
     boost::asio::io_service& io_service_;
     boost::asio::io_service::strand strand_;
     boost::optional <boost::asio::io_service::work> work_;
 
-    std::mutex mutable mutex_;
-    std::condition_variable cond_;
-    std::vector<std::unique_ptr<Door>> list_;
-    std::size_t accepting_ = 0;
-    std::deque <Stat> stats_;
+    std::mutex m_;
+    std::vector<Port> ports_;
+    std::vector<std::weak_ptr<Door>> list_;
     int high_ = 0;
-
     std::array <std::size_t, 64> hist_;
+    
+    io_list ios_;
 
 public:
     ServerImpl (Handler& handler,
@@ -93,39 +76,30 @@ public:
     beast::Journal
     journal() override
     {
-        return journal_;
+        return j_;
     }
 
     void
     ports (std::vector<Port> const& ports) override;
 
     void
-    onWrite (beast::PropertyStream::Map& map) override;
-
-    void
     close() override;
 
-public:
-    Handler*
-    handler()
+    io_list&
+    ios()
     {
-        return handler_;
+        return ios_;
     }
 
+public:
     boost::asio::io_service&
     get_io_service()
     {
         return io_service_;
     }
 
-    void
-    remove();
-
     bool
     closed();
-
-    void
-    report (Stat&& stat);
 
 private:
     static

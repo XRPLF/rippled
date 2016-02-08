@@ -20,8 +20,9 @@
 #ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
-#include <ripple/server/impl/Door.h>
 #include <ripple/server/Session.h>
+#include <ripple/server/impl/Door.h>
+#include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
@@ -46,7 +47,7 @@ namespace ripple {
 /** Represents an active connection. */
 template <class Impl>
 class BaseHTTPPeer
-    : public Door::Child
+    : public io_list::work
     , public Session
 {
 protected:
@@ -81,6 +82,8 @@ protected:
         std::size_t used;
     };
 
+    Port const& port_;
+    Handler& handler_;
     boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
@@ -108,9 +111,9 @@ protected:
 
 public:
     template <class ConstBufferSequence>
-    BaseHTTPPeer (Door& door, boost::asio::io_service& io_service,
-        beast::Journal journal, endpoint_type remote_address,
-            ConstBufferSequence const& buffers);
+    BaseHTTPPeer (Port const& port, Handler& handler,
+        boost::asio::io_service& io_service, beast::Journal journal,
+            endpoint_type remote_address, ConstBufferSequence const& buffers);
 
     virtual
     ~BaseHTTPPeer();
@@ -165,13 +168,13 @@ protected:
     beast::Journal
     journal() override
     {
-        return door_.server().journal();
+        return journal_;
     }
 
     Port const&
     port() override
     {
-        return door_.port();
+        return port_;
     }
 
     beast::IP::Endpoint
@@ -213,10 +216,12 @@ protected:
 
 template <class Impl>
 template <class ConstBufferSequence>
-BaseHTTPPeer<Impl>::BaseHTTPPeer (Door& door, boost::asio::io_service& io_service,
-    beast::Journal journal, endpoint_type remote_address,
+BaseHTTPPeer<Impl>::BaseHTTPPeer (Port const& port, Handler& handler,
+    boost::asio::io_service& io_service, beast::Journal journal,
+        endpoint_type remote_address,
         ConstBufferSequence const& buffers)
-    : Child(door)
+    : port_(port)
+    , handler_(handler)
     , work_ (io_service)
     , strand_ (io_service)
     , timer_ (io_service)
@@ -236,17 +241,7 @@ BaseHTTPPeer<Impl>::BaseHTTPPeer (Door& door, boost::asio::io_service& io_servic
 template <class Impl>
 BaseHTTPPeer<Impl>::~BaseHTTPPeer()
 {
-    Stat stat;
-    stat.id = nid_;
-    stat.elapsed = std::chrono::duration_cast <
-        std::chrono::seconds> (clock_type::now() - when_);
-    stat.requests = request_count_;
-    stat.bytes_in = bytes_in_;
-    stat.bytes_out = bytes_out_;
-    stat.ec = std::move (ec_);
-    door_.server().report (std::move (stat));
-    if(door_.server().handler())
-        door_.server().handler()->onClose(session(), ec_);
+    handler_.onClose(session(), ec_);
     if (journal_.trace) journal_.trace << id_ <<
         "destroyed: " << request_count_ <<
             ((request_count_ == 1) ? " request" : " requests");
