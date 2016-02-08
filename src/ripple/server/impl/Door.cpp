@@ -35,7 +35,7 @@ namespace ripple {
     read from the stream until there is enough to determine a result.
     No bytes are discarded from buf. Any additional bytes read are retained.
     buf must provide an interface compatible with boost::asio::streambuf
-   http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
+    http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
     See
         http://www.ietf.org/rfc/rfc2246.txt
         Section 7.4. Handshake protocol
@@ -81,21 +81,9 @@ detect_ssl (Socket& socket, StreamBuf& buf, Yield yield)
 
 //------------------------------------------------------------------------------
 
-Door::Child::Child(Door& door)
-    : door_(door)
-{
-}
-
-Door::Child::~Child()
-{
-    door_.remove(*this);
-}
-
-//------------------------------------------------------------------------------
-
-Door::detector::detector (Door& door, socket_type&& socket,
+Door::Detector::Detector (Door& door, socket_type&& socket,
         endpoint_type remote_address)
-    : Child(door)
+    : door_(door)
     , socket_(std::move(socket))
     , timer_(socket_.get_io_service())
     , remote_address_(remote_address)
@@ -103,19 +91,19 @@ Door::detector::detector (Door& door, socket_type&& socket,
 }
 
 void
-Door::detector::run()
+Door::Detector::run()
 {
     // do_detect must be called before do_timer or else
     // the timer can be canceled before it gets set.
-    boost::asio::spawn (door_.strand_, std::bind (&detector::do_detect,
+    boost::asio::spawn (door_.strand_, std::bind (&Detector::do_detect,
         shared_from_this(), std::placeholders::_1));
 
-    boost::asio::spawn (door_.strand_, std::bind (&detector::do_timer,
+    boost::asio::spawn (door_.strand_, std::bind (&Detector::do_timer,
         shared_from_this(), std::placeholders::_1));
 }
 
 void
-Door::detector::close()
+Door::Detector::close()
 {
     error_code ec;
     socket_.close(ec);
@@ -123,7 +111,7 @@ Door::detector::close()
 }
 
 void
-Door::detector::do_timer (yield_context yield)
+Door::Detector::do_timer (yield_context yield)
 {
     error_code ec; // ignored
     while (socket_.is_open())
@@ -135,7 +123,7 @@ Door::detector::do_timer (yield_context yield)
 }
 
 void
-Door::detector::do_detect (boost::asio::yield_context yield)
+Door::Detector::do_detect (boost::asio::yield_context yield)
 {
     bool ssl;
     error_code ec;
@@ -212,19 +200,15 @@ Door::Door (boost::asio::io_service& io_service,
 
 Door::~Door()
 {
-    {
-        // Block until all detector, Peer objects destroyed
-        std::unique_lock<std::mutex> lock(mutex_);
-        while (! list_.empty())
-            cond_.wait(lock);
-    }
+    ios_.close();
+    ios_.join();
 }
 
 void
 Door::run()
 {
-    boost::asio::spawn (strand_, std::bind (&Door::do_accept,
-        this, std::placeholders::_1));
+    boost::asio::spawn (strand_, std::bind(&Door::do_accept,
+        shared_from_this(), std::placeholders::_1));
 }
 
 void
@@ -232,47 +216,13 @@ Door::close()
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
-            &Door::close, this));
+            &Door::close, shared_from_this()));
     error_code ec;
     acceptor_.close(ec);
-    // Close all detector, Peer objects
-    std::vector<std::shared_ptr<Child>> v;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for(auto& p : list_)
-        {
-            auto const peer = p.second.lock();
-            if (peer != nullptr)
-            {
-                peer->close();
-                // Must destroy shared_ptr outside the
-                // lock otherwise deadlock from the
-                // managed object's destructor.
-                v.emplace_back(std::move(peer));
-            }
-        }
-    }
-}
-
-void
-Door::remove (Child& c)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto const n = list_.erase(&c);
-    if(n != 1)
-        Throw<std::runtime_error>("missing child");
-    if (list_.empty())
-        cond_.notify_all();
+    ios_.close();
 }
 
 //------------------------------------------------------------------------------
-
-void
-Door::add (std::shared_ptr<Child> const& child)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    list_.emplace(child.get(), child);
-}
 
 template <class ConstBufferSequence>
 void
@@ -281,21 +231,17 @@ Door::create (bool ssl, ConstBufferSequence const& buffers,
 {
     if (server_.closed())
         return;
-
     if (ssl)
     {
-        auto const peer = std::make_shared <SSLHTTPPeer> (*this,
+        if(auto sp = ios_.emplace<SSLHTTPPeer>(*this,
             server_.journal(), remote_address, buffers,
-                std::move(socket));
-        add(peer);
-        return peer->run();
+                std::move(socket)))
+            sp->run();
     }
-
-    auto const peer = std::make_shared <PlainHTTPPeer> (*this,
+    if(auto sp = ios_.emplace<PlainHTTPPeer>(*this,
         server_.journal(), remote_address, buffers,
-            std::move(socket));
-    add(peer);
-    peer->run();
+            std::move(socket)))
+        sp->run();
 }
 
 void
@@ -317,10 +263,9 @@ Door::do_accept (boost::asio::yield_context yield)
 
         if (ssl_ && plain_)
         {
-            auto const c = std::make_shared <detector> (
-                *this, std::move(socket), remote_address);
-            add(c);
-            c->run();
+            if(auto sp = ios_.emplace<Detector>(*this,
+                    std::move(socket), remote_address))
+                sp->run();
         }
         else if (ssl_ || plain_)
         {
@@ -328,7 +273,6 @@ Door::do_accept (boost::asio::yield_context yield)
                 std::move(socket), remote_address);
         }
     }
-    server_.remove();
 }
 
 } // ripple

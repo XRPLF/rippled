@@ -23,6 +23,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
+#include <ripple/server/impl/io_list.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
@@ -52,13 +53,6 @@ struct Stat
 
 class ServerImpl : public Server
 {
-public:
-    struct Child
-    {
-        virtual ~Child() = default;
-        virtual void close() = 0;
-    };
-
 private:
     using clock_type = std::chrono::system_clock;
 
@@ -75,14 +69,13 @@ private:
     boost::asio::io_service::strand strand_;
     boost::optional <boost::asio::io_service::work> work_;
 
-    std::mutex mutable mutex_;
-    std::condition_variable cond_;
-    std::vector<std::unique_ptr<Door>> list_;
-    std::size_t accepting_ = 0;
+    std::mutex m_;
+    std::vector<std::weak_ptr<Door>> list_;
     std::deque <Stat> stats_;
     int high_ = 0;
-
     std::array <std::size_t, 64> hist_;
+    
+    io_list ios_;
 
 public:
     ServerImpl (Handler& handler,
@@ -117,9 +110,6 @@ public:
     {
         return io_service_;
     }
-
-    void
-    remove();
 
     bool
     closed();

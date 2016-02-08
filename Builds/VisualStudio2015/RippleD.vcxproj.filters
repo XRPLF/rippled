@@ -3795,6 +3795,9 @@
     <ClInclude Include="..\..\src\ripple\server\impl\Door.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\io_list.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\JSONRPCUtil.cpp">
       <Filter>ripple\server\impl</Filter>
     </ClCompile>

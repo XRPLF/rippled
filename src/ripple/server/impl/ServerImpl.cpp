@@ -47,15 +47,9 @@ ServerImpl::ServerImpl (Handler& handler,
 
 ServerImpl::~ServerImpl()
 {
-    // Prevent call to handler
-    handler_ = nullptr;
-    close();
-    {
-        // Block until all Doors are done accepting
-        std::unique_lock<std::mutex> lock(mutex_);
-        while (accepting_ > 0)
-            cond_.wait(lock);
-    }
+    // Handler::onStopped will not be called
+    ios_.close();
+    ios_.join();
 }
 
 void
@@ -67,19 +61,20 @@ ServerImpl::ports (std::vector<Port> const& ports)
     {
         if (! port.websockets())
         {
-            ++accepting_;
-            list_.emplace_back(std::make_unique<Door>(
-                io_service_, *this, port));
+            if(auto sp = ios_.emplace<Door>(
+                    io_service_, *this, port))
+            {
+                list_.push_back(sp);
+                sp->run();
+            }
         }
     }
-    for(auto const& door : list_)
-        door->run();
 }
 
 void
 ServerImpl::onWrite (beast::PropertyStream::Map& map)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard <std::mutex> lock (m_);
     map ["active"] = list_.size();
     {
         std::string s;
@@ -117,50 +112,20 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 void
 ServerImpl::close()
 {
-    Handler* h = nullptr;
+    work_ = boost::none;
+    ios_.close(
+    [&]
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (work_)
-        {
-            work_ = boost::none;
-            // Close all Door objects
-            if (accepting_ == 0)
-            {
-                std::swap (h, handler_);
-            }
-            else
-            {
-                for(auto& door : list_)
-                    door->close();
-            }
-        }
-    }
-    if (h)
-        h->onStopped(*this);
+        handler_->onStopped(*this);
+    });
 }
 
 //--------------------------------------------------------------------------
 
-void
-ServerImpl::remove()
-{
-    Handler* h = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if(--accepting_ == 0)
-        {
-            cond_.notify_all();
-            std::swap (h, handler_);
-        }
-    }
-    if (h)
-        h->onStopped(*this);
-}
-
 bool
 ServerImpl::closed()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    // VFALCO What about the mutex?
     return ! work_;
 }
 
@@ -168,7 +133,7 @@ void
 ServerImpl::report (Stat&& stat)
 {
     int const bucket = ceil_log2 (stat.requests);
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard<std::mutex> lock (m_);
     ++hist_[bucket];
     high_ = std::max (high_, bucket);
     if (stats_.size() >= historySize)
@@ -214,4 +179,3 @@ make_Server (Handler& handler,
 }
 
 } // ripple
-

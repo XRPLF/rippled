@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_DOOR_H_INCLUDED
 #define RIPPLE_SERVER_DOOR_H_INCLUDED
 
+#include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/streambuf.h>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -36,20 +37,9 @@ namespace ripple {
 
 /** A listening socket. */
 class Door
-    : public ServerImpl::Child
+    : public io_list::work
+    , public std::enable_shared_from_this<Door>
 {
-public:
-    class Child
-    {
-    protected:
-        Door& door_;
-
-    public:
-        Child (Door& door);
-        virtual ~Child();
-        virtual void close() = 0;
-    };
-
 private:
     using clock_type = std::chrono::steady_clock;
     using timer_type = boost::asio::basic_waitable_timer<clock_type>;
@@ -61,17 +51,18 @@ private:
     using socket_type = protocol_type::socket;
 
     // Detects SSL on a socket
-    class detector
-        : public Child
-        , public std::enable_shared_from_this <detector>
+    class Detector
+        : public io_list::work
+        , public std::enable_shared_from_this<Detector>
     {
     private:
+        Door& door_;
         socket_type socket_;
         timer_type timer_;
         endpoint_type remote_address_;
 
     public:
-        detector (Door& door, socket_type&& socket,
+        Detector (Door& door, socket_type&& socket,
             endpoint_type remote_address);
         void run();
         void close() override;
@@ -85,12 +76,9 @@ private:
     ServerImpl& server_;
     acceptor_type acceptor_;
     boost::asio::io_service::strand strand_;
-    std::mutex mutex_;
-    std::condition_variable cond_;
-    boost::container::flat_map<
-        Child*, std::weak_ptr<Child>> list_;
     bool ssl_;
     bool plain_;
+    io_list ios_;
 
 public:
     Door (boost::asio::io_service& io_service,
@@ -126,11 +114,7 @@ public:
     */
     void close();
 
-    void remove (Child& c);
-
 private:
-    void add (std::shared_ptr<Child> const& child);
-
     template <class ConstBufferSequence>
     void create (bool ssl, ConstBufferSequence const& buffers,
         socket_type&& socket, endpoint_type remote_address);

@@ -20,8 +20,9 @@
 #ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
-#include <ripple/server/impl/Door.h>
 #include <ripple/server/Session.h>
+#include <ripple/server/impl/Door.h>
+#include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
@@ -46,7 +47,7 @@ namespace ripple {
 /** Represents an active connection. */
 template <class Impl>
 class BaseHTTPPeer
-    : public Door::Child
+    : public io_list::work
     , public Session
 {
 protected:
@@ -81,6 +82,7 @@ protected:
         std::size_t used;
     };
 
+    Door& door_;
     boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
@@ -216,7 +218,7 @@ template <class ConstBufferSequence>
 BaseHTTPPeer<Impl>::BaseHTTPPeer (Door& door, boost::asio::io_service& io_service,
     beast::Journal journal, endpoint_type remote_address,
         ConstBufferSequence const& buffers)
-    : Child(door)
+    : door_(door)
     , work_ (io_service)
     , strand_ (io_service)
     , timer_ (io_service)
