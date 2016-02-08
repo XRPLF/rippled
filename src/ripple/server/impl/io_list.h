@@ -19,7 +19,6 @@
 
 #ifndef RIPPLE_SERVER_IO_LIST_H_INCLUDED
 
-#include <boost/range/adaptor/transformed.hpp>
 #include <condition_variable>
 #include <unordered_map>
 #include <memory>
@@ -99,10 +98,8 @@ public:
             closed_ = true;
             map = std::move(map_);
         }
-        using namespace boost::adaptors;
-        for(auto wp : transform(map,
-                [](auto const& v){ return v.second; }))
-            if(auto sp = wp.lock())
+        for(auto const& p : map)
+            if(auto sp = p.second.lock())
                 sp->close();
     }
 
