@@ -66,10 +66,6 @@ public:
     {
         return mHaveHeader;
     }
-    bool isDone () const
-    {
-        return isComplete () || isFailed ();
-    }
     Ledger::ref getLedger () const
     {
         return mLedger;
@@ -139,7 +135,6 @@ private:
     bool               mHaveHeader;
     bool               mHaveState;
     bool               mHaveTransactions;
-    bool               mAborted;
     bool               mSignaled;
     bool               mByHash;
     std::uint32_t      mSeq;
