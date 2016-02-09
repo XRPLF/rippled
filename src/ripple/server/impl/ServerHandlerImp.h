@@ -23,6 +23,7 @@
 #include <ripple/core/Job.h>
 #include <ripple/core/JobCoro.h>
 #include <ripple/json/Output.h>
+#include <ripple/server/Handler.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -33,14 +34,14 @@ namespace ripple {
 // Private implementation
 class ServerHandlerImp
     : public ServerHandler
-    , public HTTP::Handler
+    , public Handler
 {
 private:
     Application& app_;
     Resource::Manager& m_resourceManager;
     beast::Journal m_journal;
     NetworkOPs& m_networkOPs;
-    std::unique_ptr<HTTP::Server> m_server;
+    std::unique_ptr<Server> m_server;
     Setup setup_;
     JobQueue& m_jobQueue;
     beast::insight::Counter rpc_requests_;
@@ -79,40 +80,40 @@ private:
     //
 
     void
-    onAccept (HTTP::Session& session) override;
+    onAccept (Session& session) override;
 
     bool
-    onAccept (HTTP::Session& session,
+    onAccept (Session& session,
         boost::asio::ip::tcp::endpoint endpoint) override;
 
     Handoff
-    onHandoff (HTTP::Session& session,
+    onHandoff (Session& session,
         std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
             beast::http::message&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override;
 
     Handoff
-    onHandoff (HTTP::Session& session, boost::asio::ip::tcp::socket&& socket,
+    onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) override;
     void
-    onRequest (HTTP::Session& session) override;
+    onRequest (Session& session) override;
 
     void
-    onClose (HTTP::Session& session,
+    onClose (Session& session,
         boost::system::error_code const&) override;
 
     void
-    onStopped (HTTP::Server&) override;
+    onStopped (Server&) override;
 
     //--------------------------------------------------------------------------
 
     void
-    processSession (std::shared_ptr<HTTP::Session> const&,
+    processSession (std::shared_ptr<Session> const&,
         std::shared_ptr<JobCoro> jobCoro);
 
     void
-    processRequest (HTTP::Port const& port, std::string const& request,
+    processRequest (Port const& port, std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress, Output&&,
         std::shared_ptr<JobCoro> jobCoro,
         std::string forwardedFor, std::string user);
@@ -129,7 +130,7 @@ private:
     isWebsocketUpgrade (beast::http::message const& request);
 
     bool
-    authorized (HTTP::Port const& port,
+    authorized (Port const& port,
         std::map<std::string, std::string> const& h);
 };
 

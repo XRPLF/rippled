@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/server/impl/ServerImpl.h>
-#include <ripple/server/impl/Peer.h>
+#include <ripple/server/impl/BaseHTTPPeer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -33,11 +33,10 @@
 #include <time.h>
 
 namespace ripple {
-namespace HTTP {
 
 ServerImpl::ServerImpl (Handler& handler,
         boost::asio::io_service& io_service, beast::Journal journal)
-    : handler_ (handler)
+    : handler_ (&handler)
     , journal_ (journal)
     , io_service_ (io_service)
     , strand_ (io_service_)
@@ -48,30 +47,34 @@ ServerImpl::ServerImpl (Handler& handler,
 
 ServerImpl::~ServerImpl()
 {
-    close();
-    {
-        // Block until all Door objects destroyed
-        std::unique_lock<std::mutex> lock(mutex_);
-        while (! list_.empty())
-            cond_.wait(lock);
-    }
+    // Handler::onStopped will not be called
+    ios_.close();
+    ios_.join();
 }
 
 void
 ServerImpl::ports (std::vector<Port> const& ports)
 {
     if (closed())
-        Throw<std::logic_error> ("ports() on closed HTTP::Server");
-    for(auto const& _ : ports)
-        if (! _.websockets())
-            std::make_shared<Door>(
-                io_service_, *this, _)->run();
+        Throw<std::logic_error> ("ports() on closed Server");
+    for(auto const& port : ports)
+    {
+        if (! port.websockets())
+        {
+            if(auto sp = ios_.emplace<Door>(
+                    io_service_, *this, port))
+            {
+                list_.push_back(sp);
+                sp->run();
+            }
+        }
+    }
 }
 
 void
 ServerImpl::onWrite (beast::PropertyStream::Map& map)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard <std::mutex> lock (m_);
     map ["active"] = list_.size();
     {
         std::string s;
@@ -109,54 +112,20 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 void
 ServerImpl::close()
 {
-    bool stopped = false;
+    work_ = boost::none;
+    ios_.close(
+    [&]
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (work_)
-        {
-            work_ = boost::none;
-            // Close all Door objects
-            if (list_.empty())
-                stopped = true;
-            else
-                for(auto& _ :list_)
-                    _.close();
-        }
-    }
-    if (stopped)
-        handler_.onStopped(*this);
+        handler_->onStopped(*this);
+    });
 }
 
 //--------------------------------------------------------------------------
 
-void
-ServerImpl::add (Child& child)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    list_.push_back(child);
-}
-
-void
-ServerImpl::remove (Child& child)
-{
-    bool stopped = false;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        list_.erase(list_.iterator_to(child));
-        if (list_.empty())
-        {
-            cond_.notify_all();
-            stopped = true;
-        }
-    }
-    if (stopped)
-        handler_.onStopped(*this);
-}
-
 bool
 ServerImpl::closed()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    // VFALCO What about the mutex?
     return ! work_;
 }
 
@@ -164,7 +133,7 @@ void
 ServerImpl::report (Stat&& stat)
 {
     int const bucket = ceil_log2 (stat.requests);
-    std::lock_guard <std::mutex> lock (mutex_);
+    std::lock_guard<std::mutex> lock (m_);
     ++hist_[bucket];
     high_ = std::max (high_, bucket);
     if (stats_.size() >= historySize)
@@ -209,5 +178,4 @@ make_Server (Handler& handler,
     return std::make_unique<ServerImpl>(handler, io_service, journal);
 }
 
-}
-}
+} // ripple

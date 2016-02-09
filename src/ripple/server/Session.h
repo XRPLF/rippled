@@ -32,10 +32,6 @@
 
 namespace ripple {
 
-namespace HTTP {
-
-class Session;
-
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
     Some fields are input parameters, some are output parameters,
@@ -67,16 +63,6 @@ public:
     virtual
     beast::IP::Endpoint
     remoteAddress() = 0;
-
-    /** Returns the user name if behind a proxy (secure_gateway). */
-    virtual
-    std::string
-    user() = 0;
-
-    /** Returns X-Forwarded-For if behind a proxy (secure_gateway). */
-    virtual
-    std::string
-    forwarded_for() = 0;
 
     /** Returns the current HTTP request. */
     virtual
@@ -151,7 +137,6 @@ public:
     close (bool graceful) = 0;
 };
 
-}  // namespace HTTP
 }  // ripple
 
 #endif

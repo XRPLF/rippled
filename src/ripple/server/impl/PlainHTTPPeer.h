@@ -17,28 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_PLAINPEER_H_INCLUDED
-#define RIPPLE_SERVER_PLAINPEER_H_INCLUDED
+#ifndef RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
+#define RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
 
-#include <ripple/server/impl/Peer.h>
+#include <ripple/server/impl/BaseHTTPPeer.h>
 #include <memory>
 
 namespace ripple {
-namespace HTTP {
 
-class PlainPeer
-    : public Peer <PlainPeer>
-    , public std::enable_shared_from_this <PlainPeer>
+class PlainHTTPPeer
+    : public BaseHTTPPeer<PlainHTTPPeer>
+    , public std::enable_shared_from_this <PlainHTTPPeer>
 {
 private:
-    friend class Peer <PlainPeer>;
+    friend class BaseHTTPPeer<PlainHTTPPeer>;
     using socket_type = boost::asio::ip::tcp::socket;
 
     socket_type stream_;
 
 public:
     template <class ConstBufferSequence>
-    PlainPeer (Door& door, beast::Journal journal, endpoint_type endpoint,
+    PlainHTTPPeer (Door& door, beast::Journal journal, endpoint_type endpoint,
         ConstBufferSequence const& buffers, socket_type&& socket);
 
     void
@@ -55,30 +54,30 @@ private:
 //------------------------------------------------------------------------------
 
 template <class ConstBufferSequence>
-PlainPeer::PlainPeer (Door& door, beast::Journal journal,
+PlainHTTPPeer::PlainHTTPPeer (Door& door, beast::Journal journal,
     endpoint_type remote_address, ConstBufferSequence const& buffers,
         socket_type&& socket)
-    : Peer (door, socket.get_io_service(), journal, remote_address, buffers)
+    : BaseHTTPPeer (door, socket.get_io_service(), journal, remote_address, buffers)
     , stream_(std::move(socket))
 {
 }
 
 void
-PlainPeer::run ()
+PlainHTTPPeer::run ()
 {
-    door_.server().handler().onAccept (session());
+    door_.server().handler()->onAccept (session());
     if (! stream_.is_open())
         return;
 
-    boost::asio::spawn (strand_, std::bind (&PlainPeer::do_read,
+    boost::asio::spawn (strand_, std::bind (&PlainHTTPPeer::do_read,
         shared_from_this(), std::placeholders::_1));
 }
 
 void
-PlainPeer::do_request()
+PlainHTTPPeer::do_request()
 {
     ++request_count_;
-    auto const what = door_.server().handler().onHandoff (session(),
+    auto const what = door_.server().handler()->onHandoff (session(),
         std::move(stream_), std::move(message_), remote_address_);
     if (what.moved)
         return;
@@ -99,17 +98,16 @@ PlainPeer::do_request()
     if (ec)
         return fail (ec, "request");
     // legacy
-    door_.server().handler().onRequest (session());
+    door_.server().handler()->onRequest (session());
 }
 
 void
-PlainPeer::do_close()
+PlainHTTPPeer::do_close()
 {
     error_code ec;
     stream_.shutdown (socket_type::shutdown_send, ec);
 }
 
-}
-}
+} // ripple
 
 #endif

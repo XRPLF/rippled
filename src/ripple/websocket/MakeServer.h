@@ -38,7 +38,7 @@ namespace websocket {
 struct ServerDescription
 {
     Application& app;
-    HTTP::Port port;
+    Port port;
     Resource::Manager& resourceManager;
     InfoSub::Source& source;
     beast::Journal& journal;

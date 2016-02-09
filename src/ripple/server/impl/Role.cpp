@@ -23,7 +23,7 @@
 namespace ripple {
 
 bool
-passwordUnrequiredOrSentCorrect (HTTP::Port const& port,
+passwordUnrequiredOrSentCorrect (Port const& port,
                                  Json::Value const& params) {
 
     assert(! port.admin_ip.empty ());
@@ -47,7 +47,7 @@ ipAllowed (beast::IP::Address const& remoteIp,
 }
 
 bool
-isAdmin (HTTP::Port const& port, Json::Value const& params,
+isAdmin (Port const& port, Json::Value const& params,
          beast::IP::Address const& remoteIp)
 {
     return ipAllowed (remoteIp, port.admin_ip) &&
@@ -55,7 +55,7 @@ isAdmin (HTTP::Port const& port, Json::Value const& params,
 }
 
 Role
-requestRole (Role const& required, HTTP::Port const& port,
+requestRole (Role const& required, Port const& port,
              Json::Value const& params, beast::IP::Endpoint const& remoteIp,
              std::string const& user)
 {
@@ -75,7 +75,7 @@ requestRole (Role const& required, HTTP::Port const& port,
  * ADMIN and IDENTIFIED roles shall have unlimited resources.
  */
 bool
-isUnlimited (Role const& required, HTTP::Port const& port,
+isUnlimited (Role const& required, Port const& port,
     Json::Value const&params, beast::IP::Endpoint const& remoteIp,
     std::string const& user)
 {
@@ -96,7 +96,7 @@ isUnlimited (Role const& role)
 Resource::Consumer
 requestInboundEndpoint (Resource::Manager& manager,
     beast::IP::Endpoint const& remoteAddress,
-        HTTP::Port const& port, std::string const& user)
+        Port const& port, std::string const& user)
 {
     if (isUnlimited (Role::GUEST, port, Json::Value(), remoteAddress, user))
         return manager.newUnlimitedEndpoint (to_string (remoteAddress));
@@ -105,7 +105,7 @@ requestInboundEndpoint (Resource::Manager& manager,
 }
 
 bool
-isIdentified (HTTP::Port const& port, beast::IP::Address const& remoteIp,
+isIdentified (Port const& port, beast::IP::Address const& remoteIp,
         std::string const& user)
 {
     return ! user.empty() && ipAllowed (remoteIp, port.secure_gateway_ip);
