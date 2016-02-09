@@ -38,8 +38,6 @@ void BookListeners::removeSubscriber (std::uint64_t seq)
 
 void BookListeners::publish (Json::Value const& jvObj)
 {
-    std::string sObj = to_string (jvObj);
-
     std::lock_guard <std::recursive_mutex> sl (mLock);
     auto it = mListeners.cbegin ();
 
@@ -49,7 +47,7 @@ void BookListeners::publish (Json::Value const& jvObj)
 
         if (p)
         {
-            p->send (jvObj, sObj, true);
+            p->send (jvObj, true);
             ++it;
         }
         else
