@@ -126,10 +126,6 @@ public:
 
     virtual void send (Json::Value const& jvObj, bool broadcast) = 0;
 
-    // virtual so that a derived class can optimize this case
-    virtual void send (
-        Json::Value const& jvObj, std::string const& sObj, bool broadcast);
-
     std::uint64_t getSeq ();
 
     void onSendEmpty ();
