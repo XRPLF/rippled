@@ -1577,9 +1577,6 @@ void NetworkOPsImp::pubServer ()
         jvObj [jss::load_factor]   =
                 (mLastLoadFactor = app_.getFeeTrack ().getLoadFactor ());
 
-        std::string sObj = to_string (jvObj);
-
-
         for (auto i = mSubServer.begin (); i != mSubServer.end (); )
         {
             InfoSub::pointer p = i->second.lock ();
@@ -1589,7 +1586,7 @@ void NetworkOPsImp::pubServer ()
             //             sending of JSON data.
             if (p)
             {
-                p->send (jvObj, sObj, true);
+                p->send (jvObj, true);
                 ++i;
             }
             else
@@ -2318,8 +2315,6 @@ void NetworkOPsImp::pubValidatedTransaction (
         *alTx.getTxn (), alTx.getResult (), true, alAccepted);
     jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
-    std::string sObj = to_string (jvObj);
-
     {
         ScopedLockType sl (mSubLock);
 
@@ -2330,7 +2325,7 @@ void NetworkOPsImp::pubValidatedTransaction (
 
             if (p)
             {
-                p->send (jvObj, sObj, true);
+                p->send (jvObj, true);
                 ++it;
             }
             else
@@ -2345,7 +2340,7 @@ void NetworkOPsImp::pubValidatedTransaction (
 
             if (p)
             {
-                p->send (jvObj, sObj, true);
+                p->send (jvObj, true);
                 ++it;
             }
             else
@@ -2432,12 +2427,8 @@ void NetworkOPsImp::pubAccountTransaction (
         if (alTx.isApplied ())
             jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
-        std::string sObj = to_string (jvObj);
-
         for (InfoSub::ref isrListener : notify)
-        {
-            isrListener->send (jvObj, sObj, true);
-        }
+            isrListener->send (jvObj, true);
     }
 }
 
