@@ -140,7 +140,7 @@ void Stoppable::stopRecursive (Journal j)
     bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
     if (timedOut)
     {
-        j.warning << "Waiting for '" << m_name << "' to stop";
+        j.error << "Waiting for '" << m_name << "' to stop";
         m_stoppedEvent.wait ();
     }
 
