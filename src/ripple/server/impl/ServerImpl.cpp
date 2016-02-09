@@ -37,7 +37,7 @@ namespace HTTP {
 
 ServerImpl::ServerImpl (Handler& handler,
         boost::asio::io_service& io_service, beast::Journal journal)
-    : handler_ (handler)
+    : handler_ (&handler)
     , journal_ (journal)
     , io_service_ (io_service)
     , strand_ (io_service_)
@@ -48,11 +48,13 @@ ServerImpl::ServerImpl (Handler& handler,
 
 ServerImpl::~ServerImpl()
 {
+    // Prevent call to handler
+    handler_ = nullptr;
     close();
     {
-        // Block until all Door objects destroyed
+        // Block until all Doors are done accepting
         std::unique_lock<std::mutex> lock(mutex_);
-        while (! list_.empty())
+        while (accepting_ > 0)
             cond_.wait(lock);
     }
 }
@@ -62,10 +64,17 @@ ServerImpl::ports (std::vector<Port> const& ports)
 {
     if (closed())
         Throw<std::logic_error> ("ports() on closed HTTP::Server");
-    for(auto const& _ : ports)
-        if (! _.websockets())
-            std::make_shared<Door>(
-                io_service_, *this, _)->run();
+    for(auto const& port : ports)
+    {
+        if (! port.websockets())
+        {
+            ++accepting_;
+            list_.emplace_back(std::make_shared<Door>(
+                io_service_, *this, port));
+        }
+    }
+    for(auto const& door : list_)
+        door->run();
 }
 
 void
@@ -109,48 +118,44 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 void
 ServerImpl::close()
 {
-    bool stopped = false;
+    Handler* h = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (work_)
         {
             work_ = boost::none;
             // Close all Door objects
-            if (list_.empty())
-                stopped = true;
+            if (accepting_ == 0)
+            {
+                std::swap (h, handler_);
+            }
             else
-                for(auto& _ :list_)
-                    _.close();
+            {
+                for(auto& door : list_)
+                    door->close();
+            }
         }
     }
-    if (stopped)
-        handler_.onStopped(*this);
+    if (h)
+        h->onStopped(*this);
 }
 
 //--------------------------------------------------------------------------
 
 void
-ServerImpl::add (Child& child)
+ServerImpl::remove()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    list_.push_back(child);
-}
-
-void
-ServerImpl::remove (Child& child)
-{
-    bool stopped = false;
+    Handler* h = nullptr;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        list_.erase(list_.iterator_to(child));
-        if (list_.empty())
+        if(--accepting_ == 0)
         {
             cond_.notify_all();
-            stopped = true;
+            std::swap (h, handler_);
         }
     }
-    if (stopped)
-        handler_.onStopped(*this);
+    if (h)
+        h->onStopped(*this);
 }
 
 bool
