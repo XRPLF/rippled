@@ -140,13 +140,25 @@ private:
         void
         close()
         {
-            std::unique_lock<std::mutex> lock(mutex_);
-            if (closed_)
-                return;
-            closed_ = true;
-            for(auto& c : list_)
-                if(auto p = c.second.lock())
-                    p->close();
+            std::vector<std::shared_ptr<Child>> v;
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                v.reserve(list_.size());
+                if (closed_)
+                    return;
+                closed_ = true;
+                for(auto const& c : list_)
+                {
+                    if(auto p = c.second.lock())
+                    {
+                        p->close();
+                        // Must destroy shared_ptr outside the
+                        // lock otherwise deadlock from the
+                        // managed object's destructor.
+                        v.emplace_back(std::move(p));
+                    }
+                }
+            }
         }
 
         void
