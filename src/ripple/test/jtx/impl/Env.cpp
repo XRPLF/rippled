@@ -158,6 +158,7 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     app = owned.get();
     app->logs().severity(beast::Journal::kError);
     app->setup();
+    app->logs().severity(beast::Journal::kError);
     timeKeeper->set(
         app->getLedgerMaster().getClosedLedger()->info().closeTime);
     app->doStart();
