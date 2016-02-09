@@ -219,7 +219,7 @@ Door::close()
             &Door::close, shared_from_this()));
     error_code ec;
     acceptor_.close(ec);
-    ios_.close();
+    ios_.close([self = shared_from_this()]{});
 }
 
 //------------------------------------------------------------------------------
