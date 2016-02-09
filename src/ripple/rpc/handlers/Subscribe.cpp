@@ -194,30 +194,20 @@ Json::Value doSubscribe (RPC::Context& context)
                 return rpcError (rpcINVALID_PARAMS);
 
             Book book;
-            bool bBoth =
-                    (j.isMember (jss::both) && j[jss::both].asBool ()) ||
-                    (j.isMember (jss::both_sides) && j[jss::both_sides].asBool ());
-            bool bSnapshot =
-                    (j.isMember (jss::snapshot) && j[jss::snapshot].asBool ()) ||
-                    (j.isMember (jss::state_now) && j[jss::state_now].asBool ());
-            // TODO(tom): both_sides and state_now are apparently deprecated...
-            // where is this documented?
-
             Json::Value taker_pays = j[jss::taker_pays];
             Json::Value taker_gets = j[jss::taker_gets];
 
             // Parse mandatory currency.
-            if (!taker_pays.isMember (jss::currency)
-                    || !to_currency (book.in.currency,
-                                     taker_pays[jss::currency].asString ()))
+            if (! taker_pays.isMember (jss::currency) || ! to_currency (
+                    book.in.currency, taker_pays[jss::currency].asString ()))
             {
                 JLOG (context.j.info) << "Bad taker_pays currency.";
-
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
+
             // Parse optional issuer.
-            else if (((taker_pays.isMember (jss::issuer))
-                      && (!taker_pays[jss::issuer].isString ()
+            if (((taker_pays.isMember (jss::issuer))
+                      && (! taker_pays[jss::issuer].isString ()
                           || !to_issuer (book.in.account,
                                          taker_pays[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
@@ -225,21 +215,19 @@ Json::Value doSubscribe (RPC::Context& context)
                      || noAccount() == book.in.account)
             {
                 JLOG (context.j.info) << "Bad taker_pays issuer.";
-
                 return rpcError (rpcSRC_ISR_MALFORMED);
             }
 
             // Parse mandatory currency.
-            if (!taker_gets.isMember (jss::currency)
-                    || !to_currency (book.out.currency,
-                                     taker_gets[jss::currency].asString ()))
+            if (! taker_gets.isMember (jss::currency) || !to_currency (
+                book.out.currency, taker_gets[jss::currency].asString ()))
             {
                 JLOG (context.j.info) << "Bad taker_pays currency.";
-
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
+
             // Parse optional issuer.
-            else if (((taker_gets.isMember (jss::issuer))
+            if (((taker_gets.isMember (jss::issuer))
                       && (!taker_gets[jss::issuer].isString ()
                           || !to_issuer (book.out.account,
                                          taker_gets[jss::issuer].asString ())))
@@ -248,7 +236,6 @@ Json::Value doSubscribe (RPC::Context& context)
                      || noAccount() == book.out.account)
             {
                 JLOG (context.j.info) << "Bad taker_gets issuer.";
-
                 return rpcError (rpcDST_ISR_MALFORMED);
             }
 
@@ -278,10 +265,17 @@ Json::Value doSubscribe (RPC::Context& context)
 
             context.netOps.subBook (ispSub, book);
 
-            if (bBoth)
-                context.netOps.subBook (ispSub, book);
+            // both_sides is deprecated.
+            bool const both =
+                (j.isMember(jss::both) && j[jss::both].asBool()) ||
+                (j.isMember(jss::both_sides) && j[jss::both_sides].asBool());
 
-            if (bSnapshot)
+            if (both)
+                context.netOps.subBook(ispSub, reversed(book));
+
+            // state_now is deprecated.
+            if ((j.isMember(jss::snapshot) && j[jss::snapshot].asBool()) ||
+                (j.isMember(jss::state_now) && j[jss::state_now].asBool()))
             {
                 context.loadType = Resource::feeMediumBurdenRPC;
                 std::shared_ptr<ReadView const> lpLedger
@@ -310,7 +304,7 @@ Json::Value doSubscribe (RPC::Context& context)
                         }
                     };
 
-                    if (bBoth)
+                    if (both)
                     {
                         add (jss::bids);
                         add (jss::asks);
