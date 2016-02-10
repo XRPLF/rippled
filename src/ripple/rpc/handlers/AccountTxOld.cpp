@@ -29,6 +29,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/Utilities.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {
@@ -183,7 +184,10 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 {
                     std::uint32_t uLedgerIndex = it->second->getLgrSeq ();
 
-                    jvObj[jss::meta]           = it->second->getJson (0);
+                    auto meta = it->second->getJson(0);
+                    addPaymentDeliveredAmount(meta, context, it->first, it->second);
+                    jvObj[jss::meta] = std::move(meta);
+
                     jvObj[jss::validated]
                             = bValidated
                             && uValidatedMin <= uLedgerIndex
