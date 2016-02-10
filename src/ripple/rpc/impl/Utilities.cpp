@@ -42,20 +42,29 @@ addPaymentDeliveredAmount (
 {
     // We only want to add a "delivered_amount" field if the transaction
     // succeeded - otherwise nothing could have been delivered.
-    if (!transaction || transaction->getResult () != tesSUCCESS)
+    if (! transaction)
         return;
 
     auto serializedTx = transaction->getSTransaction ();
-
-    if (!serializedTx || serializedTx->getTxnType () != ttPAYMENT)
+    if (! serializedTx || serializedTx->getTxnType () != ttPAYMENT)
         return;
 
-    // If the transaction explicitly specifies a DeliveredAmount in the
-    // metadata then we use it.
-    if (transactionMeta && transactionMeta->hasDeliveredAmount ())
+    if (transactionMeta)
     {
-        meta[jss::delivered_amount] =
-            transactionMeta->getDeliveredAmount ().getJson (1);
+        if (transactionMeta->getResultTER() != tesSUCCESS)
+            return;
+
+        // If the transaction explicitly specifies a DeliveredAmount in the
+        // metadata then we use it.
+        if (transactionMeta->hasDeliveredAmount ())
+        {
+            meta[jss::delivered_amount] =
+                transactionMeta->getDeliveredAmount ().getJson (1);
+            return;
+        }
+    }
+    else if (transaction->getResult() != tesSUCCESS)
+    {
         return;
     }
 
