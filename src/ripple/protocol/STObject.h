@@ -188,7 +188,7 @@ private:
             OptionalProxy const& lhs,
                 OptionalProxy const& rhs) noexcept
         {
-            if (lhs.engaged() != lhs.engaged())
+            if (lhs.engaged() != rhs.engaged())
                 return false;
             return ! lhs.engaged() || *lhs == *rhs;
         }
