@@ -163,7 +163,7 @@ Json::Value doAccountTx (RPC::Context& context)
                 {
                     auto meta = it.second->getJson (1);
                     addPaymentDeliveredAmount (meta, context, it.first, it.second);
-                    jvObj[jss::meta] = meta;
+                    jvObj[jss::meta] = std::move(meta);
 
                     std::uint32_t uLedgerIndex = it.second->getLgrSeq ();
 
