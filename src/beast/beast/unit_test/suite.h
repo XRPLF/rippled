@@ -163,6 +163,7 @@ public:
         forwarded constructor arguments to the base.
         Normally this is called by the framework for you.
     */
+    template<class = void>
     void
     operator() (runner& r);
 
@@ -380,7 +381,7 @@ suite::testcase_t::operator() (abort_t abort)
     return { suite_, &ss_ };
 }
 
-template <class T>
+template<class T>
 inline
 suite::scoped_testcase
 suite::testcase_t::operator<< (T const& t)
@@ -390,13 +391,21 @@ suite::testcase_t::operator<< (T const& t)
 
 //------------------------------------------------------------------------------
 
-inline
+template<class>
 void
-suite::operator() (runner& r)
+suite::operator()(runner& r)
 {
     *p_this_suite() = this;
-    run (r);
-    *p_this_suite() = nullptr;
+    try
+    {
+        run(r);
+        *p_this_suite() = nullptr;
+    }
+    catch(...)
+    {
+        *p_this_suite() = nullptr;
+        throw;
+    }
 }
 
 template <class Condition, class String>
