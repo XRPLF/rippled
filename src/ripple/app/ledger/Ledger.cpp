@@ -271,6 +271,7 @@ Ledger::Ledger (open_ledger_t, Ledger const& prevLedger,
         prevLedger.stateMap_->family()))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
     , fees_(prevLedger.fees_)
+    , rules_(prevLedger.rules_)
 {
     info_.open = true;
     info_.seq = prevLedger.info_.seq + 1;
