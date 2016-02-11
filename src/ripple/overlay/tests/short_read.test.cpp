@@ -143,10 +143,11 @@ private:
             std::vector<std::shared_ptr<Child>> v;
             {
                 std::unique_lock<std::mutex> lock(mutex_);
+                v.reserve(list_.size());
                 if (closed_)
                     return;
                 closed_ = true;
-                for(auto& c : list_)
+                for(auto const& c : list_)
                 {
                     if(auto p = c.second.lock())
                     {
