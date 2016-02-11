@@ -94,6 +94,7 @@ public:
     template <typename T>
     logger<level_type>& operator<<(T a)
     {
+        // VFALCO Logging disabled (can cause a crash)
         return *this;
     }
 
