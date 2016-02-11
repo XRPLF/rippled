@@ -28,8 +28,6 @@
 
 namespace ripple {
 
-unsigned int const gMaxHTTPHeaderSize = 0x02000000;
-
 std::string getHTTPHeaderTimestamp ()
 {
     // CHECKME This is probably called often enough that optimizing it makes
