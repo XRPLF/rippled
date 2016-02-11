@@ -35,7 +35,7 @@ char const* getRawVersionString ()
     //
     //  The build version number (edit this for each release)
     //
-        "0.30.1"
+        "0.30.1-hf1"
     //
     //  Must follow the format described here:
     //
