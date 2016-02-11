@@ -149,7 +149,7 @@ public:
     /** Memberspace for declaring test cases. */
     testcase_t testcase;
 
-    /** Returns the "current" runnin suite.
+    /** Returns the "current" running suite.
         If no suite is running, nullptr is returned.
     */
     static suite* this_suite()
