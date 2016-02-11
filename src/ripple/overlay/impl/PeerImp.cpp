@@ -99,10 +99,7 @@ PeerImp::~PeerImp ()
         if (journal_.warning) journal_.warning <<
             name_ << " left cluster";
     if (state_ == State::active)
-    {
-        assert(publicKey_.size() != 0);
-        overlay_.onPeerDeactivate(id_, publicKey_);
-    }
+        overlay_.onPeerDeactivate(id_);
     overlay_.peerFinder().on_closed (slot_);
     overlay_.remove (slot_);
 }

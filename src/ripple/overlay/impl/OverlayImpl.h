@@ -115,8 +115,7 @@ private:
     TrafficCount m_traffic;
     hash_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> m_peers;
-    hash_map<PublicKey, std::weak_ptr<PeerImp>> m_publicKeyMap;
-    hash_map<Peer::id_t, std::weak_ptr<PeerImp>> m_shortIdMap;
+    hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& m_resolver;
     std::atomic <Peer::id_t> next_id_;
     ManifestCache manifestCache_;
@@ -226,29 +225,21 @@ public:
 
     // Called when an active peer is destroyed.
     void
-    onPeerDeactivate (Peer::id_t id, PublicKey const& publicKey);
+    onPeerDeactivate (Peer::id_t id);
 
     // UnaryFunc will be called as
     //  void(std::shared_ptr<PeerImp>&&)
     //
     template <class UnaryFunc>
     void
-    for_each_unlocked (UnaryFunc&& f)
-    {
-        for (auto const& e : m_publicKeyMap)
-        {
-            auto sp = e.second.lock();
-            if (sp)
-                f(std::move(sp));
-        }
-    }
-
-    template <class UnaryFunc>
-    void
     for_each (UnaryFunc&& f)
     {
         std::lock_guard <decltype(mutex_)> lock (mutex_);
-        for_each_unlocked(f);
+        for (auto const& e : ids_)
+        {
+            if (auto sp = e.second.lock())
+                f(std::move(sp));
+        }
     }
 
     std::size_t
@@ -330,9 +321,6 @@ private:
     onWrite (beast::PropertyStream::Map& stream) override;
 
     //--------------------------------------------------------------------------
-
-    void
-    add (std::shared_ptr<PeerImp> const& peer);
 
     void
     remove (Child& child);
