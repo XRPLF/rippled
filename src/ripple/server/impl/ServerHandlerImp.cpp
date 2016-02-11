@@ -203,7 +203,8 @@ void
 ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
     std::shared_ptr<JobCoro> jobCoro)
 {
-    auto forwarded_for =
+    processRequest (session->port(), to_string (session->body()),
+        session->remoteAddress().at_port (0), makeOutput (*session), jobCoro,
         [&]
         {
             auto const iter =
@@ -212,8 +213,7 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
             if(iter != session->request().headers.end())
                 return iter->second;
             return std::string{};
-        }();
-    auto user =
+        }(),
         [&]
         {
             auto const iter =
@@ -222,11 +222,7 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
             if(iter != session->request().headers.end())
                 return iter->second;
             return std::string{};
-        }();
-
-    processRequest (session->port(), to_string (session->body()),
-        session->remoteAddress().at_port (0), makeOutput (*session), jobCoro,
-        forwarded_for, user);
+        }());
 
     if (session->request().keep_alive())
         session->complete();
