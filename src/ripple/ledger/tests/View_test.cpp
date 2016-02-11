@@ -24,6 +24,7 @@
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/Sandbox.h>
+#include <ripple/protocol/Feature.h>
 #include <type_traits>
 
 namespace ripple {
@@ -524,6 +525,209 @@ class View_test
     }
 
     void
+    testFlags()
+    {
+        using namespace jtx;
+        Env env(*this);
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, carol, gw);
+        env.trust(USD(100), alice, bob, carol);
+        {
+            // Global freezing.
+            env(pay(gw, alice, USD(50)));
+            env(offer(alice, XRP(5), USD(5)));
+
+            // Now freeze gw.
+            env(fset (gw, asfGlobalFreeze));
+            env.close();
+            env(offer(alice, XRP(4), USD(5)), ter(tecFROZEN));
+            env.close();
+
+            // Alice's USD balance should be zero if frozen.
+            expect(USD(0) == accountHolds (*env.closed(),
+                alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+
+            // Thaw gw and try again.
+            env(fclear (gw, asfGlobalFreeze));
+            env.close();
+            env(offer("alice", XRP(4), USD(5)));
+        }
+        {
+            // Local freezing.
+            env(pay(gw, bob, USD(50)));
+            env.close();
+
+            // Now gw freezes bob's USD trust line.
+            env(trust(gw, USD(100), bob, tfSetFreeze));
+            env.close();
+
+            // Bob's balance should be zero if frozen.
+            expect(USD(0) == accountHolds (*env.closed(),
+                bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+
+            // gw thaws bob's trust line.  bob gets his money back.
+            env(trust(gw, USD(100), bob, tfClearFreeze));
+            env.close();
+            expect(USD(50) == accountHolds (*env.closed(),
+                bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+        }
+        {
+            // accountHolds().
+            env(pay(gw, carol, USD(50)));
+            env.close();
+
+            // carol has no EUR.
+            expect(EUR(0) == accountHolds (*env.closed(),
+                carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
+
+            // But carol does have USD.
+            expect(USD(50) == accountHolds (*env.closed(),
+                carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+
+            // carol's XRP balance should be her holdings minus her reserve.
+            auto const carolsXRP = accountHolds (*env.closed(),
+                carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal);
+            expect(carolsXRP == XRP(9750));
+
+            // carol should be able to spend *more* than her XRP balance on
+            // a fee by eating into her reserve.
+            env(noop(carol), fee(carolsXRP + XRP(10)));
+            env.close();
+
+            // carol's XRP balance should now show as zero.
+            expect (XRP(0) == accountHolds (*env.closed(),
+                carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
+        }
+        {
+            // accountFunds().
+            // Gateways have whatever funds they claim to have.
+            auto const gwUSD = accountFunds(
+                *env.closed(), gw, USD(0), fhZERO_IF_FROZEN, env.journal);
+            expect (gwUSD == USD(0));
+
+            // carol has funds from the gateway.
+            auto carolsUSD = accountFunds(
+                *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            expect (carolsUSD == USD(50));
+
+            // If carols funds are frozen she has no funds...
+            env(fset (gw, asfGlobalFreeze));
+            env.close();
+            carolsUSD = accountFunds(
+                *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            expect (carolsUSD == USD(0));
+
+            // ... unless the query ignores the FROZEN state.
+            carolsUSD = accountFunds(
+                *env.closed(), carol, USD(0), fhIGNORE_FREEZE, env.journal);
+            expect (carolsUSD == USD(50));
+
+            // Just to be tidy, thaw gw.
+            env(fclear (gw, asfGlobalFreeze));
+            env.close();
+        }
+    }
+
+    void
+    testTransferRate()
+    {
+        using namespace jtx;
+        Env env(*this);
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw1 = Account("gw1");
+
+        env.fund(XRP(10000), alice, bob, gw1);
+        env.close();
+
+        auto rdView = env.closed();
+        // Test with no rate set on gw1.
+        expect (rippleTransferRate (*rdView, alice, bob, gw1) == 1000000000);
+        expect (rippleTransferRate (*rdView, gw1, alice, gw1) == 1000000000);
+        expect (rippleTransferRate (*rdView, alice, gw1, gw1) == 1000000000);
+
+        env(rate(gw1, 1.02));
+        env.close();
+
+        rdView = env.closed();
+        // Test with a non-unity rate set on gw1.
+        expect (rippleTransferRate (*rdView, alice, bob, gw1) == 1020000000);
+        expect (rippleTransferRate (*rdView, gw1, alice, gw1) == 1000000000);
+        expect (rippleTransferRate (*rdView, alice, gw1, gw1) == 1000000000);
+    }
+
+    void
+    testAreCompatible()
+    {
+        // This test requires incompatible ledgers.  The good news is that
+        // ledgers have their memory managed by shared_ptr.  So we can:
+        //  o Make an Env and construct a couple of ledgers in it,
+        //  o Destroy the Env that created them, but save the ledgers,
+        //  o Make a new Env, and
+        //  o Use the new Env to make a couple of ledgers that are
+        //    incompatible with the first two.
+        using namespace jtx;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        // Make a couple of ledgers, then destroy their environment.
+        std::shared_ptr<const ReadView> rdViewA3;
+        std::shared_ptr<const ReadView> rdViewA4;
+        {
+            Env env(*this);
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            rdViewA3 = env.closed();
+
+            env.fund(XRP(10000), bob);
+            env.close();
+            rdViewA4 = env.closed();
+        }
+
+        // Make ledgers that are incompatible with the first ledgers.  Note
+        // that bob is funded before alice.
+        Env env(*this);
+
+        env.fund(XRP(10000), bob);
+        env.close();
+        auto const rdViewB3 = env.closed();
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        auto const rdViewB4 = env.closed();
+
+        // Check for compatibility.
+        auto jStream = env.journal.stream(beast::Journal::kError);
+        expect (  areCompatible (*rdViewA3, *rdViewA4, jStream, ""));
+        expect (  areCompatible (*rdViewA4, *rdViewA3, jStream, ""));
+        expect (  areCompatible (*rdViewA4, *rdViewA4, jStream, ""));
+        expect (! areCompatible (*rdViewA3, *rdViewB4, jStream, ""));
+        expect (! areCompatible (*rdViewA4, *rdViewB3, jStream, ""));
+        expect (! areCompatible (*rdViewA4, *rdViewB4, jStream, ""));
+
+        // Try the other interface.
+        // Note that the different interface has different outcomes.
+        auto const& iA3 = rdViewA3->info();
+        auto const& iA4 = rdViewA4->info();
+
+        expect (  areCompatible (iA3.hash, iA3.seq, *rdViewA4, jStream, ""));
+        expect (  areCompatible (iA4.hash, iA4.seq, *rdViewA3, jStream, ""));
+        expect (  areCompatible (iA4.hash, iA4.seq, *rdViewA4, jStream, ""));
+        expect (! areCompatible (iA3.hash, iA3.seq, *rdViewB4, jStream, ""));
+        expect (  areCompatible (iA4.hash, iA4.seq, *rdViewB3, jStream, ""));
+        expect (! areCompatible (iA4.hash, iA4.seq, *rdViewB4, jStream, ""));
+    }
+
+    void
     testRegressions()
     {
         using namespace jtx;
@@ -573,11 +777,186 @@ class View_test
         testStacked();
         testContext();
         testSles();
+        testFlags();
+        testTransferRate();
+        testAreCompatible();
         testRegressions();
     }
 };
 
+class GetAmendments_test
+    : public beast::unit_test::suite
+{
+    static
+    std::unique_ptr<Config>
+    makeValidatorConfig()
+    {
+        auto p = std::make_unique<Config>();
+        setupConfigForUnitTests(*p);
+
+        // If the config has valid validation keys then we run as a validator.
+        auto const seed = parseBase58<Seed>("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
+        if (!seed)
+            Throw<std::runtime_error> ("Invalid seed specified");
+        p->VALIDATION_PRIV = generateSecretKey (KeyType::secp256k1, *seed);
+        p->VALIDATION_PUB =
+            derivePublicKey (KeyType::secp256k1, p->VALIDATION_PRIV);
+        return p;
+    }
+
+    void
+    testGetAmendments()
+    {
+        using namespace jtx;
+        Env env(*this, makeValidatorConfig());
+
+        // Start out with no amendments.
+        auto majorities = getMajorityAmendments (*env.closed());
+        expect (majorities.empty());
+
+        // Now close ledgers until the amendments show up.
+        int i = 0;
+        for (i = 0; i <= 256; ++i)
+        {
+            env.close();
+            majorities = getMajorityAmendments (*env.closed());
+            if (! majorities.empty())
+                break;
+        }
+
+        // There should be at least 5 amendments.  Don't do exact comparison
+        // to avoid maintenance as more amendments are added in the future.
+        expect (i == 254);
+        expect (majorities.size() >= 5);
+
+        // None of the amendments should be enabled yet.
+        auto enableds = getEnabledAmendments(*env.closed());
+        expect (enableds.empty());
+
+        // Now wait 2 weeks modulo 256 ledgers for the amendments to be
+        // enabled.  Speed the process by closing ledgers every 80 minutes,
+        // which should get us to just past 2 weeks after 256 ledgers.
+        for (i = 0; i <= 256; ++i)
+        {
+            using namespace std::chrono_literals;
+            env.close(80min);
+            enableds = getEnabledAmendments(*env.closed());
+            if (! enableds.empty())
+                break;
+        }
+        expect (i == 255);
+        expect (enableds.size() >= 5);
+    }
+
+    void run() override
+    {
+        testGetAmendments();
+    }
+};
+
+class DirIsEmpty_test
+    : public beast::unit_test::suite
+{
+    void
+    testDirIsEmpty()
+    {
+        using namespace jtx;
+        auto const alice = Account("alice");
+        auto const bogie = Account("bogie");
+
+        Env env(*this, features(featureMultiSign));
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // alice should have an empty directory.
+        expect (dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+
+        // Give alice a signer list, then there will be stuff in the directory.
+        env(signers(alice, 1, { { bogie, 1} }));
+        env.close();
+        expect (! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+
+        env(signers(alice, jtx::none));
+        env.close();
+        expect (dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+
+        // The next test is a bit awkward.  It tests the case where alice
+        // uses 3 directory pages and then deletes all entries from the
+        // first 2 pages.  dirIsEmpty() should still return false in this
+        // circumstance.
+        //
+        // Fill alice's directory with implicit trust lines (produced by
+        // taking offers) and then remove all but the last one.
+        auto const becky = Account ("becky");
+        auto const gw = Account ("gw");
+        env.fund(XRP(10000), becky, gw);
+        env.close();
+
+        // The DIR_NODE_MAX constant is hidden in View.cpp (Feb 2016).  But,
+        // ideally, we'd verify we're doing a good test with the following:
+//      static_assert (64 >= (2 * DIR_NODE_MAX), "");
+
+        // Generate 64 currencies named AAA -> AAP and ADA -> ADP.
+        std::vector<IOU> currencies;
+        currencies.reserve(64);
+        for (char b = 'A'; b <= 'D'; ++b)
+        {
+            for (char c = 'A'; c <= 'P'; ++c)
+            {
+                currencies.push_back(gw[std::string("A") + b + c]);
+                IOU const& currency = currencies.back();
+
+                // Establish trust lines.
+                env(trust(becky, currency(50)));
+                env.close();
+                env(pay(gw, becky, currency(50)));
+                env.close();
+                env(offer(alice, currency(50), XRP(10)));
+                env(offer(becky, XRP(10), currency(50)));
+                env.close();
+            }
+        }
+
+        // Set up one more currency that alice will hold onto.  We expect
+        // this one to go in the third directory page.
+        IOU const lastCurrency = gw["ZZZ"];
+        env(trust(becky, lastCurrency(50)));
+        env.close();
+        env(pay(gw, becky, lastCurrency(50)));
+        env.close();
+        env(offer(alice, lastCurrency(50), XRP(10)));
+        env(offer(becky, XRP(10), lastCurrency(50)));
+        env.close();
+
+        expect (! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+
+        // Now alice gives all the currencies except the last one back to becky.
+        for (auto currency : currencies)
+        {
+            env(pay(alice, becky, currency(50)));
+            env.close();
+        }
+
+        // This is the crux of the test.
+        expect (! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+
+        // Give the last currency to becky.  Now alice's directory is empty.
+        env(pay(alice, becky, lastCurrency(50)));
+        env.close();
+
+        expect (dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+    }
+
+    void run() override
+    {
+        testDirIsEmpty();
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(View,ledger,ripple);
+BEAST_DEFINE_TESTSUITE(GetAmendments,ledger,ripple);
+BEAST_DEFINE_TESTSUITE(DirIsEmpty, ledger,ripple)
 
 }  // test
 }  // ripple
