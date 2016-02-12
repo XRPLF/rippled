@@ -44,13 +44,12 @@ ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_se
         context, io_service))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
-    , parser_ (
+    , parser_ (response_, false,
         [&](void const* data, std::size_t size)
         {
             body_.commit(boost::asio::buffer_copy(body_.prepare(size),
                 boost::asio::buffer(data, size)));
-        }
-        , response_, false)
+        })
     , slot_ (slot)
 {
     if (journal_.debug) journal_.debug <<
