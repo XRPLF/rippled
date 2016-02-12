@@ -132,6 +132,7 @@ void printHelp (const po::options_description& desc)
            "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
            "     connect <ip> [<port>]\n"
            "     consensus_info\n"
+           "     feature [<feature> [accept|reject]]\n"
            "     fetch_info [clear]\n"
            "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ <hotwallet> ]]\n"
            "     get_counts\n"
