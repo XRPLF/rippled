@@ -233,15 +233,8 @@ public:
         if (! expect_read (s, "Hello, world!\n"))
             return ;
 
-        try
-        {
-            s.shutdown (socket::shutdown_both);
-            pass();
-        }
-        catch (std::exception const& e)
-        {
-            fail (e.what());
-        }
+        boost::system::error_code ec;
+        s.shutdown(socket::shutdown_both, ec);
 
         std::this_thread::sleep_for (std::chrono::seconds (1));
     }
@@ -274,15 +267,8 @@ public:
         if (! expect_read (s, "Hello, world!\n"))
             return ;
 
-        try
-        {
-            s.shutdown (socket::shutdown_both);
-            pass();
-        }
-        catch (std::exception const& e)
-        {
-            fail (e.what());
-        }
+        boost::system::error_code ec;
+        s.shutdown(socket::shutdown_both, ec);
     }
 
     void basicTests()
