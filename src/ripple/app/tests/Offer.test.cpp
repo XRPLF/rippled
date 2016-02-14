@@ -24,15 +24,28 @@
 #include <ripple/test/jtx.h>
 #include <ripple/test/jtx/Account.h>
 #include <ripple/ledger/tests/PathSet.h>
+#include <ripple/protocol/SystemParameters.h>
 
 namespace ripple {
 namespace test {
 
 class Offer_test : public beast::unit_test::suite
 {
+    XRPAmount reserve(jtx::Env& env, std::uint32_t count)
+    {
+        return env.current()->fees().accountReserve (count);
+    }
+
+    std::uint32_t lastClose (jtx::Env& env)
+    {
+        return env.current()->info().parentCloseTime.time_since_epoch().count();
+    }
+
 public:
     void testRmFundedOffer ()
     {
+        testcase ("Incorrect Removal of Funded Offers");
+
         // We need at least two paths. One at good quality and one at bad quality.
         // The bad quality path needs two offer books in a row. Each offer book
         // should have two offers at the same quality, the offers should be
@@ -87,8 +100,11 @@ public:
         expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
             isOffer (env, "carol", BTC (49), XRP (49)));
     }
+
     void testCanceledOffer ()
     {
+        testcase ("Removing Canceled Offers");
+
         using namespace jtx;
         Env env (*this);
         auto const gw = Account ("gateway");
@@ -121,8 +137,11 @@ public:
         expect (isOffer (env, "alice", XRP (300), USD (100)) &&
             isOffer (env, "alice", XRP (400), USD (200)));
     }
+
     void testTinyPayment ()
     {
+        testcase ("Tiny payments");
+
         // Regression test for tiny payments
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -161,6 +180,7 @@ public:
                 sendmax (USD (100)), ter (expectedResult));
         }
     }
+
     void testEnforceNoRipple ()
     {
         testcase ("Enforce No Ripple");
@@ -235,12 +255,393 @@ public:
             env.require (balance (carol, USD2 (50)));
         }
     }
+
+    void
+    testInsufficientReserve ()
+    {
+        testcase ("Insufficient Reserve");
+
+        // If an account places an offer and its balance
+        // *before* the transaction began isn't high enough
+        // to meet the reserve *after* the transaction runs,
+        // then no offer should go on the books but if the
+        // offer partially or fully crossed the tx succeeds.
+
+        using namespace jtx;
+
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+
+        auto const usdOffer = USD(1000);
+        auto const xrpOffer = XRP(1000);
+
+        // No crossing:
+        {
+            Env env(*this);
+            env.fund (XRP(1000000), gw);
+
+            auto const f = env.current ()->fees ().base;
+            auto const r = reserve (env, 0);
+
+            env.fund (r + f, "alice");
+
+            env (trust ("alice", usdOffer),           ter(tesSUCCESS));
+            env (pay (gw, "alice", usdOffer),         ter(tesSUCCESS));
+            env (offer ("alice", xrpOffer, usdOffer), ter(tecINSUF_RESERVE_OFFER));
+
+            env.require (
+                balance ("alice", r - f),
+                owners ("alice", 1));
+        }
+
+        // Partial cross:
+        {
+            Env env(*this);
+            env.fund (XRP(1000000), gw);
+
+            auto const f = env.current ()->fees ().base;
+            auto const r = reserve (env, 0);
+
+            auto const usdOffer2 = USD(500);
+            auto const xrpOffer2 = XRP(500);
+
+            env.fund (r + f + xrpOffer, "bob");
+            env (offer ("bob", usdOffer2, xrpOffer2),   ter(tesSUCCESS));
+            env.fund (r + f, "alice");
+            env (trust ("alice", usdOffer),             ter(tesSUCCESS));
+            env (pay (gw, "alice", usdOffer),           ter(tesSUCCESS));
+            env (offer ("alice", xrpOffer, usdOffer),   ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", r - f + xrpOffer2),
+                balance ("alice", usdOffer2),
+                owners ("alice", 1),
+                balance ("bob", r + xrpOffer2),
+                balance ("bob", usdOffer2),
+                owners ("bob", 1));
+        }
+
+        // Account has enough reserve as is, but not enough
+        // if an offer were added. Attempt to sell IOUs to
+        // buy XRP. If it fully crosses, we succeed.
+        {
+            Env env(*this);
+            env.fund (XRP(1000000), gw);
+
+            auto const f = env.current ()->fees ().base;
+            auto const r = reserve (env, 0);
+
+            auto const usdOffer2 = USD(500);
+            auto const xrpOffer2 = XRP(500);
+
+            env.fund (r + f + xrpOffer, "bob", "carol");
+            env (offer ("bob", usdOffer2, xrpOffer2),    ter(tesSUCCESS));
+            env (offer ("carol", usdOffer, xrpOffer),    ter(tesSUCCESS));
+
+            env.fund (r + f, "alice");
+            env (trust ("alice", usdOffer),              ter(tesSUCCESS));
+            env (pay (gw, "alice", usdOffer),            ter(tesSUCCESS));
+            env (offer ("alice", xrpOffer, usdOffer),    ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", r - f + xrpOffer),
+                balance ("alice", USD(0)),
+                owners ("alice", 1),
+                balance ("bob", r + xrpOffer2),
+                balance ("bob", usdOffer2),
+                owners ("bob", 1),
+                balance ("carol", r + xrpOffer2),
+                balance ("carol", usdOffer2),
+                owners ("carol", 2));
+        }
+    }
+
+    void
+    testFillModes ()
+    {
+        testcase ("Fill Modes");
+
+        using namespace jtx;
+
+        auto const startBalance = XRP(1000000);
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+
+        // Fill or Kill - unless we fully cross, just charge
+        // a fee and not place the offer on the books:
+        {
+            Env env(*this);
+            env.fund (startBalance, gw);
+
+            auto const f = env.current ()->fees ().base;
+            auto const r = reserve (env, 0);
+
+            env.fund (startBalance, "alice", "bob");
+            env (offer ("bob", USD(500), XRP(500)),  ter(tesSUCCESS));
+            env (trust ("alice", USD(1000)),         ter(tesSUCCESS));
+            env (pay (gw, "alice", USD(1000)),       ter(tesSUCCESS));
+
+            // Order that can't be filled:
+            env (offer ("alice", XRP(1000), USD(1000)),
+                txflags (tfFillOrKill),              ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", startBalance - f - f),
+                balance ("alice", USD(1000)),
+                owners ("alice", 1),
+                offers ("alice", 0),
+                balance ("bob", startBalance - f),
+                balance ("bob", USD(none)),
+                owners ("bob", 1),
+                offers ("bob", 1));
+
+            // Order that can be filled
+            env (offer ("alice", XRP(500), USD(500)),
+                txflags (tfFillOrKill),              ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", startBalance - f - f - f + XRP(500)),
+                balance ("alice", USD(500)),
+                owners ("alice", 1),
+                offers ("alice", 0),
+                balance ("bob", startBalance - f - XRP(500)),
+                balance ("bob", USD(500)),
+                owners ("bob", 1),
+                offers ("bob", 0));
+        }
+
+        // Immediate or Cancel - cross as much as possible
+        // and add nothing on the books:
+        {
+            Env env(*this);
+            env.fund (startBalance, gw);
+
+            auto const f = env.current ()->fees ().base;
+            auto const r = reserve (env, 0);
+
+            env.fund (startBalance, "alice", "bob");
+
+            env (trust ("alice", USD(1000)),                 ter(tesSUCCESS));
+            env (pay (gw, "alice", USD(1000)),               ter(tesSUCCESS));
+
+            // No cross:
+            env (offer ("alice", XRP(1000), USD(1000)),
+                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", startBalance - f - f),
+                balance ("alice", USD(1000)),
+                owners ("alice", 1),
+                offers ("alice", 0));
+
+            // Partially cross:
+            env (offer ("bob", USD(50), XRP(50)),            ter(tesSUCCESS));
+            env (offer ("alice", XRP(1000), USD(1000)),
+                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", startBalance - f - f - f + XRP(50)),
+                balance ("alice", USD(950)),
+                owners ("alice", 1),
+                offers ("alice", 0),
+                balance ("bob", startBalance - f - XRP(50)),
+                balance ("bob", USD(50)),
+                owners ("bob", 1),
+                offers ("bob", 0));
+
+            // Fully cross:
+            env (offer ("bob", USD(50), XRP(50)),            ter(tesSUCCESS));
+            env (offer ("alice", XRP(50), USD(50)),
+                txflags (tfImmediateOrCancel),               ter(tesSUCCESS));
+
+            env.require (
+                balance ("alice", startBalance - f - f - f - f + XRP(100)),
+                balance ("alice", USD(900)),
+                owners ("alice", 1),
+                offers ("alice", 0),
+                balance ("bob", startBalance - f - f - XRP(100)),
+                balance ("bob", USD(100)),
+                owners ("bob", 1),
+                offers ("bob", 0));
+        }
+    }
+
+    void
+    testMalformed()
+    {
+        testcase ("Malformed Detection");
+
+        using namespace jtx;
+
+        auto const startBalance = XRP(1000000);
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+
+        Env env(*this);
+        env.fund (startBalance, gw);
+
+        env.fund (startBalance, "alice");
+
+        // Order that has invalid flags
+        env (offer ("alice", USD(1000), XRP(1000)),
+            txflags (tfImmediateOrCancel + 1),            ter(temINVALID_FLAG));
+        env.require (
+            balance ("alice", startBalance),
+            owners ("alice", 0),
+            offers ("alice", 0));
+
+        // Order with incompatible flags
+        env (offer ("alice", USD(1000), XRP(1000)),
+            txflags (tfImmediateOrCancel | tfFillOrKill), ter(temINVALID_FLAG));
+        env.require (
+            balance ("alice", startBalance),
+            owners ("alice", 0),
+            offers ("alice", 0));
+
+        // Sell and buy the same asset
+        {
+            // Alice tries an XRP to XRP order:
+            env (offer ("alice", XRP(1000), XRP(1000)),   ter(temBAD_OFFER));
+            env.require (
+                owners ("alice", 0),
+                offers ("alice", 0));
+
+            // Alice tries an IOU to IOU order:
+            env (trust ("alice", USD(1000)),              ter(tesSUCCESS));
+            env (pay (gw, "alice", USD(1000)),            ter(tesSUCCESS));
+            env (offer ("alice", USD(1000), USD(1000)),   ter(temREDUNDANT));
+            env.require (
+                owners ("alice", 1),
+                offers ("alice", 0));
+        }
+
+        // Offers with negative amounts
+        {
+            env (offer ("alice", -USD(1000), XRP(1000)),  ter(temBAD_OFFER));
+            env.require (
+                owners ("alice", 1),
+                offers ("alice", 0));
+
+            env (offer ("alice", USD(1000), -XRP(1000)),  ter(temBAD_OFFER));
+            env.require (
+                owners ("alice", 1),
+                offers ("alice", 0));
+        }
+
+        // Offer with a bad expiration
+        {
+            Json::StaticString const key ("Expiration");
+
+            env (offer ("alice", USD(1000), XRP(1000)),
+                json (key, std::uint32_t (0)),            ter(temBAD_EXPIRATION));
+            env.require (
+                owners ("alice", 1),
+                offers ("alice", 0));
+        }
+
+        // Offer with a bad offer sequence
+        {
+            Json::StaticString const key ("OfferSequence");
+
+            env (offer ("alice", USD(1000), XRP(1000)),
+                json (key, std::uint32_t (0)),            ter(temBAD_SEQUENCE));
+            env.require (
+                owners ("alice", 1),
+                offers ("alice", 0));
+        }
+
+        // Use XRP as a currency code
+        {
+            auto const BAD = IOU(gw, badCurrency());
+
+            env (offer ("alice", XRP(1000), BAD(1000)),   ter(temBAD_CURRENCY));
+            env.require (
+                owners ("alice", 1),
+                offers ("alice", 0));
+        }
+    }
+
+    void
+    testExpiration ()
+    {
+        testcase ("Offer Expiration");
+
+        using namespace jtx;
+
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+
+        auto const startBalance = XRP(1000000);
+        auto const usdOffer = USD(1000);
+        auto const xrpOffer = XRP(1000);
+
+        Json::StaticString const key ("Expiration");
+
+        Env env(*this);
+        env.fund (startBalance, gw, "alice", "bob");
+        env.close();
+
+        auto const f = env.current ()->fees ().base;
+
+        // Place an offer that should have already expired
+        env (trust ("alice", usdOffer),             ter(tesSUCCESS));
+        env (pay (gw, "alice", usdOffer),           ter(tesSUCCESS));
+        env.close();
+        env.require (
+            balance ("alice", startBalance - f),
+            balance ("alice", usdOffer),
+            offers ("alice", 0),
+            owners ("alice", 1));
+
+        env (offer ("alice", xrpOffer, usdOffer),
+            json (key, lastClose(env)),             ter(tesSUCCESS));
+        env.require (
+            balance ("alice", startBalance - f - f),
+            balance ("alice", usdOffer),
+            offers ("alice", 0),
+            owners ("alice", 1));
+        env.close();
+
+        // Add an offer that's expires before the next ledger close
+        env (offer ("alice", xrpOffer, usdOffer),
+            json (key, lastClose(env) + 1),         ter(tesSUCCESS));
+        env.require (
+            balance ("alice", startBalance - f - f - f),
+            balance ("alice", usdOffer),
+            offers ("alice", 1),
+            owners ("alice", 2));
+
+        // The offer expires (it's not removed yet)
+        env.close ();
+        env.require (
+            balance ("alice", startBalance - f - f - f),
+            balance ("alice", usdOffer),
+            offers ("alice", 1),
+            owners ("alice", 2));
+
+        // Add offer - the expired offer is removed
+        env (offer ("bob", usdOffer, xrpOffer),     ter(tesSUCCESS));
+        env.require (
+            balance ("alice", startBalance - f - f - f),
+            balance ("alice", usdOffer),
+            offers ("alice", 0),
+            owners ("alice", 1),
+            balance ("bob", startBalance - f),
+            balance ("bob", USD(none)),
+            offers ("bob", 1),
+            owners ("bob", 1));
+    }
+
     void run ()
     {
         testCanceledOffer ();
         testRmFundedOffer ();
         testTinyPayment ();
         testEnforceNoRipple ();
+        testInsufficientReserve ();
+        testFillModes ();
+        testMalformed ();
+        testExpiration ();
     }
 };
 
