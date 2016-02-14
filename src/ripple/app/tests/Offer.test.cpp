@@ -632,6 +632,67 @@ public:
             owners ("bob", 1));
     }
 
+    void
+    testUnfundedCross()
+    {
+        testcase ("Unfunded Crossing");
+
+        using namespace jtx;
+
+        auto const gw = Account("gateway");
+        auto const USD = gw["USD"];
+
+        auto const usdOffer = USD(1000);
+        auto const xrpOffer = XRP(1000);
+
+        Env env(*this);
+        env.fund (XRP(1000000), gw);
+
+        // The fee that's charged for transactions
+        auto const f = env.current ()->fees ().base;
+
+        // Account is at the reserve, and will dip below once
+        // fees are subtracted.
+        env.fund (reserve (env, 0), "alice");
+        env (offer ("alice", usdOffer, xrpOffer),     ter(tecUNFUNDED_OFFER));
+        env.require (
+            balance ("alice", reserve (env, 0) - f),
+            owners ("alice", 0));
+
+        // Account has just enough for the reserve and the
+        // fee.
+        env.fund (reserve (env, 0) + f, "bob");
+        env (offer ("bob", usdOffer, xrpOffer),       ter(tecUNFUNDED_OFFER));
+        env.require (
+            balance ("bob", reserve (env, 0)),
+            owners ("bob", 0));
+
+        // Account has enough for the reserve, the fee and
+        // the offer, and a bit more, but not enough for the
+        // reserve after the offer is placed.
+        env.fund (reserve (env, 0) + f + XRP(1), "carol");
+        env (offer ("carol", usdOffer, xrpOffer),     ter(tecINSUF_RESERVE_OFFER));
+        env.require (
+            balance ("carol", reserve (env, 0) + XRP(1)),
+            owners ("carol", 0));
+
+        // Account has enough for the reserve plus one
+        // offer, and the fee.
+        env.fund (reserve (env, 1) + f, "dan");
+        env (offer ("dan", usdOffer, xrpOffer),       ter(tesSUCCESS));
+        env.require (
+            balance ("dan", reserve (env, 1)),
+            owners ("dan", 1));
+
+        // Account has enough for the reserve plus one
+        // offer, the fee and the entire offer amount.
+        env.fund (reserve (env, 1) + f + xrpOffer, "eve");
+        env (offer ("eve", usdOffer, xrpOffer),       ter(tesSUCCESS));
+        env.require (
+            balance ("eve", reserve (env, 1) + xrpOffer),
+            owners ("eve", 1));
+    }
+
     void run ()
     {
         testCanceledOffer ();
@@ -642,6 +703,7 @@ public:
         testFillModes ();
         testMalformed ();
         testExpiration ();
+        testUnfundedCross ();
     }
 };
 
