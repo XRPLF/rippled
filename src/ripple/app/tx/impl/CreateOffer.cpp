@@ -88,7 +88,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
     if (saTakerPays.native () && saTakerGets.native ())
     {
         JLOG(j.debug) <<
-            "Malformed offer: XRP for XRP";
+            "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
     if (saTakerPays <= zero || saTakerGets <= zero)
@@ -107,14 +107,14 @@ CreateOffer::preflight (PreflightContext const& ctx)
     if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
     {
         JLOG(j.debug) <<
-            "Malformed offer: redundant offer";
+            "Malformed offer: redundant (IOU for IOU)";
         return temREDUNDANT;
     }
     // We don't allow a non-native currency to use the currency code XRP.
     if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
     {
         JLOG(j.debug) <<
-            "Malformed offer: Bad currency.";
+            "Malformed offer: bad currency";
         return temBAD_CURRENCY;
     }
 
