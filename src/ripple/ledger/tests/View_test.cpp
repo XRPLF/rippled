@@ -592,8 +592,13 @@ class View_test
                 carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
-            auto const carolsXRP = accountHolds (*env.closed(),
-                carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal);
+            auto const carolsXRP = accountHolds (*env.closed(), carol,
+                xrpCurrency(), xrpAccount(), fhZERO_IF_FROZEN, env.journal);
+            // carol's XRP balance:              10000
+            // base reserve:                      -200
+            // 1 trust line times its reserve: 1 * -50
+            //                                 -------
+            // carol's available balance:         9750
             expect(carolsXRP == XRP(9750));
 
             // carol should be able to spend *more* than her XRP balance on
@@ -609,15 +614,15 @@ class View_test
             // accountFunds().
             // Gateways have whatever funds they claim to have.
             auto const gwUSD = accountFunds(
-                *env.closed(), gw, USD(0), fhZERO_IF_FROZEN, env.journal);
-            expect (gwUSD == USD(0));
+                *env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
+            expect (gwUSD == USD(314159));
 
             // carol has funds from the gateway.
             auto carolsUSD = accountFunds(
                 *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
             expect (carolsUSD == USD(50));
 
-            // If carols funds are frozen she has no funds...
+            // If carol's funds are frozen she has no funds...
             env(fset (gw, asfGlobalFreeze));
             env.close();
             carolsUSD = accountFunds(
@@ -667,46 +672,59 @@ class View_test
     void
     testAreCompatible()
     {
-        // This test requires incompatible ledgers.  The good news is that
-        // ledgers have their memory managed by shared_ptr.  So we can:
-        //  o Make an Env and construct a couple of ledgers in it,
-        //  o Destroy the Env that created them, but save the ledgers,
-        //  o Make a new Env, and
-        //  o Use the new Env to make a couple of ledgers that are
-        //    incompatible with the first two.
+        // This test requires incompatible ledgers.  The good news we can
+        // construct and manage two different Env instances at the same
+        // time.  So we can use two Env instances to produce mutually
+        // incompatible ledgers.
         using namespace jtx;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        // Make a couple of ledgers, then destroy their environment.
-        std::shared_ptr<const ReadView> rdViewA3;
-        std::shared_ptr<const ReadView> rdViewA4;
+        // The first Env.
+        Env eA(*this);
+
+        eA.fund(XRP(10000), alice);
+        eA.close();
+        auto const rdViewA3 = eA.closed();
+
+        eA.fund(XRP(10000), bob);
+        eA.close();
+        auto const rdViewA4 = eA.closed();
+
+        // The two Env's can't share the same ports, so edit the config
+        // of the second Env.
+        auto getConfigWithNewPorts = [this] ()
         {
-            Env env(*this);
+            auto cfg = std::make_unique<Config>();
+            setupConfigForUnitTests(*cfg);
 
-            env.fund(XRP(10000), alice);
-            env.close();
-            rdViewA3 = env.closed();
-
-            env.fund(XRP(10000), bob);
-            env.close();
-            rdViewA4 = env.closed();
-        }
+            for (auto const sectionName : {"port_peer", "port_http", "port_ws"})
+            {
+                Section& s = (*cfg)[sectionName];
+                auto const port = s.get<std::int32_t>("port");
+                this->expect (port);
+                if (port)
+                {
+                    constexpr int portIncr = 5;
+                    s.set ("port", std::to_string(*port + portIncr));
+                }
+            }
+            return cfg;
+        };
+        Env eB(*this, getConfigWithNewPorts());
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.
-        Env env(*this);
+        eB.fund(XRP(10000), bob);
+        eB.close();
+        auto const rdViewB3 = eB.closed();
 
-        env.fund(XRP(10000), bob);
-        env.close();
-        auto const rdViewB3 = env.closed();
-
-        env.fund(XRP(10000), alice);
-        env.close();
-        auto const rdViewB4 = env.closed();
+        eB.fund(XRP(10000), alice);
+        eB.close();
+        auto const rdViewB4 = eB.closed();
 
         // Check for compatibility.
-        auto jStream = env.journal.stream(beast::Journal::kError);
+        auto jStream = eA.journal.stream(beast::Journal::kError);
         expect (  areCompatible (*rdViewA3, *rdViewA4, jStream, ""));
         expect (  areCompatible (*rdViewA4, *rdViewA3, jStream, ""));
         expect (  areCompatible (*rdViewA4, *rdViewA4, jStream, ""));

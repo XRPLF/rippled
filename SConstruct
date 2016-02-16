@@ -422,7 +422,7 @@ def get_libs(lib, static):
                 static_libs.append(l)
         return (static_libs, dynamic_libs)
     except Exception as e:
-        raise Exception('pkg-config failed for ' + lib + ' Exception: ' + str(e))
+        raise Exception('pkg-config failed for ' + lib + '; Exception: ' + str(e))
 
 def add_sanitizer (toolchain, env):
     san = GetOption('sanitize')
