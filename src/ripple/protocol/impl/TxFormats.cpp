@@ -86,7 +86,7 @@ TxFormats::TxFormats ()
         SOElement (sfOfferSequence,       SOE_REQUIRED);
 
     add ("EnableAmendment", ttAMENDMENT)
-        << SOElement (sfLedgerSequence,      SOE_OPTIONAL)
+        << SOElement (sfLedgerSequence,      SOE_REQUIRED)
         << SOElement (sfAmendment,           SOE_REQUIRED)
         ;
 

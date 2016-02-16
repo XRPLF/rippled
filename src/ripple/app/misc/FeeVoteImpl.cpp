@@ -202,6 +202,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
     std::uint32_t const baseReserve = baseReserveVote.getVotes ();
     std::uint32_t const incReserve = incReserveVote.getVotes ();
     std::uint32_t const feeUnits = target_.reference_fee_units;
+    auto const seq = lastClosedLedger->info().seq + 1;
 
     // add transactions to our position
     if ((baseFee != lastClosedLedger->fees().base) ||
@@ -214,9 +215,10 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
             "/" << incReserve;
 
         STTx feeTx (ttFEE,
-            [baseFee,baseReserve,incReserve,feeUnits](auto& obj)
+            [seq,baseFee,baseReserve,incReserve,feeUnits](auto& obj)
             {
                 obj[sfAccount] = AccountID();
+                obj[sfLedgerSequence] = seq;
                 obj[sfBaseFee] = baseFee;
                 obj[sfReserveBase] = baseReserve;
                 obj[sfReserveIncrement] = incReserve;
