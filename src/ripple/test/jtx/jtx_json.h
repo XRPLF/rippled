@@ -49,6 +49,12 @@ public:
         jv_[key] = value;
     }
 
+    template <class T>
+    json (std::string const& key, T const& value)
+    {
+        jv_[key] = value;
+    }
+
     void
     operator()(Env&, JTx& jt) const;
 };
