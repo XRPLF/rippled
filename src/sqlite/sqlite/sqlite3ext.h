@@ -12,7 +12,7 @@
 ** This header file defines the SQLite interface for use by
 ** shared libraries that want to be imported as extensions into
 ** an SQLite instance.  Shared libraries that intend to be loaded
-** as extensions by SQLite should #include this file instead of 
+** as extensions by SQLite should #include this file instead of
 ** sqlite3.h.
 */
 #ifndef _SQLITE3EXT_H_
@@ -272,6 +272,13 @@ struct sqlite3_api_routines {
   void (*value_free)(sqlite3_value*);
   int (*result_zeroblob64)(sqlite3_context*,sqlite3_uint64);
   int (*bind_zeroblob64)(sqlite3_stmt*, int, sqlite3_uint64);
+  /* Version 3.9.0 and later */
+  unsigned int (*value_subtype)(sqlite3_value*);
+  void (*result_subtype)(sqlite3_context*,unsigned int);
+  /* Version 3.10.0 and later */
+  int (*status64)(int,sqlite3_int64*,sqlite3_int64*,int);
+  int (*strlike)(const char*,const char*,unsigned int);
+  int (*db_cacheflush)(sqlite3*);
 };
 
 /*
@@ -285,7 +292,7 @@ struct sqlite3_api_routines {
 ** the API.  So the redefinition macros are only valid if the
 ** SQLITE_CORE macros is undefined.
 */
-#ifndef SQLITE_CORE
+#if !defined(SQLITE_CORE) && !defined(SQLITE_OMIT_LOAD_EXTENSION)
 #define sqlite3_aggregate_context      sqlite3_api->aggregate_context
 #ifndef SQLITE_OMIT_DEPRECATED
 #define sqlite3_aggregate_count        sqlite3_api->aggregate_count
@@ -412,6 +419,7 @@ struct sqlite3_api_routines {
 #define sqlite3_value_text16le         sqlite3_api->value_text16le
 #define sqlite3_value_type             sqlite3_api->value_type
 #define sqlite3_vmprintf               sqlite3_api->vmprintf
+#define sqlite3_vsnprintf              sqlite3_api->vsnprintf
 #define sqlite3_overload_function      sqlite3_api->overload_function
 #define sqlite3_prepare_v2             sqlite3_api->prepare_v2
 #define sqlite3_prepare16_v2           sqlite3_api->prepare16_v2
@@ -507,17 +515,24 @@ struct sqlite3_api_routines {
 #define sqlite3_value_free             sqlite3_api->value_free
 #define sqlite3_result_zeroblob64      sqlite3_api->result_zeroblob64
 #define sqlite3_bind_zeroblob64        sqlite3_api->bind_zeroblob64
-#endif /* SQLITE_CORE */
+/* Version 3.9.0 and later */
+#define sqlite3_value_subtype          sqlite3_api->value_subtype
+#define sqlite3_result_subtype         sqlite3_api->result_subtype
+/* Version 3.10.0 and later */
+#define sqlite3_status64               sqlite3_api->status64
+#define sqlite3_strlike                sqlite3_api->strlike
+#define sqlite3_db_cacheflush          sqlite3_api->db_cacheflush
+#endif /* !defined(SQLITE_CORE) && !defined(SQLITE_OMIT_LOAD_EXTENSION) */
 
-#ifndef SQLITE_CORE
-  /* This case when the file really is being compiled as a loadable 
+#if !defined(SQLITE_CORE) && !defined(SQLITE_OMIT_LOAD_EXTENSION)
+  /* This case when the file really is being compiled as a loadable
   ** extension */
 # define SQLITE_EXTENSION_INIT1     const sqlite3_api_routines *sqlite3_api=0;
 # define SQLITE_EXTENSION_INIT2(v)  sqlite3_api=v;
 # define SQLITE_EXTENSION_INIT3     \
     extern const sqlite3_api_routines *sqlite3_api;
 #else
-  /* This case when the file is being statically linked into the 
+  /* This case when the file is being statically linked into the
   ** application */
 # define SQLITE_EXTENSION_INIT1     /*no-op*/
 # define SQLITE_EXTENSION_INIT2(v)  (void)v; /* unused parameter */
