@@ -51,7 +51,7 @@ env.app().logs().severity(beast::Journal::kWarning);
         env.fund(XRP(10000), "george", "harold", "iris");
         env.close();
         */
-        auto jv = wsc->getMsg(std::chrono::seconds(1));
+        auto jv = wsc->getMsg();
         if(jv)
             log << pretty(*jv);
         pass();

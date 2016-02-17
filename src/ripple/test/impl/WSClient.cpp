@@ -204,28 +204,21 @@ public:
     {
         using namespace boost::asio;
 
-        {
-            Json::Value jp;
-            if(params)
-               jp = params;
-            jp["command"] = cmd;
-            auto const s = to_string(jp);
-            ws_.write(buffer(s));
-        }
+        Json::Value jp;
+        if (params)
+            jp = params;
+        jp["command"] = cmd;
+        auto const s = to_string(jp);
+        ws_.write(buffer(s));
 
-        std::shared_ptr<msg> m;
-        {
-            std::unique_lock<std::mutex> lock(m_);
-            cv_.wait(lock, [&]{ return ! msgs_.empty(); });
-            m = std::move(msgs_.front());
-            msgs_.pop_front();
-        }
-
-        return m->jv;
+        if(auto jv = getMsg())
+            return std::move(*jv);
+        return Json::Value();
     }
 
     boost::optional<Json::Value>
-    getMsg(std::chrono::milliseconds const& timeout) override
+    getMsg(std::chrono::milliseconds const& timeout =
+        std::chrono::seconds{30}) override
     {
         std::shared_ptr<msg> m;
         {

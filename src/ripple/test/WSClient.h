@@ -36,7 +36,7 @@ public:
     virtual
     boost::optional<Json::Value>
     getMsg(std::chrono::milliseconds const& timeout =
-        std::chrono::milliseconds{0}) = 0;
+        std::chrono::seconds{30}) = 0;
 };
 
 /** Returns a client operating through WebSockets/S. */
