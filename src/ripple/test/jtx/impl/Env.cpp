@@ -128,6 +128,8 @@ public:
     {
     }
 
+    ~SuiteLogs() override = default;
+
     std::unique_ptr<beast::Journal::Sink>
     makeSink(std::string const& partition,
         beast::Journal::Severity startingLevel) override
