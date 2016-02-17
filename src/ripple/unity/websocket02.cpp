@@ -41,7 +41,6 @@
 
 #include <ripple/websocket/WebSocket02.cpp>
 #include <ripple/websocket/MakeServer.cpp>
-#include <ripple/websocket/LogWebsockets.cpp>
 
 // Must come last to prevent compilation errors.
 #include <websocketpp_02/src/md5/md5.c>
