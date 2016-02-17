@@ -159,6 +159,8 @@ public:
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
 
+    virtual ~Logs() = default;
+
     bool
     open (boost::filesystem::path const& pathToLogFile);
 
