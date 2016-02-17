@@ -85,9 +85,6 @@ namespace elevel {
     static const value ALL = 0xFFFF;
 }
 
-extern void websocketLog(alevel::value, const std::string&);
-extern void websocketLog(elevel::value, const std::string&);
-
 template <typename level_type>
 class logger {
 public:

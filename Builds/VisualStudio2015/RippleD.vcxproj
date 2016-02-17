@@ -3767,9 +3767,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\websocket\Handler.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\LogWebsockets.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\websocket\MakeServer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

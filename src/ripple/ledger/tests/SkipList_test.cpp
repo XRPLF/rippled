@@ -104,7 +104,6 @@ class SkipList_test : public beast::unit_test::suite
 
     void run()
     {
-        LogSquelcher l;
         testSkipList();
     }
 };

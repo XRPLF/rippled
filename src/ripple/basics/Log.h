@@ -154,7 +154,7 @@ private:
     bool silent_ = false;
 
 public:
-    Logs();
+    Logs(beast::Journal::Severity level);
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
@@ -259,35 +259,6 @@ debugJournal();
 */
 void
 setDebugJournalSink(beast::Journal::Sink& sink);
-
-//------------------------------------------------------------------------------
-// VFALCO DEPRECATED Temporary transition function until interfaces injected
-inline
-Logs&
-deprecatedLogs()
-{
-    static Logs logs;
-    return logs;
-}
-
-class LogSquelcher
-{
-public:
-    LogSquelcher()
-        : severity_(deprecatedLogs().severity())
-    {
-        deprecatedLogs().severity(
-            beast::Journal::Severity::kNone);
-    }
-
-    ~LogSquelcher()
-    {
-        deprecatedLogs().severity(severity_);
-    }
-
-private:
-    beast::Journal::Severity const severity_;
-};
 
 } // ripple
 
