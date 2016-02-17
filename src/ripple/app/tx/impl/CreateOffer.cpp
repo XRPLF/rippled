@@ -88,7 +88,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
     if (saTakerPays.native () && saTakerGets.native ())
     {
         JLOG(j.debug) <<
-            "Malformed offer: XRP for XRP";
+            "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
     if (saTakerPays <= zero || saTakerGets <= zero)
@@ -107,14 +107,14 @@ CreateOffer::preflight (PreflightContext const& ctx)
     if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
     {
         JLOG(j.debug) <<
-            "Malformed offer: redundant offer";
+            "Malformed offer: redundant (IOU for IOU)";
         return temREDUNDANT;
     }
     // We don't allow a non-native currency to use the currency code XRP.
     if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
     {
         JLOG(j.debug) <<
-            "Malformed offer: Bad currency.";
+            "Malformed offer: bad currency";
         return temBAD_CURRENCY;
     }
 
@@ -575,10 +575,9 @@ CreateOffer::step_account (OfferStream& stream, Taker const& taker, Logs& logs)
     return false;
 }
 
-// Fill offer as much as possible by consuming offers already on the books,
-// and adjusting account balances accordingly.
-//
-// Charges fees on top to taker.
+// Fill as much of the offer as possible by consuming offers
+// already on the books. Return the status and the amount of
+// the offer to left unfilled.
 std::pair<TER, Amounts>
 CreateOffer::cross (
     ApplyView& view,
@@ -592,6 +591,20 @@ CreateOffer::cross (
     Taker taker (cross_type_, view, account_, taker_amount,
         ctx_.tx.getFlags(), beast::Journal (takerSink));
 
+    // If the taker is unfunded before we begin crossing
+    // there's nothing to do - just return an error.
+    //
+    // We check this in preclaim, but when selling XRP
+    // charged fees can cause a user's available balance
+    // to go to 0 (by causing it to dip below the reserve)
+    // so we check this case again.
+    if (taker.unfunded ())
+    {
+        JLOG (j_.debug) <<
+            "Not crossing: taker is unfunded.";
+        return { tecUNFUNDED_OFFER, taker_amount };
+    }
+
     try
     {
         if (cross_type_ == CrossType::IouToIou)
@@ -601,8 +614,9 @@ CreateOffer::cross (
     }
     catch (std::exception const& e)
     {
-        j_.error << "Exception during offer crossing: " << e.what ();
-        return std::make_pair (tecINTERNAL, taker.remaining_offer ());
+        JLOG (j_.error) <<
+            "Exception during offer crossing: " << e.what ();
+        return { tecINTERNAL, taker.remaining_offer () };
     }
 }
 
@@ -794,7 +808,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // entire operation should be aborted, with only fees paid.
     if (bFillOrKill)
     {
-        j_.trace << "Fill or Kill: offer killed";
+        JLOG (j_.trace) << "Fill or Kill: offer killed";
         return { tesSUCCESS, false };
     }
 
@@ -802,7 +816,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // placed - it gets cancelled and the operation succeeds.
     if (bImmediateOrCancel)
     {
-        j_.trace << "Immediate or cancel: offer cancelled";
+        JLOG (j_.trace) << "Immediate or cancel: offer cancelled";
         return { tesSUCCESS, true };
     }
 
@@ -847,7 +861,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // Update owner count.
         adjustOwnerCount(view, sleCreator, 1, viewJ);
 
-        if (j_.trace) j_.trace <<
+        JLOG (j_.trace) <<
             "adding to book: " << to_string (saTakerPays.issue ()) <<
             " : " << to_string (saTakerGets.issue ());
 

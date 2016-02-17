@@ -112,6 +112,16 @@ BasicTaker::effective_rate (
 }
 
 bool
+BasicTaker::unfunded () const
+{
+    if (get_funds (account(), remaining_.in) > zero)
+        return false;
+
+    journal_.debug << "Unfunded: taker is out of funds.";
+    return true;
+}
+
+bool
 BasicTaker::done () const
 {
     // We are done if we have consumed all the input currency
@@ -130,7 +140,7 @@ BasicTaker::done () const
     }
 
     // We are done if the taker is out of funds
-    if (get_funds (account(), remaining_.in) <= zero)
+    if (unfunded ())
     {
         journal_.debug << "Done: taker out of funds.";
         return true;
@@ -147,7 +157,7 @@ BasicTaker::remaining_offer () const
         return Amounts (remaining_.in.zeroed(), remaining_.out.zeroed());
 
     // Avoid math altogether if we didn't cross.
-   if (original_ == remaining_)
+    if (original_ == remaining_)
        return original_;
 
     if (sell_)
@@ -379,8 +389,6 @@ BasicTaker::flow_iou_to_iou (
 BasicTaker::Flow
 BasicTaker::do_cross (Amounts offer, Quality quality, AccountID const& owner)
 {
-    assert (!done ());
-
     auto const owner_funds = get_funds (owner, offer.out);
     auto const taker_funds = get_funds (account (), offer.in);
 
@@ -419,8 +427,6 @@ BasicTaker::do_cross (
     Amounts offer1, Quality quality1, AccountID const& owner1,
     Amounts offer2, Quality quality2, AccountID const& owner2)
 {
-    assert (!done ());
-
     assert (!offer1.in.native ());
     assert (offer1.out.native ());
     assert (offer2.in.native ());

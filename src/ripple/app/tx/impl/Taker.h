@@ -208,6 +208,10 @@ public:
         return issue_out_;
     }
 
+    /** Returns `true` if the taker has run out of funds. */
+    bool
+    unfunded () const;
+
     /** Returns `true` if order crossing should not continue.
         Order processing is stopped if the taker's order quantities have
         been reached, or if the taker has run out of input funds.
