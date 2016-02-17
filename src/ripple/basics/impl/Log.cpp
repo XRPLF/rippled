@@ -111,8 +111,8 @@ void Logs::File::writeln (char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs()
-    : thresh_ (beast::Journal::kWarning) // default severity
+Logs::Logs(beast::Journal::Severity thresh)
+    : thresh_ (thresh) // default severity
 {
 }
 
