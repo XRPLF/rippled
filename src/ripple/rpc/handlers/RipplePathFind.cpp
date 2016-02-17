@@ -406,7 +406,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             app.logs(),
             &rcInput);
 
-        JLOG(j.warning)
+        JLOG(j.info)
             << "ripple_path_find:"
             << " saMaxAmount=" << saMaxAmount
             << " saDstAmount=" << saDstAmount
