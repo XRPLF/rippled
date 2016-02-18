@@ -107,14 +107,12 @@ public:
 
     Logic (clock_type& clock, Store& store,
             Checker& checker, beast::Journal journal)
-        : m_journal (journal, Reporting::logic)
+        : m_journal (journal)
         , m_clock (clock)
         , m_store (store)
         , m_checker (checker)
-        , livecache_ (m_clock,
-            beast::Journal (journal, Reporting::livecache))
-        , bootcache_ (store, m_clock,
-            beast::Journal (journal, Reporting::bootcache))
+        , livecache_ (m_clock, journal)
+        , bootcache_ (store, m_clock, journal)
         , m_whenBroadcast (m_clock.now())
         , m_squelches (m_clock)
     {

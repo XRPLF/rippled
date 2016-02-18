@@ -27,7 +27,6 @@
 #include <ripple/peerfinder/impl/SourceStrings.cpp>
 
 #include <ripple/peerfinder/sim/GraphAlgorithms.h>
-#include <ripple/peerfinder/sim/WrappedSink.h>
 #include <ripple/peerfinder/sim/Predicates.h>
 #include <ripple/peerfinder/sim/FunctionQueue.h>
 #include <ripple/peerfinder/sim/Message.h>

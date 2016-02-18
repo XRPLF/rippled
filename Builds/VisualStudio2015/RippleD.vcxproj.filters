@@ -3096,9 +3096,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\Predicates.h">
       <Filter>ripple\peerfinder\sim</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
-      <Filter>ripple\peerfinder\sim</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Slot.h">
       <Filter>ripple\peerfinder</Filter>
     </ClInclude>
