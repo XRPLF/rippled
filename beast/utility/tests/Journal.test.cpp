@@ -32,7 +32,8 @@ public:
 
     public:
         TestSink()
-            : m_count(0)
+            : Sink (Journal::kWarning, false)
+            , m_count(0)
         {
         }
 
@@ -49,9 +50,10 @@ public:
         }
 
         void
-        write (Journal::Severity, std::string const&)
+        write (Journal::Severity level, std::string const&) override
         {
-            ++m_count;
+            if (level >= threshold())
+                ++m_count;
         }
     };
 
@@ -59,7 +61,7 @@ public:
     {
         TestSink sink;
 
-        sink.severity(Journal::kInfo);
+        sink.threshold(Journal::kInfo);
 
         Journal j(sink);
 
@@ -78,7 +80,7 @@ public:
 
         sink.reset();
 
-        sink.severity(Journal::kDebug);
+        sink.threshold(Journal::kDebug);
 
         j.trace << " ";
         expect(sink.count() == 0);
