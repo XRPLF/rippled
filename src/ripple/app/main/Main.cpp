@@ -425,11 +425,11 @@ int run (int argc, char** argv)
         auto logs = std::make_unique<Logs>();
 
         if (vm.count ("quiet"))
-            logs->severity (beast::Journal::kFatal);
+            logs->threshold (beast::Journal::kFatal);
         else if (vm.count ("verbose"))
-            logs->severity (beast::Journal::kTrace);
+            logs->threshold (beast::Journal::kTrace);
         else
-            logs->severity (beast::Journal::kInfo);
+            logs->threshold (beast::Journal::kInfo);
 
         if (vm.count ("debug"))
             setDebugJournalSink (logs->get("Debug"));

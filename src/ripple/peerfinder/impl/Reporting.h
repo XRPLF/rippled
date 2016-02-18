@@ -39,29 +39,6 @@ struct Reporting
 
     // Report nodes detailed information
     static bool const dump_nodes = false;
-
-    //
-    //
-    //
-
-    // Reports from Network (and children)
-    static beast::Journal::Severity const network = beast::Journal::kWarning;
-
-    // Reports from simulation Node (and children)
-    static beast::Journal::Severity const node = beast::Journal::kAll;
-
-    //
-    //
-    //
-
-    // Reports from Logic
-    static beast::Journal::Severity const logic = beast::Journal::kAll;
-
-    // Reports from Livecache
-    static beast::Journal::Severity const livecache = beast::Journal::kAll;
-
-    // Reports from Bootcache
-    static beast::Journal::Severity const bootcache = beast::Journal::kAll;
 };
 
 }
