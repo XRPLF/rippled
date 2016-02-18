@@ -2552,8 +2552,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\Predicates.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Slot.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\tests\Livecache.test.cpp">

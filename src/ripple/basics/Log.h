@@ -57,7 +57,7 @@ private:
 
     public:
         Sink (std::string const& partition,
-            beast::Journal::Severity severity, Logs& logs);
+            beast::Journal::Severity thresh, Logs& logs);
 
         Sink (Sink const&) = delete;
         Sink& operator= (Sink const&) = delete;
@@ -149,7 +149,7 @@ private:
     std::map <std::string,
         std::unique_ptr<beast::Journal::Sink>,
             beast::ci_less> sinks_;
-    beast::Journal::Severity level_;
+    beast::Journal::Severity thresh_;
     File file_;
     bool silent_ = false;
 
@@ -174,10 +174,10 @@ public:
     journal (std::string const& name);
 
     beast::Journal::Severity
-    severity() const;
+    threshold() const;
 
     void
-    severity (beast::Journal::Severity level);
+    threshold (beast::Journal::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
     partition_severities() const;
@@ -276,19 +276,19 @@ class LogSquelcher
 {
 public:
     LogSquelcher()
-        : severity_(deprecatedLogs().severity())
+        : thresh_(deprecatedLogs().threshold())
     {
-        deprecatedLogs().severity(
+        deprecatedLogs().threshold(
             beast::Journal::Severity::kNone);
     }
 
     ~LogSquelcher()
     {
-        deprecatedLogs().severity(severity_);
+        deprecatedLogs().threshold(thresh_);
     }
 
 private:
-    beast::Journal::Severity const severity_;
+    beast::Journal::Severity const thresh_;
 };
 
 } // ripple

@@ -77,7 +77,8 @@ public:
 
     public:
         TestSink (beast::unit_test::suite& suite)
-            : suite_ (suite)
+            : Sink (beast::Journal::kWarning, false)
+            , suite_ (suite)
         {
         }
 
@@ -85,6 +86,9 @@ public:
         write (beast::Journal::Severity level,
             std::string const& text) override
         {
+            if (level < threshold())
+                return;
+
             suite_.log << text;
         }
     };
@@ -275,7 +279,7 @@ public:
     {
         TestSink sink {*this};
         TestThread thread;
-        sink.severity (beast::Journal::Severity::kAll);
+        sink.threshold (beast::Journal::Severity::kAll);
         beast::Journal journal {sink};
         TestHandler handler;
         auto s = make_Server (handler,
