@@ -485,6 +485,10 @@ JobQueue::processTask ()
         m_journal.trace << "Skipping processTask ('" << data.name () << "')";
     }
 
+    // Make sure the job is destroyed before calling checkSotpped
+    // otherwise the jobQueue may think it has stopped while a job lingers.
+    job.reset ();
+
     {
         std::lock_guard <std::mutex> lock (m_mutex);
         finishJob (job);
