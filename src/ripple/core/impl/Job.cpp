@@ -82,6 +82,11 @@ void Job::doJob ()
     mJob (*this);
 }
 
+void Job::abort ()
+{
+    mJob = std::function<void (Job&)>();
+}
+
 void Job::rename (std::string const& newName)
 {
     mName = newName;

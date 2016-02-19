@@ -124,6 +124,7 @@ public:
     bool shouldCancel () const;
 
     void doJob ();
+    void abort ();
 
     void rename (std::string const& n);
 

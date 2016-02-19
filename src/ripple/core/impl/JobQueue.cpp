@@ -483,6 +483,7 @@ JobQueue::processTask ()
     else
     {
         m_journal.trace << "Skipping processTask ('" << data.name () << "')";
+        job.abort ();
     }
 
     {
