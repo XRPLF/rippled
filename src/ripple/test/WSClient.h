@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,49 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_JSON_H_INCLUDED
-#define RIPPLE_TEST_JTX_JSON_H_INCLUDED
+#ifndef RIPPLE_TEST_WSCLIENT_H_INCLUDED
+#define RIPPLE_TEST_WSCLIENT_H_INCLUDED
 
-#include <ripple/test/jtx/Env.h>
-#include <ripple/json/json_value.h>
+#include <ripple/test/AbstractClient.h>
+#include <ripple/core/Config.h>
+#include <boost/optional.hpp>
+#include <chrono>
+#include <memory>
 
 namespace ripple {
 namespace test {
-namespace jtx {
 
-/** Inject raw JSON. */
-class json
+class WSClient : public AbstractClient
 {
-private:
-    Json::Value jv_;
-
 public:
-    explicit
-    json (std::string const&);
-
-    explicit
-    json (char const*);
-
-    explicit
-    json (Json::Value);
-
-    template <class T>
-    json (Json::StaticString const& key, T const& value)
-    {
-        jv_[key] = value;
-    }
-
-    template <class T>
-    json (std::string const& key, T const& value)
-    {
-        jv_[key] = value;
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
+    /** Retrieve a message. */
+    virtual
+    boost::optional<Json::Value>
+    getMsg(std::chrono::milliseconds const& timeout =
+        std::chrono::seconds{30}) = 0;
 };
 
-} // jtx
+/** Returns a client operating through WebSockets/S. */
+std::unique_ptr<WSClient>
+makeWSClient(Config const& cfg);
+
 } // test
 } // ripple
 
