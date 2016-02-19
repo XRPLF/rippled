@@ -109,7 +109,6 @@ private:
     };
 
     AppBundle bundle_;
-    LogSquelcher logSquelcher_;
 
     inline
     void

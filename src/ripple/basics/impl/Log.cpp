@@ -108,8 +108,8 @@ void Logs::File::writeln (char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs()
-    : level_ (beast::Journal::kWarning) // default severity
+Logs::Logs(beast::Journal::Severity level)
+    : level_ (level) // default severity
 {
 }
 

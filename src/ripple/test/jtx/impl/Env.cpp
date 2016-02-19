@@ -124,7 +124,8 @@ class SuiteLogs : public Logs
 public:
     explicit
     SuiteLogs(beast::unit_test::suite& suite)
-        : suite_(suite)
+        : Logs (beast::Journal::kError)
+        , suite_(suite)
     {
     }
 
