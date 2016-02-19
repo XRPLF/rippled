@@ -79,7 +79,12 @@ void Job::doJob ()
     m_loadEvent->start ();
     m_loadEvent->reName (mName);
 
-    mJob (*this);
+    abort ();
+}
+
+void Job::abort ()
+{
+    mJob = std::function<void (Job&)>();
 }
 
 void Job::rename (std::string const& newName)
