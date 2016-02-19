@@ -483,6 +483,8 @@ JobQueue::processTask ()
     else
     {
         m_journal.trace << "Skipping processTask ('" << data.name () << "')";
+        // Make sure the job is destroyed before calling checkSotpped
+        // otherwise the jobQueue may think it is done while a job lingers.
         job.abort ();
     }
 

@@ -79,7 +79,7 @@ void Job::doJob ()
     m_loadEvent->start ();
     m_loadEvent->reName (mName);
 
-    mJob (*this);
+    abort ();
 }
 
 void Job::abort ()
