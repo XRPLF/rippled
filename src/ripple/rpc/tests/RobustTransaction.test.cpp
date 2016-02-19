@@ -46,6 +46,9 @@ public:
             expect(jv[jss::status] == "success");
         }
 
+        for(int i = 0; i < 1000; ++i)
+            auto jv = wsc->invoke("ledger_accept");
+/*
         {
             // Submit past ledger sequence transaction
             Json::Value payment;
@@ -92,6 +95,7 @@ public:
             expect(ff[jss::Account] == Account("bob").human());
             expect(ff["Balance"] == "10002000000");
         }
+*/            
     }
 
     /*
@@ -269,9 +273,9 @@ public:
     run() override
     {
         testSequenceRealignment();
-        testReconnect();
-        testReconnectAfterWait();
-        testAccountsProposed();
+//        testReconnect();
+//       testReconnectAfterWait();
+//       testAccountsProposed();
     }
 };
 

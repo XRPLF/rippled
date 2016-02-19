@@ -211,8 +211,8 @@ public:
         auto const s = to_string(jp);
         ws_.write(buffer(s));
 
-        if(auto jv = getMsg())
-            return std::move(*jv);
+//        if(auto jv = getMsg())
+//            return std::move(*jv);
         return Json::Value();
     }
 
