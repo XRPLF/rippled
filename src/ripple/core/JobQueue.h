@@ -180,7 +180,7 @@ private:
     //
     // Invariants:
     //  <none>
-    void finishJob (Job const& job);
+    void finishJob (JobType type);
 
     template <class Rep, class Period>
     void on_dequeue (JobType type,
