@@ -357,7 +357,7 @@ ServerHandlerImp::processRequest (Port const& port,
 
     Resource::Charge loadType = Resource::feeReferenceRPC;
 
-    m_journal.debug << "Query: " << strMethod << params;
+    JLOG(m_journal.debug) << "Query: " << strMethod << params;
 
     // Provide the JSON-RPC method as the field "command" in the request.
     params[jss::command] = strMethod;

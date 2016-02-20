@@ -651,7 +651,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
             if (mMode != omDISCONNECTED)
             {
                 setMode (omDISCONNECTED);
-                m_journal.warning
+                JLOG(m_journal.warning)
                     << "Node count (" << numPeers << ") "
                     << "has fallen below quorum (" << m_network_quorum << ").";
             }
@@ -664,7 +664,8 @@ void NetworkOPsImp::processHeartbeatTimer ()
         if (mMode == omDISCONNECTED)
         {
             setMode (omCONNECTED);
-            m_journal.info << "Node count (" << numPeers << ") is sufficient.";
+            JLOG(m_journal.info)
+                << "Node count (" << numPeers << ") is sufficient.";
         }
 
         // Check if the last validated ledger forces a change between these
@@ -693,7 +694,7 @@ void NetworkOPsImp::processClusterTimer ()
 
     if (!update)
     {
-        m_journal.debug << "Too soon to send cluster update";
+        JLOG(m_journal.debug) << "Too soon to send cluster update";
         return;
     }
 
@@ -828,7 +829,7 @@ void NetworkOPsImp::processTransaction (std::shared_ptr<Transaction>& transactio
     // Not concerned with local checks at this point.
     if (validity.first == Validity::SigBad)
     {
-        m_journal.info << "Transaction has bad signature: " <<
+        JLOG(m_journal.info) << "Transaction has bad signature: " <<
             validity.second;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
@@ -973,8 +974,10 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 std::string token, human;
 
                 if (transResultInfo (e.result, token, human))
-                    m_journal.info << "TransactionResult: "
+                {
+                    JLOG(m_journal.info) << "TransactionResult: "
                             << token << ": " << human;
+                }
             }
     #endif
 
@@ -982,7 +985,8 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 
             if (e.result == tesSUCCESS)
             {
-                m_journal.debug << "Transaction is now included in open ledger";
+                JLOG(m_journal.debug)
+                    << "Transaction is now included in open ledger";
                 e.transaction->setStatus (INCLUDED);
 
                 auto txCur = e.transaction->getSTransaction();
@@ -995,7 +999,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             else if (e.result == tefPAST_SEQ)
             {
                 // duplicate or conflict
-                m_journal.info << "Transaction is obsolete";
+                JLOG(m_journal.info) << "Transaction is obsolete";
                 e.transaction->setStatus (OBSOLETE);
             }
             else if (e.result == terQUEUED)
@@ -1017,14 +1021,16 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 else
                 {
                     // transaction should be held
-                    m_journal.debug << "Transaction should be held: " << e.result;
+                    JLOG(m_journal.debug)
+                        << "Transaction should be held: " << e.result;
                     e.transaction->setStatus (HELD);
                     m_ledgerMaster.addHeldTransaction (e.transaction);
                 }
             }
             else
             {
-                m_journal.debug << "Status other than success " << e.result;
+                JLOG(m_journal.debug)
+                    << "Status other than success " << e.result;
                 e.transaction->setStatus (INVALID);
             }
 
@@ -1225,7 +1231,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
     // our last closed ledger? Or do sufficient nodes agree? And do we have no
     // better ledger available?  If so, we are either tracking or full.
 
-    m_journal.trace << "NetworkOPsImp::checkLastClosedLedger";
+    JLOG(m_journal.trace) << "NetworkOPsImp::checkLastClosedLedger";
 
     Ledger::pointer ourClosed = m_ledgerMaster.getClosedLedger ();
 
@@ -1234,8 +1240,8 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
     uint256 closedLedger = ourClosed->getHash ();
     uint256 prevClosedLedger = ourClosed->info().parentHash;
-    m_journal.trace << "OurClosed:  " << closedLedger;
-    m_journal.trace << "PrevClosed: " << prevClosedLedger;
+    JLOG(m_journal.trace) << "OurClosed:  " << closedLedger;
+    JLOG(m_journal.trace) << "PrevClosed: " << prevClosedLedger;
 
     hash_map<uint256, ValidationCount> ledgers;
     {
@@ -1296,17 +1302,21 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
     for (auto const& it: ledgers)
     {
-        m_journal.debug << "L: " << it.first
-                        << " t=" << it.second.trustedValidations
-                        << ", n=" << it.second.nodesUsing;
+        JLOG(m_journal.debug) << "L: " << it.first
+                              << " t=" << it.second.trustedValidations
+                              << ", n=" << it.second.nodesUsing;
 
         // Temporary logging to make sure tiebreaking isn't broken
         if (it.second.trustedValidations > 0)
-            m_journal.trace << "  TieBreakTV: " << it.second.highValidation;
+            JLOG(m_journal.trace)
+                << "  TieBreakTV: " << it.second.highValidation;
         else
         {
             if (it.second.nodesUsing > 0)
-                m_journal.trace << "  TieBreakNU: " << it.second.highNodeUsing;
+            {
+                JLOG(m_journal.trace)
+                    << "  TieBreakNU: " << it.second.highNodeUsing;
+            }
         }
 
         if (it.second > bestVC)
@@ -1320,7 +1330,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
     if (switchLedgers && (closedLedger == prevClosedLedger))
     {
         // don't switch to our own previous ledger
-        m_journal.info << "We won't switch to our own previous ledger";
+        JLOG(m_journal.info) << "We won't switch to our own previous ledger";
         networkClosed = ourClosed->getHash ();
         switchLedgers = false;
     }
@@ -1345,9 +1355,9 @@ bool NetworkOPsImp::checkLastClosedLedger (
         return false;
     }
 
-    m_journal.warning << "We are not running on the consensus ledger";
-    m_journal.info << "Our LCL: " << getJson (*ourClosed);
-    m_journal.info << "Net LCL " << closedLedger;
+    JLOG(m_journal.warning) << "We are not running on the consensus ledger";
+    JLOG(m_journal.info) << "Our LCL: " << getJson (*ourClosed);
+    JLOG(m_journal.info) << "Net LCL " << closedLedger;
 
     if ((mMode == omTRACKING) || (mMode == omFULL))
         setMode (omCONNECTED);
@@ -1371,7 +1381,7 @@ void NetworkOPsImp::switchLastClosedLedger (
     // set the newLCL as our last closed ledger -- this is abnormal code
 
     auto msg = duringConsensus ? "JUMPdc" : "JUMP";
-    m_journal.error
+    JLOG(m_journal.error)
         << msg << " last closed ledger to " << newLCL->getHash ();
 
     clearNeedNetworkLedger ();
@@ -1425,7 +1435,7 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
 
     auto closingInfo = m_ledgerMaster.getCurrentLedger()->info();
 
-    if (m_journal.info) m_journal.info <<
+    JLOG(m_journal.info) <<
         "Consensus time for #" << closingInfo.seq <<
         " with LCL " << closingInfo.parentHash;
 
@@ -1437,7 +1447,7 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         // this shouldn't happen unless we jump ledgers
         if (mMode == omFULL)
         {
-            m_journal.warning << "Don't have LCL, going to tracking";
+            JLOG(m_journal.warning) << "Don't have LCL, going to tracking";
             setMode (omTRACKING);
         }
 
@@ -1456,7 +1466,7 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         prevLedger,
         closingInfo.closeTime);
 
-    m_journal.debug << "Initiating consensus engine";
+    JLOG(m_journal.debug) << "Initiating consensus engine";
     return true;
 }
 
@@ -1476,7 +1486,7 @@ void NetworkOPsImp::processTrustedProposal (
         if (mLedgerConsensus->peerPosition (proposal))
             app_.overlay().relay(*set, proposal->getSuppressionID());
         else
-            m_journal.info << "Not relaying trusted proposal";
+            JLOG(m_journal.info) << "Not relaying trusted proposal";
     }
 }
 
@@ -1498,7 +1508,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
     {
         if (it && (it->getClosedLedgerHash () == deadLedger))
         {
-            m_journal.trace << "Killing obsolete peer status";
+            JLOG(m_journal.trace) << "Killing obsolete peer status";
             it->cycleStatus ();
         }
     }
@@ -1672,7 +1682,7 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
     accounting_.mode (om);
 
-    m_journal.info << "STATE->" << strOperatingMode ();
+    JLOG(m_journal.info) << "STATE->" << strOperatingMode ();
     pubServer ();
 }
 
@@ -1757,7 +1767,7 @@ NetworkOPsImp::transactionsSQL (
                     % beast::lexicalCastThrow <std::string> (offset)
                     % beast::lexicalCastThrow <std::string> (numberOfResults)
                    );
-    m_journal.trace << "txSQL query: " << sql;
+    JLOG(m_journal.trace) << "txSQL query: " << sql;
     return sql;
 }
 
@@ -1810,8 +1820,8 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
             { // Work around a bug that could leave the metadata missing
                 auto const seq = rangeCheckedCast<std::uint32_t>(
                     ledgerSeq.value_or (0));
-                m_journal.warning << "Recovering ledger " << seq
-                                  << ", txn " << txn->getID();
+                JLOG(m_journal.warning) << "Recovering ledger " << seq
+                                        << ", txn " << txn->getID();
                 Ledger::pointer ledger = m_ledgerMaster.getLedgerBySeq(seq);
                 if (ledger)
                     pendSaveValidated(app_, ledger, false, false);
@@ -1936,8 +1946,8 @@ NetworkOPsImp::getTxsAccountB (
 bool NetworkOPsImp::recvValidation (
     STValidation::ref val, std::string const& source)
 {
-    m_journal.debug << "recvValidation " << val->getLedgerHash ()
-                    << " from " << source;
+    JLOG(m_journal.debug) << "recvValidation " << val->getLedgerHash ()
+                          << " from " << source;
     pubValidation (val);
     return app_.getValidations ().addValidation (val, source);
 }
@@ -2161,7 +2171,7 @@ void NetworkOPsImp::pubProposedTransaction (
     }
     AcceptedLedgerTx alt (lpCurrent, stTxn, terResult,
         app_.accountIDCache(), app_.logs());
-    m_journal.trace << "pubProposed: " << alt.getJson ();
+    JLOG(m_journal.trace) << "pubProposed: " << alt.getJson ();
     pubAccountTransaction (lpCurrent, alt, false);
 }
 
@@ -2225,7 +2235,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref lpAccepted)
     // Don't lock since pubAcceptedTransaction is locking.
     for (auto const& vt : alpAccepted->getMap ())
     {
-        m_journal.trace << "pubAccepted: " << vt.second->getJson ();
+        JLOG(m_journal.trace) << "pubAccepted: " << vt.second->getJson ();
         pubValidatedTransaction (lpAccepted, *vt.second);
     }
 }
@@ -2404,7 +2414,7 @@ void NetworkOPsImp::pubAccountTransaction (
             }
         }
     }
-    m_journal.trace << "pubAccountTransaction:" <<
+    JLOG(m_journal.trace) << "pubAccountTransaction:" <<
         " iProposed=" << iProposed <<
         " iAccepted=" << iAccepted;
 
@@ -2437,7 +2447,7 @@ void NetworkOPsImp::subAccount (
 
     for (auto const& naAccountID : vnaAccountIDs)
     {
-        if (m_journal.trace) m_journal.trace <<
+        JLOG(m_journal.trace) <<
             "subAccount: account: " << toBase58(naAccountID);
 
         isrListener->insertSubAccountInfo (naAccountID, rt);
@@ -2764,7 +2774,7 @@ void NetworkOPsImp::getBookPage (
         {
             bDirectAdvance  = false;
 
-            m_journal.trace << "getBookPage: bDirectAdvance";
+            JLOG(m_journal.trace) << "getBookPage: bDirectAdvance";
 
             auto const ledgerIndex = view.succ(uTipIndex, uBookEnd);
             if (ledgerIndex)
@@ -2774,7 +2784,7 @@ void NetworkOPsImp::getBookPage (
 
             if (!sleOfferDir)
             {
-                m_journal.trace << "getBookPage: bDone";
+                JLOG(m_journal.trace) << "getBookPage: bDone";
                 bDone           = true;
             }
             else
@@ -2785,8 +2795,10 @@ void NetworkOPsImp::getBookPage (
                 cdirFirst (view,
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex, viewJ);
 
-                m_journal.trace << "getBookPage:   uTipIndex=" << uTipIndex;
-                m_journal.trace << "getBookPage: offerIndex=" << offerIndex;
+                JLOG(m_journal.trace)
+                    << "getBookPage:   uTipIndex=" << uTipIndex;
+                JLOG(m_journal.trace)
+                    << "getBookPage: offerIndex=" << offerIndex;
             }
         }
 
@@ -2909,7 +2921,7 @@ void NetworkOPsImp::getBookPage (
             }
             else
             {
-                m_journal.warning << "Missing offer";
+                JLOG(m_journal.warning) << "Missing offer";
             }
 
             if (! cdirNext(view,
@@ -2919,7 +2931,8 @@ void NetworkOPsImp::getBookPage (
             }
             else
             {
-                m_journal.trace << "getBookPage: offerIndex=" << offerIndex;
+                JLOG(m_journal.trace)
+                    << "getBookPage: offerIndex=" << offerIndex;
             }
         }
     }

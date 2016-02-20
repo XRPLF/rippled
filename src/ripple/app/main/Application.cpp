@@ -282,8 +282,10 @@ private:
             if (ms.count() >= 10)
                 m_event.notify (ms);
             if (ms.count() >= 500)
-                m_journal.warning <<
+            {
+                JLOG(m_journal.warning) <<
                     "io_service latency = " << ms;
+            }
         }
 
         std::chrono::milliseconds
@@ -781,12 +783,12 @@ public:
         }
         else if (ec)
         {
-            m_journal.error << "Received signal: " << signal_number
-                            << " with error: " << ec.message();
+            JLOG(m_journal.error) << "Received signal: " << signal_number
+                                  << " with error: " << ec.message();
         }
         else
         {
-            m_journal.debug << "Received signal: " << signal_number;
+            JLOG(m_journal.debug) << "Received signal: " << signal_number;
             signalStop();
         }
     }
@@ -802,7 +804,8 @@ public:
 
     void onStart () override
     {
-        m_journal.info << "Application starting. Build is " << gitCommitID();
+        JLOG(m_journal.info)
+            << "Application starting. Build is " << gitCommitID();
 
         m_sweepTimer.setExpiration (10);
         m_entropyTimer.setRecurringExpiration (300);
@@ -815,7 +818,7 @@ public:
     // Called to indicate shutdown.
     void onStop () override
     {
-        m_journal.debug << "Application stopping";
+        JLOG(m_journal.debug) << "Application stopping";
 
         m_io_latency_sampler.cancel_async ();
 
@@ -885,7 +888,8 @@ public:
                 //
                 if (space.available < (512 * 1024 * 1024))
                 {
-                    m_journal.fatal << "Remaining free disk space is less than 512MB";
+                    JLOG(m_journal.fatal)
+                        << "Remaining free disk space is less than 512MB";
                     signalStop ();
                 }
             }
@@ -965,7 +969,7 @@ void ApplicationImp::setup()
 
     if (!initSqliteDbs ())
     {
-        m_journal.fatal << "Can not create database connections!";
+        JLOG(m_journal.fatal) << "Cannot create database connections!";
         exitWithCode(3);
     }
 
@@ -1008,7 +1012,7 @@ void ApplicationImp::setup()
     auto const startUp = config_->START_UP;
     if (startUp == Config::FRESH)
     {
-        m_journal.info << "Starting new Ledger";
+        JLOG(m_journal.info) << "Starting new Ledger";
 
         startGenesisLedger ();
     }
@@ -1016,7 +1020,7 @@ void ApplicationImp::setup()
                 startUp == Config::LOAD_FILE ||
                 startUp == Config::REPLAY)
     {
-        m_journal.info << "Loading specified Ledger";
+        JLOG(m_journal.info) << "Loading specified Ledger";
 
         if (!loadOldLedger (config_->START_LEDGER,
                             startUp == Config::REPLAY,
@@ -1044,18 +1048,20 @@ void ApplicationImp::setup()
 
     if (!cluster_->load (config().section(SECTION_CLUSTER_NODES)))
     {
-        m_journal.fatal << "Invalid entry in cluster configuration.";
+        JLOG(m_journal.fatal) << "Invalid entry in cluster configuration.";
         Throw<std::exception>();
     }
 
     if (!validators_->load (config().section (SECTION_VALIDATORS)))
     {
-        m_journal.fatal << "Invalid entry in validator configuration.";
+        JLOG(m_journal.fatal) << "Invalid entry in validator configuration.";
         Throw<std::exception>();
     }
 
     if (validators_->size () == 0 && !config_->RUN_STANDALONE)
-        m_journal.warning << "No validators are configured.";
+    {
+        JLOG(m_journal.warning) << "No validators are configured.";
+    }
 
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
     m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
@@ -1102,7 +1108,7 @@ void ApplicationImp::setup()
                 *m_collectorManager});
         if (!server)
         {
-            m_journal.fatal << "Could not create Websocket for [" <<
+            JLOG(m_journal.fatal) << "Could not create Websocket for [" <<
                 port.name << "]";
             Throw<std::exception> ();
         }
@@ -1117,7 +1123,10 @@ void ApplicationImp::setup()
         // Should this message be here, conceptually? In theory this sort
         // of message, if displayed, should be displayed from PeerFinder.
         if (config_->PEER_PRIVATE && config_->IPS_FIXED.empty ())
-            m_journal.warning << "No outbound peer connections will be made";
+        {
+            JLOG(m_journal.warning)
+                << "No outbound peer connections will be made";
+        }
 
         // VFALCO NOTE the state timer resets the deadlock detector.
         //
@@ -1125,7 +1134,7 @@ void ApplicationImp::setup()
     }
     else
     {
-        m_journal.warning << "Running in standalone mode";
+        JLOG(m_journal.warning) << "Running in standalone mode";
 
         m_networkOPs->setStandAlone ();
     }
@@ -1155,9 +1164,9 @@ ApplicationImp::run()
 
     // Stop the server. When this returns, all
     // Stoppable objects should be stopped.
-    m_journal.info << "Received shutdown request";
+    JLOG(m_journal.info) << "Received shutdown request";
     stop (m_journal);
-    m_journal.info << "Done.";
+    JLOG(m_journal.info) << "Done.";
     StopSustain();
 }
 
@@ -1266,14 +1275,16 @@ bool ApplicationImp::loadOldLedger (
             std::ifstream ledgerFile (ledgerID.c_str (), std::ios::in);
             if (!ledgerFile)
             {
-                m_journal.fatal << "Unable to open file";
+                JLOG(m_journal.fatal) << "Unable to open file";
             }
             else
             {
                  Json::Reader reader;
                  Json::Value jLedger;
                  if (!reader.parse (ledgerFile, jLedger))
-                     m_journal.fatal << "Unable to parse ledger JSON";
+                 {
+                     JLOG(m_journal.fatal) << "Unable to parse ledger JSON";
+                 }
                  else
                  {
                      std::reference_wrapper<Json::Value> ledger (jLedger);
@@ -1324,7 +1335,8 @@ bool ApplicationImp::loadOldLedger (
                      }
                      if (!ledger.get().isArray ())
                      {
-                         m_journal.fatal << "State nodes must be an array";
+                         JLOG(m_journal.fatal)
+                            << "State nodes must be an array";
                      }
                      else
                      {
@@ -1340,7 +1352,6 @@ bool ApplicationImp::loadOldLedger (
                              entry.removeMember (jss::index);
 
                              STParsedJSONObject stp ("sle", ledger.get()[index]);
-                             // m_journal.info << "json: " << stp.object->getJson(0);
 
                              if (stp.object && (uIndex.isNonZero()))
                              {
@@ -1349,11 +1360,16 @@ bool ApplicationImp::loadOldLedger (
                                  STLedgerEntry sle (*stp.object, uIndex);
                                  bool ok = loadLedger->addSLE (sle);
                                  if (!ok)
-                                     m_journal.warning << "Couldn't add serialized ledger: " << uIndex;
+                                 {
+                                     JLOG(m_journal.warning)
+                                        << "Couldn't add serialized ledger: "
+                                        << uIndex;
+                                 }
                              }
                              else
                              {
-                                 m_journal.warning << "Invalid entry in ledger";
+                                 JLOG(m_journal.warning)
+                                    << "Invalid entry in ledger";
                              }
                          }
 
@@ -1394,8 +1410,8 @@ bool ApplicationImp::loadOldLedger (
 
         if (!loadLedger)
         {
-            m_journal.fatal << "No Ledger found from ledgerID="
-                            << ledgerID << std::endl;
+            JLOG(m_journal.fatal) << "No Ledger found from ledgerID="
+                                  << ledgerID << std::endl;
             return false;
         }
 
@@ -1406,12 +1422,12 @@ bool ApplicationImp::loadOldLedger (
             // this ledger holds the transactions we want to replay
             replayLedger = loadLedger;
 
-            m_journal.info << "Loading parent ledger";
+            JLOG(m_journal.info) << "Loading parent ledger";
 
             loadLedger = loadByHash (replayLedger->info().parentHash, *this);
             if (!loadLedger)
             {
-                m_journal.info << "Loading parent ledger from node store";
+                JLOG(m_journal.info) << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
@@ -1422,7 +1438,7 @@ bool ApplicationImp::loadOldLedger (
 
                 if (!loadLedger)
                 {
-                    m_journal.fatal << "Replay ledger missing/damaged";
+                    JLOG(m_journal.fatal) << "Replay ledger missing/damaged";
                     assert (false);
                     return false;
                 }
@@ -1431,25 +1447,25 @@ bool ApplicationImp::loadOldLedger (
 
         loadLedger->setClosed ();
 
-        m_journal.info << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->info().seq;
+        JLOG(m_journal.info) << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->info().seq;
 
         if (loadLedger->info().accountHash.isZero ())
         {
-            m_journal.fatal << "Ledger is empty.";
+            JLOG(m_journal.fatal) << "Ledger is empty.";
             assert (false);
             return false;
         }
 
         if (!loadLedger->walkLedger (journal ("Ledger")))
         {
-            m_journal.fatal << "Ledger is missing nodes.";
+            JLOG(m_journal.fatal) << "Ledger is missing nodes.";
             assert(false);
             return false;
         }
 
         if (!loadLedger->assertSane (journal ("Ledger")))
         {
-            m_journal.fatal << "Ledger is not sane.";
+            JLOG(m_journal.fatal) << "Ledger is not sane.";
             assert(false);
             return false;
         }
@@ -1502,12 +1518,13 @@ bool ApplicationImp::loadOldLedger (
     }
     catch (SHAMapMissingNode&)
     {
-        m_journal.fatal << "Data is missing for selected ledger";
+        JLOG(m_journal.fatal) << "Data is missing for selected ledger";
         return false;
     }
     catch (boost::bad_lexical_cast&)
     {
-        m_journal.fatal << "Ledger specified '" << ledgerID << "' is not valid";
+        JLOG(m_journal.fatal)
+            << "Ledger specified '" << ledgerID << "' is not valid";
         return false;
     }
 

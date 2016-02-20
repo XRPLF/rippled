@@ -191,7 +191,7 @@ SetTrust::doApply ()
         SLE::pointer sleDelete = view().peek (
             keylet::line(account_, uDstAccountID, currency));
 
-        j_.warning <<
+        JLOG(j_.warning) <<
             "Clearing redundant line.";
 
         return trustDelete (view(),
@@ -203,7 +203,7 @@ SetTrust::doApply ()
 
     if (!sleDst)
     {
-        j_.trace <<
+        JLOG(j_.trace) <<
             "Delay transaction: Destination account does not exist.";
         return tecNO_DST;
     }
@@ -412,7 +412,7 @@ SetTrust::doApply ()
         // Reserve is not scaled by load.
         else if (bReserveIncrease && mPriorBalance < reserveCreate)
         {
-            j_.trace <<
+            JLOG(j_.trace) <<
                 "Delay transaction: Insufficent reserve to add trust line.";
 
             // Another transaction could provide XRP to the account and then
@@ -423,7 +423,7 @@ SetTrust::doApply ()
         {
             view().update (sleRippleState);
 
-            j_.trace << "Modify ripple line";
+            JLOG(j_.trace) << "Modify ripple line";
         }
     }
     // Line does not exist.
@@ -432,13 +432,13 @@ SetTrust::doApply ()
         (! bQualityOut || ! uQualityOut) &&         // Not setting quality out or setting default quality out.
         (! (view().rules().enabled(featureTrustSetAuth, ctx_.app.config().features)) || ! bSetAuth))
     {
-        j_.trace <<
+        JLOG(j_.trace) <<
             "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
     else if (mPriorBalance < reserveCreate) // Reserve is not scaled by load.
     {
-        j_.trace <<
+        JLOG(j_.trace) <<
             "Delay transaction: Line does not exist. Insufficent reserve to create line.";
 
         // Another transaction could create the account and then this transaction would succeed.
@@ -452,7 +452,7 @@ SetTrust::doApply ()
         uint256 index (getRippleStateIndex (
             account_, uDstAccountID, currency));
 
-        j_.trace <<
+        JLOG(j_.trace) <<
             "doTrustSet: Creating ripple line: " <<
             to_string (index);
 

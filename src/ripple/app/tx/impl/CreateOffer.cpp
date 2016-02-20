@@ -450,13 +450,13 @@ CreateOffer::bridged_cross (
 
         if (taker.done())
         {
-            j_.debug << "The taker reports he's done during crossing!";
+            JLOG(j_.debug) << "The taker reports he's done during crossing!";
             break;
         }
 
         if (reachedOfferCrossingLimit (taker))
         {
-            j_.debug << "The offer crossing limit has been exceeded!";
+            JLOG(j_.debug) << "The offer crossing limit has been exceeded!";
             break;
         }
 
@@ -531,13 +531,13 @@ CreateOffer::direct_cross (
 
         if (taker.done())
         {
-            j_.debug << "The taker reports he's done during crossing!";
+            JLOG(j_.debug) << "The taker reports he's done during crossing!";
             break;
         }
 
         if (reachedOfferCrossingLimit (taker))
         {
-            j_.debug << "The offer crossing limit has been exceeded!";
+            JLOG(j_.debug) << "The offer crossing limit has been exceeded!";
             break;
         }
 
@@ -770,7 +770,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // never be negative. If it is, something went very very wrong.
         if (place_offer.in < zero || place_offer.out < zero)
         {
-            j_.fatal << "Cross left offer negative!" <<
+            JLOG(j_.fatal) << "Cross left offer negative!" <<
                 "     in: " << format_amount (place_offer.in) <<
                 "    out: " << format_amount (place_offer.out);
             return { tefINTERNAL, true };
@@ -778,7 +778,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
         if (place_offer.in == zero || place_offer.out == zero)
         {
-            j_.debug << "Offer fully crossed!";
+            JLOG(j_.debug) << "Offer fully crossed!";
             return { result, true };
         }
 

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/io_list.h>
@@ -233,7 +234,7 @@ BaseHTTPPeer<Impl>::BaseHTTPPeer (Port const& port, Handler& handler,
     static std::atomic <int> sid;
     nid_ = ++sid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
-    if (journal_.trace) journal_.trace << id_ <<
+    JLOG(journal_.trace) << id_ <<
         "accept:    " << remote_address_.address();
     when_ = clock_type::now();
 }
@@ -242,7 +243,7 @@ template <class Impl>
 BaseHTTPPeer<Impl>::~BaseHTTPPeer()
 {
     handler_.onClose(session(), ec_);
-    if (journal_.trace) journal_.trace << id_ <<
+    JLOG(journal_.trace) << id_ <<
         "destroyed: " << request_count_ <<
             ((request_count_ == 1) ? " request" : " requests");
 }
@@ -268,7 +269,7 @@ BaseHTTPPeer<Impl>::fail (error_code ec, char const* what)
     if (! ec_ && ec != boost::asio::error::operation_aborted)
     {
         ec_ = ec;
-        if (journal_.trace) journal_.trace << id_ <<
+        JLOG(journal_.trace) << id_ <<
             std::string(what) << ": " << ec.message();
         impl().stream_.lowest_layer().close (ec);
     }

@@ -125,7 +125,6 @@ public:
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
-            log << result;
             expect(!RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::have_header] == false);
         }
