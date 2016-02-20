@@ -407,14 +407,11 @@ JobQueue::getNextJob (Job& job)
 }
 
 void
-JobQueue::finishJob (Job const& job)
+JobQueue::finishJob (JobType type)
 {
-    JobType const type = job.getType ();
+    assert(type != jtINVALID);
 
-    assert (m_jobSet.find (job) == m_jobSet.end ());
-    assert (type != jtINVALID);
-
-    JobTypeData& data (getJobTypeData (type));
+    JobTypeData& data = getJobTypeData (type);
 
     // Queue a deferred task if possible
     if (data.deferred > 0)
@@ -455,40 +452,49 @@ void JobQueue::on_execute (JobType type,
 void
 JobQueue::processTask ()
 {
-    Job job;
+    JobType type;
+
+    {
+        Job job;
+
+        {
+            std::lock_guard <std::mutex> lock (m_mutex);
+            getNextJob (job);
+            ++m_processCount;
+        }
+
+        JobTypeData& data (getJobTypeData (job.getType ()));
+
+        // Skip the job if we are stopping and the
+        // skipOnStop flag is set for the job type
+        //
+        if (!isStopping() || !data.info.skip ())
+        {
+            beast::Thread::setCurrentThreadName (data.name ());
+            JLOG(m_journal.trace) << "Doing " << data.name () << " job";
+
+            Job::clock_type::time_point const start_time (
+                Job::clock_type::now());
+
+            on_dequeue (job.getType (), start_time - job.queue_time ());
+            job.doJob ();
+            on_execute (job.getType (), Job::clock_type::now() - start_time);
+        }
+        else
+        {
+            JLOG(m_journal.trace) << "Skipping processTask ('" << data.name () << "')";
+        }
+
+        type = job.getType();
+    }
 
     {
         std::lock_guard <std::mutex> lock (m_mutex);
-        getNextJob (job);
-        ++m_processCount;
-    }
-
-    JobTypeData& data (getJobTypeData (job.getType ()));
-
-    // Skip the job if we are stopping and the
-    // skipOnStop flag is set for the job type
-    //
-    if (!isStopping() || !data.info.skip ())
-    {
-        beast::Thread::setCurrentThreadName (data.name ());
-        JLOG(m_journal.trace) << "Doing " << data.name () << " job";
-
-        Job::clock_type::time_point const start_time (
-            Job::clock_type::now());
-
-        on_dequeue (job.getType (), start_time - job.queue_time ());
-        job.doJob ();
-        on_execute (job.getType (), Job::clock_type::now() - start_time);
-    }
-    else
-    {
-        JLOG(m_journal.trace) << "Skipping processTask ('" << data.name () << "')";
-    }
-
-    {
-        std::lock_guard <std::mutex> lock (m_mutex);
-        finishJob (job);
+        finishJob (type);
         --m_processCount;
+        // Job should be destroyed before calling checkStopped
+        // otherwise destructors with side effects can access
+        // parent objects that are already destroyed.
         checkStopped (lock);
     }
 
