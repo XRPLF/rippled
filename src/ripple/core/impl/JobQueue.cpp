@@ -305,16 +305,6 @@ JobQueue::getJson (int c)
     return ret;
 }
 
-Job*
-JobQueue::getJobForThread (std::thread::id const& id) const
-{
-    auto tid = (id == std::thread::id()) ? std::this_thread::get_id() : id;
-
-    std::lock_guard <std::mutex> lock (m_mutex);
-    auto i = m_threadIds.find (tid);
-    return (i == m_threadIds.end()) ? nullptr : i->second;
-}
-
 JobTypeData&
 JobQueue::getJobTypeData (JobType type)
 {
@@ -400,8 +390,6 @@ JobQueue::getNextJob (Job& job)
     job = *iter;
     m_jobSet.erase (iter);
 
-    m_threadIds[std::this_thread::get_id()] = &job;
-
     --data.waiting;
     ++data.running;
 }
@@ -422,10 +410,6 @@ JobQueue::finishJob (JobType type)
         m_workers.addTask ();
     }
 
-    if (! m_threadIds.erase (std::this_thread::get_id()))
-    {
-        assert (false);
-    }
     --data.running;
 }
 
