@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 
@@ -117,7 +118,7 @@ BasicTaker::unfunded () const
     if (get_funds (account(), remaining_.in) > zero)
         return false;
 
-    journal_.debug << "Unfunded: taker is out of funds.";
+    JLOG(journal_.debug) << "Unfunded: taker is out of funds.";
     return true;
 }
 
@@ -127,7 +128,7 @@ BasicTaker::done () const
     // We are done if we have consumed all the input currency
     if (remaining_.in <= zero)
     {
-        journal_.debug << "Done: all the input currency has been consumed.";
+        JLOG(journal_.debug) << "Done: all the input currency has been consumed.";
         return true;
     }
 
@@ -135,14 +136,14 @@ BasicTaker::done () const
     // desired amount of output currency
     if (!sell_ && (remaining_.out <= zero))
     {
-        journal_.debug << "Done: the desired amount has been received.";
+        JLOG(journal_.debug) << "Done: the desired amount has been received.";
         return true;
     }
 
     // We are done if the taker is out of funds
     if (unfunded ())
     {
-        journal_.debug << "Done: taker out of funds.";
+        JLOG(journal_.debug) << "Done: taker out of funds.";
         return true;
     }
 
@@ -438,7 +439,7 @@ BasicTaker::do_cross (
 
     if (account () == owner1)
     {
-        journal_.trace << "The taker owns the first leg of a bridge.";
+        JLOG(journal_.trace) << "The taker owns the first leg of a bridge.";
         leg1_in_funds = std::max (leg1_in_funds, offer1.in);
     }
 
@@ -448,7 +449,7 @@ BasicTaker::do_cross (
 
     if (account () == owner2)
     {
-        journal_.trace << "The taker owns the second leg of a bridge.";
+        JLOG(journal_.trace) << "The taker owns the second leg of a bridge.";
         leg2_out_funds = std::max (leg2_out_funds, offer2.out);
     }
 
@@ -464,7 +465,8 @@ BasicTaker::do_cross (
 
     if (owner1 == owner2)
     {
-        journal_.trace << "The bridge endpoints are owneb by the same account.";
+        JLOG(journal_.trace) <<
+            "The bridge endpoints are owned by the same account.";
         xrp_funds = std::max (offer1.out, offer2.in);
     }
 
@@ -568,7 +570,7 @@ Taker::consume_offer (Offer const& offer, Amounts const& order)
     if (order.out < zero)
         Throw<std::logic_error> ("flow with negative output.");
 
-    if (journal_.debug) journal_.debug << "Consuming from offer " << offer;
+    JLOG(journal_.debug) << "Consuming from offer " << offer;
 
     if (journal_.trace)
     {

@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/ResolverAsio.h>
+#include <ripple/basics/Log.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/module/asio/AsyncObject.h>
@@ -120,7 +121,7 @@ public:
                 &ResolverAsioImpl::do_stop,
                     this, CompletionCounter (this))));
 
-            m_journal.debug << "Queued a stop request";
+            JLOG(m_journal.debug) << "Queued a stop request";
         }
     }
 
@@ -128,9 +129,9 @@ public:
     {
         stop_async ();
 
-        m_journal.debug << "Waiting to stop";
+        JLOG(m_journal.debug) << "Waiting to stop";
         m_stop_complete.wait();
-        m_journal.debug << "Stopped";
+        JLOG(m_journal.debug) << "Stopped";
     }
 
     void resolve (
@@ -255,7 +256,7 @@ public:
 
         if (hp.first.empty ())
         {
-            m_journal.error <<
+            JLOG(m_journal.error) <<
                 "Unable to parse '" << name << "'";
 
             m_io_service.post (m_strand.wrap (std::bind (
@@ -284,7 +285,7 @@ public:
         {
             m_work.emplace_back (names, handler);
 
-            m_journal.debug <<
+            JLOG(m_journal.debug) <<
                 "Queued new job with " << names.size() <<
                 " tasks. " << m_work.size() << " jobs outstanding.";
 

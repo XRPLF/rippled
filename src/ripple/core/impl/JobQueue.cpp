@@ -117,7 +117,7 @@ JobQueue::addJob (JobType type, std::string const& name,
     //
     if (isStopping() && skipOnStop (type))
     {
-        m_journal.debug <<
+        JLOG(m_journal.debug) <<
             "Skipping addJob ('" << name << "')";
         return;
     }
@@ -176,7 +176,7 @@ JobQueue::getJobCountGE (JobType t) const
 void
 JobQueue::shutdown ()
 {
-    m_journal.info <<  "Job queue shutting down";
+    JLOG(m_journal.info) <<  "Job queue shutting down";
 
     m_workers.pauseAllThreadsAndWait ();
 }
@@ -193,7 +193,7 @@ JobQueue::setThreadCount (int c, bool const standaloneMode)
         c = static_cast<int>(std::thread::hardware_concurrency());
         c = 2 + std::min (c, 4); // I/O will bottleneck
 
-        m_journal.info << "Auto-tuning to " << c <<
+        JLOG(m_journal.info) << "Auto-tuning to " << c <<
                             " validation/transaction/proposal threads";
     }
 
@@ -471,7 +471,7 @@ JobQueue::processTask ()
     if (!isStopping() || !data.info.skip ())
     {
         beast::Thread::setCurrentThreadName (data.name ());
-        m_journal.trace << "Doing " << data.name () << " job";
+        JLOG(m_journal.trace) << "Doing " << data.name () << " job";
 
         Job::clock_type::time_point const start_time (
             Job::clock_type::now());
@@ -482,7 +482,7 @@ JobQueue::processTask ()
     }
     else
     {
-        m_journal.trace << "Skipping processTask ('" << data.name () << "')";
+        JLOG(m_journal.trace) << "Skipping processTask ('" << data.name () << "')";
     }
 
     {

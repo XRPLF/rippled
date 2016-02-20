@@ -55,8 +55,8 @@ public:
     {
         sociConfig.open (m_session);
 
-        m_journal.info << "Opening database at '" << sociConfig.connectionString ()
-                       << "'";
+        JLOG(m_journal.info) <<
+            "Opening database at '" << sociConfig.connectionString () << "'";
 
         init ();
         update ();
@@ -91,7 +91,7 @@ public:
             }
             else
             {
-                m_journal.error <<
+                JLOG(m_journal.error) <<
                     "Bad address string '" << s << "' in Bootcache table";
             }
         }
@@ -152,14 +152,16 @@ public:
 
             version = vO.value_or (0);
 
-            m_journal.info <<
+            JLOG(m_journal.info) <<
                 "Opened version " << version << " database";
         }
 
         {
             if (version < currentSchemaVersion)
-                m_journal.info <<
+            {
+                JLOG(m_journal.info) <<
                     "Updating database to version " << currentSchemaVersion;
+            }
             else if (version > currentSchemaVersion)
             {
                 Throw<std::runtime_error> (
@@ -221,7 +223,7 @@ public:
                     }
                     else
                     {
-                        m_journal.error <<
+                        JLOG(m_journal.error) <<
                             "Bad address string '" << s << "' in Bootcache table";
                     }
                 }

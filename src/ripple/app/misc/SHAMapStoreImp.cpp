@@ -309,7 +309,7 @@ SHAMapStoreImp::run()
         if (validatedSeq >= lastRotated + setup_.deleteInterval
                 && canDelete_ >= lastRotated - 1)
         {
-            journal_.debug << "rotating  validatedSeq " << validatedSeq
+            JLOG(journal_.debug) << "rotating  validatedSeq " << validatedSeq
                     << " lastRotated " << lastRotated << " deleteInterval "
                     << setup_.deleteInterval << " canDelete_ " << canDelete_;
 
@@ -343,7 +343,7 @@ SHAMapStoreImp::run()
                     false)->visitNodes (
                     std::bind (&SHAMapStoreImp::copyNode, this,
                     std::ref(nodeCount), std::placeholders::_1));
-            journal_.debug << "copied ledger " << validatedSeq
+            JLOG(journal_.debug) << "copied ledger " << validatedSeq
                     << " nodecount " << nodeCount;
             switch (health())
             {
@@ -358,7 +358,7 @@ SHAMapStoreImp::run()
             }
 
             freshenCaches();
-            journal_.debug << validatedSeq << " freshened caches";
+            JLOG(journal_.debug) << validatedSeq << " freshened caches";
             switch (health())
             {
                 case Health::stopping:
@@ -373,7 +373,7 @@ SHAMapStoreImp::run()
 
             std::shared_ptr <NodeStore::Backend> newBackend =
                     makeBackendRotating();
-            journal_.debug << validatedSeq << " new backend "
+            JLOG(journal_.debug) << validatedSeq << " new backend "
                     << newBackend->getName();
             std::shared_ptr <NodeStore::Backend> oldBackend;
 
@@ -401,7 +401,7 @@ SHAMapStoreImp::run()
                 clearCaches (validatedSeq);
                 oldBackend = database_->rotateBackends (newBackend);
             }
-            journal_.debug << "finished rotation " << validatedSeq;
+            JLOG(journal_.debug) << "finished rotation " << validatedSeq;
 
             oldBackend->setDeletePath();
         }
@@ -525,7 +525,7 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
 
     boost::format formattedDeleteQuery (deleteQuery);
 
-    if (journal_.debug) journal_.debug <<
+    JLOG(journal_.debug) <<
         "start: " << deleteQuery << " from " << min << " to " << lastRotated;
     while (min < lastRotated)
     {
@@ -541,7 +541,7 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
             std::this_thread::sleep_for (
                     std::chrono::milliseconds (setup_.backOff));
     }
-    journal_.debug << "finished: " << deleteQuery;
+    JLOG(journal_.debug) << "finished: " << deleteQuery;
 }
 
 void
@@ -622,9 +622,9 @@ SHAMapStoreImp::health()
     auto age = ledgerMaster_->getValidatedLedgerAge();
     if (mode != NetworkOPs::omFULL || age.count() >= setup_.ageThreshold)
     {
-        journal_.warning << "Not deleting. state: " << mode
-                         << " age " << age.count()
-                         << " age threshold " << setup_.ageThreshold;
+        JLOG(journal_.warning) << "Not deleting. state: " << mode
+                               << " age " << age.count()
+                               << " age threshold " << setup_.ageThreshold;
         healthy_ = false;
     }
 
