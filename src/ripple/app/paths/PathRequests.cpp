@@ -32,10 +32,11 @@ namespace ripple {
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
 */
-RippleLineCache::pointer PathRequests::getLineCache (
-    std::shared_ptr <ReadView const> const& ledger, bool authoritative)
+std::shared_ptr<RippleLineCache>
+PathRequests::getLineCache (
+    std::shared_ptr <ReadView const> const& ledger,
+    bool authoritative)
 {
-
     ScopedLockType sl (mLock);
 
     std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->seq() : 0;
@@ -59,7 +60,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
             jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
-    RippleLineCache::pointer cache;
+    std::shared_ptr<RippleLineCache> cache;
 
     // Get the ledger and cache we should be using
     {

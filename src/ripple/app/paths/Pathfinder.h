@@ -39,7 +39,7 @@ class Pathfinder
 public:
     /** Construct a pathfinder without an issuer.*/
     Pathfinder (
-        RippleLineCache::ref cache,
+        std::shared_ptr<RippleLineCache> const& cache,
         AccountID const& srcAccount,
         AccountID const& dstAccount,
         Currency const& uSrcCurrency,
@@ -182,7 +182,7 @@ private:
 
     std::shared_ptr <ReadView const> mLedger;
     LoadEvent::pointer m_loadEvent;
-    RippleLineCache::pointer mRLCache;
+    std::shared_ptr<RippleLineCache> mRLCache;
 
     STPathElement mSource;
     STPathSet mCompletePaths;

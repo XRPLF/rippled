@@ -52,7 +52,7 @@ static unsigned int const max_paths = 4;
 static
 Json::Value
 buildSrcCurrencies(AccountID const& account,
-    RippleLineCache::pointer const& cache)
+    std::shared_ptr<RippleLineCache> const& cache)
 {
     auto currencies = accountSourceCurrencies(account, cache, true);
     auto jvSrcCurrencies = Json::Value(Json::arrayValue);
@@ -163,7 +163,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else
     {
-        RippleLineCache::pointer cache;
+        std::shared_ptr<RippleLineCache> cache;
 
         if (lpLedger)
         {
@@ -265,7 +265,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 }
 
 std::unique_ptr<Pathfinder> const&
-getPathFinder(RippleLineCache::ref cache, AccountID const& raSrc,
+getPathFinder(std::shared_ptr<RippleLineCache> const& cache, AccountID const& raSrc,
     AccountID const& raDst, boost::optional<STAmount> saSendMax,
         hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
             Currency const& currency, STAmount const& dst_amount,
@@ -284,7 +284,7 @@ getPathFinder(RippleLineCache::ref cache, AccountID const& raSrc,
 }
 
 std::pair<bool, Json::Value>
-ripplePathFind (RippleLineCache::pointer const& cache,
+ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
   AccountID const& raSrc, AccountID const& raDst,
     STAmount const& saDstAmount, Json::Value const& jvSrcCurrencies,
         boost::optional<Json::Value> const& contextPaths,

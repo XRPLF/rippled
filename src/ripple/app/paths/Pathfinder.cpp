@@ -142,7 +142,7 @@ std::string pathTypeToString (Pathfinder::PathType const& type)
 }  // namespace
 
 Pathfinder::Pathfinder (
-    RippleLineCache::ref cache,
+    std::shared_ptr<RippleLineCache> const& cache,
     AccountID const& uSrcAccount,
     AccountID const& uDstAccount,
     Currency const& uSrcCurrency,

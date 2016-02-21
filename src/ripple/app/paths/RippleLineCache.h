@@ -34,14 +34,12 @@ namespace ripple {
 class RippleLineCache
 {
 public:
-    using RippleStateVector = std::vector <RippleState::pointer>;
-    using pointer = std::shared_ptr <RippleLineCache>;
-    using ref = pointer const&;
-
-    explicit RippleLineCache (std::shared_ptr <ReadView const> const& l);
+    explicit
+    RippleLineCache (
+        std::shared_ptr <ReadView const> const& l);
 
     std::shared_ptr <ReadView const> const&
-    getLedger () // VFALCO TODO const?
+    getLedger () const
     {
         return mLedger;
     }
@@ -91,7 +89,10 @@ private:
         };
     };
 
-    hash_map <AccountKey, RippleStateVector, AccountKey::Hash> mRLMap;
+    hash_map <
+        AccountKey,
+        std::vector <RippleState::pointer>,
+        AccountKey::Hash> lines_;
 };
 
 } // ripple

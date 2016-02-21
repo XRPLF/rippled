@@ -45,7 +45,7 @@ extern open_ledger_t const open_ledger;
 
     @note Presented as ReadView to clients.
 */
-class OpenView
+class OpenView final
     : public ReadView
     , public TxsRawView
 {

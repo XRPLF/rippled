@@ -87,7 +87,7 @@ private:
 
     @note Presented as ApplyView to clients
 */
-class PaymentSandbox
+class PaymentSandbox final
     : public detail::ApplyViewBase
 {
 public:
