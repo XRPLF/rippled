@@ -34,7 +34,7 @@ namespace ripple {
 
     @note Presented as ApplyView to clients.
 */
-class ApplyViewImpl
+class ApplyViewImpl final
     : public detail::ApplyViewBase
 {
 public:

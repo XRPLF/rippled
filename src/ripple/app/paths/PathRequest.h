@@ -81,25 +81,26 @@ public:
     Json::Value getStatus ();
 
     std::pair<bool, Json::Value> doCreate (
-        const RippleLineCache::pointer&,
+        std::shared_ptr<RippleLineCache> const&,
         Json::Value const&);
 
     Json::Value doClose (Json::Value const&);
     Json::Value doStatus (Json::Value const&);
 
     // update jvStatus
-    Json::Value doUpdate (const std::shared_ptr<RippleLineCache>&, bool fast);
+    Json::Value doUpdate (
+        std::shared_ptr<RippleLineCache> const&, bool fast);
     InfoSub::pointer getSubscriber ();
     bool hasCompletion ();
 
 private:
     using ScopedLockType = std::lock_guard <std::recursive_mutex>;
 
-    bool isValid (RippleLineCache::ref crCache);
+    bool isValid (std::shared_ptr<RippleLineCache> const& crCache);
     void setValid ();
 
     std::unique_ptr<Pathfinder> const&
-    getPathFinder(RippleLineCache::ref,
+    getPathFinder(std::shared_ptr<RippleLineCache> const&,
         hash_map<Currency, std::unique_ptr<Pathfinder>>&, Currency const&,
             STAmount const&, int const);
 
@@ -107,7 +108,7 @@ private:
         Returns false if the source currencies are inavlid.
     */
     bool
-    findPaths (RippleLineCache::ref, int const, Json::Value&);
+    findPaths (std::shared_ptr<RippleLineCache> const&, int const, Json::Value&);
 
     int parseJson (Json::Value const&);
 

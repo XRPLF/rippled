@@ -26,7 +26,7 @@
 namespace ripple {
 
 std::pair<bool, Json::Value>
-ripplePathFind (RippleLineCache::pointer const& cache,
+ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
     AccountID const& raSrc, AccountID const& raDst,
         STAmount const& saDstAmount,
             Json::Value const& jvSrcCurrencies,

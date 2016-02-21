@@ -32,17 +32,19 @@ RippleLineCache::RippleLineCache(
     mLedger = std::make_shared<OpenView>(&*ledger, ledger);
 }
 
-RippleLineCache::RippleStateVector const&
+std::vector<RippleState::pointer> const&
 RippleLineCache::getRippleLines (AccountID const& accountID)
 {
     AccountKey key (accountID, hasher_ (accountID));
 
     std::lock_guard <std::mutex> sl (mLock);
 
-    auto it = mRLMap.emplace (key, RippleStateVector ());
+    auto it = lines_.emplace (key,
+        std::vector<RippleState::pointer>());
 
     if (it.second)
-        it.first->second = ripple::getRippleStateItems (accountID, *mLedger);
+        it.first->second = getRippleStateItems (
+            accountID, *mLedger);
 
     return it.first->second;
 }

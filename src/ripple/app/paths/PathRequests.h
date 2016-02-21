@@ -46,7 +46,7 @@ public:
     void updateAll (std::shared_ptr<ReadView const> const& ledger,
                     Job::CancelCallback shouldCancel);
 
-    RippleLineCache::pointer getLineCache (
+    std::shared_ptr<RippleLineCache> getLineCache (
         std::shared_ptr <ReadView const> const& ledger, bool authoritative);
 
     Json::Value makePathRequest (
@@ -83,7 +83,7 @@ private:
     std::vector<PathRequest::wptr> requests_;
 
     // Use a RippleLineCache
-    RippleLineCache::pointer         mLineCache;
+    std::shared_ptr<RippleLineCache>         mLineCache;
 
     std::atomic<int>                 mLastIdentifier;
 

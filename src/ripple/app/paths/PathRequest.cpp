@@ -159,7 +159,7 @@ void PathRequest::updateComplete ()
     }
 }
 
-bool PathRequest::isValid (RippleLineCache::ref crCache)
+bool PathRequest::isValid (std::shared_ptr<RippleLineCache> const& crCache)
 {
     if (! raSrcAccount || ! raDstAccount)
         return false;
@@ -171,16 +171,16 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
         return false;
     }
 
-    if (! crCache->getLedger()->exists(
-        keylet::account(*raSrcAccount)))
+    auto const& lrLedger = crCache->getLedger();
+
+    if (! lrLedger->exists(keylet::account(*raSrcAccount)))
     {
         // Source account does not exist.
         jvStatus = rpcError (rpcSRC_ACT_NOT_FOUND);
         return false;
     }
 
-    auto const& lrLedger = crCache->getLedger();
-    auto const sleDest = crCache->getLedger()->read(
+    auto const sleDest = lrLedger->read(
         keylet::account(*raDstAccount));
 
     Json::Value& jvDestCur =
@@ -234,7 +234,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 */
 std::pair<bool, Json::Value>
 PathRequest::doCreate (
-    RippleLineCache::ref& cache,
+    std::shared_ptr<RippleLineCache> const& cache,
     Json::Value const& value)
 {
     bool valid = false;
@@ -435,7 +435,7 @@ Json::Value PathRequest::doStatus (Json::Value const&)
 }
 
 std::unique_ptr<Pathfinder> const&
-PathRequest::getPathFinder(RippleLineCache::ref cache,
+PathRequest::getPathFinder(std::shared_ptr<RippleLineCache> const& cache,
     hash_map<Currency, std::unique_ptr<Pathfinder>>& currency_map,
         Currency const& currency, STAmount const& dst_amount,
             int const level)
@@ -454,7 +454,7 @@ PathRequest::getPathFinder(RippleLineCache::ref cache,
 }
 
 bool
-PathRequest::findPaths (RippleLineCache::ref cache, int const level,
+PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache, int const level,
     Json::Value& jvArray)
 {
     auto sourceCurrencies = sciSourceCurrencies;
@@ -588,7 +588,7 @@ PathRequest::findPaths (RippleLineCache::ref cache, int const level,
     return true;
 }
 
-Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
+Json::Value PathRequest::doUpdate (std::shared_ptr<RippleLineCache> const& cache, bool fast)
 {
     using namespace std::chrono;
     m_journal.debug << iIdentifier << " update " << (fast ? "fast" : "normal");
