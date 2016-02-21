@@ -63,7 +63,7 @@ public:
     startRound (
         LedgerConsensus& ledgerConsensus,
         LedgerHash const& prevLCLHash,
-        Ledger::ref previousLedger,
+        std::shared_ptr<Ledger const> const& previousLedger,
         NetClock::time_point closeTime) override;
 
     void

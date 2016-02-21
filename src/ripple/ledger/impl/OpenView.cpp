@@ -94,7 +94,6 @@ OpenView::OpenView (open_ledger_t,
     , base_ (base)
     , hold_ (std::move(hold))
 {
-    info_.open = true;
     info_.validated = false;
     info_.accepted = false;
     info_.seq = base_->info().seq + 1;
@@ -108,6 +107,7 @@ OpenView::OpenView (ReadView const* base,
     , info_ (base->info())
     , base_ (base)
     , hold_ (std::move(hold))
+    , open_ (base->open())
 {
 }
 
@@ -192,18 +192,16 @@ auto
 OpenView::txsBegin() const ->
     std::unique_ptr<txs_type::iter_base>
 {
-    return std::make_unique<
-        txs_iter_impl>(
-            closed(), txs_.cbegin());
+    return std::make_unique<txs_iter_impl>(
+        !open(), txs_.cbegin());
 }
 
 auto
 OpenView::txsEnd() const ->
     std::unique_ptr<txs_type::iter_base>
 {
-    return std::make_unique<
-        txs_iter_impl>(
-            closed(), txs_.cend());
+    return std::make_unique<txs_iter_impl>(
+        !open(), txs_.cend());
 }
 
 bool

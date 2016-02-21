@@ -138,7 +138,7 @@ Json::Value doTx (RPC::Context& context)
 
         if (okay)
             ret[jss::validated] = isValidated (
-                context, lgr->info().seq, lgr->getHash ());
+                context, lgr->info().seq, lgr->info().hash);
     }
 
     return ret;

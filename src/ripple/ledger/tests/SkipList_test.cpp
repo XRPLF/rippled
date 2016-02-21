@@ -43,10 +43,9 @@ class SkipList_test : public beast::unit_test::suite
             for (auto i = 0; i < 1023; ++i)
             {
                 auto next = std::make_shared<Ledger>(
-                    open_ledger, *prev,
+                    *prev,
                     env.app().timeKeeper().closeTime());
                 next->updateSkipList();
-                next->setClosed();
                 history.push_back(next);
                 prev = next;
             }

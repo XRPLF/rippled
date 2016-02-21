@@ -33,7 +33,7 @@ Json::Value doLedgerClosed (RPC::Context& context)
 
     Json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->info().seq;
-    jvResult[jss::ledger_hash] = to_string (ledger->getHash ());
+    jvResult[jss::ledger_hash] = to_string (ledger->info().hash);
 
     return jvResult;
 }

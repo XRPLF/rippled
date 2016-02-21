@@ -58,9 +58,8 @@ struct Regression_test : public beast::unit_test::suite
         auto const aliceAmount = XRP(aliceXRP);
 
         auto next = std::make_shared<Ledger>(
-            open_ledger, *closed,
+            *closed,
             env.app().timeKeeper().closeTime());
-        next->setClosed();
         {
             // Fund alice
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));

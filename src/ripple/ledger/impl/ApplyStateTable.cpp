@@ -116,7 +116,7 @@ ApplyStateTable::apply (OpenView& to,
         std::make_shared<Serializer>();
     tx.add(*sTx);
     std::shared_ptr<Serializer> sMeta;
-    if (to.closed())
+    if (!to.open())
     {
         TxMeta meta(j);
         // VFALCO Shouldn't TxMeta ctor do this?

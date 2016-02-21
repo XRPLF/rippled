@@ -56,7 +56,7 @@ public:
 
     virtual void startRound (
         LedgerHash const& prevLCLHash,
-        Ledger::ref prevLedger,
+        std::shared_ptr<Ledger const> const& prevLedger,
         NetClock::time_point closeTime,
         int previousProposers,
         std::chrono::milliseconds previousConvergeTime) = 0;
@@ -90,7 +90,7 @@ void applyTransactions (
     Application& app,
     SHAMap const* set,
     OpenView& view,
-    Ledger::ref checkLedger,
+    ReadView const& checkLedger,
     CanonicalTXSet& retriableTransactions,
     ApplyFlags flags);
 

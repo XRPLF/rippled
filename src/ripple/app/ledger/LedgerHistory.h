@@ -40,7 +40,8 @@ public:
     /** Track a ledger
         @return `true` if the ledger was already tracked
     */
-    bool addLedger (Ledger::pointer ledger, bool validated);
+    bool insert (std::shared_ptr<Ledger const> ledger,
+        bool validated);
 
     /** Get the ledgers_by_hash cache hit rate
         @return the hit rate
@@ -50,22 +51,19 @@ public:
         return m_ledgers_by_hash.getHitRate ();
     }
 
-    /** Get a ledger given its squence number
-        @param ledgerIndex The sequence number of the desired ledger
-    */
-    Ledger::pointer getLedgerBySeq (LedgerIndex ledgerIndex);
+    /** Get a ledger given its squence number */
+    std::shared_ptr<Ledger const>
+    getLedgerBySeq (LedgerIndex ledgerIndex);
+
+    /** Retrieve a ledger given its hash */
+    std::shared_ptr<Ledger const>
+    getLedgerByHash (LedgerHash const& ledgerHash);
 
     /** Get a ledger's hash given its sequence number
         @param ledgerIndex The sequence number of the desired ledger
         @return The hash of the specified ledger
     */
     LedgerHash getLedgerHash (LedgerIndex ledgerIndex);
-
-    /** Retrieve a ledger given its hash
-        @param ledgerHash The hash of the requested ledger
-        @return The ledger requested
-    */
-    Ledger::pointer getLedgerByHash (LedgerHash const& ledgerHash);
 
     /** Set the history cache's paramters
         @param size The target size of the cache
@@ -81,13 +79,14 @@ public:
         m_consensus_validated.sweep ();
     }
 
-    /** Report that we have locally built a particular ledger
-    */
-    void builtLedger (Ledger::ref, Json::Value);
+    /** Report that we have locally built a particular ledger */
+    void builtLedger (
+        std::shared_ptr<Ledger const> const&,
+        Json::Value);
 
-    /** Report that we have validated a particular ledger
-    */
-    void validatedLedger (Ledger::ref);
+    /** Report that we have validated a particular ledger */
+    void validatedLedger (
+        std::shared_ptr<Ledger const> const&);
 
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired
@@ -113,7 +112,7 @@ private:
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatch_counter_;
 
-    using LedgersByHash = TaggedCache <LedgerHash, Ledger>;
+    using LedgersByHash = TaggedCache <LedgerHash, Ledger const>;
 
     LedgersByHash m_ledgers_by_hash;
 

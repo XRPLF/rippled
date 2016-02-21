@@ -269,7 +269,9 @@ private:
     }
 
     // VFALCO TODO This should return boost::optional<uint256>
-    LedgerHash getLedgerHash(Ledger::pointer ledger, LedgerIndex index)
+    LedgerHash getLedgerHash(
+        std::shared_ptr<ReadView const>& ledger,
+        LedgerIndex index)
     {
         boost::optional<LedgerHash> hash;
         try
@@ -281,7 +283,7 @@ private:
             JLOG (j_.warning) <<
                 "Node missing from ledger " << ledger->info().seq;
             app_.getInboundLedgers().acquire (
-                ledger->getHash(), ledger->info().seq,
+                ledger->info().hash, ledger->info().seq,
                 InboundLedger::fcGENERIC);
         }
         return hash ? *hash : zero; // kludge
@@ -300,9 +302,8 @@ private:
         bool doNodes,
         bool doTxns)
     {
-        Ledger::pointer nodeLedger =
-            app_.getInboundLedgers().acquire (
-                ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
+        auto nodeLedger = app_.getInboundLedgers().acquire (
+            ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
         if (!nodeLedger)
         {
             JLOG (j_.debug) << "Ledger " << ledgerIndex << " not available";
@@ -312,9 +313,9 @@ private:
             return false;
         }
 
-        Ledger::pointer dbLedger = loadByIndex(ledgerIndex, app_);
+        auto dbLedger = loadByIndex(ledgerIndex, app_);
         if (! dbLedger ||
-            (dbLedger->getHash() != ledgerHash) ||
+            (dbLedger->info().hash != ledgerHash) ||
             (dbLedger->info().parentHash != nodeLedger->info().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
@@ -355,7 +356,7 @@ private:
     */
     LedgerHash getHash(
         LedgerIndex const& ledgerIndex,
-        Ledger::pointer& referenceLedger)
+        std::shared_ptr<ReadView const>& referenceLedger)
     {
         LedgerHash ledgerHash;
 
@@ -411,7 +412,7 @@ private:
             return shouldExit_;
         };
 
-        Ledger::pointer goodLedger;
+        std::shared_ptr<ReadView const> goodLedger;
 
         while (! shouldExit())
         {

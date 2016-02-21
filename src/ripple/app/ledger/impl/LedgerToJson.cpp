@@ -40,13 +40,13 @@ bool isBinary(LedgerFill const& fill)
 }
 
 template <class Object>
-void fillJson(Object& json, LedgerInfo const& info, bool bFull)
+void fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
     json[jss::parent_hash]  = to_string (info.parentHash);
     json[jss::ledger_index] = to_string (info.seq);
     json[jss::seqNum]       = to_string (info.seq);      // DEPRECATED
 
-    if (! info.open)
+    if (closed)
     {
         json[jss::closed] = true;
     }
@@ -64,7 +64,7 @@ void fillJson(Object& json, LedgerInfo const& info, bool bFull)
     // These next three are DEPRECATED.
     json[jss::hash] = to_string (info.hash);
     json[jss::totalCoins] = to_string (info.drops);
-    json[jss::accepted] = ! info.open;
+    json[jss::accepted] = closed;
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
@@ -165,7 +165,7 @@ void fillJson (Object& json, LedgerFill const& fill)
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
     auto bFull = isFull(fill);
-    fillJson(json, fill.ledger.info(), bFull);
+    fillJson(json, !fill.ledger.open(), fill.ledger.info(), bFull);
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);

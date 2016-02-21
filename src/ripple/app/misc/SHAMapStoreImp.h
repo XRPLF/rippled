@@ -93,8 +93,8 @@ private:
     bool healthy_ = true;
     mutable std::condition_variable cond_;
     mutable std::mutex mutex_;
-    Ledger::pointer newLedger_;
-    Ledger::pointer validatedLedger_;
+    std::shared_ptr<Ledger const> newLedger_;
+    std::shared_ptr<Ledger const> validatedLedger_;
     TransactionMaster& transactionMaster_;
     std::atomic <LedgerIndex> canDelete_;
     // these do not exist upon SHAMapStore creation, but do exist
@@ -158,7 +158,7 @@ public:
         return canDelete_;
     }
 
-    void onLedgerClosed (Ledger::pointer validatedLedger) override;
+    void onLedgerClosed (std::shared_ptr<Ledger const> const& ledger) override;
 
 private:
     // callback for visitNodes

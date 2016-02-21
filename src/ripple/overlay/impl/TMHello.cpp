@@ -140,9 +140,11 @@ buildHello (
 
     auto const closedLedger = app.getLedgerMaster().getClosedLedger();
 
-    if (closedLedger && !closedLedger->info().open)
+    assert(! closedLedger->open());
+    // VFALCO There should ALWAYS be a closed ledger
+    if (closedLedger)
     {
-        uint256 hash = closedLedger->getHash ();
+        uint256 hash = closedLedger->info().hash;
         h.set_ledgerclosed (hash.begin (), hash.size ());
         hash = closedLedger->info().parentHash;
         h.set_ledgerprevious (hash.begin (), hash.size ());

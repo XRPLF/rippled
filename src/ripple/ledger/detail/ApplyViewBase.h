@@ -46,6 +46,8 @@ public:
         ReadView const* base, ApplyFlags flags);
 
     // ReadView
+    bool
+    open() const override;
 
     LedgerInfo const&
     info() const override;

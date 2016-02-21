@@ -82,7 +82,7 @@ private:
     Family&                         f_;
     beast::Journal                  journal_;
     std::uint32_t                   seq_;
-    std::uint32_t                   ledgerSeq_; // sequence number of ledger this is part of
+    std::uint32_t                   ledgerSeq_ = 0; // sequence number of ledger this is part of
     std::shared_ptr<SHAMapAbstractNode> root_;
     SHAMapState                     state_;
     SHAMapType                      type_;
@@ -131,7 +131,14 @@ public:
     // Returns a new map that's a snapshot of this one.
     // Handles copy on write for mutable snapshots.
     std::shared_ptr<SHAMap> snapShot (bool isMutable) const;
+
+    /*  Sets metadata associated with the SHAMap
+
+        Marked `const` because the data is not part of
+        the map contents.
+    */
     void setLedgerSeq (std::uint32_t lseq);
+
     bool fetchRoot (SHAMapHash const& hash, SHAMapSyncFilter * filter);
 
     // normal hash access functions
@@ -198,7 +205,7 @@ public:
 
     using fetchPackEntry_t = std::pair <uint256, Blob>;
 
-    void getFetchPack (SHAMap * have, bool includeLeaves, int max,
+    void getFetchPack (SHAMap const* have, bool includeLeaves, int max,
         std::function<void (SHAMapHash const&, const Blob&)>) const;
 
     void setUnbacked ();
@@ -211,7 +218,7 @@ private:
     using DeltaRef = std::pair<std::shared_ptr<SHAMapItem const> const&,
                                std::shared_ptr<SHAMapItem const> const&>;
 
-    void visitDifferences(SHAMap* have, std::function<bool(SHAMapAbstractNode&)>) const;
+    void visitDifferences(SHAMap const* have, std::function<bool(SHAMapAbstractNode&)>) const;
     int unshare ();
 
      // tree node cache operations

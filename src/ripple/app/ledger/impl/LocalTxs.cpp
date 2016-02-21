@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/Indexes.h>
@@ -120,21 +121,6 @@ public:
         m_txns.emplace_back (index, txn);
     }
 
-    bool can_remove (LocalTx& txn, Ledger::ref ledger)
-    {
-        if (txn.isExpired (ledger->info().seq))
-            return true;
-        if (ledger->txExists(txn.getID()))
-            return true;
-        auto const sle = cachedRead(*ledger,
-            keylet::account(txn.getAccount()).key, ltACCOUNT_ROOT);
-        if (! sle)
-            return false;
-        if (sle->getFieldU32 (sfSequence) > txn.getSeq ())
-            return true;
-        return false;
-    }
-
     CanonicalTXSet
     getTxSet () override
     {
@@ -152,19 +138,25 @@ public:
         return tset;
     }
 
-    // Remove transactions that have either been accepted into a fully-validated
-    // ledger, are (now) impossible, or have expired
-    void sweep (Ledger::ref validLedger) override
+    // Remove transactions that have either been accepted
+    // into a fully-validated ledger, are (now) impossible,
+    // or have expired
+    void sweep (ReadView const& view) override
     {
         std::lock_guard <std::mutex> lock (m_lock);
 
-        for (auto it = m_txns.begin (); it != m_txns.end (); )
+        m_txns.remove_if ([&view](auto const& txn)
         {
-            if (can_remove (*it, validLedger))
-                it = m_txns.erase (it);
-            else
-                ++it;
-        }
+            if (txn.isExpired (view.info().seq))
+                return true;
+            if (view.txExists(txn.getID()))
+                return true;
+            auto const sle = cachedRead(view,
+                keylet::account(txn.getAccount()).key, ltACCOUNT_ROOT);
+            if (! sle)
+                return false;
+            return sle->getFieldU32 (sfSequence) > txn.getSeq ();
+        });
     }
 
     std::size_t size () override

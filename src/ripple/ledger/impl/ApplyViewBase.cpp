@@ -33,6 +33,12 @@ ApplyViewBase::ApplyViewBase(
 
 //---
 
+bool
+ApplyViewBase::open() const
+{
+    return base_->open();
+}
+
 LedgerInfo const&
 ApplyViewBase::info() const
 {

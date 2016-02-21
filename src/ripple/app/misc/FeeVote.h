@@ -20,7 +20,8 @@
 #ifndef RIPPLE_APP_MISC_FEEVOTE_H_INCLUDED
 #define RIPPLE_APP_MISC_FEEVOTE_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/shamap/SHAMap.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/protocol/SystemParameters.h>
@@ -60,7 +61,7 @@ public:
     */
     virtual
     void
-    doValidation (Ledger::ref lastClosedLedger,
+    doValidation (std::shared_ptr<ReadView const> const& lastClosedLedger,
         STObject& baseValidation) = 0;
 
     /** Cast our local vote on the fee.
@@ -70,8 +71,9 @@ public:
     */
     virtual
     void
-    doVoting (Ledger::ref lastClosedLedger, ValidationSet const& parentValidations,
-        std::shared_ptr<SHAMap> const& initialPosition) = 0;
+    doVoting (std::shared_ptr<ReadView const> const& lastClosedLedger,
+        ValidationSet const& parentValidations,
+            std::shared_ptr<SHAMap> const& initialPosition) = 0;
 };
 
 /** Build FeeVote::Setup from a config section. */

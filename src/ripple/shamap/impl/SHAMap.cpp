@@ -31,7 +31,6 @@ SHAMap::SHAMap (
     : f_ (f)
     , journal_(f.journal())
     , seq_ (seq)
-    , ledgerSeq_ (0)
     , state_ (SHAMapState::Modifying)
     , type_ (t)
 {
@@ -47,7 +46,6 @@ SHAMap::SHAMap (
     : f_ (f)
     , journal_(f.journal())
     , seq_ (1)
-    , ledgerSeq_ (0)
     , state_ (SHAMapState::Synching)
     , type_ (t)
 {

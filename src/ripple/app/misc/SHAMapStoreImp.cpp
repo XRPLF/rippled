@@ -241,11 +241,12 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
 }
 
 void
-SHAMapStoreImp::onLedgerClosed (Ledger::pointer validatedLedger)
+SHAMapStoreImp::onLedgerClosed(
+    std::shared_ptr<Ledger const> const& ledger)
 {
     {
         std::lock_guard <std::mutex> lock (mutex_);
-        newLedger_ = validatedLedger;
+        newLedger_ = ledger;
     }
     cond_.notify_one();
 }

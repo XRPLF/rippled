@@ -155,7 +155,7 @@ class View_test
                 create_genesis, config, env.app().family());
         auto const ledger =
             std::make_shared<Ledger>(
-                open_ledger, *genesis,
+                *genesis,
                 env.app().timeKeeper().closeTime());
         wipe(*ledger);
         ReadView& v = *ledger;
@@ -419,7 +419,7 @@ class View_test
             std::make_shared<Ledger> (
                 create_genesis, config, env.app().family());
         auto const ledger = std::make_shared<Ledger>(
-            open_ledger, *genesis,
+            *genesis,
             env.app().timeKeeper().closeTime());
         auto setup123 = [&ledger, this]()
         {
@@ -761,7 +761,7 @@ class View_test
                     create_genesis, config, env.app().family());
             auto const ledger =
                 std::make_shared<Ledger>(
-                    open_ledger, *genesis,
+                    *genesis,
                     env.app().timeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));

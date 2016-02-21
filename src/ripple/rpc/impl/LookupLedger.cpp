@@ -111,19 +111,19 @@ Status ledgerFromRequest (T& ledger, Context& context)
             if (ledger == nullptr)
                 return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
-            assert (! ledger->info().open);
+            assert (! ledger->open());
         }
         else
         {
             if (index.empty () || index == "current")
             {
                 ledger = ledgerMaster.getCurrentLedger ();
-                assert (ledger->info().open);
+                assert (ledger->open());
             }
             else if (index == "closed")
             {
                 ledger = ledgerMaster.getClosedLedger ();
-                assert (! ledger->info().open);
+                assert (! ledger->open());
             }
             else
             {
@@ -148,7 +148,7 @@ Status ledgerFromRequest (T& ledger, Context& context)
 bool isValidated (LedgerMaster& ledgerMaster, ReadView const& ledger,
     Application& app)
 {
-    if (ledger.info().open)
+    if (ledger.open())
         return false;
 
     if (ledger.info().validated)
@@ -220,7 +220,7 @@ Status lookupLedger (
 
     auto& info = ledger->info();
 
-    if (!info.open)
+    if (!ledger->open())
     {
         result[jss::ledger_hash] = to_string (info.hash);
         result[jss::ledger_index] = info.seq;

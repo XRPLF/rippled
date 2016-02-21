@@ -80,9 +80,6 @@ class Ledger final
 public:
     static char const* getCountedObjectName () { return "Ledger"; }
 
-    using pointer = std::shared_ptr<Ledger>;
-    using ref     = const std::shared_ptr<Ledger>&;
-
     Ledger (Ledger const&) = delete;
     Ledger& operator= (Ledger const&) = delete;
 
@@ -110,16 +107,13 @@ public:
             Family& family,
             beast::Journal j);
 
-    // Create a new ledger that's a snapshot of this one
-    Ledger (Ledger const& target, bool isMutable);
-
-    /** Create a new open ledger
+    /** Create a new ledger following a previous ledger
 
         The ledger will have the sequence number that
         follows previous, and have
         parentCloseTime == previous.closeTime.
     */
-    Ledger (open_ledger_t, Ledger const& previous,
+    Ledger (Ledger const& previous,
         NetClock::time_point closeTime);
 
     Ledger (void const* data,
@@ -136,6 +130,12 @@ public:
     //
     // ReadView
     //
+
+    bool
+    open() const override
+    {
+        return false;
+    }
 
     LedgerInfo const&
     info() const override
@@ -227,12 +227,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void setClosed()
-    {
-        info_.open = false;
-    }
-
-    void setValidated()
+    void setValidated() const
     {
         info_.validated = true;
     }
@@ -248,25 +243,21 @@ public:
         return mImmutable;
     }
 
-    // Indicates that all ledger entries
-    // are available locally. For example,
-    // all in the NodeStore and memory.
-    void setFull ()
+    /*  Mark this ledger as "should be full".
+
+        "Full" is metadata property of the ledger, it indicates
+        that the local server wants all the corresponding nodes
+        in durable storage.
+
+        This is marked `const` because it reflects metadata
+        and not data that is in common with other nodes on the
+        network.
+    */
+    void
+    setFull() const
     {
         txMap_->setLedgerSeq (info_.seq);
         stateMap_->setLedgerSeq (info_.seq);
-    }
-
-    // ledger signature operations
-    void addRaw (Serializer& s) const;
-    void setRaw (SerialIter& sit, bool hasPrefix, Family& family);
-
-    // DEPRECATED
-    // Remove contract.h include
-    uint256 const&
-    getHash() const
-    {
-        return info_.hash;
     }
 
     void setTotalDrops (std::uint64_t totDrops)
@@ -302,10 +293,7 @@ public:
     bool addSLE (SLE const& sle);
 
     // ledger sync functions
-    void setAcquiring (void);
-    bool isAcquiring (void) const;
-    bool isAcquiringTx (void) const;
-    bool isAcquiringAS (void) const;
+    void setAcquiring ();
 
     //--------------------------------------------------------------------------
 
@@ -328,7 +316,7 @@ private:
     class sles_iter_impl;
     class txs_iter_impl;
 
-    bool saveValidatedLedger (bool current);
+    void setRaw (SerialIter& sit, bool hasPrefix, Family& family);
 
     bool
     setup (Config const& config);
@@ -338,8 +326,6 @@ private:
 
     void
     updateHash();
-
-    // The basic Ledger structure, can be opened, closed, or synching
 
     bool mValidHash = false;
     bool mImmutable;
@@ -368,22 +354,22 @@ extern
 bool
 pendSaveValidated(
     Application& app,
-    std::shared_ptr<Ledger> const& ledger,
+    std::shared_ptr<Ledger const> const& ledger,
     bool isSynchronous,
     bool isCurrent);
 
 extern
-Ledger::pointer
+std::shared_ptr<Ledger>
 loadByIndex (std::uint32_t ledgerIndex,
     Application& app);
 
 extern
-std::tuple<Ledger::pointer, std::uint32_t, uint256>
+std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 loadLedgerHelper(std::string const& sqlSuffix,
     Application& app);
 
 extern
-Ledger::pointer
+std::shared_ptr<Ledger>
 loadByHash (uint256 const& ledgerHash, Application& app);
 
 extern

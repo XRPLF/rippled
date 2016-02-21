@@ -2111,7 +2111,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 
         // Figure out what ledger they want
         JLOG(p_journal_.trace) << "GetLedger: Received";
-        Ledger::pointer ledger;
+        std::shared_ptr<Ledger const> ledger;
 
         if (packet.has_ledgerhash ())
         {
@@ -2176,10 +2176,14 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
         {
             ledger = app_.getLedgerMaster ().getClosedLedger ();
-
+            assert(! ledger->open());
+            // VFALCO ledger should never be null!
+            // VFALCO How can the closed ledger be open?
+        #if 0
             if (ledger && ledger->info().open)
                 ledger = app_.getLedgerMaster ().getLedgerBySeq (
                     ledger->info().seq - 1);
+        #endif
         }
         else
         {
@@ -2208,7 +2212,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
         }
 
         // Fill out the reply
-        uint256 lHash = ledger->getHash ();
+        auto const lHash = ledger->info().hash;
         reply.set_ledgerhash (lHash.begin (), lHash.size ());
         reply.set_ledgerseq (ledger->info().seq);
         reply.set_type (packet.itype ());
@@ -2218,7 +2222,7 @@ PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
             // they want the ledger base data
             JLOG(p_journal_.trace) << "GetLedger: Base data";
             Serializer nData (128);
-            ledger->addRaw (nData);
+            addRaw(ledger->info(), nData);
             reply.add_nodes ()->set_nodedata (
                 nData.getDataPtr (), nData.getLength ());
 

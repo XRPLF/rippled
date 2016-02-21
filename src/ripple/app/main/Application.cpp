@@ -925,7 +925,10 @@ private:
     void addTxnSeqField();
     void updateTables ();
     void startGenesisLedger ();
-    Ledger::pointer getLastFullLedger();
+
+    std::shared_ptr<Ledger>
+    getLastFullLedger();
+
     bool loadOldLedger (
         std::string const& ledgerID, bool replay, bool isFilename);
 };
@@ -1207,9 +1210,8 @@ ApplicationImp::startGenesisLedger()
     m_ledgerMaster->storeLedger (genesis);
 
     auto const next = std::make_shared<Ledger>(
-        open_ledger, *genesis, timeKeeper().closeTime());
+        *genesis, timeKeeper().closeTime());
     next->updateSkipList ();
-    next->setClosed ();
     next->setImmutable (*config_);
     m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, cachedSLEs_,
@@ -1218,49 +1220,50 @@ ApplicationImp::startGenesisLedger()
     m_ledgerMaster->switchLCL (next);
 }
 
-Ledger::pointer
+std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
+    auto j = journal ("Ledger");
+
     try
     {
-        Ledger::pointer ledger;
-        std::uint32_t ledgerSeq;
-        uint256 ledgerHash;
-        std::tie (ledger, ledgerSeq, ledgerHash) =
-                loadLedgerHelper ("order by LedgerSeq desc limit 1", *this);
+        std::shared_ptr<Ledger> ledger;
+        std::uint32_t seq;
+        uint256 hash;
+
+        std::tie (ledger, seq, hash) =
+            loadLedgerHelper (
+                "order by LedgerSeq desc limit 1", *this);
 
         if (!ledger)
             return ledger;
 
-        ledger->setClosed ();
         ledger->setImmutable(*config_);
 
-        if (getLedgerMaster ().haveLedger (ledgerSeq))
+        if (getLedgerMaster ().haveLedger (seq))
             ledger->setValidated ();
 
-        if (ledger->getHash () != ledgerHash)
+        if (ledger->info().hash == hash)
         {
-            auto j = journal ("Ledger");
-            if (j.error)
-            {
-                j.error  << "Failed on ledger";
-                Json::Value p;
-                addJson (p, {*ledger, LedgerFill::full});
-                j.error << p;
-            }
-
-            assert (false);
-            return Ledger::pointer ();
+            JLOG (j.trace) << "Loaded ledger: " << hash;
+            return ledger;
         }
 
-        JLOG (journal ("Ledger").trace) << "Loaded ledger: " << ledgerHash;
-        return ledger;
+        if (j.error)
+        {
+            j.error  << "Failed on ledger";
+            Json::Value p;
+            addJson (p, {*ledger, LedgerFill::full});
+            j.error << p;
+        }
+
+        return {};
     }
     catch (SHAMapMissingNode& sn)
     {
-        JLOG (journal ("Ledger").warning)
-                << "Database contains ledger with missing nodes: " << sn;
-        return Ledger::pointer ();
+        JLOG (j.warning) <<
+            "Ledger with missing nodes in database: " << sn;
+        return {};
     }
 }
 
@@ -1269,7 +1272,7 @@ bool ApplicationImp::loadOldLedger (
 {
     try
     {
-        Ledger::pointer loadLedger, replayLedger;
+        std::shared_ptr<Ledger> loadLedger, replayLedger;
 
         if (isFileName)
         {
@@ -1374,7 +1377,6 @@ bool ApplicationImp::loadOldLedger (
                              }
                          }
 
-                         loadLedger->setClosed ();
                          loadLedger->stateMap().flushDirty
                              (hotACCOUNT_NODE, loadLedger->info().seq);
                          loadLedger->setAccepted (closeTime,
@@ -1446,9 +1448,9 @@ bool ApplicationImp::loadOldLedger (
             }
         }
 
-        loadLedger->setClosed ();
-
-        JLOG(m_journal.info) << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->info().seq;
+        JLOG(m_journal.info) <<
+            "Loading ledger " << loadLedger->info().hash <<
+            " seq:" << loadLedger->info().seq;
 
         if (loadLedger->info().accountHash.isZero ())
         {
@@ -1471,12 +1473,13 @@ bool ApplicationImp::loadOldLedger (
             return false;
         }
 
-        m_ledgerMaster->setLedgerRangePresent (loadLedger->info().seq, loadLedger->info().seq);
+        m_ledgerMaster->setLedgerRangePresent (
+            loadLedger->info().seq,
+            loadLedger->info().seq);
 
-        auto const openLedger =
-            std::make_shared<Ledger>(open_ledger, *loadLedger, timeKeeper().closeTime());
         m_ledgerMaster->switchLCL (loadLedger);
-        m_ledgerMaster->forceValid(loadLedger);
+        loadLedger->setValidated();
+        m_ledgerMaster->setFullLedger(loadLedger, true, false);
         m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, cachedSLEs_,
             logs_->journal("OpenLedger"));

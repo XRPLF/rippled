@@ -105,7 +105,7 @@ public:
     */
     void startRound (
         LedgerHash const& prevLCLHash,
-        Ledger::ref prevLedger,
+        std::shared_ptr<Ledger const> const& prevLedger,
         NetClock::time_point closeTime,
         int previousProposers,
         std::chrono::milliseconds previousConvergeTime) override;
@@ -256,7 +256,7 @@ private:
                      typically neACCEPTED_LEDGER or neCLOSING_LEDGER.
       @param ledger  The ledger associated with the event.
     */
-    void statusChange (protocol::NodeEvent event, Ledger& ledger);
+    void statusChange (protocol::NodeEvent event, ReadView const& ledger);
 
     /** Take an initial position on what we think the consensus should be
         based on the transactions that made it into our open ledger
@@ -316,7 +316,7 @@ private:
     uint256 mPrevLedgerHash;
     uint256 mAcquiringLedger;
 
-    Ledger::pointer mPreviousLedger;
+    std::shared_ptr<Ledger const> mPreviousLedger;
     LedgerProposal::pointer mOurPosition;
     PublicKey mValPublic;
     SecretKey mValSecret;

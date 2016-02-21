@@ -64,8 +64,11 @@ public:
     {
     }
 
-    Ledger::pointer acquire (
-        uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
+    std::shared_ptr<Ledger>
+    acquire (
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
         bool isNew = true;

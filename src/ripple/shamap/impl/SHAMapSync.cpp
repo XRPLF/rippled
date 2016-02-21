@@ -671,7 +671,7 @@ SHAMap::hasLeafNode (uint256 const& tag, SHAMapHash const& targetNodeHash) const
 Note: a caller should set includeLeaves to false for transaction trees.
 There's no point in including the leaves of transaction trees.
 */
-void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
+void SHAMap::getFetchPack (SHAMap const* have, bool includeLeaves, int max,
                            std::function<void (SHAMapHash const&, const Blob&)> func) const
 {
     visitDifferences (have,
@@ -691,7 +691,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 }
 
 void
-SHAMap::visitDifferences(SHAMap* have,
+SHAMap::visitDifferences(SHAMap const* have,
                          std::function<bool (SHAMapAbstractNode&)> func) const
 {
     // Visit every node in this SHAMap that is not present

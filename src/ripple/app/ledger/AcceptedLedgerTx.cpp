@@ -41,7 +41,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (
     , accountCache_ (accountCache)
     , logs_ (logs)
 {
-    assert (! ledger->info().open);
+    assert (! ledger->open());
 
     mResult = mMeta->getResultTER ();
 
@@ -65,7 +65,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (
     , accountCache_ (accountCache)
     , logs_ (logs)
 {
-    assert (ledger->info().open);
+    assert (ledger->open());
     buildJson ();
 }
 

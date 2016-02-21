@@ -142,7 +142,6 @@ void InboundLedger::init (ScopedLockType& collectionLock)
     {
         JLOG (m_journal.debug) <<
             "Acquiring ledger we already have locally: " << getHash ();
-        mLedger->setClosed ();
         mLedger->setImmutable (app_.config());
 
         if (mReason != fcHISTORY)
@@ -192,7 +191,7 @@ bool InboundLedger::tryLocal ()
                 true, app_.config(), app_.family());
         }
 
-        if (mLedger->getHash () != mHash)
+        if (mLedger->info().hash != mHash)
         {
             // We know for a fact the ledger can never be acquired
             JLOG (m_journal.warning) <<
@@ -264,7 +263,6 @@ bool InboundLedger::tryLocal ()
         JLOG (m_journal.debug) <<
             "Had everything locally";
         mComplete = true;
-        mLedger->setClosed ();
         mLedger->setImmutable (app_.config());
     }
 
@@ -357,7 +355,6 @@ void InboundLedger::done ()
 
     if (isComplete () && !isFailed () && mLedger)
     {
-        mLedger->setClosed ();
         mLedger->setImmutable (app_.config());
         if (mReason != fcHISTORY)
             app_.getLedgerMaster ().storeLedger (mLedger);
@@ -735,10 +732,10 @@ bool InboundLedger::takeHeader (std::string const& data)
         data.data(), data.size(), false,
         app_.config(), app_.family());
 
-    if (mLedger->getHash () != mHash)
+    if (mLedger->info().hash != mHash)
     {
         JLOG (m_journal.warning) <<
-            "Acquire hash mismatch: " << mLedger->getHash () <<
+            "Acquire hash mismatch: " << mLedger->info().hash <<
             "!=" << mHash;
         mLedger.reset ();
         return false;

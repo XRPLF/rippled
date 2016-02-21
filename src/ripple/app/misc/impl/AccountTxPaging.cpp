@@ -57,9 +57,8 @@ convertBlobsToTxResult (
 void
 saveLedgerAsync (Application& app, std::uint32_t seq)
 {
-    Ledger::pointer ledger = app.getLedgerMaster().getLedgerBySeq(seq);
-    if (ledger)
-        pendSaveValidated(app, ledger, false, false);
+    if (auto l = app.getLedgerMaster().getLedgerBySeq(seq))
+        pendSaveValidated(app, l, false, false);
 }
 
 void

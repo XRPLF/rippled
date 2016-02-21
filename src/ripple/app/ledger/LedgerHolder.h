@@ -20,42 +20,40 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <mutex>
 
 namespace ripple {
 
 // Can std::atomic<std::shared_ptr>> make this lock free?
 
+// VFALCO NOTE This class can be replaced with atomic<shared_ptr<...>>
+
 /** Hold a ledger in a thread-safe way.
+
+    VFALCO TODO The constructor should require a valid ledger, this
+                way the object always holds a value. We can use the
+                genesis ledger in all cases.
 */
 class LedgerHolder
 {
 public:
     // Update the held ledger
-    void set (Ledger::pointer ledger)
+    void set (std::shared_ptr<Ledger const> ledger)
     {
-        // The held ledger must always be immutable
-        if (ledger && !ledger->isImmutable ())
-           ledger = std::make_shared <Ledger> (*ledger, false);
-
-        {
-            std::lock_guard <std::mutex> sl (m_lock);
-            m_heldLedger = ledger;
-        }
+        if(! ledger)
+            LogicError("LedgerHolder::set with nullptr");
+        if(! ledger->isImmutable())
+            LogicError("LedgerHolder::set with mutable Ledger");
+        std::lock_guard <std::mutex> sl (m_lock);
+        m_heldLedger = std::move(ledger);
     }
 
     // Return the (immutable) held ledger
-    Ledger::pointer get ()
+    std::shared_ptr<Ledger const> get ()
     {
         std::lock_guard <std::mutex> sl (m_lock);
         return m_heldLedger;
-    }
-
-    // Return a mutable snapshot of the held ledger
-    Ledger::pointer getMutable ()
-    {
-        Ledger::pointer ret = get ();
-        return ret ? std::make_shared <Ledger> (*ret, true) : ret;
     }
 
     bool empty ()
@@ -66,7 +64,7 @@ public:
 
 private:
     std::mutex m_lock;
-    Ledger::pointer m_heldLedger;
+    std::shared_ptr<Ledger const> m_heldLedger;
 };
 
 } // ripple

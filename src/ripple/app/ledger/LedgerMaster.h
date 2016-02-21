@@ -49,7 +49,7 @@ struct LedgerReplay
     std::map< int, std::shared_ptr<STTx const> > txns_;
     NetClock::time_point closeTime_;
     int closeFlags_;
-    Ledger::pointer prevLedger_;
+    std::shared_ptr<Ledger const> prevLedger_;
 };
 
 // Tracks the current ledger and any ledgers in the process of closing
@@ -69,37 +69,43 @@ public:
             beast::insight::Collector::ptr const& collector,
                 beast::Journal journal);
 
-public:
-    using callback = std::function <void (Ledger::ref)>;
-
-public:
     virtual ~LedgerMaster () = default;
 
     LedgerIndex getCurrentLedgerIndex ();
     LedgerIndex getValidLedgerIndex ();
 
-    bool isCompatible (Ledger::pointer,
-        beast::Journal::Stream, const char* reason);
+    bool isCompatible (
+        ReadView const&,
+        beast::Journal::Stream,
+        char const* reason);
 
     std::recursive_mutex& peekMutex ();
 
     // The current ledger is the ledger we believe new transactions should go in
-    std::shared_ptr<ReadView const> getCurrentLedger ();
+    std::shared_ptr<ReadView const>
+    getCurrentLedger();
 
     // The finalized ledger is the last closed/accepted ledger
-    Ledger::pointer getClosedLedger ();
+    std::shared_ptr<Ledger const>
+    getClosedLedger()
+    {
+        return mClosedLedger.get();
+    }
 
     // The validated ledger is the last fully validated ledger
-    Ledger::pointer getValidatedLedger ();
+    std::shared_ptr<Ledger const>
+    getValidatedLedger ()
+    {
+        return mValidLedger.get();
+    }
 
     // The Rules are in the last fully validated ledger if there is one.
     Rules getValidatedRules();
 
     // This is the last ledger we published to clients and can lag the validated
     // ledger
-    Ledger::pointer getPublishedLedger ();
-
-    bool isValidLedger(LedgerInfo const&);
+    std::shared_ptr<ReadView const>
+    getPublishedLedger();
 
     std::chrono::seconds getPublishedLedgerAge ();
     std::chrono::seconds getValidatedLedgerAge ();
@@ -111,13 +117,13 @@ public:
 
     std::uint32_t getEarliestFetch ();
 
-    bool storeLedger (Ledger::pointer);
-    void forceValid (Ledger::pointer);
+    bool storeLedger (std::shared_ptr<Ledger const> ledger);
 
     void setFullLedger (
-        Ledger::pointer ledger, bool isSynchronous, bool isCurrent);
+        std::shared_ptr<Ledger const> const& ledger,
+            bool isSynchronous, bool isCurrent);
 
-    void switchLCL (Ledger::pointer lastClosed);
+    void switchLCL (std::shared_ptr<Ledger const> const& lastClosed);
 
     void failedSave(std::uint32_t seq, uint256 const& hash);
 
@@ -144,9 +150,9 @@ public:
     */
     uint256 getHashBySeq (std::uint32_t index);
 
-    /** Walk to a ledger's hash using the skip list
-    */
+    /** Walk to a ledger's hash using the skip list */
     boost::optional<LedgerHash> walkHashBySeq (std::uint32_t index);
+
     /** Walk the chain of ledger hashes to determine the hash of the
         ledger with the specified index. The referenceLedger is used as
         the base of the chain and should be fully validated and must not
@@ -155,17 +161,21 @@ public:
         in the node store.
     */
     boost::optional<LedgerHash> walkHashBySeq (
-        std::uint32_t index, Ledger::ref referenceLedger);
+        std::uint32_t index,
+        std::shared_ptr<ReadView const> const& referenceLedger);
 
-    Ledger::pointer getLedgerBySeq (std::uint32_t index);
+    std::shared_ptr<Ledger const>
+    getLedgerBySeq (std::uint32_t index);
 
-    Ledger::pointer getLedgerByHash (uint256 const& hash);
+    std::shared_ptr<Ledger const>
+    getLedgerByHash (uint256 const& hash);
 
     void setLedgerRangePresent (
         std::uint32_t minV, std::uint32_t maxV);
 
     boost::optional<LedgerHash> getLedgerHash(
-        std::uint32_t desiredSeq, Ledger::ref knownGoodLedger);
+        std::uint32_t desiredSeq,
+        std::shared_ptr<ReadView const> const& knownGoodLedger);
 
     boost::optional <NetClock::time_point> getCloseTimeBySeq (
         LedgerIndex ledgerIndex);
@@ -174,7 +184,7 @@ public:
         LedgerHash const& ledgerHash);
 
     void addHeldTransaction (std::shared_ptr<Transaction> const& trans);
-    void fixMismatch (Ledger::ref ledger);
+    void fixMismatch (ReadView const& ledger);
 
     bool haveLedger (std::uint32_t seq);
     void clearLedger (std::uint32_t seq);
@@ -187,9 +197,9 @@ public:
     void sweep ();
     float getCacheHitRate ();
 
-    void checkAccept (Ledger::ref ledger);
+    void checkAccept (std::shared_ptr<Ledger const> const& ledger);
     void checkAccept (uint256 const& hash, std::uint32_t seq);
-    void consensusBuilt (Ledger::ref ledger, Json::Value consensus);
+    void consensusBuilt (std::shared_ptr<Ledger const> const& ledger, Json::Value consensus);
 
     LedgerIndex getBuildingLedger ();
     void setBuildingLedger (LedgerIndex index);
@@ -235,9 +245,15 @@ public:
     std::size_t getFetchPackCacheSize () const;
 
 private:
-    void setValidLedger(Ledger::ref l);
-    void setPubLedger(Ledger::ref l);
-    void tryFill(Job& job, Ledger::pointer ledger);
+    void setValidLedger(
+        std::shared_ptr<Ledger const> const& l);
+    void setPubLedger(
+        std::shared_ptr<Ledger const> const& l);
+
+    void tryFill(
+        Job& job,
+        std::shared_ptr<Ledger const> ledger);
+
     void getFetchPack(LedgerHash missingHash, LedgerIndex missingIndex);
     boost::optional<LedgerHash> getLedgerHashForHistory(LedgerIndex index);
     int getNeededValidations();
@@ -250,7 +266,10 @@ private:
         std::uint32_t const ledgerHistory,
         std::uint32_t const ledgerHistoryIndex,
         std::uint32_t const candidateLedger) const;
-    std::vector<Ledger::pointer> findNewLedgersToPublish();
+
+    std::vector<std::shared_ptr<Ledger const>>
+    findNewLedgersToPublish();
+
     void updatePaths(Job& job);
     void newPFWork(const char *name);
 
@@ -270,13 +289,13 @@ private:
     LedgerHolder mValidLedger;
 
     // The last ledger we have published.
-    Ledger::pointer mPubLedger;
+    std::shared_ptr<Ledger const> mPubLedger;
 
     // The last ledger we did pathfinding against.
-    Ledger::pointer mPathLedger;
+    std::shared_ptr<Ledger const> mPathLedger;
 
     // The last ledger we handled fetching history
-    Ledger::pointer mHistLedger;
+    std::shared_ptr<Ledger const> mHistLedger;
 
     // Fully validated ledger, whether or not we have the ledger resident.
     std::pair <uint256, LedgerIndex> mLastValidLedger;

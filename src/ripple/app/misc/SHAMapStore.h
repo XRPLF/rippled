@@ -54,7 +54,7 @@ public:
     SHAMapStore (Stoppable& parent) : Stoppable ("SHAMapStore", parent) {}
 
     /** Called by LedgerMaster every time a ledger validates. */
-    virtual void onLedgerClosed (Ledger::pointer validatedLedger) = 0;
+    virtual void onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
 
     virtual std::uint32_t clampFetchDepth (std::uint32_t fetch_depth) const = 0;
 

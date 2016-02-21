@@ -66,7 +66,8 @@ public:
     {
         return mHaveHeader;
     }
-    Ledger::ref getLedger () const
+    std::shared_ptr<Ledger> const&
+    getLedger() const
     {
         return mLedger;
     }
@@ -131,7 +132,7 @@ private:
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
 
 private:
-    Ledger::pointer    mLedger;
+    std::shared_ptr<Ledger> mLedger;
     bool               mHaveHeader;
     bool               mHaveState;
     bool               mHaveTransactions;

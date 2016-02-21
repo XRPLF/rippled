@@ -24,6 +24,7 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <memory>
 #include <beast/threads/Stoppable.h>
@@ -197,7 +198,7 @@ public:
 
     virtual void reportFeeChange () = 0;
 
-    virtual void updateLocalTx (Ledger::ref newValidLedger) = 0;
+    virtual void updateLocalTx (ReadView const& newValidLedger) = 0;
     virtual std::size_t getLocalTxCount () = 0;
 
     // client information retrieval functions
@@ -229,7 +230,8 @@ public:
     //
     // Monitoring: publisher side
     //
-    virtual void pubLedger (Ledger::ref lpAccepted) = 0;
+    virtual void pubLedger (
+        std::shared_ptr<ReadView const> const& lpAccepted) = 0;
     virtual void pubProposedTransaction (
         std::shared_ptr<ReadView const> const& lpCurrent,
         std::shared_ptr<STTx const> const& stTxn, TER terResult) = 0;

@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/to_string.h>
 
 namespace ripple {
@@ -52,17 +53,22 @@ LedgerHistory::LedgerHistory (
 {
 }
 
-bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
+bool
+LedgerHistory::insert(
+    std::shared_ptr<Ledger const> ledger,
+        bool validated)
 {
-    assert (ledger && ledger->isImmutable ());
+    if(! ledger->isImmutable())
+        LogicError("mutable Ledger in insert");
+
     assert (ledger->stateMap().getHash ().isNonZero ());
 
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
     const bool alreadyHad = m_ledgers_by_hash.canonicalize (
-        ledger->getHash(), ledger, true);
+        ledger->info().hash, ledger, true);
     if (validated)
-        mLedgersByIndex[ledger->info().seq] = ledger->getHash();
+        mLedgersByIndex[ledger->info().seq] = ledger->info().hash;
 
     return alreadyHad;
 }
@@ -78,7 +84,8 @@ LedgerHash LedgerHistory::getLedgerHash (LedgerIndex index)
     return uint256 ();
 }
 
-Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
+std::shared_ptr<Ledger const>
+LedgerHistory::getLedgerBySeq (LedgerIndex index)
 {
     {
         LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
@@ -92,7 +99,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
         }
     }
 
-    Ledger::pointer ret = loadByIndex (index, app_);
+    std::shared_ptr<Ledger const> ret = loadByIndex (index, app_);
 
     if (!ret)
         return ret;
@@ -104,20 +111,21 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (LedgerIndex index)
         LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
         assert (ret->isImmutable ());
-        m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
-        mLedgersByIndex[ret->info().seq] = ret->getHash ();
-        return (ret->info().seq == index) ? ret : Ledger::pointer ();
+        m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
+        mLedgersByIndex[ret->info().seq] = ret->info().hash;
+        return (ret->info().seq == index) ? ret : nullptr;
     }
 }
 
-Ledger::pointer LedgerHistory::getLedgerByHash (LedgerHash const& hash)
+std::shared_ptr<Ledger const>
+LedgerHistory::getLedgerByHash (LedgerHash const& hash)
 {
-    Ledger::pointer ret = m_ledgers_by_hash.fetch (hash);
+    auto ret = m_ledgers_by_hash.fetch (hash);
 
     if (ret)
     {
         assert (ret->isImmutable ());
-        assert (ret->getHash () == hash);
+        assert (ret->info().hash == hash);
         return ret;
     }
 
@@ -127,19 +135,22 @@ Ledger::pointer LedgerHistory::getLedgerByHash (LedgerHash const& hash)
         return ret;
 
     assert (ret->isImmutable ());
-    assert (ret->getHash () == hash);
-    m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
-    assert (ret->getHash () == hash);
+    assert (ret->info().hash == hash);
+    m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
+    assert (ret->info().hash == hash);
 
     return ret;
 }
 
 static
 void
-log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg,
+log_one(
+    ReadView const& ledger,
+    uint256 const& tx,
+    char const* msg,
     beast::Journal& j)
 {
-    auto metaData = ledger->txRead(tx).second;
+    auto metaData = ledger.txRead(tx).second;
 
     if (metaData != nullptr)
     {
@@ -157,10 +168,12 @@ log_one(Ledger::pointer ledger, uint256 const& tx, char const* msg,
 static
 void
 log_metadata_difference(
-    Ledger::pointer builtLedger, Ledger::pointer validLedger, uint256 const& tx,
+    ReadView const& builtLedger,
+    ReadView const& validLedger,
+    uint256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [j](Ledger const& ledger,
+    auto getMeta = [j](ReadView const& ledger,
         uint256 const& txID) -> std::shared_ptr<TxMeta>
     {
         auto meta = ledger.txRead(txID).second;
@@ -169,8 +182,8 @@ log_metadata_difference(
         return std::make_shared<TxMeta> (txID, ledger.seq(), *meta, j);
     };
 
-    auto validMetaData = getMeta (*validLedger, tx);
-    auto builtMetaData = getMeta (*builtLedger, tx);
+    auto validMetaData = getMeta (validLedger, tx);
+    auto builtMetaData = getMeta (builtLedger, tx);
     assert(validMetaData != nullptr || builtMetaData != nullptr);
 
     if (validMetaData != nullptr && builtMetaData != nullptr)
@@ -299,15 +312,16 @@ leaves (SHAMap const& sm)
     return v;
 }
 
-
 void LedgerHistory::handleMismatch (
-    LedgerHash const& built, LedgerHash const& valid, Json::Value const& consensus)
+    LedgerHash const& built,
+    LedgerHash const& valid,
+    Json::Value const& consensus)
 {
     assert (built != valid);
     ++mismatch_counter_;
 
-    Ledger::pointer builtLedger = getLedgerByHash (built);
-    Ledger::pointer validLedger = getLedgerByHash (valid);
+    auto builtLedger = getLedgerByHash (built);
+    auto validLedger = getLedgerByHash (valid);
 
     if (!builtLedger || !validLedger)
     {
@@ -326,19 +340,19 @@ void LedgerHistory::handleMismatch (
         j_.debug << "Consensus: " << consensus;
     }
 
-    // Determine the mismatch reason
-    // Distinguish Byzantine failure from transaction processing difference
+    // Determine the mismatch reason, distinguishing Byzantine
+    // failure from transaction processing difference
 
+    // Disagreement over prior ledger indicates sync issue
     if (builtLedger->info().parentHash != validLedger->info().parentHash)
     {
-        // Disagreement over prior ledger indicates sync issue
         JLOG (j_.error) << "MISMATCH on prior ledger";
         return;
     }
 
+    // Disagreement over close time indicates Byzantine failure
     if (builtLedger->info().closeTime != validLedger->info().closeTime)
     {
-        // Disagreement over close time indicates Byzantine failure
         JLOG (j_.error) << "MISMATCH on close time";
         return;
     }
@@ -346,18 +360,18 @@ void LedgerHistory::handleMismatch (
     // Find differences between built and valid ledgers
     auto const builtTx = leaves(builtLedger->txMap());
     auto const validTx = leaves(validLedger->txMap());
+
     if (builtTx == validTx)
         JLOG (j_.error) <<
-            "MISMATCH with same " << builtTx.size() << " transactions";
+            "MISMATCH with same " << builtTx.size() <<
+            " transactions";
     else
         JLOG (j_.error) << "MISMATCH with " <<
             builtTx.size() << " built and " <<
             validTx.size() << " valid transactions.";
 
-    JLOG (j_.error) << "built\n" <<
-        getJson(*builtLedger);
-    JLOG (j_.error) << "valid\n" <<
-        getJson(*validLedger);
+    JLOG (j_.error) << "built\n" << getJson(*builtLedger);
+    JLOG (j_.error) << "valid\n" << getJson(*validLedger);
 
     // Log all differences between built and valid ledgers
     auto b = builtTx.begin();
@@ -366,12 +380,12 @@ void LedgerHistory::handleMismatch (
     {
         if ((*b)->key() < (*v)->key())
         {
-            log_one (builtLedger, (*b)->key(), "valid", j_);
+            log_one (*builtLedger, (*b)->key(), "valid", j_);
             ++b;
         }
         else if ((*b)->key() > (*v)->key())
         {
-            log_one(validLedger, (*v)->key(), "built", j_);
+            log_one(*validLedger, (*v)->key(), "built", j_);
             ++v;
         }
         else
@@ -379,23 +393,28 @@ void LedgerHistory::handleMismatch (
             if ((*b)->peekData() != (*v)->peekData())
             {
                 // Same transaction with different metadata
-                log_metadata_difference(builtLedger, validLedger, (*b)->key(), j_);
+                log_metadata_difference(
+                    *builtLedger,
+                    *validLedger, (*b)->key(), j_);
             }
             ++b;
             ++v;
         }
     }
     for (; b != builtTx.end(); ++b)
-        log_one (builtLedger, (*b)->key(), "valid", j_);
+        log_one (*builtLedger, (*b)->key(), "valid", j_);
     for (; v != validTx.end(); ++v)
-        log_one (validLedger, (*v)->key(), "built", j_);
+        log_one (*validLedger, (*v)->key(), "built", j_);
 }
 
-void LedgerHistory::builtLedger (Ledger::ref ledger, Json::Value consensus)
+void LedgerHistory::builtLedger (
+    std::shared_ptr<Ledger const> const& ledger,
+    Json::Value consensus)
 {
     LedgerIndex index = ledger->info().seq;
-    LedgerHash hash = ledger->getHash();
+    LedgerHash hash = ledger->info().hash;
     assert (!hash.isZero());
+
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
@@ -422,11 +441,13 @@ void LedgerHistory::builtLedger (Ledger::ref ledger, Json::Value consensus)
     entry->consensus.emplace (std::move (consensus));
 }
 
-void LedgerHistory::validatedLedger (Ledger::ref ledger)
+void LedgerHistory::validatedLedger (
+    std::shared_ptr<Ledger const> const& ledger)
 {
     LedgerIndex index = ledger->info().seq;
-    LedgerHash hash = ledger->getHash();
+    LedgerHash hash = ledger->info().hash;
     assert (!hash.isZero());
+
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 

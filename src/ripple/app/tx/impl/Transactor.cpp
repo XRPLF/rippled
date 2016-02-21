@@ -683,7 +683,7 @@ Transactor::operator()()
         // Transaction succeeded fully or (retries are
         // not allowed and the transaction could claim a fee)
 
-        if(view().closed())
+        if(!view().open())
         {
             // Charge whatever fee they specified.
 

@@ -75,7 +75,6 @@ struct LedgerInfo
     // For all ledgers
     //
 
-    bool open = true;
     LedgerIndex seq = 0;
     NetClock::time_point parentCloseTime = {};
 
@@ -233,18 +232,9 @@ public:
     info() const = 0;
 
     /** Returns true if this reflects an open ledger. */
+    virtual
     bool
-    open() const
-    {
-        return info().open;
-    }
-
-    /** Returns true if this reflects a closed ledger. */
-    bool
-    closed() const
-    {
-        return ! info().open;
-    }
+    open() const = 0;
 
     /** Returns the close time of the previous ledger. */
     NetClock::time_point

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
+#include <ripple/ledger/ReadView.h>
 #include <memory>
 
 namespace ripple {
@@ -42,7 +42,7 @@ public:
     virtual CanonicalTXSet getTxSet () = 0;
 
     // Remove obsolete transactions based on a new fully-valid ledger
-    virtual void sweep (Ledger::ref validLedger) = 0;
+    virtual void sweep (ReadView const& view) = 0;
 
     virtual std::size_t size () = 0;
 };

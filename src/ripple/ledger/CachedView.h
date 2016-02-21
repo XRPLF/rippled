@@ -65,6 +65,12 @@ public:
     std::shared_ptr<SLE const>
     read (Keylet const& k) const override;
 
+    bool
+    open() const override
+    {
+        return base_.open();
+    }
+
     LedgerInfo const&
     info() const override
     {
