@@ -714,6 +714,7 @@ Ledger::setup (Config const& config)
         Throw();
     }
 
+#if 0
     try
     {
         rules_ = Rules(*this);
@@ -726,6 +727,7 @@ Ledger::setup (Config const& config)
     {
         Throw();
     }
+#endif
 
     return ret;
 }
