@@ -305,6 +305,17 @@ JobQueue::getJson (int c)
     return ret;
 }
 
+void
+JobQueue::rendezvous()
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    cv_.wait(lock, [&]
+    {
+        return m_processCount == 0 &&
+            m_jobSet.empty();
+    });
+}
+
 JobTypeData&
 JobQueue::getJobTypeData (JobType type)
 {
@@ -474,11 +485,12 @@ JobQueue::processTask ()
 
     {
         std::lock_guard <std::mutex> lock (m_mutex);
-        finishJob (type);
-        --m_processCount;
         // Job should be destroyed before calling checkStopped
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.
+        finishJob (type);
+        if(--m_processCount == 0 && m_jobSet.empty())
+            cv_.notify_all();
         checkStopped (lock);
     }
 
