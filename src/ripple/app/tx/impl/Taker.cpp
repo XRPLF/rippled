@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 
 namespace ripple {
 
@@ -117,7 +118,7 @@ BasicTaker::unfunded () const
     if (get_funds (account(), remaining_.in) > zero)
         return false;
 
-    journal_.debug << "Unfunded: taker is out of funds.";
+    JLOG(journal_.debug) << "Unfunded: taker is out of funds.";
     return true;
 }
 

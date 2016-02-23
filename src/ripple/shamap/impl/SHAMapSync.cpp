@@ -129,8 +129,8 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
     {
         if (generation == 0)
             clearSynching();
-        else if (journal_.warning) journal_.warning <<
-            "synching empty tree";
+        else
+            JLOG(journal_.warning) << "synching empty tree";
         return ret;
     }
 
@@ -291,9 +291,11 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             <std::chrono::milliseconds> (std::chrono::steady_clock::now() - after);
 
         if ((count > 50) || (elapsed.count() > 50))
-            journal_.debug << "getMissingNodes reads " <<
+        {
+            JLOG(journal_.debug) << "getMissingNodes reads " <<
                 count << " nodes (" << hits << " hits) in "
                 << elapsed.count() << " + " << process_time.count()  << " ms";
+        }
 
         if (max <= 0)
             return ret;
@@ -343,15 +345,14 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
 
     if (!node || (nodeID != wanted))
     {
-        if (journal_.warning) journal_.warning <<
+        JLOG(journal_.warning) <<
             "peer requested node that is not in the map: " << wanted;
         return false;
     }
 
     if (node->isInner() && static_cast<SHAMapInnerNode*>(node)->isEmpty())
     {
-        if (journal_.warning) journal_.warning <<
-            "peer requests empty node";
+        JLOG(journal_.warning) << "peer requests empty node";
         return false;
     }
 
@@ -422,8 +423,7 @@ SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode,
     // we already have a root_ node
     if (root_->getNodeHash ().isNonZero ())
     {
-        if (journal_.trace) journal_.trace <<
-            "got root node, already have one";
+        JLOG(journal_.trace) << "got root node, already have one";
         assert (root_->getNodeHash () == hash);
         return SHAMapAddNode::duplicate ();
     }
@@ -462,8 +462,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
     if (!isSynching ())
     {
-        if (journal_.trace) journal_.trace <<
-            "AddKnownNode while not synching";
+        JLOG(journal_.trace) << "AddKnownNode while not synching";
         return SHAMapAddNode::duplicate ();
     }
 
@@ -480,8 +479,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
         auto inner = static_cast<SHAMapInnerNode*>(iNode);
         if (inner->isEmptyBranch (branch))
         {
-            if (journal_.warning) journal_.warning <<
-                "Add known node for empty branch" << node;
+            JLOG(journal_.warning) << "Add known node for empty branch" << node;
             return SHAMapAddNode::invalid ();
         }
 
@@ -497,11 +495,9 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
             if (iNodeID != node)
             {
                 // Either this node is broken or we didn't request it (yet)
-                if (journal_.warning) journal_.warning <<
-                    "unable to hook node " << node;
-                if (journal_.info) journal_.info <<
-                    " stuck at " << iNodeID;
-                if (journal_.info) journal_.info <<
+                JLOG(journal_.warning) << "unable to hook node " << node;
+                JLOG(journal_.info) << " stuck at " << iNodeID;
+                JLOG(journal_.info) <<
                     "got depth=" << node.getDepth () <<
                         ", walked to= " << iNodeID.getDepth ();
                 return SHAMapAddNode::invalid ();
@@ -512,8 +508,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
             if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
             {
-                if (journal_.warning) journal_.warning <<
-                    "Corrupt node received";
+                JLOG(journal_.warning) << "Corrupt node received";
                 return SHAMapAddNode::invalid ();
             }
 
@@ -541,8 +536,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
         }
     }
 
-    if (journal_.trace) journal_.trace <<
-        "got node, already had it (late)";
+    JLOG(journal_.trace) << "got node, already had it (late)";
     return SHAMapAddNode::duplicate ();
 }
 
@@ -562,14 +556,12 @@ bool SHAMap::deepCompare (SHAMap& other) const
 
         if (!node || !otherNode)
         {
-            if (journal_.info) journal_.info <<
-                "unable to fetch node";
+            JLOG(journal_.info) << "unable to fetch node";
             return false;
         }
         else if (otherNode->getNodeHash () != node->getNodeHash ())
         {
-            if (journal_.warning) journal_.warning <<
-                "node hash mismatch";
+            JLOG(journal_.warning) << "node hash mismatch";
             return false;
         }
 
@@ -606,8 +598,7 @@ bool SHAMap::deepCompare (SHAMap& other) const
                     auto otherNext = other.descend(other_inner, i);
                     if (!next || !otherNext)
                     {
-                        if (journal_.warning) journal_.warning <<
-                            "unable to fetch inner node";
+                        JLOG(journal_.warning) << "unable to fetch inner node";
                         return false;
                     }
                     stack.push ({next, otherNext});
