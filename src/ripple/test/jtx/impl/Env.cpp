@@ -184,6 +184,9 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
 Env::AppBundle::~AppBundle()
 {
     client.reset();
+    // Make sure all jobs finish, otherwise tests
+    // might not get the coverage they expect.
+    app->getJobQueue().rendezvous();
     app->signalStop();
     thread.join();
 }
