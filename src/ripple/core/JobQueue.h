@@ -28,8 +28,9 @@
 #include <beast/threads/Stoppable.h>
 #include <beast/module/core/thread/Workers.h>
 #include <boost/function.hpp>
-#include <thread>
+#include <condition_variable>
 #include <set>
+#include <thread>
 
 namespace ripple {
 
@@ -95,6 +96,10 @@ public:
     // Cannot be const because LoadMonitor has no const methods.
     Json::Value getJson (int c = 0);
 
+    /** Block until no tasks running. */
+    void
+    rendezvous();
+
 private:
     using JobDataMap = std::map <JobType, JobTypeData>;
 
@@ -115,6 +120,8 @@ private:
     beast::insight::Collector::ptr m_collector;
     beast::insight::Gauge job_count;
     beast::insight::Hook hook;
+
+    std::condition_variable cv_;
 
     static JobTypes const& getJobTypes()
     {
