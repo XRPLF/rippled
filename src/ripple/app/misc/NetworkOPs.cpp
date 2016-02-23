@@ -920,6 +920,7 @@ void NetworkOPsImp::transactionBatch()
 
 void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 {
+    std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     mTransactions.swap (transactions);
     assert (! transactions.empty());
@@ -996,7 +997,13 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 for (auto const& tx : m_ledgerMaster.pruneHeldTransactions(
                     txCur->getAccountID(sfAccount), txCur->getSequence() + 1))
                 {
-                    submitTransaction(tx);
+                    std::string reason;
+                    auto const trans = sterilize(*tx);
+                    auto t = std::make_shared<Transaction>(
+                        trans, reason, app_);
+                    submit_held.emplace_back(
+                        t, false, false, FailHard::no);
+                    t->setApplying();
                 }
             }
             else if (e.result == tefPAST_SEQ)
@@ -1074,6 +1081,15 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 
     for (TransactionStatus& e : transactions)
         e.transaction->clearApplying();
+
+    if (! submit_held.empty())
+    {
+        if (mTransactions.empty())
+            mTransactions.swap(submit_held);
+        else
+            for (auto& e : submit_held)
+                mTransactions.push_back(std::move(e));
+    }
 
     mCond.notify_all();
 
