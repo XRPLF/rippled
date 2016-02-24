@@ -109,13 +109,6 @@ void Journal::Sink::threshold (Severity thresh)
 
 //------------------------------------------------------------------------------
 
-Journal::ScopedStream::ScopedStream (Stream const& stream)
-    : m_sink (stream.sink ())
-    , m_level (stream.severity ())
-{
-    init ();
-}
-
 Journal::ScopedStream::ScopedStream (ScopedStream const& other)
     : m_sink (other.m_sink)
     , m_level (other.m_level)
@@ -123,13 +116,11 @@ Journal::ScopedStream::ScopedStream (ScopedStream const& other)
     init ();
 }
 
-Journal::ScopedStream::ScopedStream (
-    Stream const& stream, std::ostream& manip (std::ostream&))
-    : m_sink (stream.sink ())
-    , m_level (stream.severity ())
+Journal::ScopedStream::ScopedStream (Sink& sink, Severity level)
+    : m_sink (sink)
+    , m_level (level)
 {
     init ();
-    m_ostream << manip;
 }
 
 Journal::ScopedStream::~ScopedStream ()
@@ -155,11 +146,6 @@ void Journal::ScopedStream::init ()
 std::ostream& Journal::ScopedStream::operator<< (std::ostream& manip (std::ostream&)) const
 {
     return m_ostream << manip;
-}
-
-std::ostringstream& Journal::ScopedStream::ostream () const
-{
-    return m_ostream;
 }
 
 //------------------------------------------------------------------------------
