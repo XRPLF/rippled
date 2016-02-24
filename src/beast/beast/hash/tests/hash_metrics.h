@@ -166,15 +166,15 @@ windowed_score (FwdIter first, FwdIter last)
     int maxwidth = 20;
     // We need at least 5 keys per bin to reliably test distribution biases
     // down to 1%, so don't bother to test sparser distributions than that
-    while (static_cast<double>(size) / (1 << maxwidth) < 5.0)
+    while (static_cast<double>(size) / (1ull << maxwidth) < 5.0)
         maxwidth--;
     double worst = 0;
-    std::vector <int> bins (1 << maxwidth);
+    std::vector <int> bins (1ull << maxwidth);
     int const hashbits = sizeof(std::size_t) * CHAR_BIT;
     for (int start = 0; start < hashbits; ++start)
     {
         int width = maxwidth;
-        bins.assign (1 << width, 0);
+        bins.assign (1ull << width, 0);
         for (auto iter (first); iter != last; ++iter)
             ++bins[detail::window(&*iter, start, width)];
         // Test the distribution, then fold the bins in half,

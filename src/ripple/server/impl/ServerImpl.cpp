@@ -21,7 +21,6 @@
 #include <ripple/basics/contract.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <ripple/server/impl/BaseHTTPPeer.h>
-#include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <cassert>

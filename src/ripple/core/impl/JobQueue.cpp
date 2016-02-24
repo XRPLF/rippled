@@ -436,6 +436,7 @@ template <class Rep, class Period>
 void JobQueue::on_dequeue (JobType type,
     std::chrono::duration <Rep, Period> const& value)
 {
+    using namespace std::chrono;
     auto const ms (ceil <std::chrono::milliseconds> (value));
 
     if (ms.count() >= 10)
@@ -446,6 +447,7 @@ template <class Rep, class Period>
 void JobQueue::on_execute (JobType type,
     std::chrono::duration <Rep, Period> const& value)
 {
+    using namespace std::chrono;
     auto const ms (ceil <std::chrono::milliseconds> (value));
 
     if (ms.count() >= 10)

@@ -65,6 +65,7 @@ public:
     void
     notify (std::chrono::duration <Rep, Period> const& value) const
     {
+        using namespace std::chrono;
         if (m_impl)
             m_impl->notify (ceil <value_type> (value));
     }

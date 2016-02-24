@@ -21,7 +21,6 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
 #include <beast/unit_test/suite.h>
-#include <beast/chrono/chrono_io.h>
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {
@@ -214,7 +213,7 @@ public:
             for (int i = 0; i < 128; ++i)
             {
                 j.info <<
-                    "Time= " << logic.clock().now().time_since_epoch() <<
+                    "Time= " << logic.clock().now().time_since_epoch().count() <<
                     ", Balance = " << c.balance();
                 logic.advance();
             }
@@ -230,7 +229,7 @@ public:
             {
                 c.charge (fee);
                 j.info <<
-                    "Time= " << logic.clock().now().time_since_epoch() <<
+                    "Time= " << logic.clock().now().time_since_epoch().count() <<
                     ", Balance = " << c.balance();
                 logic.advance();
             }

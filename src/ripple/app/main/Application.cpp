@@ -272,6 +272,7 @@ private:
         template <class Duration>
         void operator() (Duration const& elapsed)
         {
+            using namespace std::chrono;
             auto const ms (ceil <std::chrono::milliseconds> (elapsed));
 
             {
@@ -284,7 +285,7 @@ private:
             if (ms.count() >= 500)
             {
                 JLOG(m_journal.warning) <<
-                    "io_service latency = " << ms;
+                    "io_service latency = " << ms.count();
             }
         }
 
