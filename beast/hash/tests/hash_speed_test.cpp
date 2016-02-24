@@ -23,7 +23,6 @@
 #include <beast/hash/fnv1a.h>
 #include <beast/hash/siphash.h>
 #include <beast/hash/xxhasher.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/rngfill.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
@@ -61,7 +60,7 @@ public:
         }
         auto const elapsed = clock_type::now() - start;
         log << setw(12) << what << " " <<
-            duration<double>(elapsed) << "s";
+            duration<double>(elapsed).count() << "s";
     }
 
     void

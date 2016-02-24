@@ -107,6 +107,7 @@ public:
             for (auto iter : workers_)
                 iter->sample();
 
+            using namespace std::chrono;
             clock_type::time_point const when (
                 floor <seconds> (
                     clock_type::now().time_since_epoch()) +
