@@ -23,7 +23,6 @@
 
 #include <beast/Config.h>
 
-#include <beast/chrono/impl/chrono_io.cpp>
 #include <beast/chrono/impl/RelativeTime.cpp>
 
 #include <beast/chrono/tests/abstract_clock.test.cpp>

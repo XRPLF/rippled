@@ -24,7 +24,6 @@
 #include <beast/hash/endian.h>
 #include <beast/hash/tests/hash_metrics.h>
 #include <beast/hash/hash_append.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <beast/utility/type_name.h>

@@ -23,7 +23,6 @@
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/iosformat.h>
 #include <ripple/peerfinder/impl/Tuning.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/container/aged_map.h>
 #include <beast/utility/maybe_const.h>
 #include <boost/intrusive/list.hpp>
@@ -477,7 +476,7 @@ Livecache <Allocator>::onWrite (beast::PropertyStream::Map& map)
         item ["hops"] = e.endpoint.hops;
         item ["address"] = e.endpoint.address.to_string ();
         std::stringstream ss;
-        ss << iter.when() - expired;
+        ss << (iter.when() - expired).count();
         item ["expires"] = ss.str();
     }
 }

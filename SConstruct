@@ -359,7 +359,7 @@ def config_base(env):
         ,{'HAVE_USLEEP' : '1'}
         ,{'SOCI_CXX_C11' : '1'}
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
-        ,'-DBOOST_NO_AUTO_PTR'
+        ,'BOOST_NO_AUTO_PTR'
         ])
 
     if Beast.system.windows:

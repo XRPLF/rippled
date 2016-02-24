@@ -22,7 +22,6 @@
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
 #include <beast/chrono/basic_seconds_clock.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/http/rfc2616.h>
 #include <beast/nudb/create.h>
 #include <beast/nudb/detail/format.h>
@@ -105,7 +104,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << std::chrono::round<nanoseconds>(d).count();
+            os << round<nanoseconds>(d).count();
         }
         os << "ns";
     }
@@ -121,7 +120,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << std::chrono::round<microseconds>(d).count();
+            os << round<microseconds>(d).count();
         }
         os << "us";
     }
@@ -137,7 +136,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << std::chrono::round<milliseconds>(d).count();
+            os << round<milliseconds>(d).count();
         }
         os << "ms";
     }
@@ -153,7 +152,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << std::chrono::round<seconds>(d).count();
+            os << round<seconds>(d).count();
         }
         os << "s";
     }
@@ -169,7 +168,7 @@ pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
         else
         {
             // use integral
-            os << std::chrono::round<minutes>(d).count();
+            os << round<minutes>(d).count();
         }
         os << "min";
     }

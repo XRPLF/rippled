@@ -184,7 +184,7 @@ checkConsensus (
         "checkConsensus: prop=" << currentProposers <<
         "/" << previousProposers <<
         " agree=" << currentAgree << " validated=" << currentFinished <<
-        " time=" << currentAgreeTime <<  "/" << previousAgreeTime;
+        " time=" << currentAgreeTime.count() <<  "/" << previousAgreeTime.count();
 
     if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
         return ConsensusState::No;

@@ -42,9 +42,9 @@ public:
 
             std::stringstream ss;
             ss <<
-                "t1= " << t1.time_since_epoch() <<
-                ", t2= " << t2.time_since_epoch() <<
-                ", elapsed= " << (t2 - t1);
+                "t1= " << t1.time_since_epoch().count() <<
+                ", t2= " << t2.time_since_epoch().count() <<
+                ", elapsed= " << (t2 - t1).count();
             log << ss.str();
         }
     }
@@ -56,13 +56,13 @@ public:
 
         std::stringstream ss;
 
-        ss << "now() = " << c.now().time_since_epoch() << std::endl;
+        ss << "now() = " << c.now().time_since_epoch().count() << std::endl;
 
         c.set (clock_type::time_point (std::chrono::seconds(1)));
-        ss << "now() = " << c.now().time_since_epoch() << std::endl;
+        ss << "now() = " << c.now().time_since_epoch().count() << std::endl;
 
         c.set (clock_type::time_point (std::chrono::seconds(2)));
-        ss << "now() = " << c.now().time_since_epoch() << std::endl;
+        ss << "now() = " << c.now().time_since_epoch().count() << std::endl;
 
         log << ss.str();
     }

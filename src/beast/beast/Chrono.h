@@ -22,7 +22,6 @@
 
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/basic_seconds_clock.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/chrono/chrono_util.h>
 #include <beast/chrono/manual_clock.h>
 #include <beast/chrono/ratio_io.h>

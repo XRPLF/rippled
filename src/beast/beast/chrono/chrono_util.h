@@ -23,6 +23,7 @@
 // From Howard Hinnant
 // http://home.roadrunner.com/~hinnant/duration_io/chrono_util.html
 
+#if !defined(_MSC_FULL_VER) || (_MSC_FULL_VER <= 190023506)
 // round down
 template <class To, class Rep, class Period>
 To floor(std::chrono::duration <Rep, Period> const& d)
@@ -62,5 +63,6 @@ To ceil (std::chrono::duration <Rep, Period> const& d)
         ++t;
     return t;
 }
+#endif
 
 #endif

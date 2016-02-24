@@ -627,22 +627,13 @@
     <ClCompile Include="..\..\src\beast\beast\chrono\Chrono.unity.cpp">
       <Filter>beast\chrono</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\chrono\chrono_io.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\chrono_util.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\chrono\impl\chrono_io.cpp">
-      <Filter>beast\chrono\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\chrono\impl\RelativeTime.cpp">
       <Filter>beast\chrono\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\chrono\manual_clock.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\chrono\ratio_io.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\RelativeTime.h">

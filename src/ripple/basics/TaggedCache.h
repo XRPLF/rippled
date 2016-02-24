@@ -23,7 +23,6 @@
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <beast/chrono/abstract_clock.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
 #include <functional>
 #include <mutex>
@@ -124,7 +123,7 @@ public:
         lock_guard lock (m_mutex);
         m_target_age = std::chrono::seconds (s);
         if (m_journal.debug) m_journal.debug <<
-            m_name << " target age set to " << m_target_age;
+            m_name << " target age set to " << m_target_age.count();
     }
 
     int getCacheSize () const
@@ -194,7 +193,7 @@ public:
 
                 if (m_journal.trace) m_journal.trace <<
                     m_name << " is growing fast " << m_cache.size () << " of " << m_target_size <<
-                        " aging at " << (now - when_expire) << " of " << m_target_age;
+                        " aging at " << (now - when_expire).count() << " of " << m_target_age.count();
             }
 
             stuffToSweep.reserve (m_cache.size ());

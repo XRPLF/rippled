@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/digest.h>
-#include <beast/chrono/chrono_io.h>
 #include <beast/rngfill.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
