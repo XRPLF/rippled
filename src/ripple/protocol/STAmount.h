@@ -402,6 +402,7 @@ inline bool isXRP(STAmount const& amount)
 }
 
 extern LocalValue<bool> stAmountCalcSwitchover;
+extern LocalValue<bool> stAmountCalcSwitchover2;
 
 /** RAII class to set and restore the STAmount calc switchover.*/
 class STAmountSO
@@ -409,20 +410,27 @@ class STAmountSO
 public:
     explicit STAmountSO(NetClock::time_point const closeTime)
         : saved_(*stAmountCalcSwitchover)
+        , saved2_(*stAmountCalcSwitchover2)
     {
         *stAmountCalcSwitchover = closeTime > soTime;
+        *stAmountCalcSwitchover2 = closeTime > soTime2;
     }
 
     ~STAmountSO()
     {
         *stAmountCalcSwitchover = saved_;
+        *stAmountCalcSwitchover2 = saved2_;
     }
 
     // Mon Dec 28, 2015 10:00:00am PST
     static NetClock::time_point const soTime;
 
+    // Mon Mar 28, 2015 10:00:00am PST
+    static NetClock::time_point const soTime2;
+
 private:
     bool saved_;
+    bool saved2_;
 };
 
 } // ripple

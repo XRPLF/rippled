@@ -181,6 +181,110 @@ public:
         }
     }
 
+    void testXRPTinyPayment ()
+    {
+        testcase ("XRP Tiny payments");
+
+        // Regression test for tiny xrp payments
+        // In some cases, when the payment code calculates
+        // the amount of xrp needed as input to an xrp->iou offer
+        // it would incorrectly round the amount to zero (even when
+        // round-up was set to true).
+        // The bug would cause funded offers to be incorrectly removed
+        // because the code thought they were unfunded.
+        // The conditions to trigger the bug are:
+        // 1) When we calculate the amount of input xrp needed for an offer from
+        //    xrp->iou, the amount is less than 1 drop (after rounding up the float
+        //    representation).
+        // 2) There is another offer in the same book with a quality sufficiently bad that
+        //    when calculating the input amount needed the amount is not set to zero.
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        auto const alice = Account ("alice");
+        auto const bob = Account ("bob");
+        auto const carol = Account ("carol");
+        auto const dan = Account ("dan");
+        auto const erin = Account ("erin");
+        auto const gw = Account ("gw");
+
+        auto const USD = gw["USD"];
+
+        for (auto withFix : {false, true})
+        {
+            Env env (*this);
+
+            auto closeTime = [&]
+            {
+                auto const delta =
+                    100 * env.closed ()->info ().closeTimeResolution;
+                if (withFix)
+                    return STAmountSO::soTime2 + delta;
+                else
+                    return STAmountSO::soTime2 - delta;
+            }();
+
+            auto offerCount = [&env](jtx::Account const& account)
+            {
+                auto count = 0;
+                forEachItem (*env.current (), account,
+                    [&](std::shared_ptr<SLE const> const& sle)
+                    {
+                        if (sle->getType () == ltOFFER)
+                            ++count;
+                    });
+                return count;
+            };
+
+            env.fund (XRP (10000), alice, bob, carol, dan, erin, gw);
+            env.trust (USD (1000), alice, bob, carol, dan, erin);
+            env (pay (gw, carol, USD (0.99999)));
+            env (pay (gw, dan, USD (1)));
+            env (pay (gw, erin, USD (1)));
+
+            // Carol doen't quite have enough funds for this offer
+            // The amount left after this offer is taken will cause
+            // STAmount to incorrectly round to zero when the next offer
+            // (at a good quality) is considered. (when the
+            // stAmountCalcSwitchover2 patch is inactive)
+            env (offer (carol, drops (1), USD (1)));
+            // Offer at a quality poor enough so when the input xrp is calculated
+            // in the reverse pass, the amount is not zero.
+            env (offer (dan, XRP (100), USD (1)));
+
+            env.close (closeTime);
+            // This is the funded offer that will be incorrectly removed.
+            // It is considered after the offer from carol, which leaves a
+            // tiny amount left to pay. When calculating the amount of xrp
+            // needed for this offer, it will incorrectly compute zero in both
+            // the forward and reverse passes (when the stAmountCalcSwitchover2 is
+            // inactive.)
+            env (offer (erin, drops (1), USD (1)));
+
+            {
+                env (pay (alice, bob, USD (1)), path (~USD),
+                    sendmax (XRP (102)),
+                    txflags (tfNoRippleDirect | tfPartialPayment));
+
+                expect (offerCount (carol) == 0);
+                expect (offerCount (dan) == 1);
+                if (!withFix)
+                {
+                    // funded offer was removed
+                    expect (offerCount (erin) == 0);
+                    env.require (balance ("erin", USD (1)));
+                }
+                else
+                {
+                    // offer was correctly consumed. There is stil some
+                    // liquidity left on that offer.
+                    expect (offerCount (erin) == 1);
+                    env.require (balance ("erin", USD (0.99999)));
+                }
+            }
+        }
+    }
+
     void testEnforceNoRipple ()
     {
         testcase ("Enforce No Ripple");
@@ -696,6 +800,7 @@ public:
         testCanceledOffer ();
         testRmFundedOffer ();
         testTinyPayment ();
+        testXRPTinyPayment ();
         testEnforceNoRipple ();
         testInsufficientReserve ();
         testFillModes ();
