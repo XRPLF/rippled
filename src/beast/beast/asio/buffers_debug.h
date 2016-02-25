@@ -27,7 +27,6 @@ namespace beast {
 namespace debug {
 
 template<class Buffers>
-static
 std::string
 buffers_to_string(Buffers const& bs)
 {

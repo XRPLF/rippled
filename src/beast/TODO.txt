@@ -1,0 +1,8 @@
+* kick out non-beast code
+
+* redo directory structure
+
+* Change build options to C++11 only
+
+* Replace Jamroot with Jamfile
+
