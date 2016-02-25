@@ -88,6 +88,21 @@
     <Filter Include="beast\unit_test">
       <UniqueIdentifier>{2762284D-66E5-8B48-1F8E-67116DB1FC6B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\wsproto">
+      <UniqueIdentifier>{53D8D640-BEB0-1F2C-61D4-5459CDAC7EB4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\detail">
+      <UniqueIdentifier>{E8E91EF5-9155-8F58-4249-3EF221768BCE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\impl">
+      <UniqueIdentifier>{63AB4C85-5B2E-B2A7-9E4F-9F0899402D1D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\src">
+      <UniqueIdentifier>{E5986CF5-37A8-1EE5-1085-645EBEE517B6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\src\test">
+      <UniqueIdentifier>{28A822FF-4532-9678-23F2-D844CB0FE207}</UniqueIdentifier>
+    </Filter>
     <Filter Include="build">
       <UniqueIdentifier>{65697F48-7FC6-2A4B-DB6C-56781F3990B5}</UniqueIdentifier>
     </Filter>
@@ -376,9 +391,6 @@
     <Filter Include="ripple\websocket">
       <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\wsproto">
-      <UniqueIdentifier>{1D54E820-ADC9-94FB-19E7-653EFDE4CBE9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="rocksdb2">
       <UniqueIdentifier>{15B4B65A-0F03-7BA9-38CD-42A5712392CB}</UniqueIdentifier>
     </Filter>
@@ -585,6 +597,9 @@
     <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\read_until.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\src\beast_asio_error.cpp">
       <Filter>beast\asio\src</Filter>
     </ClCompile>
@@ -645,10 +660,16 @@
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
       <Filter>beast\crypto\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha_context.h">
+      <Filter>beast\crypto\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\sha.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
@@ -975,6 +996,9 @@
     <ClCompile Include="..\..\src\beast\beast\unity\beast_test_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_wsproto_unity.cpp">
+      <Filter>beast\unity</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1022,6 +1046,87 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
       <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\decorator.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\frame.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\hybi13.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\invokable.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\mask.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\socket_base.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\utf8_checker.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\error.h">
+      <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\wsproto\impl\accept_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\close_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\handshake_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\read_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\read_some_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\response_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\socket.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\write_op.ipp">
+      <Filter>beast\wsproto\impl</Filter>
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\option.h">
+      <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\wsproto\README.md">
+      <Filter>beast\wsproto</Filter>
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\rfc6455.h">
+      <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\socket.h">
+      <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\async_echo_peer.h">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_echo_test.cpp">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_test.cpp">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\sync_echo_peer.h">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\static_string.h">
+      <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
+      <Filter>beast\wsproto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\xor_shift_engine.h">
       <Filter>beast</Filter>
@@ -3840,6 +3945,12 @@
     <ClInclude Include="..\..\src\ripple\server\impl\BaseHTTPPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BasePeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BaseWSPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
       <Filter>ripple\server\impl</Filter>
     </ClCompile>
@@ -3856,6 +3967,9 @@
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\PlainHTTPPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainWSPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
@@ -3877,6 +3991,9 @@
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\SSLHTTPPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
@@ -3910,6 +4027,9 @@
       <Filter>ripple\server\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\WSSession.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\Family.h">
@@ -4316,12 +4436,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
       <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\wsproto\basic_socket.h">
-      <Filter>ripple\wsproto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\wsproto\wsproto.h">
-      <Filter>ripple\wsproto</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <Filter>rocksdb2\db</Filter>

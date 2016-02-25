@@ -21,6 +21,9 @@
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
 #include <beast/unit_test/suite.h>
+#include <beast/wsproto/detail/utf8_checker.h>
+
+#include <beast/asio/handler_alloc.h>
 
 namespace ripple {
 namespace test {
@@ -28,8 +31,19 @@ namespace test {
 class WSClient_test : public beast::unit_test::suite
 {
 public:
+    void
+    test_utf8checker()
+    {
+        beast::wsproto::detail::utf8_checker utf8c;
+
+        std::uint8_t buffer[] = {0Xff};
+        expect(! utf8c.write(buffer, 3));
+    }
+
     void run() override
     {
+        test_utf8checker();
+
         using namespace jtx;
         Env env(*this);
         auto wsc = makeWSClient(env.app().config());
@@ -37,22 +51,10 @@ public:
             Json::Value jv;
             jv["streams"] = Json::arrayValue;
             jv["streams"].append("ledger");
-            //jv["streams"].append("server");
-            //jv["streams"].append("transactions");
-            //jv["streams"].append("transactions_proposed");
-            log << pretty(wsc->invoke("subscribe", jv));
         }
         env.fund(XRP(10000), "alice");
         env.close();
-        /*
-        env.fund(XRP(10000), "dan", "eric", "fred");
-        env.close();
-        env.fund(XRP(10000), "george", "harold", "iris");
-        env.close();
-        */
         auto jv = wsc->getMsg(std::chrono::seconds(1));
-        if(jv)
-            log << pretty(*jv);
         pass();
     }
 };

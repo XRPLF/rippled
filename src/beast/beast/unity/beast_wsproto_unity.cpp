@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,11 +17,5 @@
 */
 //==============================================================================
 
-#if ! BEAST_COMPILE_OBJECTIVE_CPP
-
-// MUST come first!
-#include <BeastConfig.h>
-#include <ripple/beast/core/core.unity.cpp>
-#include <beast/unit_test/define_print.cpp>
-
-#endif
+#include <beast/wsproto/src/test/beast_wsproto_ws_test.cpp>
+#include <beast/wsproto/src/test/beast_wsproto_ws_echo_test.cpp>
