@@ -36,8 +36,13 @@
 namespace ripple {
 
 LocalValue<bool> stAmountCalcSwitchover(true);
+LocalValue<bool> stAmountCalcSwitchover2(true);
+
 using namespace std::chrono_literals;
 const NetClock::time_point STAmountSO::soTime{504640800s};
+
+// Fri Feb 26, 2016 9:00:00pm PST
+const NetClock::time_point STAmountSO::soTime2{509864400s};
 
 static const std::uint64_t tenTo14 = 100000000000000ull;
 static const std::uint64_t tenTo14m1 = tenTo14 - 1;
@@ -1199,9 +1204,18 @@ mulRound (STAmount const& v1, STAmount const& v2, Issue const& issue,
     // Control when bugfixes that require switchover dates are enabled
     if (roundUp && !resultNegative && !result && *stAmountCalcSwitchover)
     {
-        // return the smallest value above zero
-        amount = STAmount::cMinValue;
-        offset = STAmount::cMinOffset;
+        if (isXRP(issue) && *stAmountCalcSwitchover2)
+        {
+            // return the smallest value above zero
+            amount = 1;
+            offset = 0;
+        }
+        else
+        {
+            // return the smallest value above zero
+            amount = STAmount::cMinValue;
+            offset = STAmount::cMinOffset;
+        }
         return STAmount(issue, amount, offset, resultNegative);
     }
     return result;
@@ -1259,10 +1273,19 @@ divRound (STAmount const& num, STAmount const& den,
     // Control when bugfixes that require switchover dates are enabled
     if (roundUp && !resultNegative && !result && *stAmountCalcSwitchover)
     {
-        // return the smallest value above zero
-        amount = STAmount::cMinValue;
-        offset = STAmount::cMinOffset;
-        return STAmount (issue, amount, offset, resultNegative);
+        if (isXRP(issue) && *stAmountCalcSwitchover2)
+        {
+            // return the smallest value above zero
+            amount = 1;
+            offset = 0;
+        }
+        else
+        {
+            // return the smallest value above zero
+            amount = STAmount::cMinValue;
+            offset = STAmount::cMinOffset;
+        }
+        return STAmount(issue, amount, offset, resultNegative);
     }
     return result;
 }
