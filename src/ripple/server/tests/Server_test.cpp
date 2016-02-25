@@ -132,6 +132,12 @@ public:
         }
 
         void
+        onWSMessage(std::shared_ptr<WSSession> session,
+            std::vector<boost::asio::const_buffer> const&) override
+        {
+        }
+
+        void
         onClose (Session& session,
             boost::system::error_code const&) override
         {
@@ -325,6 +331,12 @@ public:
 
             void
             onRequest (Session& session) override
+            {
+            }
+
+            void
+            onWSMessage(std::shared_ptr<WSSession> session,
+                std::vector<boost::asio::const_buffer> const& buffers) override
             {
             }
 

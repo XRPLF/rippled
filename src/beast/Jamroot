@@ -34,7 +34,16 @@ else if [ os.name ] = HAIKU
   lib network ;
 }
 
-build-project test/asio ;
+if [ os.name ] = NT
+{
+  lib ssl : : <name>ssleay32 ;
+  lib crypto : : <name>libeay32  ;
+}
+else
+{
+  lib ssl ;
+  lib crypto ;
+}
 
 project beast
     : requirements
@@ -49,6 +58,8 @@ project beast
       <threading>multi
       <link>static
       <runtime-link>static
+      <toolset>gcc:<cxxflags>-std=c++14
+      <toolset>clang:<cxxflags>-std=c++14
       <os>LINUX:<define>_XOPEN_SOURCE=600
       <os>LINUX:<define>_GNU_SOURCE=1
       <os>SOLARIS:<define>_XOPEN_SOURCE=500
@@ -68,7 +79,10 @@ project beast
       <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
       <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
     : usage-requirements
-      <include>.
+        <include>.
     :
       build-dir bin
     ;
+
+build-project test ;
+build-project examples ;
