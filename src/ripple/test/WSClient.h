@@ -49,6 +49,9 @@ public:
 std::unique_ptr<WSClient>
 makeWSClient(Config const& cfg);
 
+std::unique_ptr<WSClient>
+makeWS2Client(Config const& cfg);
+
 } // test
 } // ripple
 

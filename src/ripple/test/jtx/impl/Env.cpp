@@ -69,11 +69,11 @@ setupConfigForUnitTests (Config& cfg)
     cfg["port_peer"].set("ip", "127.0.0.1");
     cfg["port_peer"].set("port", "8080");
     cfg["port_peer"].set("protocol", "peer");
-    cfg["server"].append("port_http");
-    cfg["port_http"].set("ip", "127.0.0.1");
-    cfg["port_http"].set("port", "8081");
-    cfg["port_http"].set("protocol", "http");
-    cfg["port_http"].set("admin", "127.0.0.1");
+    cfg["server"].append("port_rpc");
+    cfg["port_rpc"].set("ip", "127.0.0.1");
+    cfg["port_rpc"].set("port", "8081");
+    cfg["port_rpc"].set("protocol", "http,ws2");
+    cfg["port_rpc"].set("admin", "127.0.0.1");
     cfg["server"].append("port_ws");
     cfg["port_ws"].set("ip", "127.0.0.1");
     cfg["port_ws"].set("port", "8082");
