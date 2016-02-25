@@ -117,18 +117,19 @@ class WSClientImpl : public WSClient
 
     static
     boost::asio::ip::tcp::endpoint
-    getEndpoint(BasicConfig const& cfg)
+    getEndpoint(BasicConfig const& cfg, bool v2)
     {
         auto& log = std::cerr;
         ParsedPort common;
         parse_Port (common, cfg["server"], log);
+        auto const ps = v2 ? "ws2" : "ws";
         for (auto const& name : cfg.section("server").values())
         {
             if (! cfg.exists(name))
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if(pp.protocol.count("ws") == 0)
+            if(pp.protocol.count(ps) == 0)
                 continue;
             using boost::asio::ip::address_v4;
             if(*pp.ip == address_v4{0x00000000})
@@ -168,15 +169,14 @@ class WSClientImpl : public WSClient
     std::list<std::shared_ptr<msg>> msgs_;
 
 public:
-    explicit
-    WSClientImpl(Config const& cfg)
+    WSClientImpl(Config const& cfg, bool v2)
         : work_(ios_)
         , thread_([&]{ ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
     {
         using namespace boost::asio;
-        stream_.connect(getEndpoint(cfg));
+        stream_.connect(getEndpoint(cfg, v2));
         error_code ec;
         ws_.connect(ec);
         if(ec)
@@ -276,7 +276,13 @@ private:
 std::unique_ptr<WSClient>
 makeWSClient(Config const& cfg)
 {
-    return std::make_unique<WSClientImpl>(cfg);
+    return std::make_unique<WSClientImpl>(cfg, false);
+}
+
+std::unique_ptr<WSClient>
+makeWS2Client(Config const& cfg)
+{
+    return std::make_unique<WSClientImpl>(cfg, true);
 }
 
 } // test
