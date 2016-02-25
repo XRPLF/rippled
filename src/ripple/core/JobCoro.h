@@ -39,6 +39,7 @@ struct JobCoro_create_t { };
 
 } // detail
 
+/** Coroutines must run to completion. */
 class JobCoro : public std::enable_shared_from_this<JobCoro>
 {
 private:
@@ -58,6 +59,10 @@ public:
     template <class F>
     JobCoro(detail::JobCoro_create_t, JobQueue&, JobType,
         std::string const&, F&&);
+
+    // Not copy-constructible or assignable
+    JobCoro(JobCoro const&) = delete;
+    JobCoro& operator= (JobCoro const&) = delete;
 
     /** Suspend coroutine execution.
         Effects:
