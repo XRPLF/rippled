@@ -1,0 +1,213 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:design Design choices]
+
+The implementations are driven by business needs of cryptocurrency server
+applications ([link https://ripple.com Ripple] written in C++. These
+needs were not met by existing solutions so new code was written. The new
+code tries to avoid design flaws encountered in the already-existing software
+libraries:
+
+* Don't sacrifice performance.
+
+* Don't do too much, otherwise interfaces become rigid.
+
+* Symmetric interfaces (client and server the same, or close to it).
+
+* Emulate Boost.Asio interfaces as much as possible, since Asio is
+  proven and it is familiar to users.
+
+* Let library users make the important decisions such as how to
+  allocate memory or how to leverage flow control.
+
+Beast formalizes the [link beast.types.Streambuf [*`Streambuf`]] concept,
+and relies heavily on the Boost.Asio [*`ConstBufferSequence`] and
+[*`MutableBufferSequence`] concepts for passing buffers to functions.
+The authors have found the `Streambuf` and buffer sequence interfaces
+to be optimal for interacting with Asio, and for other tasks such as
+incremental parsing of data in buffers (for example, parsing websocket
+frames stored in a [link beast.ref.static_streambuf `static_streambuf`]).
+
+During the development of Beast the authors have studied other software
+packages and in particular the comments left during the Boost Review process
+of other packages offering similar functionality. In this section we attempt
+to address those issues.
+
+[variablelist
+[[
+    "I would also like to see instances of this library being used
+    in production. That would give some evidence that the design
+    works in practice.""
+][
+    Beast.HTTP and Beast.WebSocket will be used in [*rippled], an
+    asynchronous peer to peer server that implements the
+    [*Ripple Consensus Protocol]. These servers are deployed in multiple
+    production environments, with banks in many countries running client
+    applications that connect to [*rippled].
+]]
+
+]
+
+
+[section:http HTTP]
+
+For HTTP we to model the message to maximize flexibility of implementation
+strategies while allowing familiar verbs such as [*`read`] and [*`write`].
+The HTTP interface is further driven by the needs of the WebSocket module,
+as a WebSocket session requires a HTTP Upgrade handshake exchange at the
+start. Other design goals:
+
+* Don't try to invent a complete web server or client
+
+* Have simple free functions to send and receive messages.
+
+* Allow the message object to be customized,
+
+[variablelist
+
+[[
+    "Some more advanced examples, e.g. including TLS with client/server
+    certificates would help.""
+][
+    The HTTP interface doesn't try to reinvent the wheel, it just uses
+    the `boost::asio::ip::tcp::socket` or `boost::asio::ssl::stream` that
+    you set up beforehand. Callers use the interfaces already existing
+    on those objects to make outgoing connections, accept incoming connections,
+    or establish TLS sessions with certificates. We find the available Asio
+    examples for performing these tasks sufficient.
+]]
+
+[[
+    "A built-in router?"
+][
+    We presume this means a facility to match expressions against the URI
+    in HTTP requests, and dispatch them to calling code. The authors feel
+    that this is a responsibility of higher level code. Beast.HTTP does
+    not try to offer a web server.
+]]
+
+[[
+    "Cookies? Forms/File Uploads?""
+][
+    Cookies, or managing these types of HTTP headers in general, is the
+    responsibility of higher levels. Beast.HTTP just tries to get complete
+    messages to and from the calling code. It deals in the HTTP headers just
+    enough to process the message body and leaves the rest to callers. However,
+    for forms and file uploads the symmetric interface of the message class
+    allows HTTP requests to include arbitrary body types including those needed
+    to upload a file or fill out a form.
+]]
+
+[[
+    "...supporting TLS (is this a feature? If not this would be a show-stopper),
+    etc.
+][
+    Beast.HTTP does not provide direct facilities for implementing TLS
+    connections; however, the interfaces already existing on the
+    `boost::asio::ssl::stream` are available and can be used to establish
+    secure connections. Then, functions like `http::read` or `http::async_write`
+    can work with those encrypted connections with no problem.
+]]
+
+[[
+    "There should also be more examples of how to integrate the http service
+    with getting files from the file system, generating responses CGI-style"
+][
+    The design goal for the library is to not try to invent a web server.
+    We feel that there is a strong need for a basic implementation that
+    models the HTTP message and provides functions to send and receive them
+    over Asio. Such an implementation should serve as a building block upon
+    which higher abstractions such as the aforementioned HTTP service or
+    cgi-gateway can be built.
+]]
+
+[[
+    "You should send a 100-continue to ask for the rest of the body if required."
+][
+    These behaviors are best left to the calling software. A future library
+    can build on Beast.HTTP to provide these behaviors.
+]]
+
+[[
+    "What about HTTP/2?""
+][
+    Many reviewers feel that HTTP/2 support is an essential feature of
+    a HTTP library. The authors agree that HTTP/2 is important but also
+    feel that the most sensible implementation is one that does not re-use
+    the same network reading and writing interface for 2 as that for 1.0
+    and 1.1.
+
+    The Beast.HTTP message model is suitable for HTTP/2 and can be re-used.
+    The IEFT HTTP Working Group adopted message compatiblity with HTTP/1.x
+    as an explicit goal. A parser can simply emit full headers after
+    decoding the compressed HTTP/2 headers. The stream ID is not logicaly
+    part of the message but rather message metadata and should be
+    communicated out-of-band (see below). HTTP/2 sessions begin with a
+    traditional HTTP/1.1 Upgrade similar in fashion to the WebSocket
+    upgrade. A HTTP/2 implementation can use existing Beast.HTTP primitives
+    to perform this handshake.
+
+    Free functions for HTTP/2 sessions are not possible because of the
+    requirement to maintain per-session state. For example, to decode the
+    compressed headers. Or to remember and respect the remote peer's window
+    settings. The authors propose that a HTTP/2 implementation be written
+    as a separate class template, similar to the `websocket::stream` but with
+    additional interfaces to support version 2 features. We feel that
+    Beast.HTTP offers enough useful functionality to justify inclusion,
+    so that developers can take advantage of it right away instead of
+    waiting.
+]]
+
+]
+
+
+[endsect]
+
+[section:websocket WebSocket]
+
+[variablelist
+[[
+    What about message compression?
+][
+    The feature is not currently present in the library, but the choice
+    of type requirements for buffers passed to the read functions have been
+    made with compression in mind. There is the plan to add this feature;
+    however, we feel that even without compression users can begin taking
+    advantage of the WebSocket protocol immediately with this library.
+]]
+
+[[
+    Where is the TLS/SSL interface?
+][
+    The `websocket::stream` just wraps the socket or stream that you
+    provide (for example, a `boost::asio::ip::tcp::socket` or a
+    `boost::asio::ssl::stream`). You establish your TLS connection
+    using the interface on `ssl::stream` like shown in all of the Asio
+    examples, they construct your `websocket::stream` around it.
+    It works perfectly fine - Beast.WebSocket doesn't try to reinvent the
+    wheel or put a fresh coat of interface paint on the `ssl::stream`.
+
+    The WebSocket implementation [*does] provides support for shutting down
+    the TLS connection through the use of the ADL compile-time virtual functions
+    [link beast.ref.wsproto__teardown `teardown`] and
+    [link beast.ref.wsproto__async_teardown `async_teardown`]. These will
+    properly close the connection as per rfc6455 and overloads are available
+    for TLS streams. Callers may provide their own overloads of these functions
+    for user-defined next layer types.
+]]
+]
+
+[endsect]
+
+
+
+
+
+
+
+[endsect]

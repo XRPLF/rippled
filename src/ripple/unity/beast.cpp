@@ -19,17 +19,9 @@
 
 #if ! BEAST_COMPILE_OBJECTIVE_CPP
 
-/*  This file includes all of the beast sources needed to link.
-    By including them here, we avoid having to muck with the SConstruct
-    Makefile, Project file, or whatever.
-*/
-
 // MUST come first!
 #include <BeastConfig.h>
-
-// Include this to get all the basic includes included, to prevent errors
 #include <ripple/beast/core/core.unity.cpp>
-
 #include <beast/unit_test/define_print.cpp>
 
 #endif

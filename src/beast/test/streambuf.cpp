@@ -67,7 +67,7 @@ public:
         std::integral_constant<bool, Move>;
     using propagate_on_container_swap =
         std::integral_constant<bool, Swap>;
-  
+
     template<class U>
     struct rebind
     {
@@ -122,7 +122,7 @@ public:
         ::operator delete(p);
     }
 
-    std::size_t 
+    std::size_t
     id() const
     {
         return id_;
@@ -273,11 +273,6 @@ public:
             expect(sb2.get_allocator().id() == 2);
             sb_type sb3(sb, alloc_type{});
             //expect(sb3.get_allocator().id() == 3);
-        }
-        {
-            using alloc_type =
-                test_allocator<char, false, false, false, false>;
-            using sb_type = basic_streambuf<alloc_type>;
         }
     }
 
