@@ -28,8 +28,9 @@
 #include <beast/threads/Stoppable.h>
 #include <beast/module/core/thread/Workers.h>
 #include <boost/function.hpp>
-#include <thread>
+#include <condition_variable>
 #include <set>
+#include <thread>
 
 namespace ripple {
 
@@ -92,12 +93,12 @@ public:
     // Cannot be const because LoadMonitor has no const methods.
     bool isOverloaded ();
 
-    /** Get the Job corresponding to a thread.  If no thread, use the current
-        thread. */
-    Job* getJobForThread(std::thread::id const& id = {}) const;
-
     // Cannot be const because LoadMonitor has no const methods.
     Json::Value getJson (int c = 0);
+
+    /** Block until no tasks running. */
+    void
+    rendezvous();
 
 private:
     using JobDataMap = std::map <JobType, JobTypeData>;
@@ -109,8 +110,6 @@ private:
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
 
-    std::map <std::thread::id, Job*> m_threadIds;
-
     // The number of jobs currently in processTask()
     int m_processCount;
 
@@ -121,6 +120,8 @@ private:
     beast::insight::Collector::ptr m_collector;
     beast::insight::Gauge job_count;
     beast::insight::Hook hook;
+
+    std::condition_variable cv_;
 
     static JobTypes const& getJobTypes()
     {
@@ -180,7 +181,7 @@ private:
     //
     // Invariants:
     //  <none>
-    void finishJob (Job const& job);
+    void finishJob (JobType type);
 
     template <class Rep, class Period>
     void on_dequeue (JobType type,

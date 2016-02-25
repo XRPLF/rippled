@@ -916,6 +916,7 @@ void NetworkOPsImp::transactionBatch()
 
 void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 {
+    std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     mTransactions.swap (transactions);
     assert (! transactions.empty());
@@ -989,7 +990,13 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 for (auto const& tx : m_ledgerMaster.pruneHeldTransactions(
                     txCur->getAccountID(sfAccount), txCur->getSequence() + 1))
                 {
-                    submitTransaction(tx);
+                    std::string reason;
+                    auto const trans = sterilize(*tx);
+                    auto t = std::make_shared<Transaction>(
+                        trans, reason, app_);
+                    submit_held.emplace_back(
+                        t, false, false, FailHard::no);
+                    t->setApplying();
                 }
             }
             else if (e.result == tefPAST_SEQ)
@@ -1065,6 +1072,15 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
 
     for (TransactionStatus& e : transactions)
         e.transaction->clearApplying();
+
+    if (! submit_held.empty())
+    {
+        if (mTransactions.empty())
+            mTransactions.swap(submit_held);
+        else
+            for (auto& e : submit_held)
+                mTransactions.push_back(std::move(e));
+    }
 
     mCond.notify_all();
 
@@ -1561,9 +1577,6 @@ void NetworkOPsImp::pubServer ()
         jvObj [jss::load_factor]   =
                 (mLastLoadFactor = app_.getFeeTrack ().getLoadFactor ());
 
-        std::string sObj = to_string (jvObj);
-
-
         for (auto i = mSubServer.begin (); i != mSubServer.end (); )
         {
             InfoSub::pointer p = i->second.lock ();
@@ -1573,7 +1586,7 @@ void NetworkOPsImp::pubServer ()
             //             sending of JSON data.
             if (p)
             {
-                p->send (jvObj, sObj, true);
+                p->send (jvObj, true);
                 ++i;
             }
             else
@@ -2302,8 +2315,6 @@ void NetworkOPsImp::pubValidatedTransaction (
         *alTx.getTxn (), alTx.getResult (), true, alAccepted);
     jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
-    std::string sObj = to_string (jvObj);
-
     {
         ScopedLockType sl (mSubLock);
 
@@ -2314,7 +2325,7 @@ void NetworkOPsImp::pubValidatedTransaction (
 
             if (p)
             {
-                p->send (jvObj, sObj, true);
+                p->send (jvObj, true);
                 ++it;
             }
             else
@@ -2329,7 +2340,7 @@ void NetworkOPsImp::pubValidatedTransaction (
 
             if (p)
             {
-                p->send (jvObj, sObj, true);
+                p->send (jvObj, true);
                 ++it;
             }
             else
@@ -2416,12 +2427,8 @@ void NetworkOPsImp::pubAccountTransaction (
         if (alTx.isApplied ())
             jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
-        std::string sObj = to_string (jvObj);
-
         for (InfoSub::ref isrListener : notify)
-        {
-            isrListener->send (jvObj, sObj, true);
-        }
+            isrListener->send (jvObj, true);
     }
 }
 
