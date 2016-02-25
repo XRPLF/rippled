@@ -17,35 +17,23 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
-#define BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
+#ifndef BEAST_WSPROTO_ERROR_IPP_H_INCLUDED
+#define BEAST_WSPROTO_ERROR_IPP_H_INCLUDED
 
-#include <boost/asio/buffer.hpp>
-#include <string>
+#include <beast/wsproto/detail/error.h>
 
 namespace beast {
-namespace debug {
+namespace wsproto {
 
-template<class Buffers>
-std::string
-buffers_to_string(Buffers const& bs)
+inline
+error_code
+make_error_code(error e)
 {
-    using boost::asio::buffer_cast;
-    using boost::asio::buffer_size;
-    std::string s;
-    s.reserve(buffer_size(bs));
-    for(auto const& b : bs)
-        s.append(buffer_cast<char const*>(b),
-            buffer_size(b));
-    for(auto i = s.size(); i-- > 0;)
-        if(s[i] == '\r')
-            s.replace(i, 1, "\\r");
-        else if(s[i] == '\n')
-            s.replace(i, 1, "\\n\n");
-    return s;
+    return error_code(
+        static_cast<int>(e), detail::get_error_category());
 }
 
-} // debug
+} // wsproto
 } // beast
 
 #endif

@@ -17,35 +17,37 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
-#define BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
+#include "wsproto_async_echo_peer.h"
+#include "wsproto_sync_echo_peer.h"
+#include <boost/asio.hpp>
+#include <condition_variable>
+#include <mutex>
 
-#include <boost/asio/buffer.hpp>
-#include <string>
-
-namespace beast {
-namespace debug {
-
-template<class Buffers>
-std::string
-buffers_to_string(Buffers const& bs)
+int main()
 {
-    using boost::asio::buffer_cast;
-    using boost::asio::buffer_size;
-    std::string s;
-    s.reserve(buffer_size(bs));
-    for(auto const& b : bs)
-        s.append(buffer_cast<char const*>(b),
-            buffer_size(b));
-    for(auto i = s.size(); i-- > 0;)
-        if(s[i] == '\r')
-            s.replace(i, 1, "\\r");
-        else if(s[i] == '\n')
-            s.replace(i, 1, "\\n\n");
-    return s;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using address_type = boost::asio::ip::address;
+
+    beast::wsproto::async_echo_peer s1(true, endpoint_type{
+        address_type::from_string("127.0.0.1"), 6000 }, 4);
+
+    beast::wsproto::sync_echo_peer s2(true, endpoint_type{
+        address_type::from_string("127.0.0.1"), 6001 });
+
+    boost::asio::io_service ios;
+    boost::asio::signal_set signals(
+        ios, SIGINT, SIGTERM);
+    std::mutex m;
+    bool stop = false;
+    std::condition_variable cv;
+    signals.async_wait(
+        [&](boost::system::error_code const& ec,
+            int signal_number)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            stop = true;
+            cv.notify_one();
+        });
+    std::unique_lock<std::mutex> lock(m);
+    cv.wait(lock, [&]{ return stop; });
 }
-
-} // debug
-} // beast
-
-#endif

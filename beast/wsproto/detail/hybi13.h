@@ -17,35 +17,50 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
-#define BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
+#ifndef BEAST_WSPROTO_HYBI13_H_INCLUDED
+#define BEAST_WSPROTO_HYBI13_H_INCLUDED
 
-#include <boost/asio/buffer.hpp>
+#include <beast/crypto/base64.h>
+#include <beast/crypto/sha.h>
+#include <boost/utility/string_ref.hpp>
+#include <cstdint>
 #include <string>
+#include <type_traits>
 
 namespace beast {
-namespace debug {
+namespace wsproto {
+namespace detail {
 
-template<class Buffers>
+template<class Gen>
 std::string
-buffers_to_string(Buffers const& bs)
+make_sec_ws_key(Gen& g)
 {
-    using boost::asio::buffer_cast;
-    using boost::asio::buffer_size;
-    std::string s;
-    s.reserve(buffer_size(bs));
-    for(auto const& b : bs)
-        s.append(buffer_cast<char const*>(b),
-            buffer_size(b));
-    for(auto i = s.size(); i-- > 0;)
-        if(s[i] == '\r')
-            s.replace(i, 1, "\\r");
-        else if(s[i] == '\n')
-            s.replace(i, 1, "\\n\n");
-    return s;
+    union U
+    {
+        std::array<std::uint32_t, 4> a4;
+        std::array<std::uint8_t, 16> a16;
+    };
+    U u;
+    for(int i = 0; i < 4; ++i)
+        u.a4[i] = g();
+    return base64_encode(u.a16.data(), u.a16.size());
 }
 
-} // debug
+template<class = void>
+std::string
+make_sec_ws_accept(boost::string_ref const& key)
+{
+    std::string s(key.data(), key.size());
+    s += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    beast::sha_hasher h;
+    h(s.data(), s.size());
+    auto const digest = static_cast<
+        beast::sha_hasher::result_type>(h);
+    return base64_encode(digest.data(), digest.size());
+}
+
+} // detail
+} // wsproto
 } // beast
 
 #endif

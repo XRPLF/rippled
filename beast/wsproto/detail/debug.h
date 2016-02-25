@@ -17,35 +17,72 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
-#define BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
+#ifndef BEAST_WSPROTO_DEBUG_H_INCLUDED
+#define BEAST_WSPROTO_DEBUG_H_INCLUDED
 
+#include <beast/unit_test/suite.h>
 #include <boost/asio/buffer.hpp>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 namespace beast {
-namespace debug {
+namespace wsproto {
+namespace detail {
+
+template<class = void>
+std::string
+to_hex(boost::asio::const_buffer b)
+{
+    using namespace boost::asio;
+    std::stringstream ss;
+    auto p = buffer_cast<std::uint8_t const*>(b);
+    auto n = buffer_size(b);
+    while(n--)
+    {
+        ss <<
+            std::setfill('0') <<
+            std::setw(2) <<
+            std::hex << int(*p++) << " ";
+    }
+    return ss.str();
+}
+
+template<class Buffers>
+std::string
+to_hex(Buffers const& bs)
+{
+    std::string s;
+    for(auto const& b : bs)
+        s.append(to_hex(boost::asio::const_buffer(b)));
+    return s;
+}
 
 template<class Buffers>
 std::string
 buffers_to_string(Buffers const& bs)
 {
-    using boost::asio::buffer_cast;
-    using boost::asio::buffer_size;
+    using namespace boost::asio;
     std::string s;
     s.reserve(buffer_size(bs));
     for(auto const& b : bs)
         s.append(buffer_cast<char const*>(b),
             buffer_size(b));
-    for(auto i = s.size(); i-- > 0;)
-        if(s[i] == '\r')
-            s.replace(i, 1, "\\r");
-        else if(s[i] == '\n')
-            s.replace(i, 1, "\\n\n");
     return s;
 }
 
-} // debug
+template<class = void>
+std::string
+format(std::string s)
+{
+    auto const w = 84;
+    for(int n = w*(s.size()/w); n>0; n-=w)
+        s.insert(n, 1, '\n');
+    return s;
+}
+
+} // detail
+} // wsproto
 } // beast
 
 #endif

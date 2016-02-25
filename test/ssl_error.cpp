@@ -17,35 +17,27 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
-#define BEAST_ASIO_BUFFERS_DEBUG_H_INLUDED
-
-#include <boost/asio/buffer.hpp>
+#include <beast/asio/ssl_error.h>
+#include <beast/unit_test/suite.h>
 #include <string>
 
 namespace beast {
-namespace debug {
 
-template<class Buffers>
-std::string
-buffers_to_string(Buffers const& bs)
+class ssl_error_test : public unit_test::suite
 {
-    using boost::asio::buffer_cast;
-    using boost::asio::buffer_size;
-    std::string s;
-    s.reserve(buffer_size(bs));
-    for(auto const& b : bs)
-        s.append(buffer_cast<char const*>(b),
-            buffer_size(b));
-    for(auto i = s.size(); i-- > 0;)
-        if(s[i] == '\r')
-            s.replace(i, 1, "\\r");
-        else if(s[i] == '\n')
-            s.replace(i, 1, "\\n\n");
-    return s;
-}
+public:
+    void run()
+    {
+        {
+            boost::system::error_code ec =
+                boost::system::error_code (335544539,
+                    boost::asio::error::get_ssl_category ());
+            std::string const s = beast::error_message_with_ssl(ec);
+            expect(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:short read");
+        }
+    }
+};
 
-} // debug
+BEAST_DEFINE_TESTSUITE(ssl_error,asio,beast);
+
 } // beast
-
-#endif
