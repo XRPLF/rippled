@@ -36,8 +36,17 @@ JobCoro::JobCoro(detail::JobCoro_create_t, JobQueue& jq, JobType type,
             yield_ = &do_yield;
             yield();
             fn(shared_from_this());
+#ifndef NDEBUG
+            finished_ = true;
+#endif
         }, boost::coroutines::attributes (1024 * 1024))
 {
+}
+
+inline
+JobCoro::~JobCoro()
+{
+    assert(finished_);
 }
 
 inline

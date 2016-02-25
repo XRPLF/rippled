@@ -39,6 +39,7 @@ struct JobCoro_create_t { };
 
 } // detail
 
+/** Coroutines must run to completion. */
 class JobCoro : public std::enable_shared_from_this<JobCoro>
 {
 private:
@@ -52,12 +53,21 @@ private:
     std::condition_variable cv_;
     boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
     boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
+#ifndef NDEBUG
+    bool finished_ = false;
+#endif
 
 public:
     // Private: Used in the implementation
     template <class F>
     JobCoro(detail::JobCoro_create_t, JobQueue&, JobType,
         std::string const&, F&&);
+
+    // Not copy-constructible or assignable
+    JobCoro(JobCoro const&) = delete;
+    JobCoro& operator= (JobCoro const&) = delete;
+
+    ~JobCoro();
 
     /** Suspend coroutine execution.
         Effects:
