@@ -29,6 +29,7 @@
 #include <ripple/test/jtx/sig.h>
 #include <ripple/test/jtx/utility.h>
 #include <ripple/test/JSONRPCClient.h>
+#include <ripple/test/WSClient.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -179,7 +180,8 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     thread = std::thread(
         [&](){ app->run(); });
 
-    client = makeJSONRPCClient(app->config());
+    //client = makeJSONRPCClient(app->config());
+    client = makeWS2Client(app->config());
 }
 
 Env::AppBundle::~AppBundle()
