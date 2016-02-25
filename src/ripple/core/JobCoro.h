@@ -53,6 +53,9 @@ private:
     std::condition_variable cv_;
     boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
     boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
+#ifndef NDEBUG
+    bool finished_ = false;
+#endif
 
 public:
     // Private: Used in the implementation
@@ -63,6 +66,8 @@ public:
     // Not copy-constructible or assignable
     JobCoro(JobCoro const&) = delete;
     JobCoro& operator= (JobCoro const&) = delete;
+
+    ~JobCoro();
 
     /** Suspend coroutine execution.
         Effects:
