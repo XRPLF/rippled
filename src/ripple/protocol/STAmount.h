@@ -382,16 +382,19 @@ multiply (STAmount const& v1, STAmount const& v2, Issue const& issue);
 class STAmountCalcSwitchovers
 {
     bool enableUnderflowFix_ {false};
+    bool enableUnderflowFix2_ {false};
   public:
     STAmountCalcSwitchovers () = delete;
     explicit
     STAmountCalcSwitchovers (NetClock::time_point parentCloseTime);
     explicit
     STAmountCalcSwitchovers (bool enableAll)
-        : enableUnderflowFix_ (enableAll) {}
+        : enableUnderflowFix_ (enableAll), enableUnderflowFix2_(enableAll) {}
     bool enableUnderflowFix () const;
+    bool enableUnderflowFix2 () const;
     // for tests
     static NetClock::time_point enableUnderflowFixCloseTime ();
+    static NetClock::time_point enableUnderflowFixCloseTime2 ();
 };
 
 // multiply, or divide rounding result in specified direction

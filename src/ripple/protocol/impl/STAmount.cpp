@@ -1207,10 +1207,20 @@ mulRound (STAmount const& v1, STAmount const& v2,
     STAmount result (issue, amount, offset, resultNegative);
     if (switchovers.enableUnderflowFix () && roundUp && !resultNegative && !result)
     {
-        // return the smallest value above zero
-        amount = STAmount::cMinValue;
-        offset = STAmount::cMinOffset;
-        return STAmount (issue, amount, offset, resultNegative);
+        if (isXRP(issue) && switchovers.enableUnderflowFix2 ())
+        {
+            // return the smallest value above zero
+            amount = 1;
+            offset = 0;
+            return STAmount(issue, amount, offset, resultNegative);
+        }
+        else
+        {
+            // return the smallest value above zero
+            amount = STAmount::cMinValue;
+            offset = STAmount::cMinOffset;
+            return STAmount(issue, amount, offset, resultNegative);
+        }
     }
     return result;
 }
@@ -1267,10 +1277,20 @@ divRound (STAmount const& num, STAmount const& den,
     STAmount result (issue, amount, offset, resultNegative);
     if (switchovers.enableUnderflowFix () && roundUp && !resultNegative && !result)
     {
-        // return the smallest value above zero
-        amount = STAmount::cMinValue;
-        offset = STAmount::cMinOffset;
-        return STAmount (issue, amount, offset, resultNegative);
+        if (isXRP(issue) && switchovers.enableUnderflowFix2 ())
+        {
+            // return the smallest value above zero
+            amount = 1;
+            offset = 0;
+            return STAmount(issue, amount, offset, resultNegative);
+        }
+        else
+        {
+            // return the smallest value above zero
+            amount = STAmount::cMinValue;
+            offset = STAmount::cMinOffset;
+            return STAmount(issue, amount, offset, resultNegative);
+        }
     }
     return result;
 }
@@ -1283,15 +1303,29 @@ STAmountCalcSwitchovers::enableUnderflowFixCloseTime ()
     return NetClock::time_point{504640800s};
 }
 
+NetClock::time_point
+STAmountCalcSwitchovers::enableUnderflowFixCloseTime2 ()
+{
+    using namespace std::chrono_literals;
+    // Fri Feb 26, 2016 9:00:00pm PST
+    return NetClock::time_point{509864400s};
+}
+
 STAmountCalcSwitchovers::STAmountCalcSwitchovers (NetClock::time_point parentCloseTime)
 {
     enableUnderflowFix_ = parentCloseTime > enableUnderflowFixCloseTime();
+    enableUnderflowFix2_ = parentCloseTime > enableUnderflowFixCloseTime2();
 }
 
 
 bool STAmountCalcSwitchovers::enableUnderflowFix () const
 {
     return enableUnderflowFix_;
+}
+
+bool STAmountCalcSwitchovers::enableUnderflowFix2 () const
+{
+    return enableUnderflowFix2_;
 }
 
 } // ripple
