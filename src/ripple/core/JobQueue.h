@@ -37,6 +37,14 @@ namespace ripple {
 class Logs;
 
 /** A pool of threads to perform work.
+
+    A job posted will always run to completion.
+    
+    Coroutines that are suspended must be resumed,
+    and run to completion.
+
+    When the JobQueue stops, it waits for all jobs
+    and coroutines to finish.
 */
 class JobQueue
     : public beast::Stoppable
@@ -139,6 +147,8 @@ private:
     void collect();
     JobTypeData& getJobTypeData (JobType type);
 
+    void onStop() override;
+
     // Signals the service stopped if the stopped condition is met.
     void checkStopped (std::lock_guard <std::mutex> const& lock);
 
@@ -210,18 +220,11 @@ private:
     //  <none>
     void processTask () override;
 
-    // Returns `true` if all jobs of this type should be skipped when
-    // the JobQueue receives a stop notification. If the job type isn't
-    // skipped, the Job will be called and the job must call Job::shouldCancel
-    // to determine if a long running or non-mandatory operation should be canceled.
-    bool skipOnStop (JobType type);
-
     // Returns the limit of running jobs for the given job type.
     // For jobs with no limit, we return the largest int. Hopefully that
     // will be enough.
     int getJobLimit (JobType type);
 
-    void onStop () override;
     void onChildrenStopped () override;
 };
 
