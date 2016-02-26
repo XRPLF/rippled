@@ -339,11 +339,13 @@ JobQueue::checkStopped (std::lock_guard <std::mutex> const& lock)
     //  2. All Stoppable children have stopped
     //  3. There are no executing calls to processTask
     //  4. There are no remaining Jobs in the job set
+    //  5. There are no suspended coroutines
     //
     if (isStopping() &&
         areChildrenStopped() &&
         (m_processCount == 0) &&
-        m_jobSet.empty())
+        m_jobSet.empty() &&
+        nSuspend_ == 0)
     {
         stopped();
     }
