@@ -103,6 +103,10 @@ public:
     // Cannot be const because LoadMonitor has no const methods.
     bool isOverloaded ();
 
+    /** Get the Job corresponding to a thread.  If no thread, use the current
+        thread. */
+    Job* getJobForThread(std::thread::id const& id = {}) const;
+
     // Cannot be const because LoadMonitor has no const methods.
     Json::Value getJson (int c = 0);
 
@@ -121,6 +125,8 @@ private:
     std::set <Job> m_jobSet;
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
+
+    std::map <std::thread::id, Job*> m_threadIds;
 
     // The number of jobs currently in processTask()
     int m_processCount;

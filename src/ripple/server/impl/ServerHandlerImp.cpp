@@ -237,6 +237,8 @@ ServerHandlerImp::processRequest (Port const& port,
         std::string forwardedFor, std::string user)
 {
     auto rpcJ = app_.journal ("RPC");
+    // Move off the webserver thread onto the JobQueue.
+    assert (app_.getJobQueue().getJobForThread());
 
     Json::Value jsonRPC;
     {
