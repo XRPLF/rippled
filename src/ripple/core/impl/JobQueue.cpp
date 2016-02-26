@@ -112,16 +112,6 @@ JobQueue::addJob (JobType type, std::string const& name,
             ! areChildrenStopped()));
     }
 
-    // Don't even add it to the queue if we're stopping
-    // and the job type is marked for skipOnStop.
-    //
-    if (isStopping() && skipOnStop (type))
-    {
-        JLOG(m_journal.debug) <<
-            "Skipping addJob ('" << name << "')";
-        return;
-    }
-
     {
         std::lock_guard <std::mutex> lock (m_mutex);
 
@@ -452,37 +442,23 @@ JobQueue::processTask ()
     JobType type;
 
     {
-        Job job;
-
+        Job::clock_type::time_point const start_time (
+            Job::clock_type::now());
         {
-            std::lock_guard <std::mutex> lock (m_mutex);
-            getNextJob (job);
-            ++m_processCount;
-        }
-
-        JobTypeData& data (getJobTypeData (job.getType ()));
-
-        // Skip the job if we are stopping and the
-        // skipOnStop flag is set for the job type
-        //
-        if (!isStopping() || !data.info.skip ())
-        {
+            Job job;
+            {
+                std::lock_guard <std::mutex> lock (m_mutex);
+                getNextJob (job);
+                ++m_processCount;
+            }
+            type = job.getType();
+            JobTypeData& data(getJobTypeData(type));
             beast::Thread::setCurrentThreadName (data.name ());
             JLOG(m_journal.trace) << "Doing " << data.name () << " job";
-
-            Job::clock_type::time_point const start_time (
-                Job::clock_type::now());
-
             on_dequeue (job.getType (), start_time - job.queue_time ());
             job.doJob ();
-            on_execute (job.getType (), Job::clock_type::now() - start_time);
         }
-        else
-        {
-            JLOG(m_journal.trace) << "Skipping processTask ('" << data.name () << "')";
-        }
-
-        type = job.getType();
+        on_execute(type, Job::clock_type::now() - start_time);
     }
 
     {
@@ -500,15 +476,6 @@ JobQueue::processTask ()
     // to the associated LoadEvent object (in the Job) may be destroyed.
 }
 
-bool
-JobQueue::skipOnStop (JobType type)
-{
-    JobTypeInfo const& j (getJobTypes ().get (type));
-    assert (j.type () != jtINVALID);
-
-    return j.skip ();
-}
-
 int
 JobQueue::getJobLimit (JobType type)
 {
@@ -516,59 +483,6 @@ JobQueue::getJobLimit (JobType type)
     assert (j.type () != jtINVALID);
 
     return j.limit ();
-}
-
-void
-JobQueue::onStop ()
-{
-    // VFALCO NOTE I wanted to remove all the jobs that are skippable
-    //             but then the Workers count of tasks to process
-    //             goes wrong.
-
-    /*
-    {
-        std::lock_guard <std::mutex> lock (m_mutex);
-
-        // Remove all jobs whose type is skipOnStop
-        using JobDataMap = hash_map <JobType, std::size_t>;
-        JobDataMap counts;
-        bool const report (m_journal.debug.active());
-
-        for (std::set <Job>::const_iterator iter (m_jobSet.begin());
-            iter != m_jobSet.end();)
-        {
-            if (skipOnStop (iter->getType()))
-            {
-                if (report)
-                {
-                    std::pair <JobDataMap::iterator, bool> result (
-                        counts.insert (std::make_pair (iter->getType(), 1)));
-                    if (! result.second)
-                        ++(result.first->second);
-                }
-
-                iter = m_jobSet.erase (iter);
-            }
-            else
-            {
-                ++iter;
-            }
-        }
-
-        if (report)
-        {
-            beast::Journal::ScopedStream s (m_journal.debug);
-
-            for (JobDataMap::const_iterator iter (counts.begin());
-                iter != counts.end(); ++iter)
-            {
-                s << std::endl <<
-                    "Removed " << iter->second <<
-                    " skiponStop jobs of type " << Job::toString (iter->first);
-            }
-        }
-    }
-    */
 }
 
 void
