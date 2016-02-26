@@ -34,144 +34,47 @@ public:
     using const_iterator = Map::const_iterator;
 
     JobTypes ()
-        : m_unknown (jtINVALID, "invalid", 0, true, true, 0, 0)
+        : m_unknown (jtINVALID, "invalid", 0, true, 0, 0)
     {
         int maxLimit = std::numeric_limits <int>::max ();
 
-        // Make a fetch pack for a peer
-        add (jtPACK,          "makeFetchPack",
-            1,        true,   false, 0,     0);
+add(    jtPACK,          "makeFetchPack",           1,        false, 0,     0);
+add(    jtPUBOLDLEDGER,  "publishAcqLedger",        2,        false, 10000, 15000);
+add(    jtVALIDATION_ut, "untrustedValidation",     maxLimit, false, 2000,  5000);
+add(    jtTRANSACTION_l, "localTransaction",        maxLimit, false, 100,   500);
+add(    jtLEDGER_REQ,    "ledgerRequest",           2,        false, 0,     0);
+add(    jtPROPOSAL_ut,   "untrustedProposal",       maxLimit, false, 500,   1250);
+add(    jtLEDGER_DATA,   "ledgerData",              2,        false, 0,     0);
+add(    jtCLIENT,        "clientCommand",           maxLimit, false, 2000,  5000);
+add(    jtRPC,           "RPC",                     maxLimit, false, 0,     0);
+add(    jtUPDATE_PF,     "updatePaths",             maxLimit, false, 0,     0);
+add(    jtTRANSACTION,   "transaction",             maxLimit, false, 250,   1000);
+add(    jtBATCH,         "batch",                   maxLimit, false, 250,   1000);
+add(    jtUNL,           "unl",                     1,        false, 0,     0);
+add(    jtADVANCE,       "advanceLedger",           maxLimit, false, 0,     0);
+add(    jtPUBLEDGER,     "publishNewLedger",        maxLimit, false, 3000,  4500);
+add(    jtTXN_DATA,      "fetchTxnData",            1,        false, 0,     0);
+add(    jtWAL,           "writeAhead",              maxLimit, false, 1000,  2500);
+add(    jtVALIDATION_t,  "trustedValidation",       maxLimit, false, 500,  1500);
+add(    jtWRITE,         "writeObjects",            maxLimit, false, 1750,  2500);
+add(    jtACCEPT,        "acceptLedger",            maxLimit, false, 0,     0);
+add(    jtPROPOSAL_t,    "trustedProposal",         maxLimit, false, 100,   500);
+add(    jtSWEEP,         "sweep",                   maxLimit, false, 0,     0);
+add(    jtNETOP_CLUSTER, "clusterReport",           1,        false, 9999,  9999);
+add(    jtNETOP_TIMER,   "heartbeat",               1,        false, 999,   999);
+add(    jtADMIN,         "administration",          maxLimit, false, 0,     0);
 
-        // An old ledger has been accepted
-        add (jtPUBOLDLEDGER,  "publishAcqLedger",
-            2,        true,   false, 10000, 15000);
-
-        // A validation from an untrusted source
-        add (jtVALIDATION_ut, "untrustedValidation",
-            maxLimit, true,   false, 2000,  5000);
-
-        // A local transaction
-        add (jtTRANSACTION_l, "localTransaction",
-            maxLimit, true,   false, 100,   500);
-
-        // A request for ledger/txnset data from another server
-        add (jtLEDGER_REQ,    "ledgerRequest",
-            2,        true,   false,    0,     0);
-
-        // A proposal from an untrusted source
-        add (jtPROPOSAL_ut,   "untrustedProposal",
-            maxLimit, true,   false, 500,   1250);
-
-        // Received data for a ledger we're acquiring
-        add (jtLEDGER_DATA,   "ledgerData",
-            2,        true,   false, 0,     0);
-
-        // A websocket command from the client
-        add (jtCLIENT,        "clientCommand",
-            maxLimit, true,   false, 2000,  5000);
-
-        // A websocket command from the client
-        add (jtRPC,           "RPC",
-            maxLimit, false,  false, 0,     0);
-
-        // Update pathfinding requests
-        add (jtUPDATE_PF,     "updatePaths",
-            maxLimit, true,   false, 0,     0);
-
-        // A transaction received from the network
-        add (jtTRANSACTION,   "transaction",
-            maxLimit, true,   false, 250,   1000);
-
-        // Apply batched transactions
-        add (jtBATCH,          "batch",
-            maxLimit, true,   false, 250,   1000);
-
-        // A Score or Fetch of the UNL (DEPRECATED)
-        add (jtUNL,           "unl",
-            1,        true,   false, 0,     0);
-
-        // Advance validated/acquired ledgers
-        add (jtADVANCE,       "advanceLedger",
-            maxLimit, true,   false, 0,     0);
-
-        // Publish a fully-accepted ledger
-        add (jtPUBLEDGER,     "publishNewLedger",
-            maxLimit, true,   false, 3000,  4500);
-
-        // Fetch a proposed set
-        add (jtTXN_DATA,      "fetchTxnData",
-            1,        true,   false, 0,     0);
-
-        // Write-ahead logging
-        add (jtWAL,           "writeAhead",
-            maxLimit, false,  false, 1000,  2500);
-
-        // A validation from a trusted source
-        add (jtVALIDATION_t,  "trustedValidation",
-            maxLimit, true,   false, 500,  1500);
-
-        // Write out hashed objects
-        add (jtWRITE,         "writeObjects",
-            maxLimit, false,  false, 1750,  2500);
-
-        // Accept a consensus ledger
-        add (jtACCEPT,        "acceptLedger",
-            maxLimit, false,  false, 0,     0);
-
-        // A proposal from a trusted source
-        add (jtPROPOSAL_t,    "trustedProposal",
-            maxLimit, false,  false, 100,   500);
-
-        // Sweep for stale structures
-        add (jtSWEEP,         "sweep",
-            maxLimit, true,   false, 0,     0);
-
-        // NetworkOPs cluster peer report
-        add (jtNETOP_CLUSTER, "clusterReport",
-            1,        true,   false, 9999,  9999);
-
-        // NetworkOPs net timer processing
-        add (jtNETOP_TIMER,   "heartbeat",
-            1,        true,   false, 999,   999);
-
-        // An administrative operation
-        add (jtADMIN,         "administration",
-            maxLimit, true,   false, 0,     0);
-
-        // The rest are special job types that are not dispatched
-        // by the job pool. The "limit" and "skip" attributes are
-        // not applicable to these types of jobs.
-
-        add (jtPEER,          "peerCommand",
-            0,        false,  true,  200,   2500);
-
-        add (jtDISK,          "diskAccess",
-            0,        false,  true,  500,   1000);
-
-        add (jtTXN_PROC,      "processTransaction",
-            0,        false,  true,  0,     0);
-
-        add (jtOB_SETUP,      "orderBookSetup",
-            0,        false,  true,  0,     0);
-
-        add (jtPATH_FIND,     "pathFind",
-            0,        false,  true,  0,     0);
-
-        add (jtHO_READ,       "nodeRead",
-            0,        false,  true,  0,     0);
-
-        add (jtHO_WRITE,      "nodeWrite",
-            0,        false,  true,  0,     0);
-
-        add (jtGENERIC,       "generic",
-            0,        false,  true,  0,     0);
-
-        add (jtNS_SYNC_READ,  "SyncReadNode",
-            0,        false,  true,  0,     0);
-        add (jtNS_ASYNC_READ, "AsyncReadNode",
-            0,        false,  true,  0,     0);
-        add (jtNS_WRITE,      "WriteNode",
-            0,        false,  true,  0,     0);
+add(    jtPEER,          "peerCommand",             0,        true,  200,   2500);
+add(    jtDISK,          "diskAccess",              0,        true,  500,   1000);
+add(    jtTXN_PROC,      "processTransaction",      0,        true,  0,     0);
+add(    jtOB_SETUP,      "orderBookSetup",          0,        true,  0,     0);
+add(    jtPATH_FIND,     "pathFind",                0,        true,  0,     0);
+add(    jtHO_READ,       "nodeRead",                0,        true,  0,     0);
+add(    jtHO_WRITE,      "nodeWrite",               0,        true,  0,     0);
+add(    jtGENERIC,       "generic",                 0,        true,  0,     0);
+add(    jtNS_SYNC_READ,  "SyncReadNode",            0,        true,  0,     0);
+add(    jtNS_ASYNC_READ, "AsyncReadNode",           0,        true,  0,     0);
+add(    jtNS_WRITE,      "WriteNode",               0,        true,  0,     0);
 
     }
 
@@ -213,14 +116,14 @@ public:
 
 private:
     void add(JobType jt, std::string name, int limit,
-        bool skip, bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
+        bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
     {
         assert (m_map.find (jt) == m_map.end ());
 
         std::pair<Map::iterator,bool> result (m_map.emplace (
             std::piecewise_construct,
             std::forward_as_tuple (jt),
-            std::forward_as_tuple (jt, name, limit, skip, special,
+            std::forward_as_tuple (jt, name, limit, special,
                 avgLatency, peakLatency)));
 
         assert (result.second == true);

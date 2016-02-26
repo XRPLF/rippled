@@ -33,9 +33,6 @@ private:
     /** The limit on the number of running jobs for this job type. */
     int const m_limit;
 
-    /** Can be skipped */
-    bool const m_skip;
-
     /** Special jobs are not dispatched via the job queue */
     bool const m_special;
 
@@ -48,11 +45,10 @@ public:
     JobTypeInfo () = delete;
 
     JobTypeInfo (JobType type, std::string name, int limit,
-            bool skip, bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
+            bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
         : m_type (type)
         , m_name (name)
         , m_limit (limit)
-        , m_skip (skip)
         , m_special (special)
         , m_avgLatency (avgLatency)
         , m_peakLatency (peakLatency)
@@ -73,11 +69,6 @@ public:
     int limit () const
     {
         return m_limit;
-    }
-
-    bool skip () const
-    {
-        return m_skip;
     }
 
     bool special () const
