@@ -90,14 +90,29 @@ const char* LedgerDBInit[] =
     );",
     "CREATE INDEX IF NOT EXISTS SeqLedger ON Ledgers(LedgerSeq);",
 
+    // InitialSeq field is the current ledger seq when the row
+    // is inserted. Only relevant during online delete
     "CREATE TABLE IF NOT EXISTS Validations   (                   \
+        LedgerSeq   BIGINT UNSIGNED,                \
+        InitialSeq  BIGINT UNSIGNED,                \
         LedgerHash  CHARACTER(64),                  \
         NodePubKey  CHARACTER(56),                  \
         SignTime    BIGINT UNSIGNED,                \
         RawData     BLOB                            \
     );",
+    // This will error out if the column already exists,
+    //  but DatabaseCon intentionally ignores errors.
+    "ALTER TABLE Validations                        \
+        ADD COLUMN LedgerSeq       BIGINT UNSIGNED;",
+    "ALTER TABLE Validations                        \
+        ADD COLUMN InitialSeq      BIGINT UNSIGNED;",
+
     "CREATE INDEX IF NOT EXISTS ValidationsByHash ON              \
         Validations(LedgerHash);",
+    "CREATE INDEX IF NOT EXISTS ValidationsBySeq ON              \
+        Validations(LedgerSeq);",
+    "CREATE INDEX IF NOT EXISTS ValidationsByInitialSeq ON              \
+        Validations(InitialSeq, LedgerSeq);",
     "CREATE INDEX IF NOT EXISTS ValidationsByTime ON              \
         Validations(SignTime);",
 

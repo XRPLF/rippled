@@ -57,7 +57,7 @@ private:
 
     public:
         Sink (std::string const& partition,
-            beast::Journal::Severity severity, Logs& logs);
+            beast::Journal::Severity thresh, Logs& logs);
 
         Sink (Sink const&) = delete;
         Sink& operator= (Sink const&) = delete;
@@ -149,12 +149,12 @@ private:
     std::map <std::string,
         std::unique_ptr<beast::Journal::Sink>,
             beast::ci_less> sinks_;
-    beast::Journal::Severity level_;
+    beast::Journal::Severity thresh_;
     File file_;
     bool silent_ = false;
 
 public:
-    Logs();
+    Logs(beast::Journal::Severity level);
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
@@ -174,10 +174,10 @@ public:
     journal (std::string const& name);
 
     beast::Journal::Severity
-    severity() const;
+    threshold() const;
 
     void
-    severity (beast::Journal::Severity level);
+    threshold (beast::Journal::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
     partition_severities() const;
@@ -261,35 +261,6 @@ debugJournal();
 */
 void
 setDebugJournalSink(beast::Journal::Sink& sink);
-
-//------------------------------------------------------------------------------
-// VFALCO DEPRECATED Temporary transition function until interfaces injected
-inline
-Logs&
-deprecatedLogs()
-{
-    static Logs logs;
-    return logs;
-}
-
-class LogSquelcher
-{
-public:
-    LogSquelcher()
-        : severity_(deprecatedLogs().severity())
-    {
-        deprecatedLogs().severity(
-            beast::Journal::Severity::kNone);
-    }
-
-    ~LogSquelcher()
-    {
-        deprecatedLogs().severity(severity_);
-    }
-
-private:
-    beast::Journal::Severity const severity_;
-};
 
 } // ripple
 

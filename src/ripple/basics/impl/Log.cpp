@@ -28,16 +28,19 @@
 namespace ripple {
 
 Logs::Sink::Sink (std::string const& partition,
-    beast::Journal::Severity severity, Logs& logs)
-    : logs_(logs)
+    beast::Journal::Severity thresh, Logs& logs)
+    : beast::Journal::Sink (thresh, false)
+    , logs_(logs)
     , partition_(partition)
 {
-    beast::Journal::Sink::severity (severity);
 }
 
 void
 Logs::Sink::write (beast::Journal::Severity level, std::string const& text)
 {
+    if (level < threshold())
+        return;
+
     logs_.write (level, partition_, text, console());
 }
 
@@ -108,8 +111,8 @@ void Logs::File::writeln (char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs()
-    : level_ (beast::Journal::kWarning) // default severity
+Logs::Logs(beast::Journal::Severity thresh)
+    : thresh_ (thresh) // default severity
 {
 }
 
@@ -124,7 +127,7 @@ Logs::get (std::string const& name)
 {
     std::lock_guard <std::mutex> lock (mutex_);
     auto const result =
-        sinks_.emplace(name, makeSink(name, level_));
+        sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
 
@@ -141,18 +144,18 @@ Logs::journal (std::string const& name)
 }
 
 beast::Journal::Severity
-Logs::severity() const
+Logs::threshold() const
 {
-    return level_;
+    return thresh_;
 }
 
 void
-Logs::severity (beast::Journal::Severity level)
+Logs::threshold (beast::Journal::Severity thresh)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    level_ = level;
+    thresh_ = thresh;
     for (auto& sink : sinks_)
-        sink.second->severity (level);
+        sink.second->threshold (thresh);
 }
 
 std::vector<std::pair<std::string, std::string>>
@@ -163,7 +166,7 @@ Logs::partition_severities() const
     list.reserve (sinks_.size());
     for (auto const& e : sinks_)
         list.push_back(std::make_pair(e.first,
-            toString(fromSeverity(e.second->severity()))));
+            toString(fromSeverity(e.second->threshold()))));
     return list;
 }
 
@@ -194,10 +197,10 @@ Logs::rotate()
 
 std::unique_ptr<beast::Journal::Sink>
 Logs::makeSink(std::string const& name,
-    beast::Journal::Severity startingLevel)
+    beast::Journal::Severity threshold)
 {
     return std::make_unique<Sink>(
-        name, startingLevel, *this);
+        name, threshold, *this);
 }
 
 LogSeverity

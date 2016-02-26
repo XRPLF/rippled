@@ -419,18 +419,19 @@ int run (int argc, char** argv)
         }
     }
 
+    // Construct the logs object at the configured severity
+    beast::Journal::Severity thresh = beast::Journal::kInfo;
+
+    if (vm.count ("quiet"))
+        thresh = beast::Journal::kFatal;
+    else if (vm.count ("verbose"))
+        thresh = beast::Journal::kTrace;
+
+    auto logs = std::make_unique<Logs>(thresh);
+
     // No arguments. Run server.
     if (!vm.count ("parameters"))
     {
-        auto logs = std::make_unique<Logs>();
-
-        if (vm.count ("quiet"))
-            logs->severity (beast::Journal::kFatal);
-        else if (vm.count ("verbose"))
-            logs->severity (beast::Journal::kTrace);
-        else
-            logs->severity (beast::Journal::kInfo);
-
         if (vm.count ("debug"))
             setDebugJournalSink (logs->get("Debug"));
 
@@ -450,7 +451,8 @@ int run (int argc, char** argv)
     setCallingThreadName ("rpc");
     return RPCCall::fromCommandLine (
         *config,
-        vm["parameters"].as<std::vector<std::string>>(), deprecatedLogs());
+        vm["parameters"].as<std::vector<std::string>>(),
+        *logs);
 }
 
 extern int run (int argc, char** argv);

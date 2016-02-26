@@ -92,10 +92,18 @@ class SuiteSink : public beast::Journal::Sink
 
 public:
     SuiteSink(std::string const& partition,
+            beast::Journal::Severity threshold,
             beast::unit_test::suite& suite)
-        : partition_(partition + " ")
+        : Sink (threshold, false)
+        , partition_(partition + " ")
         , suite_ (suite)
     {
+    }
+
+    // For unit testing, always generate logging text.
+    bool active(beast::Journal::Severity level) const override
+    {
+        return true;
     }
 
     void
@@ -113,7 +121,10 @@ public:
         default:
         case beast::Journal::kFatal:    s = "FTL:"; break;
         }
-        suite_.log << s << partition_ << text;
+
+        // Only write the string if the level at least equals the threshold.
+        if (level >= threshold())
+            suite_.log << s << partition_ << text;
     }
 };
 
@@ -124,7 +135,8 @@ class SuiteLogs : public Logs
 public:
     explicit
     SuiteLogs(beast::unit_test::suite& suite)
-        : suite_(suite)
+        : Logs (beast::Journal::kError)
+        , suite_(suite)
     {
     }
 
@@ -132,9 +144,9 @@ public:
 
     std::unique_ptr<beast::Journal::Sink>
     makeSink(std::string const& partition,
-        beast::Journal::Severity startingLevel) override
+        beast::Journal::Severity threshold) override
     {
-        return std::make_unique<SuiteSink>(partition, suite_);
+        return std::make_unique<SuiteSink>(partition, threshold, suite_);
     }
 };
 
@@ -153,14 +165,13 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     auto timeKeeper_ =
         std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
-    // Hack so we dont have to call Config::setup
+    // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(*config);
     owned = make_Application(std::move(config),
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().severity(beast::Journal::kError);
+    app->logs().threshold(beast::Journal::kError);
     app->setup();
-    app->logs().severity(beast::Journal::kError);
     timeKeeper->set(
         app->getLedgerMaster().getClosedLedger()->info().closeTime);
     app->doStart();
