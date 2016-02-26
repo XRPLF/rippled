@@ -80,6 +80,10 @@ void
 JobQueue::addJob (JobType type, std::string const& name,
     JobFunction const& func)
 {
+    if(isStopping() &&
+            getJobForThread(std::this_thread::get_id()) == nullptr)
+        LogicError("addJob while stopping");
+
     assert (type != jtINVALID);
 
     auto iter (m_jobData.find (type));
