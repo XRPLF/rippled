@@ -36,6 +36,8 @@ namespace ripple {
 
 class Logs;
 
+/** A pool of threads to perform work.
+*/
 class JobQueue
     : public beast::Stoppable
     , private beast::Workers::Callback
@@ -101,6 +103,8 @@ public:
     rendezvous();
 
 private:
+    friend class JobCoro;
+
     using JobDataMap = std::map <JobType, JobTypeData>;
 
     beast::Journal m_journal;
@@ -112,6 +116,9 @@ private:
 
     // The number of jobs currently in processTask()
     int m_processCount;
+
+    // The number of suspended coroutines
+    int nSuspend_ = 0;
 
     beast::Workers m_workers;
     Job::CancelCallback m_cancelCallback;
