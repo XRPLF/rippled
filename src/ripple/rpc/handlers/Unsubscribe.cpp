@@ -136,16 +136,14 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
         for (auto& jv: context.params[jss::books])
         {
-            if (!jv.isObject ()
-                    || !jv.isMember (jss::taker_pays)
-                    || !jv.isMember (jss::taker_gets)
-                    || !jv[jss::taker_pays].isObject ()
-                    || !jv[jss::taker_gets].isObject ())
-                return rpcError (rpcINVALID_PARAMS);
-
-            bool bBoth = (jv.isMember (jss::both) && jv[jss::both].asBool ()) ||
-                    (jv.isMember (jss::both_sides) && jv[jss::both_sides].asBool ());
-            // both_sides is deprecated.
+            if (! jv.isObject() ||
+                ! jv.isMember(jss::taker_pays) ||
+                ! jv.isMember(jss::taker_gets) ||
+                ! jv[jss::taker_pays].isObject() ||
+                ! jv[jss::taker_gets].isObject())
+            {
+                return rpcError(rpcINVALID_PARAMS);
+            }
 
             Json::Value taker_pays = jv[jss::taker_pays];
             Json::Value taker_gets = jv[jss::taker_gets];
@@ -206,8 +204,12 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
             context.netOps.unsubBook (ispSub->getSeq (), book);
 
-            if (bBoth)
-                context.netOps.unsubBook (ispSub->getSeq (), book);
+            // both_sides is deprecated.
+            if ((jv.isMember(jss::both) && jv[jss::both].asBool()) ||
+                (jv.isMember(jss::both_sides) && jv[jss::both_sides].asBool()))
+            {
+                context.netOps.unsubBook(ispSub->getSeq(), reversed(book));
+            }
         }
     }
 

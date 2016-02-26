@@ -77,12 +77,6 @@ Resource::Consumer& InfoSub::getConsumer()
     return m_consumer;
 }
 
-void InfoSub::send (
-    Json::Value const& jvObj, std::string const& sObj, bool broadcast)
-{
-    send (jvObj, broadcast);
-}
-
 std::uint64_t InfoSub::getSeq ()
 {
     return mSeq;

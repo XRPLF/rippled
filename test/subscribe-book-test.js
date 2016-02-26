@@ -650,4 +650,3 @@ suite("Subscribe book tests", function() {
   });
 
 });
-

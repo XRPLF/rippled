@@ -175,8 +175,9 @@ template <class WebSocket>
 void ConnectionImpl <WebSocket>::rcvMessage (
     message_ptr const& msg, bool& msgRejected, bool& runQueue)
 {
-    JLOG (j_.warning)
-            << "WebSocket: rcvMessage";
+    JLOG(j_.debug) <<
+        "WebSocket: received " << msg->get_payload();
+
     ScopedLockType sl (m_receiveQueueMutex);
 
     if (m_isDead)
@@ -354,10 +355,9 @@ void ConnectionImpl <WebSocket>::preDestroy ()
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
 {
-    JLOG (j_.warning)
-            << "WebSocket: sending '" << to_string (jvObj);
+    JLOG (j_.debug) <<
+        "WebSocket: sending " << to_string (jvObj);
     connection_ptr ptr = m_connection.lock ();
-
     if (ptr)
         m_handler.send (ptr, jvObj, broadcast);
 }
@@ -365,8 +365,8 @@ void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::disconnect ()
 {
-    JLOG (j_.warning)
-            << "WebSocket: disconnecting";
+    JLOG (j_.debug) <<
+        "WebSocket: disconnecting";
     connection_ptr ptr = m_connection.lock ();
 
     if (ptr)
