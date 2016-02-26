@@ -114,8 +114,13 @@ void Stoppable::stopAsyncRecursive (Journal j)
     onStop ();
     auto const ms = duration_cast<milliseconds>(
         high_resolution_clock::now() - start).count();
+
+#ifdef NDEBUG
     if (ms >= 10)
         j.fatal << m_name << "::onStop took " << ms << "ms";
+#else
+    (void)ms;
+#endif
 
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
