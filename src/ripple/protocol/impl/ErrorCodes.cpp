@@ -121,6 +121,7 @@ public:
     ErrorInfo const& get (error_code_i code) const
     {
         Map::const_iterator const iter (m_map.find (code));
+        assert (iter != m_map.end());
         if (iter != m_map.end())
             return iter->second;
         return m_unknown;
