@@ -187,13 +187,13 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapNodeID const& id,
 {
     std::shared_ptr<SHAMapAbstractNode> node;
     Blob nodeData;
-    if (filter->haveNode (id, hash, nodeData))
+    if (filter->haveNode (hash, nodeData))
     {
         node = SHAMapAbstractNode::make(
             nodeData, 0, snfPREFIX, hash, true, f_.journal ());
         if (node)
         {
-            filter->gotNode (true, id, hash, nodeData, node->getType ());
+            filter->gotNode (true, hash, nodeData, node->getType ());
             if (backed_)
                 canonicalize (hash, node);
         }
