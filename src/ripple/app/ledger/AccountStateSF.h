@@ -39,13 +39,11 @@ public:
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
-                  SHAMapNodeID const& id,
                   SHAMapHash const& nodeHash,
-                  Blob& nodeData,
+                  Blob&& nodeData,
                   SHAMapTreeNode::TNType) const override;
 
-    bool haveNode (SHAMapNodeID const& id,
-                   SHAMapHash const& nodeHash,
+    bool haveNode (SHAMapHash const& nodeHash,
                    Blob& nodeData) const override;
 };
 

@@ -187,7 +187,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
                     {
                         SHAMapNodeID childID = nodeID.getChildNodeID (branch);
                         bool pending = false;
-                        auto d = descendAsync (node, branch, childID, filter, pending);
+                        auto d = descendAsync (node, branch, filter, pending);
 
                         if (!d)
                         {
@@ -268,7 +268,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             auto const& nodeID = std::get<2>(node);
             auto const& nodeHash = parent->getChildHash (branch);
 
-            auto nodePtr = fetchNodeNT(nodeID, nodeHash, filter);
+            auto nodePtr = fetchNodeNT(nodeHash, filter);
             if (nodePtr)
             {
                 ++hits;
@@ -446,8 +446,8 @@ SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode,
     {
         Serializer s;
         root_->addRaw (s, snfPREFIX);
-        filter->gotNode (false, SHAMapNodeID{}, root_->getNodeHash (),
-                         s.modData (), root_->getType ());
+        filter->gotNode (false, root_->getNodeHash (),
+                         std::move(s.modData ()), root_->getType ());
     }
 
     return SHAMapAddNode::useful ();
@@ -528,8 +528,8 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
             {
                 Serializer s;
                 newNode->addRaw (s, snfPREFIX);
-                filter->gotNode (false, node, childHash,
-                                 s.modData (), newNode->getType ());
+                filter->gotNode (false, childHash,
+                                 std::move(s.modData ()), newNode->getType ());
             }
 
             return SHAMapAddNode::useful ();

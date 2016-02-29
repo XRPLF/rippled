@@ -229,12 +229,11 @@ private:
     std::shared_ptr<SHAMapAbstractNode> fetchNodeFromDB (SHAMapHash const& hash) const;
     std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (SHAMapHash const& hash) const;
     std::shared_ptr<SHAMapAbstractNode> fetchNodeNT (
-        SHAMapNodeID const& id,
         SHAMapHash const& hash,
         SHAMapSyncFilter *filter) const;
     std::shared_ptr<SHAMapAbstractNode> fetchNode (SHAMapHash const& hash) const;
     std::shared_ptr<SHAMapAbstractNode> checkFilter(SHAMapHash const& hash,
-        SHAMapNodeID const& id, SHAMapSyncFilter* filter) const;
+        SHAMapSyncFilter* filter) const;
 
     /** Update hashes up to the root */
     void dirtyUp (SharedPtrNodeStack& stack,
@@ -275,7 +274,7 @@ private:
 
     // Descend with filter
     SHAMapAbstractNode* descendAsync (SHAMapInnerNode* parent, int branch,
-        SHAMapNodeID const& childID, SHAMapSyncFilter* filter, bool& pending) const;
+        SHAMapSyncFilter* filter, bool& pending) const;
 
     std::pair <SHAMapAbstractNode*, SHAMapNodeID>
         descend (SHAMapInnerNode* parent, SHAMapNodeID const& parentID,

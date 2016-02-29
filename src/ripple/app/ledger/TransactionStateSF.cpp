@@ -35,9 +35,8 @@ TransactionStateSF::TransactionStateSF(Application& app)
 
 // VFALCO This might be better as Blob&&
 void TransactionStateSF::gotNode (bool fromFilter,
-                                  SHAMapNodeID const& id,
                                   SHAMapHash const& nodeHash,
-                                  Blob& nodeData,
+                                  Blob&& nodeData,
                                   SHAMapTreeNode::TNType type) const
 {
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
@@ -50,8 +49,7 @@ void TransactionStateSF::gotNode (bool fromFilter,
             std::move (nodeData), nodeHash.as_uint256());
 }
 
-bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
-                                   SHAMapHash const& nodeHash,
+bool TransactionStateSF::haveNode (SHAMapHash const& nodeHash,
                                    Blob& nodeData) const
 {
     return app_.getLedgerMaster ().getFetchPack (nodeHash.as_uint256(), nodeData);

@@ -34,9 +34,8 @@ AccountStateSF::AccountStateSF(Application& app)
 }
 
 void AccountStateSF::gotNode (bool fromFilter,
-                              SHAMapNodeID const& id,
                               SHAMapHash const& nodeHash,
-                              Blob& nodeData,
+                              Blob&& nodeData,
                               SHAMapTreeNode::TNType) const
 {
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
@@ -46,8 +45,7 @@ void AccountStateSF::gotNode (bool fromFilter,
         hotACCOUNT_NODE, std::move (nodeData), nodeHash.as_uint256());
 }
 
-bool AccountStateSF::haveNode (SHAMapNodeID const& id,
-                               SHAMapHash const& nodeHash,
+bool AccountStateSF::haveNode (SHAMapHash const& nodeHash,
                                Blob& nodeData) const
 {
     return app_.getLedgerMaster ().getFetchPack (nodeHash.as_uint256(), nodeData);
