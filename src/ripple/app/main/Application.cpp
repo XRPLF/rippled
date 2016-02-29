@@ -958,8 +958,8 @@ void ApplicationImp::setup()
         if (!logs_->open(debug_log))
             std::cerr << "Can't open log file " << debug_log << '\n';
 
-        if (logs_->severity() > beast::Journal::kDebug)
-            logs_->severity (beast::Journal::kDebug);
+        if (logs_->threshold() > beast::Journal::kDebug)
+            logs_->threshold (beast::Journal::kDebug);
     }
 
     logs_->silent (config_->SILENT);

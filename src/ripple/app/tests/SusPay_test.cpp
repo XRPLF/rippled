@@ -249,6 +249,7 @@ struct SusPay_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
         using S = seconds;
+        testcase("c1");
         {
             Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
@@ -275,6 +276,7 @@ struct SusPay_test : public beast::unit_test::suite
             env(cancel("bob", "carol", 1),                                  ter(tecNO_TARGET));
             env.close();
         }
+        testcase("c2");
         {
             Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
@@ -292,6 +294,7 @@ struct SusPay_test : public beast::unit_test::suite
             // SLE removed on cancel
             expect(! env.le(keylet::susPay(Account("alice").id(), seq)));
         }
+        testcase("c3");
         {
             Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
@@ -311,6 +314,7 @@ struct SusPay_test : public beast::unit_test::suite
             expect((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("carol", XRP(5000)));
         }
+        testcase("c4");
         {
             Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
@@ -323,6 +327,7 @@ struct SusPay_test : public beast::unit_test::suite
             auto const cx = cond("bad");
             env(finish("bob", "alice", seq, cx.first, cx.second),           ter(tecNO_PERMISSION));
         }
+        testcase("c5");
         {
             Env env(*this, features(featureSusPay));
             auto T = [&env](NetClock::duration const& d)
@@ -354,6 +359,14 @@ struct SusPay_test : public beast::unit_test::suite
         expect((*m)[sfTransactionResult] == tesSUCCESS);
     }
 
+    void
+    testJobQ()
+    {
+        using namespace jtx;
+        Env env(*this);
+        env.close();
+    }
+
     void run() override
     {
         testEnablement();
@@ -362,6 +375,7 @@ struct SusPay_test : public beast::unit_test::suite
         testLockup();
         testCondPay();
         testMeta();
+        testJobQ();
     }
 };
 

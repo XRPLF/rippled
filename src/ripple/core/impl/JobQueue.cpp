@@ -80,6 +80,10 @@ void
 JobQueue::addJob (JobType type, std::string const& name,
     JobFunction const& func)
 {
+    if(isStopping() &&
+            getJobForThread(std::this_thread::get_id()) == nullptr)
+        LogicError("addJob while stopping");
+
     assert (type != jtINVALID);
 
     auto iter (m_jobData.find (type));
@@ -110,16 +114,6 @@ JobQueue::addJob (JobType type, std::string const& name,
             m_processCount>0 ||
             ! m_jobSet.empty () ||
             ! areChildrenStopped()));
-    }
-
-    // Don't even add it to the queue if we're stopping
-    // and the job type is marked for skipOnStop.
-    //
-    if (isStopping() && skipOnStop (type))
-    {
-        JLOG(m_journal.debug) <<
-            "Skipping addJob ('" << name << "')";
-        return;
     }
 
     {
@@ -305,6 +299,17 @@ JobQueue::getJson (int c)
     return ret;
 }
 
+void
+JobQueue::rendezvous()
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    cv_.wait(lock, [&]
+    {
+        return m_processCount == 0 &&
+            m_jobSet.empty();
+    });
+}
+
 Job*
 JobQueue::getJobForThread (std::thread::id const& id) const
 {
@@ -338,11 +343,13 @@ JobQueue::checkStopped (std::lock_guard <std::mutex> const& lock)
     //  2. All Stoppable children have stopped
     //  3. There are no executing calls to processTask
     //  4. There are no remaining Jobs in the job set
+    //  5. There are no suspended coroutines
     //
     if (isStopping() &&
         areChildrenStopped() &&
         (m_processCount == 0) &&
-        m_jobSet.empty())
+        m_jobSet.empty() &&
+        nSuspend_ == 0)
     {
         stopped();
     }
@@ -407,14 +414,11 @@ JobQueue::getNextJob (Job& job)
 }
 
 void
-JobQueue::finishJob (Job const& job)
+JobQueue::finishJob (JobType type)
 {
-    JobType const type = job.getType ();
+    assert(type != jtINVALID);
 
-    assert (m_jobSet.find (job) == m_jobSet.end ());
-    assert (type != jtINVALID);
-
-    JobTypeData& data (getJobTypeData (type));
+    JobTypeData& data = getJobTypeData (type);
 
     // Queue a deferred task if possible
     if (data.deferred > 0)
@@ -455,54 +459,41 @@ void JobQueue::on_execute (JobType type,
 void
 JobQueue::processTask ()
 {
-    Job job;
+    JobType type;
 
     {
-        std::lock_guard <std::mutex> lock (m_mutex);
-        getNextJob (job);
-        ++m_processCount;
-    }
-
-    JobTypeData& data (getJobTypeData (job.getType ()));
-
-    // Skip the job if we are stopping and the
-    // skipOnStop flag is set for the job type
-    //
-    if (!isStopping() || !data.info.skip ())
-    {
-        beast::Thread::setCurrentThreadName (data.name ());
-        JLOG(m_journal.trace) << "Doing " << data.name () << " job";
-
         Job::clock_type::time_point const start_time (
             Job::clock_type::now());
-
-        on_dequeue (job.getType (), start_time - job.queue_time ());
-        job.doJob ();
-        on_execute (job.getType (), Job::clock_type::now() - start_time);
-    }
-    else
-    {
-        JLOG(m_journal.trace) << "Skipping processTask ('" << data.name () << "')";
+        {
+            Job job;
+            {
+                std::lock_guard <std::mutex> lock (m_mutex);
+                getNextJob (job);
+                ++m_processCount;
+            }
+            type = job.getType();
+            JobTypeData& data(getJobTypeData(type));
+            beast::Thread::setCurrentThreadName (data.name ());
+            JLOG(m_journal.trace) << "Doing " << data.name () << " job";
+            on_dequeue (job.getType (), start_time - job.queue_time ());
+            job.doJob ();
+        }
+        on_execute(type, Job::clock_type::now() - start_time);
     }
 
     {
         std::lock_guard <std::mutex> lock (m_mutex);
-        finishJob (job);
-        --m_processCount;
+        // Job should be destroyed before calling checkStopped
+        // otherwise destructors with side effects can access
+        // parent objects that are already destroyed.
+        finishJob (type);
+        if(--m_processCount == 0 && m_jobSet.empty())
+            cv_.notify_all();
         checkStopped (lock);
     }
 
     // Note that when Job::~Job is called, the last reference
     // to the associated LoadEvent object (in the Job) may be destroyed.
-}
-
-bool
-JobQueue::skipOnStop (JobType type)
-{
-    JobTypeInfo const& j (getJobTypes ().get (type));
-    assert (j.type () != jtINVALID);
-
-    return j.skip ();
 }
 
 int
@@ -512,59 +503,6 @@ JobQueue::getJobLimit (JobType type)
     assert (j.type () != jtINVALID);
 
     return j.limit ();
-}
-
-void
-JobQueue::onStop ()
-{
-    // VFALCO NOTE I wanted to remove all the jobs that are skippable
-    //             but then the Workers count of tasks to process
-    //             goes wrong.
-
-    /*
-    {
-        std::lock_guard <std::mutex> lock (m_mutex);
-
-        // Remove all jobs whose type is skipOnStop
-        using JobDataMap = hash_map <JobType, std::size_t>;
-        JobDataMap counts;
-        bool const report (m_journal.debug.active());
-
-        for (std::set <Job>::const_iterator iter (m_jobSet.begin());
-            iter != m_jobSet.end();)
-        {
-            if (skipOnStop (iter->getType()))
-            {
-                if (report)
-                {
-                    std::pair <JobDataMap::iterator, bool> result (
-                        counts.insert (std::make_pair (iter->getType(), 1)));
-                    if (! result.second)
-                        ++(result.first->second);
-                }
-
-                iter = m_jobSet.erase (iter);
-            }
-            else
-            {
-                ++iter;
-            }
-        }
-
-        if (report)
-        {
-            beast::Journal::ScopedStream s (m_journal.debug);
-
-            for (JobDataMap::const_iterator iter (counts.begin());
-                iter != counts.end(); ++iter)
-            {
-                s << std::endl <<
-                    "Removed " << iter->second <<
-                    " skiponStop jobs of type " << Job::toString (iter->first);
-            }
-        }
-    }
-    */
 }
 
 void
