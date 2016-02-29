@@ -62,7 +62,7 @@ public:
 
         void gotNode (bool fromFilter,
             SHAMapHash const& nodeHash,
-                Blob& nodeData, SHAMapTreeNode::TNType type) const override
+                Blob&& nodeData, SHAMapTreeNode::TNType type) const override
         {
         }
 

@@ -35,7 +35,7 @@ AccountStateSF::AccountStateSF(Application& app)
 
 void AccountStateSF::gotNode (bool fromFilter,
                               SHAMapHash const& nodeHash,
-                              Blob& nodeData,
+                              Blob&& nodeData,
                               SHAMapTreeNode::TNType) const
 {
     // VFALCO SHAMapSync filters should be passed the SHAMap, the

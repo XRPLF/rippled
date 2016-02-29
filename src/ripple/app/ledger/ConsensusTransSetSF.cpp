@@ -40,7 +40,7 @@ ConsensusTransSetSF::ConsensusTransSetSF (Application& app, NodeCache& nodeCache
 
 void ConsensusTransSetSF::gotNode (
     bool fromFilter, SHAMapHash const& nodeHash,
-    Blob& nodeData, SHAMapTreeNode::TNType type) const
+    Blob&& nodeData, SHAMapTreeNode::TNType type) const
 {
     if (fromFilter)
         return;

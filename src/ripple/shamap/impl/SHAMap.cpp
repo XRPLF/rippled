@@ -193,7 +193,8 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapNodeID const& id,
             nodeData, 0, snfPREFIX, hash, true, f_.journal ());
         if (node)
         {
-            filter->gotNode (true, hash, nodeData, node->getType ());
+            filter->gotNode (true, hash,
+                std::move(nodeData), node->getType ());
             if (backed_)
                 canonicalize (hash, node);
         }

@@ -447,7 +447,7 @@ SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode,
         Serializer s;
         root_->addRaw (s, snfPREFIX);
         filter->gotNode (false, root_->getNodeHash (),
-                         s.modData (), root_->getType ());
+                         std::move(s.modData ()), root_->getType ());
     }
 
     return SHAMapAddNode::useful ();
@@ -529,7 +529,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                 Serializer s;
                 newNode->addRaw (s, snfPREFIX);
                 filter->gotNode (false, childHash,
-                                 s.modData (), newNode->getType ());
+                                 std::move(s.modData ()), newNode->getType ());
             }
 
             return SHAMapAddNode::useful ();

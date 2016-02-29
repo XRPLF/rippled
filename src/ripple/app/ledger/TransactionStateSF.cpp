@@ -36,7 +36,7 @@ TransactionStateSF::TransactionStateSF(Application& app)
 // VFALCO This might be better as Blob&&
 void TransactionStateSF::gotNode (bool fromFilter,
                                   SHAMapHash const& nodeHash,
-                                  Blob& nodeData,
+                                  Blob&& nodeData,
                                   SHAMapTreeNode::TNType type) const
 {
     // VFALCO SHAMapSync filters should be passed the SHAMap, the
