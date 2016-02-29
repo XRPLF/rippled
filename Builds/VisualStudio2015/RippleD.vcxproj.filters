@@ -3780,6 +3780,12 @@
     <ClInclude Include="..\..\src\ripple\server\impl\BaseHTTPPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BasePeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BaseWSPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
       <Filter>ripple\server\impl</Filter>
     </ClCompile>
@@ -3796,6 +3802,9 @@
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\PlainHTTPPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainWSPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
@@ -3850,6 +3859,9 @@
       <Filter>ripple\server\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\WSSession.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\Family.h">

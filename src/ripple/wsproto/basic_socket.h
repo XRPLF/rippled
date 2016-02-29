@@ -21,6 +21,7 @@
 #define RIPPLE_WSPROTO_BASIC_SOCKET_H_INCLUDED
 
 #include <BeastConfig.h>
+#include <beast/asio/streambuf.h>
 #include <beast/http/parser.h>
 #include <beast/is_call_possible.h>
 #include <boost/asio.hpp>
@@ -259,6 +260,8 @@ public:
     }
 };
 
+//------------------------------------------------------------------------------
+
 // read a frame header
 template<class Stream, class Handler>
 class read_fh_op
@@ -302,8 +305,6 @@ public:
         std::size_t bytes_transferred)
     {
         using namespace boost::asio;
-        if(ec == error::operation_aborted)
-            return;
         if(! ec)
         {
             if(d_->state == 0)
@@ -332,16 +333,14 @@ public:
 
     friend
     auto asio_handler_deallocate(
-        void* p, std::size_t size,
-            read_fh_op* op)
+        void* p, std::size_t size, read_fh_op* op)
     {
         return boost_asio_handler_alloc_helpers::
             deallocate(p, size, op->d_->h);
     }
 
     friend
-    auto asio_handler_is_continuation(
-        read_fh_op* op)
+    auto asio_handler_is_continuation(read_fh_op* op)
     {
         return (op->d_->state != 0) ? true :
             boost_asio_handler_cont_helpers::
@@ -350,13 +349,14 @@ public:
 
     template <class Function>
     friend
-    auto asio_handler_invoke(
-        Function&& f, read_fh_op* op)
+    auto asio_handler_invoke(Function&& f, read_fh_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
     }
 };
+
+//------------------------------------------------------------------------------
 
 // read a frame body
 template<class Stream,
@@ -372,12 +372,13 @@ struct read_op
         MutableBuffers b;
         Handler h;
 
+        template<class DeducedBuffers, class DeducedHandler>
         data(Stream& s_, frame_header const& fh_,
-                MutableBuffers const& b_, Handler&& h_)
+                DeducedBuffers&& b_, DeducedHandler&& h_)
             : s(s_)
             , fh(fh_)
-            , b(b_)
-            , h(std::forward<Handler>(h_))
+            , b(std::forward<DeducedBuffers>(b_))
+            , h(std::forward<DeducedHandler>(h_))
         {
         }
     };
@@ -388,10 +389,10 @@ public:
     read_op(read_op&&) = default;
     read_op(read_op const&) = default;
 
-    read_op(Stream& s, frame_header const& fh,
-            MutableBuffers const& b, Handler&& h)
-        : d_(std::make_shared<data>(s, fh, b,
-            std::forward<Handler>(h)))
+    template<class... Args>
+    read_op(Args&&... args)
+        : d_(std::make_shared<data>(
+            std::forward<Args>(args)...))
     {
         using namespace boost::asio;
         async_read(d_->s, d_->b,
@@ -402,12 +403,13 @@ public:
         std::size_t bytes_transferred)
     {
         using namespace boost::asio;
-        if(ec == error::operation_aborted)
-            return;
-        if(d_->fh.mask)
+        if(! ec)
         {
-            // apply mask key
-            // adjust d_->fh.offset
+            if(d_->fh.mask)
+            {
+                // apply mask key
+                // adjust d_->fh.offset
+            }
         }
         return d_->s.get_io_service().wrap(
             std::move(d_->h))(ec, std::move(d_->fh),
@@ -419,21 +421,19 @@ public:
         std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
-                allocate(size, op->d_->h);
+            allocate(size, op->d_->h);
     }
 
     friend
     auto asio_handler_deallocate(
-        void* p, std::size_t size,
-            read_op* op)
+        void* p, std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
             deallocate(p, size, op->d_->h);
     }
 
     friend
-    auto asio_handler_is_continuation(
-        read_op* op)
+    auto asio_handler_is_continuation(read_op* op)
     {
         return boost_asio_handler_cont_helpers::
             is_continuation(op->d_->h);
@@ -441,13 +441,99 @@ public:
 
     template <class Function>
     friend
-    auto asio_handler_invoke(
-        Function&& f, read_op* op)
+    auto asio_handler_invoke(Function&& f, read_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
     }
 };
+
+//------------------------------------------------------------------------------
+
+// write a frame
+template<class Stream, class Handler>
+struct write_op
+{
+    using error_code = boost::system::error_code;
+
+    struct data
+    {
+        Stream& s;
+        frame_header fh;
+        Handler h;
+        beast::asio::streambuf sb;
+
+        template<class ConstBuffers, class DeducedHandler>
+        data(Stream& s_, frame_header const& fh_,
+                ConstBuffers const& b, DeducedHandler&& h_)
+            : s(s_)
+            , fh(fh_)
+            , h(std::forward<DeducedHandler>(h_))
+        {
+            write_frame(sb, b);
+        }
+    };
+
+    std::shared_ptr<data> d_;
+
+public:
+    write_op(write_op&&) = default;
+    write_op(write_op const&) = default;
+
+    template<class...Args>
+    write_op(Args&&... args)
+        : d_(std::make_shared<data>(
+            std::forward<Args>(args)...))
+    {
+        using namespace boost::asio;
+        async_write(d_->s, d_->sb.data(),
+            std::move(*this));
+    }
+
+    void operator()(error_code const& ec,
+        std::size_t bytes_transferred)
+    {
+        using namespace boost::asio;
+        if(! ec)
+        {
+        }
+        return d_->s.get_io_service().wrap(
+            std::move(d_->h))(ec, std::move(d_->fh));
+    }
+
+    friend
+    auto asio_handler_allocate(
+        std::size_t size, write_op* op)
+    {
+        return boost_asio_handler_alloc_helpers::
+            allocate(size, op->d_->h);
+    }
+
+    friend
+    auto asio_handler_deallocate(
+        void* p, std::size_t size, write_op* op)
+    {
+        return boost_asio_handler_alloc_helpers::
+            deallocate(p, size, op->d_->h);
+    }
+
+    friend
+    auto asio_handler_is_continuation(write_op* op)
+    {
+        return boost_asio_handler_cont_helpers::
+            is_continuation(op->d_->h);
+    }
+
+    template <class Function>
+    friend
+    auto asio_handler_invoke(Function&& f, write_op* op)
+    {
+        return boost_asio_handler_invoke_helpers::
+            invoke(f, op->d_->h);
+    }
+};
+
+//------------------------------------------------------------------------------
 
 } // detail
 
@@ -571,8 +657,9 @@ public:
         static_assert(beast::is_call_possible<Handler,
             void(error_code)>::value,
                 "Type does not meet the handler requirements");
-        detail::read_fh_op<Stream, Handler>{
-            s_, fh, std::forward<Handler>(h)};
+        detail::read_fh_op<Stream,
+            std::remove_cv_t<Handler>>{
+                s_, fh, std::forward<Handler>(h)};
     }
 
     // read a frame body asynchronously
@@ -580,13 +667,38 @@ public:
     template<class MutableBuffers, class Handler>
     void
     async_read(frame_header const& fh,
-        MutableBuffers const& b, Handler&& h)
+        MutableBuffers&& b, Handler&& h)
     {
         static_assert(beast::is_call_possible<Handler,
             void(error_code)>::value,
                 "Type does not meet the handler requirements");
-        detail::read_op<Stream, MutableBuffers, Handler>{
-            s_, fh, b, std::forward<Handler>(h)};
+        detail::read_op<Stream,
+            std::remove_cv_t<MutableBuffers>,
+                std::remove_cv_t<Handler>>{s_, fh,
+                    std::forward<MutableBuffers>(b),
+                        std::forward<Handler>(h)};
+    }
+
+    // write a frame asynchronously
+    template<class ConstBuffers, class Handler>
+    void
+    async_write(bool fin, ConstBuffers const& b, Handler&& h)
+    {
+        static_assert(beast::is_call_possible<Handler,
+            void(error_code)>::value,
+                "Type does not meet the handler requirements");
+        frame_header fh;
+        fh.op = 1;
+        fh.fin = fin;
+        fh.mask = false;
+        fh.rsv1 = 0;
+        fh.rsv2 = 0;
+        fh.rsv3 = 0;
+        fh.len = boost::asio::buffer_size(b);
+        //fh.key =
+        detail::write_op<Stream,
+            std::remove_cv_t<Handler>>{s_, fh, b,
+                std::forward<Handler>(h)};
     }
 };
 
