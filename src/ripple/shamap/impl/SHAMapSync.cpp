@@ -187,7 +187,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
                     {
                         SHAMapNodeID childID = nodeID.getChildNodeID (branch);
                         bool pending = false;
-                        auto d = descendAsync (node, branch, childID, filter, pending);
+                        auto d = descendAsync (node, branch, filter, pending);
 
                         if (!d)
                         {
@@ -268,7 +268,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             auto const& nodeID = std::get<2>(node);
             auto const& nodeHash = parent->getChildHash (branch);
 
-            auto nodePtr = fetchNodeNT(nodeID, nodeHash, filter);
+            auto nodePtr = fetchNodeNT(nodeHash, filter);
             if (nodePtr)
             {
                 ++hits;

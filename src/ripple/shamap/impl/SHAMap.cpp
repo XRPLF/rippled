@@ -182,7 +182,7 @@ SHAMap::fetchNodeFromDB (SHAMapHash const& hash) const
 
 // See if a sync filter has a node
 std::shared_ptr<SHAMapAbstractNode>
-SHAMap::checkFilter(SHAMapHash const& hash, SHAMapNodeID const& id,
+SHAMap::checkFilter(SHAMapHash const& hash,
                     SHAMapSyncFilter* filter) const
 {
     std::shared_ptr<SHAMapAbstractNode> node;
@@ -205,7 +205,6 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapNodeID const& id,
 // Get a node without throwing
 // Used on maps where missing nodes are expected
 std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT(
-    SHAMapNodeID const& id,
     SHAMapHash const& hash,
     SHAMapSyncFilter* filter) const
 {
@@ -224,7 +223,7 @@ std::shared_ptr<SHAMapAbstractNode> SHAMap::fetchNodeNT(
     }
 
     if (filter)
-        node = checkFilter (hash, id, filter);
+        node = checkFilter (hash, filter);
 
     return node;
 }
@@ -325,7 +324,7 @@ SHAMap::descend (SHAMapInnerNode * parent, SHAMapNodeID const& parentID,
 
     if (!child)
     {
-        std::shared_ptr<SHAMapAbstractNode> childNode = fetchNodeNT (childID, childHash, filter);
+        std::shared_ptr<SHAMapAbstractNode> childNode = fetchNodeNT (childHash, filter);
 
         if (childNode)
         {
@@ -339,7 +338,7 @@ SHAMap::descend (SHAMapInnerNode * parent, SHAMapNodeID const& parentID,
 
 SHAMapAbstractNode*
 SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
-    SHAMapNodeID const& childID, SHAMapSyncFilter * filter, bool & pending) const
+    SHAMapSyncFilter * filter, bool & pending) const
 {
     pending = false;
 
@@ -353,7 +352,7 @@ SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
     if (!ptr)
     {
         if (filter)
-            ptr = checkFilter (hash, childID, filter);
+            ptr = checkFilter (hash, filter);
 
         if (!ptr && backed_)
         {
@@ -838,7 +837,7 @@ bool SHAMap::fetchRoot (SHAMapHash const& hash, SHAMapSyncFilter* filter)
         }
     }
 
-    auto newRoot = fetchNodeNT (SHAMapNodeID(), hash, filter);
+    auto newRoot = fetchNodeNT (hash, filter);
 
     if (newRoot)
     {
