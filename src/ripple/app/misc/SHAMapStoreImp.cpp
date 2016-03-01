@@ -29,6 +29,7 @@
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 #include <memory>
+#include <chrono>
 
 namespace ripple {
 void SHAMapStoreImp::SavedStateDB::init (BasicConfig const& config,
@@ -179,21 +180,24 @@ SHAMapStoreImp::SHAMapStoreImp (
     , scheduler_ (scheduler)
     , journal_ (journal)
     , nodeStoreJournal_ (nodeStoreJournal)
+    , rotating_(false)
     , transactionMaster_ (transactionMaster)
     , canDelete_ (std::numeric_limits <LedgerIndex>::max())
 {
     if (setup_.deleteInterval)
     {
-        if (setup_.deleteInterval < minimumDeletionInterval_)
+        auto const minInterval = setup.standalone ?
+            minimumDeletionIntervalSA_ : minimumDeletionInterval_;
+        if (setup_.deleteInterval < minInterval)
         {
             Throw<std::runtime_error> ("online_delete must be at least " +
-                std::to_string (minimumDeletionInterval_));
+                std::to_string (minInterval));
         }
 
         if (setup_.ledgerHistory > setup_.deleteInterval)
         {
             Throw<std::runtime_error> (
-                "online_delete must be less than ledger_history (currently " +
+                "online_delete must not be less than ledger_history (currently " +
                 std::to_string (setup_.ledgerHistory) + ")");
         }
 
@@ -282,7 +286,8 @@ SHAMapStoreImp::run()
     while (1)
     {
         healthy_ = true;
-        validatedLedger_.reset();
+        Ledger::pointer validatedLedger;
+        rotating_ = false;
 
         {
             std::unique_lock <std::mutex> lock (mutex_);
@@ -293,12 +298,15 @@ SHAMapStoreImp::run()
             }
             cond_.wait (lock);
             if (newLedger_)
-                validatedLedger_ = std::move (newLedger_);
+            {
+                rotating_ = true;
+                validatedLedger = std::move(newLedger_);
+            }
             else
                 continue;
         }
 
-        LedgerIndex validatedSeq = validatedLedger_->info().seq;
+        LedgerIndex validatedSeq = validatedLedger->info().seq;
         if (!lastRotated)
         {
             lastRotated = validatedSeq;
@@ -339,7 +347,7 @@ SHAMapStoreImp::run()
             }
 
             std::uint64_t nodeCount = 0;
-            validatedLedger_->stateMap().snapShot (
+            validatedLedger->stateMap().snapShot (
                     false)->visitNodes (
                     std::bind (&SHAMapStoreImp::copyNode, this,
                     std::ref(nodeCount), std::placeholders::_1));
@@ -503,7 +511,7 @@ SHAMapStoreImp::makeDatabaseRotating (std::string const& name,
             readThreads, writableBackend, archiveBackend, nodeStoreJournal_);
 }
 
-void
+bool
 SHAMapStoreImp::clearSql (DatabaseCon& database,
         LedgerIndex lastRotated,
         std::string const& minQuery,
@@ -516,12 +524,12 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
         boost::optional<std::uint64_t> m;
         *db << minQuery, soci::into(m);
         if (!m)
-            return;
+            return false;
         min = *m;
     }
 
-    if (health() != Health::ok)
-        return;
+    if(min > lastRotated || health() != Health::ok)
+        return false;
 
     boost::format formattedDeleteQuery (deleteQuery);
 
@@ -529,19 +537,19 @@ SHAMapStoreImp::clearSql (DatabaseCon& database,
         "start: " << deleteQuery << " from " << min << " to " << lastRotated;
     while (min < lastRotated)
     {
-        min = (min + setup_.deleteBatch >= lastRotated) ? lastRotated :
-            min + setup_.deleteBatch;
+        min = std::min(lastRotated, min + setup_.deleteBatch);
         {
             auto db =  database.checkoutDb ();
             *db << boost::str (formattedDeleteQuery % min);
         }
         if (health())
-            return;
+            return true;
         if (min < lastRotated)
             std::this_thread::sleep_for (
                     std::chrono::milliseconds (setup_.backOff));
     }
     JLOG(journal_.debug) << "finished: " << deleteQuery;
+    return true;
 }
 
 void
@@ -565,31 +573,128 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
 {
-    ledgerMaster_->clearPriorLedgers (lastRotated);
     if (health())
         return;
 
-    // TODO This won't remove validations for ledgers that do not get
-    // validated. That will likely require inserting LedgerSeq into
-    // the validations table.
-    //
-    // This query has poor performance with large data sets.
-    // The schema needs to be redesigned to avoid the JOIN, or an
-    // RDBMS that supports concurrency should be used.
-    /*
-    clearSql (*ledgerDb_, lastRotated,
-        "SELECT MIN(LedgerSeq) FROM Ledgers;",
-        "DELETE FROM Validations WHERE LedgerHash IN "
-        "(SELECT Ledgers.LedgerHash FROM Validations JOIN Ledgers ON "
-        "Validations.LedgerHash=Ledgers.LedgerHash WHERE Ledgers.LedgerSeq < %u);");
-     */
-
+    ledgerMaster_->clearPriorLedgers (lastRotated);
     if (health())
         return;
 
     clearSql (*ledgerDb_, lastRotated,
         "SELECT MIN(LedgerSeq) FROM Ledgers;",
         "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
+    if (health())
+        return;
+
+    {
+        /*
+            Steps for migration:
+            Assume: online_delete = 100, lastRotated = 1000,
+                Last shutdown was at ledger # 1080.
+                The current network validated ledger is 1090.
+            Implies: Ledgers has entries from 900 to 1080.
+                Validations has entries for all 1080 ledgers,
+                including orphan validations that were not included
+                in a validated ledger.
+            1) Columns are created in Validations with default NULL values.
+            2) During syncing, Ledgers and Validations for 1080 - 1090
+               are received from the network. Records are created in
+               Validations with InitialSeq approximately 1080 (exact value
+               doesn't matter), and later validated with the matching
+               LedgerSeq value.
+            3) rippled participates in ledgers 1091-1100. Validations
+                received are created with InitialSeq in that range, and
+                appropriate LedgerSeqs. Maybe some of those ledgers are
+                not accepted, so LedgerSeq stays null.
+            4) At ledger 1100, this function is called with
+                lastRotated = 1000. The first query tries to delete
+                rows WHERE LedgerSeq < 1000. It finds none.
+            5) The second round of deletions does not run.
+            6) Ledgers continue to advance from 1100-1200 as described
+                in step 3.
+            7) At ledger 1200, this function is called again with
+                lastRotated = 1100. The first query again tries to delete
+                rows WHERE LedgerSeq < 1100. It finds the rows for 1080-1099.
+            8) The second round of deletions runs. It gets
+                WHERE v.LedgerSeq is NULL AND
+                (v.InitialSeq IS NULL OR v.InitialSeq < 1100)
+                The rows that are found include (a) ALL of the Validations
+                for the first 1080 ledgers. (b) Any orphan validations that
+                were created in step 3.
+            9) This continues. The next rotation cycle does the same as steps
+                7 & 8, except that none of the original Validations (8a) exist
+                anymore, and 8b gets the orphans from step 6.
+        */
+
+        static auto anyValDeleted = false;
+        auto const valDeleted = clearSql(*ledgerDb_, lastRotated,
+            "SELECT MIN(LedgerSeq) FROM Validations;",
+            "DELETE FROM Validations WHERE LedgerSeq < %u;");
+        anyValDeleted |= valDeleted;
+
+        if (health())
+            return;
+
+        if (anyValDeleted)
+        {
+            /* Delete the old NULL LedgerSeqs - the Validations that
+               aren't linked to a validated ledger - but only if we
+               deleted rows in the matching `clearSql` call, and only
+               for those created with an old InitialSeq.
+            */
+            using namespace std::chrono;
+            auto const deleteBatch = setup_.deleteBatch;
+            auto const continueLimit = (deleteBatch + 1) / 2;
+
+            std::string const deleteQuery(
+                R"sql(DELETE FROM Validations
+                WHERE LedgerHash IN
+                (
+                    SELECT v.LedgerHash
+                    FROM Validations v
+                    WHERE v.LedgerSeq is NULL AND
+                        (v.InitialSeq IS NULL OR v.InitialSeq < )sql" +
+                    std::to_string(lastRotated) +
+                    ") LIMIT " +
+                    std::to_string (deleteBatch) +
+                ");");
+
+            JLOG(journal_.debug) << "start: " << deleteQuery << " of "
+                << deleteBatch << " rows.";
+            long long totalRowsAffected = 0;
+            long long rowsAffected;
+            soci::statement st = [&]
+            {
+                auto db = ledgerDb_->checkoutDb();
+                return (db->prepare << deleteQuery);
+            }();
+            if (health())
+                return;
+            do
+            {
+                {
+                    auto db = ledgerDb_->checkoutDb();
+                    auto const start = high_resolution_clock::now();
+                    st.execute(true);
+                    rowsAffected = st.get_affected_rows();
+                    totalRowsAffected += rowsAffected;
+                    auto const ms = duration_cast<milliseconds>(
+                        high_resolution_clock::now() - start).count();
+                    JLOG(journal_.trace) << "step: deleted " << rowsAffected
+                        << " rows in " << ms << "ms.";
+                }
+                if (health())
+                    return;
+                if (rowsAffected >= continueLimit)
+                    std::this_thread::sleep_for(
+                        std::chrono::milliseconds(setup_.backOff));
+            }
+            while (rowsAffected && rowsAffected >= continueLimit);
+            JLOG(journal_.debug) << "finished: " << deleteQuery << ". Deleted "
+                << totalRowsAffected << " rows.";
+        }
+    }
+
     if (health())
         return;
 
@@ -673,6 +778,8 @@ SHAMapStore::Setup
 setup_SHAMapStore (Config const& c)
 {
     SHAMapStore::Setup setup;
+
+    setup.standalone = c.RUN_STANDALONE;
 
     // Get existing settings and add some default values if not specified:
     setup.nodeDatabase = c.section (ConfigSection::nodeDatabase ());
