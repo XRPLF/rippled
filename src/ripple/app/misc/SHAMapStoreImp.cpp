@@ -655,8 +655,7 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
                     WHERE v.LedgerSeq is NULL AND
                         (v.InitialSeq IS NULL OR v.InitialSeq < )sql" +
                     std::to_string(lastRotated) +
-                    R"sql()
-                    LIMIT )sql" +
+                    ") LIMIT " +
                     std::to_string (deleteBatch) +
                 ");");
 

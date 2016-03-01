@@ -1067,14 +1067,15 @@ static bool saveValidatedLedger (
 
     {
         static std::string addLedger(
-            "INSERT OR REPLACE INTO Ledgers "
-            "(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,"
-            "CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash) VALUES "
-            "(:ledgerHash,:ledgerSeq,:prevHash,:totalCoins,:closingTime,:prevClosingTime,"
-            ":closeTimeRes,:closeFlags,:accountSetHash,:transSetHash);");
+            R"sql(INSERT OR REPLACE INTO Ledgers
+                (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
+                CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
+            VALUES
+                (:ledgerHash,:ledgerSeq,:prevHash,:totalCoins,:closingTime,:prevClosingTime,
+                :closeTimeRes,:closeFlags,:accountSetHash,:transSetHash);)sql");
         static std::string updateVal(
-            "UPDATE Validations SET LedgerSeq = :ledgerSeq, InitialSeq = :initialSeq "
-            "WHERE LedgerHash = :ledgerHash;");
+            R"sql(UPDATE Validations SET LedgerSeq = :ledgerSeq, InitialSeq = :initialSeq
+                WHERE LedgerHash = :ledgerHash;)sql");
 
         auto db (app.getLedgerDB ().checkoutDb ());
 
@@ -1089,6 +1090,7 @@ static bool saveValidatedLedger (
             ledger->info().parentCloseTime.time_since_epoch().count();
         auto const closeTimeResolution =
             ledger->info().closeTimeResolution.count();
+        auto const closeFlags = ledger->info().closeFlags;
         auto const accountHash = to_string (ledger->info().accountHash);
         auto const txHash = to_string (ledger->info().txHash);
 
@@ -1100,7 +1102,7 @@ static bool saveValidatedLedger (
             soci::use(closeTime),
             soci::use(parentCloseTime),
             soci::use(closeTimeResolution),
-            soci::use(ledger->info().closeFlags),
+            soci::use(closeFlags),
             soci::use(accountHash),
             soci::use(txHash);
 
