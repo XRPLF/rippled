@@ -71,6 +71,11 @@ struct is_call_possible_udt2
     int operator()(int) const;
 };
 
+struct is_call_possible_udt3
+{
+    int operator()(int);
+};
+
 static_assert(is_call_possible<
     is_call_possible_udt1, void(int)>::value, "");
 
@@ -86,6 +91,11 @@ static_assert(! is_call_possible<
 static_assert(! is_call_possible<
     is_call_possible_udt2, void(void)>::value, "");
 
+static_assert(is_call_possible<
+    is_call_possible_udt3, int(int)>::value, "");
+
+static_assert(! is_call_possible<
+    is_call_possible_udt3 const, int(int)>::value, "");
 }
 
 }
