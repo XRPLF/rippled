@@ -33,6 +33,10 @@ private:
     friend class BasePeer<PlainWSPeer>;
     friend class BaseWSPeer<PlainWSPeer>;
 
+    using clock_type = std::chrono::system_clock;
+    using error_code = boost::system::error_code;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
     using socket_type = boost::asio::ip::tcp::socket;
 
     wsproto::basic_socket<socket_type> ws_;

@@ -38,6 +38,11 @@ class BaseWSPeer
 private:
     friend class BasePeer<Impl>;
 
+    using clock_type = std::chrono::system_clock;
+    using error_code = boost::system::error_code;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
+
     beast::asio::streambuf rb_;
     beast::asio::streambuf wb_;
     wsproto::frame_header fh_;

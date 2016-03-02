@@ -29,6 +29,10 @@
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 #include <boost/optional.hpp>
+#include <boost/version.hpp>
+#if defined(BOOST_VERSION) && BOOST_VERSION >= 105800
+#include <boost/endian/conversion.hpp>
+#endif
 #include <array>
 #include <chrono>
 #include <memory>
@@ -39,66 +43,81 @@
 
 //------------------------------------------------------------------------------
 
-#if 0//BOOST_VERSION >= 105800
+#ifndef BOOST_ENDIAN_CONVERSION_HPP
 
-#include <boost/endian/arithmetic.hpp>
-template <class Int>
-Int native_to_big(Int n);
-{
-    return boost::endian::native_to_big<Int>(n);
-}
+namespace boost {
+namespace endian {
 
-template <class Int>
-Int big_to_native(Int b)
-{
-    return boost::endian::big_to_native<Int>(b);
-}
+template<class EndianReversible>
+EndianReversible native_to_big(EndianReversible n) noexcept;
 
-#else
-
-template <class Int>
-Int native_to_big(Int n);
-
-template <class Int>
-Int big_to_native(Int b);
+template<class EndianReversible>
+EndianReversible big_to_native(EndianReversible b) noexcept;
 
 template<>
 inline
 std::uint16_t
-native_to_big<std::uint16_t>(std::uint16_t n)
+native_to_big<std::uint16_t>(std::uint16_t n) noexcept
 {
-    std::uint8_t* p =
-        reinterpret_cast<std::uint8_t*>(&n);
-    std::swap(p[0], p[1]);
-    return n;
-}
-
-template<>
-inline
-std::uint64_t
-native_to_big<std::uint64_t>(std::uint64_t n)
-{
-    return 0;
-}
-
-template<>
-inline
-std::uint16_t
-big_to_native<uint16_t>(std::uint16_t b)
-{
+    std::uint16_t b;
     std::uint8_t* p =
         reinterpret_cast<std::uint8_t*>(&b);
-    std::swap(p[0], p[1]);
+    p[0] = (n & 0xff00) >> 8;
+    p[1] =  n & 0x00ff;
     return b;
 }
 
 template<>
 inline
 std::uint64_t
-big_to_native<uint64_t>(std::uint64_t b)
+native_to_big<std::uint64_t>(std::uint64_t n) noexcept
 {
-    return 0;
+    std::uint64_t b;
+    std::uint8_t* p =
+        reinterpret_cast<std::uint8_t*>(&b);
+    p[0] = (n & 0xff00000000000000) >> 56;
+    p[1] = (n & 0x00ff000000000000) >> 48;
+    p[2] = (n & 0x0000ff0000000000) >> 40;
+    p[3] = (n & 0x000000ff00000000) >> 32;
+    p[4] = (n & 0x00000000ff000000) >> 24;
+    p[5] = (n & 0x0000000000ff0000) >> 16;
+    p[6] = (n & 0x000000000000ff00) >>  8;
+    p[7] = (n & 0x00000000000000ff);
+    return b;
 }
+
+template<>
+inline
+std::uint16_t
+big_to_native<std::uint16_t>(std::uint16_t b) noexcept
+{
+    std::uint8_t* p =
+        reinterpret_cast<std::uint8_t*>(&b);
+    return
+        (std::uint16_t(p[0]) << 8) +
+         std::uint16_t(p[1]);
+}
+
+template<>
+inline
+std::uint64_t
+big_to_native<std::uint64_t>(std::uint64_t b) noexcept
+{
+    std::uint8_t* p =
+        reinterpret_cast<std::uint8_t*>(&b);
+    return
+        (std::uint64_t(p[0]) << 56) +
+        (std::uint64_t(p[1]) << 48) +
+        (std::uint64_t(p[2]) << 40) +
+        (std::uint64_t(p[3]) << 32) +
+        (std::uint64_t(p[4]) << 24) +
+        (std::uint64_t(p[5]) << 16) +
+        (std::uint64_t(p[6]) <<  8) +
+         std::uint64_t(p[7]);
+}
+
+} // endian
+} // boost
 
 #endif
 
@@ -200,6 +219,7 @@ write_frame(StreamBuf& sb, ConstBuffers const& cb)
     b[0] = (fin ? 0x80 : 0x00) | op;
     b[1] = mask ? 0x80 : 0x00;
     auto const len = buffer_size(cb);
+    using namespace boost::endian;
     if (len <= 125)
     {
         b[1] |= len;
@@ -532,8 +552,6 @@ public:
             invoke(f, op->d_->h);
     }
 };
-
-//------------------------------------------------------------------------------
 
 } // detail
 
