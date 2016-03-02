@@ -47,6 +47,9 @@ public:
     void
     run();
 
+    void
+    websocketUpgrade() override;
+
 private:
     void
     do_handshake (yield_context yield);
@@ -84,6 +87,11 @@ SSLHTTPPeer::run()
 
     boost::asio::spawn (strand_, std::bind (&SSLHTTPPeer::do_handshake,
         shared_from_this(), std::placeholders::_1));
+}
+
+void
+SSLHTTPPeer::websocketUpgrade()
+{
 }
 
 void

@@ -135,6 +135,11 @@ public:
     virtual
     void
     close (bool graceful) = 0;
+
+    /** Convert the connection to WebSocket. */
+    virtual
+    void
+    websocketUpgrade() = 0;
 };
 
 }  // ripple

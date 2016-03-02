@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,49 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_WRITER_H_INCLUDED
-#define RIPPLE_SERVER_WRITER_H_INCLUDED
+#ifndef RIPPLE_TEST_WSCLIENT_H_INCLUDED
+#define RIPPLE_TEST_WSCLIENT_H_INCLUDED
 
-#include <boost/asio/buffer.hpp>
-#include <functional>
-#include <vector>
+#include <ripple/test/AbstractClient.h>
+#include <ripple/core/Config.h>
+#include <boost/optional.hpp>
+#include <chrono>
+#include <memory>
 
 namespace ripple {
+namespace test {
 
-class Writer
+class WSClient : public AbstractClient
 {
 public:
-    virtual ~Writer() = default;
-
-    /** Returns `true` if there is no more data to pull. */
+    /** Retrieve a message. */
     virtual
-    bool
-    complete() = 0;
-
-    /** Removes bytes from the input sequence.
-
-        Can be called with 0.
-    */
-    virtual
-    void
-    consume (std::size_t bytes) = 0;
-
-    /** Add data to the input sequence.
-        @param bytes A hint to the number of bytes desired.
-        @param resume A functor to later resume execution.
-        @return `true` if the writer is ready to provide more data.
-    */
-    virtual
-    bool
-    prepare (std::size_t bytes,
-        std::function<void(void)> resume) = 0;
-
-    /** Returns a ConstBufferSequence representing the input sequence. */
-    virtual
-    std::vector<boost::asio::const_buffer>
-    data() = 0;
+    boost::optional<Json::Value>
+    getMsg(std::chrono::milliseconds const& timeout =
+        std::chrono::milliseconds{0}) = 0;
 };
 
+/** Returns a client operating through WebSockets/S. */
+std::unique_ptr<WSClient>
+makeWSClient(Config const& cfg);
+
+std::unique_ptr<WSClient>
+makeWS2Client(Config const& cfg);
+
+} // test
 } // ripple
 
 #endif

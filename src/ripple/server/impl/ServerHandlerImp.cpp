@@ -29,6 +29,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/to_string.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/server/make_Server.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/ResourceManager.h>
@@ -36,6 +37,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <beast/crypto/base64.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <beast/asio/IPAddressConversion.h>
 #include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
@@ -135,6 +137,14 @@ ServerHandlerImp::onHandoff (Session& session,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
+    if (session.port().protocol.count("ws2") > 0 &&
+        isWebsocketUpgrade (request))
+    {
+        session.websocketUpgrade();
+        Handoff handoff;
+        handoff.moved = true;
+        return handoff;
+    }
     if (session.port().protocol.count("ws") > 0 &&
         isWebsocketUpgrade (request))
     {
@@ -184,6 +194,87 @@ ServerHandlerImp::onRequest (Session& session)
         });
 }
 
+template<class Streambuf>
+class StreambufWSMsg : public WSMsg
+{
+    Streambuf sb_;
+    std::size_t n_ = 0;
+
+public:
+    StreambufWSMsg(Streambuf&& sb)
+        : sb_(std::move(sb))
+    {
+    }
+
+    std::pair<boost::tribool,
+        std::vector<boost::asio::const_buffer>>
+    prepare(std::size_t bytes,
+        std::function<void(void)>) override
+    {
+        if(sb_.size() == 0)
+            return { true, {} };
+        sb_.consume(n_);
+        boost::tribool done;
+        // VFALCO TODO respect `bytes` fully
+        if(bytes < sb_.size())
+        {
+            n_ = bytes;
+            done = boost::indeterminate;
+        }
+        else
+        {
+            n_ = sb_.size();
+            done = true;
+        }
+        std::vector<boost::asio::const_buffer> vb;
+        auto const& data = sb_.data();
+        vb.reserve(std::distance(
+            data.begin(), data.end()));
+        std::copy(data.begin(), data.end(),
+            std::back_inserter(vb));
+        return { done, vb };
+    }
+};
+
+void
+ServerHandlerImp::onWSMessage(
+    std::shared_ptr<WSSession> session,
+        std::vector<boost::asio::const_buffer> const& buffers)
+{
+    // VFALCO This is inefficient, the JSON
+    // should be parsed from the buffer sequence.
+    std::string s;
+    s.reserve(boost::asio::buffer_size(buffers));
+    std::copy(boost::asio::buffers_begin(buffers),
+        boost::asio::buffers_end(buffers),
+            std::back_inserter(s));
+//m_journal.error << "Recv: " << s;
+    Json::Value jv;
+    // VFALCO should we parse a coroutine instead?
+    if(! Json::Reader{}.parse(s, jv))
+    {
+        // TODO Send error
+        return;
+    }
+    m_jobQueue.postCoro(jtCLIENT, "WS-Client",
+        [this, session = std::move(session),
+            jv = std::move(jv)](auto const& coro)
+        {
+            auto const jr =
+                processSession(session, coro, jv);
+            beast::asio::streambuf sb;
+//m_journal.error << "Send: " << to_string(jr);
+            stream(jr,
+                [&sb](auto const p, auto const n)
+                {
+                    sb.commit(boost::asio::buffer_copy(
+                        sb.prepare(n), boost::asio::buffer(p, n)));
+                });
+            session->send(std::make_shared<
+                StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+        });
+}
+
 void
 ServerHandlerImp::onClose (Session& session,
     boost::system::error_code const&)
@@ -197,6 +288,112 @@ ServerHandlerImp::onStopped (Server&)
 }
 
 //------------------------------------------------------------------------------
+
+Json::Value
+ServerHandlerImp::processSession(
+    std::shared_ptr<WSSession> const& session,
+        std::shared_ptr<JobCoro> const& coro,
+            Json::Value const& jv)
+{
+    /*
+    if (getConsumer().disconnect ())
+    {
+        disconnect ();
+        return rpcError (rpcSLOW_DOWN);
+    }
+    */
+
+    // Requests without "command" are invalid.
+    //
+    if (!jv.isMember (jss::command))
+    {
+        Json::Value jr (Json::objectValue);
+
+        jr[jss::type]    = jss::response;
+        jr[jss::status]  = jss::error;
+        jr[jss::error]   = jss::missingCommand;
+        jr[jss::request] = jv;
+
+        if (jv.isMember (jss::id))
+        {
+            jr[jss::id]  = jv[jss::id];
+        }
+
+        /*
+        getConsumer().charge (Resource::feeInvalidRPC);
+        */
+
+        return jr;
+    }
+
+    Resource::Charge loadType = Resource::feeReferenceRPC;
+    Json::Value jr (Json::objectValue);
+
+    auto required = RPC::roleRequired (jv[jss::command].asString());
+    // VFALCO TODO Get identity/credentials from HTTP headers
+    std::string const user = "";
+    std::string const fwdfor = "";
+    auto role = requestRole (required, session->port(), jv,
+        beast::IP::from_asio(session->remote_endpoint().address()),
+        user);
+
+    if (Role::FORBID == role)
+    {
+        jr[jss::result]  = rpcError (rpcFORBIDDEN);
+    }
+    else
+    {
+        // VFALCO TODO InfoSub parameter in context
+        RPC::Context context {app_.journal ("RPCHandler"), jv,
+            app_, loadType, app_.getOPs(), app_.getLedgerMaster(), role,
+                coro,
+                /*this->shared_from_this ()*/nullptr, { user, fwdfor }};
+        RPC::doCommand (context, jr[jss::result]);
+    }
+
+    /*
+    getConsumer().charge (loadType);
+    if (getConsumer().warn ())
+    {
+        jr[jss::warning] = jss::load;
+    }
+    */
+
+    // Currently we will simply unwrap errors returned by the RPC
+    // API, in the future maybe we can make the responses
+    // consistent.
+    //
+    // Regularize result. This is duplicate code.
+    if (jr[jss::result].isMember (jss::error))
+    {
+        jr               = jr[jss::result];
+        jr[jss::status]  = jss::error;
+        jr[jss::request] = jv;
+
+    }
+    else
+    {
+        jr[jss::status] = jss::success;
+
+        // For testing resource limits on this connection.
+        if (jv[jss::command].asString() == "ping")
+        {
+            /*
+            if (getConsumer().isUnlimited())
+                jr[jss::unlimited] = true;
+            */
+        }
+    }
+
+    if (jv.isMember (jss::id))
+    {
+        jr[jss::id] = jv[jss::id];
+    }
+
+    jr[jss::type] = jss::response;
+
+    return jr;
+}
 
 // Run as a couroutine.
 void
@@ -237,8 +434,6 @@ ServerHandlerImp::processRequest (Port const& port,
         std::string forwardedFor, std::string user)
 {
     auto rpcJ = app_.journal ("RPC");
-    // Move off the webserver thread onto the JobQueue.
-    assert (app_.getJobQueue().getJobForThread());
 
     Json::Value jsonRPC;
     {
