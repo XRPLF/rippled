@@ -31,6 +31,8 @@
 #include <stdexcept>
 #include <thread>
 
+#if 0
+
 namespace ripple {
 namespace test {
 
@@ -379,3 +381,4 @@ BEAST_DEFINE_TESTSUITE(Server,http,ripple);
 } // test
 } // ripple
 
+#endif
