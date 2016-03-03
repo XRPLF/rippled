@@ -107,7 +107,7 @@ public:
 
     class Stream;
 private:
-    /** Scoped ostream-based container for writing messages to a Journal. */
+    /* Scoped ostream-based container for writing messages to a Journal. */
     class ScopedStream
     {
     public:
@@ -146,7 +146,7 @@ private:
 
 //------------------------------------------------------------------------------
 private:
-    /** Templated TScopedStream. */
+    /* Templated TScopedStream. */
     template <Severity LEVEL>
     class TScopedStream
     {
@@ -175,7 +175,7 @@ private:
 
 //------------------------------------------------------------------------------
 private:
-    /** Templated TScopedStreamProxy. */
+    /* Templated TScopedStreamProxy. */
     template <Severity LEVEL>
     class TScopedStreamProxy
     {
@@ -191,8 +191,8 @@ private:
 
         TScopedStreamProxy& operator= (TScopedStreamProxy const&) = delete;
 
-        /** Returns `true` if m_sink logs anything at this stream's severity. */
-        /** @{ */
+        /* Returns `true` if m_sink logs anything at this stream's severity. */
+        /* @{ */
         bool active() const
         {
             return m_sink.active (LEVEL);
@@ -203,16 +203,16 @@ private:
         {
             return active();
         }
-        /** @} */
+        /* @} */
 
-        /** Postpone creating an actual TScopedStream until streaming. */
-        /** @{ */
+        /* Postpone creating an actual TScopedStream until streaming. */
+        /* @{ */
         TScopedStream<LEVEL> operator<< (
             std::ostream& manip (std::ostream&)) const;
 
         template <typename T>
         TScopedStream<LEVEL> operator<< (T const& t) const;
-        /** @} */
+        /* @} */
 
     private:
         Sink& m_sink;
@@ -361,6 +361,14 @@ public:
     }
     /** @} */
 };
+
+// Make the friend functions visible at namespace scope.
+Journal::TScopedStreamProxy<Journal::kTrace>   trace(Journal const& j);
+Journal::TScopedStreamProxy<Journal::kDebug>   debug(Journal const& j);
+Journal::TScopedStreamProxy<Journal::kInfo>    info (Journal const& j);
+Journal::TScopedStreamProxy<Journal::kWarning> warn (Journal const& j);
+Journal::TScopedStreamProxy<Journal::kError>   error(Journal const& j);
+Journal::TScopedStreamProxy<Journal::kFatal>   fatal(Journal const& j);
 
 //------------------------------------------------------------------------------
 
