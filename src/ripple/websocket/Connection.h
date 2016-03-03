@@ -106,7 +106,6 @@ private:
     Application& app_;
     Port const& m_port;
     Resource::Manager& m_resourceManager;
-    Resource::Consumer m_usage;
     beast::IP::Endpoint const m_remoteAddress;
     std::string const m_forwardedFor;
     std::string const m_user;
