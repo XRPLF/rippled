@@ -83,6 +83,10 @@ convert_http_method (joyent::http_method m)
     case HTTP_PROPPATCH:   return http::method_t::http_proppatch;
     case HTTP_SEARCH:      return http::method_t::http_search;
     case HTTP_UNLOCK:      return http::method_t::http_unlock;
+    case HTTP_BIND:        return http::method_t::http_bind;
+    case HTTP_REBIND:      return http::method_t::http_rebind;
+    case HTTP_UNBIND:      return http::method_t::http_unbind;
+    case HTTP_ACL:         return http::method_t::http_acl;
 
     // subversion
     case HTTP_REPORT:      return http::method_t::http_report;
@@ -99,6 +103,13 @@ convert_http_method (joyent::http_method m)
     // RFC-5789
     case HTTP_PATCH:       return http::method_t::http_patch;
     case HTTP_PURGE:       return http::method_t::http_purge;
+
+    // CalDav
+    case HTTP_MKCALENDAR:  return http::method_t::http_mkcalendar;
+
+    // RFC-2068, section 19.6.1.2
+    case HTTP_LINK:        return http::method_t::http_link;
+    case HTTP_UNLINK:      return http::method_t::http_unlink;
     };
 
     return http::method_t::http_get;

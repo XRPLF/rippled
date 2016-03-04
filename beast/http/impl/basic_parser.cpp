@@ -93,6 +93,8 @@ basic_parser::basic_parser (bool request) noexcept
     h->on_headers_complete  = &basic_parser::cb_headers_complete;
     h->on_body              = &basic_parser::cb_body;
     h->on_message_complete  = &basic_parser::cb_message_complete;
+    h->on_chunk_header      = &basic_parser::cb_chunk_header;
+    h->on_chunk_complete    = &basic_parser::cb_chunk_complete;
 
     joyent::http_parser_init (s, request
         ? joyent::http_parser_type::HTTP_REQUEST
@@ -231,6 +233,18 @@ basic_parser::do_message_complete ()
     return 0;
 }
 
+int
+basic_parser::do_chunk_header()
+{
+    return 0;
+}
+
+int
+basic_parser::do_chunk_complete()
+{
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 
 int
@@ -293,6 +307,20 @@ basic_parser::cb_message_complete (joyent::http_parser* p)
 {
     return reinterpret_cast <basic_parser*> (
         p->data)->do_message_complete();
+}
+
+int
+basic_parser::cb_chunk_header (joyent::http_parser* p)
+{
+    return reinterpret_cast <basic_parser*> (
+        p->data)->do_chunk_header();
+}
+
+int
+basic_parser::cb_chunk_complete (joyent::http_parser* p)
+{
+    return reinterpret_cast <basic_parser*> (
+        p->data)->do_chunk_complete();
 }
 
 } // http
