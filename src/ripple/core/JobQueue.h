@@ -28,13 +28,24 @@
 #include <beast/threads/Stoppable.h>
 #include <beast/module/core/thread/Workers.h>
 #include <boost/function.hpp>
-#include <thread>
+#include <condition_variable>
 #include <set>
+#include <thread>
 
 namespace ripple {
 
 class Logs;
 
+/** A pool of threads to perform work.
+
+    A job posted will always run to completion.
+    
+    Coroutines that are suspended must be resumed,
+    and run to completion.
+
+    When the JobQueue stops, it waits for all jobs
+    and coroutines to finish.
+*/
 class JobQueue
     : public beast::Stoppable
     , private beast::Workers::Callback
@@ -92,14 +103,16 @@ public:
     // Cannot be const because LoadMonitor has no const methods.
     bool isOverloaded ();
 
-    /** Get the Job corresponding to a thread.  If no thread, use the current
-        thread. */
-    Job* getJobForThread(std::thread::id const& id = {}) const;
-
     // Cannot be const because LoadMonitor has no const methods.
     Json::Value getJson (int c = 0);
 
+    /** Block until no tasks running. */
+    void
+    rendezvous();
+
 private:
+    friend class JobCoro;
+
     using JobDataMap = std::map <JobType, JobTypeData>;
 
     beast::Journal m_journal;
@@ -109,10 +122,11 @@ private:
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
 
-    std::map <std::thread::id, Job*> m_threadIds;
-
     // The number of jobs currently in processTask()
     int m_processCount;
+
+    // The number of suspended coroutines
+    int nSuspend_ = 0;
 
     beast::Workers m_workers;
     Job::CancelCallback m_cancelCallback;
@@ -122,6 +136,8 @@ private:
     beast::insight::Gauge job_count;
     beast::insight::Hook hook;
 
+    std::condition_variable cv_;
+
     static JobTypes const& getJobTypes()
     {
         static JobTypes types;
@@ -130,6 +146,8 @@ private:
 
     void collect();
     JobTypeData& getJobTypeData (JobType type);
+
+    void onStop() override;
 
     // Signals the service stopped if the stopped condition is met.
     void checkStopped (std::lock_guard <std::mutex> const& lock);
@@ -180,7 +198,7 @@ private:
     //
     // Invariants:
     //  <none>
-    void finishJob (Job const& job);
+    void finishJob (JobType type);
 
     template <class Rep, class Period>
     void on_dequeue (JobType type,
@@ -202,18 +220,11 @@ private:
     //  <none>
     void processTask () override;
 
-    // Returns `true` if all jobs of this type should be skipped when
-    // the JobQueue receives a stop notification. If the job type isn't
-    // skipped, the Job will be called and the job must call Job::shouldCancel
-    // to determine if a long running or non-mandatory operation should be canceled.
-    bool skipOnStop (JobType type);
-
     // Returns the limit of running jobs for the given job type.
     // For jobs with no limit, we return the largest int. Hopefully that
     // will be enough.
     int getJobLimit (JobType type);
 
-    void onStop () override;
     void onChildrenStopped () override;
 };
 
