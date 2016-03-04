@@ -923,6 +923,7 @@ public:
 
 private:
     void addTxnSeqField();
+    void addValidationSeqFields();
     void updateTables ();
     void startGenesisLedger ();
 
@@ -1705,6 +1706,39 @@ void ApplicationImp::addTxnSeqField ()
     tr.commit ();
 }
 
+void ApplicationImp::addValidationSeqFields ()
+{
+    if (schemaHas(getLedgerDB(), "Validations", 0, "LedgerSeq", m_journal))
+    {
+        assert(schemaHas(getLedgerDB(), "Validations", 0, "InitialSeq", m_journal));
+        return;
+    }
+
+    JLOG(m_journal.warning) << "Validation sequence fields are missing";
+    assert(!schemaHas(getLedgerDB(), "Validations", 0, "InitialSeq", m_journal));
+
+    auto& session = getLedgerDB().getSession();
+
+    soci::transaction tr(session);
+
+    JLOG(m_journal.info) << "Altering table";
+    session << "ALTER TABLE Validations "
+        "ADD COLUMN LedgerSeq       BIGINT UNSIGNED;";
+    session << "ALTER TABLE Validations "
+        "ADD COLUMN InitialSeq      BIGINT UNSIGNED;";
+
+    // Create the indexes, too, so we don't have to
+    // wait for the next startup, which may be a while.
+    // These should be identical to those in LedgerDBInit
+    JLOG(m_journal.info) << "Building new indexes";
+    session << "CREATE INDEX IF NOT EXISTS "
+        "ValidationsBySeq ON Validations(LedgerSeq);";
+    session << "CREATE INDEX IF NOT EXISTS ValidationsByInitialSeq "
+        "ON Validations(InitialSeq, LedgerSeq);";
+
+    tr.commit();
+}
+
 void ApplicationImp::updateTables ()
 {
     if (config_->section (ConfigSection::nodeDatabase ()).empty ())
@@ -1723,6 +1757,8 @@ void ApplicationImp::updateTables ()
         JLOG (m_journal.fatal) << "AccountTransactions database should not have a primary key";
         exitWithCode(1);
     }
+
+    addValidationSeqFields ();
 
     if (config_->doImport)
     {

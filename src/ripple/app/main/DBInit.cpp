@@ -100,13 +100,6 @@ const char* LedgerDBInit[] =
         SignTime    BIGINT UNSIGNED,                \
         RawData     BLOB                            \
     );",
-    // This will error out if the column already exists,
-    //  but DatabaseCon intentionally ignores errors.
-    "ALTER TABLE Validations                        \
-        ADD COLUMN LedgerSeq       BIGINT UNSIGNED;",
-    "ALTER TABLE Validations                        \
-        ADD COLUMN InitialSeq      BIGINT UNSIGNED;",
-
     "CREATE INDEX IF NOT EXISTS ValidationsByHash ON              \
         Validations(LedgerHash);",
     "CREATE INDEX IF NOT EXISTS ValidationsBySeq ON              \

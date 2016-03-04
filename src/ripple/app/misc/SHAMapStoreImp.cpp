@@ -664,10 +664,10 @@ SHAMapStoreImp::clearPrior (LedgerIndex lastRotated)
                 << deleteBatch << " rows.";
             long long totalRowsAffected = 0;
             long long rowsAffected;
-            soci::statement st = [&]
+            auto st = [&]
             {
                 auto db = ledgerDb_->checkoutDb();
-                return (db->prepare << deleteQuery);
+                return soci::statement(db->prepare << deleteQuery);
             }();
             if (health())
                 return;
