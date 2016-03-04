@@ -74,6 +74,8 @@ private:
       cb_t      on_headers_complete;
       data_cb_t on_body;
       cb_t      on_message_complete;
+      cb_t      on_chunk_header;
+      cb_t      on_chunk_complete;
     };
 
     char state_ [sizeof(state_t)];
@@ -221,6 +223,8 @@ private:
     int do_headers_complete ();
     int do_body (char const* in, std::size_t bytes);
     int do_message_complete ();
+    int do_chunk_header();
+    int do_chunk_complete();
 
     static int cb_message_start (joyent::http_parser*);
     static int cb_url (joyent::http_parser*, char const*, std::size_t);
@@ -230,6 +234,8 @@ private:
     static int cb_headers_complete (joyent::http_parser*);
     static int cb_body (joyent::http_parser*, char const*, std::size_t);
     static int cb_message_complete (joyent::http_parser*);
+    static int cb_chunk_header (joyent::http_parser*);
+    static int cb_chunk_complete (joyent::http_parser*);
 };
 
 template <class ConstBufferSequence>

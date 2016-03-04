@@ -48,6 +48,10 @@ enum class method_t
     http_proppatch,
     http_search,
     http_unlock,
+    http_bind,
+    http_rebind,
+    http_unbind,
+    http_acl,
 
     // subversion
     http_report,
@@ -63,7 +67,14 @@ enum class method_t
 
     // RFC-5789
     http_patch,
-    http_purge
+    http_purge,
+
+    // CalDav
+    http_mkcalendar,
+
+    // RFC-2068, section 19.6.1.2
+    http_link,
+    http_unlink
 };
 
 std::string
