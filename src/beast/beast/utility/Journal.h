@@ -24,6 +24,26 @@
 
 namespace beast {
 
+/** A namespace for easy access to logging severity values. */
+namespace severities
+{
+    /** Severity level / threshold of a Journal message. */
+    enum Severity
+    {
+        kAll = 0,
+
+        kTrace = kAll,
+        kDebug,
+        kInfo,
+        kWarning,
+        kError,
+        kFatal,
+
+        kDisabled,
+        kNone = kDisabled
+    };
+}
+
 /** A generic endpoint for log messages.
 
     The Journal has a few simple goals:
@@ -40,20 +60,17 @@ class Journal
 {
 public:
     /** Severity level / threshold of a Journal message. */
-    enum Severity
-    {
-        kAll = 0,
+    using Severity = severities::Severity;
 
-        kTrace = kAll,
-        kDebug,
-        kInfo,
-        kWarning,
-        kError,
-        kFatal,
-
-        kDisabled,
-        kNone = kDisabled
-    };
+    static constexpr Severity kAll      = severities::kAll;
+    static constexpr Severity kTrace    = severities::kTrace;
+    static constexpr Severity kDebug    = severities::kDebug;
+    static constexpr Severity kInfo     = severities::kInfo;
+    static constexpr Severity kWarning  = severities::kWarning;
+    static constexpr Severity kError    = severities::kError;
+    static constexpr Severity kFatal    = severities::kFatal;
+    static constexpr Severity kDisabled = severities::kDisabled;
+    static constexpr Severity kNone     = severities::kNone;
 
     class Sink;
 
@@ -151,7 +168,7 @@ private:
     class TScopedStream
     {
     public:
-        static_assert (LEVEL < kDisabled, "Invalid streaming LEVEL");
+        static_assert (LEVEL < severities::kDisabled, "Invalid streaming LEVEL");
 
         TScopedStream() = delete;
         TScopedStream (TScopedStream const& other);
@@ -180,7 +197,7 @@ private:
     class TScopedStreamProxy
     {
     public:
-        static_assert (LEVEL < kDisabled, "Invalid streaming LEVEL");
+        static_assert (LEVEL < severities::kDisabled, "Invalid streaming LEVEL");
 
         TScopedStreamProxy() = delete;
         TScopedStreamProxy (TScopedStreamProxy const&) = default;
@@ -319,56 +336,56 @@ public:
     */
     /** @{ */
     friend
-    TScopedStreamProxy<kTrace>
+    TScopedStreamProxy<severities::kTrace>
     trace(Journal const& j)
     {
-        return TScopedStreamProxy<kTrace>(j);
+        return TScopedStreamProxy<severities::kTrace>(j);
     }
 
     friend
-    TScopedStreamProxy<kDebug>
+    TScopedStreamProxy<severities::kDebug>
     debug(Journal const& j)
     {
-        return TScopedStreamProxy<kDebug>(j);
+        return TScopedStreamProxy<severities::kDebug>(j);
     }
 
     friend
-    TScopedStreamProxy<kInfo>
+    TScopedStreamProxy<severities::kInfo>
     info(Journal const& j)
     {
-        return TScopedStreamProxy<kInfo>(j);
+        return TScopedStreamProxy<severities::kInfo>(j);
     }
 
     friend
-    TScopedStreamProxy<kWarning>
+    TScopedStreamProxy<severities::kWarning>
     warn(Journal const& j)
     {
-        return TScopedStreamProxy<kWarning>(j);
+        return TScopedStreamProxy<severities::kWarning>(j);
     }
 
     friend
-    TScopedStreamProxy<kError>
+    TScopedStreamProxy<severities::kError>
     error(Journal const& j)
     {
-        return TScopedStreamProxy<kError>(j);
+        return TScopedStreamProxy<severities::kError>(j);
     }
 
     friend
-    TScopedStreamProxy<kFatal>
+    TScopedStreamProxy<severities::kFatal>
     fatal(Journal const& j)
     {
-        return TScopedStreamProxy<kFatal>(j);
+        return TScopedStreamProxy<severities::kFatal>(j);
     }
     /** @} */
 };
 
 // Make the friend functions visible at namespace scope.
-Journal::TScopedStreamProxy<Journal::kTrace>   trace(Journal const& j);
-Journal::TScopedStreamProxy<Journal::kDebug>   debug(Journal const& j);
-Journal::TScopedStreamProxy<Journal::kInfo>    info (Journal const& j);
-Journal::TScopedStreamProxy<Journal::kWarning> warn (Journal const& j);
-Journal::TScopedStreamProxy<Journal::kError>   error(Journal const& j);
-Journal::TScopedStreamProxy<Journal::kFatal>   fatal(Journal const& j);
+Journal::TScopedStreamProxy<severities::kTrace>   trace(Journal const& j);
+Journal::TScopedStreamProxy<severities::kDebug>   debug(Journal const& j);
+Journal::TScopedStreamProxy<severities::kInfo>    info (Journal const& j);
+Journal::TScopedStreamProxy<severities::kWarning> warn (Journal const& j);
+Journal::TScopedStreamProxy<severities::kError>   error(Journal const& j);
+Journal::TScopedStreamProxy<severities::kFatal>   fatal(Journal const& j);
 
 //------------------------------------------------------------------------------
 
