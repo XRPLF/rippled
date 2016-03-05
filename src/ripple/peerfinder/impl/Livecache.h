@@ -352,9 +352,6 @@ public:
     /** Creates or updates an existing Element based on a new message. */
     void insert (Endpoint const& ep);
 
-    /** Produce diagnostic output. */
-    void dump (beast::Journal::ScopedStream& ss) const;
-
     /** Output statistics. */
     void onWrite (beast::PropertyStream::Map& map);
 };
@@ -442,21 +439,6 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
         if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
             "Livecache refresh " << ep.address <<
             " at hops " << ep.hops;
-    }
-}
-
-template <class Allocator>
-void
-Livecache <Allocator>::dump (beast::Journal::ScopedStream& ss) const
-{
-    ss << std::endl << std::endl <<
-        "Livecache (size " << m_cache.size() << ")";
-    for (auto const& entry : m_cache)
-    {
-        auto const& e (entry.second);
-        ss << std::endl <<
-            e.endpoint.address << ", " <<
-            e.endpoint.hops << " hops";
     }
 }
 
