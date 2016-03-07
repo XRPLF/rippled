@@ -107,8 +107,6 @@ sign (PublicKey const& pk,
     {
     case KeyType::ed25519:
     {
-        auto const pk = derivePublicKey(
-            KeyType::ed25519, sk);
         Buffer b(64);
         ed25519_sign(m.data(), m.size(),
             sk.data(), pk.data() + 1, b.data());
