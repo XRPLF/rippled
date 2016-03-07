@@ -110,16 +110,14 @@ public:
 
         using namespace boost::asio;
         using namespace std::string_literals;
-        std::string r;
-        r =
+        auto const r =
             "POST / HTTP/1.1\r\n"
             "Host: me\r\n"
             "Connection: Keep-Alive\r\n"s +
             "Content-Type: application/json; charset=UTF-8\r\n"s +
             "Content-Length: " + std::to_string(s.size()) + "\r\n"
-            "\r\n";
+            "\r\n" + s;
         write(stream_, buffer(r));
-        write(stream_, buffer(s));
 
         read_until(stream_, bin_, "\r\n\r\n");
         beast::asio::streambuf body;
