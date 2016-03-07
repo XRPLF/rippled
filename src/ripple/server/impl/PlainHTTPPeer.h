@@ -56,11 +56,18 @@ private:
 
 template <class ConstBufferSequence>
 PlainHTTPPeer::PlainHTTPPeer (Port const& port, Handler& handler,
-    beast::Journal journal, endpoint_type remote_address,
+    beast::Journal journal, endpoint_type remote_endpoint,
         ConstBufferSequence const& buffers, socket_type&& socket)
-    : BaseHTTPPeer(port, handler, socket.get_io_service(), journal, remote_address, buffers)
+    : BaseHTTPPeer(port, handler, socket.get_io_service(),
+        journal, remote_endpoint, buffers)
     , stream_(std::move(socket))
 {
+    // Set TCP_NODELAY on loopback interfaces,
+    // otherwise Nagle's algorithm makes Env
+    // tests run slower on Linux systems.
+    //
+    if(remote_endpoint.address().is_loopback())
+        stream_.set_option(boost::asio::ip::tcp::no_delay{true});
 }
 
 void
