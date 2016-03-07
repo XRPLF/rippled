@@ -156,7 +156,6 @@ public:
         test_recover (lf, 0);
         test_recover (lf, 10);
         test_recover (lf, 100);
-        test_recover (lf, 1000);
     }
 };
 
@@ -169,6 +168,7 @@ public:
     run() override
     {
         float lf = 0.90f;
+        test_recover (lf, 1000);
         test_recover (lf, 10000);
         test_recover (lf, 100000);
     }
