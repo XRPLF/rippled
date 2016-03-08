@@ -32,6 +32,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <beast/module/core/text/LexicalCast.h>
+#include <boost/algorithm/clamp.hpp>
 #include <boost/optional.hpp>
 #include <tuple>
 
@@ -47,6 +48,7 @@ PathRequest::PathRequest (
         , m_journal (journal)
         , mOwner (owner)
         , wpSubscriber (subscriber)
+        , consumer_(subscriber->getConsumer())
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
@@ -62,6 +64,7 @@ PathRequest::PathRequest (
 PathRequest::PathRequest (
     Application& app,
     std::function <void(void)> const& completion,
+    Resource::Consumer& consumer,
     int id,
     PathRequests& owner,
     beast::Journal journal)
@@ -69,6 +72,7 @@ PathRequest::PathRequest (
         , m_journal (journal)
         , mOwner (owner)
         , fCompletion (completion)
+        , consumer_ (consumer)
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
@@ -603,6 +607,13 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
         }
     }
 
+    /*  The resource fee is based on the number of source currencies used.
+        The minimum cost is 50 and the maximum is 400. The cost increases
+        after four source currencies, 50 - (4 * 4) = 34.
+    */
+    int const size = sourceCurrencies.size();
+    consumer_.charge({boost::algorithm::clamp(size * size + 34, 50, 400),
+        "path update"});
     return true;
 }
 
