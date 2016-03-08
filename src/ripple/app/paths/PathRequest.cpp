@@ -47,6 +47,7 @@ PathRequest::PathRequest (
         , m_journal (journal)
         , mOwner (owner)
         , wpSubscriber (subscriber)
+        , consumer_(subscriber->getConsumer())
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
@@ -62,6 +63,7 @@ PathRequest::PathRequest (
 PathRequest::PathRequest (
     Application& app,
     std::function <void(void)> const& completion,
+    Resource::Consumer& consumer,
     int id,
     PathRequests& owner,
     beast::Journal journal)
@@ -69,6 +71,7 @@ PathRequest::PathRequest (
         , m_journal (journal)
         , mOwner (owner)
         , fCompletion (completion)
+        , consumer_ (consumer)
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
@@ -600,6 +603,15 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
                 << transHuman(rc.result());
         }
     }
+
+    // Charge cost is based on source currencies used.
+    double const min_cost = 50;
+    double const max_cost = 400;
+    Resource::Charge c {static_cast<int>(
+        std::min(max_cost, std::max(
+            min_cost, std::pow(sourceCurrencies.size(), 2)))),
+                "path update"};
+    consumer_.charge(c);
 
     return true;
 }

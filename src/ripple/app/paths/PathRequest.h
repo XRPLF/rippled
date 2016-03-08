@@ -69,16 +69,16 @@ public:
     PathRequest (
         Application& app,
         std::function <void (void)> const& completion,
+        Resource::Consumer& consumer,
         int id,
         PathRequests&,
         beast::Journal journal);
 
     ~PathRequest ();
 
-    bool        isNew ();
-    bool        needsUpdate (bool newOnly, LedgerIndex index);
-    void        updateComplete ();
-    Json::Value getStatus ();
+    bool isNew ();
+    bool needsUpdate (bool newOnly, LedgerIndex index);
+    void updateComplete ();
 
     std::pair<bool, Json::Value> doCreate (
         std::shared_ptr<RippleLineCache> const&,
@@ -121,9 +121,10 @@ private:
 
     std::weak_ptr<InfoSub> wpSubscriber; // Who this request came from
     std::function <void (void)> fCompletion;
+    Resource::Consumer& consumer_; // Charge according to source currencies
 
     Json::Value jvId;
-    Json::Value jvStatus;                   // Last result
+    Json::Value jvStatus; // Last result
 
     // Client request parameters
     boost::optional<AccountID> raSrcAccount;

@@ -368,7 +368,7 @@ ServerHandlerImp::processRequest (Port const& port,
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-        app_.getLedgerMaster(), role, jobCoro, InfoSub::pointer(),
+        app_.getLedgerMaster(), usage, role, jobCoro, InfoSub::pointer(),
         {user, forwardedFor}};
     Json::Value result;
     RPC::doCommand (context, result);
