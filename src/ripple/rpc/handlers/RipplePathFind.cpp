@@ -76,7 +76,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
         jvResult = context.app.getPathRequests().makeLegacyPathRequest (
             request, std::bind(&JobCoro::post, context.jobCoro),
-                lpLedger, context.params);
+                context.consumer, lpLedger, context.params);
         if (request)
         {
             context.jobCoro->yield();
@@ -357,14 +357,32 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(max_paths,
             fullLiquidityPath, spsComputed, issue.account);
-        auto& issuer =
-            isXRP(srcIssuerID) ?
-            isXRP(srcCurrencyID) ? // Default to source account.
-            xrpAccount() :
-            (raSrc)
-            : srcIssuerID;            // Use specifed issuer.
-        STAmount saMaxAmount = saSendMax.value_or(
-            STAmount({ srcCurrencyID, issuer}, 1u, 0, true));
+
+        STAmount saMaxAmount;
+        if (saSendMax)
+        {
+            saMaxAmount = *saSendMax;
+        }
+        else
+        {
+            AccountID issuerID;
+            if (isXRP(srcIssuerID))
+            {
+                // Default to source account.
+                if(isXRP(srcCurrencyID))
+                    issuerID = xrpAccount();
+                else
+                    issuerID = raSrc;
+            }
+            else
+            {
+                // Use specifed issuer.
+                issuerID = srcIssuerID;
+            }
+
+            saMaxAmount = STAmount(
+                {srcCurrencyID, issuerID}, 1u, 0, true);
+        }
 
         boost::optional<PaymentSandbox> sandbox;
         sandbox.emplace(&*cache->getLedger(), tapNONE);

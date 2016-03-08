@@ -266,8 +266,9 @@ public:
 
         auto& app = env.app();
         Resource::Charge loadType = Resource::feeReferenceRPC;
-        RPC::Context context {beast::Journal(), {}, app, loadType, app.getOPs(),
-            app.getLedgerMaster(), Role::USER, {}};
+        Resource::Consumer c;
+        RPC::Context context {beast::Journal(), {}, app, loadType,
+            app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
         Json::Value result;
         gate g;
         // Test RPC::Tuning::max_src_cur source currencies.

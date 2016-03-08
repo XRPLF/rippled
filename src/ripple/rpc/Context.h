@@ -53,6 +53,7 @@ struct Context
     Resource::Charge& loadType;
     NetworkOPs& netOps;
     LedgerMaster& ledgerMaster;
+    Resource::Consumer& consumer;
     Role role;
     std::shared_ptr<JobCoro> jobCoro;
     InfoSub::pointer infoSub;
