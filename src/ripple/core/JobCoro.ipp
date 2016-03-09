@@ -34,16 +34,29 @@ JobCoro::JobCoro(detail::JobCoro_create_t, JobQueue& jq, JobType type,
         (boost::coroutines::asymmetric_coroutine<void>::push_type& do_yield)
         {
             yield_ = &do_yield;
-            (*yield_)();
+            yield();
             fn(shared_from_this());
+#ifndef NDEBUG
+            finished_ = true;
+#endif
         }, boost::coroutines::attributes (1024 * 1024))
 {
+}
+
+inline
+JobCoro::~JobCoro()
+{
+    assert(finished_);
 }
 
 inline
 void
 JobCoro::yield() const
 {
+    {
+        std::lock_guard<std::mutex> lock(jq_.m_mutex);
+        ++jq_.nSuspend_;
+    }
     (*yield_)();
 }
 
@@ -60,6 +73,10 @@ JobCoro::post()
     jq_.addJob(type_, name_,
         [this, sp = shared_from_this()](Job&)
         {
+            {
+                std::lock_guard<std::mutex> lock(jq_.m_mutex);
+                --jq_.nSuspend_;
+            }
             auto saved = detail::getLocalValues().release();
             detail::getLocalValues().reset(&lvs_);
             std::lock_guard<std::mutex> lock(mutex_);

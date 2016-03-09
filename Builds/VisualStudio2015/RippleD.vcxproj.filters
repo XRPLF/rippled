@@ -406,6 +406,9 @@
     <Filter Include="ripple\websocket">
       <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\wsproto">
+      <UniqueIdentifier>{1D54E820-ADC9-94FB-19E7-653EFDE4CBE9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="rocksdb2">
       <UniqueIdentifier>{15B4B65A-0F03-7BA9-38CD-42A5712392CB}</UniqueIdentifier>
     </Filter>
@@ -831,9 +834,6 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\method.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
-      <Filter>beast\http\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
@@ -844,9 +844,6 @@
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\parser.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\raw_parser.h">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\rfc2616.h">
@@ -3756,6 +3753,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\AccountLinesRPC.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\Book.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\JSONRPC.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
@@ -3765,7 +3765,13 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\LedgerRequestRPC.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\RobustTransaction.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Status.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\Subscribe.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
@@ -3928,6 +3934,12 @@
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\WSClient.cpp">
+      <Filter>ripple\test\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\impl\WSClient_test.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\test\JSONRPCClient.h">
@@ -4116,6 +4128,9 @@
     <ClInclude Include="..\..\src\ripple\test\mao\Net.h">
       <Filter>ripple\test\mao</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\WSClient.h">
+      <Filter>ripple\test</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4250,6 +4265,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
       <Filter>ripple\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\wsproto\basic_socket.h">
+      <Filter>ripple\wsproto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\wsproto\wsproto.h">
+      <Filter>ripple\wsproto</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <Filter>rocksdb2\db</Filter>

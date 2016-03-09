@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,42 +17,39 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/to_string.h>
+#ifndef RIPPLE_TEST_WSCLIENT_H_INCLUDED
+#define RIPPLE_TEST_WSCLIENT_H_INCLUDED
+
+#include <ripple/test/AbstractClient.h>
+#include <ripple/core/Config.h>
+#include <boost/optional.hpp>
+#include <chrono>
+#include <memory>
 
 namespace ripple {
+namespace test {
 
-void BookListeners::addSubscriber (InfoSub::ref sub)
+class WSClient : public AbstractClient
 {
-    std::lock_guard <std::recursive_mutex> sl (mLock);
-    mListeners[sub->getSeq ()] = sub;
-}
+public:
+    /** Retrieve a message. */
+    virtual
+    boost::optional<Json::Value>
+    getMsg(std::chrono::milliseconds const& timeout =
+        std::chrono::milliseconds{0}) = 0;
 
-void BookListeners::removeSubscriber (std::uint64_t seq)
-{
-    std::lock_guard <std::recursive_mutex> sl (mLock);
-    mListeners.erase (seq);
-}
+    /** Retrieve a message that meets the predicate criteria. */
+    virtual
+    boost::optional<Json::Value>
+    findMsg(std::chrono::milliseconds const& timeout,
+        std::function<bool(Json::Value const&)> pred) = 0;
+};
 
-void BookListeners::publish (Json::Value const& jvObj)
-{
-    std::lock_guard <std::recursive_mutex> sl (mLock);
-    auto it = mListeners.cbegin ();
+/** Returns a client operating through WebSockets/S. */
+std::unique_ptr<WSClient>
+makeWSClient(Config const& cfg);
 
-    while (it != mListeners.cend ())
-    {
-        InfoSub::pointer p = it->second.lock ();
-
-        if (p)
-        {
-            p->send (jvObj, true);
-            ++it;
-        }
-        else
-            it = mListeners.erase (it);
-    }
-}
-
+} // test
 } // ripple
+
+#endif

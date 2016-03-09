@@ -365,6 +365,8 @@ public:
         //
         for (int i = 0; i < 3; ++i)
         {
+            if(app_.getJobQueue().isStopping())
+                return;
             boost::optional <std::string> msg = ptr->getMessage ();
             if (! msg)
                 return;
