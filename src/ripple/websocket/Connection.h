@@ -106,7 +106,6 @@ private:
     Application& app_;
     Port const& m_port;
     Resource::Manager& m_resourceManager;
-    Resource::Consumer m_usage;
     beast::IP::Endpoint const m_remoteAddress;
     std::string const m_forwardedFor;
     std::string const m_user;
@@ -285,9 +284,10 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     }
     else
     {
+        Resource::Consumer c;
         RPC::Context context {app_.journal ("RPCHandler"), jvRequest,
-            app_, loadType, m_netOPs, app_.getLedgerMaster(), role,
-                jobCoro, this->shared_from_this (), {m_user, m_forwardedFor}};
+            app_, loadType, m_netOPs, app_.getLedgerMaster(),  c, role,
+                jobCoro, this->shared_from_this(), {m_user, m_forwardedFor}};
         RPC::doCommand (context, jvResult[jss::result]);
     }
 

@@ -95,8 +95,9 @@ void startServer (Application& app)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
+            Resource::Consumer c;
             RPC::Context context {app.journal ("RPCHandler"), jvCommand, app,
-                loadType, app.getOPs (), app.getLedgerMaster(), Role::ADMIN};
+                loadType, app.getOPs (), app.getLedgerMaster(), c, Role::ADMIN};
 
             Json::Value jvResult;
             RPC::doCommand (context, jvResult);

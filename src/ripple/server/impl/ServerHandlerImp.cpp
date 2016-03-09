@@ -298,17 +298,19 @@ ServerHandlerImp::processRequest (Port const& port,
     }
 
     Resource::Consumer usage;
-
-    if (isUnlimited (role))
-        usage = m_resourceManager.newUnlimitedEndpoint (
-            remoteIPAddress.to_string());
-    else
-        usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
-
-    if (usage.disconnect ())
+    if (isUnlimited(role))
     {
-        HTTPReply (503, "Server is overloaded", output, rpcJ);
-        return;
+        usage = m_resourceManager.newUnlimitedEndpoint(
+            remoteIPAddress.to_string());
+    }
+    else
+    {
+        usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
+        if (usage.disconnect())
+        {
+            HTTPReply(503, "Server is overloaded", output, rpcJ);
+            return;
+        }
     }
 
     std::string strMethod = method.asString ();
@@ -355,8 +357,6 @@ ServerHandlerImp::processRequest (Port const& port,
         return;
     }
 
-    Resource::Charge loadType = Resource::feeReferenceRPC;
-
     JLOG(m_journal.debug) << "Query: " << strMethod << params;
 
     // Provide the JSON-RPC method as the field "command" in the request.
@@ -364,10 +364,11 @@ ServerHandlerImp::processRequest (Port const& port,
     JLOG (m_journal.trace)
         << "doRpcCommand:" << strMethod << ":" << params;
 
+    Resource::Charge loadType = Resource::feeReferenceRPC;
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-        app_.getLedgerMaster(), role, jobCoro, InfoSub::pointer(),
+        app_.getLedgerMaster(), usage, role, jobCoro, InfoSub::pointer(),
         {user, forwardedFor}};
     Json::Value result;
     RPC::doCommand (context, result);
