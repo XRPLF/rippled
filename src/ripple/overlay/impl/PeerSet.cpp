@@ -85,7 +85,7 @@ void PeerSet::invokeOnTimer ()
     if (!isProgress())
     {
         ++mTimeouts;
-        JLOG (m_journal.debug) << "Timeout(" << mTimeouts
+        JLOG (m_journal.debug()) << "Timeout(" << mTimeouts
             << ") pc=" << mPeers.size () << " acquiring " << mHash;
         onTimer (false, sl);
     }
@@ -127,7 +127,7 @@ void PeerSet::timerEntry (
 
             if (jc > 4)
             {
-                JLOG (j.debug) << "Deferring PeerSet timer due to load";
+                JLOG (j.debug()) << "Deferring PeerSet timer due to load";
                 ptr->setTimer ();
             }
             else

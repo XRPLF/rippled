@@ -182,7 +182,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
     {
         if (rawNode.size () < 4)
         {
-            JLOG (j.info) << "size < 4";
+            JLOG (j.info()) << "size < 4";
             Throw<std::runtime_error> ("invalid P node");
         }
 
@@ -215,7 +215,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
 
             if (u.isZero ())
             {
-                JLOG (j.info) << "invalid PLN node";
+                JLOG (j.info()) << "invalid PLN node";
                 Throw<std::runtime_error> ("invalid PLN node");
             }
 
@@ -258,7 +258,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         }
         else
         {
-            JLOG (j.info) << "Unknown node prefix " << std::hex << prefix << std::dec;
+            JLOG (j.info()) << "Unknown node prefix " << std::hex << prefix << std::dec;
             Throw<std::runtime_error> ("invalid node prefix");
         }
     }
@@ -466,7 +466,7 @@ int SHAMapInnerNode::getBranchCount () const
 void
 SHAMapAbstractNode::dump(const SHAMapNodeID & id, beast::Journal journal)
 {
-    if (journal.debug) journal.debug <<
+    JLOG(journal.debug()) <<
         "SHAMapTreeNode(" << id.getNodeID () << ")";
 }
 

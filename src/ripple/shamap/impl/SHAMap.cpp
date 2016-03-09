@@ -104,7 +104,7 @@ SHAMap::dirtyUp (SharedPtrNodeStack& stack,
         node->setChild (branch, child);
 
     #ifdef ST_DEBUG
-        JLOG(journal_.trace) <<
+        JLOG(journal_.trace()) <<
             "dirtyUp sets branch " << branch << " to " << prevHash;
     #endif
         child = std::move (node);
@@ -163,7 +163,7 @@ SHAMap::fetchNodeFromDB (SHAMapHash const& hash) const
             }
             catch (std::exception const&)
             {
-                JLOG(journal_.warning) <<
+                JLOG(journal_.warn()) <<
                     "Invalid DB node " << hash;
                 return std::shared_ptr<SHAMapTreeNode> ();
             }
@@ -802,7 +802,7 @@ SHAMap::updateGiveItem (std::shared_ptr<SHAMapItem const> const& item,
     if (!node->setItem (item, !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
                         (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM)))
     {
-        JLOG(journal_.trace) <<
+        JLOG(journal_.trace()) <<
             "SHAMap setItem, no change";
         return true;
     }
@@ -816,21 +816,21 @@ bool SHAMap::fetchRoot (SHAMapHash const& hash, SHAMapSyncFilter* filter)
     if (hash == root_->getNodeHash ())
         return true;
 
-    if (journal_.trace)
+    if (auto stream = journal_.trace())
     {
         if (type_ == SHAMapType::TRANSACTION)
         {
-            journal_.trace
+            stream
                 << "Fetch root TXN node " << hash;
         }
         else if (type_ == SHAMapType::STATE)
         {
-            journal_.trace <<
+            stream <<
                 "Fetch root STATE node " << hash;
         }
         else
         {
-            journal_.trace <<
+            stream <<
                 "Fetch root SHAMap node " << hash;
         }
     }
@@ -1031,7 +1031,7 @@ SHAMap::walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq)
 void SHAMap::dump (bool hash) const
 {
     int leafCount = 0;
-    JLOG(journal_.info) << " MAP Contains";
+    JLOG(journal_.info()) << " MAP Contains";
 
     std::stack <std::pair <SHAMapAbstractNode*, SHAMapNodeID> > stack;
     stack.push ({root_.get (), SHAMapNodeID ()});
@@ -1042,10 +1042,10 @@ void SHAMap::dump (bool hash) const
         auto nodeID = stack.top().second;
         stack.pop();
 
-        JLOG(journal_.info) << node->getString (nodeID);
+        JLOG(journal_.info()) << node->getString (nodeID);
         if (hash)
         {
-           JLOG(journal_.info) << "Hash: " << node->getNodeHash();
+           JLOG(journal_.info()) << "Hash: " << node->getNodeHash();
         }
 
         if (node->isInner ())
@@ -1069,7 +1069,7 @@ void SHAMap::dump (bool hash) const
     }
     while (!stack.empty ());
 
-    JLOG(journal_.info) << leafCount << " resident leaves";
+    JLOG(journal_.info()) << leafCount << " resident leaves";
 }
 
 std::shared_ptr<SHAMapAbstractNode> SHAMap::getCache (SHAMapHash const& hash) const

@@ -117,7 +117,8 @@ void Stoppable::stopAsyncRecursive (Journal j)
 
 #ifdef NDEBUG
     if (ms >= 10)
-        j.fatal << m_name << "::onStop took " << ms << "ms";
+        if (auto stream = j.fatal())
+            stream << m_name << "::onStop took " << ms << "ms";
 #else
     (void)ms;
 #endif
@@ -145,7 +146,8 @@ void Stoppable::stopRecursive (Journal j)
     bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
     if (timedOut)
     {
-        j.error << "Waiting for '" << m_name << "' to stop";
+        if (auto stream = j.error())
+            stream << "Waiting for '" << m_name << "' to stop";
         m_stoppedEvent.wait ();
     }
 
@@ -193,7 +195,8 @@ void RootStoppable::stop (Journal j)
         std::lock_guard<std::mutex> lock(m_);
         if (m_calledStop)
         {
-            j.warning << "Stoppable::stop called again";
+            if (auto stream = j.warn())
+                stream << "Stoppable::stop called again";
             return;
         }
         m_calledStop = true;

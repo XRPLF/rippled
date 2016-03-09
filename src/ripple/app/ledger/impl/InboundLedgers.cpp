@@ -159,7 +159,7 @@ public:
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
-        JLOG (j_.trace)
+        JLOG (j_.trace())
             << "Got data (" << packet.nodes ().size ()
             << ") for acquiring ledger: " << hash;
 
@@ -167,7 +167,7 @@ public:
 
         if (!ledger)
         {
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "Got data for ledger we're no longer acquiring";
 
             // If it's state node data, stash it because it still might be
@@ -401,7 +401,7 @@ public:
 
         }
 
-        JLOG (j_.debug) <<
+        JLOG (j_.debug()) <<
             "Swept " << stuffToSweep.size () <<
             " out of " << total << " inbound ledgers.";
     }

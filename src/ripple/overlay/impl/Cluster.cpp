@@ -115,7 +115,7 @@ Cluster::load (Section const& nodes)
 
         if (!boost::regex_match (n, match, re))
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "Malformed entry: '" << n << "'";
             return false;
         }
@@ -125,14 +125,14 @@ Cluster::load (Section const& nodes)
 
         if (!id)
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "Invalid node identity: " << match[1];
             return false;
         }
 
         if (member (*id))
         {
-            JLOG (j_.warning) <<
+            JLOG (j_.warn()) <<
                 "Duplicate node identity: " << match[1];
             continue;
         }

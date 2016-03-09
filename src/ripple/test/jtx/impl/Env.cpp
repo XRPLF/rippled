@@ -92,7 +92,7 @@ class SuiteSink : public beast::Journal::Sink
 
 public:
     SuiteSink(std::string const& partition,
-            beast::Journal::Severity threshold,
+            beast::severities::Severity threshold,
             beast::unit_test::suite& suite)
         : Sink (threshold, false)
         , partition_(partition + " ")
@@ -101,25 +101,26 @@ public:
     }
 
     // For unit testing, always generate logging text.
-    bool active(beast::Journal::Severity level) const override
+    bool active(beast::severities::Severity level) const override
     {
         return true;
     }
 
     void
-    write(beast::Journal::Severity level,
+    write(beast::severities::Severity level,
         std::string const& text) override
     {
+        using namespace beast::severities;
         std::string s;
         switch(level)
         {
-        case beast::Journal::kTrace:    s = "TRC:"; break;
-        case beast::Journal::kDebug:    s = "DBG:"; break;
-        case beast::Journal::kInfo:     s = "INF:"; break;
-        case beast::Journal::kWarning:  s = "WRN:"; break;
-        case beast::Journal::kError:    s = "ERR:"; break;
+        case kTrace:    s = "TRC:"; break;
+        case kDebug:    s = "DBG:"; break;
+        case kInfo:     s = "INF:"; break;
+        case kWarning:  s = "WRN:"; break;
+        case kError:    s = "ERR:"; break;
         default:
-        case beast::Journal::kFatal:    s = "FTL:"; break;
+        case kFatal:    s = "FTL:"; break;
         }
 
         // Only write the string if the level at least equals the threshold.
@@ -135,7 +136,7 @@ class SuiteLogs : public Logs
 public:
     explicit
     SuiteLogs(beast::unit_test::suite& suite)
-        : Logs (beast::Journal::kError)
+        : Logs (beast::severities::kError)
         , suite_(suite)
     {
     }
@@ -144,7 +145,7 @@ public:
 
     std::unique_ptr<beast::Journal::Sink>
     makeSink(std::string const& partition,
-        beast::Journal::Severity threshold) override
+        beast::severities::Severity threshold) override
     {
         return std::make_unique<SuiteSink>(partition, threshold, suite_);
     }
@@ -170,7 +171,7 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
     owned = make_Application(std::move(config),
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().threshold(beast::Journal::kError);
+    app->logs().threshold(beast::severities::kError);
     app->setup();
     timeKeeper->set(
         app->getLedgerMaster().getClosedLedger()->info().closeTime);

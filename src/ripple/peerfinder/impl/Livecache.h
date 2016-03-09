@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/iosformat.h>
 #include <ripple/peerfinder/impl/Tuning.h>
@@ -352,9 +353,6 @@ public:
     /** Creates or updates an existing Element based on a new message. */
     void insert (Endpoint const& ep);
 
-    /** Produce diagnostic output. */
-    void dump (beast::Journal::ScopedStream& ss) const;
-
     /** Output statistics. */
     void onWrite (beast::PropertyStream::Map& map);
 };
@@ -389,7 +387,7 @@ Livecache <Allocator>::expire()
     }
     if (n > 0)
     {
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Livecache expired " << n <<
             ((n > 1) ? " entries" : " entry");
     }
@@ -411,7 +409,7 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
     if (result.second)
     {
         hops.insert (e);
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Livecache insert " << ep.address <<
             " at hops " << ep.hops;
         return;
@@ -421,7 +419,7 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
         // Drop duplicates at higher hops
         std::size_t const excess (
             ep.hops - e.endpoint.hops);
-        if (m_journal.trace) m_journal.trace << beast::leftw(18) <<
+        JLOG(m_journal.trace()) << beast::leftw(18) <<
             "Livecache drop " << ep.address <<
             " at hops +" << excess;
         return;
@@ -433,30 +431,15 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
     if (ep.hops < e.endpoint.hops)
     {
         hops.reinsert (e, ep.hops);
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Livecache update " << ep.address <<
             " at hops " << ep.hops;
     }
     else
     {
-        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+        JLOG(m_journal.trace()) << beast::leftw (18) <<
             "Livecache refresh " << ep.address <<
             " at hops " << ep.hops;
-    }
-}
-
-template <class Allocator>
-void
-Livecache <Allocator>::dump (beast::Journal::ScopedStream& ss) const
-{
-    ss << std::endl << std::endl <<
-        "Livecache (size " << m_cache.size() << ")";
-    for (auto const& entry : m_cache)
-    {
-        auto const& e (entry.second);
-        ss << std::endl <<
-            e.endpoint.address << ", " <<
-            e.endpoint.hops << " hops";
     }
 }
 

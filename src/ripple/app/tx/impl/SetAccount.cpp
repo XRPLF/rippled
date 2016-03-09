@@ -43,7 +43,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
     if (uTxFlags & tfAccountSetMask)
     {
-        JLOG(j.trace) << "Malformed transaction: Invalid flags set.";
+        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
@@ -52,7 +52,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
     if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
     {
-        JLOG(j.trace) << "Malformed transaction: Set and clear same flag.";
+        JLOG(j.trace()) << "Malformed transaction: Set and clear same flag.";
         return temINVALID_FLAG;
     }
 
@@ -64,7 +64,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
-        JLOG(j.trace) << "Malformed transaction: Contradictory flags set.";
+        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -76,7 +76,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
     if (bSetRequireDest && bClearRequireDest)
     {
-        JLOG(j.trace) << "Malformed transaction: Contradictory flags set.";
+        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -88,7 +88,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
-        JLOG(j.trace) << "Malformed transaction: Contradictory flags set.";
+        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -99,7 +99,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
         if (uRate && (uRate < QUALITY_ONE))
         {
-            JLOG(j.trace) << "Malformed transaction: Bad transfer rate.";
+            JLOG(j.trace()) << "Malformed transaction: Bad transfer rate.";
             return temBAD_TRANSFER_RATE;
         }
     }
@@ -107,14 +107,14 @@ SetAccount::preflight (PreflightContext const& ctx)
     auto const messageKey = tx[~sfMessageKey];
     if (messageKey && messageKey->size() > PUBLIC_BYTES_MAX)
     {
-        JLOG(j.trace) << "message key too long";
+        JLOG(j.trace()) << "message key too long";
         return telBAD_PUBLIC_KEY;
     }
 
     auto const domain = tx[~sfDomain];
     if (domain&& domain->size() > DOMAIN_BYTES_MAX)
     {
-        JLOG(j.trace) << "domain too long";
+        JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
     }
 
@@ -146,7 +146,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
         if (!dirIsEmpty(ctx.view,
             keylet::ownerDir(id)))
         {
-            JLOG(ctx.j.trace) << "Retry: Owner directory not empty.";
+            JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
             return (ctx.flags & tapRETRY) ? terOWNERS : tecOWNERS;
         }
     }
@@ -195,13 +195,13 @@ SetAccount::doApply ()
     //
     if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
     {
-        JLOG(j_.trace) << "Set RequireAuth.";
+        JLOG(j_.trace()) << "Set RequireAuth.";
         uFlagsOut |= lsfRequireAuth;
     }
 
     if (bClearRequireAuth && (uFlagsIn & lsfRequireAuth))
     {
-        JLOG(j_.trace) << "Clear RequireAuth.";
+        JLOG(j_.trace()) << "Clear RequireAuth.";
         uFlagsOut &= ~lsfRequireAuth;
     }
 
@@ -210,13 +210,13 @@ SetAccount::doApply ()
     //
     if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
     {
-        JLOG(j_.trace) << "Set lsfRequireDestTag.";
+        JLOG(j_.trace()) << "Set lsfRequireDestTag.";
         uFlagsOut |= lsfRequireDestTag;
     }
 
     if (bClearRequireDest && (uFlagsIn & lsfRequireDestTag))
     {
-        JLOG(j_.trace) << "Clear lsfRequireDestTag.";
+        JLOG(j_.trace()) << "Clear lsfRequireDestTag.";
         uFlagsOut &= ~lsfRequireDestTag;
     }
 
@@ -225,13 +225,13 @@ SetAccount::doApply ()
     //
     if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
     {
-        JLOG(j_.trace) << "Set lsfDisallowXRP.";
+        JLOG(j_.trace()) << "Set lsfDisallowXRP.";
         uFlagsOut |= lsfDisallowXRP;
     }
 
     if (bClearDisallowXRP && (uFlagsIn & lsfDisallowXRP))
     {
-        JLOG(j_.trace) << "Clear lsfDisallowXRP.";
+        JLOG(j_.trace()) << "Clear lsfDisallowXRP.";
         uFlagsOut &= ~lsfDisallowXRP;
     }
 
@@ -242,7 +242,7 @@ SetAccount::doApply ()
     {
         if (!sigWithMaster)
         {
-            JLOG(j_.trace) << "Must use master key to disable master key.";
+            JLOG(j_.trace()) << "Must use master key to disable master key.";
             return tecNEED_MASTER_KEY;
         }
 
@@ -259,13 +259,13 @@ SetAccount::doApply ()
             return tecNO_REGULAR_KEY;
         }
 
-        JLOG(j_.trace) << "Set lsfDisableMaster.";
+        JLOG(j_.trace()) << "Set lsfDisableMaster.";
         uFlagsOut |= lsfDisableMaster;
     }
 
     if ((uClearFlag == asfDisableMaster) && (uFlagsIn & lsfDisableMaster))
     {
-        JLOG(j_.trace) << "Clear lsfDisableMaster.";
+        JLOG(j_.trace()) << "Clear lsfDisableMaster.";
         uFlagsOut &= ~lsfDisableMaster;
     }
 
@@ -288,18 +288,18 @@ SetAccount::doApply ()
     {
         if (!sigWithMaster && !(uFlagsIn & lsfDisableMaster))
         {
-            JLOG(j_.trace) << "Can't use regular key to set NoFreeze.";
+            JLOG(j_.trace()) << "Can't use regular key to set NoFreeze.";
             return tecNEED_MASTER_KEY;
         }
 
-        JLOG(j_.trace) << "Set NoFreeze flag";
+        JLOG(j_.trace()) << "Set NoFreeze flag";
         uFlagsOut |= lsfNoFreeze;
     }
 
     // Anyone may set global freeze
     if (uSetFlag == asfGlobalFreeze)
     {
-        JLOG(j_.trace) << "Set GlobalFreeze flag";
+        JLOG(j_.trace()) << "Set GlobalFreeze flag";
         uFlagsOut |= lsfGlobalFreeze;
     }
 
@@ -309,7 +309,7 @@ SetAccount::doApply ()
     if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
         ((uFlagsOut & lsfNoFreeze) == 0))
     {
-        JLOG(j_.trace) << "Clear GlobalFreeze flag";
+        JLOG(j_.trace()) << "Clear GlobalFreeze flag";
         uFlagsOut &= ~lsfGlobalFreeze;
     }
 
@@ -318,13 +318,13 @@ SetAccount::doApply ()
     //
     if ((uSetFlag == asfAccountTxnID) && !sle->isFieldPresent (sfAccountTxnID))
     {
-        JLOG(j_.trace) << "Set AccountTxnID";
+        JLOG(j_.trace()) << "Set AccountTxnID";
         sle->makeFieldPresent (sfAccountTxnID);
         }
 
     if ((uClearFlag == asfAccountTxnID) && sle->isFieldPresent (sfAccountTxnID))
     {
-        JLOG(j_.trace) << "Clear AccountTxnID";
+        JLOG(j_.trace()) << "Clear AccountTxnID";
         sle->makeFieldAbsent (sfAccountTxnID);
     }
 
@@ -337,12 +337,12 @@ SetAccount::doApply ()
 
         if (!uHash)
         {
-            JLOG(j_.trace) << "unset email hash";
+            JLOG(j_.trace()) << "unset email hash";
             sle->makeFieldAbsent (sfEmailHash);
         }
         else
         {
-            JLOG(j_.trace) << "set email hash";
+            JLOG(j_.trace()) << "set email hash";
             sle->setFieldH128 (sfEmailHash, uHash);
         }
     }
@@ -356,12 +356,12 @@ SetAccount::doApply ()
 
         if (!uHash)
         {
-            JLOG(j_.trace) << "unset wallet locator";
+            JLOG(j_.trace()) << "unset wallet locator";
             sle->makeFieldAbsent (sfWalletLocator);
         }
         else
         {
-            JLOG(j_.trace) << "set wallet locator";
+            JLOG(j_.trace()) << "set wallet locator";
             sle->setFieldH256 (sfWalletLocator, uHash);
         }
     }
@@ -375,12 +375,12 @@ SetAccount::doApply ()
 
         if (messageKey.empty ())
         {
-            JLOG(j_.debug) << "set message key";
+            JLOG(j_.debug()) << "set message key";
             sle->makeFieldAbsent (sfMessageKey);
         }
         else
         {
-            JLOG(j_.debug) << "set message key";
+            JLOG(j_.debug()) << "set message key";
             sle->setFieldVL (sfMessageKey, messageKey);
         }
     }
@@ -394,12 +394,12 @@ SetAccount::doApply ()
 
         if (domain.empty ())
         {
-            JLOG(j_.trace) << "unset domain";
+            JLOG(j_.trace()) << "unset domain";
             sle->makeFieldAbsent (sfDomain);
         }
         else
         {
-            JLOG(j_.trace) << "set domain";
+            JLOG(j_.trace()) << "set domain";
             sle->setFieldVL (sfDomain, domain);
         }
     }
@@ -413,12 +413,12 @@ SetAccount::doApply ()
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {
-            JLOG(j_.trace) << "unset transfer rate";
+            JLOG(j_.trace()) << "unset transfer rate";
             sle->makeFieldAbsent (sfTransferRate);
         }
         else if (uRate > QUALITY_ONE)
         {
-            JLOG(j_.trace) << "set transfer rate";
+            JLOG(j_.trace()) << "set transfer rate";
             sle->setFieldU32 (sfTransferRate, uRate);
         }
     }

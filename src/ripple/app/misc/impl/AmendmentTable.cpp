@@ -229,7 +229,7 @@ AmendmentTableImpl::AmendmentTableImpl (
     {
         if (auto s = add (a.first))
         {
-            JLOG (j_.debug) <<
+            JLOG (j_.debug()) <<
                 "Amendment " << a.first << " is supported.";
 
             if (!a.second.empty ())
@@ -243,7 +243,7 @@ AmendmentTableImpl::AmendmentTableImpl (
     {
         if (auto s = add (a.first))
         {
-            JLOG (j_.debug) <<
+            JLOG (j_.debug()) <<
                 "Amendment " << a.first << " is enabled.";
 
             if (!a.second.empty ())
@@ -259,7 +259,7 @@ AmendmentTableImpl::AmendmentTableImpl (
         // Unknown amendments are effectively vetoed already
         if (auto s = get (a.first))
         {
-            JLOG (j_.info) <<
+            JLOG (j_.info()) <<
                 "Amendment " << a.first << " is vetoed.";
 
             if (!a.second.empty ())
@@ -403,7 +403,7 @@ AmendmentTableImpl::doVoting (
     majorityAmendments_t const& majorityAmendments,
     ValidationSet const& valSet)
 {
-    JLOG (j_.trace) <<
+    JLOG (j_.trace()) <<
         "voting at " << closeTime.time_since_epoch().count() <<
         ": " << enabledAmendments.size() <<
         ", " << majorityAmendments.size() <<
@@ -432,7 +432,7 @@ AmendmentTableImpl::doVoting (
     vote->mThreshold = std::max(1,
         (vote->mTrustedValidations * majorityFraction_) / 256);
 
-    JLOG (j_.debug) <<
+    JLOG (j_.debug()) <<
         "Received " << vote->mTrustedValidations <<
         " trusted validations, threshold is: " << vote->mThreshold;
 
@@ -459,7 +459,7 @@ AmendmentTableImpl::doVoting (
 
             if (enabledAmendments.count (entry.first) != 0)
             {
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     entry.first << ": amendment already enabled";
             }
             else  if (hasValMajority &&
@@ -467,7 +467,7 @@ AmendmentTableImpl::doVoting (
                 ! entry.second.vetoed)
             {
                 // Ledger says no majority, validators say yes
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     entry.first << ": amendment got majority";
                 actions[entry.first] = tfGotMajority;
             }
@@ -475,7 +475,7 @@ AmendmentTableImpl::doVoting (
                 (majorityTime != NetClock::time_point{}))
             {
                 // Ledger says majority, validators say no
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     entry.first << ": amendment lost majority";
                 actions[entry.first] = tfLostMajority;
             }
@@ -484,7 +484,7 @@ AmendmentTableImpl::doVoting (
                 ! entry.second.vetoed)
             {
                 // Ledger says majority held
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     entry.first << ": amendment majority held";
                 actions[entry.first] = 0;
             }

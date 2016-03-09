@@ -226,7 +226,7 @@ public:
 
             // Since this was a 'hard' fetch, we will log it.
             //
-            if (m_journal.trace) m_journal.trace <<
+            JLOG(m_journal.trace()) <<
                 "HOS: " << hash << " fetch: in db";
         }
 
@@ -257,12 +257,12 @@ public:
         case dataCorrupt:
             // VFALCO TODO Deal with encountering corrupt data!
             //
-            if (m_journal.fatal) m_journal.fatal <<
+            JLOG(m_journal.fatal()) <<
                 "Corrupt NodeObject #" << hash;
             break;
 
         default:
-            if (m_journal.warning) m_journal.warning <<
+            JLOG(m_journal.warn()) <<
                 "Unknown status=" << status;
             break;
         }

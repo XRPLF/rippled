@@ -195,7 +195,7 @@ preflight(Application& app, Rules const& rules,
     }
     catch (std::exception const& e)
     {
-        JLOG(j.fatal) <<
+        JLOG(j.fatal()) <<
             "apply: " << e.what();
         return{ pfctx, tefEXCEPTION };
     }
@@ -228,7 +228,7 @@ preclaim (PreflightResult const& preflightResult,
     }
     catch (std::exception const& e)
     {
-        JLOG(ctx->j.fatal) <<
+        JLOG(ctx->j.fatal()) <<
             "apply: " << e.what();
         return{ *ctx, tefEXCEPTION, 0 };
     }
@@ -267,7 +267,7 @@ doApply(PreclaimResult const& preclaimResult,
     }
     catch (std::exception const& e)
     {
-        JLOG(preclaimResult.j.fatal) <<
+        JLOG(preclaimResult.j.fatal()) <<
             "apply: " << e.what();
         return { tefEXCEPTION, false };
     }

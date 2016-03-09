@@ -125,7 +125,7 @@ public:
     {
         try
         {
-            auto& jm = broadcast ? j_.trace : j_.debug;
+            auto jm = broadcast ? j_.trace() : j_.debug();
             JLOG (jm)
                     << "Ws:: Sending '" << strMessage << "'";
 
@@ -162,7 +162,7 @@ public:
             cpClient->terminate ({});
             try
             {
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     "Ws:: ping_out(" <<
                     // TODO(tom): re-enable this logging.
                     // cpClient->get_socket ().remote_endpoint ().to_string ()
@@ -213,7 +213,7 @@ public:
 
             assert (result.second);
             (void) result.second;
-            JLOG (j_.debug) <<
+            JLOG (j_.debug()) <<
                 "Ws:: on_open(" << remoteEndpoint << ")";
         }
         catch (std::exception const&)
@@ -235,7 +235,7 @@ public:
         }
         try
         {
-            JLOG (j_.debug) <<
+            JLOG (j_.debug()) <<
            "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint() << ")";
         }
         catch (std::exception const&)
@@ -267,7 +267,7 @@ public:
             {
                 try
                 {
-                    JLOG (j_.debug) <<
+                    JLOG (j_.debug()) <<
                         "Ws:: " << reason << "(" <<
                            cpClient->get_socket ().remote_endpoint() <<
                            ") not found";
@@ -286,7 +286,7 @@ public:
         ptr->preDestroy (); // Must be done before we return
         try
         {
-            JLOG (j_.debug) <<
+            JLOG (j_.debug()) <<
                 "Ws:: " << reason << "(" <<
                    cpClient->get_socket ().remote_endpoint () << ") found";
         }
@@ -331,7 +331,7 @@ public:
         {
             try
             {
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     "Ws:: Rejected(" <<
                     cpClient->get_socket().remote_endpoint() <<
                     ") '" << mpMessage->get_payload () << "'";
@@ -388,7 +388,7 @@ public:
 
         try
         {
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                     << "Ws:: Receiving("
                     << cpClient->get_socket ().remote_endpoint ()
                     << ") '" << message << "'";

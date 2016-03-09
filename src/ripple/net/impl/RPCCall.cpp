@@ -478,8 +478,8 @@ private:
         Json::Reader    reader;
         Json::Value     jvRequest;
 
-        JLOG (j_.trace) << "RPC method: " << jvParams[0u];
-        JLOG (j_.trace) << "RPC json: " << jvParams[1u];
+        JLOG (j_.trace()) << "RPC method: " << jvParams[0u];
+        JLOG (j_.trace()) << "RPC json: " << jvParams[1u];
 
         if (reader.parse (jvParams[1u].asString (), jvRequest))
         {
@@ -635,7 +635,7 @@ private:
         Json::Value     jvRequest;
         bool            bLedger     = 2 == jvParams.size ();
 
-        JLOG (j_.trace) << "RPC json: " << jvParams[0u];
+        JLOG (j_.trace()) << "RPC json: " << jvParams[0u];
 
         if (reader.parse (jvParams[0u].asString (), jvRequest))
         {
@@ -893,10 +893,10 @@ public:
     // <-- { method: xyz, params: [... ] } or { error: ..., ... }
     Json::Value parseCommand (std::string strMethod, Json::Value jvParams, bool allowAnyCommand)
     {
-        if (j_.trace)
+        if (auto stream = j_.trace())
         {
-            j_.trace << "Method: '" << strMethod << "'";
-            j_.trace << "Params: " << jvParams;
+            stream << "Method: '" << strMethod << "'";
+            stream << "Params: " << jvParams;
         }
 
         struct Command
@@ -983,7 +983,7 @@ public:
                 if ((command.minParams >= 0 && count < command.minParams) ||
                     (command.maxParams >= 0 && count > command.maxParams))
                 {
-                    JLOG (j_.debug) <<
+                    JLOG (j_.debug()) <<
                         "Wrong number of parameters for " << command.name <<
                         " minimum=" << command.minParams <<
                         " maximum=" << command.maxParams <<
@@ -1054,7 +1054,7 @@ struct RPCCallImp
                 Throw<std::runtime_error> ("no response from server");
 
             // Parse reply
-            JLOG (j.debug) << "RPC reply: " << strData << std::endl;
+            JLOG (j.debug()) << "RPC reply: " << strData << std::endl;
 
             Json::Reader    reader;
             Json::Value     jvReply;
@@ -1080,7 +1080,7 @@ struct RPCCallImp
         const std::map<std::string, std::string>& mHeaders, std::string const& strPath,
             boost::asio::streambuf& sb, std::string const& strHost, beast::Journal j)
     {
-        JLOG (j.debug) << "requestRPC: strPath='" << strPath << "'";
+        JLOG (j.debug()) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream    osRequest (&sb);
         osRequest <<
@@ -1114,7 +1114,7 @@ rpcCmdLineToJson (std::vector<std::string> const& args,
 
     jvRequest   = rpParser.parseCommand (args[0], jvRpcParams, true);
 
-    JLOG (j.trace) << "RPC Request: " << jvRequest << std::endl;
+    JLOG (j.trace()) << "RPC Request: " << jvRequest << std::endl;
 
     return jvRequest;
 }

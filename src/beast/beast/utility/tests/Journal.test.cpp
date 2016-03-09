@@ -32,7 +32,7 @@ public:
 
     public:
         TestSink()
-            : Sink (Journal::kWarning, false)
+            : Sink (severities::kWarning, false)
             , m_count(0)
         {
         }
@@ -50,7 +50,7 @@ public:
         }
 
         void
-        write (Journal::Severity level, std::string const&) override
+        write (severities::Severity level, std::string const&) override
         {
             if (level >= threshold())
                 ++m_count;
@@ -61,38 +61,39 @@ public:
     {
         TestSink sink;
 
-        sink.threshold(Journal::kInfo);
+        using namespace beast::severities;
+        sink.threshold(kInfo);
 
         Journal j(sink);
 
-        j.trace << " ";
+        j.trace() << " ";
         expect(sink.count() == 0);
-        j.debug << " ";
+        j.debug() << " ";
         expect(sink.count() == 0);
-        j.info << " ";
+        j.info() << " ";
         expect(sink.count() == 1);
-        j.warning << " ";
+        j.warn() << " ";
         expect(sink.count() == 2);
-        j.error << " ";
+        j.error() << " ";
         expect(sink.count() == 3);
-        j.fatal << " ";
+        j.fatal() << " ";
         expect(sink.count() == 4);
 
         sink.reset();
 
-        sink.threshold(Journal::kDebug);
+        sink.threshold(kDebug);
 
-        j.trace << " ";
+        j.trace() << " ";
         expect(sink.count() == 0);
-        j.debug << " ";
+        j.debug() << " ";
         expect(sink.count() == 1);
-        j.info << " ";
+        j.info() << " ";
         expect(sink.count() == 2);
-        j.warning << " ";
+        j.warn() << " ";
         expect(sink.count() == 3);
-        j.error << " ";
+        j.error() << " ";
         expect(sink.count() == 4);
-        j.fatal << " ";
+        j.fatal() << " ";
         expect(sink.count() == 5);
     }
 };

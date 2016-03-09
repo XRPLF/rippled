@@ -42,7 +42,7 @@ SetTrust::preflight (PreflightContext const& ctx)
 
     if (uTxFlags & tfTrustSetMask)
     {
-        JLOG(j.trace) <<
+        JLOG(j.trace()) <<
             "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
@@ -54,7 +54,7 @@ SetTrust::preflight (PreflightContext const& ctx)
 
     if (saLimitAmount.native ())
     {
-        JLOG(j.trace) <<
+        JLOG(j.trace()) <<
             "Malformed transaction: specifies native limit " <<
             saLimitAmount.getFullText ();
         return temBAD_LIMIT;
@@ -62,14 +62,14 @@ SetTrust::preflight (PreflightContext const& ctx)
 
     if (badCurrency() == saLimitAmount.getCurrency ())
     {
-        JLOG(j.trace) <<
+        JLOG(j.trace()) <<
             "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
     }
 
     if (saLimitAmount < zero)
     {
-        JLOG(j.trace) <<
+        JLOG(j.trace()) <<
             "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
     }
@@ -79,7 +79,7 @@ SetTrust::preflight (PreflightContext const& ctx)
 
     if (!issuer || issuer == noAccount())
     {
-        JLOG(j.trace) <<
+        JLOG(j.trace()) <<
             "Malformed transaction: no destination account.";
         return temDST_NEEDED;
     }
@@ -101,7 +101,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     if (bSetAuth && !(sle->getFieldU32(sfFlags) & lsfRequireAuth))
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
     }
@@ -121,7 +121,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
         if (!sleDelete)
         {
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "Malformed transaction: Can not extend credit to self.";
             return temDST_IS_SRC;
         }
@@ -191,7 +191,7 @@ SetTrust::doApply ()
         SLE::pointer sleDelete = view().peek (
             keylet::line(account_, uDstAccountID, currency));
 
-        JLOG(j_.warning) <<
+        JLOG(j_.warn()) <<
             "Clearing redundant line.";
 
         return trustDelete (view(),
@@ -203,7 +203,7 @@ SetTrust::doApply ()
 
     if (!sleDst)
     {
-        JLOG(j_.trace) <<
+        JLOG(j_.trace()) <<
             "Delay transaction: Destination account does not exist.";
         return tecNO_DST;
     }
@@ -412,7 +412,7 @@ SetTrust::doApply ()
         // Reserve is not scaled by load.
         else if (bReserveIncrease && mPriorBalance < reserveCreate)
         {
-            JLOG(j_.trace) <<
+            JLOG(j_.trace()) <<
                 "Delay transaction: Insufficent reserve to add trust line.";
 
             // Another transaction could provide XRP to the account and then
@@ -423,7 +423,7 @@ SetTrust::doApply ()
         {
             view().update (sleRippleState);
 
-            JLOG(j_.trace) << "Modify ripple line";
+            JLOG(j_.trace()) << "Modify ripple line";
         }
     }
     // Line does not exist.
@@ -432,13 +432,13 @@ SetTrust::doApply ()
         (! bQualityOut || ! uQualityOut) &&         // Not setting quality out or setting default quality out.
         (! (view().rules().enabled(featureTrustSetAuth, ctx_.app.config().features)) || ! bSetAuth))
     {
-        JLOG(j_.trace) <<
+        JLOG(j_.trace()) <<
             "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
     else if (mPriorBalance < reserveCreate) // Reserve is not scaled by load.
     {
-        JLOG(j_.trace) <<
+        JLOG(j_.trace()) <<
             "Delay transaction: Line does not exist. Insufficent reserve to create line.";
 
         // Another transaction could create the account and then this transaction would succeed.
@@ -452,7 +452,7 @@ SetTrust::doApply ()
         uint256 index (getRippleStateIndex (
             account_, uDstAccountID, currency));
 
-        JLOG(j_.trace) <<
+        JLOG(j_.trace()) <<
             "doTrustSet: Creating ripple line: " <<
             to_string (index);
 

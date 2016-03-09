@@ -117,7 +117,7 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
 
     pathState->setIndex (pathStateList_.size ());
 
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "rippleCalc: Build direct:"
         << " status: " << transToken (pathState->status());
 
@@ -147,7 +147,7 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
 // <-- TER: Only returns tepPATH_PARTIAL if partialPaymentAllowed.
 TER RippleCalc::rippleCalculate ()
 {
-    JLOG (j_.trace)
+    JLOG (j_.trace())
         << "rippleCalc>"
         << " saMaxAmountReq_:" << saMaxAmountReq_
         << " saDstAmountReq_:" << saDstAmountReq_;
@@ -166,7 +166,7 @@ TER RippleCalc::rippleCalculate ()
     }
     else if (spsPaths_.empty ())
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "rippleCalc: Invalid transaction:"
             << "No paths and direct ripple not allowed.";
 
@@ -177,7 +177,7 @@ TER RippleCalc::rippleCalculate ()
     // nodes.
     // XXX Might also make a XRP bridge by default.
 
-    JLOG (j_.trace)
+    JLOG (j_.trace())
         << "rippleCalc: Paths in set: " << spsPaths_.size ();
 
     // Now expand the path state.
@@ -230,7 +230,7 @@ TER RippleCalc::rippleCalculate ()
                 pc.nextIncrement ();
 
                 // Compute increment.
-                JLOG (j_.debug)
+                JLOG (j_.debug())
                     << "rippleCalc: AFTER:"
                     << " mIndex=" << pathState->index()
                     << " uQuality=" << pathState->quality()
@@ -247,7 +247,7 @@ TER RippleCalc::rippleCalculate ()
                     // Path is not dry, but moved no funds
                     // This should never happen. Consider the path dry
 
-                    JLOG (j_.warning)
+                    JLOG (j_.warn())
                         << "rippleCalc: Non-dry path moves no funds";
 
                     assert (false);
@@ -259,7 +259,7 @@ TER RippleCalc::rippleCalculate ()
                 {
                     if (!pathState->inPass() || !pathState->outPass())
                     {
-                        JLOG (j_.debug)
+                        JLOG (j_.debug())
                             << "rippleCalc: better:"
                             << " uQuality="
                             << amountFromRate (pathState->quality())
@@ -279,7 +279,7 @@ TER RippleCalc::rippleCalculate ()
                                 *pathStateList_[iBest], *pathState)))
                         // Current is better than set.
                     {
-                        JLOG (j_.debug)
+                        JLOG (j_.debug())
                             << "rippleCalc: better:"
                             << " mIndex=" << pathState->index()
                             << " uQuality=" << pathState->quality()
@@ -296,16 +296,16 @@ TER RippleCalc::rippleCalculate ()
 
         ++iPass;
 
-        if (j_.debug)
+        if (auto stream = j_.debug())
         {
-            j_.debug
+            stream
                 << "rippleCalc: Summary:"
                 << " Pass: " << iPass
                 << " Dry: " << iDry
                 << " Paths: " << pathStateList_.size ();
             for (auto pathState: pathStateList_)
             {
-                j_.debug
+                stream
                     << "rippleCalc: "
                     << "Summary: " << pathState->index()
                     << " rate: "
@@ -320,7 +320,7 @@ TER RippleCalc::rippleCalculate ()
             // Apply best path.
             auto pathState = pathStateList_[iBest];
 
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                 << "rippleCalc: best:"
                 << " uQuality="
                 << amountFromRate (pathState->quality())
@@ -354,7 +354,7 @@ TER RippleCalc::rippleCalculate ()
             }
             else if (actualAmountOut_ > saDstAmountReq_)
             {
-                JLOG (j_.fatal)
+                JLOG (j_.fatal())
                     << "rippleCalc: TOO MUCH:"
                     << " actualAmountOut_:" << actualAmountOut_
                     << " saDstAmountReq_:" << saDstAmountReq_;
@@ -376,7 +376,7 @@ TER RippleCalc::rippleCalculate ()
                 {
                     // This payment is taking too many passes
 
-                    JLOG (j_.error)
+                    JLOG (j_.error())
                        << "rippleCalc: pass limit";
 
                     resultCode = telFAILED_PROCESSING;

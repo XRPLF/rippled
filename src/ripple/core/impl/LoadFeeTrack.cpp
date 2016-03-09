@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
@@ -147,7 +148,7 @@ LoadFeeTrack::raiseLocalFee ()
     if (origFee == mLocalTxnLoadFee)
         return false;
 
-    m_journal.debug << "Local load fee raised from " <<
+    JLOG(m_journal.debug()) << "Local load fee raised from " <<
         origFee << " to " << mLocalTxnLoadFee;
     return true;
 }
@@ -168,7 +169,7 @@ LoadFeeTrack::lowerLocalFee ()
     if (origFee == mLocalTxnLoadFee)
         return false;
 
-    m_journal.debug << "Local load fee lowered from " <<
+    JLOG(m_journal.debug()) << "Local load fee lowered from " <<
         origFee << " to " << mLocalTxnLoadFee;
     return true;
 }

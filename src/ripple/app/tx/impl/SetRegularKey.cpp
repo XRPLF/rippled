@@ -60,7 +60,7 @@ SetRegularKey::preflight (PreflightContext const& ctx)
 
     if (uTxFlags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;

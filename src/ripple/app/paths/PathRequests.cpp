@@ -72,7 +72,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
 
-    JLOG (mJournal.trace) <<
+    JLOG (mJournal.trace()) <<
         "updateAll seq=" << cache->getLedger()->seq() <<
         ", " << requests.size() << " requests";
 
@@ -176,7 +176,7 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
     }
     while (!shouldCancel ());
 
-    JLOG (mJournal.debug) <<
+    JLOG (mJournal.debug()) <<
         "updateAll complete: " << processed << " processed and " <<
         removed << " removed";
 }

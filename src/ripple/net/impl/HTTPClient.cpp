@@ -178,7 +178,7 @@ public:
 
     void httpsNext ()
     {
-        JLOG (j_.trace) << "Fetch: " << mDeqSites[0];
+        JLOG (j_.trace()) << "Fetch: " << mDeqSites[0];
 
         auto query = std::make_shared<boost::asio::ip::tcp::resolver::query>(
                 mDeqSites[0],
@@ -188,7 +188,7 @@ public:
 
         mDeadline.expires_from_now (mTimeout, mShutdown);
 
-        JLOG (j_.trace) << "expires_from_now: " << mShutdown.message ();
+        JLOG (j_.trace()) << "expires_from_now: " << mShutdown.message ();
 
         if (!mShutdown)
         {
@@ -201,7 +201,7 @@ public:
 
         if (!mShutdown)
         {
-            JLOG (j_.trace) << "Resolving: " << mDeqSites[0];
+            JLOG (j_.trace()) << "Resolving: " << mDeqSites[0];
 
             mResolver.async_resolve (*mQuery,
                                      std::bind (
@@ -220,20 +220,20 @@ public:
         if (ecResult == boost::asio::error::operation_aborted)
         {
             // Timer canceled because deadline no longer needed.
-            JLOG (j_.trace) << "Deadline cancelled.";
+            JLOG (j_.trace()) << "Deadline cancelled.";
 
             // Aborter is done.
         }
         else if (ecResult)
         {
-            JLOG (j_.trace) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message ();
+            JLOG (j_.trace()) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message ();
 
             // Can't do anything sound.
             abort ();
         }
         else
         {
-            JLOG (j_.trace) << "Deadline arrived.";
+            JLOG (j_.trace()) << "Deadline arrived.";
 
             // Mark us as shutting down.
             // XXX Use our own error code.
@@ -257,7 +257,7 @@ public:
     {
         if (ecResult)
         {
-            JLOG (j_.trace) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message ();
+            JLOG (j_.trace()) << "Shutdown error: " << mDeqSites[0] << ": " << ecResult.message ();
         }
     }
 
@@ -271,13 +271,13 @@ public:
 
         if (mShutdown)
         {
-            JLOG (j_.trace) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message ();
+            JLOG (j_.trace()) << "Resolve error: " << mDeqSites[0] << ": " << mShutdown.message ();
 
             invokeComplete (mShutdown);
         }
         else
         {
-            JLOG (j_.trace) << "Resolve complete.";
+            JLOG (j_.trace()) << "Resolve complete.";
 
             boost::asio::async_connect (
                 mSocket.lowest_layer (),
@@ -296,12 +296,12 @@ public:
 
         if (mShutdown)
         {
-            JLOG (j_.trace) << "Connect error: " << mShutdown.message ();
+            JLOG (j_.trace()) << "Connect error: " << mShutdown.message ();
         }
 
         if (!mShutdown)
         {
-            JLOG (j_.trace) << "Connected.";
+            JLOG (j_.trace()) << "Connected.";
 
             if (httpClientSSLContext->sslVerify ())
             {
@@ -309,7 +309,7 @@ public:
 
                 if (mShutdown)
                 {
-                    JLOG (j_.trace) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message ();
+                    JLOG (j_.trace()) << "set_verify_callback: " << mDeqSites[0] << ": " << mShutdown.message ();
                 }
             }
         }
@@ -340,13 +340,13 @@ public:
 
         if (mShutdown)
         {
-            JLOG (j_.trace) << "Handshake error:" << mShutdown.message ();
+            JLOG (j_.trace()) << "Handshake error:" << mShutdown.message ();
 
             invokeComplete (mShutdown);
         }
         else
         {
-            JLOG (j_.trace) << "Session started.";
+            JLOG (j_.trace()) << "Session started.";
 
             mBuild (mRequest, mDeqSites[0]);
 
@@ -366,13 +366,13 @@ public:
 
         if (mShutdown)
         {
-            JLOG (j_.trace) << "Write error: " << mShutdown.message ();
+            JLOG (j_.trace()) << "Write error: " << mShutdown.message ();
 
             invokeComplete (mShutdown);
         }
         else
         {
-            JLOG (j_.trace) << "Wrote.";
+            JLOG (j_.trace()) << "Wrote.";
 
             mSocket.async_read_until (
                 mHeader,
@@ -387,7 +387,7 @@ public:
     void handleHeader (const boost::system::error_code& ecResult, std::size_t bytes_transferred)
     {
         std::string     strHeader ((std::istreambuf_iterator<char> (&mHeader)), std::istreambuf_iterator<char> ());
-        JLOG (j_.trace) << "Header: \"" << strHeader << "\"";
+        JLOG (j_.trace()) << "Header: \"" << strHeader << "\"";
 
         static boost::regex reStatus ("\\`HTTP/1\\S+ (\\d{3}) .*\\'");          // HTTP/1.1 200 OK
         static boost::regex reSize ("\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'");
@@ -400,7 +400,7 @@ public:
         if (!bMatch)
         {
             // XXX Use our own error code.
-            JLOG (j_.trace) << "No status code";
+            JLOG (j_.trace()) << "No status code";
             invokeComplete (boost::system::error_code (boost::system::errc::bad_address, boost::system::system_category ()));
             return;
         }
@@ -447,7 +447,7 @@ public:
 
         if (mShutdown && mShutdown != boost::asio::error::eof)
         {
-            JLOG (j_.trace) << "Read error: " << mShutdown.message ();
+            JLOG (j_.trace()) << "Read error: " << mShutdown.message ();
 
             invokeComplete (mShutdown);
         }
@@ -455,7 +455,7 @@ public:
         {
             if (mShutdown)
             {
-                JLOG (j_.trace) << "Complete.";
+                JLOG (j_.trace()) << "Complete.";
             }
             else
             {
@@ -475,10 +475,10 @@ public:
 
         if (ecCancel)
         {
-            JLOG (j_.trace) << "invokeComplete: Deadline cancel error: " << ecCancel.message ();
+            JLOG (j_.trace()) << "invokeComplete: Deadline cancel error: " << ecCancel.message ();
         }
 
-        JLOG (j_.debug) << "invokeComplete: Deadline popping: " << mDeqSites.size ();
+        JLOG (j_.debug()) << "invokeComplete: Deadline popping: " << mDeqSites.size ();
 
         if (!mDeqSites.empty ())
         {

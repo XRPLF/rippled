@@ -226,7 +226,7 @@ OpenLedger::apply (Application& app, OpenView& view,
         }
         catch(std::exception const&)
         {
-            JLOG(j.error) <<
+            JLOG(j.error()) <<
                 "Caught exception";
         }
     }

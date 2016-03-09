@@ -41,7 +41,7 @@ CreateTicket::preflight (PreflightContext const& ctx)
     {
         if (ctx.tx.getFieldU32 (sfExpiration) == 0)
         {
-            JLOG(ctx.j.warning) <<
+            JLOG(ctx.j.warn()) <<
                 "Malformed transaction: bad expiration";
             return temBAD_EXPIRATION;
         }
@@ -61,7 +61,7 @@ CreateTicket::doApply ()
     {
         auto const reserve = view().fees().accountReserve(
             sle->getFieldU32(sfOwnerCount) + 1);
-        
+
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -115,7 +115,7 @@ CreateTicket::doApply ()
         describer,
         viewJ);
 
-    if (j_.trace) j_.trace <<
+    JLOG(j_.trace()) <<
         "Creating ticket " << to_string (sleTicket->getIndex ()) <<
         ": " << transHuman (result);
 

@@ -65,7 +65,7 @@ TER PathCursor::reverseLiquidity () const
     // Otherwise the node is an Offer.
     if (isXRP (nextNode().account_))
     {
-        JLOG (j_.trace)
+        JLOG (j_.trace())
             << "reverseLiquidityForOffer: "
             << "OFFER --> offer: nodeIndex_=" << nodeIndex_;
         return tesSUCCESS;
@@ -78,7 +78,7 @@ TER PathCursor::reverseLiquidity () const
     // Next is an account node, resolve current offer node's deliver.
     STAmount saDeliverAct;
 
-    JLOG (j_.trace)
+    JLOG (j_.trace())
         << "reverseLiquidityForOffer: OFFER --> account:"
         << " nodeIndex_=" << nodeIndex_
         << " saRevDeliver=" << node().saRevDeliver;

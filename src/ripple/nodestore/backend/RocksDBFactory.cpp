@@ -248,7 +248,7 @@ public:
             {
                 status = Status (customCode + getStatus.code());
 
-                m_journal.error << getStatus.ToString ();
+                JLOG(m_journal.error()) << getStatus.ToString ();
             }
         }
 
@@ -322,7 +322,7 @@ public:
                 else
                 {
                     // Uh oh, corrupted data!
-                    if (m_journal.fatal) m_journal.fatal <<
+                    JLOG(m_journal.fatal()) <<
                         "Corrupt NodeObject #" <<
                         from_hex_text<uint256>(it->key ().data ());
                 }
@@ -331,7 +331,7 @@ public:
             {
                 // VFALCO NOTE What does it mean to find an
                 //             incorrectly sized key? Corruption?
-                if (m_journal.fatal) m_journal.fatal <<
+                JLOG(m_journal.fatal()) <<
                     "Bad key size = " << it->key ().size ();
             }
         }

@@ -94,13 +94,13 @@ public:
         {
             if (std::abs (closeOffset_.count()) < 60)
             {
-                JLOG(j_.info) <<
+                JLOG(j_.info()) <<
                     "TimeKeeper: Close time offset now " <<
                         closeOffset_.count();
             }
             else
             {
-                JLOG(j_.warning) <<
+                JLOG(j_.warn()) <<
                     "TimeKeeper: Large close time offset = " <<
                         closeOffset_.count();
             }

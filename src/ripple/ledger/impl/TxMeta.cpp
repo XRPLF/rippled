@@ -157,7 +157,7 @@ TxMeta::getAffectedAccounts() const
                         }
                         else
                         {
-                            JLOG (j_.fatal) << "limit is not amount " << field.getJson (0);
+                            JLOG (j_.fatal()) << "limit is not amount " << field.getJson (0);
                         }
                     }
                 }

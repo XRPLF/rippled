@@ -76,7 +76,7 @@ STArray::STArray (SerialIter& sit, SField const& f)
 
         if ((type == STI_OBJECT) && (field == 1))
         {
-            JLOG (debugJournal().warning) <<
+            JLOG (debugJournal().warn()) <<
                 "Encountered array with end of object marker";
             Throw<std::runtime_error> ("Illegal terminator in array");
         }
@@ -85,14 +85,14 @@ STArray::STArray (SerialIter& sit, SField const& f)
 
         if (fn.isInvalid ())
         {
-            JLOG (debugJournal().trace) <<
+            JLOG (debugJournal().trace()) <<
                 "Unknown field: " << type << "/" << field;
             Throw<std::runtime_error> ("Unknown field");
         }
 
         if (fn.fieldType != STI_OBJECT)
         {
-            JLOG (debugJournal().trace) <<
+            JLOG (debugJournal().trace()) <<
                 "Array contains non-object";
             Throw<std::runtime_error> ("Non-object in array");
         }
