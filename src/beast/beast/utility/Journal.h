@@ -20,9 +20,30 @@
 #ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
+#include <cassert>
 #include <sstream>
 
 namespace beast {
+
+/** A namespace for easy access to logging severity values. */
+namespace severities
+{
+    /** Severity level / threshold of a Journal message. */
+    enum Severity
+    {
+        kAll = 0,
+
+        kTrace = kAll,
+        kDebug,
+        kInfo,
+        kWarning,
+        kError,
+        kFatal,
+
+        kDisabled,
+        kNone = kDisabled
+    };
+}
 
 /** A generic endpoint for log messages.
 
@@ -39,26 +60,13 @@ namespace beast {
 class Journal
 {
 public:
-    /** Severity level of the message. */
-    enum Severity
-    {
-        kAll = 0,
-
-        kTrace = kAll,
-        kDebug,
-        kInfo,
-        kWarning,
-        kError,
-        kFatal,
-
-        kDisabled,
-        kNone = kDisabled
-    };
-
     class Sink;
 
 private:
-    Sink* m_sink;
+    // Severity level / threshold of a Journal message.
+    using Severity = severities::Severity;
+
+    Sink& m_sink;
 
 public:
     //--------------------------------------------------------------------------
@@ -70,6 +78,7 @@ public:
         Sink () = delete;
         explicit Sink(Sink const& sink) = default;
         Sink (Severity thresh, bool console);
+        Sink& operator= (Sink const& lhs) = delete;
 
     public:
         virtual ~Sink () = 0;
@@ -100,6 +109,13 @@ public:
         bool m_console;
     };
 
+static_assert(std::is_default_constructible<Sink>::value == false, "");
+static_assert(std::is_copy_constructible<Sink>::value == false, "");
+static_assert(std::is_move_constructible<Sink>::value == false, "");
+static_assert(std::is_copy_assignable<Sink>::value == false, "");
+static_assert(std::is_move_assignable<Sink>::value == false, "");
+static_assert(std::is_nothrow_destructible<Sink>::value == true, "");
+
     /** Returns a Sink which does nothing. */
     static Sink& getNullSink ();
 
@@ -107,76 +123,98 @@ public:
 
     class Stream;
 
-    /** Scoped ostream-based container for writing messages to a Journal. */
+private:
+    /* Scoped ostream-based container for writing messages to a Journal. */
     class ScopedStream
     {
     public:
-        explicit ScopedStream (Stream const& stream);
-        ScopedStream (ScopedStream const& other);
+        ScopedStream (ScopedStream const& other)
+            : ScopedStream (other.m_sink, other.m_level)
+        { }
+
+        ScopedStream (Sink& sink, Severity level);
 
         template <typename T>
-        ScopedStream (Stream const& stream, T const& t)
-            : m_sink (stream.sink())
-            , m_level (stream.severity())
-        {
-            m_ostream << t;
-        }
+        ScopedStream (Stream const& stream, T const& t);
 
-        ScopedStream (Stream const& stream,
-            std::ostream& manip (std::ostream&));
+        ScopedStream (
+            Stream const& stream, std::ostream& manip (std::ostream&));
+
+        ScopedStream& operator= (ScopedStream const&) = delete;
 
         ~ScopedStream ();
 
-        std::ostringstream& ostream () const;
+        std::ostringstream& ostream () const
+        {
+            return m_ostream;
+        }
 
         std::ostream& operator<< (
             std::ostream& manip (std::ostream&)) const;
 
         template <typename T>
-        std::ostream& operator<< (T const& t) const
-        {
-            m_ostream << t;
-            return m_ostream;
-        }
+        std::ostream& operator<< (T const& t) const;
 
     private:
-        void init ();
-
-        ScopedStream& operator= (ScopedStream const&); // disallowed
-
         Sink& m_sink;
-        Severity const m_level; // cached from Stream for call to m_sink.write
+        Severity const m_level;
         std::ostringstream mutable m_ostream;
     };
 
-    //--------------------------------------------------------------------------
+static_assert(std::is_default_constructible<ScopedStream>::value == false, "");
+static_assert(std::is_copy_constructible<ScopedStream>::value == true, "");
+static_assert(std::is_move_constructible<ScopedStream>::value == true, "");
+static_assert(std::is_copy_assignable<ScopedStream>::value == false, "");
+static_assert(std::is_move_assignable<ScopedStream>::value == false, "");
+static_assert(std::is_nothrow_destructible<ScopedStream>::value == true, "");
 
+    //--------------------------------------------------------------------------
+public:
+    /** Provide a light-weight way to check active() before string formatting */
     class Stream
     {
     public:
         /** Create a stream which produces no output. */
-        Stream ();
+        Stream ()
+        : m_sink (getNullSink())
+        , m_level (severities::kDisabled)
+        { }
 
-        /** Create stream that writes at the given level. */
-        Stream (Sink& sink, Severity level);
+        /** Create stream that writes at the given level.
+
+            Constructor is inlined so checking active() very inexpensive.
+        */
+        Stream (Sink& sink, Severity level)
+            : m_sink (sink)
+            , m_level (level)
+        {
+            assert (m_level < severities::kDisabled);
+        }
 
         /** Construct or copy another Stream. */
-        /** @{ */
-        Stream (Stream const& other);
-        Stream& operator= (Stream const& other);
-        /** @} */
+        Stream (Stream const& other)
+            : Stream (other.m_sink, other.m_level)
+        {  }
+
+        Stream& operator= (Stream const& other) = delete;
 
         /** Returns the Sink that this Stream writes to. */
-        Sink& sink() const;
+        Sink& sink() const
+        {
+            return m_sink;
+        }
 
-        /** Returns the Severity of messages this Stream reports. */
-        Severity severity() const;
+        /** Returns the Severity level of messages this Stream reports. */
+        Severity level() const
+        {
+            return m_level;
+        }
 
-        /** Returns `true` if sink logs anything at this stream's severity. */
+        /** Returns `true` if sink logs anything at this stream's level. */
         /** @{ */
         bool active() const
         {
-            return m_sink->active (m_level);
+            return m_sink.active (m_level);
         }
 
         explicit
@@ -191,55 +229,132 @@ public:
         ScopedStream operator<< (std::ostream& manip (std::ostream&)) const;
 
         template <typename T>
-        ScopedStream operator<< (T const& t) const
-        {
-            return ScopedStream (*this, t);
-        }
+        ScopedStream operator<< (T const& t) const;
         /** @} */
 
     private:
-        Sink* m_sink;
+        Sink& m_sink;
         Severity m_level;
     };
+
+static_assert(std::is_default_constructible<Stream>::value == true, "");
+static_assert(std::is_copy_constructible<Stream>::value == true, "");
+static_assert(std::is_move_constructible<Stream>::value == true, "");
+static_assert(std::is_copy_assignable<Stream>::value == false, "");
+static_assert(std::is_move_assignable<Stream>::value == false, "");
+static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
 
     //--------------------------------------------------------------------------
 
     /** Create a journal that writes to the null sink. */
-    Journal ();
+    Journal ()
+    : Journal (getNullSink())
+    { }
 
     /** Create a journal that writes to the specified sink. */
-    explicit Journal (Sink& sink);
+    explicit Journal (Sink& sink)
+    : m_sink (sink)
+    { }
 
     /** Create a journal from another journal. */
-    Journal (Journal const& other);
+    Journal (Journal const& other)
+    : Journal (other.m_sink)
+    { }
 
     // Disallowed.
     Journal& operator= (Journal const& other) = delete;
 
     /** Destroy the journal. */
-    ~Journal ();
+    ~Journal () = default;
 
     /** Returns the Sink associated with this Journal. */
-    Sink& sink() const;
+    Sink& sink() const
+    {
+        return m_sink;
+    }
 
-    /** Returns a stream for this sink, with the specified severity. */
-    Stream stream (Severity level) const;
+    /** Returns a stream for this sink, with the specified severity level. */
+    Stream stream (Severity level) const
+    {
+        return Stream (m_sink, level);
+    }
 
     /** Returns `true` if any message would be logged at this severity level.
         For a message to be logged, the severity must be at or above the
         sink's severity threshold.
     */
-    bool active (Severity level) const;
+    bool active (Severity level) const
+    {
+        return m_sink.active (level);
+    }
 
-    /** Convenience sink streams for each severity level. */
-    Stream const trace;
-    Stream const debug;
-    Stream const info;
-    Stream const warning;
-    Stream const error;
-    Stream const fatal;
+    /** Severity stream access functions. */
+    /** @{ */
+    Stream trace() const
+    {
+        return { m_sink, severities::kTrace };
+    }
+
+    Stream debug() const
+    {
+        return { m_sink, severities::kDebug };
+    }
+
+    Stream info() const
+    {
+        return { m_sink, severities::kInfo };
+    }
+
+    Stream warn() const
+    {
+        return { m_sink, severities::kWarning };
+    }
+
+    Stream error() const
+    {
+        return { m_sink, severities::kError };
+    }
+
+    Stream fatal() const
+    {
+        return { m_sink, severities::kFatal };
+    }
+    /** @} */
 };
 
+static_assert(std::is_default_constructible<Journal>::value == true, "");
+static_assert(std::is_copy_constructible<Journal>::value == true, "");
+static_assert(std::is_move_constructible<Journal>::value == true, "");
+static_assert(std::is_copy_assignable<Journal>::value == false, "");
+static_assert(std::is_move_assignable<Journal>::value == false, "");
+static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
+
+//------------------------------------------------------------------------------
+
+template <typename T>
+Journal::ScopedStream::ScopedStream (Journal::Stream const& stream, T const& t)
+   : ScopedStream (stream.sink(), stream.level())
+{
+    m_ostream << t;
 }
+
+template <typename T>
+std::ostream&
+Journal::ScopedStream::operator<< (T const& t) const
+{
+    m_ostream << t;
+    return m_ostream;
+}
+
+//------------------------------------------------------------------------------
+
+template <typename T>
+Journal::ScopedStream
+Journal::Stream::operator<< (T const& t) const
+{
+    return ScopedStream (*this, t);
+}
+
+} // beast
 
 #endif

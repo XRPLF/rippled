@@ -46,7 +46,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
 
     // Taker is the active party against an offer in the ledger - the entity
     // that is taking advantage of an offer in the order book.
-    JLOG (j_.trace)
+    JLOG (j_.trace())
             << "advanceNode: TakerPays:"
             << node().saTakerPays << " TakerGets:" << node().saTakerGets;
 
@@ -63,7 +63,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
         //
         if (++loopCount > NODE_ADVANCE_MAX_LOOPS)
         {
-            JLOG (j_.warning) << "Loop count exceeded";
+            JLOG (j_.warn()) << "Loop count exceeded";
             return tefEXCEPTION;
         }
 
@@ -78,13 +78,13 @@ TER PathCursor::advanceNode (bool const bReverse) const
             {
                 // We didn't run off the end of this order book and found
                 // another quality directory.
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "advanceNode: Quality advance: node.directory.current="
                     << node().directory.current;
             }
             else if (bReverse)
             {
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "advanceNode: No more offers.";
 
                 node().offerIndex_ = 0;
@@ -94,7 +94,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
             {
                 // No more offers. Should be done rather than fall off end of
                 // book.
-                JLOG (j_.warning)
+                JLOG (j_.warn())
                     << "advanceNode: Unreachable: "
                     << "Fell off end of order book.";
                 // FIXME: why?
@@ -112,7 +112,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
             node().uEntry = 0;
             node().bEntryAdvance   = true;
 
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "advanceNode: directory dirty: node.saOfrRate="
                 << node().saOfrRate;
         }
@@ -135,13 +135,13 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     fhZERO_IF_FROZEN, viewJ);
                 node().bFundsDirty = false;
 
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "advanceNode: funds dirty: node().saOfrRate="
                     << node().saOfrRate;
             }
             else
             {
-                JLOG (j_.trace) << "advanceNode: as is";
+                JLOG (j_.trace()) << "advanceNode: as is";
             }
         }
         else if (!dirNext (view(),
@@ -157,7 +157,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
             {
                 // We are allowed to process multiple qualities if this is the
                 // only path.
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "advanceNode: next quality";
                 node().directory.advanceNeeded  = true;  // Process next quality.
             }
@@ -167,7 +167,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 // going forwards - this should be impossible!
                 // TODO(tom): these warnings occur in production!  They
                 // shouldn't.
-                JLOG (j_.warning)
+                JLOG (j_.warn())
                     << "advanceNode: unreachable: ran out of offers";
                 return telFAILED_PROCESSING;
             }
@@ -187,7 +187,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
             {
                 // Corrupt directory that points to an entry that doesn't exist.
                 // This has happened in production.
-                JLOG (j_.warning) <<
+                JLOG (j_.warn()) <<
                     "Missing offer in directory";
                 node().bEntryAdvance = true;
             }
@@ -203,7 +203,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 AccountIssue const accountIssue (
                     node().offerOwnerAccount_, node().issue_);
 
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "advanceNode: offerOwnerAccount_="
                     << to_string (node().offerOwnerAccount_)
                     << " node.saTakerPays=" << node().saTakerPays
@@ -215,7 +215,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                             view().parentCloseTime().time_since_epoch().count()))
                 {
                     // Offer is expired.
-                    JLOG (j_.trace)
+                    JLOG (j_.trace())
                         << "advanceNode: expired offer";
                     rippleCalc_.permanentlyUnfundedOffers_.insert(
                         node().offerIndex_);
@@ -231,7 +231,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     {
                         // Past internal error, offer had bad amounts.
                         // This has occurred in production.
-                        JLOG (j_.warning)
+                        JLOG (j_.warn())
                             << "advanceNode: PAST INTERNAL ERROR"
                             << " REVERSE: OFFER NON-POSITIVE:"
                             << " node.saTakerPays=" << node().saTakerPays
@@ -247,7 +247,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                         // Past internal error, offer was found failed to place
                         // this in permanentlyUnfundedOffers_.
                         // Just skip it. It will be deleted.
-                        JLOG (j_.debug)
+                        JLOG (j_.debug())
                             << "advanceNode: PAST INTERNAL ERROR "
                             << " FORWARD CONFIRM: OFFER NON-POSITIVE:"
                             << " node.saTakerPays=" << node().saTakerPays
@@ -258,7 +258,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     {
                         // Reverse should have previously put bad offer in list.
                         // An internal error previously left a bad offer.
-                        JLOG (j_.warning)
+                        JLOG (j_.warn())
                             << "advanceNode: INTERNAL ERROR"
 
                             <<" FORWARD NEWLY FOUND: OFFER NON-POSITIVE:"
@@ -295,7 +295,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 {
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
-                    JLOG (j_.trace)
+                    JLOG (j_.trace())
                         << "advanceNode: temporarily unfunded offer"
                         << " (forward)";
                     continue;
@@ -315,7 +315,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 {
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
-                    JLOG (j_.trace)
+                    JLOG (j_.trace())
                         << "advanceNode: temporarily unfunded offer"
                         <<" (reverse)";
                     continue;
@@ -337,7 +337,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 if (node().saOfferFunds <= zero)
                 {
                     // Offer is unfunded.
-                    JLOG (j_.trace)
+                    JLOG (j_.trace())
                         << "advanceNode: unfunded offer";
 
                     if (bReverse && !bFoundReverse && !bFoundPast)
@@ -363,7 +363,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     && !bFoundReverse)  // New to pass.
                 {
                     // Consider source mentioned by current path state.
-                    JLOG (j_.trace)
+                    JLOG (j_.trace())
                         << "advanceNode: remember="
                         <<  node().offerOwnerAccount_
                         << "/"
@@ -382,12 +382,12 @@ TER PathCursor::advanceNode (bool const bReverse) const
 
     if (resultCode == tesSUCCESS)
     {
-        JLOG (j_.trace)
+        JLOG (j_.trace())
             << "advanceNode: node.offerIndex_=" << node().offerIndex_;
     }
     else
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "advanceNode: resultCode=" << transToken (resultCode);
     }
 

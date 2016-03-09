@@ -247,7 +247,7 @@ ApplyStateTable::apply (OpenView& to,
 
         // VFALCO For diagnostics do we want to show
         //        metadata even when the base view is open?
-        JLOG(j.trace) <<
+        JLOG(j.trace()) <<
             "metadata " << meta.getJson (0);
     }
     to.rawTxInsert(
@@ -565,7 +565,7 @@ ApplyStateTable::getForMod (ReadView const& base,
             {
                 // VFALCO We need to think about throwing
                 //        an exception or calling LogicError
-                JLOG(j.fatal) <<
+                JLOG(j.fatal()) <<
                     "Trying to thread to deleted node";
                 return nullptr;
             }
@@ -581,7 +581,7 @@ ApplyStateTable::getForMod (ReadView const& base,
     {
         // VFALCO We need to think about throwing
         //        an exception or calling LogicError
-        JLOG(j.fatal) <<
+        JLOG(j.fatal()) <<
             "ApplyStateTable::getForMod: key not found";
         return nullptr;
     }
@@ -602,7 +602,7 @@ ApplyStateTable::threadTx (ReadView const& base,
     {
         // VFALCO We need to think about throwing
         //        an exception or calling LogicError
-        JLOG(j.fatal) <<
+        JLOG(j.fatal()) <<
             "Threading to non-existent account: " <<
                 toBase58(to);
         return;

@@ -53,7 +53,7 @@ LoadManager::~LoadManager ()
     catch (std::exception const& ex)
     {
         // Swallow the exception in a destructor.
-        JLOG(journal_.warning) << "std::exception in ~LoadManager.  "
+        JLOG(journal_.warn()) << "std::exception in ~LoadManager.  "
             << ex.what();
     }
 }
@@ -83,7 +83,7 @@ void LoadManager::onPrepare ()
 
 void LoadManager::onStart ()
 {
-    JLOG(journal_.debug) << "Starting";
+    JLOG(journal_.debug()) << "Starting";
     assert (! thread_.joinable());
 
     thread_ = std::thread {&LoadManager::run, this};
@@ -93,7 +93,7 @@ void LoadManager::onStop ()
 {
     if (thread_.joinable())
     {
-        JLOG(journal_.debug) << "Stopping";
+        JLOG(journal_.debug()) << "Stopping";
         {
             std::lock_guard<std::mutex> sl (mutex_);
             stop_ = true;
@@ -148,7 +148,7 @@ void LoadManager::run ()
                 // Report the deadlocked condition every 10 seconds
                 if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0)
                 {
-                    JLOG(journal_.warning)
+                    JLOG(journal_.warn())
                         << "Server stalled for "
                         << timeSpentDeadlocked << " seconds.";
                 }
@@ -164,7 +164,7 @@ void LoadManager::run ()
         bool change = false;
         if (app_.getJobQueue ().isOverloaded ())
         {
-            JLOG(journal_.info) << app_.getJobQueue ().getJson (0);
+            JLOG(journal_.info()) << app_.getJobQueue ().getJson (0);
             change = app_.getFeeTrack ().raiseLocalFee ();
         }
         else
@@ -185,7 +185,7 @@ void LoadManager::run ()
         if ((duration < std::chrono::seconds (0)) ||
             (duration > std::chrono::seconds (1)))
         {
-            JLOG(journal_.warning) << "time jump";
+            JLOG(journal_.warn()) << "time jump";
             t = clock_type::now();
         }
         else

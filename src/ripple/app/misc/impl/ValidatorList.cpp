@@ -63,7 +63,7 @@ ValidatorList::insertEphemeralKey (
 
     if (permanent_.find (identity) != permanent_.end())
     {
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             toBase58 (TokenType::TOKEN_NODE_PUBLIC, identity) <<
             ": ephemeral key exists in permanent table!";
         return false;
@@ -89,7 +89,7 @@ ValidatorList::insertPermanentKey (
 
     if (ephemeral_.find (identity) != ephemeral_.end())
     {
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             toBase58 (TokenType::TOKEN_NODE_PUBLIC, identity) <<
             ": permanent key exists in ephemeral table!";
         return false;
@@ -141,21 +141,21 @@ ValidatorList::load (
         ")?"                      // end optional comment block
     );
 
-    JLOG (j_.debug) <<
+    JLOG (j_.debug()) <<
         "Loading configured validators";
 
     std::size_t count = 0;
 
     for (auto const& n : validators.values ())
     {
-        JLOG (j_.trace) <<
+        JLOG (j_.trace()) <<
             "Processing '" << n << "'";
 
         boost::smatch match;
 
         if (!boost::regex_match (n, match, re))
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "Malformed entry: '" << n << "'";
             return false;
         }
@@ -165,14 +165,14 @@ ValidatorList::load (
 
         if (!id)
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "Invalid node identity: " << match[1];
             return false;
         }
 
         if (trusted (*id))
         {
-            JLOG (j_.warning) <<
+            JLOG (j_.warn()) <<
                 "Duplicate node identity: " << match[1];
             continue;
         }
@@ -181,7 +181,7 @@ ValidatorList::load (
             ++count;
     }
 
-    JLOG (j_.debug) <<
+    JLOG (j_.debug()) <<
         "Loaded " << count << " entries";
 
     return true;

@@ -120,7 +120,7 @@ bool getSingleSection (IniFileSections& secSource,
     }
     else if (pmtEntries)
     {
-        JLOG (j.warning) << boost::str (
+        JLOG (j.warn()) << boost::str (
             boost::format ("Section [%s]: requires 1 line not %d lines.") %
             strSection % pmtEntries->size ());
     }
@@ -442,7 +442,7 @@ void Config::loadFromString (std::string const& fileContents)
 
         if (validatorsFile.empty ())
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "[" SECTION_VALIDATORS_FILE "]" <<
                 ": " << strTemp <<
                 " is not a valid path";
@@ -450,7 +450,7 @@ void Config::loadFromString (std::string const& fileContents)
         }
         else if (!boost::filesystem::exists (validatorsFile))
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "[" SECTION_VALIDATORS_FILE "]" <<
                 ": the file " << validatorsFile <<
                 " does not exist";
@@ -458,7 +458,7 @@ void Config::loadFromString (std::string const& fileContents)
         }
         else if (!boost::filesystem::is_regular_file (validatorsFile))
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "[" SECTION_VALIDATORS_FILE "]" <<
                 ": the file " << validatorsFile <<
                 " is not a regular file";
@@ -498,7 +498,7 @@ void Config::loadFromString (std::string const& fileContents)
 
         if (!entries)
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "[" SECTION_VALIDATORS_FILE "]" <<
                 ": the file " << validatorsFile <<
                 " does not contain a [" SECTION_VALIDATORS <<

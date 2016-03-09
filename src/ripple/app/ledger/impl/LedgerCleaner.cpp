@@ -110,7 +110,7 @@ public:
 
     void onStop () override
     {
-        JLOG (j_.info) << "Stopping";
+        JLOG (j_.info()) << "Stopping";
         {
             std::lock_guard<std::mutex> lock (mutex_);
             shouldExit_ = true;
@@ -237,13 +237,13 @@ public:
 private:
     void init ()
     {
-        JLOG (j_.debug) << "Initializing";
+        JLOG (j_.debug()) << "Initializing";
     }
 
     void run ()
     {
         beast::Thread::setCurrentThreadName ("LedgerCleaner");
-        JLOG (j_.debug) << "Started";
+        JLOG (j_.debug()) << "Started";
 
         init();
 
@@ -280,7 +280,7 @@ private:
         }
         catch (SHAMapMissingNode &)
         {
-            JLOG (j_.warning) <<
+            JLOG (j_.warn()) <<
                 "Node missing from ledger " << ledger->info().seq;
             app_.getInboundLedgers().acquire (
                 ledger->info().hash, ledger->info().seq,
@@ -306,7 +306,7 @@ private:
             ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
         if (!nodeLedger)
         {
-            JLOG (j_.debug) << "Ledger " << ledgerIndex << " not available";
+            JLOG (j_.debug()) << "Ledger " << ledgerIndex << " not available";
             app_.getLedgerMaster().clearLedger (ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
@@ -319,21 +319,21 @@ private:
             (dbLedger->info().parentHash != nodeLedger->info().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
-            JLOG (j_.debug) <<
+            JLOG (j_.debug()) <<
                 "Ledger " << ledgerIndex << " mismatches SQL DB";
             doTxns = true;
         }
 
         if(! app_.getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
         {
-            JLOG (j_.debug) << "ledger " << ledgerIndex
+            JLOG (j_.debug()) << "ledger " << ledgerIndex
                             << " had wrong entry in history";
             doTxns = true;
         }
 
         if (doNodes && !nodeLedger->walkLedger(app_.journal ("Ledger")))
         {
-            JLOG (j_.debug) << "Ledger " << ledgerIndex << " is missing nodes";
+            JLOG (j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger (ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
@@ -342,7 +342,7 @@ private:
 
         if (doTxns && !pendSaveValidated(app_, nodeLedger, true, false))
         {
-            JLOG (j_.debug) << "Failed to save ledger " << ledgerIndex;
+            JLOG (j_.debug()) << "Failed to save ledger " << ledgerIndex;
             return false;
         }
 
@@ -365,7 +365,7 @@ private:
             referenceLedger = app_.getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
             {
-                JLOG (j_.warning) << "No validated ledger";
+                JLOG (j_.warn()) << "No validated ledger";
                 return ledgerHash; // Nothing we can do. No validated ledger.
             }
         }
@@ -398,7 +398,7 @@ private:
             }
         }
         else
-            JLOG (j_.warning) << "Validated ledger is prior to target ledger";
+            JLOG (j_.warn()) << "Validated ledger is prior to target ledger";
 
         return ledgerHash;
     }
@@ -423,7 +423,7 @@ private:
 
             while (app_.getFeeTrack().isLoadedLocal())
             {
-                JLOG (j_.debug) << "Waiting for load to subside";
+                JLOG (j_.debug()) << "Waiting for load to subside";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 if (shouldExit())
                     return;
@@ -448,13 +448,13 @@ private:
             bool fail = false;
             if (ledgerHash.isZero())
             {
-                JLOG (j_.info) << "Unable to get hash for ledger "
+                JLOG (j_.info()) << "Unable to get hash for ledger "
                                << ledgerIndex;
                 fail = true;
             }
             else if (!doLedger(ledgerIndex, ledgerHash, doNodes, doTxns))
             {
-                JLOG (j_.info) << "Failed to process ledger " << ledgerIndex;
+                JLOG (j_.info()) << "Failed to process ledger " << ledgerIndex;
                 fail = true;
             }
 

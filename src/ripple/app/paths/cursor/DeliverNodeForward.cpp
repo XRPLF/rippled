@@ -59,7 +59,7 @@ TER PathCursor::deliverNodeForward (
                 CALC_NODE_DELIVER_MAX_LOOPS_MQ :
                 CALC_NODE_DELIVER_MAX_LOOPS))
         {
-            JLOG (j_.warning)
+            JLOG (j_.warn())
                 << "deliverNodeForward: max loops cndf";
             return telFAILED_PROCESSING;
         }
@@ -75,7 +75,7 @@ TER PathCursor::deliverNodeForward (
         }
         else if (!node().offerIndex_)
         {
-            JLOG (j_.warning)
+            JLOG (j_.warn())
                 << "deliverNodeForward: INTERNAL ERROR: Ran out of offers.";
             return telFAILED_PROCESSING;
         }
@@ -138,7 +138,7 @@ TER PathCursor::deliverNodeForward (
             // Will be determined by adjusted saInPassAct.
             STAmount saInPassFees;
 
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "deliverNodeForward:"
                 << " nodeIndex_=" << nodeIndex_
                 << " saOutFunded=" << saOutFunded
@@ -157,7 +157,7 @@ TER PathCursor::deliverNodeForward (
             // FIXME: We remove an offer if WE didn't want anything out of it?
             if (!node().saTakerPays || saInSum <= zero)
             {
-                JLOG (j_.debug)
+                JLOG (j_.debug())
                     << "deliverNodeForward: Microscopic offer unfunded.";
 
                 // After math offer is effectively unfunded.
@@ -169,7 +169,7 @@ TER PathCursor::deliverNodeForward (
             if (!saInFunded)
             {
                 // Previous check should catch this.
-                JLOG (j_.warning)
+                JLOG (j_.warn())
                     << "deliverNodeForward: UNREACHABLE REACHED";
 
                 // After math offer is effectively unfunded.
@@ -188,7 +188,7 @@ TER PathCursor::deliverNodeForward (
                 saOutPassAct = saOutPassMax;
                 saInPassFees = saInPassFeesMax;
 
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "deliverNodeForward: ? --> OFFER --> account:"
                     << " offerOwnerAccount_="
                     << node().offerOwnerAccount_
@@ -262,13 +262,13 @@ TER PathCursor::deliverNodeForward (
                     outPassTotal,
                     viewJ);
 
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "deliverNodeForward: ? --> OFFER --> offer:"
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutPassFees=" << saOutPassFees;
             }
 
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "deliverNodeForward: "
                 << " nodeIndex_=" << nodeIndex_
                 << " node().saTakerGets=" << node().saTakerGets
@@ -310,7 +310,7 @@ TER PathCursor::deliverNodeForward (
 
             if (saTakerPaysNew < zero || saTakerGetsNew < zero)
             {
-                JLOG (j_.warning)
+                JLOG (j_.warn())
                     << "deliverNodeForward: NEGATIVE:"
                     << " saTakerPaysNew=" << saTakerPaysNew
                     << " saTakerGetsNew=" << saTakerGetsNew;
@@ -328,7 +328,7 @@ TER PathCursor::deliverNodeForward (
             {
                 // Offer became unfunded.
 
-                JLOG (j_.debug)
+                JLOG (j_.debug())
                     << "deliverNodeForward: unfunded:"
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=" << saOutFunded;
@@ -340,7 +340,7 @@ TER PathCursor::deliverNodeForward (
             {
                 if (saOutPassAct >= saOutFunded)
                 {
-                    JLOG (j_.warning)
+                    JLOG (j_.warn())
                         << "deliverNodeForward: TOO MUCH:"
                         << " saOutPassAct=" << saOutPassAct
                         << " saOutFunded=" << saOutFunded;
@@ -358,7 +358,7 @@ TER PathCursor::deliverNodeForward (
         }
     }
 
-    JLOG (j_.trace)
+    JLOG (j_.trace())
         << "deliverNodeForward<"
         << " nodeIndex_=" << nodeIndex_
         << " saInAct=" << saInAct

@@ -38,7 +38,7 @@ Change::preflight (PreflightContext const& ctx)
     auto account = ctx.tx.getAccountID(sfAccount);
     if (account != zero)
     {
-        JLOG(ctx.j.warning) << "Change: Bad source id";
+        JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
     }
 
@@ -46,7 +46,7 @@ Change::preflight (PreflightContext const& ctx)
     auto const fee = ctx.tx.getFieldAmount (sfFee);
     if (!fee.native () || fee != beast::zero)
     {
-        JLOG(ctx.j.warning) << "Change: invalid fee";
+        JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
     }
 
@@ -54,13 +54,13 @@ Change::preflight (PreflightContext const& ctx)
         !ctx.tx.getSignature ().empty () ||
         ctx.tx.isFieldPresent (sfSigners))
     {
-        JLOG(ctx.j.warning) << "Change: Bad signature";
+        JLOG(ctx.j.warn()) << "Change: Bad signature";
         return temBAD_SIGNATURE;
     }
 
     if (ctx.tx.getSequence () != 0 || ctx.tx.isFieldPresent (sfPreviousTxnID))
     {
-        JLOG(ctx.j.warning) << "Change: Bad sequence";
+        JLOG(ctx.j.warn()) << "Change: Bad sequence";
         return temBAD_SEQUENCE;
     }
 
@@ -74,7 +74,7 @@ Change::preclaim(PreclaimContext const &ctx)
     // this block can be moved to preflight.
     if (ctx.view.open())
     {
-        ctx.j.warning << "Change transaction against open ledger";
+        JLOG(ctx.j.warn()) << "Change transaction against open ledger";
         return temINVALID;
     }
 
@@ -170,7 +170,7 @@ Change::applyAmendment()
 
         if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
         {
-            JLOG (j_.warning) <<
+            JLOG (j_.warn()) <<
                 "Unsupported amendment " << amendment <<
                 " received a majority.";
         }
@@ -185,7 +185,7 @@ Change::applyAmendment()
 
         if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
         {
-            JLOG (j_.error) <<
+            JLOG (j_.error()) <<
                 "Unsupported amendment " << amendment <<
                 " activated: server blocked.";
             ctx_.app.getOPs ().setAmendmentBlocked ();
@@ -226,7 +226,7 @@ Change::applyFee()
 
     view().update (feeObject);
 
-    j_.warning << "Fees have been changed";
+    JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
 }
 

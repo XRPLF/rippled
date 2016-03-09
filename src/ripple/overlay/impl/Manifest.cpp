@@ -144,7 +144,7 @@ ManifestCache::loadValidatorKeys(
         ")?"                      // end optional comment block
     );
 
-    JLOG (journal.debug) <<
+    JLOG (journal.debug()) <<
         "Loading configured validator keys";
 
     std::size_t count = 0;
@@ -155,7 +155,7 @@ ManifestCache::loadValidatorKeys(
 
         if (!boost::regex_match (line, match, re))
         {
-            JLOG (journal.error) <<
+            JLOG (journal.error()) <<
                 "Malformed entry: '" << line << "'";
             return false;
         }
@@ -165,25 +165,25 @@ ManifestCache::loadValidatorKeys(
 
         if (!key)
         {
-            JLOG (journal.error) <<
+            JLOG (journal.error()) <<
                 "Error decoding validator key: " << match[1];
             return false;
         }
 
         if (publicKeyType(*key) != KeyType::ed25519)
         {
-            JLOG (journal.error) <<
+            JLOG (journal.error()) <<
                 "Validator key not using Ed25519: " << match[1];
             return false;
         }
 
-        JLOG (journal.debug) << "Loaded key: " << match[1];
+        JLOG (journal.debug()) << "Loaded key: " << match[1];
 
         addTrustedKey (*key, match[2]);
         ++count;
     }
 
-    JLOG (journal.debug) <<
+    JLOG (journal.debug()) <<
         "Loaded " << count << " entries";
 
     return true;
@@ -235,8 +235,8 @@ ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
             Since rippled always sends all of its current manifests,
             this will happen normally any time a peer connects.
         */
-        if (journal.debug)
-            logMftAct(journal.debug, "Untrusted", pk, seq);
+        if (auto stream = journal.debug())
+            logMftAct(stream, "Untrusted", pk, seq);
         return ManifestDisposition::untrusted;
     }
 
@@ -250,8 +250,8 @@ ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
             This will happen normally when a peer without the latest gossip
             connects.
         */
-        if (journal.debug)
-            logMftAct(journal.debug, "Stale", pk, seq, old->sequence);
+        if (auto stream = journal.debug())
+            logMftAct(stream, "Stale", pk, seq, old->sequence);
         return ManifestDisposition::stale;  // not a newer manifest, ignore
     }
 
@@ -284,8 +284,8 @@ ManifestCache::applyManifest (
           A manifest's signature is invalid.
           This shouldn't happen normally.
         */
-        if (journal.warning)
-            logMftAct(journal.warning, "Invalid", m.masterKey, m.sequence);
+        if (auto stream = journal.warn())
+            logMftAct(stream, "Invalid", m.masterKey, m.sequence);
         return ManifestDisposition::invalid;
     }
 
@@ -314,8 +314,8 @@ ManifestCache::applyManifest (
             run (and possibly not at all, if there's an obsolete entry in
             [validator_keys] for a validator that no longer exists).
         */
-        if (journal.info)
-            logMftAct(journal.info, "AcceptedNew", m.masterKey, m.sequence);
+        if (auto stream = journal.info())
+            logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
     }
     else
     {
@@ -325,9 +325,9 @@ ManifestCache::applyManifest (
                The MASTER key for this validator was revoked.  This is
                expected, but should happen at most *very* rarely.
             */
-            if (journal.info)
-                logMftAct(journal.info, "Revoked",
-                          m.masterKey, m.sequence, old->sequence);
+            if (auto stream = journal.info())
+                logMftAct(stream, "Revoked",
+                    m.masterKey, m.sequence, old->sequence);
         }
         else
         {
@@ -335,8 +335,8 @@ ManifestCache::applyManifest (
                 An ephemeral key was revoked and superseded by a new key.
                 This is expected, but should happen infrequently.
             */
-            if (journal.info)
-                logMftAct(journal.info, "AcceptedUpdate",
+            if (auto stream = journal.info())
+                logMftAct(stream, "AcceptedUpdate",
                           m.masterKey, m.sequence, old->sequence);
         }
 
@@ -346,8 +346,8 @@ ManifestCache::applyManifest (
     if (m.revoked ())
     {
         // The master key is revoked -- don't insert the signing key
-        if (journal.warning)
-            logMftAct(journal.warning, "Revoked", m.masterKey, m.sequence);
+        if (auto stream = journal.warn())
+            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
 
         /*
             A validator master key has been compromised, so its manifests
@@ -396,8 +396,8 @@ void ManifestCache::load (
         }
         else
         {
-            if (journal.warning)
-                journal.warning << "Malformed manifest in database";
+            JLOG(journal.warn())
+                << "Malformed manifest in database";
         }
     }
 }

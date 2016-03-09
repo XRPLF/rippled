@@ -131,7 +131,7 @@ public:
         if (boost::asio::ssl::rfc2818_verification (domain) (preverified, ctx))
             return true;
 
-        JLOG (j.warning) <<
+        JLOG (j.warn()) <<
             "Outbound SSL connection to " << domain <<
             " fails certificate verification";
         return false;
@@ -319,7 +319,7 @@ protected:
 
         if (ec)
         {
-            JLOG (j_.warning) <<
+            JLOG (j_.warn()) <<
                 "Handle autodetect error: " << ec;
             cbFunc (ec);
         }
@@ -332,14 +332,14 @@ protected:
                   || ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
         {
             // not ssl
-            JLOG (j_.trace) << "non-SSL";
+            JLOG (j_.trace()) << "non-SSL";
             mSecure = false;
             cbFunc (ec);
         }
         else
         {
             // ssl
-            JLOG (j_.trace) << "SSL";
+            JLOG (j_.trace()) << "SSL";
             mSecure = true;
             mSocket->async_handshake (ssl_socket::server, cbFunc);
         }

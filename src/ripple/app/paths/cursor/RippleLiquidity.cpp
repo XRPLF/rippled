@@ -57,7 +57,7 @@ void rippleLiquidity (
     STAmount& saCurAct,  // <-> out limit including achieved so far: <-- <= -->
     std::uint64_t& uRateMax)
 {
-    JLOG (rippleCalc.j_.trace)
+    JLOG (rippleCalc.j_.trace())
         << "rippleLiquidity>"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
@@ -84,7 +84,7 @@ void rippleLiquidity (
     // How much could possibly flow through the current node?
     const STAmount  saCur = saCurReq - saCurAct;
 
-    JLOG (rippleCalc.j_.trace)
+    JLOG (rippleCalc.j_.trace())
         << "rippleLiquidity: "
         << " bPrvUnlimited=" << bPrvUnlimited
         << " saPrv=" << saPrv
@@ -97,7 +97,7 @@ void rippleLiquidity (
     if (uQualityIn >= uQualityOut)
     {
         // You're getting better quality than you asked for, so no fee.
-        JLOG (rippleCalc.j_.trace) << "rippleLiquidity: No fees";
+        JLOG (rippleCalc.j_.trace()) << "rippleLiquidity: No fees";
 
         // Only process if the current rate, 1:1, is not worse than the previous
         // rate, uRateMax - otherwise there is no flow.
@@ -127,7 +127,7 @@ void rippleLiquidity (
     else
     {
         // If the quality is worse than the previous
-        JLOG (rippleCalc.j_.trace) << "rippleLiquidity: Fee";
+        JLOG (rippleCalc.j_.trace()) << "rippleLiquidity: Fee";
 
         std::uint64_t uRate = getRate (
             STAmount (uQualityOut), STAmount (uQualityIn));
@@ -146,7 +146,7 @@ void rippleLiquidity (
             STAmount saCurIn = divRound (
                 numerator, uQualityIn, {currency, uCurIssuerID}, true);
 
-            JLOG (rippleCalc.j_.trace)
+            JLOG (rippleCalc.j_.trace())
                 << "rippleLiquidity:"
                 << " bPrvUnlimited=" << bPrvUnlimited
                 << " saPrv=" << saPrv
@@ -157,7 +157,7 @@ void rippleLiquidity (
                 // All of current. Some amount of previous.
                 saCurAct += saCur;
                 saPrvAct += saCurIn;
-                JLOG (rippleCalc.j_.trace)
+                JLOG (rippleCalc.j_.trace())
                     << "rippleLiquidity:3c:"
                     << " saCurReq=" << saCurReq
                     << " saPrvAct=" << saPrvAct;
@@ -178,7 +178,7 @@ void rippleLiquidity (
                 STAmount saCurOut = divRound (
                     numerator, uQualityOut, issue, true);
 
-                JLOG (rippleCalc.j_.trace)
+                JLOG (rippleCalc.j_.trace())
                     << "rippleLiquidity:4: saCurReq=" << saCurReq;
 
                 saCurAct += saCurOut;
@@ -189,7 +189,7 @@ void rippleLiquidity (
         }
     }
 
-    JLOG (rippleCalc.j_.trace)
+    JLOG (rippleCalc.j_.trace())
         << "rippleLiquidity<"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut

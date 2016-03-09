@@ -119,7 +119,7 @@ error_code_i fillHandler (Context& context,
         int jc = context.app.getJobQueue ().getJobCountGE (jtCLIENT);
         if (jc > Tuning::maxJobQueueClients)
         {
-            JLOG (context.j.debug) << "Too busy for command: " << jc;
+            JLOG (context.j.debug()) << "Too busy for command: " << jc;
             return rpcTOO_BUSY;
         }
     }
@@ -129,8 +129,8 @@ error_code_i fillHandler (Context& context,
 
     std::string strCommand  = context.params[jss::command].asString ();
 
-    JLOG (context.j.trace) << "COMMAND:" << strCommand;
-    JLOG (context.j.trace) << "REQUEST:" << context.params;
+    JLOG (context.j.trace()) << "COMMAND:" << strCommand;
+    JLOG (context.j.trace()) << "REQUEST:" << context.params;
 
     auto handler = getHandler(strCommand);
 
@@ -143,7 +143,7 @@ error_code_i fillHandler (Context& context,
     if ((handler->condition_ & NEEDS_NETWORK_CONNECTION) &&
         (context.netOps.getOperatingMode () < NetworkOPs::omSYNCING))
     {
-        JLOG (context.j.info)
+        JLOG (context.j.info())
             << "Insufficient network mode for RPC: "
             << context.netOps.strOperatingMode ();
 
@@ -164,7 +164,7 @@ error_code_i fillHandler (Context& context,
 
         if (cID + 10 < vID)
         {
-            JLOG (context.j.debug) << "Current ledger ID(" << cID <<
+            JLOG (context.j.debug()) << "Current ledger ID(" << cID <<
                 ") is less than validated ledger ID(" << vID << ")";
             return rpcNO_CURRENT;
         }
@@ -192,7 +192,7 @@ Status callMethod (
     }
     catch (std::exception& e)
     {
-        JLOG (context.j.info) << "Caught throw: " << e.what ();
+        JLOG (context.j.info()) << "Caught throw: " << e.what ();
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;
@@ -209,7 +209,7 @@ void getResult (
     auto&& result = Json::addObject (object, jss::result);
     if (auto status = callMethod (context, method, name, result))
     {
-        JLOG (context.j.debug) << "rpcError: " << status.toString();
+        JLOG (context.j.debug()) << "rpcError: " << status.toString();
         result[jss::status] = jss::error;
         result[jss::request] = context.params;
     }
@@ -236,13 +236,13 @@ Status doCommand (
         if (! context.headers.user.empty() ||
             ! context.headers.forwardedFor.empty())
         {
-            context.j.debug << "start command: " << handler->name_ <<
+            JLOG(context.j.debug()) << "start command: " << handler->name_ <<
                 ", X-User: " << context.headers.user << ", X-Forwarded-For: " <<
                     context.headers.forwardedFor;
 
             auto ret = callMethod (context, method, handler->name_, result);
 
-            context.j.debug << "finish command: " << handler->name_ <<
+            JLOG(context.j.debug()) << "finish command: " << handler->name_ <<
                 ", X-User: " << context.headers.user << ", X-Forwarded-For: " <<
                     context.headers.forwardedFor;
 

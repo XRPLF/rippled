@@ -51,7 +51,7 @@ TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
 
     if (p == nullptr)
     {
-        JLOG(j_.error) <<
+        JLOG(j_.error()) <<
             "Missing directory " << tip_.dir() <<
             " for offer " << tip_.index();
         return;
@@ -62,7 +62,7 @@ TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
 
     if (it == v.end())
     {
-        JLOG(j_.error) <<
+        JLOG(j_.error()) <<
             "Missing offer " << tip_.index() <<
             " for directory " << tip_.dir();
         return;
@@ -72,7 +72,7 @@ TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
     p->setFieldV256 (sfIndexes, v);
     view.update (p);
 
-    JLOG(j_.trace) <<
+    JLOG(j_.trace()) <<
         "Missing offer " << tip_.index() <<
         " removed from directory " << tip_.dir();
 }
@@ -151,7 +151,7 @@ TOfferStreamBase<TIn, TOut>::step ()
         if (entry->isFieldPresent (sfExpiration) &&
             tp{d{(*entry)[sfExpiration]}} <= expire_)
         {
-            JLOG(j_.trace) <<
+            JLOG(j_.trace()) <<
                 "Removing expired offer " << entry->getIndex();
                 permRmOffer (entry);
             continue;
@@ -164,7 +164,7 @@ TOfferStreamBase<TIn, TOut>::step ()
         // Remove if either amount is zero
         if (amount.empty())
         {
-            JLOG(j_.warning) <<
+            JLOG(j_.warn()) <<
                 "Removing bad offer " << entry->getIndex();
             permRmOffer (entry);
             offer_ = TOffer<TIn, TOut>{};
@@ -188,12 +188,12 @@ TOfferStreamBase<TIn, TOut>::step ()
             if (original_funds == *ownerFunds_)
             {
                 permRmOffer (entry);
-                JLOG(j_.trace) <<
+                JLOG(j_.trace()) <<
                     "Removing unfunded offer " << entry->getIndex();
             }
             else
             {
-                JLOG(j_.trace) <<
+                JLOG(j_.trace()) <<
                     "Removing became unfunded offer " << entry->getIndex();
             }
             offer_ = TOffer<TIn, TOut>{};

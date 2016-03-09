@@ -78,7 +78,7 @@ void STLedgerEntry::setSLEType ()
     type_ = mFormat->getType ();
     if (!setType (mFormat->elements))
     {
-        if (auto j = debugJournal().warning)
+        if (auto j = debugJournal().warn())
         {
             j << "Ledger entry not valid for type " << mFormat->getName ();
             j << "Object: " << getJson (0);
@@ -141,7 +141,7 @@ bool STLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
 
-    JLOG (debugJournal().trace)
+    JLOG (debugJournal().trace())
         << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 
     if (oldPrevTxID == txID)

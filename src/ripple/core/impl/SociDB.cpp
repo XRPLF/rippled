@@ -238,13 +238,13 @@ private:
         auto fname = sqlite3_db_filename (&conn_, "main");
         if (ret != SQLITE_OK)
         {
-            auto& jm = (ret == SQLITE_LOCKED) ? j_.trace : j_.warning;
+            auto jm = (ret == SQLITE_LOCKED) ? j_.trace() : j_.warn();
             JLOG (jm)
                 << "WAL(" << fname << "): error " << ret;
         }
         else
         {
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "WAL(" << fname << "): frames="
                 << log << ", written=" << ckpt;
         }

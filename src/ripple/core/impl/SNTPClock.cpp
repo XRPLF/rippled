@@ -141,7 +141,7 @@ public:
 
         if (it == servers.end ())
         {
-            JLOG(j_.info) <<
+            JLOG(j_.info()) <<
                 "SNTP: no server specified";
             return;
         }
@@ -207,7 +207,7 @@ public:
             return;
         if (ec)
         {
-            JLOG(j_.error) <<
+            JLOG(j_.error()) <<
                 "SNTPClock::onTimer: " << ec.message();
             return;
         }
@@ -235,18 +235,18 @@ public:
 
         if (! ec)
         {
-            JLOG(j_.trace) <<
+            JLOG(j_.trace()) <<
                 "SNTP: Packet from " << ep_;
             std::lock_guard<std::mutex> lock (mutex_);
             auto const query = queries_.find (ep_);
             if (query == queries_.end ())
             {
-                JLOG(j_.debug) <<
+                JLOG(j_.debug()) <<
                     "SNTP: Reply from " << ep_ << " found without matching query";
             }
             else if (query->second.replied)
             {
-                JLOG(j_.debug) <<
+                JLOG(j_.debug()) <<
                     "SNTP: Duplicate response from " << ep_;
             }
             else
@@ -255,12 +255,12 @@ public:
 
                 if (time (nullptr) > (query->second.sent + 1))
                 {
-                    JLOG(j_.warning) <<
+                    JLOG(j_.warn()) <<
                         "SNTP: Late response from " << ep_;
                 }
                 else if (bytes_xferd < 48)
                 {
-                    JLOG(j_.warning) <<
+                    JLOG(j_.warn()) <<
                         "SNTP: Short reply from " << ep_ <<
                             " (" << bytes_xferd << ") " << buf_.size ();
                 }
@@ -268,7 +268,7 @@ public:
                         &buf_[0])[NTP_OFF_ORGTS_FRAC] !=
                             query->second.nonce)
                 {
-                    JLOG(j_.warning) <<
+                    JLOG(j_.warn()) <<
                         "SNTP: Reply from " << ep_ << "had wrong nonce";
                 }
                 else
@@ -311,7 +311,7 @@ public:
 
         if (best == servers_.end ())
         {
-            JLOG(j_.trace) <<
+            JLOG(j_.trace()) <<
                 "SNTP: No server to query";
             return false;
         }
@@ -320,7 +320,7 @@ public:
 
         if ((best->second != time_t(-1)) && ((best->second + NTP_MIN_QUERY) >= now))
         {
-            JLOG(j_.trace) <<
+            JLOG(j_.trace()) <<
                 "SNTP: All servers recently queried";
             return false;
         }
@@ -333,7 +333,7 @@ public:
             &SNTPClientImp::resolveComplete, this,
                 beast::asio::placeholders::error,
                     beast::asio::placeholders::iterator));
-        JLOG(j_.trace) <<
+        JLOG(j_.trace()) <<
             "SNTPClock: Resolve pending for " << best->first;
         return true;
     }
@@ -346,7 +346,7 @@ public:
             return;
         if (ec)
         {
-            JLOG(j_.trace) <<
+            JLOG(j_.trace()) <<
                 "SNTPClock::resolveComplete: " << ec.message();
             return;
         }
@@ -371,7 +371,7 @@ public:
             if ((query.sent == now) || ((query.sent + 1) == now))
             {
                 // This can happen if the same IP address is reached through multiple names
-                JLOG(j_.trace) <<
+                JLOG(j_.trace()) <<
                     "SNTP: Redundant query suppressed";
                 return;
             }
@@ -395,7 +395,7 @@ public:
 
         if (ec)
         {
-            JLOG(j_.warning) <<
+            JLOG(j_.warn()) <<
                 "SNTPClock::onSend: " << ec.message();
             return;
         }
@@ -412,14 +412,14 @@ public:
 
         if ((info >> 30) == 3)
         {
-            JLOG(j_.info) <<
+            JLOG(j_.info()) <<
                 "SNTP: Alarm condition " << ep_;
             return;
         }
 
         if ((stratum == 0) || (stratum > 14))
         {
-            JLOG(j_.info) <<
+            JLOG(j_.info()) <<
                 "SNTP: Unreasonable stratum (" << stratum << ") from " << ep_;
             return;
         }
@@ -453,7 +453,7 @@ public:
 
         if (timev || offset_)
         {
-            JLOG(j_.trace) << "SNTP: Offset is " << timev <<
+            JLOG(j_.trace()) << "SNTP: Offset is " << timev <<
                 ", new system offset is " << offset_;
         }
     }

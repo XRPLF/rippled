@@ -44,7 +44,7 @@ Payment::preflight (PreflightContext const& ctx)
 
     if (uTxFlags & tfPaymentMask)
     {
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "Invalid flags set.";
         return temINVALID_FLAG;
     }
@@ -83,25 +83,25 @@ Payment::preflight (PreflightContext const& ctx)
 
     if (!uDstAccountID)
     {
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "Payment destination account not specified.";
         return temDST_NEEDED;
     }
     if (bMax && maxSourceAmount <= zero)
     {
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "bad max amount: " << maxSourceAmount.getFullText ();
         return temBAD_AMOUNT;
     }
     if (saDstAmount <= zero)
     {
-        JLOG(j.trace) << "Malformed transaction: "<<
+        JLOG(j.trace()) << "Malformed transaction: "<<
             "bad dst amount: " << saDstAmount.getFullText ();
         return temBAD_AMOUNT;
     }
     if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
     {
-        JLOG(j.trace) <<"Malformed transaction: " <<
+        JLOG(j.trace()) <<"Malformed transaction: " <<
             "Bad currency.";
         return temBAD_CURRENCY;
     }
@@ -109,7 +109,7 @@ Payment::preflight (PreflightContext const& ctx)
     {
         // You're signing yourself a payment.
         // If bPaths is true, you might be trying some arbitrage.
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "Redundant payment from " << to_string (account) <<
             " to self without path for " << to_string (uDstCurrency);
         return temREDUNDANT;
@@ -117,35 +117,35 @@ Payment::preflight (PreflightContext const& ctx)
     if (bXRPDirect && bMax)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "SendMax specified for XRP to XRP.";
         return temBAD_SEND_XRP_MAX;
     }
     if (bXRPDirect && bPaths)
     {
         // XRP is sent without paths.
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "Paths specified for XRP to XRP.";
         return temBAD_SEND_XRP_PATHS;
     }
     if (bXRPDirect && partialPaymentAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "Partial payment specified for XRP to XRP.";
         return temBAD_SEND_XRP_PARTIAL;
     }
     if (bXRPDirect && limitQuality)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "Limit quality specified for XRP to XRP.";
         return temBAD_SEND_XRP_LIMIT;
     }
     if (bXRPDirect && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace) << "Malformed transaction: " <<
+        JLOG(j.trace()) << "Malformed transaction: " <<
             "No ripple direct specified for XRP to XRP.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
@@ -155,7 +155,7 @@ Payment::preflight (PreflightContext const& ctx)
     {
         if (! partialPaymentAllowed)
         {
-            JLOG(j.trace) << "Malformed transaction: Partial payment not "
+            JLOG(j.trace()) << "Malformed transaction: Partial payment not "
                 "specified for " << jss::DeliverMin.c_str() << ".";
             return temBAD_AMOUNT;
         }
@@ -163,21 +163,21 @@ Payment::preflight (PreflightContext const& ctx)
         auto const dMin = *deliverMin;
         if (!isLegalNet(dMin) || dMin <= zero)
         {
-            JLOG(j.trace) << "Malformed transaction: Invalid " <<
+            JLOG(j.trace()) << "Malformed transaction: Invalid " <<
                 jss::DeliverMin.c_str() << " amount. " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin.issue() != saDstAmount.issue())
         {
-            JLOG(j.trace) <<  "Malformed transaction: Dst issue differs "
+            JLOG(j.trace()) <<  "Malformed transaction: Dst issue differs "
                 "from " << jss::DeliverMin.c_str() << ". " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
         }
         if (dMin > saDstAmount)
         {
-            JLOG(j.trace) << "Malformed transaction: Dst amount less than " <<
+            JLOG(j.trace()) << "Malformed transaction: Dst amount less than " <<
                 jss::DeliverMin.c_str() << ". " <<
                     dMin.getFullText();
             return temBAD_AMOUNT;
@@ -207,7 +207,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         // Destination account does not exist.
         if (!saDstAmount.native())
         {
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "Delay transaction: Destination account does not exist.";
 
             // Another transaction could create the account and then this
@@ -219,7 +219,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "Delay transaction: Partial payment not allowed to create account.";
 
 
@@ -231,7 +231,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "Delay transaction: Destination account does not exist. " <<
                 "Insufficent payment to create account.";
 
@@ -249,7 +249,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 
         // We didn't make this test for a newly-formed account because there's
         // no way for this field to be set.
-        JLOG(ctx.j.trace) << "Malformed transaction: DestinationTag required.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
 
         return tecDST_TAG_NEEDED;
     }
@@ -308,7 +308,7 @@ Payment::doApply ()
             saDstAmount.mantissa(), saDstAmount.exponent (),
             saDstAmount < zero);
 
-    JLOG(j_.trace) <<
+    JLOG(j_.trace()) <<
         "maxSourceAmount=" << maxSourceAmount.getFullText () <<
         " saDstAmount=" << saDstAmount.getFullText ();
 
@@ -354,7 +354,7 @@ Payment::doApply ()
         path::RippleCalc::Output rc;
         {
             PaymentSandbox pv(&view());
-            JLOG(j_.debug)
+            JLOG(j_.debug())
                 << "Entering RippleCalc in payment: " << ctx_.tx.getTransactionID();
             rc = path::RippleCalc::rippleCalculate (
                 pv,
@@ -417,7 +417,7 @@ Payment::doApply ()
         {
             // Vote no. However the transaction might succeed, if applied in
             // a different order.
-            JLOG(j_.trace) << "Delay transaction: Insufficient funds: " <<
+            JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " <<
                 " " << to_string (mPriorBalance) <<
                 " / " << to_string (saDstAmount.xrp () + mmm) <<
                 " (" << to_string (reserve) << ")";

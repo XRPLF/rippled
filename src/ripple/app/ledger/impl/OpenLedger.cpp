@@ -81,7 +81,7 @@ OpenLedger::accept(Application& app, Rules const& rules,
                 std::string const& suffix,
                     modify_type const& f)
 {
-    JLOG(j_.trace) <<
+    JLOG(j_.trace()) <<
         "accept ledger " << ledger->seq() << " " << suffix;
     auto next = create(rules, ledger);
     if (retriesFirst)

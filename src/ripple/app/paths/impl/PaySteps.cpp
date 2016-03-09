@@ -99,7 +99,7 @@ toStep (
     if (e1->isOffer() && e2->isAccount())
     {
         // should already be taken care of
-        JLOG (j.warning)
+        JLOG (j.warn())
             << "Found offer/account payment step. Aborting payment strand.";
         assert (0);
         Throw<FlowException> (tefEXCEPTION, "Found offer/account payment step.");
@@ -116,7 +116,7 @@ toStep (
 
     if (isXRP (curIssue.currency) && isXRP (outCurrency))
     {
-        JLOG (j.warning) << "Found xrp/xrp offer payment step";
+        JLOG (j.warn()) << "Found xrp/xrp offer payment step";
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
@@ -143,22 +143,22 @@ toStrand (
 {
     if (isXRP (src))
     {
-        JLOG (j.debug) << "toStrand with xrpAccount as src";
+        JLOG (j.debug()) << "toStrand with xrpAccount as src";
         return {temBAD_PATH, Strand{}};
     }
     if (isXRP (dst))
     {
-        JLOG (j.debug) << "toStrand with xrpAccount as dst";
+        JLOG (j.debug()) << "toStrand with xrpAccount as dst";
         return {temBAD_PATH, Strand{}};
     }
     if (!isConsistent (deliver))
     {
-        JLOG (j.debug) << "toStrand inconsistent deliver issue";
+        JLOG (j.debug()) << "toStrand inconsistent deliver issue";
         return {temBAD_PATH, Strand{}};
     }
     if (sendMaxIssue && !isConsistent (*sendMaxIssue))
     {
-        JLOG (j.debug) << "toStrand inconsistent sendMax issue";
+        JLOG (j.debug()) << "toStrand inconsistent sendMax issue";
         return {temBAD_PATH, Strand{}};
     }
 
@@ -270,7 +270,7 @@ toStrand (
                 curIssue.account != cur->getAccountID () &&
                 curIssue.account != next->getAccountID ())
             {
-                JLOG (j.trace) << "Inserting implied account";
+                JLOG (j.trace()) << "Inserting implied account";
                 auto msr = make_DirectStepI (ctx(), cur->getAccountID (),
                     curIssue.account, curIssue.currency);
                 if (msr.first != tesSUCCESS)
@@ -286,7 +286,7 @@ toStrand (
         {
             if (curIssue.account != cur->getAccountID ())
             {
-                JLOG (j.trace) << "Inserting implied account before offer";
+                JLOG (j.trace()) << "Inserting implied account before offer";
                 auto msr = make_DirectStepI (ctx(), cur->getAccountID (),
                     curIssue.account, curIssue.currency);
                 if (msr.first != tesSUCCESS)
@@ -303,7 +303,7 @@ toStrand (
             if (curIssue.account != next->getAccountID () &&
                 !isXRP (next->getAccountID ()))
             {
-                JLOG (j.trace) << "Inserting implied account after offer";
+                JLOG (j.trace()) << "Inserting implied account after offer";
                 auto msr = make_DirectStepI (ctx(), curIssue.account,
                     next->getAccountID (), curIssue.currency);
                 if (msr.first != tesSUCCESS)
@@ -322,7 +322,7 @@ toStrand (
 
             if (isXRP (curIssue.currency))
             {
-                JLOG (j.trace) << "Inserting implied XI offer";
+                JLOG (j.trace()) << "Inserting implied XI offer";
                 auto msr = make_BookStepXI (
                     ctx(), {nextCurrency, nextIssuer});
                 if (msr.first != tesSUCCESS)
@@ -331,7 +331,7 @@ toStrand (
             }
             else if (isXRP (nextCurrency))
             {
-                JLOG (j.trace) << "Inserting implied IX offer";
+                JLOG (j.trace()) << "Inserting implied IX offer";
                 auto msr = make_BookStepIX (ctx(), curIssue);
                 if (msr.first != tesSUCCESS)
                     return {msr.first, Strand{}};
@@ -339,7 +339,7 @@ toStrand (
             }
             else
             {
-                JLOG (j.trace) << "Inserting implied II offer";
+                JLOG (j.trace()) << "Inserting implied II offer";
                 auto msr = make_BookStepII (
                     ctx(), curIssue, {nextCurrency, nextIssuer});
                 if (msr.first != tesSUCCESS)
@@ -359,7 +359,7 @@ toStrand (
             result.emplace_back (std::move (s.second));
         else
         {
-            JLOG (j.warning) << "toStep failed";
+            JLOG (j.warn()) << "toStep failed";
             return {s.first, Strand{}};
         }
     }
@@ -397,21 +397,21 @@ toStrands (
 
         if (ter != tesSUCCESS)
         {
-            JLOG (j.trace) << "failed to add default path";
+            JLOG (j.trace()) << "failed to add default path";
             if (isTemMalformed (ter) || paths.empty ()) {
                 return {ter, std::vector<Strand>{}};
             }
         }
         else if (strand.empty ())
         {
-            JLOG (j.trace) << "toStrand failed";
+            JLOG (j.trace()) << "toStrand failed";
             Throw<FlowException> (tefEXCEPTION, "toStrand returned tes & empty strand");
         }
         insert(std::move(strand));
     }
     else if (paths.empty ())
     {
-        JLOG (j.debug)
+        JLOG (j.debug())
             << "Flow: Invalid transaction: No paths and direct ripple not allowed.";
         return {temRIPPLE_EMPTY, std::vector<Strand>{}};
     }
@@ -426,14 +426,14 @@ toStrands (
         if (ter != tesSUCCESS)
         {
             lastFailTer = ter;
-            JLOG (j.trace)
+            JLOG (j.trace())
                     << "failed to add path: ter: " << ter << "path: " << p.getJson(0);
             if (isTemMalformed (ter))
                 return {ter, std::vector<Strand>{}};
         }
         else if (strand.empty ())
         {
-            JLOG (j.trace) << "toStrand failed";
+            JLOG (j.trace()) << "toStrand failed";
             Throw<FlowException> (tefEXCEPTION, "toStrand returned tes & empty strand");
         }
 

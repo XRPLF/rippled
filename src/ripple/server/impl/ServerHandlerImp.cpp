@@ -355,11 +355,11 @@ ServerHandlerImp::processRequest (Port const& port,
         return;
     }
 
-    JLOG(m_journal.debug) << "Query: " << strMethod << params;
+    JLOG(m_journal.debug()) << "Query: " << strMethod << params;
 
     // Provide the JSON-RPC method as the field "command" in the request.
     params[jss::command] = strMethod;
-    JLOG (m_journal.trace)
+    JLOG (m_journal.trace())
         << "doRpcCommand:" << strMethod << ":" << params;
 
     Resource::Charge loadType = Resource::feeReferenceRPC;
@@ -376,7 +376,7 @@ ServerHandlerImp::processRequest (Port const& port,
     {
         result[jss::status] = jss::error;
         result[jss::request] = params;
-        JLOG (m_journal.debug)  <<
+        JLOG (m_journal.debug())  <<
             "rpcError: " << result [jss::error] <<
             ": " << result [jss::error_message];
     }
@@ -399,13 +399,13 @@ ServerHandlerImp::processRequest (Port const& port,
     response += '\n';
     usage.charge (loadType);
 
-    if (m_journal.debug.active())
+    if (auto stream = m_journal.debug())
     {
         static const int maxSize = 10000;
         if (response.size() <= maxSize)
-            m_journal.debug << "Reply: " << response;
+            stream << "Reply: " << response;
         else
-            m_journal.debug << "Reply: " << response.substr (0, maxSize);
+            stream << "Reply: " << response.substr (0, maxSize);
     }
 
     HTTPReply (200, response, output, rpcJ);

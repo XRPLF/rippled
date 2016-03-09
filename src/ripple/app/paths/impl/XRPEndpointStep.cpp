@@ -199,7 +199,7 @@ XRPEndpointStep::validFwd (
 {
     if (!cache_)
     {
-        JLOG (j_.error) << "Expected valid cache in validFwd";
+        JLOG (j_.error()) << "Expected valid cache in validFwd";
         return {false, EitherAmount (XRPAmount (beast::zero))};
     }
 
@@ -210,7 +210,7 @@ XRPEndpointStep::validFwd (
 
     if (!isLast_ && balance < xrpIn)
     {
-        JLOG (j_.error) << "XRPEndpointStep: Strand re-execute check failed."
+        JLOG (j_.error()) << "XRPEndpointStep: Strand re-execute check failed."
             << " Insufficient balance: " << to_string (balance)
             << " Requested: " << to_string (xrpIn);
         return {false, EitherAmount (balance)};
@@ -218,7 +218,7 @@ XRPEndpointStep::validFwd (
 
     if (xrpIn != *cache_)
     {
-        JLOG (j_.error) << "XRPEndpointStep: Strand re-execute check failed."
+        JLOG (j_.error()) << "XRPEndpointStep: Strand re-execute check failed."
             << " ExpectedIn: " << to_string (*cache_)
             << " CachedIn: " << to_string (xrpIn);
     }
@@ -230,14 +230,14 @@ XRPEndpointStep::check (StrandContext const& ctx) const
 {
     if (!acc_)
     {
-        JLOG (j_.debug) << "XRPEndpointStep: specified bad account.";
+        JLOG (j_.debug()) << "XRPEndpointStep: specified bad account.";
         return temBAD_PATH;
     }
 
     auto sleAcc = ctx.view.read (keylet::account (acc_));
     if (!sleAcc)
     {
-        JLOG (j_.warning) << "XRPEndpointStep: can't send or receive XRPs from "
+        JLOG (j_.warn()) << "XRPEndpointStep: can't send or receive XRPs from "
                              "non-existent account: "
                           << acc_;
         return terNO_ACCOUNT;

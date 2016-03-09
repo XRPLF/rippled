@@ -46,7 +46,7 @@ void PathCursor::nextIncrement () const
     {
         if (pathState_.isDry())
         {
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                 << "nextIncrement: success on dry path:"
                 << " outPass=" << pathState_.outPass()
                 << " inPass=" << pathState_.inPass();

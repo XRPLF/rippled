@@ -118,7 +118,7 @@ BasicTaker::unfunded () const
     if (get_funds (account(), remaining_.in) > zero)
         return false;
 
-    JLOG(journal_.debug) << "Unfunded: taker is out of funds.";
+    JLOG(journal_.debug()) << "Unfunded: taker is out of funds.";
     return true;
 }
 
@@ -128,7 +128,7 @@ BasicTaker::done () const
     // We are done if we have consumed all the input currency
     if (remaining_.in <= zero)
     {
-        JLOG(journal_.debug) << "Done: all the input currency has been consumed.";
+        JLOG(journal_.debug()) << "Done: all the input currency has been consumed.";
         return true;
     }
 
@@ -136,14 +136,14 @@ BasicTaker::done () const
     // desired amount of output currency
     if (!sell_ && (remaining_.out <= zero))
     {
-        JLOG(journal_.debug) << "Done: the desired amount has been received.";
+        JLOG(journal_.debug()) << "Done: the desired amount has been received.";
         return true;
     }
 
     // We are done if the taker is out of funds
     if (unfunded ())
     {
-        JLOG(journal_.debug) << "Done: taker out of funds.";
+        JLOG(journal_.debug()) << "Done: taker out of funds.";
         return true;
     }
 
@@ -205,21 +205,22 @@ qual_mul (STAmount const& amount, Quality const& quality, STAmount const& output
 void
 BasicTaker::log_flow (char const* description, Flow const& flow)
 {
-    if (!journal_.debug)
+    auto stream = journal_.debug();
+    if (!stream)
         return;
 
-    journal_.debug << description;
+    stream << description;
 
     if (isXRP (issue_in ()))
-        journal_.debug << "   order in: " << format_amount (flow.order.in);
+        stream << "   order in: " << format_amount (flow.order.in);
     else
-        journal_.debug << "   order in: " << format_amount (flow.order.in) <<
+        stream << "   order in: " << format_amount (flow.order.in) <<
             " (issuer: " << format_amount (flow.issuers.in) << ")";
 
     if (isXRP (issue_out ()))
-        journal_.debug << "  order out: " << format_amount (flow.order.out);
+        stream << "  order out: " << format_amount (flow.order.out);
     else
-        journal_.debug << "  order out: " << format_amount (flow.order.out) <<
+        stream << "  order out: " << format_amount (flow.order.out) <<
             " (issuer: " << format_amount (flow.issuers.out) << ")";
 }
 
@@ -439,7 +440,7 @@ BasicTaker::do_cross (
 
     if (account () == owner1)
     {
-        JLOG(journal_.trace) << "The taker owns the first leg of a bridge.";
+        JLOG(journal_.trace()) << "The taker owns the first leg of a bridge.";
         leg1_in_funds = std::max (leg1_in_funds, offer1.in);
     }
 
@@ -449,7 +450,7 @@ BasicTaker::do_cross (
 
     if (account () == owner2)
     {
-        JLOG(journal_.trace) << "The taker owns the second leg of a bridge.";
+        JLOG(journal_.trace()) << "The taker owns the second leg of a bridge.";
         leg2_out_funds = std::max (leg2_out_funds, offer2.out);
     }
 
@@ -465,17 +466,17 @@ BasicTaker::do_cross (
 
     if (owner1 == owner2)
     {
-        JLOG(journal_.trace) <<
+        JLOG(journal_.trace()) <<
             "The bridge endpoints are owned by the same account.";
         xrp_funds = std::max (offer1.out, offer2.in);
     }
 
-    if (journal_.debug)
+    if (auto stream = journal_.debug())
     {
-        journal_.debug << "Available bridge funds:";
-        journal_.debug << "  leg1 in: " << format_amount (leg1_in_funds);
-        journal_.debug << " leg2 out: " << format_amount (leg2_out_funds);
-        journal_.debug << "      xrp: " << format_amount (xrp_funds);
+        stream << "Available bridge funds:";
+        stream << "  leg1 in: " << format_amount (leg1_in_funds);
+        stream << " leg2 out: " << format_amount (leg2_out_funds);
+        stream << "      xrp: " << format_amount (xrp_funds);
     }
 
     auto const leg1_rate = in_rate (owner1, account ());
@@ -540,23 +541,23 @@ Taker::Taker (CrossType cross_type, ApplyView& view,
     assert (issue_in () == offer.in.issue ());
     assert (issue_out () == offer.out.issue ());
 
-    if (journal_.debug)
+    if (auto stream = journal_.debug())
     {
-        journal_.debug << "Crossing as: " << to_string (account);
+        stream << "Crossing as: " << to_string (account);
 
         if (isXRP (issue_in ()))
-            journal_.debug << "   Offer in: " << format_amount (offer.in);
+            stream << "   Offer in: " << format_amount (offer.in);
         else
-            journal_.debug << "   Offer in: " << format_amount (offer.in) <<
+            stream << "   Offer in: " << format_amount (offer.in) <<
                 " (issuer: " << issue_in ().account << ")";
 
         if (isXRP (issue_out ()))
-            journal_.debug << "  Offer out: " << format_amount (offer.out);
+            stream << "  Offer out: " << format_amount (offer.out);
         else
-            journal_.debug << "  Offer out: " << format_amount (offer.out) <<
+            stream << "  Offer out: " << format_amount (offer.out) <<
                 " (issuer: " << issue_out ().account << ")";
 
-        journal_.debug <<
+        stream <<
             "    Balance: " << format_amount (get_funds (account, offer.in));
     }
 }
@@ -570,14 +571,14 @@ Taker::consume_offer (Offer& offer, Amounts const& order)
     if (order.out < zero)
         Throw<std::logic_error> ("flow with negative output.");
 
-    JLOG(journal_.debug) << "Consuming from offer " << offer;
+    JLOG(journal_.debug()) << "Consuming from offer " << offer;
 
-    if (journal_.trace)
+    if (auto stream = journal_.trace())
     {
         auto const& available = offer.amount ();
 
-        journal_.trace << "   in:" << format_amount (available.in);
-        journal_.trace << "  out:" << format_amount(available.out);
+        stream << "   in:" << format_amount (available.in);
+        stream << "  out:" << format_amount(available.out);
     }
 
     offer.consume (view_, order);

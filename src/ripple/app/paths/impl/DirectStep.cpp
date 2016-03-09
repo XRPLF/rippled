@@ -210,7 +210,7 @@ DirectStepI::revImp (
 
     Issue const srcToDstIss (currency_, srcRedeems ? dst_ : src_);
 
-    JLOG (j_.trace) <<
+    JLOG (j_.trace()) <<
         "DirectStepI::rev" <<
         " srcRedeems: " << srcRedeems <<
         " outReq: " << to_string (out) <<
@@ -220,7 +220,7 @@ DirectStepI::revImp (
 
     if (maxSrcToDst.signum () <= 0)
     {
-        JLOG (j_.trace) << "DirectStepI::rev: dry";
+        JLOG (j_.trace()) << "DirectStepI::rev: dry";
         cache_.emplace (
             IOUAmount (beast::zero),
             IOUAmount (beast::zero),
@@ -240,7 +240,7 @@ DirectStepI::revImp (
         rippleCredit (sb,
                       src_, dst_, toSTAmount (srcToDst, srcToDstIss),
                       /*checkIssuer*/ true, j_);
-        JLOG (j_.trace) <<
+        JLOG (j_.trace()) <<
             "DirectStepI::rev: Non-limiting" <<
             " srcRedeems: " << srcRedeems <<
             " in: " << to_string (in) <<
@@ -258,7 +258,7 @@ DirectStepI::revImp (
     rippleCredit (sb,
                   src_, dst_, toSTAmount (maxSrcToDst, srcToDstIss),
                   /*checkIssuer*/ true, j_);
-    JLOG (j_.trace) <<
+    JLOG (j_.trace()) <<
         "DirectStepI::rev: Limiting" <<
         " srcRedeems: " << srcRedeems <<
         " in: " << to_string (in) <<
@@ -289,7 +289,7 @@ DirectStepI::setCacheLimiting (
                     double(cache_->in.mantissa ())) > 1.01)
             {
                 // Detect large diffs on forward pass so they may be investigated
-                JLOG (j_.warning)
+                JLOG (j_.warn())
                     << "DirectStepI::fwd: setCacheLimiting"
                     << " fwdIn: " << to_string (fwdIn)
                     << " cacheIn: " << to_string (cache_->in)
@@ -328,7 +328,7 @@ DirectStepI::fwdImp (
 
     Issue const srcToDstIss (currency_, srcRedeems ? dst_ : src_);
 
-    JLOG (j_.trace) <<
+    JLOG (j_.trace()) <<
             "DirectStepI::fwd" <<
             " srcRedeems: " << srcRedeems <<
             " inReq: " << to_string (in) <<
@@ -338,7 +338,7 @@ DirectStepI::fwdImp (
 
     if (maxSrcToDst.signum () <= 0)
     {
-        JLOG (j_.trace) << "DirectStepI::fwd: dry";
+        JLOG (j_.trace()) << "DirectStepI::fwd: dry";
         cache_.emplace (
             IOUAmount (beast::zero),
             IOUAmount (beast::zero),
@@ -357,7 +357,7 @@ DirectStepI::fwdImp (
         rippleCredit (sb,
             src_, dst_, toSTAmount (cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true, j_);
-        JLOG (j_.trace) <<
+        JLOG (j_.trace()) <<
                 "DirectStepI::fwd: Non-limiting" <<
                 " srcRedeems: " << srcRedeems <<
                 " in: " << to_string (in) <<
@@ -375,7 +375,7 @@ DirectStepI::fwdImp (
         rippleCredit (sb,
             src_, dst_, toSTAmount (cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true, j_);
-        JLOG (j_.trace) <<
+        JLOG (j_.trace()) <<
                 "DirectStepI::rev: Limiting" <<
                 " srcRedeems: " << srcRedeems <<
                 " in: " << to_string (actualIn) <<
@@ -393,7 +393,7 @@ DirectStepI::validFwd (
 {
     if (!cache_)
     {
-        JLOG (j_.trace) << "Expected valid cache in validFwd";
+        JLOG (j_.trace()) << "Expected valid cache in validFwd";
         return {false, EitherAmount (IOUAmount (beast::zero))};
     }
 
@@ -419,7 +419,7 @@ DirectStepI::validFwd (
 
     if (maxSrcToDst < cache_->srcToDst)
     {
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             "DirectStepI: Strand re-execute check failed." <<
             " Exceeded max src->dst limit" <<
             " max src->dst: " << to_string (maxSrcToDst) <<
@@ -430,7 +430,7 @@ DirectStepI::validFwd (
     if (!(checkNear (savCache.in, cache_->in) &&
           checkNear (savCache.out, cache_->out)))
     {
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             "DirectStepI: Strand re-execute check failed." <<
             " ExpectedIn: " << to_string (savCache.in) <<
             " CachedIn: " << to_string (cache_->in) <<
@@ -518,7 +518,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
 {
     if (!src_ || !dst_)
     {
-        JLOG (j_.debug) << "DirectStepI: specified bad account.";
+        JLOG (j_.debug()) << "DirectStepI: specified bad account.";
         return temBAD_PATH;
     }
 
@@ -526,7 +526,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
         auto sleSrc = ctx.view.read (keylet::account (src_));
         if (!sleSrc)
         {
-            JLOG (j_.warning)
+            JLOG (j_.warn())
                     << "DirectStepI: can't receive IOUs from non-existent issuer: "
                     << src_;
             return terNO_ACCOUNT;
@@ -536,7 +536,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
 
         if (!sleLine)
         {
-            JLOG (j_.trace) << "DirectStepI: No credit line. " << *this;
+            JLOG (j_.trace()) << "DirectStepI: No credit line. " << *this;
             return terNO_LINE;
         }
 
@@ -546,7 +546,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
             !((*sleLine)[sfFlags] & authField) &&
             (*sleLine)[sfBalance] == zero)
         {
-            JLOG (j_.warning)
+            JLOG (j_.warn())
                 << "DirectStepI: can't receive IOUs from issuer without auth."
                 << " src: " << src_;
             return terNO_AUTH;
@@ -575,7 +575,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
     if (!ctx.seenDirectIssues[0].insert (Issue{currency_, src_}).second ||
         !ctx.seenDirectIssues[1].insert (Issue{currency_, dst_}).second)
     {
-        JLOG (j_.debug) << "DirectStepI: loop detected: Index: "
+        JLOG (j_.debug()) << "DirectStepI: loop detected: Index: "
                         << ctx.strandSize << ' ' << *this;
         return temBAD_PATH_LOOP;
     }
@@ -587,7 +587,7 @@ TER DirectStepI::check (StrandContext const& ctx) const
             auto const limit = creditLimit (ctx.view, dst_, src_, currency_);
             if (-owed >= limit)
             {
-                JLOG (j_.debug)
+                JLOG (j_.debug())
                         << "DirectStepI: dry: owed: " << owed << " limit: " << limit;
                 return tecPATH_DRY;
             }

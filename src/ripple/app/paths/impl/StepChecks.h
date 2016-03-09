@@ -82,7 +82,7 @@ checkNoRipple (
         (*sleOut)[sfFlags] &
             ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
     {
-        JLOG (j.info) << "Path violates noRipple constraint between " << prev
+        JLOG (j.info()) << "Path violates noRipple constraint between " << prev
                       << ", " << cur << " and " << next;
 
         return terNO_RIPPLE;

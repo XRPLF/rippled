@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/crypto/csprng.h>
+#include <ripple/basics/Log.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/format.hpp>
 #include <cassert>
@@ -144,7 +145,7 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
 
 void SHAMapNodeID::dump (beast::Journal journal) const
 {
-    if (journal.debug) journal.debug <<
+    JLOG(journal.debug()) <<
         getString ();
 }
 

@@ -159,7 +159,7 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
 
     if (! m_forwardedFor.empty() || ! m_user.empty())
     {
-        j_.debug << "connect secure_gateway X-Forwarded-For: " <<
+        JLOG(j_.debug()) << "connect secure_gateway X-Forwarded-For: " <<
             m_forwardedFor << ", X-User: " << m_user;
     }
 }
@@ -174,7 +174,7 @@ template <class WebSocket>
 void ConnectionImpl <WebSocket>::rcvMessage (
     message_ptr const& msg, bool& msgRejected, bool& runQueue)
 {
-    JLOG(j_.debug) <<
+    JLOG(j_.debug()) <<
         "WebSocket: received " << msg->get_payload();
 
     ScopedLockType sl (m_receiveQueueMutex);
@@ -337,7 +337,7 @@ void ConnectionImpl <WebSocket>::preDestroy ()
 {
     if (! m_forwardedFor.empty() || ! m_user.empty())
     {
-        j_.debug << "disconnect secure_gateway X-Forwarded-For: " <<
+        JLOG(j_.debug()) << "disconnect secure_gateway X-Forwarded-For: " <<
             m_forwardedFor << ", X-User: " << m_user;
     }
 
@@ -355,7 +355,7 @@ void ConnectionImpl <WebSocket>::preDestroy ()
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
 {
-    JLOG (j_.debug) <<
+    JLOG (j_.debug()) <<
         "WebSocket: sending " << to_string (jvObj);
     connection_ptr ptr = m_connection.lock ();
     if (ptr)
@@ -365,7 +365,7 @@ void ConnectionImpl <WebSocket>::send (Json::Value const& jvObj, bool broadcast)
 template <class WebSocket>
 void ConnectionImpl <WebSocket>::disconnect ()
 {
-    JLOG (j_.debug) <<
+    JLOG (j_.debug()) <<
         "WebSocket: disconnecting";
     connection_ptr ptr = m_connection.lock ();
 

@@ -724,7 +724,7 @@ class View_test
         auto const rdViewB4 = eB.closed();
 
         // Check for compatibility.
-        auto jStream = eA.journal.stream(beast::Journal::kError);
+        auto jStream = eA.journal.error();
         expect (  areCompatible (*rdViewA3, *rdViewA4, jStream, ""));
         expect (  areCompatible (*rdViewA4, *rdViewA3, jStream, ""));
         expect (  areCompatible (*rdViewA4, *rdViewA4, jStream, ""));

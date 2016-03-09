@@ -481,7 +481,7 @@ BookStep<TIn, TOut>::validFwd (
 {
     if (!cache_)
     {
-        JLOG (j_.trace) << "Expected valid cache in validFwd";
+        JLOG (j_.trace()) << "Expected valid cache in validFwd";
         return {false, EitherAmount (TOut (beast::zero))};
     }
 
@@ -500,7 +500,7 @@ BookStep<TIn, TOut>::validFwd (
     if (!(checkNear (savCache.in, cache_->in) &&
             checkNear (savCache.out, cache_->out)))
     {
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             "Strand re-execute check failed." <<
             " ExpectedIn: " << to_string (savCache.in) <<
             " CachedIn: " << to_string (cache_->in) <<
@@ -517,17 +517,17 @@ BookStep<TIn, TOut>::check(StrandContext const& ctx) const
 {
     if (book_.in == book_.out)
     {
-        JLOG (j_.debug) << "BookStep: Book with same in and out issuer " << *this;
+        JLOG (j_.debug()) << "BookStep: Book with same in and out issuer " << *this;
         return temBAD_PATH;
     }
     if (!isConsistent (book_.in) || !isConsistent (book_.out))
     {
-        JLOG (j_.debug) << "Book: currency is inconsistent with issuer." << *this;
+        JLOG (j_.debug()) << "Book: currency is inconsistent with issuer." << *this;
         return temBAD_PATH;
     }
     if (!ctx.seenBooks.insert (book_).second)
     {
-        JLOG (j_.debug) << "BookStep: loop detected: " << *this;
+        JLOG (j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
     }
     return tesSUCCESS;

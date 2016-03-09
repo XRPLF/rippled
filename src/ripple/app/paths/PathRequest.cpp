@@ -57,8 +57,8 @@ PathRequest::PathRequest (
         , iIdentifier (id)
         , created_ (std::chrono::steady_clock::now())
 {
-    if (m_journal.debug)
-        m_journal.debug << iIdentifier << " created";
+    JLOG(m_journal.debug())
+        << iIdentifier << " created";
 }
 
 PathRequest::PathRequest (
@@ -81,14 +81,15 @@ PathRequest::PathRequest (
         , iIdentifier (id)
         , created_ (std::chrono::steady_clock::now())
 {
-    if (m_journal.debug)
-        m_journal.debug << iIdentifier << " created";
+    JLOG(m_journal.debug())
+        << iIdentifier << " created";
 }
 
 PathRequest::~PathRequest()
 {
     using namespace std::chrono;
-    if (! m_journal.info)
+    auto stream = m_journal.info();
+    if (! stream)
         return;
 
     std::string fast, full;
@@ -106,8 +107,8 @@ PathRequest::~PathRequest()
             duration_cast<milliseconds>(full_reply_ - created_).count());
         full += "ms";
     }
-    m_journal.info << iIdentifier << " complete:" << fast << full <<
-    " total:" << duration_cast<milliseconds>(steady_clock::now() -
+    stream << iIdentifier << " complete:" << fast << full <<
+        " total:" << duration_cast<milliseconds>(steady_clock::now() -
         created_).count() << "ms";
 }
 
@@ -250,18 +251,18 @@ PathRequest::doCreate (
             doUpdate(cache, true);
     }
 
-    if (m_journal.debug)
+    if (auto stream = m_journal.debug())
     {
         if (valid)
         {
-            m_journal.debug << iIdentifier <<
+            stream << iIdentifier <<
                 " valid: " << toBase58(*raSrcAccount);
-            m_journal.debug << iIdentifier <<
+            stream << iIdentifier <<
                 " deliver: " << saDstAmount.getFullText ();
         }
         else
         {
-            m_journal.debug << iIdentifier << " invalid";
+            stream << iIdentifier << " invalid";
         }
     }
 
@@ -441,7 +442,7 @@ int PathRequest::parseJson (Json::Value const& jvParams)
 
 Json::Value PathRequest::doClose (Json::Value const&)
 {
-    m_journal.debug << iIdentifier << " closed";
+    JLOG(m_journal.debug()) << iIdentifier << " closed";
     ScopedLockType sl (mLock);
     jvStatus[jss::closed] = true;
     return jvStatus;
@@ -500,7 +501,7 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
     hash_map<Currency, std::unique_ptr<Pathfinder>> currency_map;
     for (auto const& issue : sourceCurrencies)
     {
-        JLOG(m_journal.debug)
+        JLOG(m_journal.debug())
             << iIdentifier
             << " Trying to find paths: "
             << STAmount(issue, 1).getFullText();
@@ -510,7 +511,7 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
         if (! pathfinder)
         {
             assert(false);
-            m_journal.debug << iIdentifier << " No paths found";
+            JLOG(m_journal.debug()) << iIdentifier << " No paths found";
             continue;
         }
 
@@ -527,7 +528,7 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
         STAmount saMaxAmount = saSendMax.value_or(
             STAmount({issue.currency, sourceAccount}, 1u, 0, true));
 
-        m_journal.debug << iIdentifier
+        JLOG(m_journal.debug()) << iIdentifier
             << " Paths found, calling rippleCalc";
 
         path::RippleCalc::Input rcInput;
@@ -551,7 +552,7 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
             ! fullLiquidityPath.empty() &&
             (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
-            m_journal.debug << iIdentifier
+            JLOG(m_journal.debug()) << iIdentifier
                 << " Trying with an extra path element";
 
             ps.push_back(fullLiquidityPath);
@@ -570,13 +571,13 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
 
             if (rc.result() != tesSUCCESS)
             {
-                m_journal.warning << iIdentifier
+                JLOG(m_journal.warn()) << iIdentifier
                     << " Failed with covering path "
                     << transHuman(rc.result());
             }
             else
             {
-                m_journal.debug << iIdentifier
+                JLOG(m_journal.debug()) << iIdentifier
                     << " Extra path element gives "
                     << transHuman(rc.result());
             }
@@ -602,7 +603,7 @@ PathRequest::findPaths (std::shared_ptr<RippleLineCache> const& cache,
         }
         else
         {
-            m_journal.debug << iIdentifier << " rippleCalc returns "
+            JLOG(m_journal.debug()) << iIdentifier << " rippleCalc returns "
                 << transHuman(rc.result());
         }
     }
@@ -621,7 +622,8 @@ Json::Value PathRequest::doUpdate(
     std::shared_ptr<RippleLineCache> const& cache, bool fast)
 {
     using namespace std::chrono;
-    m_journal.debug << iIdentifier << " update " << (fast ? "fast" : "normal");
+    JLOG(m_journal.debug()) << iIdentifier
+        << " update " << (fast ? "fast" : "normal");
 
     {
         ScopedLockType sl (mLock);
@@ -683,7 +685,8 @@ Json::Value PathRequest::doUpdate(
             --iLevel;
     }
 
-    m_journal.debug << iIdentifier << " processing at level " << iLevel;
+    JLOG(m_journal.debug()) << iIdentifier
+        << " processing at level " << iLevel;
 
     Json::Value& jvArray = (newStatus[jss::alternatives] = Json::arrayValue);
     if (! findPaths(cache, iLevel, jvArray))

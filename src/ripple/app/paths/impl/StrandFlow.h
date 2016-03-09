@@ -88,7 +88,7 @@ flow (
     using Result = StrandResult<TInAmt, TOutAmt>;
     if (strand.empty ())
     {
-        JLOG (j.warning) << "Empty strand passed to Liquidity";
+        JLOG (j.warn()) << "Empty strand passed to Liquidity";
         return {};
     }
 
@@ -119,7 +119,7 @@ flow (
                 auto r = strand[i]->rev (*sb, *afView, ofrsToRm, stepOut);
                 if (strand[i]->dry (r.second))
                 {
-                    JLOG (j.trace) << "Strand found dry in rev";
+                    JLOG (j.trace()) << "Strand found dry in rev";
                     return {tecPATH_DRY, std::move (ofrsToRm)};
                 }
 
@@ -141,7 +141,7 @@ flow (
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
-                        JLOG (j.fatal) << "Re-executed limiting step failed";
+                        JLOG (j.fatal()) << "Re-executed limiting step failed";
                         assert (0);
                         return {telFAILED_PROCESSING, std::move (ofrsToRm)};
                     }
@@ -165,7 +165,7 @@ flow (
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity
                         // yet the limiting is still limiting
-                        JLOG (j.fatal) << "Re-executed limiting step failed";
+                        JLOG (j.fatal()) << "Re-executed limiting step failed";
                         assert (0);
                         return {telFAILED_PROCESSING, std::move (ofrsToRm)};
                     }
@@ -199,7 +199,7 @@ flow (
                     strand[i]->validFwd (checkSB, checkAfView, stepIn);
                 if (!valid)
                 {
-                    JLOG (j.error)
+                    JLOG (j.error())
                         << "Strand re-execute check failed. Step: " << i;
                     return {telFAILED_PROCESSING, std::move (ofrsToRm)};
                 }
@@ -424,7 +424,7 @@ flow (PaymentSandbox const& baseView,
 
             Quality const q (f.out, f.in);
 
-            JLOG (j.trace)
+            JLOG (j.trace())
                 << "New flow iter (iter, in, out): "
                 << curTry-1 << " "
                 << to_string(f.in) << " "
@@ -432,7 +432,7 @@ flow (PaymentSandbox const& baseView,
 
             if (limitQuality && q < *limitQuality)
             {
-                JLOG (j.trace)
+                JLOG (j.trace())
                     << "Path rejected by limitQuality"
                     << " limit: " << *limitQuality
                     << " path q: " << q;
@@ -455,7 +455,7 @@ flow (PaymentSandbox const& baseView,
             if (sendMax)
                 remainingIn = *sendMax - sum (savedIns);
 
-            JLOG (j.trace)
+            JLOG (j.trace())
                 << "Best path: in: " << to_string (best->in)
                 << " out: " << to_string (best->out)
                 << " remainingOut: " << to_string (remainingOut);
@@ -464,7 +464,7 @@ flow (PaymentSandbox const& baseView,
         }
         else
         {
-            JLOG (j.trace) << "All strands dry.";
+            JLOG (j.trace()) << "All strands dry.";
         }
 
         best.reset ();  // view in best must be destroyed before modifying base
@@ -480,7 +480,7 @@ flow (PaymentSandbox const& baseView,
     auto const actualOut = sum (savedOuts);
     auto const actualIn = sum (savedIns);
 
-    JLOG (j.trace)
+    JLOG (j.trace())
         << "Total flow: in: " << to_string (actualIn)
         << " out: " << to_string (actualOut);
 

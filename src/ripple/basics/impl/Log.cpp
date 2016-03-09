@@ -28,7 +28,7 @@
 namespace ripple {
 
 Logs::Sink::Sink (std::string const& partition,
-    beast::Journal::Severity thresh, Logs& logs)
+    beast::severities::Severity thresh, Logs& logs)
     : beast::Journal::Sink (thresh, false)
     , logs_(logs)
     , partition_(partition)
@@ -36,7 +36,7 @@ Logs::Sink::Sink (std::string const& partition,
 }
 
 void
-Logs::Sink::write (beast::Journal::Severity level, std::string const& text)
+Logs::Sink::write (beast::severities::Severity level, std::string const& text)
 {
     if (level < threshold())
         return;
@@ -111,7 +111,7 @@ void Logs::File::writeln (char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs(beast::Journal::Severity thresh)
+Logs::Logs(beast::severities::Severity thresh)
     : thresh_ (thresh) // default severity
 {
 }
@@ -143,14 +143,14 @@ Logs::journal (std::string const& name)
     return beast::Journal (get(name));
 }
 
-beast::Journal::Severity
+beast::severities::Severity
 Logs::threshold() const
 {
     return thresh_;
 }
 
 void
-Logs::threshold (beast::Journal::Severity thresh)
+Logs::threshold (beast::severities::Severity thresh)
 {
     std::lock_guard <std::mutex> lock (mutex_);
     thresh_ = thresh;
@@ -171,7 +171,7 @@ Logs::partition_severities() const
 }
 
 void
-Logs::write (beast::Journal::Severity level, std::string const& partition,
+Logs::write (beast::severities::Severity level, std::string const& partition,
     std::string const& text, bool console)
 {
     std::string s;
@@ -197,51 +197,51 @@ Logs::rotate()
 
 std::unique_ptr<beast::Journal::Sink>
 Logs::makeSink(std::string const& name,
-    beast::Journal::Severity threshold)
+    beast::severities::Severity threshold)
 {
     return std::make_unique<Sink>(
         name, threshold, *this);
 }
 
 LogSeverity
-Logs::fromSeverity (beast::Journal::Severity level)
+Logs::fromSeverity (beast::severities::Severity level)
 {
-    using beast::Journal;
+    using namespace beast::severities;
     switch (level)
     {
-    case Journal::kTrace:   return lsTRACE;
-    case Journal::kDebug:   return lsDEBUG;
-    case Journal::kInfo:    return lsINFO;
-    case Journal::kWarning: return lsWARNING;
-    case Journal::kError:   return lsERROR;
+    case kTrace:   return lsTRACE;
+    case kDebug:   return lsDEBUG;
+    case kInfo:    return lsINFO;
+    case kWarning: return lsWARNING;
+    case kError:   return lsERROR;
 
     default:
         assert(false);
-    case Journal::kFatal:
+    case kFatal:
         break;
     }
 
     return lsFATAL;
 }
 
-beast::Journal::Severity
+beast::severities::Severity
 Logs::toSeverity (LogSeverity level)
 {
-    using beast::Journal;
+    using namespace beast::severities;
     switch (level)
     {
-    case lsTRACE:   return Journal::kTrace;
-    case lsDEBUG:   return Journal::kDebug;
-    case lsINFO:    return Journal::kInfo;
-    case lsWARNING: return Journal::kWarning;
-    case lsERROR:   return Journal::kError;
+    case lsTRACE:   return kTrace;
+    case lsDEBUG:   return kDebug;
+    case lsINFO:    return kInfo;
+    case lsWARNING: return kWarning;
+    case lsERROR:   return kError;
     default:
         assert(false);
     case lsFATAL:
         break;
     }
 
-    return Journal::kFatal;
+    return kFatal;
 }
 
 std::string
@@ -307,7 +307,7 @@ Logs::scrub (std::string s)
 
 void
 Logs::format (std::string& output, std::string const& message,
-    beast::Journal::Severity severity, std::string const& partition)
+    beast::severities::Severity severity, std::string const& partition)
 {
     output.reserve (message.size() + partition.size() + 100);
 
@@ -318,16 +318,17 @@ Logs::format (std::string& output, std::string const& message,
     if (! partition.empty ())
         output += partition + ":";
 
+    using namespace beast::severities;
     switch (severity)
     {
-    case beast::Journal::kTrace:    output += "TRC "; break;
-    case beast::Journal::kDebug:    output += "DBG "; break;
-    case beast::Journal::kInfo:     output += "NFO "; break;
-    case beast::Journal::kWarning:  output += "WRN "; break;
-    case beast::Journal::kError:    output += "ERR "; break;
+    case kTrace:    output += "TRC "; break;
+    case kDebug:    output += "DBG "; break;
+    case kInfo:     output += "NFO "; break;
+    case kWarning:  output += "WRN "; break;
+    case kError:    output += "ERR "; break;
     default:
         assert(false);
-    case beast::Journal::kFatal:    output += "FTL "; break;
+    case kFatal:    output += "FTL "; break;
     }
 
     output += scrub (message);

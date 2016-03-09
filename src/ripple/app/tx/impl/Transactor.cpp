@@ -42,7 +42,7 @@ preflight0(PreflightContext const& ctx)
 
     if (txID == beast::zero)
     {
-        JLOG(ctx.j.warning) <<
+        JLOG(ctx.j.warn()) <<
             "applyTransaction: transaction id may not be zero";
         return temINVALID;
     }
@@ -61,7 +61,7 @@ preflight1 (PreflightContext const& ctx)
     auto const id = ctx.tx.getAccountID(sfAccount);
     if (id == zero)
     {
-        JLOG(ctx.j.warning) << "preflight1: bad account id";
+        JLOG(ctx.j.warn()) << "preflight1: bad account id";
         return temBAD_SRC_ACCOUNT;
     }
 
@@ -69,7 +69,7 @@ preflight1 (PreflightContext const& ctx)
     auto const fee = ctx.tx.getFieldAmount (sfFee);
     if (!fee.native () || fee.negative () || !isLegalAmount (fee.xrp ()))
     {
-        JLOG(ctx.j.debug) << "preflight1: invalid fee";
+        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
         return temBAD_FEE;
     }
 
@@ -77,7 +77,7 @@ preflight1 (PreflightContext const& ctx)
 
     if (!spk.empty () && !publicKeyType (makeSlice (spk)))
     {
-        JLOG(ctx.j.debug) << "preflight1: invalid signing key";
+        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
         return temBAD_SIGNATURE;
     }
 
@@ -94,7 +94,7 @@ preflight2 (PreflightContext const& ctx)
             ctx.tx, ctx.rules, ctx.app.config());
         if (sigValid.first == Validity::SigBad)
        {
-            JLOG(ctx.j.debug) <<
+            JLOG(ctx.j.debug()) <<
                 "preflight2: bad signature. " << sigValid.second;
             return temINVALID;
         }
@@ -165,7 +165,7 @@ Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
     // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open() && feePaid < feeDue)
     {
-        JLOG(ctx.j.trace) << "Insufficient fee paid: " <<
+        JLOG(ctx.j.trace()) << "Insufficient fee paid: " <<
             to_string (feePaid) << "/" << to_string (feeDue);
         return telINSUF_FEE_P;
     }
@@ -180,7 +180,7 @@ Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace) << "Insufficient balance:" <<
+        JLOG(ctx.j.trace()) << "Insufficient balance:" <<
             " balance=" << to_string(balance) <<
             " paid=" << to_string(feePaid);
 
@@ -224,7 +224,7 @@ Transactor::checkSeq (PreclaimContext const& ctx)
 
     if (!sle)
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "applyTransaction: delay: source account does not exist " <<
             toBase58(ctx.tx.getAccountID(sfAccount));
         return terNO_ACCOUNT;
@@ -242,7 +242,7 @@ Transactor::checkSeq (PreclaimContext const& ctx)
                 return tesSUCCESS;
             }
 
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "applyTransaction: has future sequence number " <<
                 "a_seq=" << a_seq << " t_seq=" << t_seq;
             return terPRE_SEQ;
@@ -251,7 +251,7 @@ Transactor::checkSeq (PreclaimContext const& ctx)
         if (ctx.view.txExists(ctx.tx.getTransactionID ()))
             return tefALREADY;
 
-        JLOG(ctx.j.trace) << "applyTransaction: has past sequence number " <<
+        JLOG(ctx.j.trace()) << "applyTransaction: has past sequence number " <<
             "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
@@ -349,7 +349,7 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     auto const spk = ctx.tx.getSigningPubKey();
     if (!publicKeyType (makeSlice (spk)))
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "checkSingleSign: signing public key type is unknown";
         return tefBAD_AUTH; // FIXME: should be better error!
     }
@@ -370,13 +370,13 @@ Transactor::checkSingleSign (PreclaimContext const& ctx)
     }
     else if (hasAuthKey)
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;
     }
@@ -393,7 +393,7 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "applyTransaction: Invalid: Not a multi-signing account.";
         return tefNOT_MULTI_SIGNING;
     }
@@ -428,7 +428,7 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
         {
             if (++iter == accountSigners.first.end ())
             {
-                JLOG(ctx.j.trace) <<
+                JLOG(ctx.j.trace()) <<
                     "applyTransaction: Invalid SigningAccount.Account.";
                 return tefBAD_SIGNATURE;
             }
@@ -436,7 +436,7 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
         if (iter->account != txSignerAcctID)
         {
             // The SigningAccount is not in the SignerEntries.
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "applyTransaction: Invalid SigningAccount.Account.";
             return tefBAD_SIGNATURE;
         }
@@ -448,7 +448,7 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
 
         if (!publicKeyType (makeSlice(spk)))
         {
-            JLOG(ctx.j.trace) <<
+            JLOG(ctx.j.trace()) <<
                 "checkMultiSign: signing public key type is unknown";
             return tefBAD_SIGNATURE;
         }
@@ -495,7 +495,7 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
 
                 if (signerAccountFlags & lsfDisableMaster)
                 {
-                    JLOG(ctx.j.trace) <<
+                    JLOG(ctx.j.trace()) <<
                         "applyTransaction: Signer:Account lsfDisableMaster.";
                     return tefMASTER_DISABLED;
                 }
@@ -507,21 +507,21 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
             // Public key must hash to the account's regular key.
             if (!sleTxSignerRoot)
             {
-                JLOG(ctx.j.trace) <<
+                JLOG(ctx.j.trace()) <<
                     "applyTransaction: Non-phantom signer lacks account root.";
                 return tefBAD_SIGNATURE;
             }
 
             if (!sleTxSignerRoot->isFieldPresent (sfRegularKey))
             {
-                JLOG(ctx.j.trace) <<
+                JLOG(ctx.j.trace()) <<
                     "applyTransaction: Account lacks RegularKey.";
                 return tefBAD_SIGNATURE;
             }
             if (signingAcctIDFromPubKey !=
                 sleTxSignerRoot->getAccountID (sfRegularKey))
             {
-                JLOG(ctx.j.trace) <<
+                JLOG(ctx.j.trace()) <<
                     "applyTransaction: Account doesn't match RegularKey.";
                 return tefBAD_SIGNATURE;
             }
@@ -533,7 +533,7 @@ TER Transactor::checkMultiSign (PreclaimContext const& ctx)
     // Cannot perform transaction if quorum is not met.
     if (weightSum < sleAccountSigners->getFieldU32 (sfSignerQuorum))
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "applyTransaction: Signers failed to meet quorum.";
         return tefBAD_QUORUM;
     }
@@ -566,12 +566,12 @@ void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers, 
 std::pair<TER, bool>
 Transactor::operator()()
 {
-    JLOG(j_.trace) <<
+    JLOG(j_.trace()) <<
         "applyTransaction>";
 
     auto const txID = ctx_.tx.getTransactionID ();
 
-    JLOG(j_.debug) << "Transactor for id: " << txID;
+    JLOG(j_.debug()) << "Transactor for id: " << txID;
 
 #ifdef BEAST_DEBUG
     {
@@ -582,10 +582,10 @@ Transactor::operator()()
 
         if (! s2.isEquivalent(ctx_.tx))
         {
-            JLOG(j_.fatal) <<
+            JLOG(j_.fatal()) <<
                 "Transaction serdes mismatch";
-            JLOG(j_.info) << to_string(ctx_.tx.getJson (0));
-            JLOG(j_.fatal) << s2.getJson (0);
+            JLOG(j_.info()) << to_string(ctx_.tx.getJson (0));
+            JLOG(j_.fatal()) << s2.getJson (0);
             assert (false);
         }
     }
@@ -599,14 +599,14 @@ Transactor::operator()()
     // and it can't be passed in from a preclaim.
     assert(terResult != temUNKNOWN);
 
-    if (j_.debug)
+    if (auto stream = j_.debug())
     {
         std::string strToken;
         std::string strHuman;
 
         transResultInfo (terResult, strToken, strHuman);
 
-        j_.debug <<
+        stream <<
             "applyTransaction: terResult=" << strToken <<
             " : " << terResult <<
             " : " << strHuman;
@@ -622,7 +622,7 @@ Transactor::operator()()
         (isTecClaim (terResult) && !(view().flags() & tapRETRY)))
     {
         // only claim the transaction fee
-        JLOG(j_.debug) <<
+        JLOG(j_.debug()) <<
             "Reprocessing tx " << txID << " to only claim fee";
 
         std::vector<uint256> removedOffers;
@@ -677,7 +677,7 @@ Transactor::operator()()
     }
     else if (!didApply)
     {
-        JLOG(j_.debug) << "Not applying transaction " << txID;
+        JLOG(j_.debug()) << "Not applying transaction " << txID;
     }
 
     if (didApply)
@@ -693,7 +693,7 @@ Transactor::operator()()
             if (fee < zero)
             {
                 // VFALCO Log to journal here
-                // JLOG(journal.fatal) << "invalid fee";
+                // JLOG(journal.fatal()) << "invalid fee";
                 Throw<std::logic_error> ("amount is negative!");
             }
 
@@ -706,7 +706,7 @@ Transactor::operator()()
         // at view() past this point.
     }
 
-    JLOG(j_.trace) <<
+    JLOG(j_.trace()) <<
         "apply: " << transToken(terResult) <<
         ", " << (didApply ? "true" : "false");
 

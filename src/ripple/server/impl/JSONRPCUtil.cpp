@@ -46,7 +46,7 @@ std::string getHTTPHeaderTimestamp ()
 void HTTPReply (
     int nStatus, std::string const& content, Json::Output const& output, beast::Journal j)
 {
-    JLOG (j.trace)
+    JLOG (j.trace())
         << "HTTP Reply " << nStatus << " " << content;
 
     if (nStatus == 401)

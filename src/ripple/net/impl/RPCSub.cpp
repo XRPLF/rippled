@@ -61,7 +61,7 @@ public:
         if (mPort < 0)
             mPort   = mSSL ? 443 : 80;
 
-        JLOG (j_.info) <<
+        JLOG (j_.info()) <<
             "RPCCall::fromNetwork sub: ip=" << mIp <<
             " port=" << mPort <<
             " ssl= "<< (mSSL ? "yes" : "no") <<
@@ -79,11 +79,11 @@ public:
         if (mDeque.size () >= eventQueueMax)
         {
             // Drop the previous event.
-            JLOG (j_.warning) << "RPCCall::fromNetwork drop";
+            JLOG (j_.warn()) << "RPCCall::fromNetwork drop";
             mDeque.pop_back ();
         }
 
-        auto& jm = broadcast ? j_.debug : j_.info;
+        auto jm = broadcast ? j_.debug() : j_.info();
         JLOG (jm) <<
             "RPCCall::fromNetwork push: " << jvObj;
 
@@ -94,7 +94,7 @@ public:
             // Start a sending thread.
             mSending    = true;
 
-            JLOG (j_.info) << "RPCCall::fromNetwork start";
+            JLOG (j_.info()) << "RPCCall::fromNetwork start";
 
             m_jobQueue.addJob (
                 jtCLIENT, "RPCSub::sendThread", [this] (Job&) {
@@ -154,7 +154,7 @@ private:
                 // XXX Might not need this in a try.
                 try
                 {
-                    JLOG (j_.info) << "RPCCall::fromNetwork: " << mIp;
+                    JLOG (j_.info()) << "RPCCall::fromNetwork: " << mIp;
 
                     RPCCall::fromNetwork (
                         m_io_service,
@@ -168,7 +168,7 @@ private:
                 }
                 catch (const std::exception& e)
                 {
-                    JLOG (j_.info) << "RPCCall::fromNetwork exception: " << e.what ();
+                    JLOG (j_.info()) << "RPCCall::fromNetwork exception: " << e.what ();
                 }
             }
         }

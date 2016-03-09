@@ -55,7 +55,7 @@ public:
     {
         sociConfig.open (m_session);
 
-        JLOG(m_journal.info) <<
+        JLOG(m_journal.info()) <<
             "Opening database at '" << sociConfig.connectionString () << "'";
 
         init ();
@@ -91,7 +91,7 @@ public:
             }
             else
             {
-                JLOG(m_journal.error) <<
+                JLOG(m_journal.error()) <<
                     "Bad address string '" << s << "' in Bootcache table";
             }
         }
@@ -152,14 +152,14 @@ public:
 
             version = vO.value_or (0);
 
-            JLOG(m_journal.info) <<
+            JLOG(m_journal.info()) <<
                 "Opened version " << version << " database";
         }
 
         {
             if (version < currentSchemaVersion)
             {
-                JLOG(m_journal.info) <<
+                JLOG(m_journal.info()) <<
                     "Updating database to version " << currentSchemaVersion;
             }
             else if (version > currentSchemaVersion)
@@ -223,7 +223,7 @@ public:
                     }
                     else
                     {
-                        JLOG(m_journal.error) <<
+                        JLOG(m_journal.error()) <<
                             "Bad address string '" << s << "' in Bootcache table";
                     }
                 }

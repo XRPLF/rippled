@@ -915,7 +915,7 @@ amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource)
     }
     catch (const std::exception& e)
     {
-        JLOG (debugJournal().debug) <<
+        JLOG (debugJournal().debug()) <<
             "amountFromJsonNoThrow: caught: " << e.what ();
     }
     return false;

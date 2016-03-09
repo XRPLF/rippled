@@ -421,12 +421,13 @@ int run (int argc, char** argv)
     }
 
     // Construct the logs object at the configured severity
-    beast::Journal::Severity thresh = beast::Journal::kInfo;
+    using namespace beast::severities;
+    Severity thresh = kInfo;
 
     if (vm.count ("quiet"))
-        thresh = beast::Journal::kFatal;
+        thresh = kFatal;
     else if (vm.count ("verbose"))
-        thresh = beast::Journal::kTrace;
+        thresh = kTrace;
 
     auto logs = std::make_unique<Logs>(thresh);
 

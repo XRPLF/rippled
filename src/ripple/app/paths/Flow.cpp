@@ -69,17 +69,17 @@ flow (
 
     auto& strands = sr.second;
 
-    if (j.trace)
+    if (j.trace())
     {
-        j.trace << "\nsrc: " << src << "\ndst: " << dst
+        j.trace() << "\nsrc: " << src << "\ndst: " << dst
             << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
-        j.trace << "\nNumStrands: " << strands.size ();
+        j.trace() << "\nNumStrands: " << strands.size ();
         for (auto const& curStrand : strands)
         {
-            j.trace << "NumSteps: " << curStrand.size ();
+            j.trace() << "NumSteps: " << curStrand.size ();
             for (auto const& step : curStrand)
             {
-                j.trace << '\n' << *step << '\n';
+                j.trace() << '\n' << *step << '\n';
             }
         }
     }

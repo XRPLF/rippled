@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Bootcache.h>
 #include <ripple/peerfinder/impl/Counts.h>
@@ -179,7 +180,7 @@ public:
 
         if (addresses.empty ())
         {
-            if (m_journal.info) m_journal.info <<
+            JLOG(m_journal.info()) <<
                 "Could not resolve fixed slot '" << name << "'";
             return;
         }
@@ -198,7 +199,7 @@ public:
 
             if (result.second)
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Logic add fixed '" << name <<
                     "' at " << remote_address;
                 return;
@@ -221,7 +222,7 @@ public:
         if (iter == slots_.end())
         {
             // The slot disconnected before we finished the check
-            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+            JLOG(m_journal.debug()) << beast::leftw (18) <<
                 "Logic tested " << checkedAddress <<
                 " but the connection was closed";
             return;
@@ -235,7 +236,7 @@ public:
         {
             // VFALCO TODO Should we retry depending on the error?
             slot.canAccept = false;
-            if (m_journal.error) m_journal.error << beast::leftw (18) <<
+            JLOG(m_journal.error()) << beast::leftw (18) <<
                 "Logic testing " << iter->first << " with error, " <<
                 ec.message();
             bootcache_.on_failure (checkedAddress);
@@ -244,7 +245,7 @@ public:
 
         slot.canAccept = true;
         slot.set_listening_port (checkedAddress.port ());
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Logic testing " << checkedAddress << " succeeded";
     }
 
@@ -253,7 +254,7 @@ public:
     SlotImp::ptr new_inbound_slot (beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint)
     {
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Logic accept" << remote_endpoint <<
             " on local " << local_endpoint;
 
@@ -266,7 +267,7 @@ public:
                 remote_endpoint.address());
             if (count > config_.ipLimit)
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Logic dropping inbound " << remote_endpoint <<
                     " because of ip limits.";
                 return SlotImp::ptr();
@@ -295,7 +296,7 @@ public:
     SlotImp::ptr
     new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
     {
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Logic connect " << remote_endpoint;
 
         std::lock_guard<std::recursive_mutex> _(lock_);
@@ -304,7 +305,7 @@ public:
         if (slots_.find (remote_endpoint) !=
             slots_.end ())
         {
-            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+            JLOG(m_journal.debug()) << beast::leftw (18) <<
                 "Logic dropping " << remote_endpoint <<
                 " as duplicate connect";
             return SlotImp::ptr ();
@@ -334,7 +335,7 @@ public:
     onConnected (SlotImp::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint)
     {
-        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+        JLOG(m_journal.trace()) << beast::leftw (18) <<
             "Logic connected" << slot->remote_endpoint () <<
             " on local " << local_endpoint;
 
@@ -353,7 +354,7 @@ public:
             {
                 assert (iter->second->local_endpoint ()
                         == slot->remote_endpoint ());
-                if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                JLOG(m_journal.warn()) << beast::leftw (18) <<
                     "Logic dropping " << slot->remote_endpoint () <<
                     " as self connect";
                 return false;
@@ -371,7 +372,7 @@ public:
     activate (SlotImp::ptr const& slot,
         PublicKey const& key, bool cluster)
     {
-        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+        JLOG(m_journal.debug()) << beast::leftw (18) <<
             "Logic handshake " << slot->remote_endpoint () <<
             " with " << (cluster ? "clustered " : "") << "key " << key;
 
@@ -425,7 +426,7 @@ public:
             auto iter (fixed_.find (slot->remote_endpoint()));
             assert (iter != fixed_.end ());
             iter->second.success (m_clock.now ());
-            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+            JLOG(m_journal.trace()) << beast::leftw (18) <<
                 "Logic fixed " << slot->remote_endpoint () << " success";
         }
 
@@ -489,14 +490,14 @@ public:
 
             if (! h.list().empty ())
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Logic connect " << h.list().size() << " fixed";
                 return h.list();
             }
 
             if (counts_.attempts() > 0)
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Logic waiting on " <<
                         counts_.attempts() << " attempts";
                 return none;
@@ -521,14 +522,14 @@ public:
                     livecache_.hops.rend());
             if (! h.list().empty ())
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Logic connect " << h.list().size () << " live " <<
                     ((h.list().size () > 1) ? "endpoints" : "endpoint");
                 return h.list();
             }
             else if (counts_.attempts() > 0)
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Logic waiting on " <<
                         counts_.attempts() << " attempts";
                 return none;
@@ -557,7 +558,7 @@ public:
 
         if (! h.list().empty ())
         {
-            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+            JLOG(m_journal.debug()) << beast::leftw (18) <<
                 "Logic connect " << h.list().size () << " boot " <<
                 ((h.list().size () > 1) ? "addresses" : "address");
             return h.list();
@@ -635,7 +636,7 @@ public:
             {
                 SlotImp::ptr const& slot = t.slot();
                 auto const& list = t.list();
-                if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+                JLOG(m_journal.trace()) << beast::leftw (18) <<
                     "Logic sending " << slot->remote_endpoint() <<
                     " with " << list.size() <<
                     ((list.size() == 1) ? " endpoint" : " endpoints");
@@ -679,7 +680,7 @@ public:
             // Enforce hop limit
             if (ep.hops > Tuning::maxHops)
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Endpoints drop " << ep.address <<
                     " for excess hops " << ep.hops;
                 iter = list.erase (iter);
@@ -698,7 +699,7 @@ public:
                 }
                 else
                 {
-                    if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                    JLOG(m_journal.debug()) << beast::leftw (18) <<
                         "Endpoints drop " << ep.address <<
                         " for extra self";
                     iter = list.erase (iter);
@@ -709,7 +710,7 @@ public:
             // Discard invalid addresses
             if (! is_valid_address (ep.address))
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Endpoints drop " << ep.address <<
                     " as invalid";
                 iter = list.erase (iter);
@@ -723,7 +724,7 @@ public:
                     return ep.address == other.address;
                 }))
             {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                JLOG(m_journal.debug()) << beast::leftw (18) <<
                     "Endpoints drop " << ep.address <<
                     " as duplicate";
                 iter = list.erase (iter);
@@ -741,7 +742,7 @@ public:
 
     void on_endpoints (SlotImp::ptr const& slot, Endpoints list)
     {
-        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+        JLOG(m_journal.trace()) << beast::leftw (18) <<
             "Endpoints from " << slot->remote_endpoint () <<
             " contained " << list.size () <<
             ((list.size() > 1) ? " entries" : " entry");
@@ -772,7 +773,7 @@ public:
             {
                 if (slot->connectivityCheckInProgress)
                 {
-                    if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                    JLOG(m_journal.debug()) << beast::leftw (18) <<
                         "Logic testing " << ep.address << " already in progress";
                     continue;
                 }
@@ -865,7 +866,7 @@ public:
             auto iter (fixed_.find (slot->remote_endpoint()));
             assert (iter != fixed_.end ());
             iter->second.failure (m_clock.now ());
-            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+            JLOG(m_journal.debug()) << beast::leftw (18) <<
                 "Logic fixed " << slot->remote_endpoint () << " failed";
         }
 
@@ -873,7 +874,7 @@ public:
         switch (slot->state())
         {
         case Slot::accept:
-            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+            JLOG(m_journal.trace()) << beast::leftw (18) <<
                 "Logic accept " << slot->remote_endpoint () << " failed";
             break;
 
@@ -887,12 +888,12 @@ public:
             break;
 
         case Slot::active:
-            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+            JLOG(m_journal.trace()) << beast::leftw (18) <<
                 "Logic close " << slot->remote_endpoint();
             break;
 
         case Slot::closing:
-            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+            JLOG(m_journal.trace()) << beast::leftw (18) <<
                 "Logic finished " << slot->remote_endpoint();
             break;
 
@@ -1033,14 +1034,14 @@ public:
         if (! results.error)
         {
             int const count (addBootcacheAddresses (results.addresses));
-            if (m_journal.info) m_journal.info << beast::leftw (18) <<
+            JLOG(m_journal.info()) << beast::leftw (18) <<
                 "Logic added " << count <<
                 " new " << ((count == 1) ? "address" : "addresses") <<
                 " from " << source->name();
         }
         else
         {
-            if (m_journal.error) m_journal.error << beast::leftw (18) <<
+            JLOG(m_journal.error()) << beast::leftw (18) <<
                 "Logic failed " << "'" << source->name() << "' fetch, " <<
                 results.error.message();
         }
@@ -1167,8 +1168,10 @@ Logic<Checker>::onRedirects (FwdIter first, FwdIter last,
         bootcache_.insert(
             beast::IPAddressConversion::from_asio(*first));
     if (n > 0)
-        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+    {
+        JLOG(m_journal.trace()) << beast::leftw (18) <<
             "Logic add " << n << " redirect IPs from " << remote_address;
+    }
 }
 
 }

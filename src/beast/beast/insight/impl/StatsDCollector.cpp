@@ -326,8 +326,8 @@ public:
 
         if (ec)
         {
-            m_journal.error <<
-                "async_send failed: " << ec.message();
+            if (auto stream = m_journal.error())
+                stream << "async_send failed: " << ec.message();
             return;
         }
     }
@@ -414,8 +414,8 @@ public:
 
         if (ec)
         {
-            m_journal.error <<
-                "on_timer failed: " << ec.message();
+            if (auto stream = m_journal.error())
+                stream << "on_timer failed: " << ec.message();
             return;
         }
 
@@ -435,8 +435,8 @@ public:
 
         if (m_socket.connect (to_endpoint (m_address), ec))
         {
-            m_journal.error <<
-                "Connect failed: " << ec.message();
+            if (auto stream = m_journal.error())
+                stream << "Connect failed: " << ec.message();
             return;
         }
 
