@@ -89,12 +89,12 @@ private:
     Handoff
     onHandoff (Session& session,
         std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-            beast::http::message&& request,
+            http_request_type&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override;
 
     Handoff
     onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-        beast::http::message&& request,
+        http_request_type&& request,
             boost::asio::ip::tcp::endpoint remote_address) override;
     void
     onRequest (Session& session) override;
@@ -120,7 +120,7 @@ private:
 
 private:
     bool
-    isWebsocketUpgrade (beast::http::message const& request);
+    isWebsocketUpgrade (http_request_type const& request);
 
     bool
     authorized (Port const& port,

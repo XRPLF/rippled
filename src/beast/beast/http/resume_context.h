@@ -17,79 +17,15 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_METHOD_H_INCLUDED
-#define BEAST_HTTP_METHOD_H_INCLUDED
+#ifndef BEAST_HTTP_RESUME_CONTEXT_H_INCLUDED
+#define BEAST_HTTP_RESUME_CONTEXT_H_INCLUDED
 
-#include <memory>
-#include <string>
+#include <functional>
 
 namespace beast {
 namespace http {
 
-enum class method_t
-{
-    http_delete,
-    http_get,
-    http_head,
-    http_post,
-    http_put,
-
-    // pathological
-    http_connect,
-    http_options,
-    http_trace,
-
-    // webdav
-    http_copy,
-    http_lock,
-    http_mkcol,
-    http_move,
-    http_propfind,
-    http_proppatch,
-    http_search,
-    http_unlock,
-    http_bind,
-    http_rebind,
-    http_unbind,
-    http_acl,
-
-    // subversion
-    http_report,
-    http_mkactivity,
-    http_checkout,
-    http_merge,
-
-    // upnp
-    http_msearch,
-    http_notify,
-    http_subscribe,
-    http_unsubscribe,
-
-    // RFC-5789
-    http_patch,
-    http_purge,
-
-    // CalDav
-    http_mkcalendar,
-
-    // RFC-2068, section 19.6.1.2
-    http_link,
-    http_unlink
-};
-
-std::string
-to_string (method_t m);
-
-template <class Stream>
-Stream&
-operator<< (Stream& s, method_t m)
-{
-    return s << to_string(m);
-}
-
-/** Returns the string corresponding to the numeric HTTP status code. */
-std::string
-status_text (int status);
+using resume_context = std::function<void(void)>;
 
 } // http
 } // beast
