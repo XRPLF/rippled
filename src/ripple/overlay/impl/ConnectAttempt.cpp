@@ -218,7 +218,7 @@ ConnectAttempt::onHandshake (error_code ec)
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
-    beast::http::message req = makeRequest(
+    beast::deprecated_http::message req = makeRequest(
         ! overlay_.peerFinder().config().peerPrivate,
             remote_endpoint_.address());
     auto const hello = buildHello (
@@ -226,10 +226,9 @@ ConnectAttempt::onHandshake (error_code ec)
         overlay_.setup().public_ip,
         beast::IPAddressConversion::from_asio(remote_endpoint_),
         app_);
-    appendHello (req, hello);
+    appendHello (req.headers, hello);
 
-    using beast::http::write;
-    write (write_buf_, req);
+    beast::deprecated_http::write (write_buf_, req);
 
     setTimer();
     stream_.async_write_some (write_buf_.data(),
@@ -293,10 +292,9 @@ ConnectAttempt::onRead (error_code ec, std::size_t bytes_transferred)
 
     if (! ec)
     {
-        write_buf_.commit (bytes_transferred);
-        std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = parser_.write(
-            write_buf_.data());
+        write_buf_.commit(bytes_transferred);
+        auto bytes_consumed = parser_.write(
+            write_buf_.data(), ec);
         if (! ec)
         {
             write_buf_.consume (bytes_consumed);
@@ -332,26 +330,26 @@ ConnectAttempt::onShutdown (error_code ec)
 
 //--------------------------------------------------------------------------
 
-beast::http::message
+beast::deprecated_http::message
 ConnectAttempt::makeRequest (bool crawl,
     boost::asio::ip::address const& remote_address)
 {
-    beast::http::message m;
+    beast::deprecated_http::message m;
     m.method (beast::http::method_t::http_get);
     m.url ("/");
     m.version (1, 1);
-    m.headers.append ("User-Agent", BuildInfo::getFullVersionString());
-    m.headers.append ("Upgrade", "RTXP/1.2");
+    m.headers.insert ("User-Agent", BuildInfo::getFullVersionString());
+    m.headers.insert ("Upgrade", "RTXP/1.2");
         //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
-    m.headers.append ("Connection", "Upgrade");
-    m.headers.append ("Connect-As", "Peer");
-    m.headers.append ("Crawl", crawl ? "public" : "private");
+    m.headers.insert ("Connection", "Upgrade");
+    m.headers.insert ("Connect-As", "Peer");
+    m.headers.insert ("Crawl", crawl ? "public" : "private");
     return m;
 }
 
 template <class Streambuf>
 void
-ConnectAttempt::processResponse (beast::http::message const& m,
+ConnectAttempt::processResponse (beast::deprecated_http::message const& m,
     Streambuf const& body)
 {
     if (response_.status() == 503)
@@ -392,7 +390,7 @@ ConnectAttempt::processResponse (beast::http::message const& m,
         return close();
     }
 
-    auto hello = parseHello (response_, journal_);
+    auto hello = parseHello (false, response_.headers, journal_);
     if(! hello)
         return fail("processResponse: Bad TMHello");
 

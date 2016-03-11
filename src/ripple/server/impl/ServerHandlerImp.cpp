@@ -109,7 +109,7 @@ ServerHandlerImp::onAccept (Session& session,
 auto
 ServerHandlerImp::onHandoff (Session& session,
     std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-        beast::http::message&& request,
+        http_request_type&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
@@ -131,7 +131,7 @@ ServerHandlerImp::onHandoff (Session& session,
 auto
 ServerHandlerImp::onHandoff (Session& session,
     boost::asio::ip::tcp::socket&& socket,
-        beast::http::message&& request,
+        http_request_type&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
@@ -154,6 +154,23 @@ Json::Output makeOutput (Session& session)
     {
         session.write (b.data(), b.size());
     };
+}
+
+// HACK!
+template<class Allocator>
+static
+std::map<std::string, std::string>
+build_map(beast::http::headers<Allocator> const& h)
+{
+    std::map <std::string, std::string> c;
+    for (auto const& e : h)
+    {
+        auto key (e.first);
+        // TODO Replace with safe C++14 version
+        std::transform (key.begin(), key.end(), key.begin(), ::tolower);
+        c [key] = e.second;
+    }
+    return c;
 }
 
 void
@@ -198,12 +215,32 @@ ServerHandlerImp::onStopped (Server&)
 
 //------------------------------------------------------------------------------
 
+template<class ConstBufferSequence>
+static
+std::string
+buffers_to_string(ConstBufferSequence const& bs)
+{
+    using boost::asio::buffer_cast;
+    using boost::asio::buffer_size;
+    std::string s;
+    s.reserve(buffer_size(bs));
+    for(auto const& b : bs)
+        s.append(buffer_cast<char const*>(b),
+            buffer_size(b));
+    for(auto i = s.size(); i-- > 0;)
+        if(s[i] == '\r')
+            s.replace(i, 1, "\\r");
+        else if(s[i] == '\n')
+            s.replace(i, 1, "\\n\n");
+    return s;
+}
+
 // Run as a couroutine.
 void
 ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
     std::shared_ptr<JobCoro> jobCoro)
 {
-    processRequest (session->port(), to_string (session->body()),
+    processRequest (session->port(), buffers_to_string(session->request().body.data()),
         session->remoteAddress().at_port (0), makeOutput (*session), jobCoro,
         [&]
         {
@@ -224,7 +261,7 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
             return std::string{};
         }());
 
-    if (session->request().keep_alive())
+    if (session->request().keep_alive)
         session->complete();
     else
         session->close (true);
@@ -416,9 +453,9 @@ ServerHandlerImp::processRequest (Port const& port,
 // Returns `true` if the HTTP request is a Websockets Upgrade
 // http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
 bool
-ServerHandlerImp::isWebsocketUpgrade (beast::http::message const& request)
+ServerHandlerImp::isWebsocketUpgrade (http_request_type const& request)
 {
-    if (request.upgrade())
+    if (request.upgrade)
         return request.headers["Upgrade"] == "websocket";
     return false;
 }
@@ -448,7 +485,7 @@ ServerHandlerImp::authorized (Port const& port,
 //------------------------------------------------------------------------------
 
 void
-ServerHandler::appendStandardFields (beast::http::message& message)
+ServerHandler::appendStandardFields (beast::deprecated_http::message& message)
 {
 }
 
