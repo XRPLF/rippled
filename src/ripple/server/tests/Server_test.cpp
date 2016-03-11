@@ -112,7 +112,7 @@ public:
         Handoff
         onHandoff (Session& session,
             std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                beast::http::message&& request,
+                http_request_type&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -120,7 +120,7 @@ public:
 
         Handoff
         onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-            beast::http::message&& request,
+            http_request_type&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -130,7 +130,7 @@ public:
         onRequest (Session& session) override
         {
             session.write (std::string ("Hello, world!\n"));
-            if (session.request().keep_alive())
+            if (session.request().keep_alive)
                 session.complete();
             else
                 session.close (true);
@@ -319,7 +319,7 @@ public:
             Handoff
             onHandoff (Session& session,
                 std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                    beast::http::message&& request,
+                    http_request_type&& request,
                         boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
@@ -327,7 +327,7 @@ public:
 
             Handoff
             onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-                beast::http::message&& request,
+                http_request_type&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};

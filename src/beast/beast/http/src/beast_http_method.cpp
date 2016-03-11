@@ -120,5 +120,6 @@ status_text (int status)
     return "Unknown HTTP status";
 }
 
-}
-}
+} // http
+} // beast
+

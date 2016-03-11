@@ -171,7 +171,7 @@ OverlayImpl::~OverlayImpl ()
 
 Handoff
 OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
-    beast::http::message&& request,
+    http_request_type&& request,
         endpoint_type remote_endpoint)
 {
     auto const id = next_id_++;
@@ -226,14 +226,14 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
             handoff.moved = false;
             handoff.response = makeRedirectResponse(slot, request,
                 remote_endpoint.address());
-            handoff.keep_alive = request.keep_alive();
+            handoff.keep_alive = request.keep_alive;
             return handoff;
         }
     }
 
     handoff.moved = true;
 
-    auto hello = parseHello (request, journal);
+    auto hello = parseHello (true, request.headers, journal);
     if(! hello)
         return handoff;
 
@@ -260,7 +260,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         handoff.moved = false;
         handoff.response = makeRedirectResponse(slot, request,
             remote_endpoint.address());
-        handoff.keep_alive = request.keep_alive();
+        handoff.keep_alive = request.keep_alive;
         return handoff;
     }
 
@@ -289,7 +289,19 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 //------------------------------------------------------------------------------
 
 bool
-OverlayImpl::isPeerUpgrade(beast::http::message const& request)
+OverlayImpl::isPeerUpgrade(http_request_type const& request)
+{
+    if (! request.upgrade)
+        return false;
+    auto const versions = parse_ProtocolVersions(
+        request.headers["Upgrade"]);
+    if (versions.size() == 0)
+        return false;
+    return true;
+}
+
+bool
+OverlayImpl::isPeerUpgrade(beast::deprecated_http::message const& request)
 {
     if (! request.upgrade())
         return false;
@@ -297,7 +309,7 @@ OverlayImpl::isPeerUpgrade(beast::http::message const& request)
         request.headers["Upgrade"]);
     if (versions.size() == 0)
         return false;
-    if (! request.request() && request.status() != 101)
+    if(! request.request() && request.status() != 101)
         return false;
     return true;
 }
@@ -312,7 +324,7 @@ OverlayImpl::makePrefix (std::uint32_t id)
 
 std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
-    beast::http::message const& request, address_type remote_address)
+    http_request_type const& request, address_type remote_address)
 {
     Json::Value json(Json::objectValue);
     {
@@ -322,13 +334,13 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
             ips.append(_.address.to_string());
     }
 
-    beast::http::message m;
+    beast::deprecated_http::message m;
     m.request(false);
     m.status(503);
     m.reason("Service Unavailable");
-    m.headers.append("Remote-Address", remote_address.to_string());
-    m.version(request.version());
-    if (request.version() == std::make_pair(1, 0))
+    m.headers.insert("Remote-Address", remote_address.to_string());
+    m.version(std::make_pair(request.version / 10, request.version % 10));
+    if (request.version == 10)
     {
         //?
     }
@@ -823,16 +835,17 @@ OverlayImpl::json ()
 }
 
 bool
-OverlayImpl::processRequest (beast::http::message const& req,
+OverlayImpl::processRequest (http_request_type const& req,
     Handoff& handoff)
 {
-    if (req.url() != "/crawl")
+    if (req.url != "/crawl")
         return false;
 
-    beast::http::message resp;
+    beast::deprecated_http::message resp;
     resp.request(false);
     resp.status(200);
     resp.reason("OK");
+    resp.version(std::make_pair(req.version / 10, req.version % 10));
     Json::Value v;
     v["overlay"] = crawl();
     handoff.response = make_JsonWriter(resp, v);

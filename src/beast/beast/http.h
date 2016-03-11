@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,39 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_HANDOFF_H_INCLUDED
-#define RIPPLE_SERVER_HANDOFF_H_INCLUDED
+#ifndef BEAST_HTTP_H_INCLUDED
+#define BEAST_HTTP_H_INCLUDED
 
-#include <ripple/server/Writer.h>
+#include <beast/http/basic_parser.h>
+#include <beast/http/chunk_encode.h>
+#include <beast/http/empty_body.h>
+#include <beast/http/error.h>
+#include <beast/http/fields.h>
+#include <beast/http/headers.h>
 #include <beast/http/message.h>
+#include <beast/http/parser.h>
+#include <beast/http/read.h>
+#include <beast/http/reason.h>
+#include <beast/http/resume_context.h>
 #include <beast/http/streambuf_body.h>
-#include <memory>
+#include <beast/http/string_body.h>
+#include <beast/http/type_check.h>
+#include <beast/http/write.h>
 
-namespace ripple {
-
-using http_request_type =
-    beast::http::parsed_request<
-        beast::http::streambuf_body>;
-
-/** Used to indicate the result of a server connection handoff. */
-struct Handoff
-{
-    // When `true`, the Session will close the socket. The
-    // Handler may optionally take socket ownership using std::move
-    bool moved = false;
-
-    // If response is set, this determines the keep alive
-    bool keep_alive = false;
-
-    // When set, this will be sent back
-    std::shared_ptr<Writer> response;
-
-    bool handled() const
-    {
-        return moved || response;
-    }
-};
-
-} // ripple
+#if DOXYGEN
+#include <beast/http/README.md>
+#endif
 
 #endif

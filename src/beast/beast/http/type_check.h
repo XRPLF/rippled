@@ -17,79 +17,46 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_METHOD_H_INCLUDED
-#define BEAST_HTTP_METHOD_H_INCLUDED
+#ifndef BEAST_HTTP_TYPE_CHECK_H_INCLUDED
+#define BEAST_HTTP_TYPE_CHECK_H_INCLUDED
 
-#include <memory>
-#include <string>
+#include <boost/asio/buffer.hpp>
+#include <boost/system/error_code.hpp>
+#include <functional>
+#include <beast/cxx17/type_traits.h> // <type_traits>
 
 namespace beast {
 namespace http {
 
-enum class method_t
+/// Evaluates to std::true_type if `T` models Body
+template<class T>
+struct is_Body : std::true_type
 {
-    http_delete,
-    http_get,
-    http_head,
-    http_post,
-    http_put,
-
-    // pathological
-    http_connect,
-    http_options,
-    http_trace,
-
-    // webdav
-    http_copy,
-    http_lock,
-    http_mkcol,
-    http_move,
-    http_propfind,
-    http_proppatch,
-    http_search,
-    http_unlock,
-    http_bind,
-    http_rebind,
-    http_unbind,
-    http_acl,
-
-    // subversion
-    http_report,
-    http_mkactivity,
-    http_checkout,
-    http_merge,
-
-    // upnp
-    http_msearch,
-    http_notify,
-    http_subscribe,
-    http_unsubscribe,
-
-    // RFC-5789
-    http_patch,
-    http_purge,
-
-    // CalDav
-    http_mkcalendar,
-
-    // RFC-2068, section 19.6.1.2
-    http_link,
-    http_unlink
 };
 
-std::string
-to_string (method_t m);
-
-template <class Stream>
-Stream&
-operator<< (Stream& s, method_t m)
+/// Evaluates to std::true_type if `T` models HTTPMessage
+template<class T>
+struct is_HTTPMessage : std::false_type
 {
-    return s << to_string(m);
-}
+};
 
-/** Returns the string corresponding to the numeric HTTP status code. */
-std::string
-status_text (int status);
+/// Evaluates to std::true_type if `HTTPMessage` is a request
+template<class HTTPMessage>
+struct is_HTTPRequest : std::true_type
+{
+};
+
+/** Trait: `C` models HTTPParser
+*/
+template<class C, class = void>
+struct is_HTTPParser : std::false_type {};
+template <class C>
+struct is_HTTPParser<C, std::void_t<
+    decltype(std::declval<C>().write(std::declval<boost::asio::const_buffer>(),
+        std::declval<boost::system::error_code&>()), std::true_type{}),
+    std::is_same<decltype(
+        std::declval<C>().complete()), bool>
+>>:std::true_type{};
 
 } // http
 } // beast
