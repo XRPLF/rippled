@@ -108,7 +108,7 @@ PlainHTTPPeer::do_request()
     }
 
     // Perform half-close when Connection: close and not SSL
-    if (! message_.keep_alive())
+    if (! is_keep_alive(message_))
         stream_.shutdown (socket_type::shutdown_receive, ec);
     if (ec)
         return fail (ec, "request");

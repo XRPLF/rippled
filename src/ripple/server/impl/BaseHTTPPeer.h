@@ -28,8 +28,10 @@
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl_error.h> // for is_short_read?
+#include <beast/http/read.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
+#include <beast/http/streambuf_body.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -95,8 +97,7 @@ protected:
     std::size_t nid_;
 
     boost::asio::streambuf read_buf_;
-    beast::http::message message_;
-    beast::http::body body_;
+    http_request_type message_;
     std::vector<buffer> wq_;
     std::vector<buffer> wq2_;
     std::mutex mutex_;
@@ -186,16 +187,10 @@ protected:
         return beast::IPAddressConversion::from_asio(remote_address_);
     }
 
-    beast::http::message&
+    http_request_type&
     request() override
     {
         return message_;
-    }
-
-    beast::http::body const&
-    body() override
-    {
-        return body_;
     }
 
     void
@@ -319,64 +314,12 @@ void
 BaseHTTPPeer<Impl>::do_read (yield_context yield)
 {
     complete_ = false;
-
     error_code ec;
-    bool eof = false;
-    body_.clear();
-    beast::http::parser parser (message_, body_, true);
-    for(;;)
-    {
-        if (read_buf_.size() == 0)
-        {
-            start_timer();
-            auto const bytes_transferred = boost::asio::async_read (
-                impl().stream_, read_buf_.prepare (bufferSize),
-                    boost::asio::transfer_at_least(1), yield[ec]);
-            cancel_timer();
-
-            eof = ec == boost::asio::error::eof;
-            if (eof)
-            {
-                ec = error_code{};
-            }
-            else if (! ec)
-            {
-                bytes_in_ += bytes_transferred;
-                read_buf_.commit (bytes_transferred);
-            }
-        }
-
-        if (! ec)
-        {
-            if (! eof)
-            {
-                // VFALCO TODO Currently parsing errors are treated the
-                //             same as the connection dropping. Instead, we
-                // should request that the handler compose a proper HTTP error
-                // response. This requires refactoring HTTPReply() into
-                // something sensible.
-                std::size_t used;
-                std::tie (ec, used) = parser.write (read_buf_.data());
-                if (! ec)
-                    read_buf_.consume (used);
-            }
-            else
-            {
-                ec = parser.write_eof();
-            }
-        }
-
-        if (! ec)
-        {
-            if (parser.complete())
-                return do_request();
-            if (eof)
-                ec = boost::asio::error::eof; // incomplete request
-        }
-
-        if (ec)
-            return fail (ec, "read");
-    }
+    beast::http::async_read(impl().stream_,
+        read_buf_, message_, yield[ec]);
+    // VFALCO What if the connection was closed?
+    cancel_timer();
+    do_request();
 }
 
 // Send everything in the write queue.
@@ -513,7 +456,7 @@ BaseHTTPPeer<Impl>::complete()
         return strand_.post(std::bind (&BaseHTTPPeer<Impl>::complete,
             impl().shared_from_this()));
 
-    message_ = beast::http::message{};
+    message_ = {};
     complete_ = true;
 
     {

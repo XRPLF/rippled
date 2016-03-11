@@ -21,4 +21,7 @@
 #include <ripple/beast/net/impl/IPAddressV6.cpp>
 #include <ripple/beast/net/impl/IPEndpoint.cpp>
 #include <ripple/beast/net/impl/IPAddressConversion.cpp>
+#include <ripple/beast/net/impl/URL.cpp>
+
+#include <ripple/beast/net/tests/beast_http_URL_test.cpp>
 #include <ripple/beast/net/tests/IPEndpoint.test.cpp>

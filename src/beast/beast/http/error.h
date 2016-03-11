@@ -17,47 +17,17 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_DETAIL_HEADER_TRAITS_H_INCLUDED
-#define BEAST_HTTP_DETAIL_HEADER_TRAITS_H_INCLUDED
+#ifndef BEAST_HTTP_ERROR_H_INCLUDED
+#define BEAST_HTTP_ERROR_H_INCLUDED
 
-#include <beast/utility/ci_char_traits.h>
-
-#include <boost/utility/string_ref.hpp>
-
-#include <memory>
-#include <string>
+#include <boost/system/error_code.hpp>
 
 namespace beast {
 namespace http {
-namespace detail {
 
-// Utilities for dealing with HTTP headers
+using error_code = boost::system::error_code;
 
-template <class Allocator = std::allocator <char>>
-using basic_field_string =
-    std::basic_string <char, ci_char_traits, Allocator>;
-
-using field_string = basic_field_string <>;
-
-using field_string_ref = boost::basic_string_ref <char, ci_char_traits>;
-
-/** Returns `true` if two header fields are the same.
-    The comparison is case-insensitive.
-*/
-template <class Alloc1, class Alloc2>
-inline
-bool field_eq (
-    std::basic_string <char, std::char_traits <char>, Alloc1> const& s1,
-    std::basic_string <char, std::char_traits <char>, Alloc2> const& s2)
-{
-    return field_string_ref (s1.c_str(), s1.size()) ==
-           field_string_ref (s2.c_str(), s2.size());
-}
-
-/** Returns the string with leading and trailing LWS removed. */
-
-}
-}
-}
+} // http
+} // beast
 
 #endif
