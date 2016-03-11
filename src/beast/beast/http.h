@@ -17,18 +17,24 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_HTTP_H_INCLUDED
+#define BEAST_HTTP_H_INCLUDED
+
+#include <beast/http/basic_parser.h>
+#include <beast/http/chunk_encode.h>
+#include <beast/http/error.h>
+#include <beast/http/fields.h>
+#include <beast/http/headers.h>
+#include <beast/http/message.h>
+#include <beast/http/parser.h>
+#include <beast/http/read.h>
+#include <beast/http/reason.h>
+#include <beast/http/resume_context.h>
+#include <beast/http/string_body.h>
+#include <beast/http/write.h>
+
+#if DOXYGEN
+#include <beast/http/README.md>
 #endif
 
-#include <beast/http/impl/basic_parser.cpp>
-#include <beast/http/impl/joyent_parser.cpp>
-#include <beast/http/impl/method.cpp>
-#include <beast/http/impl/URL.cpp>
-
-#include <beast/http/tests/chunked_encoder.test.cpp>
-#include <beast/http/tests/parser.test.cpp>
-#include <beast/http/tests/rfc2616.test.cpp>
-#include <beast/http/tests/URL.test.cpp>
-#include <beast/http/tests/urls_large_data.cpp>
-
+#endif

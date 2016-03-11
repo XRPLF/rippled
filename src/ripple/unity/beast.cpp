@@ -34,7 +34,6 @@
 #include <beast/chrono/Chrono.unity.cpp>
 #include <beast/container/Container.unity.cpp>
 #include <beast/crypto/Crypto.unity.cpp>
-#include <beast/http/HTTP.unity.cpp>
 #include <beast/insight/Insight.unity.cpp>
 #include <beast/net/Net.unity.cpp>
 //#include <beast/nudb/nudb.cpp>

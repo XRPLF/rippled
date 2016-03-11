@@ -28,8 +28,10 @@
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/error.h> // for is_short_read?
+#include <beast/http/read.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
+#include <beast/http/streambuf_body.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -95,8 +97,7 @@ protected:
     std::size_t nid_;
 
     boost::asio::streambuf read_buf_;
-    beast::http::message message_;
-    beast::http::body body_;
+    http_request_type message_;
     std::vector<buffer> wq_;
     std::vector<buffer> wq2_;
     std::mutex mutex_;
@@ -186,16 +187,10 @@ protected:
         return beast::IPAddressConversion::from_asio(remote_address_);
     }
 
-    beast::http::message&
+    http_request_type&
     request() override
     {
         return message_;
-    }
-
-    beast::http::body const&
-    body() override
-    {
-        return body_;
     }
 
     void
@@ -322,8 +317,24 @@ BaseHTTPPeer<Impl>::do_read (yield_context yield)
 
     error_code ec;
     bool eof = false;
-    body_.clear();
-    beast::http::parser parser (message_, body_, true);
+    beast::http::request_parser<
+        beast::http::streambuf_body> parser;
+#if 1
+    beast::http::async_read(impl().stream_,
+        read_buf_, parser, yield[ec]);
+    cancel_timer();
+    eof = ec == boost::asio::error::eof;
+    if(eof)
+    {
+        ec = {};
+        parser.write_eof(ec);
+    }
+    if(ec)
+        return fail(ec, "read");
+    message_ = parser.release();
+    do_request();
+
+#else
     for(;;)
     {
         if (read_buf_.size() == 0)
@@ -355,14 +366,13 @@ BaseHTTPPeer<Impl>::do_read (yield_context yield)
                 // should request that the handler compose a proper HTTP error
                 // response. This requires refactoring HTTPReply() into
                 // something sensible.
-                std::size_t used;
-                std::tie (ec, used) = parser.write (read_buf_.data());
+                auto used = parser.write (read_buf_.data(), ec);
                 if (! ec)
                     read_buf_.consume (used);
             }
             else
             {
-                ec = parser.write_eof();
+                parser.write_eof(ec);
             }
         }
 
@@ -377,6 +387,7 @@ BaseHTTPPeer<Impl>::do_read (yield_context yield)
         if (ec)
             return fail (ec, "read");
     }
+#endif
 }
 
 // Send everything in the write queue.
@@ -513,7 +524,7 @@ BaseHTTPPeer<Impl>::complete()
         return strand_.post(std::bind (&BaseHTTPPeer<Impl>::complete,
             impl().shared_from_this()));
 
-    message_ = beast::http::message{};
+    message_ = {};
     complete_ = true;
 
     {

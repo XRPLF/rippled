@@ -17,79 +17,69 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_METHOD_H_INCLUDED
-#define BEAST_HTTP_METHOD_H_INCLUDED
+#ifndef BEAST_HTTP_EMPTY_BODY_H_INCLUDED
+#define BEAST_HTTP_EMPTY_BODY_H_INCLUDED
 
+#include <beast/http/message.h>
+#include <beast/asio/streambuf.h>
 #include <memory>
 #include <string>
 
 namespace beast {
 namespace http {
 
-enum class method_t
+/** An empty content-body.
+*/
+struct empty_body
 {
-    http_delete,
-    http_get,
-    http_head,
-    http_post,
-    http_put,
+    struct value_type
+    {
+    };
 
-    // pathological
-    http_connect,
-    http_options,
-    http_trace,
+    static bool constexpr is_simple = true;
 
-    // webdav
-    http_copy,
-    http_lock,
-    http_mkcol,
-    http_move,
-    http_propfind,
-    http_proppatch,
-    http_search,
-    http_unlock,
-    http_bind,
-    http_rebind,
-    http_unbind,
-    http_acl,
+    struct reader
+    {
+        template<bool isReq, class Allocator>
+        explicit
+        reader(message<isReq, empty_body, Allocator>&)
+        {
+        }
 
-    // subversion
-    http_report,
-    http_mkactivity,
-    http_checkout,
-    http_merge,
+        void
+        write(void const*, std::size_t)
+        {
+        }
+    };
 
-    // upnp
-    http_msearch,
-    http_notify,
-    http_subscribe,
-    http_unsubscribe,
+    class writer
+    {
+        streambuf sb;
 
-    // RFC-5789
-    http_patch,
-    http_purge,
+    public:
+        template<bool isReq, class Allocator>
+        explicit
+        writer(message<isReq, empty_body, Allocator> const& m)
+        {
+            m.write_headers(sb);
+        }
 
-    // CalDav
-    http_mkcalendar,
+        auto
+        data() const
+        {
+            return sb.data();
+        }
+    };
 
-    // RFC-2068, section 19.6.1.2
-    http_link,
-    http_unlink
+    template<bool isRequest, class Allocator>
+    static
+    void
+    prepare(message<isRequest, empty_body, Allocator>& m)
+    {
+        m.headers.replace("Content-Length", 0);
+        m.headers.erase("Content-Type"); // VFALCO this right?
+    }
 };
-
-std::string
-to_string (method_t m);
-
-template <class Stream>
-Stream&
-operator<< (Stream& s, method_t m)
-{
-    return s << to_string(m);
-}
-
-/** Returns the string corresponding to the numeric HTTP status code. */
-std::string
-status_text (int status);
 
 } // http
 } // beast

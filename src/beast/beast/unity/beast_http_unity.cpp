@@ -17,28 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
-#define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+#include <beast/http/src/beast_http_method.cpp>
+#include <beast/http/src/beast_http_nodejs_parser.cpp>
+#include <beast/http/src/beast_http_URL.cpp>
 
-#include <beast/http/method.h>
-
-// TODO Use <system_error>
-#include <boost/system/error_code.hpp>
-
-// Wraps the C-language joyent http parser header in a namespace
-
-namespace beast {
-namespace joyent {
-
-#include <beast/http/impl/http-parser/http_parser.h>
-
-http::method_t
-convert_http_method (joyent::http_method m);
-
-boost::system::error_code
-convert_http_errno (joyent::http_errno err);
-
-}
-}
-
-#endif
+#include <beast/http/src/test/beast_http_chunked_encoder_test.cpp>
+#include <beast/http/src/test/beast_http_message_test.cpp>
+#include <beast/http/src/test/beast_http_parser_test.cpp>
+#include <beast/http/src/test/beast_http_rfc2616_test.cpp>
+#include <beast/http/src/test/beast_http_URL_test.cpp>
+#include <beast/http/src/test/beast_http_urls_large_data.cpp>

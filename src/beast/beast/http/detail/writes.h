@@ -17,80 +17,46 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_METHOD_H_INCLUDED
-#define BEAST_HTTP_METHOD_H_INCLUDED
+#ifndef BEAST_HTTP_WRITES_H_INCLUDED
+#define BEAST_HTTP_WRITES_H_INCLUDED
 
-#include <memory>
+#include <beast/asio/type_check.h>
+#include <boost/lexical_cast.hpp>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 namespace beast {
 namespace http {
+namespace detail {
 
-enum class method_t
+template<class Streambuf, class T,
+    class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
+void
+write(Streambuf& streambuf, T&& t)
 {
-    http_delete,
-    http_get,
-    http_head,
-    http_post,
-    http_put,
-
-    // pathological
-    http_connect,
-    http_options,
-    http_trace,
-
-    // webdav
-    http_copy,
-    http_lock,
-    http_mkcol,
-    http_move,
-    http_propfind,
-    http_proppatch,
-    http_search,
-    http_unlock,
-    http_bind,
-    http_rebind,
-    http_unbind,
-    http_acl,
-
-    // subversion
-    http_report,
-    http_mkactivity,
-    http_checkout,
-    http_merge,
-
-    // upnp
-    http_msearch,
-    http_notify,
-    http_subscribe,
-    http_unsubscribe,
-
-    // RFC-5789
-    http_patch,
-    http_purge,
-
-    // CalDav
-    http_mkcalendar,
-
-    // RFC-2068, section 19.6.1.2
-    http_link,
-    http_unlink
-};
-
-std::string
-to_string (method_t m);
-
-template <class Stream>
-Stream&
-operator<< (Stream& s, method_t m)
-{
-    return s << to_string(m);
+    using boost::asio::buffer;
+    using boost::asio::buffer_copy;
+    auto const& s =
+        boost::lexical_cast<std::string>(
+            std::forward<T>(t));
+    streambuf.commit(buffer_copy(
+        streambuf.prepare(s.size()), buffer(s)));
 }
 
-/** Returns the string corresponding to the numeric HTTP status code. */
-std::string
-status_text (int status);
+template<class Streambuf,
+    class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
+void
+write(Streambuf& streambuf, char const* s)
+{
+    using boost::asio::buffer;
+    using boost::asio::buffer_copy;
+    auto const len = ::strlen(s);
+    streambuf.commit(buffer_copy(
+        streambuf.prepare(len), buffer(s, len)));
+}
 
+} // detail
 } // http
 } // beast
 
