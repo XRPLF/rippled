@@ -17,12 +17,9 @@
 */
 //==============================================================================
 
-#include <beast/http/impl/joyent_parser.h>
+#include <beast/http/src/nodejs_parser.h>
 #include <beast/http/method.h>
 #include <boost/system/error_code.hpp>
-
-namespace beast {
-namespace joyent {
 
 #ifdef _MSC_VER
 # pragma warning (push)
@@ -34,33 +31,10 @@ namespace joyent {
 # pragma warning (pop)
 #endif
 
-}
-}
-
-namespace boost {
-namespace system {
-
-template <>
-struct is_error_code_enum <beast::joyent::http_errno>
-    : std::true_type
+beast::http::method_t
+convert_http_method(http_method m)
 {
-};
-
-template <>
-struct is_error_condition_enum <beast::joyent::http_errno>
-    : std::true_type
-{
-};
-
-}
-}
-
-namespace beast {
-namespace joyent {
-
-http::method_t
-convert_http_method (joyent::http_method m)
-{
+    using namespace beast;
     switch (m)
     {
     case HTTP_DELETE:      return http::method_t::http_delete;
@@ -113,59 +87,4 @@ convert_http_method (joyent::http_method m)
     };
 
     return http::method_t::http_get;
-}
-
-boost::system::error_code
-convert_http_errno (joyent::http_errno err)
-{
-    class http_error_category_t
-        : public boost::system::error_category
-    {
-    private:
-        using error_code = boost::system::error_code;
-        using error_condition = boost::system::error_condition;
-
-    public:
-        char const*
-        name() const noexcept override
-        {
-            return "http_errno";
-        }
-
-        std::string
-        message (int ev) const override
-        {
-            return joyent::http_errno_name (
-                joyent::http_errno (ev));
-        }
-
-        error_condition
-        default_error_condition (int ev) const noexcept override
-        {
-            return error_condition (ev, *this);
-        }
-
-        bool
-        equivalent (int code, error_condition const& condition
-            ) const noexcept override
-        {
-            return default_error_condition (code) == condition;
-        }
-
-        bool
-        equivalent (error_code const& code, int condition
-            ) const noexcept override
-        {
-            return *this == code.category() &&
-                code.value() == condition;
-        }
-    };
-
-    static http_error_category_t http_error_category;
-
-    return boost::system::error_code (
-        err, http_error_category);
-}
-
-}
 }

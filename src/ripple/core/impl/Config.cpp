@@ -26,7 +26,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
-#include <beast/http/URL.h>
+#include <ripple/beast/net/URL.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/streams/debug_ostream.h>
 #include <beast/ci_char_traits.h>

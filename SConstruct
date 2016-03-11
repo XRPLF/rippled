@@ -904,6 +904,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/beast/beast/asio/src', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/clock', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/crypto', '.cpp'))
+    append_sources(result, *list_sources('src/beast/beast/http/src', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/streams', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/test', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/container', '.cpp'))
@@ -953,6 +954,7 @@ def get_unity_sources(toolchain):
         'src/beast/beast/unity/beast_asio_unity.cpp',
         'src/beast/beast/unity/beast_clock_unity.cpp',
         'src/beast/beast/unity/beast_crypto_unity.cpp',
+        'src/beast/beast/unity/beast_http_unity.cpp',
         'src/beast/beast/unity/beast_streams_unity.cpp',
         'src/beast/beast/unity/beast_test_unity.cpp',
         'src/ripple/beast/unity/beast_container_unity.cpp',
