@@ -543,13 +543,13 @@ public:
         streambuf sb;
         read_until(s_, sb, "\r\n\r\n");
         using namespace beast;
-        http::body b;
-        http::message m;
-        http::parser p(m, b, false);
-        auto const result = p.write(sb.data());
-        if (result.first || ! p.complete())
-            throw std::runtime_error(result.first.message());
-        sb.consume(result.second);
+        deprecated_http::body b;
+        deprecated_http::message m;
+        deprecated_http::parser p(m, b, false);
+        auto const used = p.write(sb.data(), ec);
+        if (ec || ! p.complete())
+            throw std::runtime_error(ec.message());
+        sb.consume(used);
     }
 
     // write a text message

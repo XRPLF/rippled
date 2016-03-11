@@ -21,9 +21,15 @@
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
 #include <ripple/server/Writer.h>
+#include <beast/http/message.h>
+#include <beast/http/streambuf_body.h>
 #include <memory>
 
 namespace ripple {
+
+using http_request_type =
+    beast::http::parsed_request<
+        beast::http::streambuf_body>;
 
 /** Used to indicate the result of a server connection handoff. */
 struct Handoff

@@ -20,21 +20,24 @@
 #ifndef BEAST_HTTP_HEADERS_H_INCLUDED
 #define BEAST_HTTP_HEADERS_H_INCLUDED
 
+#include <beast/http/detail/writes.h>
+#include <beast/asio/type_check.h>
 #include <beast/ci_char_traits.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <cctype>
-#include <map>
-#include <ostream>
+#include <memory>
 #include <string>
+#include <beast/cxx17/type_traits.h> // <type_traits>
 #include <utility>
 
 namespace beast {
 namespace http {
 
-/** Holds a collection of HTTP headers. */
+template<class Allocator>
 class headers
 {
 public:
@@ -49,170 +52,218 @@ private:
             boost::intrusive::link_mode <
                 boost::intrusive::normal_link>>
     {
-        template <class = void>
-        element (std::string const& f, std::string const& v);
-
         value_type data;
+
+        element(std::string const& f, std::string const& v)
+        {
+            data.first = f;
+            data.second = v;
+        }
     };
 
-    struct less : private beast::ci_less
+    struct less : private ci_less
     {
-        template <class String>
+        template<class String>
         bool
-        operator() (String const& lhs, element const& rhs) const;
+        operator()(String const& lhs, element const& rhs) const
+        {
+            return ci_less::operator()(lhs, rhs.data.first);
+        }
 
-        template <class String>
+        template<class String>
         bool
-        operator() (element const& lhs, String const& rhs) const;
+        operator()(element const& lhs, String const& rhs) const
+        {
+            return ci_less::operator()(lhs.data.first, rhs);
+        }
 
         bool
-        operator() (element const& lhs, element const& rhs) const;
+        operator()(element const& lhs, element const& rhs) const
+        {
+            return beast::ci_less::operator()(
+                lhs.data.first, rhs.data.first);
+        }
     };
 
     struct transform
-        : public std::unary_function <element, value_type>
+        : public std::unary_function<element, value_type>
     {
         value_type const&
-        operator() (element const& e) const
+        operator()(element const& e) const
         {
             return e.data;
         }
     };
 
-    using list_t = boost::intrusive::make_list <element,
-        boost::intrusive::constant_time_size <false>
-            >::type;
+    using list_t = typename boost::intrusive::make_list<
+        element, boost::intrusive::constant_time_size<false>>::type;
 
-    using set_t = boost::intrusive::make_set <element,
-        boost::intrusive::constant_time_size <true>,
-        boost::intrusive::compare<less>
-            >::type;
+    using set_t = typename boost::intrusive::make_set<
+        element, boost::intrusive::constant_time_size<true>,
+            boost::intrusive::compare<less>>::type;
 
     list_t list_;
     set_t set_;
 
 public:
-    using iterator = boost::transform_iterator <transform,
-        list_t::const_iterator>;
+    using iterator = boost::transform_iterator<transform,
+        typename list_t::const_iterator>;
+
     using const_iterator = iterator;
 
-    ~headers()
+    ~headers();
+
+    headers()
     {
-        clear();
+        static_assert(std::is_copy_constructible<headers>::value, "");
+        static_assert(std::is_move_constructible<headers>::value, "");
+        static_assert(std::is_copy_assignable<headers>::value, "");
+        static_assert(std::is_move_assignable<headers>::value, "");
     }
 
-    headers() = default;
+    /** Move constructor.
 
-    headers (headers&& other);
-    headers& operator= (headers&& other);
+        After the move, the moved-from object has an empty list of fields.
+    */
+    headers(headers&&);
 
-    headers (headers const& other);
-    headers& operator= (headers const& other);
+    /** Move assignment.
 
-    /** Returns an iterator to headers in order of appearance. */
+        After the move, the moved-from object has an empty list of fields.
+    */
+    headers& operator=(headers&&);
+
+    /** Copy constructor. */
+    headers(headers const&);
+
+    /** Copy assignment. */
+    headers& operator=(headers const&);
+
+    /** Returns an iterator to fields in order of appearance. */
     /** @{ */
     iterator
-    begin() const;
+    begin() const
+    {
+        return {list_.cbegin(), transform{}};
+    }
 
     iterator
-    end() const;
+    end() const
+    {
+        return {list_.cend(), transform{}};
+    }
 
     iterator
-    cbegin() const;
+    cbegin() const
+    {
+        return {list_.cbegin(), transform{}};
+    }
 
     iterator
-    cend() const;
+    cend() const
+    {
+        return {list_.cend(), transform{}};
+    }
     /** @} */
 
+    /** Returns `true` if the specified field exists. */
+    bool
+    exists(std::string const& field) const
+    {
+        return set_.find(field, less{}) != set_.end();
+    }
+
     /** Returns an iterator to the case-insensitive matching header. */
-    template <class = void>
     iterator
-    find (std::string const& field) const;
+    find(std::string const& field) const;
 
     /** Returns the value for a case-insensitive matching header, or "" */
-    template <class = void>
     std::string const&
-    operator[] (std::string const& field) const;
+    operator[](std::string const& field) const;
 
     /** Clear the contents of the headers. */
-    template <class = void>
     void
     clear() noexcept;
 
     /** Remove a field.
+
         @return The number of fields removed.
     */
-    template <class = void>
     std::size_t
-    erase (std::string const& field);
+    erase(std::string const& field);
 
-    /** Append a field value.
+    /** Insert a field value.
+
         If a field value already exists the new value will be
         extended as per RFC2616 Section 4.2.
     */
-    // VFALCO TODO Consider allowing rvalue references for std::move
-    template <class = void>
+    // VFALCO TODO Consider allowing rvalue references for std::move?
     void
-    append (std::string const& field, std::string const& value);
+    insert(std::string const& field, std::string const& value);
+
+    /** Insert a field value.
+
+        If a field value already exists the new value will be
+        extended as per RFC2616 Section 4.2.
+    */
+    template<class T,
+        class = std::enable_if_t<
+            ! std::is_constructible<std::string, T>::value>>
+    void
+    insert(std::string const& field, T&& t)
+    {
+        insert(field, boost::lexical_cast<std::string>(
+            std::forward<T>(t)));
+    }
+
+    /** Replace a field value.
+
+        The current field value, if any, is removed. Then the
+        specified value is inserted as if by insert(field, value).
+    */
+    void
+    replace(std::string const& field, std::string const& value);
+
+    /** Replace a field value.
+
+        The current field value, if any, is removed. Then the
+        specified value is inserted as if by insert(field, value).
+    */
+    template<class T,
+        class = std::enable_if_t<
+            ! std::is_constructible<std::string, T>::value>>
+    void
+    replace(std::string const& field, T&& t)
+    {
+        replace(field, boost::lexical_cast<std::string>(
+            std::forward<T>(t)));
+    }
+
+    /** Write the headers to a Streambuf. */
+    template<class Streambuf>
+    void
+    write(Streambuf& streambuf) const;
 };
 
-template <class = void>
-std::string
-to_string (headers const& h);
-
-// HACK!
-template <class = void>
-std::map <std::string, std::string>
-build_map (headers const& h);
-
-//------------------------------------------------------------------------------
-
-template <class>
-headers::element::element (
-    std::string const& f, std::string const& v)
+template<class Allocator>
+headers<Allocator>::~headers()
 {
-    data.first = f;
-    data.second = v;
+    clear();
 }
 
-template <class String>
-bool
-headers::less::operator() (
-    String const& lhs, element const& rhs) const
-{
-    return beast::ci_less::operator() (lhs, rhs.data.first);
-}
-
-template <class String>
-bool
-headers::less::operator() (
-    element const& lhs, String const& rhs) const
-{
-    return beast::ci_less::operator() (lhs.data.first, rhs);
-}
-
-inline
-bool
-headers::less::operator() (
-    element const& lhs, element const& rhs) const
-{
-    return beast::ci_less::operator() (lhs.data.first, rhs.data.first);
-}
-
-//------------------------------------------------------------------------------
-
-inline
-headers::headers (headers&& other)
-    : list_ (std::move (other.list_))
-    , set_ (std::move (other.set_))
+template<class Allocator>
+headers<Allocator>::headers(headers&& other)
+    : list_(std::move(other.list_))
+    , set_(std::move(other.set_))
 {
     other.list_.clear();
     other.set_.clear();
 }
 
-inline
-headers&
-headers::operator= (headers&& other)
+template<class Allocator>
+auto
+headers<Allocator>::operator=(headers&& other) ->
+    headers&
 {
     list_ = std::move(other.list_);
     set_ = std::move(other.set_);
@@ -221,189 +272,118 @@ headers::operator= (headers&& other)
     return *this;
 }
 
-inline
-headers::headers (headers const& other)
+template<class Allocator>
+headers<Allocator>::headers(headers const& other)
 {
     for (auto const& e : other.list_)
-        append (e.data.first, e.data.second);
+        insert(e.data.first, e.data.second);
 }
 
-inline
-headers&
-headers::operator= (headers const& other)
+template<class Allocator>
+auto
+headers<Allocator>::operator= (headers const& other) ->
+    headers&
 {
     clear();
     for (auto const& e : other.list_)
-        append (e.data.first, e.data.second);
+        insert (e.data.first, e.data.second);
     return *this;
 }
 
-inline
-headers::iterator
-headers::begin() const
+template<class Allocator>
+auto
+headers<Allocator>::find(std::string const& field) const ->
+    iterator
 {
-    return {list_.cbegin(), transform{}};
-}
-
-inline
-headers::iterator
-headers::end() const
-{
-    return {list_.cend(), transform{}};
-}
-
-inline
-headers::iterator
-headers::cbegin() const
-{
-    return {list_.cbegin(), transform{}};
-}
-
-inline
-headers::iterator
-headers::cend() const
-{
-    return {list_.cend(), transform{}};
-}
-
-template <class>
-headers::iterator
-headers::find (std::string const& field) const
-{
-    auto const iter (set_.find (field, less{}));
-    if (iter == set_.end())
+    auto const it = set_.find(field, less{});
+    if(it == set_.end())
         return {list_.end(), transform{}};
-    return {list_.iterator_to (*iter), transform{}};
+    return {list_.iterator_to(*it), transform{}};
 }
 
-template <class>
+template<class Allocator>
 std::string const&
-headers::operator[] (std::string const& field) const
+headers<Allocator>::operator[](std::string const& field) const
 {
-    static std::string none;
-    auto const found (find (field));
-    if (found == end())
+    // VFALCO This none object looks sketchy
+    static std::string const none;
+    auto const it = find(field);
+    if(it == end())
         return none;
-    return found->second;
+    return it->second;
 }
 
-template <class>
+template<class Allocator>
 void
-headers::clear() noexcept
+headers<Allocator>::clear() noexcept
 {
-    for (auto iter (list_.begin()); iter != list_.end();)
-        delete &(*iter++);
+    for(auto it = list_.begin(); it != list_.end();)
+        delete &(*it++);
 }
 
-template <class>
+template<class Allocator>
 std::size_t
-headers::erase (std::string const& field)
+headers<Allocator>::erase(std::string const& field)
 {
-    auto const iter = set_.find(field, less{});
-    if (iter == set_.end())
+    auto const it = set_.find(field, less{});
+    if(it == set_.end())
         return 0;
-    element& e = *iter;
+    auto& e = *it;
     set_.erase(set_.iterator_to(e));
     list_.erase(list_.iterator_to(e));
     delete &e;
     return 1;
 }
 
-template <class>
+template<class Allocator>
 void
-headers::append (std::string const& field,
-    std::string const& value)
+headers<Allocator>::insert(
+    std::string const& field, std::string const& value)
 {
-    set_t::insert_commit_data d;
-    auto const result (set_.insert_check (field, less{}, d));
+    typename set_t::insert_commit_data d;
+    auto const result = set_.insert_check (field, less{}, d);
     if (result.second)
     {
-        element* const p = new element (field, value);
-        list_.push_back (*p);
-        set_.insert_commit (*p, d);
+        auto const p = new element (field, value);
+        list_.push_back(*p);
+        set_.insert_commit(*p, d);
         return;
     }
-    // If field already exists, append comma
+    // If field already exists, insert comma
     // separated value as per RFC2616 section 4.2
-    auto& cur (result.first->data.second);
-    cur.reserve (cur.size() + 1 + value.size());
-    cur.append (1, ',');
-    cur.append (value);
+    auto& cur = result.first->data.second;
+    cur.reserve(cur.size() + 1 + value.size());
+    cur.append(1, ',');
+    cur.append(value);
 }
 
-//------------------------------------------------------------------------------
-
-template <class Streambuf>
+template<class Allocator>
 void
-write (Streambuf& stream, std::string const& s)
+headers<Allocator>::replace(
+    std::string const& field, std::string const& value)
 {
-    stream.commit (boost::asio::buffer_copy (
-        stream.prepare (s.size()), boost::asio::buffer(s)));
+    erase(field);
+    insert(field, value);
 }
 
-template <class Streambuf>
+template<class Allocator>
+template<class Streambuf>
 void
-write (Streambuf& stream, char const* s)
+headers<Allocator>::write(Streambuf& streambuf) const
 {
-    auto const len (::strlen(s));
-    stream.commit (boost::asio::buffer_copy (
-        stream.prepare (len), boost::asio::buffer (s, len)));
-}
-
-template <class Streambuf>
-void
-write (Streambuf& stream, headers const& h)
-{
-    for (auto const& _ : h)
+    static_assert(is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
+    for (auto const& e : list_)
     {
-        write (stream, _.first);
-        write (stream, ": ");
-        write (stream, _.second);
-        write (stream, "\r\n");
+        detail::write(streambuf, e.data.first);
+        detail::write(streambuf, ": ");
+        detail::write(streambuf, e.data.second);
+        detail::write(streambuf, "\r\n");
     }
 }
 
-template <class>
-std::string
-to_string (headers const& h)
-{
-    std::string s;
-    std::size_t n (0);
-    for (auto const& e : h)
-        n += e.first.size() + 2 + e.second.size() + 2;
-    s.reserve (n);
-    for (auto const& e : h)
-    {
-        s.append (e.first);
-        s.append (": ");
-        s.append (e.second);
-        s.append ("\r\n");
-    }
-    return s;
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& s, headers const& h)
-{
-    s << to_string(h);
-    return s;
-}
-
-template <class>
-std::map <std::string, std::string>
-build_map (headers const& h)
-{
-    std::map <std::string, std::string> c;
-    for (auto const& e : h)
-    {
-        auto key (e.first);
-        // TODO Replace with safe C++14 version
-        std::transform (key.begin(), key.end(), key.begin(), ::tolower);
-        c [key] = e.second;
-    }
-    return c;
-}
+using http_headers =
+    headers<std::allocator<char>>;
 
 } // http
 } // beast

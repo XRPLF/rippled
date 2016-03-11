@@ -23,46 +23,30 @@
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
+namespace test {
 
-class message_test : public beast::unit_test::suite
+class parser_test : public beast::unit_test::suite
 {
 public:
-    std::pair <message, bool>
-    request (std::string const& text)
+    message
+    request(std::string const& text)
     {
-        message m;
         body b;
-        parser p (m, b, true);
-        auto result (p.write (boost::asio::buffer(text)));
+        message m;
+        parser p(m, b, true);
+        auto const used =
+            p.write(boost::asio::buffer(text));
+        expect(used == text.size());
         p.write_eof();
-        return std::make_pair (std::move(m), result.first);
-    }
-
-    void
-    dump()
-    {
-        auto const result = request (
-            "GET / HTTP/1.1\r\n"
-            //"Connection: Upgrade\r\n"
-            //"Upgrade: Ripple\r\n"
-            "Field: \t Value \t \r\n"
-            "Blib: Continu\r\n"
-            "  ation\r\n"
-            "Field: Hey\r\n"
-            "Content-Length: 1\r\n"
-            "\r\n"
-            "x"
-            );
-        log << result.first.headers;
-        log << "|" << result.first.headers["Field"] << "|";
+        return m;
     }
 
     void
     test_headers()
     {
-        headers h;
-        h.append("Field", "Value");
+        beast::http::headers<std::allocator<char>> h;
+        h.insert("Field", "Value");
         expect (h.erase("Field") == 1);
     }
 
@@ -76,14 +60,14 @@ public:
                 "GET / HTTP/1.1\r\n"
                 "\r\n"
                 ;
-            message m;
             body b;
+            message m;
             parser p (m, b, true);
-            auto result (p.write (boost::asio::buffer(text)));
-            expect (! result.first);
-            auto result2 (p.write_eof());
-            expect (! result2);
-            expect (p.complete());
+            auto const used = p.write(
+                boost::asio::buffer(text));
+            expect(used == text.size());
+            p.write_eof();
+            expect(p.complete());
         }
 
         {
@@ -92,17 +76,19 @@ public:
                 "GET\r\n"
                 "\r\n"
                 ;
-            message m;
             body b;
-            parser p (m, b, true);
-            auto result = p.write (boost::asio::buffer(text));
-            if (expect (result.first))
-                expect (result.first.message() == "invalid HTTP method");
+            message m;
+            parser p(m, b, true);
+            boost::system::error_code ec;
+            p.write(boost::asio::buffer(text), ec);
+            if(expect(ec))
+                expect(ec.message() == "invalid HTTP method");
         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(message,http,beast);
+BEAST_DEFINE_TESTSUITE(parser,http,beast);
 
-} // http
+} // test
+} // deprecated_http
 } // beast

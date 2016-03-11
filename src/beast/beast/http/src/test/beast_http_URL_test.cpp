@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <beast/http/URL.h>
-
 #include <beast/unit_test/suite.h>
 
 namespace beast {

@@ -66,9 +66,9 @@ private:
     beast::asio::ssl_bundle::stream_type& stream_;
     beast::streambuf read_buf_;
     beast::streambuf write_buf_;
-    beast::http::message response_;
+    beast::deprecated_http::message response_;
     beast::streambuf body_;
-    beast::http::parser parser_;
+    beast::deprecated_http::parser parser_;
     PeerFinder::Slot::ptr slot_;
 
 public:
@@ -100,12 +100,12 @@ private:
     void onShutdown (error_code ec);
 
     static
-    beast::http::message
+    beast::deprecated_http::message
     makeRequest (bool crawl,
         boost::asio::ip::address const& remote_address);
 
     template <class Streambuf>
-    void processResponse (beast::http::message const& m,
+    void processResponse (beast::deprecated_http::message const& m,
         Streambuf const& body);
 
     template <class = void>

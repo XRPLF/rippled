@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,19 +17,27 @@
 */
 //==============================================================================
 
-#if ! BEAST_COMPILE_OBJECTIVE_CPP
+#ifndef BEAST_HTTP_H_INCLUDED
+#define BEAST_HTTP_H_INCLUDED
 
-/*  This file includes all of the beast sources needed to link.
-    By including them here, we avoid having to muck with the SConstruct
-    Makefile, Project file, or whatever.
-*/
+#include <beast/http/basic_parser.h>
+#include <beast/http/chunk_encode.h>
+#include <beast/http/empty_body.h>
+#include <beast/http/error.h>
+#include <beast/http/fields.h>
+#include <beast/http/headers.h>
+#include <beast/http/message.h>
+#include <beast/http/parser.h>
+#include <beast/http/read.h>
+#include <beast/http/reason.h>
+#include <beast/http/resume_context.h>
+#include <beast/http/streambuf_body.h>
+#include <beast/http/string_body.h>
+#include <beast/http/type_check.h>
+#include <beast/http/write.h>
 
-// MUST come first!
-#include <BeastConfig.h>
-
-// Include this to get all the basic includes included, to prevent errors
-#include <ripple/beast/core/core.unity.cpp>
-
-#include <beast/unit_test/define_print.cpp>
+#if DOXYGEN
+#include <beast/http/README.md>
+#endif
 
 #endif
