@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_HTTP_ERROR_H_INCLUDED
+#define BEAST_HTTP_ERROR_H_INCLUDED
+
+#include <boost/system/error_code.hpp>
+
+namespace beast {
+namespace http2 {
+
+using error_code = boost::system::error_code;
+
+} // http
+} // beast
+
 #endif
-
-#include <beast/http/impl/method.cpp>
-#include <beast/http/impl/nodejs_parser.cpp>
-#include <beast/http/impl/URL.cpp>
-
-#include <beast/http/tests/chunked_encoder.test.cpp>
-#include <beast/http/tests/parser.test.cpp>
-#include <beast/http/tests/rfc2616.test.cpp>
-#include <beast/http/tests/URL.test.cpp>
-#include <beast/http/tests/urls_large_data.cpp>
-

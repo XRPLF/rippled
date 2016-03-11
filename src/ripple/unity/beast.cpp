@@ -43,5 +43,6 @@
 #include <beast/utility/Utility.unity.cpp>
 
 #include <beast/unit_test/define_print.cpp>
+//#include <beast/http/test/http_test.cpp>
 
 #endif

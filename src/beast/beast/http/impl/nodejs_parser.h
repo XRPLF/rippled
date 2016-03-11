@@ -17,17 +17,22 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+#define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+
+#include <beast/http/method.h>
+
+// Wraps the C-language nodejs http parser header in a namespace
+
+namespace beast {
+namespace nodejs {
+
+#include <beast/http/impl/http-parser/http_parser.h>
+
+http::method_t
+convert_http_method (nodejs::http_method m);
+
+}
+}
+
 #endif
-
-#include <beast/http/impl/method.cpp>
-#include <beast/http/impl/nodejs_parser.cpp>
-#include <beast/http/impl/URL.cpp>
-
-#include <beast/http/tests/chunked_encoder.test.cpp>
-#include <beast/http/tests/parser.test.cpp>
-#include <beast/http/tests/rfc2616.test.cpp>
-#include <beast/http/tests/URL.test.cpp>
-#include <beast/http/tests/urls_large_data.cpp>
-

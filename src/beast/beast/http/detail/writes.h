@@ -17,17 +17,43 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_HTTP_WRITES_H_INCLUDED
+#define BEAST_HTTP_WRITES_H_INCLUDED
+
+#include <beast/asio/type_check.h>
+#include <string>
+#include <type_traits>
+
+namespace beast {
+namespace http2 {
+namespace detail {
+
+template<class Streambuf, class Traits, class Allocator,
+    class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
+void
+write(Streambuf& streambuf,
+    std::basic_string<char, Traits, Allocator> const& s)
+{
+    using boost::asio::buffer;
+    using boost::asio::buffer_copy;
+    streambuf.commit(buffer_copy(
+        streambuf.prepare(s.size()), buffer(s)));
+}
+
+template<class Streambuf,
+    class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
+void
+write(Streambuf& streambuf, char const* s)
+{
+    using boost::asio::buffer;
+    using boost::asio::buffer_copy;
+    auto const len = ::strlen(s);
+    streambuf.commit(buffer_copy(
+        streambuf.prepare(len), buffer(s, len)));
+}
+
+} // detail
+} // http
+} // beast
+
 #endif
-
-#include <beast/http/impl/method.cpp>
-#include <beast/http/impl/nodejs_parser.cpp>
-#include <beast/http/impl/URL.cpp>
-
-#include <beast/http/tests/chunked_encoder.test.cpp>
-#include <beast/http/tests/parser.test.cpp>
-#include <beast/http/tests/rfc2616.test.cpp>
-#include <beast/http/tests/URL.test.cpp>
-#include <beast/http/tests/urls_large_data.cpp>
-

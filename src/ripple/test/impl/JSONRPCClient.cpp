@@ -132,11 +132,12 @@ public:
 
         for(;;)
         {
-            auto const result = p.write(bin_.data());
-            if (result.first)
-                Throw<boost::system::system_error>(result.first);
-
-            bin_.consume(result.second);
+            boost::system::error_code ec;
+            auto used = p.write(bin_.data(), ec);
+            if(ec)
+                Throw<boost::system::system_error>(ec);
+            bin_.consume(used);
+            // VFALCO What do we do if bin_ still has data?
             if(p.complete())
                 break;
             bin_.commit(stream_.read_some(

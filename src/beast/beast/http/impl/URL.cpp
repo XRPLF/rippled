@@ -104,9 +104,9 @@ parse_URL(std::string const& url)
     std::size_t const buflen (url.size ());
     char const* const buf (url.c_str ());
 
-    joyent::http_parser_url parser;
+    nodejs::http_parser_url parser;
 
-    if (joyent::http_parser_parse_url (buf, buflen, false, &parser) != 0)
+    if (nodejs::http_parser_parse_url (buf, buflen, false, &parser) != 0)
         return std::make_pair (false, URL{});
 
     std::string scheme;
@@ -118,54 +118,54 @@ parse_URL(std::string const& url)
     std::string fragment;
     std::string userinfo;
 
-    if ((parser.field_set & (1<<joyent::UF_SCHEMA)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_SCHEMA)) != 0)
     {
         scheme = std::string (
-            buf + parser.field_data [joyent::UF_SCHEMA].off,
-                parser.field_data [joyent::UF_SCHEMA].len);
+            buf + parser.field_data [nodejs::UF_SCHEMA].off,
+                parser.field_data [nodejs::UF_SCHEMA].len);
     }
 
-    if ((parser.field_set & (1<<joyent::UF_HOST)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_HOST)) != 0)
     {
         host = std::string (
-            buf + parser.field_data [joyent::UF_HOST].off,
-                parser.field_data [joyent::UF_HOST].len);
+            buf + parser.field_data [nodejs::UF_HOST].off,
+                parser.field_data [nodejs::UF_HOST].len);
     }
 
-    if ((parser.field_set & (1<<joyent::UF_PORT)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_PORT)) != 0)
     {
         port = parser.port;
         port_string = std::string (
-            buf + parser.field_data [joyent::UF_PORT].off,
-                parser.field_data [joyent::UF_PORT].len);
+            buf + parser.field_data [nodejs::UF_PORT].off,
+                parser.field_data [nodejs::UF_PORT].len);
     }
 
-    if ((parser.field_set & (1<<joyent::UF_PATH)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_PATH)) != 0)
     {
         path = std::string (
-            buf + parser.field_data [joyent::UF_PATH].off,
-                parser.field_data [joyent::UF_PATH].len);
+            buf + parser.field_data [nodejs::UF_PATH].off,
+                parser.field_data [nodejs::UF_PATH].len);
     }
 
-    if ((parser.field_set & (1<<joyent::UF_QUERY)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_QUERY)) != 0)
     {
         query = std::string (
-            buf + parser.field_data [joyent::UF_QUERY].off,
-                parser.field_data [joyent::UF_QUERY].len);
+            buf + parser.field_data [nodejs::UF_QUERY].off,
+                parser.field_data [nodejs::UF_QUERY].len);
     }
 
-    if ((parser.field_set & (1<<joyent::UF_FRAGMENT)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_FRAGMENT)) != 0)
     {
         fragment = std::string (
-            buf + parser.field_data [joyent::UF_FRAGMENT].off,
-                parser.field_data [joyent::UF_FRAGMENT].len);
+            buf + parser.field_data [nodejs::UF_FRAGMENT].off,
+                parser.field_data [nodejs::UF_FRAGMENT].len);
     }
 
-    if ((parser.field_set & (1<<joyent::UF_USERINFO)) != 0)
+    if ((parser.field_set & (1<<nodejs::UF_USERINFO)) != 0)
     {
         userinfo = std::string (
-            buf + parser.field_data [joyent::UF_USERINFO].off,
-                parser.field_data [joyent::UF_USERINFO].len);
+            buf + parser.field_data [nodejs::UF_USERINFO].off,
+                parser.field_data [nodejs::UF_USERINFO].len);
     }
 
     return std::make_pair (true,

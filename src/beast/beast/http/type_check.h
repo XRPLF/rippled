@@ -17,28 +17,48 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
-#define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+#ifndef BEAST_HTTP_TYPE_CHECK_H_INCLUDED
+#define BEAST_HTTP_TYPE_CHECK_H_INCLUDED
 
-#include <beast/http/method.h>
-
-// TODO Use <system_error>
+#include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
-
-// Wraps the C-language joyent http parser header in a namespace
+#include <functional>
+#include <beast/cxx17/type_traits.h> // <type_traits>
 
 namespace beast {
-namespace joyent {
+namespace http2 {
 
-#include <beast/http/impl/http-parser/http_parser.h>
+/// Evaluates to std::true_type if `T` models Body
+template<class T>
+struct is_Body : std::true_type
+{
+};
 
-http::method_t
-convert_http_method (joyent::http_method m);
+/// Evaluates to std::true_type if `T` models HTTPMessage
+template<class T>
+struct is_HTTPMessage : std::false_type
+{
+};
 
-boost::system::error_code
-convert_http_errno (joyent::http_errno err);
+/// Evaluates to std::true_type if `HTTPMessage` is a request
+template<class HTTPMessage>
+struct is_HTTPRequest : std::true_type
+{
+};
 
-}
-}
+/** Trait: `C` models HTTPParser
+*/
+template<class C, class = void>
+struct is_HTTPParser : std::false_type {};
+template <class C>
+struct is_HTTPParser<C, std::void_t<
+    decltype(std::declval<C>().write(std::declval<boost::asio::const_buffer>(),
+        std::declval<boost::system::error_code&>()), std::true_type{}),
+    std::is_same<decltype(
+        std::declval<C>().complete()), bool>
+>>:std::true_type{};
+
+} // http
+} // beast
 
 #endif
