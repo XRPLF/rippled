@@ -17,20 +17,69 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_HEADERS_H_INCLUDED
-#define BEAST_HTTP_HEADERS_H_INCLUDED
+#ifndef BEAST_HTTP_EMPTY_BODY_H_INCLUDED
+#define BEAST_HTTP_EMPTY_BODY_H_INCLUDED
 
-#include <beast/http/basic_headers.h>
+#include <beast/http/error.h>
+#include <beast/http/message.h>
+#include <beast/asio/streambuf.h>
+#include <boost/asio/buffer.hpp>
 #include <memory>
+#include <string>
 
 namespace beast {
 namespace http {
 
-template<class Allocator>
-using headers = basic_headers<Allocator>;
+/** An empty content-body.
+*/
+struct empty_body
+{
+    struct value_type
+    {
+    };
 
-using http_headers =
-    basic_headers<std::allocator<char>>;
+    struct reader
+    {
+        template<bool isRequest, class Allocator>
+        explicit
+        reader(message<isRequest, empty_body, Allocator>&)
+        {
+        }
+
+        void
+        write(void const*, std::size_t, error_code&)
+        {
+        }
+    };
+
+    struct writer
+    {
+        template<bool isRequest, class Allocator>
+        explicit
+        writer(message<isRequest, empty_body, Allocator> const& m)
+        {
+        }
+
+        void
+        init(error_code& ec)
+        {
+        }
+
+        std::size_t
+        content_length() const
+        {
+            return 0;
+        }
+
+        template<class Write>
+        boost::tribool
+        operator()(resume_context&&, error_code&, Write&& write)
+        {
+            write(boost::asio::null_buffers{});
+            return true;
+        }
+    };
+};
 
 } // http
 } // beast

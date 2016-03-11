@@ -17,15 +17,12 @@
 */
 //==============================================================================
 
-#include <beast/http/tests/urls_large_data.h>
-
-namespace beast {
-namespace http {
+#include "urls_large_data.h"
 
 // Data from Alexa top 1 million sites
 // http://s3.amazonaws.com/alexa-static/top-1m.csv.zip
 //
-std::vector <char const*> const&
+std::vector<char const*> const&
 urls_large_data()
 {
     static std::vector <char const*> const urls ({
@@ -10032,7 +10029,3 @@ urls_large_data()
 
     return urls;
 }
-
-}
-}
-

@@ -17,22 +17,29 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_HEADERS_H_INCLUDED
-#define BEAST_HTTP_HEADERS_H_INCLUDED
+#ifndef BEAST_HTTP_NODEJS_PARSER_H_INCLUDED
+#define BEAST_HTTP_NODEJS_PARSER_H_INCLUDED
 
-#include <beast/http/basic_headers.h>
-#include <memory>
+#include <beast/http/method.h>
+#include <beast/http/impl/http-parser/http_parser.h>
+#include <boost/system/error_code.hpp>
 
-namespace beast {
-namespace http {
+beast::http::method_t
+convert_http_method(http_method m);
 
-template<class Allocator>
-using headers = basic_headers<Allocator>;
-
-using http_headers =
-    basic_headers<std::allocator<char>>;
-
-} // http
-} // beast
+namespace boost {
+namespace system {
+template<>
+struct is_error_code_enum<http_errno>
+    : std::true_type
+{
+};
+template<>
+struct is_error_condition_enum<http_errno>
+    : std::true_type
+{
+};
+} // system
+} // boost
 
 #endif

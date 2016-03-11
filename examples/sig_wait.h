@@ -17,22 +17,33 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_HEADERS_H_INCLUDED
-#define BEAST_HTTP_HEADERS_H_INCLUDED
+#ifndef BEAST_EXAMPLE_SIG_WAIT_H_INCLUDED
+#define BEAST_EXAMPLE_SIG_WAIT_H_INCLUDED
 
-#include <beast/http/basic_headers.h>
-#include <memory>
+#include <boost/asio.hpp>
+#include <condition_variable>
+#include <mutex>
 
-namespace beast {
-namespace http {
-
-template<class Allocator>
-using headers = basic_headers<Allocator>;
-
-using http_headers =
-    basic_headers<std::allocator<char>>;
-
-} // http
-} // beast
+// Block until SIGINT or SIGTERM
+inline
+void
+sig_wait()
+{
+    boost::asio::io_service ios;
+    boost::asio::signal_set signals(
+        ios, SIGINT, SIGTERM);
+    std::mutex m;
+    bool stop = false;
+    std::condition_variable cv;
+    signals.async_wait(
+        [&](boost::system::error_code const&, int)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            stop = true;
+            cv.notify_one();
+        });
+    std::unique_lock<std::mutex> lock(m);
+    cv.wait(lock, [&]{ return stop; });
+}
 
 #endif

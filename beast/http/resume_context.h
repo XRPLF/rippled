@@ -17,20 +17,28 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_HEADERS_H_INCLUDED
-#define BEAST_HTTP_HEADERS_H_INCLUDED
+#ifndef BEAST_HTTP_RESUME_CONTEXT_H_INCLUDED
+#define BEAST_HTTP_RESUME_CONTEXT_H_INCLUDED
 
-#include <beast/http/basic_headers.h>
-#include <memory>
+#include <functional>
 
 namespace beast {
 namespace http {
 
-template<class Allocator>
-using headers = basic_headers<Allocator>;
+/** A functor that resumes a write operation.
 
-using http_headers =
-    basic_headers<std::allocator<char>>;
+    An rvalue reference to an object of this type is provided by the
+    write implementation to the `writer` associated with the body of
+    a message being sent.
+
+    If it is desired that the `writer` suspend the write operation (for
+    example, to wait until data is ready), it can take ownership of
+    the resume context using a move. Then, it returns `boost::indeterminate`
+    to indicate that the write operation should suspend. Later, the calling
+    code invokes the resume function and the write operation continues
+    from where it left off.
+*/
+using resume_context = std::function<void(void)>;
 
 } // http
 } // beast

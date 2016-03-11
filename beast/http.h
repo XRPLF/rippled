@@ -17,22 +17,23 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_HEADERS_H_INCLUDED
-#define BEAST_HTTP_HEADERS_H_INCLUDED
+#ifndef BEAST_HTTP_H_INCLUDED
+#define BEAST_HTTP_H_INCLUDED
 
-#include <beast/http/basic_headers.h>
-#include <memory>
-
-namespace beast {
-namespace http {
-
-template<class Allocator>
-using headers = basic_headers<Allocator>;
-
-using http_headers =
-    basic_headers<std::allocator<char>>;
-
-} // http
-} // beast
+#include <beast/http/basic_parser.h>
+#include <beast/http/chunk_encode.h>
+#include <beast/http/empty_body.h>
+#include <beast/http/error.h>
+#include <beast/http/fields.h>
+#include <beast/http/headers.h>
+#include <beast/http/message.h>
+#include <beast/http/parser.h>
+#include <beast/http/read.h>
+#include <beast/http/reason.h>
+#include <beast/http/resume_context.h>
+#include <beast/http/streambuf_body.h>
+#include <beast/http/string_body.h>
+#include <beast/http/type_check.h>
+#include <beast/http/write.h>
 
 #endif
