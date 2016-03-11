@@ -14,6 +14,7 @@ unit-test all :
     asio.cpp
     async_completion.cpp
     basic_streambuf.cpp
+    ../basic_headers.cpp
     bind_handler.cpp
     buffers_adapter.cpp
     buffers_debug.cpp

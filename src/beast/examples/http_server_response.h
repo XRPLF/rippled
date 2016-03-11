@@ -17,18 +17,15 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_URLS_LARGE_DATA_H_INCLUDED
-#define BEAST_HTTP_URLS_LARGE_DATA_H_INCLUDED
-
-#include <vector>
+#ifndef BEAST_HTTP_EXAMPLE_SERVER_RESPONSE_H_INCLUDED
+#define BEAST_HTTP_EXAMPLE_SERVER_RESPONSE_H_INCLUDED
 
 namespace beast {
 namespace http {
+namespace example {
 
-std::vector <char const*> const&
-urls_large_data();
-
-}
-}
+} // example
+} // http
+} // beast
 
 #endif

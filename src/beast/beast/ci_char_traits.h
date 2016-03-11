@@ -20,6 +20,7 @@
 #ifndef BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
 #define BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
 
+#include <boost/utility/string_ref.hpp>
 #include <algorithm>
 #include <type_traits>
 #include <cctype>
@@ -34,16 +35,15 @@ struct ci_less
 {
     static bool const is_transparent = true;
 
-    template <class String>
     bool
-    operator() (String const& lhs, String const& rhs) const
+    operator()(boost::string_ref const& lhs,
+        boost::string_ref const& rhs) const noexcept
     {
         using std::begin;
         using std::end;
-        using char_type = typename String::value_type;
-        return std::lexicographical_compare (
+        return std::lexicographical_compare(
             begin(lhs), end(lhs), begin(rhs), end(rhs),
-            [] (char_type lhs, char_type rhs)
+            [](char lhs, char rhs)
             {
                 return std::tolower(lhs) < std::tolower(rhs);
             }

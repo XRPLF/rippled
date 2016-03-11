@@ -19,7 +19,7 @@
 
 #include <ripple/server/Port.h>
 #include <beast/http/rfc2616.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 
 namespace ripple {
 
@@ -169,7 +169,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 if (*port.port == 0)
                     Throw<std::exception> ();
             }
-            catch (std::exception const& ex)
+            catch (std::exception const&)
             {
                 log <<
                     "Invalid value '" << result.first << "' for key " <<
@@ -199,7 +199,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 port.limit = static_cast<int> (
                     beast::lexicalCastThrow<std::uint16_t>(lim));
             }
-            catch (std::exception const& ex)
+            catch (std::exception const&)
             {
                 log <<
                     "Invalid value '" << lim << "' for key " <<
