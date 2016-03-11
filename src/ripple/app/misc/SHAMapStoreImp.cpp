@@ -180,7 +180,7 @@ SHAMapStoreImp::SHAMapStoreImp (
     , scheduler_ (scheduler)
     , journal_ (journal)
     , nodeStoreJournal_ (nodeStoreJournal)
-    , rotating_(false)
+    , working_(true)
     , transactionMaster_ (transactionMaster)
     , canDelete_ (std::numeric_limits <LedgerIndex>::max())
 {
@@ -251,8 +251,22 @@ SHAMapStoreImp::onLedgerClosed(
     {
         std::lock_guard <std::mutex> lock (mutex_);
         newLedger_ = ledger;
+        working_ = true;
     }
     cond_.notify_one();
+}
+
+void
+SHAMapStoreImp::rendezvous() const
+{
+    if (!working_)
+        return;
+
+    std::unique_lock <std::mutex> lock(mutex_);
+    rendezvous_.wait(lock, [&]
+    {
+        return !working_;
+    });
 }
 
 bool
@@ -288,10 +302,11 @@ SHAMapStoreImp::run()
     {
         healthy_ = true;
         std::shared_ptr<Ledger const> validatedLedger;
-        rotating_ = false;
 
         {
             std::unique_lock <std::mutex> lock (mutex_);
+            working_ = false;
+            rendezvous_.notify_all();
             if (stop_)
             {
                 stopped();
@@ -300,7 +315,6 @@ SHAMapStoreImp::run()
             cond_.wait (lock);
             if (newLedger_)
             {
-                rotating_ = true;
                 validatedLedger = std::move(newLedger_);
             }
             else

@@ -19,8 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/misc/SHAMapStoreImp.h>
+#include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/test/jtx.h>
 
@@ -188,14 +190,16 @@ class SHAMapStore_test : public beast::unit_test::suite
         auto& store = env.app().getSHAMapStore();
 
         int ledgerSeq = 3;
-        while (!store.getLastRotated())
-        {
-            env.close();
-            std::this_thread::sleep_for(100ms);
+        store.rendezvous();
+        expect(!store.getLastRotated());
 
-            auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq++)));
-        }
+        env.close();
+        store.rendezvous();
+
+        auto ledger = env.rpc("ledger", "validated");
+        expect(goodLedger(env, ledger, to_string(ledgerSeq++)));
+
+        expect(store.getLastRotated() == ledgerSeq - 1);
         return ledgerSeq;
     }
 
@@ -209,9 +213,7 @@ public:
 
         Env env(*this, makeConfig());
 
-        auto store = dynamic_cast<SHAMapStoreImp*>(
-            &env.app().getSHAMapStore());
-        expect(store);
+        auto& store = env.app().getSHAMapStore();
         env.fund(XRP(10000), noripple("alice"));
 
         validationCheck(env, 0);
@@ -239,7 +241,10 @@ public:
         ledgerTmp = env.rpc("ledger", "100");
         expect(bad(ledgerTmp));
 
-        for (auto i = 4; i < deleteInterval + 4; ++i)
+        auto const firstSeq = waitForReady(env);
+        auto lastRotated = firstSeq - 1;
+
+        for (auto i = firstSeq + 1; i < deleteInterval + firstSeq; ++i)
         {
             env.fund(XRP(10000), noripple("test" + to_string(i)));
             env.close();
@@ -247,9 +252,9 @@ public:
             ledgerTmp = env.rpc("ledger", "current");
             expect(goodLedger(env, ledgerTmp, to_string(i)));
         }
-        assert(store->getLastRotated() == 3);
+        expect(store.getLastRotated() == lastRotated);
 
-        for (auto i = 3; i < deleteInterval + 3; ++i)
+        for (auto i = 3; i < deleteInterval + lastRotated; ++i)
         {
             ledgers.emplace(std::make_pair(i,
                 env.rpc("ledger", to_string(i))));
@@ -259,8 +264,8 @@ public:
 
         validationCheck(env, 0);
         ledgerCheck(env, deleteInterval + 1, 2);
-        transactionCheck(env, deleteInterval + 1);
-        accountTransactionCheck(env, 2*(deleteInterval + 1));
+        transactionCheck(env, deleteInterval);
+        accountTransactionCheck(env, 2 * deleteInterval);
 
         {
             // Since standalone doesn't _do_ validations, manually
@@ -319,8 +324,8 @@ public:
 
         validationCheck(env, deleteInterval + 23);
         ledgerCheck(env, deleteInterval + 1, 2);
-        transactionCheck(env, deleteInterval + 1);
-        accountTransactionCheck(env, 2 * (deleteInterval + 1));
+        transactionCheck(env, deleteInterval);
+        accountTransactionCheck(env, 2 * deleteInterval);
 
         {
             // Closing one more ledger triggers a rotate
@@ -330,18 +335,17 @@ public:
             expect(goodLedger(env, ledger, to_string(deleteInterval + 4)));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
-        expect(store->getLastRotated() == deleteInterval + 3);
-        auto const lastRotated = store->getLastRotated();
+        expect(store.getLastRotated() == deleteInterval + 3);
+        lastRotated = store.getLastRotated();
         expect(lastRotated == 11, to_string(lastRotated));
 
         // That took care of the fake hashes
         validationCheck(env, deleteInterval + 8);
         ledgerCheck(env, deleteInterval + 1, 3);
-        transactionCheck(env, deleteInterval + 1);
-        accountTransactionCheck(env, 2 * (deleteInterval + 1));
+        transactionCheck(env, deleteInterval);
+        accountTransactionCheck(env, 2 * deleteInterval);
 
         // The last iteration of this loop should trigger a rotate
         for (auto i = lastRotated - 1; i < lastRotated + deleteInterval - 1; ++i)
@@ -355,7 +359,7 @@ public:
 
             ledgers.emplace(std::make_pair(i,
                 env.rpc("ledger", to_string(i))));
-            expect(store->getLastRotated() == lastRotated ||
+            expect(store.getLastRotated() == lastRotated ||
                 i == lastRotated + deleteInterval - 2, "lastRotated");
             expect(goodLedger(env, ledgers[i], to_string(i), true) &&
                 getHash(ledgers[i]).length(), to_string(ledgers[i]));
@@ -376,10 +380,9 @@ public:
                 soci::use(ledgerSeqs);
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
-        expect(store->getLastRotated() == deleteInterval + lastRotated);
+        expect(store.getLastRotated() == deleteInterval + lastRotated);
 
         validationCheck(env, deleteInterval - 1);
         ledgerCheck(env, deleteInterval + 1, lastRotated);
@@ -395,14 +398,12 @@ public:
         using namespace std::chrono_literals;
 
         Env env(*this, makeConfig());
-        auto store = dynamic_cast<SHAMapStoreImp*>(
-            &env.app().getSHAMapStore());
-        expect(store);
+        auto& store = env.app().getSHAMapStore();
 
         auto ledgerSeq = waitForReady(env);
         auto lastRotated = ledgerSeq - 1;
-        expect(store->getLastRotated() == lastRotated,
-            to_string(store->getLastRotated()));
+        expect(store.getLastRotated() == lastRotated,
+            to_string(store.getLastRotated()));
         expect(lastRotated != 2);
 
         // Because advisory_delete is unset,
@@ -419,14 +420,13 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
-        while(store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         // The database will always have back to ledger 2,
         // regardless of lastRotated.
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
-        expect(lastRotated == store->getLastRotated());
+        expect(lastRotated == store.getLastRotated());
 
         {
             // Closing one more ledger triggers a rotate
@@ -436,14 +436,13 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
-        expect(lastRotated != store->getLastRotated());
+        expect(lastRotated != store.getLastRotated());
 
-        lastRotated = store->getLastRotated();
+        lastRotated = store.getLastRotated();
 
         // Close enough ledgers to trigger another rotate
         for (; ledgerSeq < lastRotated + deleteInterval + 1; ++ledgerSeq)
@@ -454,12 +453,11 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, deleteInterval + 1, lastRotated);
-        expect(lastRotated != store->getLastRotated());
+        expect(lastRotated != store.getLastRotated());
     }
 
     void testCanDelete()
@@ -470,14 +468,12 @@ public:
 
         // Same config with advisory_delete enabled
         Env env(*this, makeConfigAdvisory());
-        auto store = dynamic_cast<SHAMapStoreImp*>(
-            &env.app().getSHAMapStore());
-        expect(store);
+        auto& store = env.app().getSHAMapStore();
 
         auto ledgerSeq = waitForReady(env);
         auto lastRotated = ledgerSeq - 1;
-        expect(store->getLastRotated() == lastRotated,
-            to_string(store->getLastRotated()));
+        expect(store.getLastRotated() == lastRotated,
+            to_string(store.getLastRotated()));
         expect(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
@@ -497,12 +493,11 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
-        expect(lastRotated == store->getLastRotated());
+        expect(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", to_string(
@@ -511,12 +506,11 @@ public:
         expect(canDelete[jss::result][jss::can_delete] ==
             ledgerSeq + deleteInterval / 2);
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
-        expect(store->getLastRotated() == lastRotated);
+        expect(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off a cleanup, but it stays small.
@@ -526,13 +520,12 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        expect(store->getLastRotated() == ledgerSeq - 1);
+        expect(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
@@ -544,10 +537,9 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
-        expect(store->getLastRotated() == lastRotated);
+        expect(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off another cleanup.
@@ -557,13 +549,12 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - firstBatch, firstBatch);
 
-        expect(store->getLastRotated() == ledgerSeq - 1);
+        expect(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
         // This does not kick off a cleanup
@@ -581,10 +572,9 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
-        expect(store->getLastRotated() == lastRotated);
+        expect(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off another cleanup.
@@ -594,13 +584,12 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        expect(store->getLastRotated() == ledgerSeq - 1);
+        expect(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
         // This does not kick off a cleanup
@@ -617,10 +606,9 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
-        expect(store->getLastRotated() == lastRotated);
+        expect(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off another cleanup.
@@ -630,13 +618,12 @@ public:
             expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
-        while (store->rotating())
-            std::this_thread::sleep_for(1ms);
+        store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        expect(store->getLastRotated() == ledgerSeq - 1);
+        expect(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
     }
 
@@ -649,7 +636,7 @@ public:
 };
 
 // VFALCO This test fails because of thread asynchronous issues
-BEAST_DEFINE_TESTSUITE_MANUAL(SHAMapStore,app,ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapStore,app,ripple);
 
 }
 }

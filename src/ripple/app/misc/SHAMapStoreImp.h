@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
 #define RIPPLE_APP_MISC_SHAMAPSTOREIMP_H_INCLUDED
 
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/DatabaseRotating.h>
@@ -94,9 +94,10 @@ private:
     bool stop_ = false;
     bool healthy_ = true;
     mutable std::condition_variable cond_;
+    mutable std::condition_variable rendezvous_;
     mutable std::mutex mutex_;
     std::shared_ptr<Ledger const> newLedger_;
-    std::atomic<bool> rotating_;
+    std::atomic<bool> working_;
     TransactionMaster& transactionMaster_;
     std::atomic <LedgerIndex> canDelete_;
     // these do not exist upon SHAMapStore creation, but do exist
@@ -107,12 +108,6 @@ private:
     TreeNodeCache* treeNodeCache_ = nullptr;
     DatabaseCon* transactionDb_ = nullptr;
     DatabaseCon* ledgerDb_ = nullptr;
-
-public:
-    bool rotating() const
-    {
-        return rotating_;
-    }
 
 public:
     SHAMapStoreImp (Application& app,
@@ -167,6 +162,8 @@ public:
     }
 
     void onLedgerClosed (std::shared_ptr<Ledger const> const& ledger) override;
+
+    void rendezvous() const override;
 
 private:
     // callback for visitNodes

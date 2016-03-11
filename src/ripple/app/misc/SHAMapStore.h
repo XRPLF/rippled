@@ -57,6 +57,8 @@ public:
     /** Called by LedgerMaster every time a ledger validates. */
     virtual void onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
 
+    virtual void rendezvous() const = 0;
+
     virtual std::uint32_t clampFetchDepth (std::uint32_t fetch_depth) const = 0;
 
     virtual std::unique_ptr <NodeStore::Database> makeDatabase (
