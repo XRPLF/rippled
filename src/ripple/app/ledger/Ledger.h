@@ -316,8 +316,6 @@ private:
     class sles_iter_impl;
     class txs_iter_impl;
 
-    void setRaw (SerialIter& sit, bool hasPrefix, Family& family);
-
     bool
     setup (Config const& config);
 

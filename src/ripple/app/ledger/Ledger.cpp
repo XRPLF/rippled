@@ -287,13 +287,29 @@ Ledger::Ledger (void const* data,
     std::size_t size, bool hasPrefix,
         Config const& config, Family& family)
     : mImmutable (true)
-    , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family))
-    , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family))
 {
     SerialIter sit (data, size);
-    setRaw (sit, hasPrefix, family);
+
+    if (hasPrefix)
+        sit.get32 ();
+
+    info_.seq = sit.get32 ();
+    info_.drops = sit.get64 ();
+    info_.parentHash = sit.get256 ();
+    info_.txHash = sit.get256 ();
+    info_.accountHash = sit.get256 ();
+    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info_.closeTimeResolution = NetClock::duration{sit.get8()};
+    info_.closeFlags = sit.get8 ();
+
+    updateHash ();
+
+    txMap_ = std::make_shared<SHAMap> (
+        SHAMapType::TRANSACTION, info_.txHash, family);
+    stateMap_ = std::make_shared<SHAMap> (
+        SHAMapType::STATE, info_.accountHash, family);
+
     // Can't set up until the stateMap is filled in
 }
 
@@ -844,27 +860,6 @@ void Ledger::updateSkipList ()
         rawInsert(sle);
     else
         rawReplace(sle);
-}
-
-void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
-{
-    if (hasPrefix)
-        sit.get32 ();
-
-    info_.seq = sit.get32 ();
-    info_.drops = sit.get64 ();
-    info_.parentHash = sit.get256 ();
-    info_.txHash = sit.get256 ();
-    info_.accountHash = sit.get256 ();
-    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTimeResolution = NetClock::duration{sit.get8()};
-    info_.closeFlags = sit.get8 ();
-    updateHash ();
-    txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
-        family);
-    stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
-        family);
 }
 
 static bool saveValidatedLedger (
