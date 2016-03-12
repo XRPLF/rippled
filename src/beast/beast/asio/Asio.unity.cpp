@@ -23,6 +23,7 @@
 
 #include <beast/asio/impl/IPAddressConversion.cpp>
 #include <beast/asio/impl/error.cpp>
+#include <beast/asio/tests/append_buffers_test.cpp>
 #include <beast/asio/tests/bind_handler.test.cpp>
 #include <beast/asio/tests/streambuf.test.cpp>
 #include <beast/asio/tests/error_test.cpp>
