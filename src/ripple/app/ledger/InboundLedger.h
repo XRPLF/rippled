@@ -39,9 +39,9 @@ class InboundLedger
 public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
-    using pointer = std::shared_ptr <InboundLedger>;
-    using PeerDataPairType = std::pair<std::weak_ptr<Peer>,
-                                       std::shared_ptr<protocol::TMLedgerData>>;
+    using PeerDataPairType = std::pair<
+        std::weak_ptr<Peer>,
+        std::shared_ptr<protocol::TMLedgerData>>;
 
     // These are the reasons we might acquire a ledger
     enum fcReason
@@ -62,10 +62,6 @@ public:
     // Called when another attempt is made to fetch this same ledger
     void update (std::uint32_t seq);
 
-    bool isHeader () const
-    {
-        return mHaveHeader;
-    }
     std::shared_ptr<Ledger> const&
     getLedger() const
     {
@@ -76,11 +72,6 @@ public:
         return mSeq;
     }
 
-    enum class TriggerReason { trAdded, trReply, trTimeout };
-    void trigger (Peer::ptr const&, TriggerReason);
-
-    bool tryLocal ();
-    void addPeers ();
     bool checkLocal ();
     void init (ScopedLockType& collectionLock);
 
@@ -89,16 +80,29 @@ public:
     using neededHash_t =
         std::pair <protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    std::vector<neededHash_t> getNeededHashes ();
-
     /** Return a Json::objectValue. */
     Json::Value getJson (int);
+
     void runData ();
 
 private:
+    enum class TriggerReason
+    {
+        added,
+        reply,
+        timeout
+    };
+
     void filterNodes (
         std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
         TriggerReason reason);
+
+    void trigger (Peer::ptr const&, TriggerReason);
+
+    std::vector<neededHash_t> getNeededHashes ();
+
+    void addPeers ();
+    bool tryLocal ();
 
     void done ();
 
@@ -109,7 +113,7 @@ private:
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
         if (mReason != fcHISTORY)
-            trigger (peer, TriggerReason::trAdded);
+            trigger (peer, TriggerReason::added);
     }
 
     std::weak_ptr <PeerSet> pmDowncast ();
@@ -130,6 +134,19 @@ private:
                      const std::vector<Blob>& data,
                      SHAMapAddNode&);
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
+
+    std::vector<uint256>
+    neededTxHashes (
+        int max, SHAMapSyncFilter* filter) const;
+
+    std::vector<uint256>
+    neededStateHashes (
+        int max, SHAMapSyncFilter* filter) const;
+
+    LedgerInfo
+    deserializeHeader (
+        Slice data,
+        bool hasPrefix);
 
 private:
     std::shared_ptr<Ledger> mLedger;

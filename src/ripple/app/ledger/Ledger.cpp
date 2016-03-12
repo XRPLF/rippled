@@ -58,6 +58,24 @@ namespace ripple {
 
 create_genesis_t const create_genesis {};
 
+static
+uint256
+calculateLedgerHash (LedgerInfo const& info)
+{
+    // VFALCO This has to match addRaw in View.h.
+    return sha512Half(
+        HashPrefix::ledgerMaster,
+        std::uint32_t(info.seq),
+        std::uint64_t(info.drops.drops ()),
+        info.parentHash,
+        info.txHash,
+        info.accountHash,
+        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
+        std::uint32_t(info.closeTime.time_since_epoch().count()),
+        std::uint8_t(info.closeTimeResolution.count()),
+        std::uint8_t(info.closeFlags));
+}
+
 //------------------------------------------------------------------------------
 
 class Ledger::sles_iter_impl
@@ -171,7 +189,7 @@ public:
 
 Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     : mImmutable (false)
-    , txMap_  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
+    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
         family, SHAMap::version{1}))
@@ -189,40 +207,22 @@ Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     sle->setFieldAmount (sfBalance, info_.drops);
     rawInsert(sle);
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
-    updateHash();
     setImmutable(config);
-    setup(config);
 }
 
-Ledger::Ledger (uint256 const& parentHash,
-                uint256 const& transHash,
-                uint256 const& accountHash,
-                std::uint64_t totDrops,
-                NetClock::time_point closeTime,
-                NetClock::time_point parentCloseTime,
-                int closeFlags,
-                NetClock::duration closeResolution,
-                std::uint32_t ledgerSeq,
-                bool& loaded,
-                Config const& config,
-                Family& family,
-                beast::Journal j)
+Ledger::Ledger (
+        LedgerInfo const& info,
+        bool& loaded,
+        Config const& config,
+        Family& family,
+        beast::Journal j)
     : mImmutable (true)
-    , txMap_ (std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, transHash, family, SHAMap::version{1}))
-    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
-        family, SHAMap::version{1}))
+    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
+        info.txHash, family, SHAMap::version{1}))
+    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
+        info.accountHash, family, SHAMap::version{1}))
+    , info_ (info)
 {
-    info_.seq = ledgerSeq;
-    info_.parentCloseTime = parentCloseTime;
-    info_.closeTime = closeTime;
-    info_.drops = totDrops;
-    info_.txHash = transHash;
-    info_.accountHash = accountHash;
-    info_.parentHash = parentHash;
-    info_.closeTimeResolution = closeResolution;
-    info_.closeFlags = closeFlags;
-
     loaded = true;
 
     if (info_.txHash.isNonZero () &&
@@ -247,7 +247,7 @@ Ledger::Ledger (uint256 const& parentHash,
 
     if (! loaded)
     {
-        updateHash ();
+        info_.hash = calculateLedgerHash(info_);
         family.missing_node (info_.hash);
     }
 }
@@ -256,8 +256,10 @@ Ledger::Ledger (uint256 const& parentHash,
 Ledger::Ledger (Ledger const& prevLedger,
     NetClock::time_point closeTime)
     : mImmutable (false)
-    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        prevLedger.stateMap_->family(), prevLedger.stateMap_->get_version()))
+    , txMap_ (std::make_shared <SHAMap> (
+        SHAMapType::TRANSACTION,
+        prevLedger.stateMap_->family(),
+        prevLedger.stateMap_->get_version()))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
@@ -283,18 +285,17 @@ Ledger::Ledger (Ledger const& prevLedger,
     }
 }
 
-Ledger::Ledger (void const* data,
-    std::size_t size, bool hasPrefix,
-        Config const& config, Family& family)
+Ledger::Ledger (
+        LedgerInfo const& info,
+        Family& family)
     : mImmutable (true)
-    , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family, SHAMap::version{1}))
-    , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family, SHAMap::version{1}))
+    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
+        info.txHash, family, SHAMap::version{1}))
+    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
+        info.accountHash, family, SHAMap::version{1}))
+    , info_ (info)
 {
-    SerialIter sit (data, size);
-    setRaw (sit, hasPrefix, family);
-    // Can't set up until the stateMap is filled in
+    info_.hash = calculateLedgerHash (info_);
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq,
@@ -312,54 +313,22 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
     setup(config);
 }
 
-//------------------------------------------------------------------------------
-
-Ledger::~Ledger ()
-{
-}
-
 void Ledger::setImmutable (Config const& config)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
-    updateHash ();
-
-    mImmutable = true;
-    if (txMap_)
-        txMap_->setImmutable ();
-    if (stateMap_)
-        stateMap_->setImmutable ();
-    setup(config);
-}
-
-void Ledger::updateHash()
-{
     if (! mImmutable)
     {
-        if (txMap_)
-            info_.txHash = txMap_->getHash ().as_uint256();
-        else
-            info_.txHash.zero ();
-
-        if (stateMap_)
-            info_.accountHash = stateMap_->getHash ().as_uint256();
-        else
-            info_.accountHash.zero ();
+        info_.txHash = txMap_->getHash ().as_uint256();
+        info_.accountHash = stateMap_->getHash ().as_uint256();
     }
 
-    // VFALCO This has to match addRaw in View.h.
-    info_.hash = sha512Half(
-        HashPrefix::ledgerMaster,
-        std::uint32_t(info_.seq),
-        std::uint64_t(info_.drops.drops ()),
-        info_.parentHash,
-        info_.txHash,
-        info_.accountHash,
-        std::uint32_t(info_.parentCloseTime.time_since_epoch().count()),
-        std::uint32_t(info_.closeTime.time_since_epoch().count()),
-        std::uint8_t(info_.closeTimeResolution.count()),
-        std::uint8_t(info_.closeFlags));
-    mValidHash = true;
+    info_.hash = calculateLedgerHash (info_);
+
+    mImmutable = true;
+    txMap_->setImmutable ();
+    stateMap_->setImmutable ();
+    setup(config);
 }
 
 void
@@ -413,15 +382,6 @@ deserializeTxPlusMeta (SHAMapItem const& item)
             STObject const>(s, sfMetadata);
     }
     return result;
-}
-
-void Ledger::setAcquiring ()
-{
-    if (!txMap_ || !stateMap_)
-        Throw<std::runtime_error> ("invalid map");
-
-    txMap_->setSynching ();
-    stateMap_->setSynching ();
 }
 
 //------------------------------------------------------------------------------
@@ -620,9 +580,7 @@ Ledger::setup (Config const& config)
 
     try
     {
-        auto const sle = read(keylet::fees());
-
-        if (sle)
+        if (auto const sle = read(keylet::fees()))
         {
             // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
 
@@ -681,32 +639,6 @@ Ledger::peek (Keylet const& k) const
 }
 
 //------------------------------------------------------------------------------
-
-static void visitHelper (
-    std::function<void (std::shared_ptr<SLE> const&)>& callback,
-        std::shared_ptr<SHAMapItem const> const& item)
-{
-    callback(std::make_shared<SLE>(SerialIter{item->data(), item->size()},
-                                    item->key()));
-}
-
-void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
-{
-    try
-    {
-        if (stateMap_)
-        {
-            stateMap_->visitLeaves(
-                std::bind(&visitHelper, std::ref(callback),
-                          std::placeholders::_1));
-        }
-    }
-    catch (SHAMapMissingNode&)
-    {
-        stateMap_->family().missing_node (info_.hash);
-        Throw();
-    }
-}
 
 bool Ledger::walkLedger (beast::Journal j) const
 {
@@ -844,27 +776,6 @@ void Ledger::updateSkipList ()
         rawInsert(sle);
     else
         rawReplace(sle);
-}
-
-void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
-{
-    if (hasPrefix)
-        sit.get32 ();
-
-    info_.seq = sit.get32 ();
-    info_.drops = sit.get64 ();
-    info_.parentHash = sit.get256 ();
-    info_.txHash = sit.get256 ();
-    info_.accountHash = sit.get256 ();
-    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTimeResolution = NetClock::duration{sit.get8()};
-    info_.closeFlags = sit.get8 ();
-    updateHash ();
-    txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
-        family, SHAMap::version{1});
-    stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
-        family, SHAMap::version{1});
 }
 
 static bool saveValidatedLedger (
@@ -1166,40 +1077,6 @@ qualityDirDescriber (
     }
 }
 
-std::vector<uint256>
-Ledger::getNeededTransactionHashes (
-    int max, SHAMapSyncFilter* filter) const
-{
-    std::vector<uint256> ret;
-
-    if (info_.txHash.isNonZero ())
-    {
-        if (txMap_->getHash ().isZero ())
-            ret.push_back (info_.txHash);
-        else
-            ret = txMap_->getNeededHashes (max, filter);
-    }
-
-    return ret;
-}
-
-std::vector<uint256>
-Ledger::getNeededAccountStateHashes (
-    int max, SHAMapSyncFilter* filter) const
-{
-    std::vector<uint256> ret;
-
-    if (info_.accountHash.isNonZero ())
-    {
-        if (stateMap_->getHash ().isZero ())
-            ret.push_back (info_.accountHash);
-        else
-            ret = stateMap_->getNeededHashes (max, filter);
-    }
-
-    return ret;
-}
-
 void
 Ledger::make_v2()
 {
@@ -1207,7 +1084,9 @@ Ledger::make_v2()
     stateMap_ = stateMap_->make_v2();
     txMap_ = txMap_->make_v2();
     info_.validated = false;
-    updateHash();
+    info_.accountHash = stateMap_->getHash ().as_uint256();
+    info_.txHash = txMap_->getHash ().as_uint256();
+    info_.hash = calculateLedgerHash (info_);
 }
 
 void
@@ -1291,18 +1170,22 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
 
     using time_point = NetClock::time_point;
     using duration = NetClock::duration;
+
+    LedgerInfo info;
+    info.parentHash = prevHash;
+    info.txHash = transHash;
+    info.accountHash = accountHash;
+    info.drops = totDrops.value_or(0);
+    info.closeTime = time_point{duration{closingTime.value_or(0)}};
+    info.parentCloseTime = time_point{duration{prevClosingTime.value_or(0)}};
+    info.closeFlags = closeFlags.value_or(0);
+    info.closeTimeResolution = duration{closeResolution.value_or(0)};
+    info.seq = ledgerSeq;
+
     bool loaded = false;
 
     auto ledger = std::make_shared<Ledger>(
-        prevHash,
-        transHash,
-        accountHash,
-        totDrops.value_or(0),
-        time_point{duration{closingTime.value_or(0)}},
-        time_point{duration{prevClosingTime.value_or(0)}},
-        closeFlags.value_or(0),
-        duration{closeResolution.value_or(0)},
-        ledgerSeq,
+        info,
         loaded,
         app.config(),
         app.family(),
