@@ -201,7 +201,7 @@ checkConsensus (
         }
     }
 
-    // Have we, together with the nodes on our UNL list, reached the treshold
+    // Have we, together with the nodes on our UNL list, reached the threshold
     // to declare consensus?
     if (checkConsensusReached (currentAgree, currentProposers, proposing))
     {

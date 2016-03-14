@@ -1623,6 +1623,7 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
             val->getSignerPublic());
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
+        jvObj [jss::full]                  = val->isFull();
 
         auto const seq = *(*val)[~sfLedgerSequence];
 

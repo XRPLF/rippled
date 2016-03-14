@@ -57,7 +57,7 @@ STValidation::STValidation (
     mNodeID = calcNodeID(publicKey);
     assert (mNodeID.isNonZero ());
 
-    if (!isFull)
+    if (isFull)
         setFlag (kFullFlag);
 }
 
