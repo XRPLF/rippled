@@ -98,14 +98,12 @@ public:
     Ledger (create_genesis_t, Config const& config, Family& family);
 
     // Used for ledgers loaded from JSON files
-    Ledger (uint256 const& parentHash, uint256 const& transHash,
-            uint256 const& accountHash,
-            std::uint64_t totDrops, NetClock::time_point closeTime,
-            NetClock::time_point parentCloseTime, int closeFlags,
-            NetClock::duration closeResolution,
-            std::uint32_t ledgerSeq, bool & loaded, Config const& config,
-            Family& family,
-            beast::Journal j);
+    Ledger (
+        LedgerInfo info,
+        bool& loaded,
+        Config const& config,
+        Family& family,
+        beast::Journal j);
 
     /** Create a new ledger following a previous ledger
 
