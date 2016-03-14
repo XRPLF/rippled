@@ -294,20 +294,6 @@ rippleTransferRate (ReadView const& view,
     return quality;
 }
 
-std::uint32_t
-rippleTransferRate (ReadView const& view,
-    AccountID const& uSenderID,
-        AccountID const& uReceiverID,
-            AccountID const& issuer)
-{
-    // If calculating the transfer rate from
-    // or to the issuer of the currency no
-    // fees are assessed.
-    return (uSenderID == issuer || uReceiverID == issuer)
-           ? QUALITY_ONE
-           : rippleTransferRate(view, issuer);
-}
-
 bool
 areCompatible (ReadView const& validLedger, ReadView const& testLedger,
     beast::Journal::Stream& s, const char* reason)
@@ -1312,39 +1298,9 @@ rippleCredit (ApplyView& view,
     return terResult;
 }
 
-// Calculate the fee needed to transfer IOU assets between two parties.
-static
-STAmount
-rippleTransferFee (ReadView const& view,
-    AccountID const& from,
-    AccountID const& to,
-    AccountID const& issuer,
-    STAmount const& saAmount,
-    beast::Journal j)
-{
-    if (from != issuer && to != issuer)
-    {
-        std::uint32_t uTransitRate = rippleTransferRate (view, issuer);
-
-        if (QUALITY_ONE != uTransitRate)
-        {
-            STAmount saTransferTotal = multiply (
-                saAmount, amountFromRate (uTransitRate), saAmount.issue ());
-            STAmount saTransferFee = saTransferTotal - saAmount;
-
-            JLOG (j.debug) << "rippleTransferFee:" <<
-                " saTransferFee=" << saTransferFee.getFullText ();
-
-            return saTransferFee;
-        }
-    }
-
-    return saAmount.zeroed();
-}
-
 // Send regardless of limits.
 // --> saAmount: Amount/currency/issuer to deliver to reciever.
-// <-- saActual: Amount actually cost.  Sender pay's fees.
+// <-- saActual: Amount actually cost.  Sender pays fees.
 static
 TER
 rippleSend (ApplyView& view,
@@ -1352,7 +1308,6 @@ rippleSend (ApplyView& view,
     STAmount const& saAmount, STAmount& saActual, beast::Journal j)
 {
     auto const issuer   = saAmount.getIssuer ();
-    TER             terResult;
 
     assert (!isXRP (uSenderID) && !isXRP (uReceiverID));
     assert (uSenderID != uReceiverID);
@@ -1361,32 +1316,36 @@ rippleSend (ApplyView& view,
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         rippleCredit (view, uSenderID, uReceiverID, saAmount, false, j);
-        saActual    = saAmount;
-        terResult   = tesSUCCESS;
+        saActual = saAmount;
+        return tesSUCCESS;
     }
-    else
+
+    // Sending 3rd party IOUs: transit.
+
+    // First, calculate the amount to transfer accounting
+    // for any transfer fees:
     {
-        // Sending 3rd party IOUs: transit.
+        auto const rate = rippleTransferRate (view, issuer);
 
-        STAmount saTransitFee = rippleTransferFee (view,
-            uSenderID, uReceiverID, issuer, saAmount, j);
-
-        saActual = !saTransitFee ? saAmount : saAmount + saTransitFee;
-
-        saActual.setIssuer (issuer); // XXX Make sure this done in + above.
-
-        JLOG (j.debug) << "rippleSend> " <<
-            to_string (uSenderID) <<
-            " - > " << to_string (uReceiverID) <<
-            " : deliver=" << saAmount.getFullText () <<
-            " fee=" << saTransitFee.getFullText () <<
-            " cost=" << saActual.getFullText ();
-
-        terResult   = rippleCredit (view, issuer, uReceiverID, saAmount, true, j);
-
-        if (tesSUCCESS == terResult)
-            terResult   = rippleCredit (view, uSenderID, issuer, saActual, true, j);
+        if (QUALITY_ONE == rate)
+            saActual = saAmount;
+        else
+            saActual = multiply (
+                saAmount,
+                amountFromRate (rate),
+                saAmount.issue ());
     }
+
+    JLOG (j.debug) << "rippleSend> " <<
+        to_string (uSenderID) <<
+        " - > " << to_string (uReceiverID) <<
+        " : deliver=" << saAmount.getFullText () <<
+        " cost=" << saActual.getFullText ();
+
+    TER terResult = rippleCredit (view, issuer, uReceiverID, saAmount, true, j);
+
+    if (tesSUCCESS == terResult)
+        terResult = rippleCredit (view, uSenderID, issuer, saActual, true, j);
 
     return terResult;
 }
