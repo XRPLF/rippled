@@ -52,7 +52,7 @@ T rangeCheckedCast (C c)
          std::numeric_limits<C>::is_signed &&
          c < std::numeric_limits<T>::lowest ()))
     {
-        JLOG (debugJournal().error) << "rangeCheckedCast domain error:"
+        JLOG (debugJournal().error()) << "rangeCheckedCast domain error:"
           << " value = " << c
           << " min = " << std::numeric_limits<T>::lowest ()
           << " max: " << std::numeric_limits<T>::max ();

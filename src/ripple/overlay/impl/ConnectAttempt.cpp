@@ -53,7 +53,7 @@ ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_se
         , response_, false)
     , slot_ (slot)
 {
-    if (journal_.debug) journal_.debug <<
+    JLOG(journal_.debug()) <<
         "Connect " << remote_endpoint;
 }
 
@@ -61,7 +61,7 @@ ConnectAttempt::~ConnectAttempt()
 {
     if (slot_ != nullptr)
         overlay_.peerFinder().on_closed(slot_);
-    if (journal_.trace) journal_.trace <<
+    JLOG(journal_.trace()) <<
         "~ConnectAttempt";
 }
 
@@ -73,7 +73,7 @@ ConnectAttempt::stop()
             &ConnectAttempt::stop, shared_from_this()));
     if (stream_.next_layer().is_open())
     {
-        if (journal_.debug) journal_.debug <<
+        JLOG(journal_.debug()) <<
             "Stop";
     }
     close();
@@ -99,7 +99,7 @@ ConnectAttempt::close()
         error_code ec;
         timer_.cancel(ec);
         socket_.close(ec);
-        if (journal_.debug) journal_.debug <<
+        JLOG(journal_.debug()) <<
             "Closed";
     }
 }
@@ -109,8 +109,10 @@ ConnectAttempt::fail (std::string const& reason)
 {
     assert(strand_.running_in_this_thread());
     if (stream_.next_layer().is_open())
-        if (journal_.debug) journal_.debug <<
+    {
+        JLOG(journal_.debug()) <<
             reason;
+    }
     close();
 }
 
@@ -119,8 +121,10 @@ ConnectAttempt::fail (std::string const& name, error_code ec)
 {
     assert(strand_.running_in_this_thread());
     if (stream_.next_layer().is_open())
-        if (journal_.debug) journal_.debug <<
+    {
+        JLOG(journal_.debug()) <<
             name << ": " << ec.message();
+    }
     close();
 }
 
@@ -131,7 +135,7 @@ ConnectAttempt::setTimer()
     timer_.expires_from_now(std::chrono::seconds(15), ec);
     if (ec)
     {
-        if (journal_.error) journal_.error <<
+        JLOG(journal_.error()) <<
             "setTimer: " << ec.message();
         return;
     }
@@ -158,7 +162,7 @@ ConnectAttempt::onTimer (error_code ec)
     if (ec)
     {
         // This should never happen
-        if (journal_.error) journal_.error <<
+        JLOG(journal_.error()) <<
             "onTimer: " << ec.message();
         return close();
     }
@@ -179,7 +183,7 @@ ConnectAttempt::onConnect (error_code ec)
         return fail("onConnect", ec);
     if(! stream_.next_layer().is_open())
         return;
-    if(journal_.trace) journal_.trace <<
+    JLOG(journal_.trace()) <<
         "onConnect";
 
     setTimer();
@@ -202,7 +206,7 @@ ConnectAttempt::onHandshake (error_code ec)
         local_endpoint = stream_.next_layer().local_endpoint(ec);
     if(ec)
         return fail("onHandshake", ec);
-    if(journal_.trace) journal_.trace <<
+    JLOG(journal_.trace()) <<
         "onHandshake";
 
     if (! overlay_.peerFinder().onConnected (slot_,
@@ -245,7 +249,7 @@ ConnectAttempt::onWrite (error_code ec, std::size_t bytes_transferred)
         return;
     if(ec)
         return fail("onWrite", ec);
-    if(journal_.trace) journal_.trace <<
+    JLOG(journal_.trace()) <<
         "onWrite: " << bytes_transferred << " bytes";
 
     write_buf_.consume (bytes_transferred);
@@ -270,7 +274,7 @@ ConnectAttempt::onRead (error_code ec, std::size_t bytes_transferred)
         return;
     if(ec == boost::asio::error::eof)
     {
-        if(journal_.info) journal_.info <<
+        JLOG(journal_.info()) <<
             "EOF";
         setTimer();
         return stream_.async_shutdown(strand_.wrap(std::bind(
@@ -279,12 +283,12 @@ ConnectAttempt::onRead (error_code ec, std::size_t bytes_transferred)
     }
     if(ec)
         return fail("onRead", ec);
-    if(journal_.trace)
+    if(auto stream = journal_.trace())
     {
-        if(bytes_transferred > 0) journal_.trace <<
-            "onRead: " << bytes_transferred << " bytes";
-        else journal_.trace <<
-            "onRead";
+        if(bytes_transferred > 0)
+            stream << "onRead: " << bytes_transferred << " bytes";
+        else
+            stream << "onRead";
     }
 
     if (! ec)
@@ -317,7 +321,7 @@ ConnectAttempt::onShutdown (error_code ec)
     cancelTimer();
     if (! ec)
     {
-        if (journal_.error) journal_.error <<
+        JLOG(journal_.error()) <<
             "onShutdown: expected error condition";
         return close();
     }
@@ -383,7 +387,7 @@ ConnectAttempt::processResponse (beast::http::message const& m,
 
     if (! OverlayImpl::isPeerUpgrade(m))
     {
-        if (journal_.info) journal_.info <<
+        JLOG(journal_.info()) <<
             "HTTP Response: " << m.status() << " " << m.reason();
         return close();
     }
@@ -404,20 +408,20 @@ ConnectAttempt::processResponse (beast::http::message const& m,
         journal_, app_);
     if(! publicKey)
         return close(); // verifyHello logs
-    if(journal_.info) journal_.info <<
+    JLOG(journal_.info()) <<
         "Public Key: " << toBase58 (
             TokenType::TOKEN_NODE_PUBLIC,
             *publicKey);
 
     auto const protocol =
         BuildInfo::make_protocol(hello->protoversion());
-    if(journal_.info) journal_.info <<
+    JLOG(journal_.info()) <<
         "Protocol: " << to_string(protocol);
 
     auto member = app_.cluster().member(*publicKey);
     if (member)
     {
-        if (journal_.info) journal_.info <<
+        JLOG(journal_.info()) <<
             "Cluster name: " << *member;
     }
 

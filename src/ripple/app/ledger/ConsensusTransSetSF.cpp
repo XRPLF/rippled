@@ -50,7 +50,7 @@ void ConsensusTransSetSF::gotNode (
     if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size () > 16))
     {
         // this is a transaction, and we didn't have it
-        JLOG (j_.debug)
+        JLOG (j_.debug())
                 << "Node on our acquiring TX set is TXN we may not have";
 
         try
@@ -69,7 +69,7 @@ void ConsensusTransSetSF::gotNode (
         }
         catch (std::exception const&)
         {
-            JLOG (j_.warning)
+            JLOG (j_.warn())
                     << "Fetched invalid transaction in proposed set";
         }
     }
@@ -86,7 +86,7 @@ bool ConsensusTransSetSF::haveNode (
     if (txn)
     {
         // this is a transaction, and we have it
-        JLOG (j_.trace)
+        JLOG (j_.trace())
                 << "Node in our acquiring TX set is TXN we have";
         Serializer s;
         s.add32 (HashPrefix::transactionID);

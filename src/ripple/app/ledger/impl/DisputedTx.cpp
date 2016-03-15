@@ -35,13 +35,13 @@ void DisputedTx::setVote (NodeID const& peer, bool votesYes)
     {
         if (votesYes)
         {
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                     << "Peer " << peer << " votes YES on " << mTransactionID;
             ++mYays;
         }
         else
         {
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                     << "Peer " << peer << " votes NO on " << mTransactionID;
             ++mNays;
         }
@@ -49,7 +49,7 @@ void DisputedTx::setVote (NodeID const& peer, bool votesYes)
     // changes vote to yes
     else if (votesYes && !res.first->second)
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
                 << "Peer " << peer << " now votes YES on " << mTransactionID;
         --mNays;
         ++mYays;
@@ -58,7 +58,7 @@ void DisputedTx::setVote (NodeID const& peer, bool votesYes)
     // changes vote to no
     else if (!votesYes && res.first->second)
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
                 << "Peer " << peer << " now votes NO on " << mTransactionID;
         ++mNays;
         --mYays;
@@ -124,18 +124,18 @@ bool DisputedTx::updateVote (int percentTime, bool proposing)
 
     if (newPosition == mOurVote)
     {
-        JLOG (j_.info)
+        JLOG (j_.info())
                 << "No change (" << (mOurVote ? "YES" : "NO") << ") : weight "
                 << weight << ", percent " << percentTime;
-        JLOG (j_.debug) << getJson ();
+        JLOG (j_.debug()) << getJson ();
         return false;
     }
 
     mOurVote = newPosition;
-    JLOG (j_.debug)
+    JLOG (j_.debug())
             << "We now vote " << (mOurVote ? "YES" : "NO")
             << " on " << mTransactionID;
-    JLOG (j_.debug) << getJson ();
+    JLOG (j_.debug()) << getJson ();
     return true;
 }
 

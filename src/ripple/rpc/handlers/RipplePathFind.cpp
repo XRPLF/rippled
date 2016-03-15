@@ -147,7 +147,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
             && (!saDstAmount.getIssuer () ||
                 noAccount() == saDstAmount.getIssuer ())))
     {
-        JLOG (context.j.info) << "Bad destination_amount.";
+        JLOG (context.j.info()) << "Bad destination_amount.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
     }
     else if (
@@ -158,7 +158,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Don't allow empty currencies.
     )
     {
-        JLOG (context.j.info) << "Bad source_currencies.";
+        JLOG (context.j.info()) << "Bad source_currencies.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
     }
     else
@@ -258,7 +258,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult[jss::alternatives] = pathFindResult.second;
     }
 
-    JLOG (context.j.debug)
+    JLOG (context.j.debug())
             << "ripple_path_find< " << jvResult;
 
     return jvResult;
@@ -311,7 +311,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             || !to_currency(
             uSrcCurrencyID, jvSource[jss::currency].asString()))
         {
-            JLOG (j.info) << "Bad currency.";
+            JLOG (j.info()) << "Bad currency.";
             return std::make_pair(false, rpcError(rpcSRC_CUR_MALFORMED));
         }
 
@@ -325,7 +325,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             (uSrcIssuerID.isZero() != uSrcCurrencyID.isZero()) ||
             (noAccount() == uSrcIssuerID)))
         {
-            JLOG (j.info) << "Bad issuer.";
+            JLOG (j.info()) << "Bad issuer.";
             return std::make_pair(false, rpcError(rpcSRC_ISR_MALFORMED));
         }
 
@@ -363,7 +363,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
                 return std::make_pair(false, paths.error);
 
             spsComputed = paths.object->getFieldPathSet(sfPaths);
-            JLOG (j.trace) << "ripple_path_find: Paths: " <<
+            JLOG (j.trace()) << "ripple_path_find: Paths: " <<
                 spsComputed.getJson(0);
         }
 
@@ -371,7 +371,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             currency_map, issue.currency, saDstAmount, level, app);
         if (! pathfinder)
         {
-            JLOG (j.warning) << "ripple_path_find: No paths found.";
+            JLOG (j.warn()) << "ripple_path_find: No paths found.";
             continue;
         }
 
@@ -406,7 +406,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             app.logs(),
             &rcInput);
 
-        JLOG(j.info)
+        JLOG(j.info())
             << "ripple_path_find:"
             << " saMaxAmount=" << saMaxAmount
             << " saDstAmount=" << saDstAmount
@@ -418,7 +418,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
             auto jpr = app.journal("PathRequest");
-            JLOG(jpr.debug)
+            JLOG(jpr.debug())
                 << "Trying with an extra path element";
             ps.push_back(fullLiquidityPath);
             sandbox.emplace(&*cache->getLedger(), tapNONE);
@@ -432,7 +432,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
                 raSrc,          // --> Account sending from.
                 ps,             // --> Path set.
                 app.logs());
-            JLOG(jpr.debug)
+            JLOG(jpr.debug())
                 << "Extra path element gives "
                 << transHuman(rc.result());
         }
@@ -461,7 +461,7 @@ ripplePathFind (std::shared_ptr<RippleLineCache> const& cache,
             std::string strToken;
             std::string strHuman;
             transResultInfo(rc.result(), strToken, strHuman);
-            JLOG (j.debug)
+            JLOG (j.debug())
                 << "ripple_path_find: "
                 << strToken << " "
                 << strHuman << " "

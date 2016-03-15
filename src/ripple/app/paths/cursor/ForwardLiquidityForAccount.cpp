@@ -80,7 +80,7 @@ TER PathCursor::forwardLiquidityForAccount () const
     // For !previousNode().isAccount()
     auto saPrvDeliverAct = previousNode().saFwdDeliver.zeroed ();
 
-    JLOG (j_.trace)
+    JLOG (j_.trace())
         << "forwardLiquidityForAccount> "
         << "nodeIndex_=" << nodeIndex_ << "/" << lastNodeIndex
         << " previousNode.saFwdRedeem:" << previousNode().saFwdRedeem
@@ -127,7 +127,7 @@ TER PathCursor::forwardLiquidityForAccount () const
 
             pathState_.setInPass (pathState_.inPass() + node().saFwdIssue);
 
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "forwardLiquidityForAccount: ^ --> "
                 << "ACCOUNT --> account :"
                 << " saInReq=" << pathState_.inReq()
@@ -140,7 +140,7 @@ TER PathCursor::forwardLiquidityForAccount () const
         else if (nodeIndex_ == lastNodeIndex)
         {
             // account --> ACCOUNT --> $
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "forwardLiquidityForAccount: account --> "
                 << "ACCOUNT --> $ :"
                 << " previousAccountID="
@@ -182,7 +182,7 @@ TER PathCursor::forwardLiquidityForAccount () const
         else
         {
             // account --> ACCOUNT --> account
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "forwardLiquidityForAccount: account --> "
                 << "ACCOUNT --> account";
 
@@ -286,7 +286,7 @@ TER PathCursor::forwardLiquidityForAccount () const
         if (nodeIndex_)
         {
             // Non-XRP, current node is the issuer.
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "forwardLiquidityForAccount: account --> "
                 << "ACCOUNT --> offer";
 
@@ -375,7 +375,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // We could be delivering to multiple accounts, so we don't know
                 // which ripple balance will be adjusted.  Assume just issuing.
 
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "forwardLiquidityForAccount: ^ --> "
                     << "ACCOUNT -- !XRP --> offer";
 
@@ -385,7 +385,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             }
             else
             {
-                JLOG (j_.trace)
+                JLOG (j_.trace())
                     << "forwardLiquidityForAccount: ^ --> "
                     << "ACCOUNT -- XRP --> offer";
 
@@ -400,7 +400,7 @@ TER PathCursor::forwardLiquidityForAccount () const
         if (nodeIndex_ == lastNodeIndex)
         {
             // offer --> ACCOUNT --> $
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "forwardLiquidityForAccount: offer --> "
                 << "ACCOUNT --> $ : "
                 << previousNode().saFwdDeliver;
@@ -414,7 +414,7 @@ TER PathCursor::forwardLiquidityForAccount () const
         else
         {
             // offer --> ACCOUNT --> account
-            JLOG (j_.trace)
+            JLOG (j_.trace())
                 << "forwardLiquidityForAccount: offer --> "
                 << "ACCOUNT --> account";
 
@@ -470,7 +470,7 @@ TER PathCursor::forwardLiquidityForAccount () const
     {
         // offer --> ACCOUNT --> offer
         // deliver/redeem -> deliver/issue.
-        JLOG (j_.trace)
+        JLOG (j_.trace())
             << "forwardLiquidityForAccount: offer --> ACCOUNT --> offer";
 
         node().saFwdDeliver.clear (node().saRevDeliver);

@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 
 #include <ripple/basics/hardened_hash.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/Insight.h>
@@ -108,7 +109,7 @@ public:
         if (s > 0)
             m_cache.rehash (static_cast<std::size_t> ((s + (s >> 2)) / m_cache.max_load_factor () + 1));
 
-        if (m_journal.debug) m_journal.debug <<
+        JLOG(m_journal.debug()) <<
             m_name << " target size set to " << s;
     }
 
@@ -122,7 +123,7 @@ public:
     {
         lock_guard lock (m_mutex);
         m_target_age = std::chrono::seconds (s);
-        if (m_journal.debug) m_journal.debug <<
+        JLOG(m_journal.debug()) <<
             m_name << " target age set to " << m_target_age.count();
     }
 
@@ -191,7 +192,7 @@ public:
                 if (when_expire > (now - minimumAge))
                     when_expire = now - minimumAge;
 
-                if (m_journal.trace) m_journal.trace <<
+                JLOG(m_journal.trace()) <<
                     m_name << " is growing fast " << m_cache.size () << " of " << m_target_size <<
                         " aging at " << (now - when_expire).count() << " of " << m_target_age.count();
             }
@@ -242,9 +243,12 @@ public:
             }
         }
 
-        if (m_journal.trace && (mapRemovals || cacheRemovals)) m_journal.trace <<
-            m_name << ": cache = " << m_cache.size () << "-" << cacheRemovals <<
-                ", map-=" << mapRemovals;
+        if (mapRemovals || cacheRemovals)
+        {
+            JLOG(m_journal.trace()) <<
+                m_name << ": cache = " << m_cache.size () <<
+                "-" << cacheRemovals << ", map-=" << mapRemovals;
+        }
 
         // At this point stuffToSweep will go out of scope outside the lock
         // and decrement the reference count on each strong pointer.

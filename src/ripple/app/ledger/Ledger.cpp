@@ -229,14 +229,14 @@ Ledger::Ledger (uint256 const& parentHash,
         !txMap_->fetchRoot (SHAMapHash{info_.txHash}, nullptr))
     {
         loaded = false;
-        JLOG (j.warning) << "Don't have TX root for ledger";
+        JLOG (j.warn()) << "Don't have TX root for ledger";
     }
 
     if (info_.accountHash.isNonZero () &&
         !stateMap_->fetchRoot (SHAMapHash{info_.accountHash}, nullptr))
     {
         loaded = false;
-        JLOG (j.warning) << "Don't have AS root for ledger";
+        JLOG (j.warn()) << "Don't have AS root for ledger";
     }
 
     txMap_->setImmutable ();
@@ -724,10 +724,13 @@ bool Ledger::walkLedger (beast::Journal j) const
         stateMap_->walkMap (missingNodes1, 32);
     }
 
-    if (j.info && !missingNodes1.empty ())
+    if (!missingNodes1.empty ())
     {
-        j.info << missingNodes1.size () << " missing account node(s)";
-        j.info << "First: " << missingNodes1[0];
+        if (auto stream = j.info())
+        {
+            stream << missingNodes1.size () << " missing account node(s)";
+            stream << "First: " << missingNodes1[0];
+        }
     }
 
     if (txMap_->getHash().isZero() &&
@@ -741,12 +744,14 @@ bool Ledger::walkLedger (beast::Journal j) const
         txMap_->walkMap (missingNodes2, 32);
     }
 
-    if (j.info && !missingNodes2.empty ())
+    if (!missingNodes2.empty ())
     {
-        j.info << missingNodes2.size () << " missing transaction node(s)";
-        j.info << "First: " << missingNodes2[0];
+        if (auto stream = j.info())
+        {
+            stream << missingNodes2.size () << " missing transaction node(s)";
+            stream << "First: " << missingNodes2[0];
+        }
     }
-
     return missingNodes1.empty () && missingNodes2.empty ();
 }
 
@@ -767,7 +772,7 @@ bool Ledger::assertSane (beast::Journal ledgerJ)
     j [jss::accountTreeHash] = to_string (info_.accountHash);
     j [jss::transTreeHash] = to_string (info_.txHash);
 
-    JLOG (ledgerJ.fatal) << "ledger is not sane" << j;
+    JLOG (ledgerJ.fatal()) << "ledger is not sane" << j;
 
     assert (false);
 
@@ -869,15 +874,15 @@ static bool saveValidatedLedger (
 {
     auto j = app.journal ("Ledger");
 
-     if (! app.pendingSaves().startWork (ledger->info().seq))
-     {
-         // The save was completed synchronously
-         JLOG (j.debug) << "Save aborted";
-         return true;
-     }
+    if (! app.pendingSaves().startWork (ledger->info().seq))
+    {
+        // The save was completed synchronously
+        JLOG (j.debug()) << "Save aborted";
+        return true;
+    }
 
     // TODO(tom): Fix this hard-coded SQL!
-    JLOG (j.trace)
+    JLOG (j.trace())
         << "saveValidatedLedger "
         << (current ? "" : "fromAcquire ") << ledger->info().seq;
     static boost::format deleteLedger (
@@ -893,16 +898,16 @@ static bool saveValidatedLedger (
 
     if (! ledger->info().accountHash.isNonZero ())
     {
-        JLOG (j.fatal) << "AH is zero: "
+        JLOG (j.fatal()) << "AH is zero: "
                                    << getJson (*ledger);
         assert (false);
     }
 
     if (ledger->info().accountHash != ledger->stateMap().getHash ().as_uint256())
     {
-        JLOG (j.fatal) << "sAL: " << ledger->info().accountHash
+        JLOG (j.fatal()) << "sAL: " << ledger->info().accountHash
                                    << " != " << ledger->stateMap().getHash ();
-        JLOG (j.fatal) << "saveAcceptedLedger: seq="
+        JLOG (j.fatal()) << "saveAcceptedLedger: seq="
                                    << seq << ", current=" << current;
         assert (false);
     }
@@ -931,7 +936,7 @@ static bool saveValidatedLedger (
     }
     catch (std::exception const&)
     {
-        JLOG (j.warning) << "An accepted ledger was missing nodes";
+        JLOG (j.warn()) << "An accepted ledger was missing nodes";
         app.getLedgerMaster().failedSave(seq, ledger->info().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
@@ -1000,12 +1005,12 @@ static bool saveValidatedLedger (
                     sql += ")";
                 }
                 sql += ";";
-                JLOG (j.trace) << "ActTx: " << sql;
+                JLOG (j.trace()) << "ActTx: " << sql;
                 *db << sql;
             }
             else
             {
-                JLOG (j.warning)
+                JLOG (j.warn())
                     << "Transaction in ledger " << seq
                     << " affects no accounts";
             }
@@ -1087,8 +1092,8 @@ bool pendSaveValidated (
     if (! app.getHashRouter ().setFlags (ledger->info().hash, SF_SAVED))
     {
         // We have tried to save this ledger recently
-
-        JLOG (app.journal ("Ledger").debug) << "Double pend save for "
+        auto stream = app.journal ("Ledger").debug();
+        JLOG (stream) << "Double pend save for "
             << ledger->info().seq;
 
         if (! isSynchronous ||
@@ -1104,7 +1109,8 @@ bool pendSaveValidated (
 
     if (! app.pendingSaves().shouldWork (ledger->info().seq, isSynchronous))
     {
-        JLOG (app.journal ("Ledger").debug)
+        auto stream = app.journal ("Ledger").debug();
+        JLOG (stream)
             << "Pend save with seq in pending saves "
             << ledger->info().seq;
 
@@ -1238,7 +1244,8 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
 
     if (!db->got_data ())
     {
-        JLOG (app.journal("Ledger").debug) << "Ledger not found: " << sqlSuffix;
+        auto stream = app.journal("Ledger").debug();
+        JLOG (stream) << "Ledger not found: " << sqlSuffix;
         return std::make_tuple (
             std::shared_ptr<Ledger>(),
             ledgerSeq,
@@ -1294,7 +1301,7 @@ void finishLoadByIndexOrHash(
 
     ledger->setImmutable (config);
 
-    JLOG (j.trace)
+    JLOG (j.trace())
         << "Loaded ledger: " << to_string (ledger->info().hash);
 
     ledger->setFull ();
@@ -1382,7 +1389,8 @@ getHashesByIndex(std::uint32_t ledgerIndex,
 
     if (!lhO || !phO)
     {
-        JLOG (app.journal ("Ledger").trace)
+        auto stream = app.journal ("Ledger").trace();
+        JLOG (stream)
             << "Don't have ledger " << ledgerIndex;
         return false;
     }
@@ -1429,7 +1437,8 @@ getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq,
             hashes.second.zero ();
         if (!ph)
         {
-            JLOG (app.journal ("Ledger").warning)
+            auto stream = app.journal ("Ledger").warn();
+            JLOG (stream)
                 << "Null prev hash for ledger seq: " << ls;
         }
     }

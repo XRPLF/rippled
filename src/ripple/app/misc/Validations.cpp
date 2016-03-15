@@ -96,7 +96,7 @@ private:
 
         if (!val->isTrusted ())
         {
-            JLOG (j_.trace) <<
+            JLOG (j_.trace()) <<
                 "Node " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, signer) <<
                 " not in UNL st=" << val->getSignTime().time_since_epoch().count() <<
                 ", hash=" << val->getLedgerHash () <<
@@ -141,7 +141,7 @@ private:
             }
         }
 
-        JLOG (j_.debug) <<
+        JLOG (j_.debug()) <<
             "Val for " << hash <<
             " from " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, signer) <<
             " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") <<
@@ -207,7 +207,7 @@ private:
 
                 if (isTrusted && currentOnly && ! current (it.second))
                 {
-                    JLOG (j_.trace) << "VC: Untrusted due to time " << ledger;
+                    JLOG (j_.trace()) << "VC: Untrusted due to time " << ledger;
                     isTrusted = false;
                 }
 
@@ -218,7 +218,7 @@ private:
             }
         }
 
-        JLOG (j_.trace) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
+        JLOG (j_.trace()) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
     }
 
     void getValidationTypes (uint256 const& ledger, int& full, int& partial) override
@@ -241,7 +241,7 @@ private:
             }
         }
 
-        JLOG (j_.trace) << "VC: " << ledger << "f:" << full << " p:" << partial;
+        JLOG (j_.trace()) << "VC: " << ledger << "f:" << full << " p:" << partial;
     }
 
     int getTrustedValidationCount (uint256 const& ledger) override
@@ -387,7 +387,7 @@ private:
                          (valPriorLedger && (it->second->getLedgerHash () == priorLedger))))
                 {
                     countPreferred = true;
-                    JLOG (j_.trace) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
+                    JLOG (j_.trace()) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
                 }
 
                 ValidationCounter& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
@@ -424,7 +424,7 @@ private:
     {
         bool anyNew = false;
 
-        JLOG (j_.info) << "Flushing validations";
+        JLOG (j_.info()) << "Flushing validations";
         ScopedLockType sl (mLock);
         for (auto& it: mCurrentValidations)
         {
@@ -444,7 +444,7 @@ private:
             std::this_thread::sleep_for (std::chrono::milliseconds (100));
         }
 
-        JLOG (j_.debug) << "Validations flushed";
+        JLOG (j_.debug()) << "Validations flushed";
     }
 
     void condWrite ()

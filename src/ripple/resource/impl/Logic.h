@@ -132,7 +132,7 @@ public:
             }
         }
 
-        JLOG(m_journal.debug) <<
+        JLOG(m_journal.debug()) <<
             "New inbound endpoint " << *entry;
 
         return Consumer (*this, *entry);
@@ -161,7 +161,7 @@ public:
             }
         }
 
-        JLOG(m_journal.debug) <<
+        JLOG(m_journal.debug()) <<
             "New outbound endpoint " << *entry;
 
         return Consumer (*this, *entry);
@@ -195,7 +195,7 @@ public:
             }
         }
 
-        JLOG(m_journal.debug) <<
+        JLOG(m_journal.debug()) <<
             "New unlimited endpoint " << *entry;
 
         return Consumer (*this, *entry);
@@ -347,7 +347,7 @@ public:
         {
             if (iter->whenExpires <= elapsed)
             {
-                JLOG(m_journal.debug) << "Expired " << *iter;
+                JLOG(m_journal.debug()) << "Expired " << *iter;
                 auto table_iter =
                     table_.find (*iter->key);
                 ++iter;
@@ -413,7 +413,7 @@ public:
         std::lock_guard<std::recursive_mutex> _(lock_);
         if (--entry.refcount == 0)
         {
-            JLOG(m_journal.debug) <<
+            JLOG(m_journal.debug()) <<
                 "Inactive " << entry;
 
             switch (entry.key->kind)
@@ -444,7 +444,7 @@ public:
         std::lock_guard<std::recursive_mutex> _(lock_);
         clock_type::time_point const now (m_clock.now());
         int const balance (entry.add (fee.cost(), now));
-        JLOG(m_journal.trace) <<
+        JLOG(m_journal.trace()) <<
             "Charging " << entry << " for " << fee;
         return disposition (balance);
     }
@@ -466,7 +466,7 @@ public:
         }
         if (notify)
         {
-            JLOG(m_journal.info) << "Load warning: " << entry;
+            JLOG(m_journal.info()) << "Load warning: " << entry;
             ++m_stats.warn;
         }
         return notify;
@@ -483,7 +483,7 @@ public:
         int const balance (entry.balance (now));
         if (balance >= dropThreshold)
         {
-            JLOG(m_journal.warning) <<
+            JLOG(m_journal.warn()) <<
                 "Consumer entry " << entry <<
                 " dropped with balance " << balance <<
                 " at or above drop threshold " << dropThreshold;

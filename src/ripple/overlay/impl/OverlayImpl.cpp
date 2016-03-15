@@ -109,7 +109,7 @@ OverlayImpl::Timer::on_timer (error_code ec)
     {
         if (ec && ec != boost::asio::error::operation_aborted)
         {
-            JLOG(overlay_.journal_.error) << "on_timer: " << ec.message();
+            JLOG(overlay_.journal_.error()) << "on_timer: " << ec.message();
         }
         return;
     }
@@ -186,13 +186,13 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
     handoff.moved = true;
 
-    JLOG(journal.debug) << "Peer connection upgrade from " << remote_endpoint;
+    JLOG(journal.debug()) << "Peer connection upgrade from " << remote_endpoint;
 
     error_code ec;
     auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
     if (ec)
     {
-        JLOG(journal.debug) << remote_endpoint << " failed: " << ec.message();
+        JLOG(journal.debug()) << remote_endpoint << " failed: " << ec.message();
         return handoff;
     }
 
@@ -255,7 +255,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     if (result != PeerFinder::Result::success)
     {
         m_peerFinder->on_closed(slot);
-        JLOG(journal.debug) <<
+        JLOG(journal.debug()) <<
             "Peer " << remote_endpoint << " redirected, slots full";
         handoff.moved = false;
         handoff.response = makeRedirectResponse(slot, request,
@@ -346,14 +346,14 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     auto usage = resourceManager().newOutboundEndpoint (remote_endpoint);
     if (usage.disconnect())
     {
-        JLOG(journal_.info) << "Over resource limit: " << remote_endpoint;
+        JLOG(journal_.info()) << "Over resource limit: " << remote_endpoint;
         return;
     }
 
     auto const slot = peerFinder().new_outbound_slot(remote_endpoint);
     if (slot == nullptr)
     {
-        JLOG(journal_.debug) << "Connect: No slot for " << remote_endpoint;
+        JLOG(journal_.debug()) << "Connect: No slot for " << remote_endpoint;
         return;
     }
 
@@ -393,7 +393,7 @@ OverlayImpl::add_active (std::shared_ptr<PeerImp> const& peer)
 
     list_.emplace(peer.get(), peer);
 
-    JLOG(journal_.debug) <<
+    JLOG(journal_.debug()) <<
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() << ":" <<
         toBase58 (
@@ -463,7 +463,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
     }
     else
     {
-        JLOG(journal_.debug) << "No [validation_manifest] section in config";
+        JLOG(journal_.debug()) << "No [validation_manifest] section in config";
     }
 
     manifestCache_.load (
@@ -628,7 +628,7 @@ OverlayImpl::activate (std::shared_ptr<PeerImp> const& peer)
         (void) result.second;
     }
 
-    JLOG(journal_.debug) <<
+    JLOG(journal_.debug()) <<
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->id() <<
         ":" << toBase58 (
@@ -655,7 +655,7 @@ OverlayImpl::onManifests (
     auto const n = m->list_size();
     auto const& journal = from->pjournal();
 
-    JLOG(journal.debug) << "TMManifest, " << n << (n == 1 ? " item" : " items");
+    JLOG(journal.debug()) << "TMManifest, " << n << (n == 1 ? " item" : " items");
 
     bool const history = m->history ();
     for (std::size_t i = 0; i < n; ++i)
@@ -713,12 +713,12 @@ OverlayImpl::onManifests (
             }
             else
             {
-                JLOG(journal.info) << "Bad manifest #" << i + 1;
+                JLOG(journal.info()) << "Bad manifest #" << i + 1;
             }
         }
         else
         {
-            JLOG(journal.warning) << "Malformed manifest #" << i + 1;
+            JLOG(journal.warn()) << "Malformed manifest #" << i + 1;
             continue;
         }
     }

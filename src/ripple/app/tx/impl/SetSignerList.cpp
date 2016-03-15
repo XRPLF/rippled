@@ -88,7 +88,7 @@ SetSignerList::preflight (PreflightContext const& ctx)
     if (std::get<3>(result) == unknown)
     {
         // Neither a set nor a destroy.  Malformed.
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
@@ -156,7 +156,7 @@ SetSignerList::validateQuorumAndSignerEntries (
         if ((signerCount < STTx::minMultiSigners)
             || (signerCount > STTx::maxMultiSigners))
         {
-            JLOG(j.trace) << "Too many or too few signers in signer list.";
+            JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
         }
     }
@@ -166,7 +166,7 @@ SetSignerList::validateQuorumAndSignerEntries (
     if (std::adjacent_find (
         signers.begin (), signers.end ()) != signers.end ())
     {
-        JLOG(j.trace) << "Duplicate signers in signer list";
+        JLOG(j.trace()) << "Duplicate signers in signer list";
         return temBAD_SIGNER;
     }
 
@@ -178,7 +178,7 @@ SetSignerList::validateQuorumAndSignerEntries (
         std::uint32_t const weight = signer.weight;
         if (weight <= 0)
         {
-            JLOG(j.trace) << "Every signer must have a positive weight.";
+            JLOG(j.trace()) << "Every signer must have a positive weight.";
             return temBAD_WEIGHT;
         }
 
@@ -186,7 +186,7 @@ SetSignerList::validateQuorumAndSignerEntries (
 
         if (signer.account == account)
         {
-            JLOG(j.trace) << "A signer may not self reference account.";
+            JLOG(j.trace()) << "A signer may not self reference account.";
             return temBAD_SIGNER;
         }
 
@@ -195,7 +195,7 @@ SetSignerList::validateQuorumAndSignerEntries (
     }
     if ((quorum <= 0) || (allSignersWeight < quorum))
     {
-        JLOG(j.trace) << "Quorum is unreachable";
+        JLOG(j.trace()) << "Quorum is unreachable";
         return temBAD_QUORUM;
     }
     return tesSUCCESS;
@@ -241,7 +241,7 @@ SetSignerList::replaceSignerList ()
     TER result = dirAdd(ctx_.view (), hint, ownerDirKeylet.key,
         signerListKeylet.key, describeOwnerDir (account_), viewJ);
 
-    JLOG(j_.trace) << "Create signer list for account " <<
+    JLOG(j_.trace()) << "Create signer list for account " <<
         toBase58(account_) << ": " << transHuman (result);
 
     if (result != tesSUCCESS)

@@ -122,7 +122,7 @@ FeeVoteImpl::doValidation(
 {
     if (lastClosedLedger->fees().base != target_.reference_fee)
     {
-        if (journal_.info) journal_.info <<
+        JLOG(journal_.info()) <<
             "Voting for base fee of " << target_.reference_fee;
 
         baseValidation.setFieldU64 (sfBaseFee, target_.reference_fee);
@@ -130,7 +130,7 @@ FeeVoteImpl::doValidation(
 
     if (lastClosedLedger->fees().accountReserve(0) != target_.account_reserve)
     {
-        if (journal_.info) journal_.info <<
+        JLOG(journal_.info()) <<
             "Voting for base resrve of " << target_.account_reserve;
 
         baseValidation.setFieldU32(sfReserveBase, target_.account_reserve);
@@ -138,7 +138,7 @@ FeeVoteImpl::doValidation(
 
     if (lastClosedLedger->fees().increment != target_.owner_reserve)
     {
-        if (journal_.info) journal_.info <<
+        JLOG(journal_.info()) <<
             "Voting for reserve increment of " << target_.owner_reserve;
 
         baseValidation.setFieldU32 (sfReserveIncrement,
@@ -211,7 +211,7 @@ FeeVoteImpl::doVoting(
             (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
             (incReserve != lastClosedLedger->fees().increment))
     {
-        if (journal_.warning) journal_.warning <<
+        JLOG(journal_.warn()) <<
             "We are voting for a fee change: " << baseFee <<
             "/" << baseReserve <<
             "/" << incReserve;
@@ -229,8 +229,8 @@ FeeVoteImpl::doVoting(
 
         uint256 txID = feeTx.getTransactionID ();
 
-        if (journal_.warning)
-            journal_.warning << "Vote: " << txID;
+        JLOG(journal_.warn()) <<
+            "Vote: " << txID;
 
         Serializer s;
         feeTx.add (s);
@@ -239,7 +239,7 @@ FeeVoteImpl::doVoting(
 
         if (!initialPosition->addGiveItem (tItem, true, false))
         {
-            if (journal_.warning) journal_.warning <<
+            JLOG(journal_.warn()) <<
                 "Ledger already had fee change";
         }
     }

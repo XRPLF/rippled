@@ -36,7 +36,7 @@ CancelOffer::preflight (PreflightContext const& ctx)
 
     if (uTxFlags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace) << "Malformed transaction: " <<
+        JLOG(ctx.j.trace()) << "Malformed transaction: " <<
             "Invalid flags set.";
         return temINVALID_FLAG;
     }
@@ -44,7 +44,7 @@ CancelOffer::preflight (PreflightContext const& ctx)
     auto const seq = ctx.tx.getFieldU32 (sfOfferSequence);
     if (! seq)
     {
-        JLOG(ctx.j.trace) <<
+        JLOG(ctx.j.trace()) <<
             "CancelOffer::preflight: missing sequence";
         return temBAD_SEQUENCE;
     }
@@ -65,7 +65,7 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
 
     if ((*sle)[sfSequence] <= offerSequence)
     {
-        ctx.j.trace << "Malformed transaction: " <<
+        JLOG(ctx.j.trace()) << "Malformed transaction: " <<
             "Sequence " << offerSequence << " is invalid.";
         return temBAD_SEQUENCE;
     }
@@ -90,11 +90,11 @@ CancelOffer::doApply ()
 
     if (sleOffer)
     {
-        JLOG(j_.debug) << "Trying to cancel offer #" << offerSequence;
+        JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete (view(), sleOffer, ctx_.app.journal("View"));
     }
 
-    JLOG(j_.debug) << "Offer #" << offerSequence << " can't be found.";
+    JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";
     return tesSUCCESS;
 }
 

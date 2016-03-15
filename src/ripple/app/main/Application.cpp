@@ -108,7 +108,7 @@ private:
         {
             auto j = app_.journal ("Ledger");
 
-            JLOG (j.error) <<
+            JLOG (j.error()) <<
                 "Missing node in " << to_string (hash);
 
             app_.getInboundLedgers ().acquire (
@@ -180,7 +180,7 @@ public:
     {
         auto j = app_.journal ("Ledger");
 
-        JLOG (j.error) <<
+        JLOG (j.error()) <<
             "Missing node in " << seq;
 
         // prevent recursive invocation
@@ -284,7 +284,7 @@ private:
                 m_event.notify (ms);
             if (ms.count() >= 500)
             {
-                JLOG(m_journal.warning) <<
+                JLOG(m_journal.warn()) <<
                     "io_service latency = " << ms.count();
             }
         }
@@ -784,12 +784,12 @@ public:
         }
         else if (ec)
         {
-            JLOG(m_journal.error) << "Received signal: " << signal_number
+            JLOG(m_journal.error()) << "Received signal: " << signal_number
                                   << " with error: " << ec.message();
         }
         else
         {
-            JLOG(m_journal.debug) << "Received signal: " << signal_number;
+            JLOG(m_journal.debug()) << "Received signal: " << signal_number;
             signalStop();
         }
     }
@@ -805,7 +805,7 @@ public:
 
     void onStart () override
     {
-        JLOG(m_journal.info)
+        JLOG(m_journal.info())
             << "Application starting. Build is " << gitCommitID();
 
         m_sweepTimer.setExpiration (10);
@@ -819,7 +819,7 @@ public:
     // Called to indicate shutdown.
     void onStop () override
     {
-        JLOG(m_journal.debug) << "Application stopping";
+        JLOG(m_journal.debug()) << "Application stopping";
 
         m_io_latency_sampler.cancel_async ();
 
@@ -889,7 +889,7 @@ public:
                 //
                 if (space.available < (512 * 1024 * 1024))
                 {
-                    JLOG(m_journal.fatal)
+                    JLOG(m_journal.fatal())
                         << "Remaining free disk space is less than 512MB";
                     signalStop ();
                 }
@@ -963,8 +963,9 @@ void ApplicationImp::setup()
         if (!logs_->open(debug_log))
             std::cerr << "Can't open log file " << debug_log << '\n';
 
-        if (logs_->threshold() > beast::Journal::kDebug)
-            logs_->threshold (beast::Journal::kDebug);
+        using namespace beast::severities;
+        if (logs_->threshold() > kDebug)
+            logs_->threshold (kDebug);
     }
 
     logs_->silent (config_->SILENT);
@@ -974,7 +975,7 @@ void ApplicationImp::setup()
 
     if (!initSqliteDbs ())
     {
-        JLOG(m_journal.fatal) << "Cannot create database connections!";
+        JLOG(m_journal.fatal()) << "Cannot create database connections!";
         exitWithCode(3);
     }
 
@@ -1017,7 +1018,7 @@ void ApplicationImp::setup()
     auto const startUp = config_->START_UP;
     if (startUp == Config::FRESH)
     {
-        JLOG(m_journal.info) << "Starting new Ledger";
+        JLOG(m_journal.info()) << "Starting new Ledger";
 
         startGenesisLedger ();
     }
@@ -1025,7 +1026,7 @@ void ApplicationImp::setup()
                 startUp == Config::LOAD_FILE ||
                 startUp == Config::REPLAY)
     {
-        JLOG(m_journal.info) << "Loading specified Ledger";
+        JLOG(m_journal.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger (config_->START_LEDGER,
                             startUp == Config::REPLAY,
@@ -1053,19 +1054,19 @@ void ApplicationImp::setup()
 
     if (!cluster_->load (config().section(SECTION_CLUSTER_NODES)))
     {
-        JLOG(m_journal.fatal) << "Invalid entry in cluster configuration.";
+        JLOG(m_journal.fatal()) << "Invalid entry in cluster configuration.";
         Throw<std::exception>();
     }
 
     if (!validators_->load (config().section (SECTION_VALIDATORS)))
     {
-        JLOG(m_journal.fatal) << "Invalid entry in validator configuration.";
+        JLOG(m_journal.fatal()) << "Invalid entry in validator configuration.";
         Throw<std::exception>();
     }
 
     if (validators_->size () == 0 && !config_->RUN_STANDALONE)
     {
-        JLOG(m_journal.warning) << "No validators are configured.";
+        JLOG(m_journal.warn()) << "No validators are configured.";
     }
 
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
@@ -1113,7 +1114,7 @@ void ApplicationImp::setup()
                 *m_collectorManager});
         if (!server)
         {
-            JLOG(m_journal.fatal) << "Could not create Websocket for [" <<
+            JLOG(m_journal.fatal()) << "Could not create Websocket for [" <<
                 port.name << "]";
             Throw<std::exception> ();
         }
@@ -1129,7 +1130,7 @@ void ApplicationImp::setup()
         // of message, if displayed, should be displayed from PeerFinder.
         if (config_->PEER_PRIVATE && config_->IPS_FIXED.empty ())
         {
-            JLOG(m_journal.warning)
+            JLOG(m_journal.warn())
                 << "No outbound peer connections will be made";
         }
 
@@ -1139,7 +1140,7 @@ void ApplicationImp::setup()
     }
     else
     {
-        JLOG(m_journal.warning) << "Running in standalone mode";
+        JLOG(m_journal.warn()) << "Running in standalone mode";
 
         m_networkOPs->setStandAlone ();
     }
@@ -1169,9 +1170,9 @@ ApplicationImp::run()
 
     // Stop the server. When this returns, all
     // Stoppable objects should be stopped.
-    JLOG(m_journal.info) << "Received shutdown request";
+    JLOG(m_journal.info()) << "Received shutdown request";
     stop (m_journal);
-    JLOG(m_journal.info) << "Done.";
+    JLOG(m_journal.info()) << "Done.";
     StopSustain();
 }
 
@@ -1246,23 +1247,23 @@ ApplicationImp::getLastFullLedger()
 
         if (ledger->info().hash == hash)
         {
-            JLOG (j.trace) << "Loaded ledger: " << hash;
+            JLOG (j.trace()) << "Loaded ledger: " << hash;
             return ledger;
         }
 
-        if (j.error)
+        if (auto stream = j.error())
         {
-            j.error  << "Failed on ledger";
+            stream  << "Failed on ledger";
             Json::Value p;
             addJson (p, {*ledger, LedgerFill::full});
-            j.error << p;
+            stream << p;
         }
 
         return {};
     }
     catch (SHAMapMissingNode& sn)
     {
-        JLOG (j.warning) <<
+        JLOG (j.warn()) <<
             "Ledger with missing nodes in database: " << sn;
         return {};
     }
@@ -1280,7 +1281,7 @@ bool ApplicationImp::loadOldLedger (
             std::ifstream ledgerFile (ledgerID.c_str (), std::ios::in);
             if (!ledgerFile)
             {
-                JLOG(m_journal.fatal) << "Unable to open file";
+                JLOG(m_journal.fatal()) << "Unable to open file";
             }
             else
             {
@@ -1288,7 +1289,7 @@ bool ApplicationImp::loadOldLedger (
                  Json::Value jLedger;
                  if (!reader.parse (ledgerFile, jLedger))
                  {
-                     JLOG(m_journal.fatal) << "Unable to parse ledger JSON";
+                     JLOG(m_journal.fatal()) << "Unable to parse ledger JSON";
                  }
                  else
                  {
@@ -1340,7 +1341,7 @@ bool ApplicationImp::loadOldLedger (
                      }
                      if (!ledger.get().isArray ())
                      {
-                         JLOG(m_journal.fatal)
+                         JLOG(m_journal.fatal())
                             << "State nodes must be an array";
                      }
                      else
@@ -1366,14 +1367,14 @@ bool ApplicationImp::loadOldLedger (
                                  bool ok = loadLedger->addSLE (sle);
                                  if (!ok)
                                  {
-                                     JLOG(m_journal.warning)
+                                     JLOG(m_journal.warn())
                                         << "Couldn't add serialized ledger: "
                                         << uIndex;
                                  }
                              }
                              else
                              {
-                                 JLOG(m_journal.warning)
+                                 JLOG(m_journal.warn())
                                     << "Invalid entry in ledger";
                              }
                          }
@@ -1414,7 +1415,7 @@ bool ApplicationImp::loadOldLedger (
 
         if (!loadLedger)
         {
-            JLOG(m_journal.fatal) << "No Ledger found from ledgerID="
+            JLOG(m_journal.fatal()) << "No Ledger found from ledgerID="
                                   << ledgerID << std::endl;
             return false;
         }
@@ -1426,12 +1427,12 @@ bool ApplicationImp::loadOldLedger (
             // this ledger holds the transactions we want to replay
             replayLedger = loadLedger;
 
-            JLOG(m_journal.info) << "Loading parent ledger";
+            JLOG(m_journal.info()) << "Loading parent ledger";
 
             loadLedger = loadByHash (replayLedger->info().parentHash, *this);
             if (!loadLedger)
             {
-                JLOG(m_journal.info) << "Loading parent ledger from node store";
+                JLOG(m_journal.info()) << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
@@ -1442,34 +1443,34 @@ bool ApplicationImp::loadOldLedger (
 
                 if (!loadLedger)
                 {
-                    JLOG(m_journal.fatal) << "Replay ledger missing/damaged";
+                    JLOG(m_journal.fatal()) << "Replay ledger missing/damaged";
                     assert (false);
                     return false;
                 }
             }
         }
 
-        JLOG(m_journal.info) <<
+        JLOG(m_journal.info()) <<
             "Loading ledger " << loadLedger->info().hash <<
             " seq:" << loadLedger->info().seq;
 
         if (loadLedger->info().accountHash.isZero ())
         {
-            JLOG(m_journal.fatal) << "Ledger is empty.";
+            JLOG(m_journal.fatal()) << "Ledger is empty.";
             assert (false);
             return false;
         }
 
         if (!loadLedger->walkLedger (journal ("Ledger")))
         {
-            JLOG(m_journal.fatal) << "Ledger is missing nodes.";
+            JLOG(m_journal.fatal()) << "Ledger is missing nodes.";
             assert(false);
             return false;
         }
 
         if (!loadLedger->assertSane (journal ("Ledger")))
         {
-            JLOG(m_journal.fatal) << "Ledger is not sane.";
+            JLOG(m_journal.fatal()) << "Ledger is not sane.";
             assert(false);
             return false;
         }
@@ -1523,12 +1524,12 @@ bool ApplicationImp::loadOldLedger (
     }
     catch (SHAMapMissingNode&)
     {
-        JLOG(m_journal.fatal) << "Data is missing for selected ledger";
+        JLOG(m_journal.fatal()) << "Data is missing for selected ledger";
         return false;
     }
     catch (boost::bad_lexical_cast&)
     {
-        JLOG(m_journal.fatal)
+        JLOG(m_journal.fatal())
             << "Ledger specified '" << ledgerID << "' is not valid";
         return false;
     }
@@ -1616,7 +1617,7 @@ static bool schemaHas (
 
     if (static_cast<int> (schema.size ()) <= line)
     {
-        JLOG (j.fatal) << "Schema for " << dbName << " has too few lines";
+        JLOG (j.fatal()) << "Schema for " << dbName << " has too few lines";
         Throw<std::runtime_error> ("bad schema");
     }
 
@@ -1628,14 +1629,14 @@ void ApplicationImp::addTxnSeqField ()
     if (schemaHas (getTxnDB (), "AccountTransactions", 0, "TxnSeq", m_journal))
         return;
 
-    JLOG (m_journal.warning) << "Transaction sequence field is missing";
+    JLOG (m_journal.warn()) << "Transaction sequence field is missing";
 
     auto& session = getTxnDB ().getSession ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);
 
-    JLOG (m_journal.info) << "Parsing transactions";
+    JLOG (m_journal.info()) << "Parsing transactions";
     int i = 0;
     uint256 transID;
 
@@ -1664,7 +1665,7 @@ void ApplicationImp::addTxnSeqField ()
         if (txnMeta.size () == 0)
         {
             txIDs.push_back (std::make_pair (transID, -1));
-            JLOG (m_journal.info) << "No metadata for " << transID;
+            JLOG (m_journal.info()) << "No metadata for " << transID;
         }
         else
         {
@@ -1674,18 +1675,18 @@ void ApplicationImp::addTxnSeqField ()
 
         if ((++i % 1000) == 0)
         {
-            JLOG (m_journal.info) << i << " transactions read";
+            JLOG (m_journal.info()) << i << " transactions read";
         }
     }
 
-    JLOG (m_journal.info) << "All " << i << " transactions read";
+    JLOG (m_journal.info()) << "All " << i << " transactions read";
 
     soci::transaction tr(session);
 
-    JLOG (m_journal.info) << "Dropping old index";
+    JLOG (m_journal.info()) << "Dropping old index";
     session << "DROP INDEX AcctTxIndex;";
 
-    JLOG (m_journal.info) << "Altering table";
+    JLOG (m_journal.info()) << "Altering table";
     session << "ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;";
 
     boost::format fmt ("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
@@ -1696,11 +1697,11 @@ void ApplicationImp::addTxnSeqField ()
 
         if ((++i % 1000) == 0)
         {
-            JLOG (m_journal.info) << i << " transactions updated";
+            JLOG (m_journal.info()) << i << " transactions updated";
         }
     }
 
-    JLOG (m_journal.info) << "Building new index";
+    JLOG (m_journal.info()) << "Building new index";
     session << "CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);";
 
     tr.commit ();
@@ -1714,14 +1715,14 @@ void ApplicationImp::addValidationSeqFields ()
         return;
     }
 
-    JLOG(m_journal.warning) << "Validation sequence fields are missing";
+    JLOG(m_journal.warn()) << "Validation sequence fields are missing";
     assert(!schemaHas(getLedgerDB(), "Validations", 0, "InitialSeq", m_journal));
 
     auto& session = getLedgerDB().getSession();
 
     soci::transaction tr(session);
 
-    JLOG(m_journal.info) << "Altering table";
+    JLOG(m_journal.info()) << "Altering table";
     session << "ALTER TABLE Validations "
         "ADD COLUMN LedgerSeq       BIGINT UNSIGNED;";
     session << "ALTER TABLE Validations "
@@ -1730,7 +1731,7 @@ void ApplicationImp::addValidationSeqFields ()
     // Create the indexes, too, so we don't have to
     // wait for the next startup, which may be a while.
     // These should be identical to those in LedgerDBInit
-    JLOG(m_journal.info) << "Building new indexes";
+    JLOG(m_journal.info()) << "Building new indexes";
     session << "CREATE INDEX IF NOT EXISTS "
         "ValidationsBySeq ON Validations(LedgerSeq);";
     session << "CREATE INDEX IF NOT EXISTS ValidationsByInitialSeq "
@@ -1743,7 +1744,7 @@ void ApplicationImp::updateTables ()
 {
     if (config_->section (ConfigSection::nodeDatabase ()).empty ())
     {
-        JLOG (m_journal.fatal) << "The [node_db] configuration setting has been updated and must be set";
+        JLOG (m_journal.fatal()) << "The [node_db] configuration setting has been updated and must be set";
         exitWithCode(1);
     }
 
@@ -1754,7 +1755,7 @@ void ApplicationImp::updateTables ()
 
     if (schemaHas (getTxnDB (), "AccountTransactions", 0, "PRIMARY", m_journal))
     {
-        JLOG (m_journal.fatal) << "AccountTransactions database should not have a primary key";
+        JLOG (m_journal.fatal()) << "AccountTransactions database should not have a primary key";
         exitWithCode(1);
     }
 
@@ -1762,13 +1763,14 @@ void ApplicationImp::updateTables ()
 
     if (config_->doImport)
     {
+        auto j = logs_->journal("NodeObject");
         NodeStore::DummyScheduler scheduler;
         std::unique_ptr <NodeStore::Database> source =
             NodeStore::Manager::instance().make_Database ("NodeStore.import", scheduler,
-                logs_->journal("NodeObject"), 0,
+                j, 0,
                 config_->section(ConfigSection::importNodeDatabase ()));
 
-        JLOG (journal ("NodeObject").warning)
+        JLOG (j.warn())
             << "Node import from '" << source->getName () << "' to '"
             << getNodeStore ().getName () << "'.";
 

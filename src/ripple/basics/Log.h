@@ -31,7 +31,7 @@
 
 namespace ripple {
 
-// DEPRECATED use beast::Journal::Severity instead
+// DEPRECATED use beast::severities::Severity instead
 enum LogSeverity
 {
     lsINVALID   = -1,   // used to indicate an invalid severity
@@ -57,13 +57,13 @@ private:
 
     public:
         Sink (std::string const& partition,
-            beast::Journal::Severity thresh, Logs& logs);
+            beast::severities::Severity thresh, Logs& logs);
 
         Sink (Sink const&) = delete;
         Sink& operator= (Sink const&) = delete;
 
         void
-        write (beast::Journal::Severity level,
+        write (beast::severities::Severity level,
                std::string const& text) override;
     };
 
@@ -149,12 +149,12 @@ private:
     std::map <std::string,
         std::unique_ptr<beast::Journal::Sink>,
             beast::ci_less> sinks_;
-    beast::Journal::Severity thresh_;
+    beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
 
 public:
-    Logs(beast::Journal::Severity level);
+    Logs(beast::severities::Severity level);
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
@@ -173,17 +173,17 @@ public:
     beast::Journal
     journal (std::string const& name);
 
-    beast::Journal::Severity
+    beast::severities::Severity
     threshold() const;
 
     void
-    threshold (beast::Journal::Severity thresh);
+    threshold (beast::severities::Severity thresh);
 
     std::vector<std::pair<std::string, std::string>>
     partition_severities() const;
 
     void
-    write (beast::Journal::Severity level, std::string const& partition,
+    write (beast::severities::Severity level, std::string const& partition,
         std::string const& text, bool console);
 
     std::string
@@ -203,15 +203,15 @@ public:
     virtual
     std::unique_ptr<beast::Journal::Sink>
     makeSink(std::string const& partition,
-        beast::Journal::Severity startingLevel);
+        beast::severities::Severity startingLevel);
 
 public:
     static
     LogSeverity
-    fromSeverity (beast::Journal::Severity level);
+    fromSeverity (beast::severities::Severity level);
 
     static
-    beast::Journal::Severity
+    beast::severities::Severity
     toSeverity (LogSeverity level);
 
     static
@@ -237,7 +237,7 @@ private:
     static
     void
     format (std::string& output, std::string const& message,
-        beast::Journal::Severity severity, std::string const& partition);
+        beast::severities::Severity severity, std::string const& partition);
 };
 
 // Wraps a Journal::Stream to skip evaluation of

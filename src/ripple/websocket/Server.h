@@ -61,7 +61,7 @@ private:
     {
         beast::Thread::setCurrentThreadName ("WebSocket");
 
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "Websocket: listening on " << desc_.port;
 
         listen();
@@ -70,17 +70,17 @@ private:
             endpoint_.reset();
         }
 
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "Websocket: finished listening on " << desc_.port;
 
         stopped ();
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "Websocket: stopped on " << desc_.port;
     }
 
     void onStart () override
     {
-        JLOG (j_.warning)
+        JLOG (j_.warn())
                 << "Websocket: creating endpoint " << desc_.port;
 
         {
@@ -103,7 +103,7 @@ private:
 
     void onStop () override
     {
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "Websocket: onStop " << desc_.port;
 
         auto endpoint = [&]

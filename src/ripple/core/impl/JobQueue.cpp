@@ -166,7 +166,7 @@ JobQueue::getJobCountGE (JobType t) const
 void
 JobQueue::shutdown ()
 {
-    JLOG(m_journal.info) <<  "Job queue shutting down";
+    JLOG(m_journal.info()) <<  "Job queue shutting down";
 
     m_workers.pauseAllThreadsAndWait ();
 }
@@ -183,7 +183,7 @@ JobQueue::setThreadCount (int c, bool const standaloneMode)
         c = static_cast<int>(std::thread::hardware_concurrency());
         c = 2 + std::min (c, 4); // I/O will bottleneck
 
-        JLOG(m_journal.info) << "Auto-tuning to " << c <<
+        JLOG(m_journal.info()) << "Auto-tuning to " << c <<
                             " validation/transaction/proposal threads";
     }
 
@@ -463,7 +463,7 @@ JobQueue::processTask ()
             type = job.getType();
             JobTypeData& data(getJobTypeData(type));
             beast::Thread::setCurrentThreadName (data.name ());
-            JLOG(m_journal.trace) << "Doing " << data.name () << " job";
+            JLOG(m_journal.trace()) << "Doing " << data.name () << " job";
             on_dequeue (job.getType (), start_time - job.queue_time ());
             job.doJob ();
         }

@@ -88,7 +88,7 @@ shouldCloseLedger (
         (currentMSeconds > 10min))
     {
         // These are unexpected cases, we just close the ledger
-        JLOG (j.warning) <<
+        JLOG (j.warn()) <<
             "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no") <<
             " Prop: " << previousProposers << "/" << proposersClosed <<
             " Secs: " << currentMSeconds.count() << " (last: " <<
@@ -99,7 +99,7 @@ shouldCloseLedger (
     if ((proposersClosed + proposersValidated) > (previousProposers / 2))
     {
         // If more than half of the network has closed, we close
-        JLOG (j.trace) << "Others have closed";
+        JLOG (j.trace()) << "Others have closed";
         return true;
     }
 
@@ -112,7 +112,7 @@ shouldCloseLedger (
     // Preserve minimum ledger open time
     if (openMSeconds < LEDGER_MIN_CLOSE)
     {
-        JLOG (j.debug) <<
+        JLOG (j.debug()) <<
             "Must wait minimum time before closing";
         return false;
     }
@@ -122,7 +122,7 @@ shouldCloseLedger (
     // the network
     if (openMSeconds < (previousMSeconds / 2))
     {
-        JLOG (j.debug) <<
+        JLOG (j.debug()) <<
             "Ledger has not been open long enough";
         return false;
     }
@@ -180,7 +180,7 @@ checkConsensus (
     bool proposing,
     beast::Journal j)
 {
-    JLOG (j.trace) <<
+    JLOG (j.trace()) <<
         "checkConsensus: prop=" << currentProposers <<
         "/" << previousProposers <<
         " agree=" << currentAgree << " validated=" << currentFinished <<
@@ -195,7 +195,7 @@ checkConsensus (
         // rush: we may need more time.
         if (currentAgreeTime < (previousAgreeTime + LEDGER_MIN_CONSENSUS))
         {
-            JLOG (j.trace) <<
+            JLOG (j.trace()) <<
                 "too fast, not enough proposers";
             return ConsensusState::No;
         }
@@ -205,7 +205,7 @@ checkConsensus (
     // to declare consensus?
     if (checkConsensusReached (currentAgree, currentProposers, proposing))
     {
-        JLOG (j.debug) << "normal consensus";
+        JLOG (j.debug()) << "normal consensus";
         return ConsensusState::Yes;
     }
 
@@ -213,13 +213,13 @@ checkConsensus (
     // to declare consensus?
     if (checkConsensusReached (currentFinished, currentProposers, false))
     {
-        JLOG (j.warning) <<
+        JLOG (j.warn()) <<
             "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;
     }
 
     // no consensus yet
-    JLOG (j.trace) << "no consensus";
+    JLOG (j.trace()) << "no consensus";
     return ConsensusState::No;
 }
 
@@ -250,7 +250,7 @@ LedgerConsensusImp::LedgerConsensusImp (
     , mPreviousMSeconds (0)
     , j_ (app.journal ("LedgerConsensus"))
 {
-    JLOG (j_.debug) << "Creating consensus object";
+    JLOG (j_.debug()) << "Creating consensus object";
 }
 
 Json::Value LedgerConsensusImp::getJson (bool full)
@@ -380,12 +380,12 @@ void LedgerConsensusImp::mapCompleteInternal (
 {
     if (acquired)
     {
-        JLOG (j_.trace) << "We have acquired txs " << hash;
+        JLOG (j_.trace()) << "We have acquired txs " << hash;
     }
 
     if (!map)  // If the map was invalid
     {
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "Tried to acquire invalid transaction map: "
             << hash;
         mAcquired[hash] = map;
@@ -434,17 +434,17 @@ void LedgerConsensusImp::mapCompleteInternal (
     }
     else if (!mOurPosition)
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "Not creating disputes: no position yet.";
     }
     else if (mOurPosition->isBowOut ())
     {
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "Not creating disputes: not participating.";
     }
     else
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "Not creating disputes: identical position.";
     }
 
@@ -465,7 +465,7 @@ void LedgerConsensusImp::mapCompleteInternal (
     }
     else if (acquired)
     {
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "By the time we got the map " << hash
             << " no peers were proposing it";
     }
@@ -485,7 +485,7 @@ void LedgerConsensusImp::mapComplete (
     catch (SHAMapMissingNode const& mn)
     {
         leaveConsensus();
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             "Missing node processing complete map " << mn;
         Throw();
     }
@@ -546,22 +546,22 @@ void LedgerConsensusImp::checkLCL ()
             status = "unknown";
         }
 
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << "View of consensus changed during " << status
             << " (" << netLgrCount << ") status="
             << status << ", "
             << (mHaveCorrectLCL ? "CorrectLCL" : "IncorrectLCL");
-        JLOG (j_.warning) << mPrevLedgerHash
+        JLOG (j_.warn()) << mPrevLedgerHash
             << " to " << netLgr;
-        JLOG (j_.warning)
+        JLOG (j_.warn())
             << ripple::getJson (*mPreviousLedger);
 
-        if (j_.debug)
+        if (auto stream = j_.debug())
         {
             for (auto& it : vals)
-                j_.debug
+                stream
                     << "V: " << it.first << ", " << it.second.first;
-            j_.debug << getJson (true);
+            stream << getJson (true);
         }
 
         if (mHaveCorrectLCL)
@@ -585,7 +585,7 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 
         if (mHaveCorrectLCL && mProposing && mOurPosition)
         {
-            JLOG (j_.info) << "Bowing out of consensus";
+            JLOG (j_.info()) << "Bowing out of consensus";
             mOurPosition->bowOut ();
             propose ();
         }
@@ -611,7 +611,7 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
         if (mAcquiringLedger != lclHash)
         {
             // need to start acquiring the correct consensus LCL
-            JLOG (j_.warning) <<
+            JLOG (j_.warn()) <<
                 "Need consensus ledger " << mPrevLedgerHash;
 
             // Tell the ledger acquire system that we need the consensus ledger
@@ -633,7 +633,7 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
 
     assert (!buildLCL->open() && buildLCL->isImmutable ());
     assert (buildLCL->info().hash == lclHash);
-    JLOG (j_.info) <<
+    JLOG (j_.info()) <<
         "Have the consensus ledger " << mPrevLedgerHash;
     startRound (
         lclHash,
@@ -691,7 +691,7 @@ void LedgerConsensusImp::timerEntry ()
     catch (SHAMapMissingNode const& mn)
     {
         leaveConsensus ();
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
            "Missing node during consensus process " << mn;
         Throw();
     }
@@ -753,12 +753,12 @@ void LedgerConsensusImp::stateEstablish ()
 
     if (!mHaveCloseTimeConsensus)
     {
-        JLOG (j_.info) <<
+        JLOG (j_.info()) <<
             "We have TX consensus but not CT consensus";
         return;
     }
 
-    JLOG (j_.info) <<
+    JLOG (j_.info()) <<
         "Converge cutoff (" << mPeerPositions.size () << " participants)";
     state_ = State::processing;
     beginAccept (false);
@@ -781,13 +781,13 @@ bool LedgerConsensusImp::haveConsensus ()
             }
             else
             {
-                JLOG (j_.debug) << to_string (it.first)
+                JLOG (j_.debug()) << to_string (it.first)
                     << " has " << to_string (it.second->getCurrentHash ());
                 ++disagree;
                 if (mCompares.count(it.second->getCurrentHash()) == 0)
                 { // Make sure we have generated disputes
                     uint256 hash = it.second->getCurrentHash();
-                    JLOG (j_.debug)
+                    JLOG (j_.debug())
                         << "We have not compared to " << hash;
                     auto it1 = mAcquired.find (hash);
                     auto it2 = mAcquired.find(mOurPosition->getCurrentHash ());
@@ -804,7 +804,7 @@ bool LedgerConsensusImp::haveConsensus ()
     int currentValidations = app_.getValidations ()
         .getNodesAfter (mPrevLedgerHash);
 
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "Checking for TX consensus: agree=" << agree
         << ", disagree=" << disagree;
 
@@ -850,7 +850,7 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
 
     if (newPosition->getPrevLedger() != mPrevLedgerHash)
     {
-        JLOG (j_.debug) << "Got proposal for "
+        JLOG (j_.debug()) << "Got proposal for "
             << newPosition->getPrevLedger ()
             << " but we are on " << mPrevLedgerHash;
         return false;
@@ -858,7 +858,7 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
 
     if (mDeadNodes.find (peerID) != mDeadNodes.end ())
     {
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "Position from dead node: " << to_string (peerID);
         return false;
     }
@@ -878,7 +878,7 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
 
     if (newPosition->isBowOut ())
     {
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "Peer bows out: " << to_string (peerID);
         for (auto& it : mDisputes)
             it.second->unVote (peerID);
@@ -890,13 +890,13 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
     if (newPosition->isInitial ())
     {
         // Record the close time estimate
-        JLOG (j_.trace)
+        JLOG (j_.trace())
             << "Peer reports close time as "
             << newPosition->getCloseTime().time_since_epoch().count();
         ++mCloseTimes[newPosition->getCloseTime()];
     }
 
-    JLOG (j_.trace) << "Processing peer proposal "
+    JLOG (j_.trace()) << "Processing peer proposal "
         << newPosition->getProposeSeq () << "/"
         << newPosition->getCurrentHash ();
     currentPosition = newPosition;
@@ -911,7 +911,7 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
     }
     else
     {
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "Don't have tx set for peer";
     }
 
@@ -923,11 +923,11 @@ void LedgerConsensusImp::simulate (
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
-    JLOG (j_.info) << "Simulating consensus";
+    JLOG (j_.info()) << "Simulating consensus";
     closeLedger ();
     mCurrentMSeconds = consensusDelay.value_or(100ms);
     beginAccept (true);
-    JLOG (j_.info) << "Simulation complete";
+    JLOG (j_.info()) << "Simulation complete";
 }
 
 void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
@@ -959,15 +959,15 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         closeTimeCorrect = true;
     }
 
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "Report: Prop=" << (mProposing ? "yes" : "no")
         << " val=" << (mValidating ? "yes" : "no")
         << " corLCL=" << (mHaveCorrectLCL ? "yes" : "no")
         << " fail=" << (mConsensusFail ? "yes" : "no");
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "Report: Prev = " << mPrevLedgerHash
         << ":" << mPreviousLedger->info().seq;
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "Report: TxSt = " << set->getHash ()
         << ", close " << closeTime.time_since_epoch().count()
         << (closeTimeCorrect ? "" : "X");
@@ -984,7 +984,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
         // Set up to write SHAMap changes to our database,
         //   perform updates, extract changes
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "Applying consensus set transactions to the"
             << " last closed ledger";
 
@@ -1021,7 +1021,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 hotACCOUNT_NODE, buildLCL->info().seq);
             int tmf = buildLCL->txMap().flushDirty (
                 hotTRANSACTION_NODE, buildLCL->info().seq);
-            JLOG (j_.debug) << "Flushed " <<
+            JLOG (j_.debug()) << "Flushed " <<
                 asf << " accounts and " <<
                 tmf << " transaction nodes";
         }
@@ -1032,19 +1032,19 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
         // And stash the ledger in the ledger master
         if (ledgerMaster_.storeLedger (buildLCL))
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                 << "Consensus built ledger we already had";
         else if (app_.getInboundLedgers().find (buildLCL->info().hash))
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                 << "Consensus built ledger we were acquiring";
         else
-            JLOG (j_.debug)
+            JLOG (j_.debug())
                 << "Consensus built new ledger";
         sharedLCL = std::move(buildLCL);
     }
 
     uint256 const newLCLHash = sharedLCL->info().hash;
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "Report: NewL  = " << newLCLHash
         << ":" << sharedLCL->info().seq;
     // Tell directly connected peers that we have a new LCL
@@ -1052,7 +1052,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
     if (mValidating &&
         ! ledgerMaster_.isCompatible (*sharedLCL,
-            app_.journal("LedgerConsensus").warning,
+            app_.journal("LedgerConsensus").warn(),
             "Not validating"))
     {
         mValidating = false;
@@ -1086,11 +1086,11 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         val.set_validation (&validation[0], validation.size ());
         // Send signed validation to all of our directly connected peers
         app_.overlay().send(val);
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "CNF Val " << newLCLHash;
     }
     else
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "CNF buildLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
@@ -1116,7 +1116,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 // we voted NO
                 try
                 {
-                    JLOG (j_.debug)
+                    JLOG (j_.debug())
                         << "Test applying disputed transaction that did"
                         << " not get in";
                     SerialIter sit (it.second->peekTransaction().slice());
@@ -1129,7 +1129,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 }
                 catch (std::exception const&)
                 {
-                    JLOG (j_.debug)
+                    JLOG (j_.debug())
                         << "Failed to apply transaction we voted NO on";
                 }
             }
@@ -1171,7 +1171,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     {
         // see how close our close time is to other node's
         //  close time reports, and update our clock.
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "We closed at " << mCloseTime.time_since_epoch().count();
         using usec64_t = std::chrono::duration<std::uint64_t>;
         usec64_t closeTotal = mCloseTime.time_since_epoch();
@@ -1180,7 +1180,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         for (auto const& p : mCloseTimes)
         {
             // FIXME: Use median, not average
-            JLOG (j_.info)
+            JLOG (j_.info())
                 << beast::lexicalCastThrow <std::string> (p.second)
                 << " time votes for "
                 << beast::lexicalCastThrow <std::string>
@@ -1195,7 +1195,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         using time_point = std::chrono::time_point<NetClock, duration>;
         auto offset = time_point{closeTotal} -
                       std::chrono::time_point_cast<duration>(mCloseTime);
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "Our close offset is estimated at "
             << offset.count() << " (" << closeCount << ")";
         app_.timeKeeper().adjustCloseTime(offset);
@@ -1220,7 +1220,7 @@ void LedgerConsensusImp::createDisputes (
     if (m1->getHash() == m2->getHash())
         return;
 
-    JLOG (j_.debug) << "createDisputes "
+    JLOG (j_.debug()) << "createDisputes "
         << m1->getHash() << " to " << m2->getHash();
     SHAMap::Delta differences;
     m1->compare (*m2, differences, 16384);
@@ -1248,7 +1248,7 @@ void LedgerConsensusImp::createDisputes (
         else // No other disagreement over a transaction should be possible
             assert (false);
     }
-    JLOG (j_.debug) << dc << " differences found";
+    JLOG (j_.debug()) << dc << " differences found";
 }
 
 void LedgerConsensusImp::addDisputedTransaction (
@@ -1258,7 +1258,7 @@ void LedgerConsensusImp::addDisputedTransaction (
     if (mDisputes.find (txID) != mDisputes.end ())
         return;
 
-    JLOG (j_.debug) << "Transaction "
+    JLOG (j_.debug()) << "Transaction "
         << txID << " is disputed";
 
     bool ourVote = false;
@@ -1328,7 +1328,7 @@ void LedgerConsensusImp::leaveConsensus ()
 
 void LedgerConsensusImp::propose ()
 {
-    JLOG (j_.trace) << "We propose: " <<
+    JLOG (j_.trace()) << "We propose: " <<
         (mOurPosition->isBowOut ()
             ? std::string ("bowOut")
             : to_string (mOurPosition->getCurrentHash ()));
@@ -1400,7 +1400,7 @@ void LedgerConsensusImp::statusChange (
     app_.overlay ().foreach (send_always (
         std::make_shared <Message> (
             s, protocol::mtSTATUS_CHANGE)));
-    JLOG (j_.trace) << "send status change to peer";
+    JLOG (j_.trace()) << "send status change to peer";
 }
 
 void LedgerConsensusImp::takeInitialPosition (
@@ -1454,7 +1454,7 @@ void LedgerConsensusImp::takeInitialPosition (
     ledgerMaster_.setBuildingLedger (mPreviousLedger->info().seq + 1);
 
     auto txSet = initialSet->getHash ().as_uint256();
-    JLOG (j_.info) << "initial position " << txSet;
+    JLOG (j_.info()) << "initial position " << txSet;
     mapCompleteInternal (txSet, initialSet, false);
 
     mOurPosition = std::make_shared<LedgerProposal> (
@@ -1543,7 +1543,7 @@ void LedgerConsensusImp::updateOurPositions ()
         {
             // peer's proposal is stale, so remove it
             auto const& peerID = it->second->getPeerID ();
-            JLOG (j_.warning)
+            JLOG (j_.warn())
                 << "Removing stale proposal from " << peerID;
             for (auto& dt : mDisputes)
                 dt.second->unVote (peerID);
@@ -1623,13 +1623,13 @@ void LedgerConsensusImp::updateOurPositions ()
         int const threshConsensus = participantsNeeded (
             participants, AV_CT_CONSENSUS_PCT);
 
-        JLOG (j_.info) << "Proposers:"
+        JLOG (j_.info()) << "Proposers:"
             << mPeerPositions.size () << " nw:" << neededWeight
             << " thrV:" << threshVote << " thrC:" << threshConsensus;
 
         for (auto const& it : closeTimes)
         {
-            JLOG (j_.debug) << "CCTime: seq "
+            JLOG (j_.debug()) << "CCTime: seq "
                 << mPreviousLedger->info().seq + 1 << ": "
                 << it.first.time_since_epoch().count()
                 << " has " << it.second << ", "
@@ -1648,7 +1648,7 @@ void LedgerConsensusImp::updateOurPositions ()
 
         if (!mHaveCloseTimeConsensus)
         {
-            JLOG (j_.debug) << "No CT consensus:"
+            JLOG (j_.debug()) << "No CT consensus:"
                 << " Proposers:" << mPeerPositions.size ()
                 << " Proposing:" << (mProposing ? "yes" : "no")
                 << " Thresh:" << threshConsensus
@@ -1676,7 +1676,7 @@ void LedgerConsensusImp::updateOurPositions ()
         ourPosition = ourPosition->snapShot (false);
 
         auto newHash = ourPosition->getHash ().as_uint256();
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "Position change: CTime "
             << closeTime.time_since_epoch().count()
             << ", tx " << newHash;
@@ -1773,7 +1773,7 @@ void LedgerConsensusImp::checkOurValidation ()
     protocol::TMValidation val;
     val.set_validation (&validation[0], validation.size ());
     consensus_.setLastValidation (v);
-    JLOG (j_.warning) << "Sending partial validation";
+    JLOG (j_.warn()) << "Sending partial validation";
 }
 
 void LedgerConsensusImp::beginAccept (bool synchronous)
@@ -1782,7 +1782,7 @@ void LedgerConsensusImp::beginAccept (bool synchronous)
 
     if (!consensusSet)
     {
-        JLOG (j_.fatal)
+        JLOG (j_.fatal())
             << "We don't have a consensus set";
         abort ();
     }
@@ -1849,7 +1849,7 @@ void LedgerConsensusImp::startRound (
     {
         // If the validation keys were set, and if we need a ledger,
         // then we want to validate, and possibly propose a ledger.
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "Entering consensus process, validating";
         mValidating = true;
         // Propose if we are in sync with the network
@@ -1859,7 +1859,7 @@ void LedgerConsensusImp::startRound (
     else
     {
         // Otherwise we just want to monitor the validation process.
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "Entering consensus process, watching";
         mProposing = mValidating = false;
     }
@@ -1875,10 +1875,10 @@ void LedgerConsensusImp::startRound (
 
         if (!mHaveCorrectLCL)
         {
-            JLOG (j_.info)
+            JLOG (j_.info())
                 << "Entering consensus with: "
                 << mPreviousLedger->info().hash;
-            JLOG (j_.info)
+            JLOG (j_.info())
                 << "Correct LCL is: " << prevLCLHash;
         }
     }
@@ -1942,12 +1942,12 @@ applyTransaction (Application& app, OpenView& view,
     if (retryAssured)
         flags = flags | tapRETRY;
 
-    JLOG (j.debug) << "TXN "
+    JLOG (j.debug()) << "TXN "
         << txn->getTransactionID ()
         //<< (engine.view().open() ? " open" : " closed")
         // because of the optional in engine
         << (retryAssured ? "/retry" : "/final");
-    JLOG (j.trace) << txn->getJson (0);
+    JLOG (j.trace()) << txn->getJson (0);
 
     try
     {
@@ -1955,7 +1955,7 @@ applyTransaction (Application& app, OpenView& view,
             view, *txn, flags, j);
         if (result.second)
         {
-            JLOG (j.debug)
+            JLOG (j.debug())
                 << "Transaction applied: " << transHuman (result.first);
             return LedgerConsensusImp::resultSuccess;
         }
@@ -1964,18 +1964,18 @@ applyTransaction (Application& app, OpenView& view,
             isTelLocal (result.first))
         {
             // failure
-            JLOG (j.debug)
+            JLOG (j.debug())
                 << "Transaction failure: " << transHuman (result.first);
             return LedgerConsensusImp::resultFail;
         }
 
-        JLOG (j.debug)
+        JLOG (j.debug())
             << "Transaction retry: " << transHuman (result.first);
         return LedgerConsensusImp::resultRetry;
     }
     catch (std::exception const&)
     {
-        JLOG (j.warning) << "Throws";
+        JLOG (j.warn()) << "Throws";
         return LedgerConsensusImp::resultFail;
     }
 }
@@ -1998,7 +1998,7 @@ void applyTransactions (
                 continue;
 
             // The transaction isn't in the check ledger, try to apply it
-            JLOG (j.debug) <<
+            JLOG (j.debug()) <<
                 "Processing candidate transaction: " << item.key();
             std::shared_ptr<STTx const> txn;
             try
@@ -2007,7 +2007,7 @@ void applyTransactions (
             }
             catch (std::exception const&)
             {
-                JLOG (j.warning) << "  Throws";
+                JLOG (j.warn()) << "  Throws";
             }
 
             if (txn)
@@ -2022,7 +2022,7 @@ void applyTransactions (
     // Attempt to apply all of the retriable transactions
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
-        JLOG (j.debug) << "Pass: " << pass << " Txns: "
+        JLOG (j.debug()) << "Pass: " << pass << " Txns: "
             << retriableTxs.size ()
             << (certainRetry ? " retriable" : " final");
         int changes = 0;
@@ -2051,13 +2051,13 @@ void applyTransactions (
             }
             catch (std::exception const&)
             {
-                JLOG (j.warning)
+                JLOG (j.warn())
                     << "Transaction throws";
                 it = retriableTxs.erase (it);
             }
         }
 
-        JLOG (j.debug) << "Pass: "
+        JLOG (j.debug()) << "Pass: "
             << pass << " finished " << changes << " changes";
 
         // A non-retry pass made no changes

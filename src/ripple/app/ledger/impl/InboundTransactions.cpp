@@ -146,7 +146,7 @@ public:
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
-        JLOG (app_.journal("InboundLedger").trace) <<
+        JLOG (app_.journal("InboundLedger").trace()) <<
             "Got data (" << packet.nodes ().size () << ") "
             "for acquiring ledger: " << hash;
 

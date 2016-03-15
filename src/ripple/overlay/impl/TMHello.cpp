@@ -71,14 +71,14 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
     auto const cookie1 = hashLastMessage(ssl, SSL_get_finished);
     if (!cookie1)
     {
-        JLOG (journal.error) << "Cookie generation: local setup not complete";
+        JLOG (journal.error()) << "Cookie generation: local setup not complete";
         return boost::none;
     }
 
     auto const cookie2 = hashLastMessage(ssl, SSL_get_peer_finished);
     if (!cookie2)
     {
-        JLOG (journal.error) << "Cookie generation: peer setup not complete";
+        JLOG (journal.error()) << "Cookie generation: peer setup not complete";
         return boost::none;
     }
 
@@ -88,7 +88,7 @@ makeSharedValue (SSL* ssl, beast::Journal journal)
     // is 0. Don't allow this.
     if (result == zero)
     {
-        JLOG(journal.error) << "Cookie generation: identical finished messages";
+        JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return boost::none;
     }
 
@@ -359,26 +359,26 @@ verifyHello (protocol::TMHello const& h,
 
         if (h.nettime () > maxTime)
         {
-            JLOG(journal.info) <<
+            JLOG(journal.info()) <<
                 "Clock for is off by +" << h.nettime() - ourTime;
             return boost::none;
         }
 
         if (h.nettime () < minTime)
         {
-            JLOG(journal.info) <<
+            JLOG(journal.info()) <<
                 "Clock is off by -" << ourTime - h.nettime();
             return boost::none;
         }
 
-        JLOG(journal.trace) <<
+        JLOG(journal.trace()) <<
             "Connect: time offset " <<
             static_cast<std::int64_t>(ourTime) - h.nettime();
     }
 
     if (h.protoversionmin () > to_packed (BuildInfo::getCurrentProtocol()))
     {
-        JLOG(journal.info) <<
+        JLOG(journal.info()) <<
             "Hello: Disconnect: Protocol mismatch [" <<
             "Peer expects " << to_string (
                 BuildInfo::make_protocol(h.protoversion())) <<
@@ -392,14 +392,14 @@ verifyHello (protocol::TMHello const& h,
 
     if (! publicKey)
     {
-        journal.info <<
+        JLOG(journal.info()) <<
             "Hello: Disconnect: Bad node public key.";
         return boost::none;
     }
 
     if (*publicKey == app.nodeIdentity().first)
     {
-        JLOG(journal.info) <<
+        JLOG(journal.info()) <<
             "Hello: Disconnect: Self connection.";
         return boost::none;
     }
@@ -408,7 +408,7 @@ verifyHello (protocol::TMHello const& h,
         makeSlice (h.nodeproof()), false))
     {
         // Unable to verify they have private key for claimed public key.
-        JLOG(journal.info) <<
+        JLOG(journal.info()) <<
             "Hello: Disconnect: Failed to verify session.";
         return boost::none;
     }
@@ -420,7 +420,7 @@ verifyHello (protocol::TMHello const& h,
     {
         // Remote asked us to confirm connection is from
         // correct IP
-        JLOG(journal.info) <<
+        JLOG(journal.info()) <<
             "Hello: Disconnect: Peer IP is " <<
             beast::IP::to_string (remote.to_v4())
             << " not " <<
@@ -434,7 +434,7 @@ verifyHello (protocol::TMHello const& h,
     {
         // We know our public IP and peer reports connection
         // from some other IP
-        JLOG(journal.info) <<
+        JLOG(journal.info()) <<
             "Hello: Disconnect: Our IP is " <<
             beast::IP::to_string (public_ip.to_v4())
             << " not " <<

@@ -23,6 +23,7 @@
 #include <ripple/app/tx/impl/BookTip.h>
 #include <ripple/app/tx/impl/Offer.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
 #include <beast/utility/Journal.h>
@@ -69,7 +70,7 @@ public:
         {
             if (count_ >= limit_)
             {
-                j_.debug << "Exceeded " << limit_ << " step limit.";
+                JLOG(j_.debug()) << "Exceeded " << limit_ << " step limit.";
                 return false;
             }
             count_++;

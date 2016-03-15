@@ -207,12 +207,12 @@ public:
             beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("192.0.2.1"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
-            j.info <<
+            JLOG(j.info()) <<
                 "Charging " << c.to_string() << " " << fee << " per second";
             c.charge (fee);
             for (int i = 0; i < 128; ++i)
             {
-                j.info <<
+                JLOG(j.info()) <<
                     "Time= " << logic.clock().now().time_since_epoch().count() <<
                     ", Balance = " << c.balance();
                 logic.advance();
@@ -223,12 +223,12 @@ public:
             beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("192.0.2.2"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
-            j.info <<
+            JLOG(j.info()) <<
                 "Charging " << c.to_string() << " " << fee << " per second";
             for (int i = 0; i < 128; ++i)
             {
                 c.charge (fee);
-                j.info <<
+                JLOG(j.info()) <<
                     "Time= " << logic.clock().now().time_since_epoch().count() <<
                     ", Balance = " << c.balance();
                 logic.advance();

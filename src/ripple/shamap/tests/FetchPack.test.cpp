@@ -72,7 +72,7 @@ public:
             Map::iterator it = mMap.find (nodeHash);
             if (it == mMap.end ())
             {
-                mJournal.fatal << "Test filter missing node";
+                JLOG(mJournal.fatal()) << "Test filter missing node";
                 return false;
             }
             nodeData = it->second;

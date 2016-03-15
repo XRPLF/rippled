@@ -60,7 +60,7 @@ void OrderBookDB::setup(
                 return;
         }
 
-        JLOG (j_.debug)
+        JLOG (j_.debug())
             << "Advancing from " << mSeq << " to " << seq;
 
         mSeq = seq;
@@ -86,7 +86,7 @@ void OrderBookDB::update(
     OrderBookDB::IssueToOrderBook sourceMap;
     hash_set< Issue > XRPBooks;
 
-    JLOG (j_.debug) << "OrderBookDB::update>";
+    JLOG (j_.debug()) << "OrderBookDB::update>";
 
     if (app_.config().PATH_SEARCH_MAX == 0)
     {
@@ -130,14 +130,14 @@ void OrderBookDB::update(
     }
     catch (const SHAMapMissingNode&)
     {
-        JLOG (j_.info)
+        JLOG (j_.info())
             << "OrderBookDB::update encountered a missing node";
         std::lock_guard <std::recursive_mutex> sl (mLock);
         mSeq = 0;
         return;
     }
 
-    JLOG (j_.debug)
+    JLOG (j_.debug())
         << "OrderBookDB::update< " << books << " books found";
     {
         std::lock_guard <std::recursive_mutex> sl (mLock);
@@ -284,7 +284,7 @@ void OrderBookDB::processTxn (
             }
             catch (std::exception const&)
             {
-                JLOG (j_.info)
+                JLOG (j_.info())
                     << "Fields not found in OrderBookDB::processTxn";
             }
         }

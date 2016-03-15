@@ -98,7 +98,7 @@ FeeMetrics::updateFeeMetrics(Application& app,
     std::sort(feeLevels.begin(), feeLevels.end());
     auto const size = feeLevels.size();
 
-    JLOG(j_.debug) << "Ledger " << view.info().seq <<
+    JLOG(j_.debug()) << "Ledger " << view.info().seq <<
         " has " << size << " transactions. " <<
         "Ledgers are processing " <<
         (timeLeap ? "slowly" : "as expected") <<
@@ -137,7 +137,7 @@ FeeMetrics::updateFeeMetrics(Application& app,
         escalationMultiplier = std::max(escalationMultiplier,
             minimumMultiplier_);
     }
-    JLOG(j_.debug) << "Expected transactions updated to " <<
+    JLOG(j_.debug()) << "Expected transactions updated to " <<
         txnsExpected << " and multiplier updated to " <<
         escalationMultiplier;
 
@@ -375,7 +375,7 @@ TxQ::apply(Application& app, OpenView& view,
             auto requiredRetryLevel = mulDiv(
                 existingCandidate->feeLevel,
                 setup_.retrySequencePercent, 100).second;
-            JLOG(j_.trace) << "Found transaction in queue for account " <<
+            JLOG(j_.trace()) << "Found transaction in queue for account " <<
                 account << " with sequence number " << sequence <<
                 " new txn fee level is " << feeLevelPaid <<
                 ", old txn fee level is " <<
@@ -390,7 +390,7 @@ TxQ::apply(Application& app, OpenView& view,
                 // the prior txn could not get into the open ledger,
                 //  but this one can.
                 // Remove the queued transaction and continue
-                JLOG(j_.trace) <<
+                JLOG(j_.trace()) <<
                     "Removing transaction from queue " <<
                     existingCandidate->txID <<
                     " in favor of " << transactionID;
@@ -404,7 +404,7 @@ TxQ::apply(Application& app, OpenView& view,
             else
             {
                 // Drop the current transaction
-                JLOG(j_.trace) <<
+                JLOG(j_.trace()) <<
                     "Ignoring transaction " <<
                     transactionID <<
                     " in favor of queued " <<
@@ -414,7 +414,7 @@ TxQ::apply(Application& app, OpenView& view,
         }
     }
 
-    JLOG(j_.trace) << "Transaction " <<
+    JLOG(j_.trace()) << "Transaction " <<
         transactionID <<
         " from account " << account <<
         " has fee level of " << feeLevelPaid <<
@@ -427,7 +427,7 @@ TxQ::apply(Application& app, OpenView& view,
     {
         // Transaction fee is sufficient to go in open ledger immediately
 
-        JLOG(j_.trace) << "Applying transaction " <<
+        JLOG(j_.trace()) << "Applying transaction " <<
             transactionID <<
             " to open ledger.";
         ripple::TER txnResult;
@@ -435,7 +435,7 @@ TxQ::apply(Application& app, OpenView& view,
 
         std::tie(txnResult, didApply) = doApply(pcresult, app, view);
 
-        JLOG(j_.trace) << "Transaction " <<
+        JLOG(j_.trace()) << "Transaction " <<
             transactionID <<
                 (didApply ? " applied successfully with " :
                     " failed with ") <<
@@ -447,7 +447,7 @@ TxQ::apply(Application& app, OpenView& view,
     if (! canBeHeld(tx))
     {
         // Bail, transaction cannot be held
-        JLOG(j_.trace) << "Transaction " <<
+        JLOG(j_.trace()) << "Transaction " <<
             transactionID <<
             " can not be held";
         return { feeLevelPaid >= requiredFeeLevel ?
@@ -463,7 +463,7 @@ TxQ::apply(Application& app, OpenView& view,
         {
             // The queue is full, and this transaction is more
             // valuable, so kick out the cheapest transaction.
-            JLOG(j_.warning) <<
+            JLOG(j_.warn()) <<
                 "Removing end item from queue with fee of" <<
                 lastRIter->feeLevel << " in favor of " <<
                 transactionID << " with fee of " <<
@@ -472,7 +472,7 @@ TxQ::apply(Application& app, OpenView& view,
         }
         else
         {
-            JLOG(j_.warning) << "Queue is full, and transaction " <<
+            JLOG(j_.warn()) << "Queue is full, and transaction " <<
                 transactionID <<
                 " fee is lower than end item";
             return { telINSUF_FEE_P, false };
@@ -496,7 +496,7 @@ TxQ::apply(Application& app, OpenView& view,
     { tx, transactionID, feeLevelPaid, flags, pfresult });
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
-    JLOG(j_.debug) << "Added transaction " << candidate.txID <<
+    JLOG(j_.debug()) << "Added transaction " << candidate.txID <<
         " from " << op << " account " << candidate.account <<
         " to queue.";
 
@@ -584,7 +584,7 @@ TxQ::accept(Application& app,
     {
         auto const requiredFeeLevel = feeMetrics_.scaleFeeLevel(view);
         auto const feeLevelPaid = candidateIter->feeLevel;
-        JLOG(j_.trace) << "Queued transaction " <<
+        JLOG(j_.trace()) << "Queued transaction " <<
             candidateIter->txID << " from account " <<
             candidateIter->account << " has fee level of " <<
             feeLevelPaid << " needs at least " <<
@@ -593,7 +593,7 @@ TxQ::accept(Application& app,
         {
             auto firstTxn = candidateIter->txn;
 
-            JLOG(j_.trace) << "Applying queued transaction " <<
+            JLOG(j_.trace()) << "Applying queued transaction " <<
                 candidateIter->txID << " to open ledger.";
 
             // If the rules or flags change, preflight again
@@ -618,7 +618,7 @@ TxQ::accept(Application& app,
             if (didApply)
             {
                 // Remove the candidate from the queue
-                JLOG(j_.debug) << "Queued transaction " <<
+                JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID <<
                     " applied successfully. Remove from queue.";
 
@@ -628,14 +628,14 @@ TxQ::accept(Application& app,
             else if (isTefFailure(txnResult) || isTemMalformed(txnResult) ||
                 isTelLocal(txnResult))
             {
-                JLOG(j_.debug) << "Queued transaction " <<
+                JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID << " failed with " <<
                     transToken(txnResult) << ". Remove from queue.";
                 candidateIter = erase(candidateIter);
             }
             else
             {
-                JLOG(j_.debug) << "Transaction " <<
+                JLOG(j_.debug()) << "Transaction " <<
                     candidateIter->txID << " failed with " <<
                     transToken(txnResult) << ". Leave in queue.";
                 candidateIter++;

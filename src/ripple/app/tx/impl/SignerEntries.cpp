@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STArray.h>
 #include <cstdint>
@@ -33,7 +34,7 @@ SignerEntries::deserialize (
 
     if (!obj.isFieldPresent (sfSignerEntries))
     {
-        if (journal.trace) journal.trace <<
+        JLOG(journal.trace()) <<
             "Malformed " << annotation << ": Need signer entry array.";
         s.second = temMALFORMED;
         return s;
@@ -48,7 +49,7 @@ SignerEntries::deserialize (
         // Validate the SignerEntry.
         if (sEntry.getFName () != sfSignerEntry)
         {
-            journal.trace <<
+            JLOG(journal.trace()) <<
                 "Malformed " << annotation << ": Expected SignerEntry.";
             s.second = temMALFORMED;
             return s;

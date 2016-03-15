@@ -121,7 +121,7 @@ public:
                 &ResolverAsioImpl::do_stop,
                     this, CompletionCounter (this))));
 
-            JLOG(m_journal.debug) << "Queued a stop request";
+            JLOG(m_journal.debug()) << "Queued a stop request";
         }
     }
 
@@ -129,9 +129,9 @@ public:
     {
         stop_async ();
 
-        JLOG(m_journal.debug) << "Waiting to stop";
+        JLOG(m_journal.debug()) << "Waiting to stop";
         m_stop_complete.wait();
-        JLOG(m_journal.debug) << "Stopped";
+        JLOG(m_journal.debug()) << "Stopped";
     }
 
     void resolve (
@@ -256,7 +256,7 @@ public:
 
         if (hp.first.empty ())
         {
-            JLOG(m_journal.error) <<
+            JLOG(m_journal.error()) <<
                 "Unable to parse '" << name << "'";
 
             m_io_service.post (m_strand.wrap (std::bind (
@@ -285,7 +285,7 @@ public:
         {
             m_work.emplace_back (names, handler);
 
-            JLOG(m_journal.debug) <<
+            JLOG(m_journal.debug()) <<
                 "Queued new job with " << names.size() <<
                 " tasks. " << m_work.size() << " jobs outstanding.";
 

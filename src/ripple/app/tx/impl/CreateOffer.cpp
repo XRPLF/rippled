@@ -46,7 +46,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
 
     if (uTxFlags & tfOfferCreateMask)
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
@@ -56,7 +56,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
 
     if (bImmediateOrCancel && bFillOrKill)
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed transaction: both IoC and FoK set.";
         return temINVALID_FLAG;
     }
@@ -65,7 +65,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
 
     if (bHaveExpiration && (tx.getFieldU32 (sfExpiration) == 0))
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed offer: bad expiration";
         return temBAD_EXPIRATION;
     }
@@ -74,7 +74,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
 
     if (bHaveCancel && (tx.getFieldU32 (sfOfferSequence) == 0))
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed offer: bad cancel sequence";
         return temBAD_SEQUENCE;
     }
@@ -87,13 +87,13 @@ CreateOffer::preflight (PreflightContext const& ctx)
 
     if (saTakerPays.native () && saTakerGets.native ())
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed offer: redundant (XRP for XRP)";
         return temBAD_OFFER;
     }
     if (saTakerPays <= zero || saTakerGets <= zero)
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed offer: bad amount";
         return temBAD_OFFER;
     }
@@ -106,14 +106,14 @@ CreateOffer::preflight (PreflightContext const& ctx)
 
     if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed offer: redundant (IOU for IOU)";
         return temREDUNDANT;
     }
     // We don't allow a non-native currency to use the currency code XRP.
     if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
     {
-        JLOG(j.debug) <<
+        JLOG(j.debug()) <<
             "Malformed offer: bad currency";
         return temBAD_CURRENCY;
     }
@@ -121,7 +121,7 @@ CreateOffer::preflight (PreflightContext const& ctx)
     if (saTakerPays.native () != !uPaysIssuerID ||
         saTakerGets.native () != !uGetsIssuerID)
     {
-        JLOG(j.warning) <<
+        JLOG(j.warn()) <<
             "Malformed offer: bad issuer";
         return temBAD_ISSUER;
     }
@@ -153,7 +153,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     if (isGlobalFrozen(ctx.view, uPaysIssuerID) ||
         isGlobalFrozen(ctx.view, uGetsIssuerID))
     {
-        JLOG(ctx.j.warning) <<
+        JLOG(ctx.j.warn()) <<
             "Offer involves frozen asset";
 
         return tecFROZEN;
@@ -161,7 +161,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     else if (accountFunds(ctx.view, id, saTakerGets,
         fhZERO_IF_FROZEN, viewJ) <= zero)
     {
-        JLOG(ctx.j.debug) <<
+        JLOG(ctx.j.debug()) <<
             "delay: Offers must be at least partially funded.";
 
         return tecUNFUNDED_OFFER;
@@ -170,7 +170,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     // before the transaction sequence number.
     else if (cancelSequence && (uAccountSequence <= *cancelSequence))
     {
-        JLOG(ctx.j.debug) <<
+        JLOG(ctx.j.debug()) <<
             "uAccountSequenceNext=" << uAccountSequence <<
             " uOfferSequence=" << *cancelSequence;
 
@@ -218,7 +218,7 @@ CreateOffer::checkAcceptAsset(ReadView const& view,
 
     if (!issuerAccount)
     {
-        JLOG(j.warning) <<
+        JLOG(j.warn()) <<
             "delay: can't receive IOUs from non-existent issuer: " <<
             to_string (issue.account);
 
@@ -249,7 +249,7 @@ CreateOffer::checkAcceptAsset(ReadView const& view,
 
         if (!is_authorized)
         {
-            JLOG(j.debug) <<
+            JLOG(j.debug()) <<
                 "delay: can't receive IOUs from issuer without auth.";
 
             return (flags & tapRETRY)
@@ -376,14 +376,14 @@ CreateOffer::bridged_cross (
 
         if (use_direct)
         {
-            if (j_.debug)
+            if (auto stream = j_.debug())
             {
-                j_.debug << count << " Direct:";
-                j_.debug << "  offer: " << offers_direct.tip ();
-                j_.debug << "     in: " << offers_direct.tip ().amount().in;
-                j_.debug << "    out: " << offers_direct.tip ().amount ().out;
-                j_.debug << "  owner: " << offers_direct.tip ().owner ();
-                j_.debug << "  funds: " << accountFunds(view,
+                stream << count << " Direct:";
+                stream << "  offer: " << offers_direct.tip ();
+                stream << "     in: " << offers_direct.tip ().amount().in;
+                stream << "    out: " << offers_direct.tip ().amount ().out;
+                stream << "  owner: " << offers_direct.tip ().owner ();
+                stream << "  funds: " << accountFunds(view,
                     offers_direct.tip ().owner (),
                     offers_direct.tip ().amount ().out,
                     fhIGNORE_FREEZE, viewJ);
@@ -391,7 +391,7 @@ CreateOffer::bridged_cross (
 
             cross_result = taker.cross(offers_direct.tip ());
 
-            JLOG (j_.debug) << "Direct Result: " << transToken (cross_result);
+            JLOG (j_.debug()) << "Direct Result: " << transToken (cross_result);
 
             if (dry_offer (view, offers_direct.tip ()))
             {
@@ -401,7 +401,7 @@ CreateOffer::bridged_cross (
         }
         else
         {
-            if (j_.debug)
+            if (auto stream = j_.debug())
             {
                 auto const owner1_funds_before = accountFunds(view,
                     offers_leg1.tip ().owner (),
@@ -413,22 +413,22 @@ CreateOffer::bridged_cross (
                     offers_leg2.tip ().amount ().out,
                     fhIGNORE_FREEZE, viewJ);
 
-                j_.debug << count << " Bridge:";
-                j_.debug << " offer1: " << offers_leg1.tip ();
-                j_.debug << "     in: " << offers_leg1.tip ().amount().in;
-                j_.debug << "    out: " << offers_leg1.tip ().amount ().out;
-                j_.debug << "  owner: " << offers_leg1.tip ().owner ();
-                j_.debug << "  funds: " << owner1_funds_before;
-                j_.debug << " offer2: " << offers_leg2.tip ();
-                j_.debug << "     in: " << offers_leg2.tip ().amount ().in;
-                j_.debug << "    out: " << offers_leg2.tip ().amount ().out;
-                j_.debug << "  owner: " << offers_leg2.tip ().owner ();
-                j_.debug << "  funds: " << owner2_funds_before;
+                stream << count << " Bridge:";
+                stream << " offer1: " << offers_leg1.tip ();
+                stream << "     in: " << offers_leg1.tip ().amount().in;
+                stream << "    out: " << offers_leg1.tip ().amount ().out;
+                stream << "  owner: " << offers_leg1.tip ().owner ();
+                stream << "  funds: " << owner1_funds_before;
+                stream << " offer2: " << offers_leg2.tip ();
+                stream << "     in: " << offers_leg2.tip ().amount ().in;
+                stream << "    out: " << offers_leg2.tip ().amount ().out;
+                stream << "  owner: " << offers_leg2.tip ().owner ();
+                stream << "  funds: " << owner2_funds_before;
             }
 
             cross_result = taker.cross(offers_leg1.tip (), offers_leg2.tip ());
 
-            JLOG (j_.debug) << "Bridge Result: " << transToken (cross_result);
+            JLOG (j_.debug()) << "Bridge Result: " << transToken (cross_result);
 
             if (dry_offer (view, offers_leg1.tip ()))
             {
@@ -450,13 +450,13 @@ CreateOffer::bridged_cross (
 
         if (taker.done())
         {
-            JLOG(j_.debug) << "The taker reports he's done during crossing!";
+            JLOG(j_.debug()) << "The taker reports he's done during crossing!";
             break;
         }
 
         if (reachedOfferCrossingLimit (taker))
         {
-            JLOG(j_.debug) << "The offer crossing limit has been exceeded!";
+            JLOG(j_.debug()) << "The offer crossing limit has been exceeded!";
             break;
         }
 
@@ -501,21 +501,21 @@ CreateOffer::direct_cross (
 
         count++;
 
-        if (j_.debug)
+        if (auto stream = j_.debug())
         {
-            j_.debug << count << " Direct:";
-            j_.debug << "  offer: " << offer;
-            j_.debug << "     in: " << offer.amount ().in;
-            j_.debug << "    out: " << offer.amount ().out;
-            j_.debug << "  owner: " << offer.owner ();
-            j_.debug << "  funds: " << accountFunds(view,
+            stream << count << " Direct:";
+            stream << "  offer: " << offer;
+            stream << "     in: " << offer.amount ().in;
+            stream << "    out: " << offer.amount ().out;
+            stream << "  owner: " << offer.owner ();
+            stream << "  funds: " << accountFunds(view,
                 offer.owner (), offer.amount ().out, fhIGNORE_FREEZE,
                 ctx_.app.journal ("View"));
         }
 
         cross_result = taker.cross (offer);
 
-        JLOG (j_.debug) << "Direct Result: " << transToken (cross_result);
+        JLOG (j_.debug()) << "Direct Result: " << transToken (cross_result);
 
         if (dry_offer (view, offer))
         {
@@ -531,13 +531,13 @@ CreateOffer::direct_cross (
 
         if (taker.done())
         {
-            JLOG(j_.debug) << "The taker reports he's done during crossing!";
+            JLOG(j_.debug()) << "The taker reports he's done during crossing!";
             break;
         }
 
         if (reachedOfferCrossingLimit (taker))
         {
-            JLOG(j_.debug) << "The offer crossing limit has been exceeded!";
+            JLOG(j_.debug()) << "The offer crossing limit has been exceeded!";
             break;
         }
 
@@ -600,7 +600,7 @@ CreateOffer::cross (
     // so we check this case again.
     if (taker.unfunded ())
     {
-        JLOG (j_.debug) <<
+        JLOG (j_.debug()) <<
             "Not crossing: taker is unfunded.";
         return { tecUNFUNDED_OFFER, taker_amount };
     }
@@ -614,7 +614,7 @@ CreateOffer::cross (
     }
     catch (std::exception const& e)
     {
-        JLOG (j_.error) <<
+        JLOG (j_.error()) <<
             "Exception during offer crossing: " << e.what ();
         return { tecINTERNAL, taker.remaining_offer () };
     }
@@ -692,7 +692,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // to fail to delete it.
         if (sleCancel)
         {
-            JLOG(j_.debug) << "Create cancels order " << *cancelSequence;
+            JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
             result = offerDelete (view, sleCancel, viewJ);
         }
     }
@@ -726,17 +726,17 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // empty (fully crossed), or something in-between.
         Amounts place_offer;
 
-        JLOG(j_.debug) << "Attempting cross: " <<
+        JLOG(j_.debug()) << "Attempting cross: " <<
             to_string (taker_amount.in.issue ()) << " -> " <<
             to_string (taker_amount.out.issue ());
 
-        if (j_.trace)
+        if (auto stream = j_.trace())
         {
-            j_.trace << "   mode: " <<
+            stream << "   mode: " <<
                 (bPassive ? "passive " : "") <<
                 (bSell ? "sell" : "buy");
-            j_.trace <<"     in: " << format_amount (taker_amount.in);
-            j_.trace << "    out: " << format_amount (taker_amount.out);
+            stream <<"     in: " << format_amount (taker_amount.in);
+            stream << "    out: " << format_amount (taker_amount.out);
         }
 
         std::tie(result, place_offer) = cross (view, view_cancel, taker_amount);
@@ -744,11 +744,11 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // or give a tec.
         assert(result == tesSUCCESS || isTecClaim(result));
 
-        if (j_.trace)
+        if (auto stream = j_.trace())
         {
-            j_.trace << "Cross result: " << transToken (result);
-            j_.trace << "     in: " << format_amount (place_offer.in);
-            j_.trace << "    out: " << format_amount (place_offer.out);
+            stream << "Cross result: " << transToken (result);
+            stream << "     in: " << format_amount (place_offer.in);
+            stream << "    out: " << format_amount (place_offer.out);
         }
 
         if (result == tecFAILED_PROCESSING && bOpenLedger)
@@ -756,7 +756,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
         if (result != tesSUCCESS)
         {
-            JLOG (j_.debug) << "final result: " << transToken (result);
+            JLOG (j_.debug()) << "final result: " << transToken (result);
             return { result, true };
         }
 
@@ -770,7 +770,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // never be negative. If it is, something went very very wrong.
         if (place_offer.in < zero || place_offer.out < zero)
         {
-            JLOG(j_.fatal) << "Cross left offer negative!" <<
+            JLOG(j_.fatal()) << "Cross left offer negative!" <<
                 "     in: " << format_amount (place_offer.in) <<
                 "    out: " << format_amount (place_offer.out);
             return { tefINTERNAL, true };
@@ -778,7 +778,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
         if (place_offer.in == zero || place_offer.out == zero)
         {
-            JLOG(j_.debug) << "Offer fully crossed!";
+            JLOG(j_.debug()) << "Offer fully crossed!";
             return { result, true };
         }
 
@@ -793,22 +793,22 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     if (result != tesSUCCESS)
     {
-        JLOG (j_.debug) << "final result: " << transToken (result);
+        JLOG (j_.debug()) << "final result: " << transToken (result);
         return { result, true };
     }
 
-    if (j_.trace)
+    if (auto stream = j_.trace())
     {
-        j_.trace << "Place" << (crossed ? " remaining " : " ") << "offer:";
-        j_.trace << "    Pays: " << saTakerPays.getFullText ();
-        j_.trace << "    Gets: " << saTakerGets.getFullText ();
+        stream << "Place" << (crossed ? " remaining " : " ") << "offer:";
+        stream << "    Pays: " << saTakerPays.getFullText ();
+        stream << "    Gets: " << saTakerGets.getFullText ();
     }
 
     // For 'fill or kill' offers, failure to fully cross means that the
     // entire operation should be aborted, with only fees paid.
     if (bFillOrKill)
     {
-        JLOG (j_.trace) << "Fill or Kill: offer killed";
+        JLOG (j_.trace()) << "Fill or Kill: offer killed";
         return { tesSUCCESS, false };
     }
 
@@ -816,7 +816,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // placed - it gets cancelled and the operation succeeds.
     if (bImmediateOrCancel)
     {
-        JLOG (j_.trace) << "Immediate or cancel: offer cancelled";
+        JLOG (j_.trace()) << "Immediate or cancel: offer cancelled";
         return { tesSUCCESS, true };
     }
 
@@ -834,7 +834,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
             if (result != tesSUCCESS)
             {
-                JLOG (j_.debug) <<
+                JLOG (j_.debug()) <<
                     "final result: " << transToken (result);
             }
 
@@ -861,7 +861,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // Update owner count.
         adjustOwnerCount(view, sleCreator, 1, viewJ);
 
-        JLOG (j_.trace) <<
+        JLOG (j_.trace()) <<
             "adding to book: " << to_string (saTakerPays.issue ()) <<
             " : " << to_string (saTakerGets.issue ());
 
@@ -902,7 +902,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     if (result != tesSUCCESS)
     {
-        JLOG (j_.debug) <<
+        JLOG (j_.debug()) <<
             "final result: " << transToken (result);
     }
 

@@ -155,7 +155,7 @@ Door::Detector::do_detect (boost::asio::yield_context yield)
     }
     if (ec != boost::asio::error::operation_aborted)
     {
-        JLOG(j_.trace) <<
+        JLOG(j_.trace()) <<
             "Error detecting ssl: " << ec.message() <<
                 " from " << remote_address_;
     }
@@ -185,7 +185,7 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
     acceptor_.open(local_address.protocol(), ec);
     if (ec)
     {
-        JLOG(j_.error) <<
+        JLOG(j_.error()) <<
             "Open port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
@@ -194,7 +194,7 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
         boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
     if (ec)
     {
-        JLOG(j_.error) <<
+        JLOG(j_.error()) <<
             "Option for port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
@@ -202,7 +202,7 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
     acceptor_.bind(local_address, ec);
     if (ec)
     {
-        JLOG(j_.error) <<
+        JLOG(j_.error()) <<
             "Bind port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
@@ -210,12 +210,12 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
     acceptor_.listen(boost::asio::socket_base::max_connections, ec);
     if (ec)
     {
-        JLOG(j_.error) <<
+        JLOG(j_.error()) <<
             "Listen on port '" << port.name << "' failed:" << ec.message();
         Throw<std::exception> ();
     }
 
-    JLOG(j_.info) <<
+    JLOG(j_.info()) <<
         "Opened " << port;
 }
 
@@ -267,8 +267,10 @@ Door::do_accept (boost::asio::yield_context yield)
         socket_type socket (acceptor_.get_io_service());
         acceptor_.async_accept (socket, remote_address, yield[ec]);
         if (ec && ec != boost::asio::error::operation_aborted)
-            if (j_.error) j_.error <<
+        {
+            JLOG(j_.error()) <<
                 "accept: " << ec.message();
+        }
         if (ec == boost::asio::error::operation_aborted)
             break;
         if (ec)
