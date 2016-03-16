@@ -111,8 +111,7 @@ public:
         {
             ScopedLockType sl (mLock);
 
-            auto it = mLedgers.
-            find (hash);
+            auto it = mLedgers.find (hash);
             if (it != mLedgers.end ())
             {
                 ret = it->second;
@@ -120,23 +119,6 @@ public:
         }
 
         return ret;
-    }
-
-    bool hasLedger (LedgerHash const& hash)
-    {
-        assert (hash.isNonZero ());
-
-        ScopedLockType sl (mLock);
-        return mLedgers.find (hash) != mLedgers.end ();
-    }
-
-    void dropLedger (LedgerHash const& hash)
-    {
-        assert (hash.isNonZero ());
-
-        ScopedLockType sl (mLock);
-        mLedgers.erase (hash);
-
     }
 
     /*
