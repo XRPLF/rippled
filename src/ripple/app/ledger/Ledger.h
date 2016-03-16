@@ -299,13 +299,6 @@ public:
 
     void visitStateItems (std::function<void (SLE::ref)>) const;
 
-
-    std::vector<uint256> getNeededTransactionHashes (
-        int max, SHAMapSyncFilter* filter) const;
-
-    std::vector<uint256> getNeededAccountStateHashes (
-        int max, SHAMapSyncFilter* filter) const;
-
     bool walkLedger (beast::Journal j) const;
 
     bool assertSane (beast::Journal ledgerJ);

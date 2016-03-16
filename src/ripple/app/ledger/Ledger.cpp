@@ -1143,40 +1143,6 @@ qualityDirDescriber (
     }
 }
 
-std::vector<uint256>
-Ledger::getNeededTransactionHashes (
-    int max, SHAMapSyncFilter* filter) const
-{
-    std::vector<uint256> ret;
-
-    if (info_.txHash.isNonZero ())
-    {
-        if (txMap_->getHash ().isZero ())
-            ret.push_back (info_.txHash);
-        else
-            ret = txMap_->getNeededHashes (max, filter);
-    }
-
-    return ret;
-}
-
-std::vector<uint256>
-Ledger::getNeededAccountStateHashes (
-    int max, SHAMapSyncFilter* filter) const
-{
-    std::vector<uint256> ret;
-
-    if (info_.accountHash.isNonZero ())
-    {
-        if (stateMap_->getHash ().isZero ())
-            ret.push_back (info_.accountHash);
-        else
-            ret = stateMap_->getNeededHashes (max, filter);
-    }
-
-    return ret;
-}
-
 //------------------------------------------------------------------------------
 
 /*

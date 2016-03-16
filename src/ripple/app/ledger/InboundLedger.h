@@ -131,6 +131,14 @@ private:
                      SHAMapAddNode&);
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
 
+    std::vector<uint256>
+    getNeededTransactionHashes (
+        int max, SHAMapSyncFilter* filter) const;
+
+    std::vector<uint256>
+    getNeededAccountStateHashes (
+        int max, SHAMapSyncFilter* filter) const;
+
 private:
     std::shared_ptr<Ledger> mLedger;
     bool               mHaveHeader;
