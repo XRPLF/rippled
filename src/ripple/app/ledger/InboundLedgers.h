@@ -47,10 +47,6 @@ public:
 
     virtual std::shared_ptr<InboundLedger> find (LedgerHash const& hash) = 0;
 
-    virtual bool hasLedger (LedgerHash const& ledgerHash) = 0;
-
-    virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
-
     // VFALCO TODO Remove the dependency on the Peer object.
     //
     virtual bool gotLedgerData (LedgerHash const& ledgerHash,
