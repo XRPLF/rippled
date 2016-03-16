@@ -76,7 +76,7 @@ private:
     onStop() override;
 
     //
-    // HTTP::Handler
+    // Handler
     //
 
     void
@@ -100,6 +100,10 @@ private:
     onRequest (Session& session) override;
 
     void
+    onWSMessage(std::shared_ptr<WSSession> session,
+        std::vector<boost::asio::const_buffer> const& buffers) override;
+
+    void
     onClose (Session& session,
         boost::system::error_code const&) override;
 
@@ -107,6 +111,12 @@ private:
     onStopped (Server&) override;
 
     //--------------------------------------------------------------------------
+
+    Json::Value
+    processSession(
+        std::shared_ptr<WSSession> const& session,
+            std::shared_ptr<JobCoro> const& coro,
+                Json::Value const& jv);
 
     void
     processSession (std::shared_ptr<Session> const&,

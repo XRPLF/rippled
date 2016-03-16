@@ -36,7 +36,10 @@ public:
     bool
     complete() = 0;
 
-    /** Removes bytes from the input sequence. */
+    /** Removes bytes from the input sequence.
+
+        Can be called with 0.
+    */
     virtual
     void
     consume (std::size_t bytes) = 0;
