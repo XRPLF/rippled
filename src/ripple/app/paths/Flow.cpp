@@ -63,6 +63,7 @@ flow (
     bool defaultPaths,
     bool partialPayment,
     bool ownerPaysTransferFee,
+    bool offerCrossing,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMax,
     beast::Journal j,
@@ -84,8 +85,8 @@ flow (
 
     // convert the paths to a collection of strands. Each strand is the collection
     // of account->account steps and book steps that may be used in this payment.
-    auto sr = toStrands (sb, src, dst, dstIssue, sendMaxIssue, paths,
-        defaultPaths, ownerPaysTransferFee, j);
+    auto sr = toStrands (sb, src, dst, dstIssue, limitQuality, sendMaxIssue,
+        paths, defaultPaths, ownerPaysTransferFee, offerCrossing, j);
 
     if (sr.first != tesSUCCESS)
     {
@@ -123,7 +124,7 @@ flow (
     {
         return finishFlow (sb, srcIssue, dstIssue,
             flow<XRPAmount, XRPAmount> (
-                sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
+                sb, strands, asDeliver.xrp, partialPayment, offerCrossing,
                 limitQuality, sendMax, j, flowDebugInfo));
     }
 
@@ -131,7 +132,7 @@ flow (
     {
         return finishFlow (sb, srcIssue, dstIssue,
             flow<XRPAmount, IOUAmount> (
-                sb, strands, asDeliver.iou, defaultPaths, partialPayment,
+                sb, strands, asDeliver.iou, partialPayment, offerCrossing,
                 limitQuality, sendMax, j, flowDebugInfo));
     }
 
@@ -139,14 +140,14 @@ flow (
     {
         return finishFlow (sb, srcIssue, dstIssue,
             flow<IOUAmount, XRPAmount> (
-                sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
+                sb, strands, asDeliver.xrp, partialPayment, offerCrossing,
                 limitQuality, sendMax, j, flowDebugInfo));
     }
 
     assert (!srcIsXRP && !dstIsXRP);
     return finishFlow (sb, srcIssue, dstIssue,
         flow<IOUAmount, IOUAmount> (
-            sb, strands, asDeliver.iou, defaultPaths, partialPayment,
+            sb, strands, asDeliver.iou, partialPayment, offerCrossing,
             limitQuality, sendMax, j, flowDebugInfo));
 
 }

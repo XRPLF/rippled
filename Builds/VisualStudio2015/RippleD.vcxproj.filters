@@ -2682,6 +2682,9 @@
     <ClInclude Include="..\..\src\ripple\ledger\CachedView.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\ledger\CashDiff.h">
+      <Filter>ripple\ledger</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\detail\ApplyStateTable.h">
       <Filter>ripple\ledger\detail</Filter>
     </ClInclude>
@@ -2716,6 +2719,9 @@
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\CachedView.cpp">
+      <Filter>ripple\ledger\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\CashDiff.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\Directory.cpp">
@@ -5449,6 +5455,9 @@
       <Filter>test\jtx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\BookDirs_test.cpp">
+      <Filter>test\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\ledger\CashDiff_test.cpp">
       <Filter>test\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\Directory_test.cpp">

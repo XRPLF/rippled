@@ -467,8 +467,8 @@ struct Flow_test : public beast::unit_test::suite
                     paths.push_back (p2);
                 }
 
-                return flow (sb, deliver, alice, carol, paths, false, false, true,
-                    boost::none, smax, flowJournal);
+                return flow (sb, deliver, alice, carol, paths, false, false,
+                    true, false, boost::none, smax, flowJournal);
             }();
 
             BEAST_EXPECT(flowResult.removableOffers.size () == 1);
@@ -1199,6 +1199,44 @@ struct Flow_test : public beast::unit_test::suite
         env.close();
     }
 
+    void
+    testSelfPayLowQualityOffer (std::initializer_list<uint256> fs)
+    {
+        // The new payment code used to assert if an offer was made for more
+        // XRP than the offering account held.  This unit test reproduces
+        // that failing case.
+        testcase ("Self crossing low quality offer");
+
+        using namespace jtx;
+
+        Env env(*this, features (fs));
+
+        auto const ann = Account("ann");
+        auto const gw = Account("gateway");
+        auto const CTB = gw["CTB"];
+
+        auto const fee = env.current ()->fees ().base;
+        env.fund (reserve(env, 2) + drops (9999640) + (fee), ann);
+        env.fund (reserve(env, 2) + (fee*4), gw);
+        env.close();
+
+        env (rate(gw, 1.002));
+        env (trust(ann, CTB(10)));
+        env.close();
+
+        env (pay(gw, ann, CTB(2.856)));
+        env.close();
+
+        env (offer(ann, drops(365611702030), CTB(5.713)));
+        env.close();
+
+        // This payment caused the assert.
+        env (pay(ann, ann, CTB(0.687)),
+             sendmax (drops(20000000000)), txflags (tfPartialPayment));
+    }
+
+
+
     void run() override
     {
         testLimitQuality();
@@ -1225,10 +1263,12 @@ struct Flow_test : public beast::unit_test::suite
             testUnfundedOffer(true, {fs...});
             testUnfundedOffer(false,  {fs...});
             testReexecuteDirectStep({fix1368, fs...});
+            testSelfPayLowQualityOffer({fs...});
         };
         testWithFeats();
         testWithFeats(featureFlow);
         testWithFeats(featureFlow, fix1373);
+        testWithFeats(featureFlow, fix1373, featureFlowCross);
     }
 };
 

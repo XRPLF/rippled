@@ -243,6 +243,20 @@ public:
 
     friend
     bool
+    operator<= (Quality const& lhs, Quality const& rhs) noexcept
+    {
+        return !(lhs > rhs);
+    }
+
+    friend
+    bool
+    operator>= (Quality const& lhs, Quality const& rhs) noexcept
+    {
+        return !(lhs < rhs);
+    }
+
+    friend
+    bool
     operator== (Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.m_value == rhs.m_value;

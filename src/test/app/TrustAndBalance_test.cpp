@@ -509,6 +509,7 @@ public:
         testWithFeatures({});
         testWithFeatures({featureFlow});
         testWithFeatures({featureFlow, fix1373});
+        testWithFeatures({featureFlow, fix1373, featureFlowCross});
     }
 };
 

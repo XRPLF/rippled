@@ -220,6 +220,7 @@ public:
         withFeatsTests({});
         withFeatsTests({featureFlow});
         withFeatsTests({featureFlow, fix1373});
+        withFeatsTests({featureFlow, fix1373, featureFlowCross});
     }
 };
 

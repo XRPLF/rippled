@@ -638,14 +638,14 @@ struct PayStrand_test : public beast::unit_test::suite
 
     // Test every combination of element type pairs on a path
     void
-    testAllPairs()
+    testAllPairs(std::initializer_list<uint256> fs)
     {
         testcase("All pairs");
         using namespace jtx;
         using RippleCalc = ::ripple::path::RippleCalc;
 
         ExistingElementPool eep;
-        Env env(*this, features(fix1373));
+        Env env(*this, features(fs));
 
         auto const closeTime = fix1298Time() +
             100 * env.closed()->info().closeTimeResolution;
@@ -892,9 +892,11 @@ struct PayStrand_test : public beast::unit_test::suite
                 alice,
                 bob,
                 deliver,
+                boost::none,
                 sendMaxIssue,
                 path,
                 true,
+                false,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(r.first == expTer);
             if (sizeof...(expSteps))
@@ -917,9 +919,11 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     alice,
                     /*deliver*/ xrpIssue(),
+                    /*limitQuality*/ boost::none,
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
+                    false,
                     env.app().logs().journal("Flow"));
                 BEAST_EXPECT(r.first == tesSUCCESS);
             }
@@ -930,9 +934,11 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     alice,
                     /*deliver*/ xrpIssue(),
+                    /*limitQuality*/ boost::none,
                     /*sendMaxIssue*/ xrpIssue(),
                     path,
                     true,
+                    false,
                     env.app().logs().journal("Flow"));
                 BEAST_EXPECT(r.first == tesSUCCESS);
             }
@@ -1043,9 +1049,11 @@ struct PayStrand_test : public beast::unit_test::suite
                         alice,
                         xrpAccount(),
                         XRP,
+                        boost::none,
                         USD.issue(),
                         STPath(),
                         true,
+                        false,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -1057,8 +1065,10 @@ struct PayStrand_test : public beast::unit_test::suite
                         alice,
                         XRP,
                         boost::none,
+                        boost::none,
                         STPath(),
                         true,
+                        false,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -1070,8 +1080,10 @@ struct PayStrand_test : public beast::unit_test::suite
                         bob,
                         USD,
                         boost::none,
+                        boost::none,
                         STPath(),
                         true,
+                        false,
                         flowJournal);
                     BEAST_EXPECT(r.first == terNO_ACCOUNT);
                 }
@@ -1204,8 +1216,10 @@ struct PayStrand_test : public beast::unit_test::suite
                 gw,
                 USD,
                 boost::none,
+                boost::none,
                 STPath(),
                 true,
+                false,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(r.first == tesSUCCESS);
             BEAST_EXPECT(equal(r.second, D{alice, gw, usdC}));
@@ -1242,8 +1256,10 @@ struct PayStrand_test : public beast::unit_test::suite
                 alice,
                 bob,
                 XRP,
+                boost::none,
                 USD.issue(),
                 path,
+                false,
                 false,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(r.first == tesSUCCESS);
@@ -1402,14 +1418,18 @@ struct PayStrand_test : public beast::unit_test::suite
     void
     run() override
     {
-        testAllPairs();
+        testAllPairs({featureFlow, fix1373});
+        testAllPairs({featureFlow, fix1373, featureFlowCross});
         testToStrand({featureFlow});
         testToStrand({featureFlow, fix1373});
+        testToStrand({featureFlow, fix1373, featureFlowCross});
         testRIPD1373({});
         testRIPD1373({featureFlow, fix1373});
+        testRIPD1373({featureFlow, fix1373, featureFlowCross});
         testLoop({});
         testLoop({featureFlow});
         testLoop({featureFlow, fix1373});
+        testLoop({featureFlow, fix1373, featureFlowCross});
     }
 };
 

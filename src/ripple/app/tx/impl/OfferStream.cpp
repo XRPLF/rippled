@@ -153,7 +153,7 @@ TOfferStreamBase<TIn, TOut>::step ()
         {
             JLOG(j_.trace()) <<
                 "Removing expired offer " << entry->key();
-                permRmOffer (entry);
+                permRmOffer (entry->key());
             continue;
         }
 
@@ -166,7 +166,7 @@ TOfferStreamBase<TIn, TOut>::step ()
         {
             JLOG(j_.warn()) <<
                 "Removing bad offer " << entry->key();
-            permRmOffer (entry);
+            permRmOffer (entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
         }
@@ -187,7 +187,7 @@ TOfferStreamBase<TIn, TOut>::step ()
 
             if (original_funds == *ownerFunds_)
             {
-                permRmOffer (entry);
+                permRmOffer (entry->key());
                 JLOG(j_.trace()) <<
                     "Removing unfunded offer " << entry->key();
             }
@@ -207,16 +207,16 @@ TOfferStreamBase<TIn, TOut>::step ()
 }
 
 void
-OfferStream::permRmOffer (std::shared_ptr<SLE> const& sle)
+OfferStream::permRmOffer (uint256 const& offerIndex)
 {
     offerDelete (cancelView_,
-                 cancelView_.peek(keylet::offer(sle->key())), j_);
+                 cancelView_.peek(keylet::offer(offerIndex)), j_);
 }
 
 template<class TIn, class TOut>
-void FlowOfferStream<TIn, TOut>::permRmOffer (std::shared_ptr<SLE> const& sle)
+void FlowOfferStream<TIn, TOut>::permRmOffer (uint256 const& offerIndex)
 {
-    permToRemove_.insert (sle->key());
+    permToRemove_.insert (offerIndex);
 }
 
 template class FlowOfferStream<STAmount, STAmount>;

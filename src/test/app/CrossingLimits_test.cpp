@@ -42,7 +42,7 @@ private:
     }
 
 public:
-    
+
     void
     testStepLimit(std::initializer_list<uint256> fs)
     {
@@ -76,7 +76,7 @@ public:
                 balance("bob", USD(0)), owners("bob", 1),
                 balance("dan", USD(1)), owners("dan", 2)));
     }
-    
+
     void
     testCrossingLimit(std::initializer_list<uint256> fs)
     {
@@ -160,6 +160,7 @@ public:
         testAll({});
         testAll({featureFlow});
         testAll({featureFlow, fix1373});
+        testAll({featureFlow, fix1373, featureFlowCross});
     }
 };
 

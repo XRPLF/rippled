@@ -27,13 +27,25 @@ namespace jtx {
 
 Json::Value
 offer (Account const& account,
-    STAmount const& in, STAmount const& out)
+    STAmount const& in, STAmount const& out,  std::uint32_t flags)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TakerPays] = in.getJson(0);
     jv[jss::TakerGets] = out.getJson(0);
+    if (flags)
+        jv[jss::Flags] = flags;
     jv[jss::TransactionType] = "OfferCreate";
+    return jv;
+}
+
+Json::Value
+offer_cancel (Account const& account, std::uint32_t offerSeq)
+{
+    Json::Value jv;
+    jv[jss::Account] = account.human();
+    jv[jss::OfferSequence] = offerSeq;
+    jv[jss::TransactionType] = "OfferCancel";
     return jv;
 }
 

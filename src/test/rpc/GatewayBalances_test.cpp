@@ -155,6 +155,7 @@ public:
     {
         testGWB({});
         testGWB({featureFlow, fix1373});
+        testGWB({featureFlow, fix1373, featureFlowCross});
     }
 };
 
