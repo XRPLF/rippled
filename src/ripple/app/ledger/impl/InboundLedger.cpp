@@ -1019,7 +1019,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 bool InboundLedger::gotData (std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> data)
 {
-    ScopedLockType sl (mReceivedDataLock);
+    std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
 
     if (isDone ())
         return false;
@@ -1165,13 +1165,14 @@ void InboundLedger::runData ()
     {
         data.clear();
         {
-            ScopedLockType sl (mReceivedDataLock);
+            std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
 
             if (mReceivedData.empty ())
             {
                 mReceiveDispatched = false;
                 break;
             }
+
             data.swap(mReceivedData);
         }
 
