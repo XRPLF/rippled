@@ -157,6 +157,40 @@ void InboundLedger::init (ScopedLockType& collectionLock)
     }
 }
 
+std::vector<uint256>
+InboundLedger::getNeededTransactionHashes (
+    int max, SHAMapSyncFilter* filter) const
+{
+    std::vector<uint256> ret;
+
+    if (mLedger->info().txHash.isNonZero ())
+    {
+        if (mLedger->txMap().getHash().isZero ())
+            ret.push_back (mLedger->info().txHash);
+        else
+            ret = mLedger->txMap().getNeededHashes (max, filter);
+    }
+
+    return ret;
+}
+
+std::vector<uint256>
+InboundLedger::getNeededAccountStateHashes (
+    int max, SHAMapSyncFilter* filter) const
+{
+    std::vector<uint256> ret;
+
+    if (mLedger->info().accountHash.isNonZero ())
+    {
+        if (mLedger->stateMap().getHash().isZero ())
+            ret.push_back (mLedger->info().accountHash);
+        else
+            ret = mLedger->stateMap().getNeededHashes (max, filter);
+    }
+
+    return ret;
+}
+
 /** See how much of the ledger data, if any, is
     in our node store
 */
@@ -218,7 +252,7 @@ bool InboundLedger::tryLocal ()
             if (mLedger->txMap().fetchRoot (
                 SHAMapHash{mLedger->info().txHash}, &filter))
             {
-                auto h (mLedger->getNeededTransactionHashes (1, &filter));
+                auto h = getNeededTransactionHashes (1, &filter);
 
                 if (h.empty ())
                 {
@@ -246,7 +280,7 @@ bool InboundLedger::tryLocal ()
             if (mLedger->stateMap().fetchRoot (
                 SHAMapHash{mLedger->info().accountHash}, &filter))
             {
-                auto h (mLedger->getNeededAccountStateHashes (1, &filter));
+                auto h = getNeededAccountStateHashes (1, &filter);
 
                 if (h.empty ())
                 {
@@ -957,7 +991,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     {
         AccountStateSF filter(app_);
         // VFALCO NOTE What's the number 4?
-        for (auto const& h : mLedger->getNeededAccountStateHashes (4, &filter))
+        for (auto const& h : getNeededAccountStateHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
                 protocol::TMGetObjectByHash::otSTATE_NODE, h));
@@ -968,7 +1002,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     {
         TransactionStateSF filter(app_);
         // VFALCO NOTE What's the number 4?
-        for (auto const& h : mLedger->getNeededTransactionHashes (4, &filter))
+        for (auto const& h : getNeededTransactionHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
                 protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
@@ -1194,7 +1228,7 @@ Json::Value InboundLedger::getJson (int)
         Json::Value hv (Json::arrayValue);
 
         // VFALCO Why 16?
-        auto v = mLedger->getNeededAccountStateHashes (16, nullptr);
+        auto v = getNeededAccountStateHashes (16, nullptr);
         for (auto const& h : v)
         {
             hv.append (to_string (h));
@@ -1206,7 +1240,7 @@ Json::Value InboundLedger::getJson (int)
     {
         Json::Value hv (Json::arrayValue);
         // VFALCO Why 16?
-        auto v = mLedger->getNeededTransactionHashes (16, nullptr);
+        auto v = getNeededTransactionHashes (16, nullptr);
         for (auto const& h : v)
         {
             hv.append (to_string (h));
