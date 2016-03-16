@@ -47,15 +47,18 @@ public:
     void
     run();
 
+    void
+    websocketUpgrade() override;
+
 private:
     void
     do_handshake (yield_context yield);
 
     void
-    do_request();
+    do_request() override;
 
     void
-    do_close();
+    do_close() override;
 
     void
     on_shutdown (error_code ec);
@@ -84,6 +87,11 @@ SSLHTTPPeer::run()
 
     boost::asio::spawn (strand_, std::bind (&SSLHTTPPeer::do_handshake,
         shared_from_this(), std::placeholders::_1));
+}
+
+void
+SSLHTTPPeer::websocketUpgrade()
+{
 }
 
 void

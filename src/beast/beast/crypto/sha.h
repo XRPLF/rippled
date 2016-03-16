@@ -17,14 +17,18 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_CRYPTO_SHA_H_INCLUDED
+#define BEAST_CRYPTO_SHA_H_INCLUDED
+
+#include <beast/crypto/detail/mac_facade.h>
+#include <beast/crypto/detail/sha_context.h>
+
+namespace beast {
+
+// non-secure
+using sha_hasher = detail::mac_facade<
+    detail::sha_context, false>;
+
+}
+
 #endif
-
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/append_buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/streambuf.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
-

@@ -17,14 +17,48 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_WSPROTO_HYBI13_H_INCLUDED
+#define BEAST_WSPROTO_HYBI13_H_INCLUDED
+
+#include <beast/crypto/base64.h>
+#include <beast/crypto/sha.h>
+#include <cstdint>
+#include <string>
+#include <type_traits>
+
+namespace beast {
+namespace wsproto {
+namespace detail {
+
+template<class Gen>
+std::string
+make_sec_ws_key(Gen& g)
+{
+    union U
+    {
+        std::array<std::uint32_t, 4> a4;
+        std::array<std::uint8_t, 16> a16;
+    };
+    U u;
+    for(int i = 0; i < 4; ++i)
+        u.a4[i] = g();
+    return base64_encode(u.a16.data(), u.a16.size());
+}
+
+template<class = void>
+std::string
+make_sec_ws_accept(std::string key)
+{
+    key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    beast::sha_hasher h;
+    h(key.data(), key.size());
+    auto const digest = static_cast<
+        beast::sha_hasher::result_type>(h);
+    return base64_encode(digest.data(), digest.size());
+}
+
+} // detail
+} // wsproto
+} // beast
+
 #endif
-
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/append_buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/streambuf.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
-

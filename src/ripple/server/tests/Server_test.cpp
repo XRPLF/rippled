@@ -31,6 +31,8 @@
 #include <stdexcept>
 #include <thread>
 
+#if 0
+
 namespace ripple {
 namespace test {
 
@@ -134,6 +136,12 @@ public:
                 session.complete();
             else
                 session.close (true);
+        }
+
+        void
+        onWSMessage(std::shared_ptr<WSSession> session,
+            std::vector<boost::asio::const_buffer> const&) override
+        {
         }
 
         void
@@ -339,6 +347,12 @@ public:
             }
 
             void
+            onWSMessage(std::shared_ptr<WSSession> session,
+                std::vector<boost::asio::const_buffer> const& buffers) override
+            {
+            }
+
+            void
             onClose (Session& session,
                 boost::system::error_code const&) override
             {
@@ -379,3 +393,4 @@ BEAST_DEFINE_TESTSUITE(Server,http,ripple);
 } // test
 } // ripple
 
+#endif

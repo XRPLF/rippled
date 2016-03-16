@@ -17,14 +17,23 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_WSPROTO_ROLE_H_INCLUDED
+#define BEAST_WSPROTO_ROLE_H_INCLUDED
+
+namespace beast {
+namespace wsproto {
+
+/// Identifies the role of a WebSockets stream.
+enum class role_type
+{
+    /// Stream is operating as a client.
+    client,
+
+    /// Stream is operating as a server.
+    server
+};
+
+} // wsproto
+} // beast
+
 #endif
-
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/append_buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/streambuf.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
-

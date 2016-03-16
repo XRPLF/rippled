@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
 
 #include <ripple/server/impl/BaseHTTPPeer.h>
+#include <ripple/server/impl/PlainWSPeer.h>
 #include <memory>
 
 namespace ripple {
@@ -44,12 +45,15 @@ public:
     void
     run();
 
+    void
+    websocketUpgrade() override;
+
 private:
     void
-    do_request();
+    do_request() override;
 
     void
-    do_close();
+    do_close() override;
 };
 
 //------------------------------------------------------------------------------
@@ -71,7 +75,7 @@ PlainHTTPPeer::PlainHTTPPeer (Port const& port, Handler& handler,
 }
 
 void
-PlainHTTPPeer::run ()
+PlainHTTPPeer::run()
 {
     handler_.onAccept (session());
     if (! stream_.is_open())
@@ -79,6 +83,15 @@ PlainHTTPPeer::run ()
 
     boost::asio::spawn (strand_, std::bind (&PlainHTTPPeer::do_read,
         shared_from_this(), std::placeholders::_1));
+}
+
+void
+PlainHTTPPeer::websocketUpgrade()
+{
+    ios().emplace<PlainWSPeer>(
+        port_, handler_, remote_address_,
+            message_, std::move(stream_),
+                journal_)->run();
 }
 
 void
