@@ -680,32 +680,6 @@ Ledger::peek (Keylet const& k) const
 
 //------------------------------------------------------------------------------
 
-static void visitHelper (
-    std::function<void (std::shared_ptr<SLE> const&)>& callback,
-        std::shared_ptr<SHAMapItem const> const& item)
-{
-    callback(std::make_shared<SLE>(SerialIter{item->data(), item->size()},
-                                    item->key()));
-}
-
-void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
-{
-    try
-    {
-        if (stateMap_)
-        {
-            stateMap_->visitLeaves(
-                std::bind(&visitHelper, std::ref(callback),
-                          std::placeholders::_1));
-        }
-    }
-    catch (SHAMapMissingNode&)
-    {
-        stateMap_->family().missing_node (info_.hash);
-        Throw();
-    }
-}
-
 bool Ledger::walkLedger (beast::Journal j) const
 {
     std::vector <SHAMapMissingNode> missingNodes1;

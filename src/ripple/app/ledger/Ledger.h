@@ -297,8 +297,6 @@ public:
 
     void updateSkipList ();
 
-    void visitStateItems (std::function<void (SLE::ref)>) const;
-
     bool walkLedger (beast::Journal j) const;
 
     bool assertSane (beast::Journal ledgerJ);
