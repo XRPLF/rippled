@@ -62,10 +62,6 @@ public:
     // Called when another attempt is made to fetch this same ledger
     void update (std::uint32_t seq);
 
-    bool isHeader () const
-    {
-        return mHaveHeader;
-    }
     std::shared_ptr<Ledger> const&
     getLedger() const
     {
@@ -79,8 +75,6 @@ public:
     enum class TriggerReason { trAdded, trReply, trTimeout };
     void trigger (Peer::ptr const&, TriggerReason);
 
-    bool tryLocal ();
-    void addPeers ();
     bool checkLocal ();
     void init (ScopedLockType& collectionLock);
 
@@ -89,16 +83,20 @@ public:
     using neededHash_t =
         std::pair <protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    std::vector<neededHash_t> getNeededHashes ();
-
     /** Return a Json::objectValue. */
     Json::Value getJson (int);
+
     void runData ();
 
 private:
     void filterNodes (
         std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
         TriggerReason reason);
+
+    std::vector<neededHash_t> getNeededHashes ();
+
+    void addPeers ();
+    bool tryLocal ();
 
     void done ();
 
