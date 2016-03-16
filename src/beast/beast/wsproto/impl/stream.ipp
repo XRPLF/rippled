@@ -286,7 +286,7 @@ stream<Stream>::make_response(
     m.headers.append("Connection", "upgrade");
     m.headers.append("Upgrade", "websocket");
     auto const key =
-        m.headers["Sec-WebSocket-Key"];
+        r.headers["Sec-WebSocket-Key"];
     m.headers.append("Sec-WebSocket-Key", key);
     m.headers.append("Sec-WebSocket-Accept",
         detail::make_sec_ws_accept(key));
