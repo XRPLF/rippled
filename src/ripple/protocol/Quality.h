@@ -20,7 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
+#include <ripple/protocol/AmountConversions.h>
+#include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/XRPAmount.h>
+
 #include <cstdint>
 #include <ostream>
 
@@ -35,11 +39,18 @@ namespace ripple {
     For offers, "in" is always TakerPays and "out" is
     always TakerGets.
 */
-struct Amounts
+template<class In, class Out>
+struct TAmounts
 {
-    Amounts() = default;
+    TAmounts() = default;
 
-    Amounts (STAmount const& in_, STAmount const& out_)
+    TAmounts (beast::Zero, beast::Zero)
+        : in (beast::zero)
+        , out (beast::zero)
+    {
+    }
+
+    TAmounts (In const& in_, Out const& out_)
         : in (in_)
         , out (out_)
     {
@@ -52,20 +63,46 @@ struct Amounts
         return in <= zero || out <= zero;
     }
 
-    STAmount in;
-    STAmount out;
+    TAmounts& operator+=(TAmounts const& rhs)
+    {
+        in += rhs.in;
+        out += rhs.out;
+        return *this;
+    }
+
+    TAmounts& operator-=(TAmounts const& rhs)
+    {
+        in -= rhs.in;
+        out -= rhs.out;
+        return *this;
+    }
+
+    In in;
+    Out out;
 };
 
-inline
+template<class In, class Out>
+TAmounts<In, Out> make_Amounts(In const& in, Out const& out)
+{
+    return TAmounts<In, Out>(in, out);
+}
+
+using Amounts = TAmounts<STAmount, STAmount>;
+
+template<class In, class Out>
 bool
-operator== (Amounts const& lhs, Amounts const& rhs) noexcept
+operator== (
+    TAmounts<In, Out> const& lhs,
+    TAmounts<In, Out> const& rhs) noexcept
 {
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-inline
+template<class In, class Out>
 bool
-operator!= (Amounts const& lhs, Amounts const& rhs) noexcept
+operator!= (
+    TAmounts<In, Out> const& lhs,
+    TAmounts<In, Out> const& rhs) noexcept
 {
     return ! (lhs == rhs);
 }
@@ -101,6 +138,13 @@ public:
     explicit
     Quality (Amounts const& amount);
 
+    /** Create a quality from the ratio of two amounts. */
+    template<class In, class Out>
+    Quality (Out const& out, In const& in)
+        : Quality (Amounts (toSTAmount (in),
+                            toSTAmount (out)))
+    {}
+
     /** Advances to the next higher quality level. */
     /** @{ */
     Quality&
@@ -133,12 +177,42 @@ public:
     Amounts
     ceil_in (Amounts const& amount, STAmount const& limit) const;
 
+    template<class In, class Out>
+    TAmounts<In, Out>
+    ceil_in (TAmounts<In, Out> const& amount, In const& limit) const
+    {
+        if (amount.in <= limit)
+            return amount;
+
+        // Use the existing STAmount implementation for now, but consider
+        // replacing with code specific to IOUAMount and XRPAmount
+        Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
+        STAmount stLim (toSTAmount (limit));
+        auto const stRes = ceil_in (stAmt, stLim);
+        return TAmounts<In, Out> (toAmount<In> (stRes.in), toAmount<Out> (stRes.out));
+    }
+
     /** Returns the scaled amount with out capped.
         Math is avoided if the result is exact. The input is clamped
         to prevent money creation.
     */
     Amounts
     ceil_out (Amounts const& amount, STAmount const& limit) const;
+
+    template<class In, class Out>
+    TAmounts<In, Out>
+    ceil_out (TAmounts<In, Out> const& amount, Out const& limit) const
+    {
+        if (amount.out <= limit)
+            return amount;
+
+        // Use the existing STAmount implementation for now, but consider
+        // replacing with code specific to IOUAMount and XRPAmount
+        Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
+        STAmount stLim (toSTAmount (limit));
+        auto const stRes = ceil_out (stAmt, stLim);
+        return TAmounts<In, Out> (toAmount<In> (stRes.in), toAmount<Out> (stRes.out));
+    }
 
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
@@ -149,6 +223,13 @@ public:
     operator< (Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.m_value > rhs.m_value;
+    }
+
+    friend
+    bool
+    operator> (Quality const& lhs, Quality const& rhs) noexcept
+    {
+        return lhs.m_value < rhs.m_value;
     }
 
     friend

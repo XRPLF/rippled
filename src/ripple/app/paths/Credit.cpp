@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Indexes.h>
 
@@ -48,6 +49,16 @@ creditLimit (
     return result;
 }
 
+IOUAmount
+creditLimit2 (
+    ReadView const& v,
+    AccountID const& acc,
+    AccountID const& iss,
+    Currency const& cur)
+{
+    return toAmount<IOUAmount> (creditLimit (v, acc, iss, cur));
+}
+
 STAmount creditBalance (
     ReadView const& view,
     AccountID const& account,
@@ -71,5 +82,16 @@ STAmount creditBalance (
     assert (result.getCurrency () == currency);
     return result;
 }
+
+IOUAmount
+creditBalance2 (
+    ReadView const& v,
+    AccountID const& acc,
+    AccountID const& iss,
+    Currency const& cur)
+{
+    return toAmount<IOUAmount> (creditBalance (v, acc, iss, cur));
+}
+
 
 } // ripple

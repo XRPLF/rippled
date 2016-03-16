@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
+#define RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
+
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/test/jtx.h>
@@ -134,3 +137,5 @@ private:
 
 } // test
 } // ripple
+
+#endif

@@ -31,6 +31,14 @@
 
 namespace ripple {
 
+bool flowV2Switchover (NetClock::time_point const closeTime)
+{
+    using namespace std::chrono_literals;
+    // Mon March 28, 2016 10:00:00am PST
+    static NetClock::time_point const soTime{512503200s};
+    return closeTime > soTime;
+}
+
 // VFALCO NOTE A copy of the other one for now
 /** Maximum number of entries in a directory page
     A change would be protocol-breaking.
@@ -1344,7 +1352,7 @@ rippleTransferFee (ReadView const& view,
 
 // Send regardless of limits.
 // --> saAmount: Amount/currency/issuer to deliver to reciever.
-// <-- saActual: Amount actually cost.  Sender pay's fees.
+// <-- saActual: Amount actually cost.  Sender pays fees.
 static
 TER
 rippleSend (ApplyView& view,
@@ -1352,7 +1360,6 @@ rippleSend (ApplyView& view,
     STAmount const& saAmount, STAmount& saActual, beast::Journal j)
 {
     auto const issuer   = saAmount.getIssuer ();
-    TER             terResult;
 
     assert (!isXRP (uSenderID) && !isXRP (uReceiverID));
     assert (uSenderID != uReceiverID);
@@ -1361,32 +1368,42 @@ rippleSend (ApplyView& view,
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         rippleCredit (view, uSenderID, uReceiverID, saAmount, false, j);
-        saActual    = saAmount;
-        terResult   = tesSUCCESS;
+        saActual = saAmount;
+        return tesSUCCESS;
+    }
+
+    // Sending 3rd party IOUs: transit.
+
+    // Calculate the amount to transfer accounting
+    // for any transfer fees:
+    if (!flowV2Switchover (view.info ().parentCloseTime))
+    {
+        STAmount const saTransitFee = rippleTransferFee (
+            view, uSenderID, uReceiverID, issuer, saAmount, j);
+
+        saActual = !saTransitFee ? saAmount : saAmount + saTransitFee;
+        saActual.setIssuer (issuer);  // XXX Make sure this done in + above.
     }
     else
     {
-        // Sending 3rd party IOUs: transit.
-
-        STAmount saTransitFee = rippleTransferFee (view,
-            uSenderID, uReceiverID, issuer, saAmount, j);
-
-        saActual = !saTransitFee ? saAmount : saAmount + saTransitFee;
-
-        saActual.setIssuer (issuer); // XXX Make sure this done in + above.
-
-        JLOG (j.debug) << "rippleSend> " <<
-            to_string (uSenderID) <<
-            " - > " << to_string (uReceiverID) <<
-            " : deliver=" << saAmount.getFullText () <<
-            " fee=" << saTransitFee.getFullText () <<
-            " cost=" << saActual.getFullText ();
-
-        terResult   = rippleCredit (view, issuer, uReceiverID, saAmount, true, j);
-
-        if (tesSUCCESS == terResult)
-            terResult   = rippleCredit (view, uSenderID, issuer, saActual, true, j);
+        auto const rate = rippleTransferRate (view, issuer);
+        if (QUALITY_ONE == rate)
+            saActual = saAmount;
+        else
+            saActual =
+                multiply (saAmount, amountFromRate (rate), saAmount.issue ());
     }
+
+    JLOG (j.debug) << "rippleSend> " <<
+        to_string (uSenderID) <<
+        " - > " << to_string (uReceiverID) <<
+        " : deliver=" << saAmount.getFullText () <<
+        " cost=" << saActual.getFullText ();
+
+    TER terResult   = rippleCredit (view, issuer, uReceiverID, saAmount, true, j);
+
+    if (tesSUCCESS == terResult)
+        terResult = rippleCredit (view, uSenderID, issuer, saActual, true, j);
 
     return terResult;
 }

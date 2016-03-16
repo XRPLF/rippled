@@ -344,9 +344,8 @@ CreateOffer::bridged_cross (
     // Note the subtle distinction here: self-offers encountered in the
     // bridge are taken, but self-offers encountered in the direct book
     // are not.
-    auto& logs = ctx_.app.logs();
-    bool have_bridge = offers_leg1.step (logs) && offers_leg2.step (logs);
-    bool have_direct = step_account (offers_direct, taker, logs);
+    bool have_bridge = offers_leg1.step () && offers_leg2.step ();
+    bool have_direct = step_account (offers_direct, taker);
     int count = 0;
 
     auto viewJ = ctx_.app.journal ("View");
@@ -396,7 +395,7 @@ CreateOffer::bridged_cross (
             if (dry_offer (view, offers_direct.tip ()))
             {
                 direct_consumed = true;
-                have_direct = step_account (offers_direct, taker, ctx_.app.logs());
+                have_direct = step_account (offers_direct, taker);
             }
         }
         else
@@ -433,12 +432,12 @@ CreateOffer::bridged_cross (
             if (dry_offer (view, offers_leg1.tip ()))
             {
                 leg1_consumed = true;
-                have_bridge = (have_bridge && offers_leg1.step (logs));
+                have_bridge = (have_bridge && offers_leg1.step ());
             }
             if (dry_offer (view, offers_leg2.tip ()))
             {
                 leg2_consumed = true;
-                have_bridge = (have_bridge && offers_leg2.step (logs));
+                have_bridge = (have_bridge && offers_leg2.step ());
             }
         }
 
@@ -486,14 +485,14 @@ CreateOffer::direct_cross (
     TER cross_result (tesSUCCESS);
     int count = 0;
 
-    bool have_offer = step_account (offers, taker, ctx_.app.logs());
+    bool have_offer = step_account (offers, taker);
 
     // Modifying the order or logic of the operations in the loop will cause
     // a protocol breaking change.
     while (have_offer)
     {
         bool direct_consumed = false;
-        auto const& offer (offers.tip());
+        auto& offer (offers.tip());
 
         // We are done with crossing as soon as we cross the quality boundary
         if (taker.reject (offer.quality()))
@@ -520,7 +519,7 @@ CreateOffer::direct_cross (
         if (dry_offer (view, offer))
         {
             direct_consumed = true;
-            have_offer = step_account (offers, taker, ctx_.app.logs());
+            have_offer = step_account (offers, taker);
         }
 
         if (cross_result != tesSUCCESS)
@@ -556,9 +555,9 @@ CreateOffer::direct_cross (
 // that are from the taker or which cross the taker's threshold.
 // Return false if the is no offer in the book, true otherwise.
 bool
-CreateOffer::step_account (OfferStream& stream, Taker const& taker, Logs& logs)
+CreateOffer::step_account (OfferStream& stream, Taker const& taker)
 {
-    while (stream.step (logs))
+    while (stream.step ())
     {
         auto const& offer = stream.tip ();
 

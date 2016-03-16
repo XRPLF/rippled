@@ -20,9 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <beast/utility/Zero.h>
 #include <boost/operators.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <cstdint>
 #include <string>
 #include <type_traits>
@@ -132,6 +134,37 @@ std::string
 to_string (XRPAmount const& amount)
 {
     return std::to_string (amount.drops ());
+}
+
+inline
+XRPAmount
+mulRatio (
+    XRPAmount const& amt,
+    std::uint32_t num,
+    std::uint32_t den,
+    bool roundUp)
+{
+    using namespace boost::multiprecision;
+
+    if (!den)
+        Throw<std::runtime_error> ("division by zero");
+
+    int128_t const den128 (den);
+    int128_t const num128 (num);
+    int128_t const amt128 (amt.drops ());
+    auto const neg = amt.drops () < 0;
+    auto const m = amt128 * num;
+    auto r = m / den;
+    if (m % den)
+    {
+        if (!neg && roundUp)
+            r += 1;
+        if (neg && !roundUp)
+            r -= 1;
+    }
+    if (r > std::numeric_limits<std::int64_t>::max ())
+        Throw<std::overflow_error> ("XRP mulRatio overflow");
+    return XRPAmount (r.convert_to<std::int64_t> ());
 }
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */

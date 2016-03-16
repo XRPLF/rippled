@@ -109,6 +109,86 @@ public:
         }
     }
 
+    void testMulRatio()
+    {
+        testcase ("mulRatio");
+
+        constexpr auto maxUInt32 = std::numeric_limits<std::uint32_t>::max ();
+        constexpr auto maxUInt64 = std::numeric_limits<std::uint64_t>::max ();
+
+        {
+            // multiply by a number that would overflow then divide by the same
+            // number, and check we didn't lose any value
+            XRPAmount big (maxUInt64);
+            expect (big == mulRatio (big, maxUInt32, maxUInt32, true));
+            // rounding mode shouldn't matter as the result is exact
+            expect (big == mulRatio (big, maxUInt32, maxUInt32, false));
+        }
+
+        {
+            // Similar test as above, but for neative values
+            XRPAmount big (maxUInt64);
+            expect (big == mulRatio (big, maxUInt32, maxUInt32, true));
+            // rounding mode shouldn't matter as the result is exact
+            expect (big == mulRatio (big, maxUInt32, maxUInt32, false));
+        }
+
+        {
+            // small amounts
+            XRPAmount tiny (1);
+            // Round up should give the smallest allowable number
+            expect (tiny == mulRatio (tiny, 1, maxUInt32, true));
+            // rounding down should be zero
+            expect (beast::zero == mulRatio (tiny, 1, maxUInt32, false));
+            expect (beast::zero ==
+                mulRatio (tiny, maxUInt32 - 1, maxUInt32, false));
+
+            // tiny negative numbers
+            XRPAmount tinyNeg (-1);
+            // Round up should give zero
+            expect (zero == mulRatio (tinyNeg, 1, maxUInt32, true));
+            expect (zero == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, true));
+            // rounding down should be tiny
+            expect (tinyNeg == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, false));
+        }
+
+        {
+            // rounding
+            {
+                XRPAmount one (1);
+                auto const rup = mulRatio (one, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown = mulRatio (one, maxUInt32 - 1, maxUInt32, false);
+                expect (rup.drops () - rdown.drops () == 1);
+            }
+
+            {
+                XRPAmount big (maxUInt64);
+                auto const rup = mulRatio (big, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown = mulRatio (big, maxUInt32 - 1, maxUInt32, false);
+                expect (rup.drops () - rdown.drops () == 1);
+            }
+
+            {
+                XRPAmount negOne (-1);
+                auto const rup = mulRatio (negOne, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown = mulRatio (negOne, maxUInt32 - 1, maxUInt32, false);
+                expect (rup.drops () - rdown.drops () == 1);
+            }
+        }
+
+        {
+            // division by zero
+            XRPAmount one (1);
+            except ([&] {mulRatio (one, 1, 0, true);});
+        }
+
+        {
+            // overflow
+            XRPAmount big (maxUInt64);
+            except ([&] {mulRatio (big, 2, 0, true);});
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     void run ()
@@ -117,6 +197,7 @@ public:
         testBeastZero ();
         testComparisons ();
         testAddSub ();
+        testMulRatio ();
     }
 };
 

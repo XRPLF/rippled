@@ -135,6 +135,23 @@ public:
         return !isOffer ();
     }
 
+    bool
+    hasIssuer () const
+    {
+        return getNodeType () & STPathElement::typeIssuer;
+    };
+    bool
+    hasCurrency () const
+    {
+        return getNodeType () & STPathElement::typeCurrency;
+    };
+
+    bool
+    isNone () const
+    {
+        return getNodeType () == STPathElement::typeNone;
+    };
+
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
     AccountID const&
@@ -163,6 +180,12 @@ public:
             mAccountID == t.mAccountID &&
             mCurrencyID == t.mCurrencyID &&
             mIssuerID == t.mIssuerID;
+    }
+
+    bool
+    operator!= (const STPathElement& t) const
+    {
+        return !operator==(t);
     }
 
 private:

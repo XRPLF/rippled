@@ -32,14 +32,13 @@ BookTip::BookTip (ApplyView& view, Book const& book)
 }
 
 bool
-BookTip::step (Logs& l)
+BookTip::step (beast::Journal j)
 {
-    auto viewJ = l.journal ("View");
     if (m_valid)
     {
         if (m_entry)
         {
-            offerDelete (view_, m_entry, viewJ);
+            offerDelete (view_, m_entry, j);
             m_entry = nullptr;
         }
     }
@@ -58,7 +57,7 @@ BookTip::step (Logs& l)
         unsigned int di = 0;
         std::shared_ptr<SLE> dir;
 
-        if (dirFirst (view_, *first_page, dir, di, m_index, viewJ))
+        if (dirFirst (view_, *first_page, dir, di, m_index, j))
         {
             m_dir = dir->key();
             m_entry = view_.peek(keylet::offer(m_index));

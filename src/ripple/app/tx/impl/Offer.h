@@ -30,27 +30,35 @@
 
 namespace ripple {
 
-class Offer
+template <class TIn, class TOut>
+class TOfferBase
+{
+protected:
+    Issue issIn_;
+    Issue issOut_;
+};
+
+template<>
+class TOfferBase<STAmount, STAmount>
+{
+};
+
+
+template<class TIn=STAmount, class TOut=STAmount>
+class TOffer
+    : private TOfferBase<TIn, TOut>
 {
 private:
     SLE::pointer m_entry;
     Quality m_quality;
     AccountID m_account;
 
-    mutable Amounts m_amounts;
-
+    TAmounts<TIn, TOut> m_amounts;
+    void setFieldAmounts ();
 public:
-    Offer() = default;
+    TOffer() = default;
 
-    Offer (SLE::pointer const& entry, Quality quality)
-        : m_entry (entry)
-        , m_quality (quality)
-        , m_account (m_entry->getAccountID (sfAccount))
-        , m_amounts (
-            m_entry->getFieldAmount (sfTakerPays),
-            m_entry->getFieldAmount (sfTakerGets))
-    {
-    }
+    TOffer (SLE::pointer const& entry, Quality quality);
 
     /** Returns the quality of the offer.
         Conceptually, the quality is the ratio of output to input currency.
@@ -77,7 +85,7 @@ public:
     /** Returns the in and out amounts.
         Some or all of the out amount may be unfunded.
     */
-    Amounts const&
+    TAmounts<TIn, TOut> const&
     amount () const
     {
         return m_amounts;
@@ -97,7 +105,7 @@ public:
     /** Adjusts the offer to indicate that we consumed some (or all) of it. */
     void
     consume (ApplyView& view,
-        Amounts const& consumed) const
+        TAmounts<TIn, TOut> const& consumed)
     {
         if (consumed.in > m_amounts.in)
             Throw<std::logic_error> ("can't consume more than is available.");
@@ -105,12 +113,8 @@ public:
         if (consumed.out > m_amounts.out)
             Throw<std::logic_error> ("can't produce more than is available.");
 
-        m_amounts.in -= consumed.in;
-        m_amounts.out -= consumed.out;
-
-        m_entry->setFieldAmount (sfTakerPays, m_amounts.in);
-        m_entry->setFieldAmount (sfTakerGets, m_amounts.out);
-
+        m_amounts -= consumed;
+        setFieldAmounts ();
         view.update (m_entry);
     }
 
@@ -118,11 +122,112 @@ public:
     {
         return to_string (m_entry->getIndex());
     }
+
+    Issue issueIn () const;
+    Issue issueOut () const;
 };
 
+using Offer = TOffer <>;
+
+template<class TIn, class TOut>
+TOffer<TIn, TOut>::TOffer (SLE::pointer const& entry, Quality quality)
+        : m_entry (entry)
+        , m_quality (quality)
+        , m_account (m_entry->getAccountID (sfAccount))
+{
+    auto const tp = m_entry->getFieldAmount (sfTakerPays);
+    auto const tg = m_entry->getFieldAmount (sfTakerGets);
+    m_amounts.in = toAmount<TIn> (tp);
+    m_amounts.out = toAmount<TOut> (tg);
+    this->issIn_ = tp.issue ();
+    this->issOut_ = tg.issue ();
+}
+
+template<>
+inline
+TOffer<STAmount, STAmount>::TOffer (SLE::pointer const& entry, Quality quality)
+        : m_entry (entry)
+        , m_quality (quality)
+        , m_account (m_entry->getAccountID (sfAccount))
+        , m_amounts (
+            m_entry->getFieldAmount (sfTakerPays),
+            m_entry->getFieldAmount (sfTakerGets))
+{
+}
+
+
+template<class TIn, class TOut>
+void TOffer<TIn, TOut>::setFieldAmounts ()
+{
+#ifdef _MSC_VER
+	assert(0);
+#else
+    static_assert(sizeof(TOut) == -1, "Must be specialized");
+#endif
+}
+
+template<>
+inline
+void TOffer<STAmount, STAmount>::setFieldAmounts ()
+{
+    m_entry->setFieldAmount (sfTakerPays, m_amounts.in);
+    m_entry->setFieldAmount (sfTakerGets, m_amounts.out);
+}
+
+template<>
+inline
+void TOffer<IOUAmount, IOUAmount>::setFieldAmounts ()
+{
+    m_entry->setFieldAmount (sfTakerPays, toSTAmount(m_amounts.in, issIn_));
+    m_entry->setFieldAmount (sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+}
+
+template<>
+inline
+void TOffer<IOUAmount, XRPAmount>::setFieldAmounts ()
+{
+    m_entry->setFieldAmount (sfTakerPays, toSTAmount(m_amounts.in, issIn_));
+    m_entry->setFieldAmount (sfTakerGets, toSTAmount(m_amounts.out));
+}
+
+template<>
+inline
+void TOffer<XRPAmount, IOUAmount>::setFieldAmounts ()
+{
+    m_entry->setFieldAmount (sfTakerPays, toSTAmount(m_amounts.in));
+    m_entry->setFieldAmount (sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+}
+
+template<class TIn, class TOut>
+Issue TOffer<TIn, TOut>::issueIn () const
+{
+    return this->issIn_;
+}
+
+template<>
+inline
+Issue TOffer<STAmount, STAmount>::issueIn () const
+{
+    return m_amounts.in.issue ();
+}
+
+template<class TIn, class TOut>
+Issue TOffer<TIn, TOut>::issueOut () const
+{
+    return this->issOut_;
+}
+
+template<>
+inline
+Issue TOffer<STAmount, STAmount>::issueOut () const
+{
+    return m_amounts.out.issue ();
+}
+
+template<class TIn, class TOut>
 inline
 std::ostream&
-operator<< (std::ostream& os, Offer const& offer)
+operator<< (std::ostream& os, TOffer<TIn, TOut> const& offer)
 {
     return os << offer.id ();
 }

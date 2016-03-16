@@ -254,7 +254,7 @@ public:
     ~Taker () = default;
 
     void
-    consume_offer (Offer const& offer, Amounts const& order);
+    consume_offer (Offer& offer, Amounts const& order);
 
     STAmount
     get_funds (AccountID const& account, STAmount const& funds) const;
@@ -283,10 +283,10 @@ public:
     */
     /** @{ */
     TER
-    cross (Offer const& offer);
+    cross (Offer& offer);
 
     TER
-    cross (Offer const& leg1, Offer const& leg2);
+    cross (Offer& leg1, Offer& leg2);
     /** @} */
 
 private:
@@ -297,12 +297,12 @@ private:
             AccountID const& account);
 
     TER
-    fill (BasicTaker::Flow const& flow, Offer const& offer);
+    fill (BasicTaker::Flow const& flow, Offer& offer);
 
     TER
     fill (
-        BasicTaker::Flow const& flow1, Offer const& leg1,
-        BasicTaker::Flow const& flow2, Offer const& leg2);
+        BasicTaker::Flow const& flow1, Offer& leg1,
+        BasicTaker::Flow const& flow2, Offer& leg2);
 
     TER
     transferXRP (AccountID const& from, AccountID const& to, STAmount const& amount);

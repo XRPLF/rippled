@@ -571,6 +571,8 @@ Transactor::operator()()
 
     auto const txID = ctx_.tx.getTransactionID ();
 
+    JLOG(j_.debug) << "Transactor for id: " << txID;
+
 #ifdef BEAST_DEBUG
     {
         Serializer ser;
