@@ -83,6 +83,14 @@ features (std::initializer_list<uint256> keys)
     return keys;
 }
 
+/** Activate features in the Env ctor */
+inline
+auto
+features (std::vector<uint256> keys)
+{
+    return keys;
+}
+
 //------------------------------------------------------------------------------
 
 /** A transaction testing environment. */
@@ -138,6 +146,14 @@ private:
     void
     construct_arg (
         std::initializer_list<uint256> list)
+    {
+        for(auto const& key : list)
+            app().config().features.insert(key);
+    }
+
+    void
+    construct_arg (
+        std::vector<uint256> const& list)
     {
         for(auto const& key : list)
             app().config().features.insert(key);

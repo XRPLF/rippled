@@ -39,15 +39,17 @@
 
 namespace ripple {
 
+/** Result of flow() execution of a single Strand. */
 template<class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    TER ter = temUNKNOWN;
-    TInAmt in = beast::zero;
-    TOutAmt out = beast::zero;
-    boost::optional<PaymentSandbox> sandbox;
-    boost::container::flat_set<uint256> ofrsToRm; // offers to remove
+    TER ter = temUNKNOWN;                         ///< Result code
+    TInAmt in = beast::zero;                      ///< Currency amount in
+    TOutAmt out = beast::zero;                    ///< Currency amount out
+    boost::optional<PaymentSandbox> sandbox;      ///< Resulting Sandbox state
+    boost::container::flat_set<uint256> ofrsToRm; ///< Offers to remove
 
+    /** Strand result constructor */
     StrandResult () = default;
 
     StrandResult (TInAmt const& in_,
@@ -68,7 +70,7 @@ struct StrandResult
     }
 };
 
-/*
+/**
    Request `out` amount from a strand
 
    @param baseView Trust lines and balances
@@ -231,6 +233,7 @@ flow (
     }
 }
 
+/// @cond INTERNAL
 template<class TInAmt, class TOutAmt>
 struct FlowResult
 {
@@ -271,7 +274,9 @@ struct FlowResult
     {
     }
 };
+/// @endcond
 
+/// @cond INTERNAL
 /* Track the non-dry strands
 
    flow will search the non-dry strands (stored in `cur_`) for the best
@@ -337,8 +342,26 @@ public:
         return cur_.size ();
     }
 };
+/// @endcond
 
-/*
+/// @cond INTERNAL
+boost::optional<Quality>
+qualityUpperBound(ReadView const& v, Strand const& strand)
+{
+    Quality q{STAmount::uRateOne};
+    bool redeems = false;
+    for(auto const& step : strand)
+    {
+        if (auto const stepQ = step->qualityUpperBound(v, redeems))
+            q = composed_quality(q, *stepQ);
+        else
+            return boost::none;
+    }
+    return q;
+};
+/// @endcond
+
+/**
    Request `out` amount from a collection of strands
 
    Attempt to fullfill the payment by using liquidity from the strands in order
@@ -348,8 +371,12 @@ public:
    @param strands Each strand contains the steps of accounts to ripple through
                   and offer books to use
    @param outReq Amount of output requested from the strand
-   @param flowParams Constraints and options on the payment
-   @param logs Logs to write journal messages to
+   @param partialPayment If true allow less than the full payment
+   @param offerCrossing If true offer crossing, not handling a standard payment
+   @param limitQuality If present, the minimum quality for any strand taken
+   @param sendMaxST If present, the maximum STAmount to send
+   @param j Journal to write journal messages to
+   @param flowDebugInfo If pointer is non-null, write flow debug info here
    @return Actual amount in and out from the strands, errors, and payment sandbox
 */
 template <class TInAmt, class TOutAmt>
@@ -357,15 +384,13 @@ FlowResult<TInAmt, TOutAmt>
 flow (PaymentSandbox const& baseView,
     std::vector<Strand> const& strands,
     TOutAmt const& outReq,
-    bool defaultPaths,
     bool partialPayment,
+    bool offerCrossing,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMaxST,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo=nullptr)
 {
-    using Result = FlowResult<TInAmt, TOutAmt>;
-
     // Used to track the strand that offers the best quality (output/input ratio)
     struct BestStrand
     {
@@ -392,16 +417,19 @@ flow (PaymentSandbox const& baseView,
     std::size_t const maxTries = 1000;
     std::size_t curTry = 0;
 
-    auto const sendMax = [&sendMaxST]()->boost::optional<TInAmt>
-    {
-        if (sendMaxST && *sendMaxST >= beast::zero)
-        {
-            return toAmount<TInAmt> (*sendMaxST);
-        }
-        return boost::none;
-    }();
+    // There is a bug in gcc that incorrectly warns about using uninitialized
+    // values if `remainingIn` is initialized through a copy constructor. We can
+    // get similar warnings for `sendMax` if it is initialized in the most
+    // natural way. Using `make_optional`, allows us to work around this bug.
+    TInAmt const sendMaxInit =
+        sendMaxST ? toAmount<TInAmt>(*sendMaxST) : TInAmt{beast::zero};
+    boost::optional<TInAmt> const sendMax =
+        boost::make_optional(sendMaxST && sendMaxInit >= beast::zero, sendMaxInit);
+    boost::optional<TInAmt> remainingIn =
+        boost::make_optional(!!sendMax, sendMaxInit);
+    // boost::optional<TInAmt> remainingIn{sendMax};
+
     TOutAmt remainingOut (outReq);
-    boost::optional<TInAmt> remainingIn (sendMax);
 
     PaymentSandbox sb (&baseView);
 
@@ -444,6 +472,12 @@ flow (PaymentSandbox const& baseView,
         if (flowDebugInfo) flowDebugInfo->newLiquidityPass();
         for (auto strand : activeStrands)
         {
+            if (offerCrossing && limitQuality)
+            {
+                auto const strandQ = qualityUpperBound(sb, *strand);
+                if (!strandQ || *strandQ < *limitQuality)
+                    continue;
+            }
             auto f = flow<TInAmt, TOutAmt> (
                 sb, *strand, remainingIn, remainingOut, j);
 
@@ -543,15 +577,29 @@ flow (PaymentSandbox const& baseView,
         }
         if (!partialPayment)
         {
-            return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
+            // If we're offerCrossing a !partialPayment, then we're
+            // handling tfFillOrKill.  That case is handled below; not here.
+            if (!offerCrossing)
+                return {tecPATH_PARTIAL,
+                    actualIn, actualOut, std::move(ofrsToRmOnFail)};
         }
         else if (actualOut == beast::zero)
         {
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
+    if (offerCrossing && !partialPayment)
+    {
+        // If we're offer crossing and partialPayment is *not* true, then
+        // we're handling a FillOrKill offer.  In this case remainingIn must
+        // be zero (all funds must be consumed) or else we kill the offer.
+        assert (remainingIn);
+        if (remainingIn && *remainingIn != zero)
+            return {tecPATH_PARTIAL,
+                actualIn, actualOut, std::move(ofrsToRmOnFail)};
+    }
 
-    return Result (actualIn, actualOut, std::move (sb), std::move(ofrsToRmOnFail));
+    return {actualIn, actualOut, std::move (sb), std::move(ofrsToRmOnFail)};
 }
 
 } // ripple

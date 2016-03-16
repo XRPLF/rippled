@@ -19,18 +19,14 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
-#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/basics/contract.h>
+#include <ripple/app/paths/Flow.h>
+#include <ripple/ledger/CashDiff.h>
+#include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/basics/Log.h>
-#include <ripple/json/to_string.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/utility/WrappedSink.h>
-#include <memory>
-#include <stdexcept>
 
 namespace ripple {
 
@@ -331,11 +327,11 @@ CreateOffer::bridged_cross (
     ApplyView& view_cancel,
     NetClock::time_point const when)
 {
-    auto const& taker_amount = taker.original_offer ();
+    auto const& takerAmount = taker.original_offer ();
 
-    assert (!isXRP (taker_amount.in) && !isXRP (taker_amount.out));
+    assert (!isXRP (takerAmount.in) && !isXRP (takerAmount.out));
 
-    if (isXRP (taker_amount.in) || isXRP (taker_amount.out))
+    if (isXRP (takerAmount.in) || isXRP (takerAmount.out))
         Throw<std::logic_error> ("Bridging with XRP and an endpoint.");
 
     OfferStream offers_direct (view, view_cancel,
@@ -517,6 +513,7 @@ CreateOffer::direct_cross (
             stream << "  offer: " << offer;
             stream << "     in: " << offer.amount ().in;
             stream << "    out: " << offer.amount ().out;
+            stream << "quality: " << offer.quality();
             stream << "  owner: " << offer.owner ();
             stream << "  funds: " << accountFunds(view,
                 offer.owner (), offer.amount ().out, fhIGNORE_FREEZE,
@@ -589,16 +586,16 @@ CreateOffer::step_account (OfferStream& stream, Taker const& taker)
 // already on the books. Return the status and the amount of
 // the offer to left unfilled.
 std::pair<TER, Amounts>
-CreateOffer::cross (
-    ApplyView& view,
-    ApplyView& cancel_view,
-    Amounts const& taker_amount)
+CreateOffer::takerCross (
+    PaymentSandbox& psb,
+    PaymentSandbox& psbCancel,
+    Amounts const& takerAmount)
 {
     NetClock::time_point const when{ctx_.view().parentCloseTime()};
 
     beast::WrappedSink takerSink (j_, "Taker ");
 
-    Taker taker (cross_type_, view, account_, taker_amount,
+    Taker taker (cross_type_, psb, account_, takerAmount,
         ctx_.tx.getFlags(), beast::Journal (takerSink));
 
     // If the taker is unfunded before we begin crossing
@@ -612,15 +609,15 @@ CreateOffer::cross (
     {
         JLOG (j_.debug()) <<
             "Not crossing: taker is unfunded.";
-        return { tecUNFUNDED_OFFER, taker_amount };
+        return { tecUNFUNDED_OFFER, takerAmount };
     }
 
     try
     {
         if (cross_type_ == CrossType::IouToIou)
-            return bridged_cross (taker, view, cancel_view, when);
+            return bridged_cross (taker, psb, psbCancel, when);
 
-        return direct_cross (taker, view, cancel_view, when);
+        return direct_cross (taker, psb, psbCancel, when);
     }
     catch (std::exception const& e)
     {
@@ -628,6 +625,392 @@ CreateOffer::cross (
             "Exception during offer crossing: " << e.what ();
         return { tecINTERNAL, taker.remaining_offer () };
     }
+}
+
+std::pair<TER, Amounts>
+CreateOffer::flowCross (
+    PaymentSandbox& psb,
+    PaymentSandbox& psbCancel,
+    Amounts const& takerAmount)
+{
+    try
+    {
+        // If the taker is unfunded before we begin crossing there's nothing
+        // to do - just return an error.
+        //
+        // We check this in preclaim, but when selling XRP charged fees can
+        // cause a user's available balance to go to 0 (by causing it to dip
+        // below the reserve) so we check this case again.
+        STAmount const inStartBalance = accountFunds (
+            psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+        if (inStartBalance <= zero)
+        {
+            // The account balance can't cover even part of the offer.
+            JLOG (j_.debug()) <<
+                "Not crossing: taker is unfunded.";
+            return { tecUNFUNDED_OFFER, takerAmount };
+        }
+
+        // If the gateway has a transfer rate, accommodate that.  The
+        // gateway takes its cut without any special consent from the
+        // offer taker.  Set sendMax to allow for the gateway's cut.
+        Rate gatewayXferRate {QUALITY_ONE};
+        STAmount sendMax = takerAmount.in;
+        if (! sendMax.native() && (account_ != sendMax.getIssuer()))
+        {
+            gatewayXferRate = transferRate (psb, sendMax.getIssuer());
+            if (gatewayXferRate.value != QUALITY_ONE)
+            {
+                sendMax = multiplyRound (takerAmount.in,
+                    gatewayXferRate, takerAmount.in.issue(), true);
+            }
+        }
+
+        // Payment flow code compares quality after the transfer rate is
+        // included.  Since transfer rate is incorporated compute threshold.
+        Quality threshold { takerAmount.out, sendMax };
+
+        // If we're creating a passive offer adjust the threshold so we only
+        // cross offers that have a better quality than this one.
+        std::uint32_t const txFlags = ctx_.tx.getFlags();
+        if (txFlags & tfPassive)
+            ++threshold;
+
+        // Don't send more than our balance.
+        if (sendMax > inStartBalance)
+            sendMax = inStartBalance;
+
+        // Always invoke flow() with the default path.  However if neither
+        // of the takerAmount currencies are XRP then we cross through an
+        // additional path with XRP as the intermediate between two books.
+        // This second path we have to build ourselves.
+        STPathSet paths;
+        if (!takerAmount.in.native() & !takerAmount.out.native())
+        {
+            STPath path;
+            path.emplace_back (boost::none, xrpCurrency(), boost::none);
+            paths.emplace_back (std::move(path));
+        }
+        // Special handling for the tfSell flag.
+        STAmount deliver = takerAmount.out;
+        if (txFlags & tfSell)
+        {
+            // We are selling, so we will accept *more* than the offer
+            // specified.  Since we don't know how much they might offer,
+            // we allow delivery of the largest possible amount.
+            if (deliver.native())
+                deliver = STAmount { STAmount::cMaxNative };
+            else
+                // We can't use the maximum possible currency here because
+                // there might be a gateway transfer rate to account for.
+                // Since the transfer rate cannot exceed 200%, we use 1/2
+                // maxValue for our limit.
+                deliver = STAmount { takerAmount.out.issue(),
+                    STAmount::cMaxValue / 2, STAmount::cMaxOffset };
+        }
+
+        // Call the payment engine's flow() to do the actual work.
+        auto const result = flow (psb, deliver, account_, account_,
+            paths,
+            true,                       // default path
+            ! (txFlags & tfFillOrKill), // partial payment
+            true,                       // owner pays transfer fee
+            true,                       // offer crossing
+            threshold,
+            sendMax, j_);
+
+        // If stale offers were found remove them.
+        for (auto const& toRemove : result.removableOffers)
+        {
+            if (auto otr = psb.peek (keylet::offer (toRemove)))
+                offerDelete (psb, otr, j_);
+            if (auto otr = psbCancel.peek (keylet::offer (toRemove)))
+                offerDelete (psbCancel, otr, j_);
+        }
+
+        // Determine the size of the final offer after crossing.
+        auto afterCross = takerAmount; // If !tesSUCCESS offer unchanged
+        if (isTesSuccess (result.result()))
+        {
+            STAmount const takerInBalance = accountFunds (
+                psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+
+            if (takerInBalance <= zero)
+            {
+                // If offer crossing exhausted the account's funds don't
+                // create the offer.
+                afterCross.in.clear();
+                afterCross.out.clear();
+            }
+            else
+            {
+                STAmount const rate {
+                    Quality{takerAmount.out, takerAmount.in}.rate() };
+
+                if (txFlags & tfSell)
+                {
+                    // If selling then scale the new out amount based on how
+                    // much we sold during crossing.  This preserves the offer
+                    // Quality,
+
+                    // Reduce the offer that is placed by the crossed amount.
+                    // Note that we must ignore the portion of the
+                    // actualAmountIn that may have been consumed by a
+                    // gateway's transfer rate.
+                    STAmount nonGatewayAmountIn = result.actualAmountIn;
+                    if (gatewayXferRate.value != QUALITY_ONE)
+                        nonGatewayAmountIn = divideRound (result.actualAmountIn,
+                            gatewayXferRate, takerAmount.in.issue(), true);
+
+                    afterCross.in -= nonGatewayAmountIn;
+
+                    // It's possible that the divRound will cause our subtract
+                    // to go slightly negative.  So limit afterCross.in to zero.
+                    if (afterCross.in < zero)
+                        // We should verify that the difference *is* small, but
+                        // what is a good threshold to check?
+                        afterCross.in.clear();
+
+                    afterCross.out = divRound (afterCross.in,
+                        rate, takerAmount.out.issue(), true);
+                }
+                else
+                {
+                    // If not selling, we scale the input based on the
+                    // remaining output.  This too preserves the offer
+                    // Quality.
+                    afterCross.out -= result.actualAmountOut;
+                    assert (afterCross.out >= zero);
+                    if (afterCross.out < zero)
+                        afterCross.out.clear();
+                    afterCross.in = mulRound (afterCross.out,
+                        rate, takerAmount.in.issue(), true);
+                }
+            }
+        }
+
+        // Return how much of the offer is left.
+        return { tesSUCCESS, afterCross };
+    }
+    catch (std::exception const& e)
+    {
+        JLOG (j_.error()) <<
+            "Exception during offer crossing: " << e.what ();
+    }
+    return { tecINTERNAL, takerAmount };
+}
+
+enum class SBoxCmp
+{
+    same,
+    dustDiff,
+    offerDelDiff,
+    diff
+};
+
+static std::string to_string (SBoxCmp c)
+{
+    switch (c)
+    {
+    case SBoxCmp::same:
+        return "same";
+    case SBoxCmp::dustDiff:
+        return "dust diffs";
+    case SBoxCmp::offerDelDiff:
+        return "offer del diffs";
+    case SBoxCmp::diff:
+        return "different";
+    }
+    return {};
+}
+
+static SBoxCmp compareSandboxes (char const* name, ApplyContext const& ctx,
+    PaymentSandbox const& psbTaker, PaymentSandbox const& psbFlow,
+    beast::Journal j)
+{
+    SBoxCmp c = SBoxCmp::same;
+    CashDiff diff = cashFlowDiff (
+        CashFilter::treatZeroOfferAsDeletion, psbTaker,
+        CashFilter::none, psbFlow);
+
+    if (diff.hasDiff())
+    {
+        using namespace beast::severities;
+        c = SBoxCmp::dustDiff;
+        Severity s = kInfo;
+        std::string diffDesc = ", but only dust.";
+        diff.rmDust();
+        if (diff.hasDiff())
+        {
+            // From here on we want to note the transaction ID of differences.
+            std::stringstream txIdSs;
+            txIdSs << ".  tx: " << ctx.tx.getTransactionID();
+            auto txID = txIdSs.str();
+
+            // Sometimes one version deletes offers that the other doesn't
+            // delete.  That's okay, but keep track of it.
+            c = SBoxCmp::offerDelDiff;
+            s = kWarning;
+            int sides = diff.rmLhsDeletedOffers() ? 1 : 0;
+            sides    |= diff.rmRhsDeletedOffers() ? 2 : 0;
+            if (!diff.hasDiff())
+            {
+                char const* t = "";
+                switch (sides)
+                {
+                case 1: t = "; Taker deleted more offers"; break;
+                case 2: t = "; Flow deleted more offers"; break;
+                case 3: t = "; Taker and Flow deleted different offers"; break;
+                default: break;
+                }
+                diffDesc = std::string(t) + txID;
+            }
+            else
+            {
+                // A difference without a broad classification...
+                c = SBoxCmp::diff;
+                std::stringstream ss;
+                ss << "; common entries: " << diff.commonCount()
+                    << "; Taker unique: " << diff.lhsOnlyCount()
+                    << "; Flow unique: " << diff.rhsOnlyCount() << txID;
+                diffDesc = ss.str();
+            }
+        }
+        j.stream (s) << "FlowCross: " << name << " different" << diffDesc;
+    }
+    return c;
+}
+
+std::pair<TER, Amounts>
+CreateOffer::cross (
+    PaymentSandbox& psb,
+    PaymentSandbox& psbCancel,
+    Amounts const& takerAmount)
+{
+    // There are features for Flow offer crossing and for comparing results
+    // between Taker and Flow offer crossing.  Turn those into bools.
+    bool const useFlowCross { psb.rules().enabled (featureFlowCross) };
+    bool const doCompare { psb.rules().enabled (featureCompareTakerFlowCross) };
+
+    PaymentSandbox psbTaker { &psb };
+    PaymentSandbox psbCancelTaker { &psbCancel };
+    auto const takerR = (!useFlowCross || doCompare)
+        ? takerCross (psbTaker, psbCancelTaker, takerAmount)
+        : std::make_pair (tecINTERNAL, takerAmount);
+
+    PaymentSandbox psbFlow { &psb };
+    PaymentSandbox psbCancelFlow { &psbCancel };
+    auto const flowR = (useFlowCross || doCompare)
+        ? flowCross (psbFlow, psbCancelFlow, takerAmount)
+        : std::make_pair (tecINTERNAL, takerAmount);
+
+    if (doCompare)
+    {
+        SBoxCmp c = SBoxCmp::same;
+        if (takerR.first != flowR.first)
+        {
+            c = SBoxCmp::diff;
+            j_.warn() << "FlowCross: Offer cross tec codes different.  tx: "
+                << ctx_.tx.getTransactionID();
+        }
+        else if ((takerR.second.in  == zero && flowR.second.in  == zero) ||
+           (takerR.second.out == zero && flowR.second.out == zero))
+        {
+            c = compareSandboxes ("Both Taker and Flow fully crossed",
+                ctx_, psbTaker, psbFlow, j_);
+        }
+        else if (takerR.second.in == zero && takerR.second.out == zero)
+        {
+            char const * crossType = "Taker fully crossed, Flow partially crossed";
+            if (flowR.second.in == takerAmount.in &&
+                flowR.second.out == takerAmount.out)
+                    crossType = "Taker fully crossed, Flow not crossed";
+
+            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+        }
+        else if (flowR.second.in == zero && flowR.second.out == zero)
+        {
+            char const * crossType =
+                "Taker partially crossed, Flow fully crossed";
+            if (takerR.second.in == takerAmount.in &&
+                takerR.second.out == takerAmount.out)
+                    crossType = "Taker not crossed, Flow fully crossed";
+
+            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+        }
+        else if (ctx_.tx.getFlags() & tfFillOrKill)
+        {
+            c = compareSandboxes (
+                "FillOrKill offer", ctx_, psbCancelTaker, psbCancelFlow, j_);
+        }
+        else if (takerR.second.in  == takerAmount.in &&
+                 flowR.second.in   == takerAmount.in &&
+                 takerR.second.out == takerAmount.out &&
+                 flowR.second.out  == takerAmount.out)
+        {
+            char const * crossType = "Neither Taker nor Flow crossed";
+            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+        }
+        else if (takerR.second.in == takerAmount.in &&
+                 takerR.second.out == takerAmount.out)
+        {
+            char const * crossType = "Taker not crossed, Flow partially crossed";
+            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+        }
+        else if (flowR.second.in == takerAmount.in &&
+                 flowR.second.out == takerAmount.out)
+        {
+            char const * crossType = "Taker partially crossed, Flow not crossed";
+            c = compareSandboxes (crossType, ctx_, psbTaker, psbFlow, j_);
+        }
+        else
+        {
+            c = compareSandboxes (
+                "Partial cross offer", ctx_, psbTaker, psbFlow, j_);
+
+            // If we've gotten this far then the returned amounts matter.
+            if (c <= SBoxCmp::dustDiff && takerR.second != flowR.second)
+            {
+                c = SBoxCmp::dustDiff;
+                using namespace beast::severities;
+                Severity s = kInfo;
+                std::string onlyDust = ", but only dust.";
+                if (! diffIsDust (takerR.second.in, flowR.second.in) ||
+                    (! diffIsDust (takerR.second.out, flowR.second.out)))
+                {
+                    char const* outSame = "";
+                    if (takerR.second.out == flowR.second.out)
+                        outSame = " but outs same";
+
+                    c = SBoxCmp::diff;
+                    s = kWarning;
+                    std::stringstream ss;
+                    ss << outSame
+                        << ".  Taker in: " << takerR.second.in.getText()
+                        << "; Taker out: " << takerR.second.out.getText()
+                        << "; Flow in: " << flowR.second.in.getText()
+                        << "; Flow out: " << flowR.second.out.getText()
+                        << ".  tx: " << ctx_.tx.getTransactionID();
+                    onlyDust = ss.str();
+                }
+                j_.stream (s) << "FlowCross: Partial cross amounts different"
+                    << onlyDust;
+            }
+        }
+        j_.error() << "FlowCross cmp result: " << to_string (c);
+    }
+
+    // Return one result or the other based on amendment.
+    if (useFlowCross)
+    {
+        psbFlow.apply (psb);
+        psbCancelFlow.apply (psbCancel);
+        return flowR;
+    }
+
+    psbTaker.apply (psb);
+    psbCancelTaker.apply (psbCancel);
+    return takerR;
 }
 
 std::string
@@ -656,7 +1039,7 @@ CreateOffer::preCompute()
 }
 
 std::pair<TER, bool>
-CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
+CreateOffer::applyGuts (PaymentSandbox& psb, PaymentSandbox& psbCancel)
 {
     std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
 
@@ -673,9 +1056,6 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // FIXME understand why we use SequenceNext instead of current transaction
     //       sequence to determine the transaction. Why is the offer sequence
     //       number insufficient?
-
-    auto const sleCreator = view.peek (keylet::account(account_));
-
     auto const uSequence = ctx_.tx.getSequence ();
 
     // This is the original rate of the offer, and is the rate at which
@@ -690,7 +1070,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence)
     {
-        auto const sleCancel = view.peek(
+        auto const sleCancel = psb.peek(
             keylet::offer(account_, *cancelSequence));
 
         // It's not an error to not find the offer to cancel: it might have
@@ -699,7 +1079,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         if (sleCancel)
         {
             JLOG(j_.debug()) << "Create cancels order " << *cancelSequence;
-            result = offerDelete (view, sleCancel, viewJ);
+            result = offerDelete (psb, sleCancel, viewJ);
         }
     }
 
@@ -731,7 +1111,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         if (!isXRP (uPaysIssuerID))
         {
             auto const sle =
-                view.read(keylet::account(uPaysIssuerID));
+                psb.read(keylet::account(uPaysIssuerID));
             if (sle && sle->isFieldPresent (sfTickSize))
                 uTickSize = std::min (uTickSize,
                     (*sle)[sfTickSize]);
@@ -739,7 +1119,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         if (!isXRP (uGetsIssuerID))
         {
             auto const sle =
-                view.read(keylet::account(uGetsIssuerID));
+                psb.read(keylet::account(uGetsIssuerID));
             if (sle && sle->isFieldPresent (sfTickSize))
                 uTickSize = std::min (uTickSize,
                     (*sle)[sfTickSize]);
@@ -776,7 +1156,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         }
 
         // We reverse pays and gets because during crossing we are taking.
-        Amounts const taker_amount (saTakerGets, saTakerPays);
+        Amounts const takerAmount (saTakerGets, saTakerPays);
 
         // The amount of the offer that is unfilled after crossing has been
         // performed. It may be equal to the original amount (didn't cross),
@@ -784,19 +1164,20 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         Amounts place_offer;
 
         JLOG(j_.debug()) << "Attempting cross: " <<
-            to_string (taker_amount.in.issue ()) << " -> " <<
-            to_string (taker_amount.out.issue ());
+            to_string (takerAmount.in.issue ()) << " -> " <<
+            to_string (takerAmount.out.issue ());
 
         if (auto stream = j_.trace())
         {
             stream << "   mode: " <<
                 (bPassive ? "passive " : "") <<
                 (bSell ? "sell" : "buy");
-            stream <<"     in: " << format_amount (taker_amount.in);
-            stream << "    out: " << format_amount (taker_amount.out);
+            stream <<"     in: " << format_amount (takerAmount.in);
+            stream << "    out: " << format_amount (takerAmount.out);
         }
 
-        std::tie(result, place_offer) = cross (view, view_cancel, taker_amount);
+        std::tie(result, place_offer) = cross (psb, psbCancel, takerAmount);
+
         // We expect the implementation of cross to succeed
         // or give a tec.
         assert(result == tesSUCCESS || isTecClaim(result));
@@ -820,7 +1201,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         assert (saTakerGets.issue () == place_offer.in.issue ());
         assert (saTakerPays.issue () == place_offer.out.issue ());
 
-        if (taker_amount != place_offer)
+        if (takerAmount != place_offer)
             crossed = true;
 
         // The offer that we need to place after offer crossing should
@@ -877,6 +1258,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         return { tesSUCCESS, true };
     }
 
+    auto const sleCreator = psb.peek (keylet::account(account_));
     {
         XRPAmount reserve = ctx_.view().fees().accountReserve(
             sleCreator->getFieldU32 (sfOwnerCount) + 1);
@@ -905,14 +1287,14 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     std::uint64_t uOwnerNode;
 
     // Add offer to owner's directory.
-    std::tie(result, std::ignore) = dirAdd(view, uOwnerNode,
+    std::tie(result, std::ignore) = dirAdd(psb, uOwnerNode,
         keylet::ownerDir (account_), offer_index,
         describeOwnerDir (account_), viewJ);
 
     if (result == tesSUCCESS)
     {
         // Update owner count.
-        adjustOwnerCount(view, sleCreator, 1, viewJ);
+        adjustOwnerCount(psb, sleCreator, 1, viewJ);
 
         JLOG (j_.trace()) <<
             "adding to book: " << to_string (saTakerPays.issue ()) <<
@@ -926,7 +1308,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         // before any crossing occured.
         auto dir = keylet::quality (keylet::book (book), uRate);
 
-        std::tie(result, isNewBook) = dirAdd (view, uBookNode,
+        std::tie(result, isNewBook) = dirAdd (psb, uBookNode,
             dir, offer_index, [&](SLE::ref sle)
             {
                 sle->setFieldH160 (sfTakerPaysCurrency,
@@ -956,7 +1338,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
                 sleOffer->setFlag (lsfPassive);
             if (bSell)
                 sleOffer->setFlag (lsfSell);
-            view.insert(sleOffer);
+            psb.insert(sleOffer);
 
             if (isNewBook)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
@@ -977,18 +1359,18 @@ CreateOffer::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
-    Sandbox view (&ctx_.view());
+    PaymentSandbox psb (&ctx_.view());
 
     // This is a ledger with just the fees paid and any unfunded or expired
     // offers we encounter removed. It's used when handling Fill-or-Kill offers,
     // if the order isn't going to be placed, to avoid wasting the work we did.
-    Sandbox viewCancel (&ctx_.view());
+    PaymentSandbox psbCancel (&ctx_.view());
 
-    auto const result = applyGuts(view, viewCancel);
+    auto const result = applyGuts(psb, psbCancel);
     if (result.second)
-        view.apply(ctx_.rawView());
+        psb.apply(ctx_.rawView());
     else
-        viewCancel.apply(ctx_.rawView());
+        psbCancel.apply(ctx_.rawView());
     return result.first;
 }
 

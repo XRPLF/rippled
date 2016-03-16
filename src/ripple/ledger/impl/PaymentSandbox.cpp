@@ -324,8 +324,7 @@ PaymentSandbox::balanceChanges (ReadView const& view) const
                     break;
             }
         }
-
-        if (!before)
+        else if (!before)
         {
             // insert
             auto const at = after->getType ();

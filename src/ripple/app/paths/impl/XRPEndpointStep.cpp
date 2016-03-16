@@ -35,11 +35,13 @@
 
 namespace ripple {
 
-class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep>
+template <class TDerived>
+class XRPEndpointStep : public StepImp<
+    XRPAmount, XRPAmount, XRPEndpointStep<TDerived>>
 {
-  private:
+private:
     AccountID acc_;
-    bool isLast_;
+    bool const isLast_;
     beast::Journal j_;
 
     // Since this step will always be an endpoint in a strand
@@ -54,14 +56,14 @@ class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep>
             return boost::none;
         return EitherAmount (*cache_);
     }
-  public:
+
+public:
     XRPEndpointStep (
-        AccountID const& acc,
-        bool isLast,
-        beast::Journal j)
-            :acc_(acc)
-            , isLast_(isLast)
-            , j_ (j) {}
+        StrandContext const& ctx,
+        AccountID const& acc)
+            : acc_(acc)
+            , isLast_(ctx.isLast)
+            , j_ (ctx.j) {}
 
     AccountID const& acc () const
     {
@@ -88,6 +90,9 @@ class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep>
         return cached ();
     }
 
+    boost::optional<Quality>
+    qualityUpperBound(ReadView const& v, bool& redeems) const override;
+
     std::pair<XRPAmount, XRPAmount>
     revImp (
         PaymentSandbox& sb,
@@ -111,10 +116,31 @@ class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep>
     // Check for errors and violations of frozen constraints.
     TER check (StrandContext const& ctx) const;
 
-private:
-    friend bool operator==(XRPEndpointStep const& lhs, XRPEndpointStep const& rhs);
+protected:
+    XRPAmount
+    xrpLiquidImpl (ReadView& sb, std::int32_t reserveReduction) const
+    {
+        return ripple::xrpLiquid (sb, acc_, reserveReduction, j_);
+    }
 
-    friend bool operator!=(XRPEndpointStep const& lhs, XRPEndpointStep const& rhs)
+    std::string logStringImpl (char const* name) const
+    {
+        std::ostringstream ostr;
+        ostr <<
+            name << ": " <<
+            "\nAcc: " << acc_;
+        return ostr.str ();
+    }
+
+private:
+    template <class P>
+    friend bool operator==(
+        XRPEndpointStep<P> const& lhs,
+        XRPEndpointStep<P> const& rhs);
+
+    friend bool operator!=(
+        XRPEndpointStep const& lhs,
+        XRPEndpointStep const& rhs)
     {
         return ! (lhs == rhs);
     }
@@ -127,39 +153,108 @@ private:
         }
         return false;
     }
+};
+
+//------------------------------------------------------------------------------
+
+// Flow is used in two different circumstances for transferring funds:
+//  o Payments, and
+//  o Offer crossing.
+// The rules for handling funds in these two cases are almost, but not
+// quite, the same.
+
+// Payment XRPEndpointStep class (not offer crossing).
+class XRPEndpointPaymentStep : public XRPEndpointStep<XRPEndpointPaymentStep>
+{
+public:
+    using XRPEndpointStep<XRPEndpointPaymentStep>::XRPEndpointStep;
+
+    XRPAmount
+    xrpLiquid (ReadView& sb) const
+    {
+        return xrpLiquidImpl (sb, 0);;
+    }
 
     std::string logString () const override
     {
-        std::ostringstream ostr;
-        ostr <<
-            "XRPEndpointStep: " <<
-            "\nAcc: " << acc_;
-        return ostr.str ();
+        return logStringImpl ("XRPEndpointPaymentStep");
     }
 };
 
-inline bool operator==(XRPEndpointStep const& lhs, XRPEndpointStep const& rhs)
+// Offer crossing XRPEndpointStep class (not a payment).
+class XRPEndpointOfferCrossingStep :
+    public XRPEndpointStep<XRPEndpointOfferCrossingStep>
+{
+private:
+
+    // For historical reasons, offer crossing is allowed to dig further
+    // into the XRP reserve than an ordinary payment.  (I believe it's
+    // because the trust line was created after the XRP was removed.)
+    // Return how much the reserve should be reduced.
+    //
+    // Note that reduced reserve only happens if the trust line does not
+    // currently exist.
+    static std::int32_t computeReserveReduction (
+        StrandContext const& ctx, AccountID const& acc)
+    {
+        if (ctx.isFirst &&
+            !ctx.view.read (keylet::line (acc, ctx.strandDeliver)))
+                return -1;
+        return 0;
+    }
+
+public:
+    XRPEndpointOfferCrossingStep (
+        StrandContext const& ctx, AccountID const& acc)
+    : XRPEndpointStep<XRPEndpointOfferCrossingStep> (ctx, acc)
+    , reserveReduction_ (computeReserveReduction (ctx, acc))
+    {
+    }
+
+    XRPAmount
+    xrpLiquid (ReadView& sb) const
+    {
+        return xrpLiquidImpl (sb, reserveReduction_);
+    }
+
+    std::string logString () const override
+    {
+        return logStringImpl ("XRPEndpointOfferCrossingStep");
+    }
+
+private:
+    std::int32_t const reserveReduction_;
+};
+
+//------------------------------------------------------------------------------
+
+template <class TDerived>
+inline bool operator==(XRPEndpointStep<TDerived> const& lhs,
+    XRPEndpointStep<TDerived> const& rhs)
 {
     return lhs.acc_ == rhs.acc_ && lhs.isLast_ == rhs.isLast_;
 }
 
-static
-XRPAmount
-xrpLiquid (ReadView& sb, AccountID const& src)
+template <class TDerived>
+boost::optional<Quality>
+XRPEndpointStep<TDerived>::qualityUpperBound(
+    ReadView const& v, bool& redeems) const
 {
-    return accountHolds(
-        sb, src, xrpCurrency(), xrpAccount(), fhIGNORE_FREEZE, {}).xrp();
+    redeems = this->redeems(v, true);
+    return Quality{STAmount::uRateOne};
 }
 
 
+template <class TDerived>
 std::pair<XRPAmount, XRPAmount>
-XRPEndpointStep::revImp (
+XRPEndpointStep<TDerived>::revImp (
     PaymentSandbox& sb,
     ApplyView& afView,
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& out)
 {
-    auto const balance = xrpLiquid (sb, acc_);
+    auto const balance = static_cast<TDerived const*>(this)->xrpLiquid (sb);
+
     auto const result = isLast_ ? out : std::min (balance, out);
 
     auto& sender = isLast_ ? xrpAccount() : acc_;
@@ -172,15 +267,17 @@ XRPEndpointStep::revImp (
     return {result, result};
 }
 
+template <class TDerived>
 std::pair<XRPAmount, XRPAmount>
-XRPEndpointStep::fwdImp (
+XRPEndpointStep<TDerived>::fwdImp (
     PaymentSandbox& sb,
     ApplyView& afView,
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
     assert (cache_);
-    auto const balance = xrpLiquid (sb, acc_);
+    auto const balance = static_cast<TDerived const*>(this)->xrpLiquid (sb);
+
     auto const result = isLast_ ? in : std::min (balance, in);
 
     auto& sender = isLast_ ? xrpAccount() : acc_;
@@ -193,8 +290,9 @@ XRPEndpointStep::fwdImp (
     return {result, result};
 }
 
+template <class TDerived>
 std::pair<bool, EitherAmount>
-XRPEndpointStep::validFwd (
+XRPEndpointStep<TDerived>::validFwd (
     PaymentSandbox& sb,
     ApplyView& afView,
     EitherAmount const& in)
@@ -208,7 +306,7 @@ XRPEndpointStep::validFwd (
     assert (in.native);
 
     auto const& xrpIn = in.xrp;
-    auto const balance = xrpLiquid (sb, acc_);
+    auto const balance = static_cast<TDerived const*>(this)->xrpLiquid (sb);
 
     if (!isLast_ && balance < xrpIn)
     {
@@ -227,8 +325,9 @@ XRPEndpointStep::validFwd (
     return {true, in};
 }
 
+template <class TDerived>
 TER
-XRPEndpointStep::check (StrandContext const& ctx) const
+XRPEndpointStep<TDerived>::check (StrandContext const& ctx) const
 {
     if (!acc_)
     {
@@ -239,7 +338,7 @@ XRPEndpointStep::check (StrandContext const& ctx) const
     auto sleAcc = ctx.view.read (keylet::account (acc_));
     if (!sleAcc)
     {
-        JLOG (j_.warn()) << "XRPEndpointStep: can't send or receive XRPs from "
+        JLOG (j_.warn()) << "XRPEndpointStep: can't send or receive XRP from "
                              "non-existent account: "
                           << acc_;
         return terNO_ACCOUNT;
@@ -266,7 +365,8 @@ namespace test
 // Needed for testing
 bool xrpEndpointStepEqual (Step const& step, AccountID const& acc)
 {
-    if (auto xs = dynamic_cast<XRPEndpointStep const*> (&step))
+    if (auto xs =
+        dynamic_cast<XRPEndpointStep<XRPEndpointPaymentStep> const*> (&step))
     {
         return xs->acc () == acc;
     }
@@ -281,10 +381,25 @@ make_XRPEndpointStep (
     StrandContext const& ctx,
     AccountID const& acc)
 {
-    auto r = std::make_unique<XRPEndpointStep> (acc, ctx.isLast, ctx.j);
-    auto ter = r->check (ctx);
+    TER ter = tefINTERNAL;
+    std::unique_ptr<Step> r;
+    if (ctx.offerCrossing)
+    {
+        auto offerCrossingStep =
+            std::make_unique<XRPEndpointOfferCrossingStep> (ctx, acc);
+        ter = offerCrossingStep->check (ctx);
+        r = std::move (offerCrossingStep);
+    }
+    else // payment
+    {
+        auto paymentStep =
+            std::make_unique<XRPEndpointPaymentStep> (ctx, acc);
+        ter = paymentStep->check (ctx);
+        r = std::move (paymentStep);
+    }
     if (ter != tesSUCCESS)
         return {ter, nullptr};
+
     return {tesSUCCESS, std::move (r)};
 }
 

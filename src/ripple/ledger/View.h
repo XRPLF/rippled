@@ -74,6 +74,16 @@ accountFunds (ReadView const& view, AccountID const& id,
     STAmount const& saDefault, FreezeHandling freezeHandling,
         beast::Journal j);
 
+// Return the account's liquid (not reserved) XRP.  Generally prefer
+// calling accountHolds() over this interface.  However this interface
+// allows the caller to temporarily adjust the owner count should that be
+// necessary.
+//
+// @param ownerCountAdj positive to add to count, negative to reduce count.
+XRPAmount
+xrpLiquid (ReadView const& view, AccountID const& id,
+    std::int32_t ownerCountAdj, beast::Journal j);
+
 /** Iterate all items in an account's owner directory. */
 void
 forEachItem (ReadView const& view, AccountID const& id,
@@ -186,7 +196,7 @@ bool areCompatible (uint256 const& validHash, LedgerIndex validIndex,
 void
 adjustOwnerCount (ApplyView& view,
     std::shared_ptr<SLE> const& sle,
-        int amount, beast::Journal j);
+        std::int32_t amount, beast::Journal j);
 
 // Return the first entry and advance uDirEntry.
 // <-- true, if had a next entry.

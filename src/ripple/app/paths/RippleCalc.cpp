@@ -142,7 +142,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
             auto const timeIt = flowV2FlowDebugInfo.timeBlock ("main");
             flowV2Out = flow (flowV2SB, saDstAmountReq, uSrcAccountID,
                 uDstAccountID, spsPaths, defaultPaths, partialPayment,
-                ownerPaysTransferFee, limitQuality, sendMax, j,
+                ownerPaysTransferFee, /* offerCrossing */ false, limitQuality, sendMax, j,
                 compareFlowV1V2 ? &flowV2FlowDebugInfo : nullptr);
         }
         catch (std::exception& e)

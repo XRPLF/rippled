@@ -96,6 +96,7 @@ struct BookDirs_test : public beast::unit_test::suite
     {
         test_bookdir({});
         test_bookdir({featureFlow, fix1373});
+        test_bookdir({featureFlow, fix1373, featureFlowCross});
     }
 };
 

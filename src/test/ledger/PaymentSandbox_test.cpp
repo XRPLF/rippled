@@ -331,7 +331,40 @@ class PaymentSandbox_test : public beast::unit_test::suite
             accountSend (sb, alice, xrpAccount (), XRP(100), dj);
             BEAST_EXPECT(accountFundsXRP (sb, alice) == beast::zero);
         }
+    }
 
+    void testBalanceHook(std::initializer_list<uint256> fs)
+    {
+        // Make sure the Issue::Account returned by PAymentSandbox::balanceHook
+        // is correct.
+        testcase ("balanceHook");
+
+        using namespace jtx;
+        Env env (*this, features(fs));
+
+        Account const gw ("gw");
+        auto const USD = gw["USD"];
+        Account const alice ("alice");
+
+        auto const closeTime = fix1274Time () +
+                100 * env.closed ()->info ().closeTimeResolution;
+        env.close (closeTime);
+
+        ApplyViewImpl av (&*env.current (), tapNONE);
+        PaymentSandbox sb (&av);
+
+        // The currency we pass for the last argument mimics the currency that
+        // is typically passed to creditHook, since it comes from a trust line.
+        Issue tlIssue = noIssue();
+        tlIssue.currency = USD.issue().currency;
+
+        sb.creditHook (gw.id(), alice.id(), {USD, 400}, {tlIssue, 600});
+        sb.creditHook (gw.id(), alice.id(), {USD, 100}, {tlIssue, 600});
+
+        // Expect that the STAmount issuer returned by balanceHook() is correct.
+        STAmount const balance =
+            sb.balanceHook (gw.id(), alice.id(), {USD, 600});
+        BEAST_EXPECT (balance.getIssuer() == USD.issue().account);
     }
 
 public:
@@ -342,9 +375,11 @@ public:
             testSubtractCredits(fs);
             testTinyBalance(fs);
             testReserve(fs);
+            testBalanceHook(fs);
         };
         testAll({});
         testAll({featureFlow, fix1373});
+        testAll({featureFlow, fix1373, featureFlowCross});
     }
 };
 

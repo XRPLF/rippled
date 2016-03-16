@@ -34,7 +34,7 @@ class PaymentSandbox;
 class ReadView;
 class ApplyView;
 
-/*
+/**
    A step in a payment path
 
    There are five concrete step classes:
@@ -63,19 +63,20 @@ class ApplyView;
 class Step
 {
 public:
+    /** Step destructor. */
     virtual ~Step () = default;
 
     /**
        Find the amount we need to put into the step to get the requested out
        subject to liquidity limits
 
-       @param sb view with the strands state of balances and offers
+       @param sb view with the strand's state of balances and offers
        @param afView view the the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
        @param ofrsToRm offers found unfunded or in an error state are added to this collection
        @param out requested step output
        @return actual step input and output
-     */
+    */
     virtual
     std::pair<EitherAmount, EitherAmount>
     rev (
@@ -88,7 +89,7 @@ public:
        Find the amount we get out of the step given the input
        subject to liquidity limits
 
-       @param sb view with the strands state of balances and offers
+       @param sb view with the strand's state of balances and offers
        @param afView view the the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
        @param ofrsToRm offers found unfunded or in an error state are added to this collection
@@ -98,15 +99,23 @@ public:
     virtual
     std::pair<EitherAmount, EitherAmount>
     fwd (
-        PaymentSandbox&,
+        PaymentSandbox& sb,
         ApplyView& afView,
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& in) = 0;
 
+    /**
+       Amount of currency computed coming into the Step the last time the
+       step ran in reverse.
+    */
     virtual
     boost::optional<EitherAmount>
     cachedIn () const = 0;
 
+    /**
+       Amount of currency computed coming out of the Step the last time the
+       step ran in reverse.
+    */
     virtual
     boost::optional<EitherAmount>
     cachedOut () const = 0;
@@ -134,6 +143,9 @@ public:
        otherwise return false.
        If this step is a BookStep, return false if the owner pays the transfer fee,
        otherwise return true.
+
+       @param sb view with the strand's state of balances and offers
+       @param fwd false -> called from rev(); true -> called from fwd().
     */
     virtual bool
     redeems (ReadView const& sb, bool fwd) const
@@ -141,13 +153,27 @@ public:
         return false;
     }
 
-    /** If this step is a DirectStepI, return the quality in of the dst account.
+    /**
+        If this step is a DirectStepI, return the quality in of the dst account.
      */
     virtual std::uint32_t
     lineQualityIn (ReadView const&) const
     {
         return QUALITY_ONE;
     }
+
+    /**
+       Find an upper bound of quality for the step
+
+       @param v view to query the ledger state from
+       @param redeems in/out param. Set to true if the previous step redeems.
+       Will be set to true if this step redeems; Will be set to false if this
+       step does not redeem.
+       @return The upper bound of quality for the step, or boost::none if the
+       step is dry.
+     */
+    virtual boost::optional<Quality>
+    qualityUpperBound(ReadView const& v, bool& redeems) const = 0;
 
     /**
        If this step is a BookStep, return the book.
@@ -165,12 +191,18 @@ public:
     bool
     dry (EitherAmount const& out) const = 0;
 
+    /**
+       Return true if Out of lhs == Out of rhs.
+    */
     virtual
     bool
     equalOut (
         EitherAmount const& lhs,
         EitherAmount const& rhs) const = 0;
 
+    /**
+       Return true if In of lhs == In of rhs.
+    */
     virtual bool equalIn (
         EitherAmount const& lhs,
         EitherAmount const& rhs) const = 0;
@@ -182,7 +214,7 @@ public:
        @param afView view the the state of balances before the strand runs
        this determines if an offer becomes unfunded or is found unfunded
        @param in requested step input
-       @return first element is true is step is valid, second element is out amount
+       @return first element is true if step is valid, second element is out amount
     */
     virtual
     std::pair<bool, EitherAmount>
@@ -191,16 +223,29 @@ public:
         ApplyView& afView,
         EitherAmount const& in) = 0;
 
+    /** Return true if lhs == rhs.
+
+        @param lhs Step to compare.
+        @param rhs Step to compare.
+        @return true if lhs == rhs.
+    */
     friend bool operator==(Step const& lhs, Step const& rhs)
     {
         return lhs.equal (rhs);
     }
 
+    /** Return true if lhs != rhs.
+
+        @param lhs Step to compare.
+        @param rhs Step to compare.
+        @return true if lhs != rhs.
+    */
     friend bool operator!=(Step const& lhs, Step const& rhs)
     {
         return ! (lhs == rhs);
     }
 
+    /** Streaming operator for a Step. */
     friend
     std::ostream&
     operator << (
@@ -210,6 +255,7 @@ public:
         stream << step.logString ();
         return stream;
     }
+
 private:
     virtual
     std::string
@@ -218,8 +264,11 @@ private:
     virtual bool equal (Step const& rhs) const = 0;
 };
 
+/// @cond INTERNAL
 using Strand = std::vector<std::unique_ptr<Step>>;
+/// @endcond
 
+/// @cond INTERNAL
 inline
 bool operator==(Strand const& lhs, Strand const& rhs)
 {
@@ -230,6 +279,7 @@ bool operator==(Strand const& lhs, Strand const& rhs)
             return false;
     return true;
 }
+/// @endcond
 
 /*
    Normalize a path by inserting implied accounts and offers
@@ -251,20 +301,26 @@ normalizePath(AccountID const& src,
     boost::optional<Issue> const& sendMaxIssue,
     STPath const& path);
 
-/*
-   Create a strand for the specified path
+/**
+   Create a Strand for the specified path
 
    @param sb view for trust lines, balances, and attributes like auth and freeze
    @param src Account that is sending assets
    @param dst Account that is receiving assets
    @param deliver Asset the dst account will receive
-   (if issuer of deliver == dst, then accept any issuer)
-   @param sendMax Optional asset to send.
+                  (if issuer of deliver == dst, then accept any issuer)
+   @param limitQuality Offer crossing BookSteps use this value in an
+                       optimization.  If, during direct offer crossing, the
+                       quality of the tip of the book drops below this value,
+                       then evaluating the strand can stop.
+   @param sendMaxIssue Optional asset to send.
    @param path Liquidity sources to use for this strand of the payment. The path
                contains an ordered collection of the offer books to use and
                accounts to ripple through.
-   @param l logs to write journal messages to
-   @return error code and collection of strands
+   @param ownerPaysTransferFee false -> charge sender; true -> charge offer owner
+   @param offerCrossing false -> payment; true -> offer crossing
+   @param j Journal for logging messages
+   @return Error code and constructed Strand
 */
 std::pair<TER, Strand>
 toStrand (
@@ -272,26 +328,34 @@ toStrand (
     AccountID const& src,
     AccountID const& dst,
     Issue const& deliver,
+    boost::optional<Quality> const& limitQuality,
     boost::optional<Issue> const& sendMaxIssue,
     STPath const& path,
     bool ownerPaysTransferFee,
+    bool offerCrossing,
     beast::Journal j);
 
 /**
-   Create a strand for each specified path (including the default path, if
-   specified)
+   Create a Strand for each specified path (including the default path, if
+   indicated)
 
-   @param sb view for trust lines, balances, and attributes like auth and freeze
+   @param sb View for trust lines, balances, and attributes like auth and freeze
    @param src Account that is sending assets
    @param dst Account that is receiving assets
    @param deliver Asset the dst account will receive
                   (if issuer of deliver == dst, then accept any issuer)
+   @param limitQuality Offer crossing BookSteps use this value in an
+                       optimization.  If, during direct offer crossing, the
+                       quality of the tip of the book drops below this value,
+                       then evaluating the strand can stop.
    @param sendMax Optional asset to send.
    @param paths Paths to use to fullfill the payment. Each path in the pathset
                 contains an ordered collection of the offer books to use and
                 accounts to ripple through.
-   @param addDefaultPath Determines if the default path should be considered
-   @param l logs to write journal messages to
+   @param addDefaultPath Determines if the default path should be included
+   @param ownerPaysTransferFee false -> charge sender; true -> charge offer owner
+   @param offerCrossing false -> payment; true -> offer crossing
+   @param j Journal for logging messages
    @return error code and collection of strands
 */
 std::pair<TER, std::vector<Strand>>
@@ -299,12 +363,15 @@ toStrands (ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
     Issue const& deliver,
+    boost::optional<Quality> const& limitQuality,
     boost::optional<Issue> const& sendMax,
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
+    bool offerCrossing,
     beast::Journal j);
 
+/// @cond INTERNAL
 template <class TIn, class TOut, class TDerived>
 struct StepImp : public Step
 {
@@ -352,7 +419,9 @@ struct StepImp : public Step
         return get<TIn> (lhs) == get<TIn> (rhs);
     }
 };
+/// @endcond
 
+/// @cond INTERNAL
 // Thrown when unexpected errors occur
 class FlowException : public std::runtime_error
 {
@@ -373,47 +442,66 @@ public:
     {
     }
 };
+/// @endcond
 
+/// @cond INTERNAL
 // Check equal with tolerance
 bool checkNear (IOUAmount const& expected, IOUAmount const& actual);
 bool checkNear (XRPAmount const& expected, XRPAmount const& actual);
+/// @endcond
 
 /**
-   Context needed for error checking
+   Context needed to build Strand Steps and for error checking
  */
 struct StrandContext
 {
-    ReadView const& view;
-    AccountID const strandSrc;
-    AccountID const strandDst;
-    bool const isFirst;
-    bool const isLast = false;
-    bool ownerPaysTransferFee;
-    size_t const strandSize;
-    // The previous step in the strand. Needed to check the no ripple constraint
+    ReadView const& view;                        ///< Current ReadView
+    AccountID const strandSrc;                   ///< Strand source account
+    AccountID const strandDst;                   ///< Strand destination account
+    Issue const strandDeliver;                   ///< Issue strand delivers
+    boost::optional<Quality> const limitQuality; ///< Worst accepted quality
+    bool const isFirst;                ///< true if Step is first in Strand
+    bool const isLast = false;         ///< true if Step is last in Strand
+    bool const ownerPaysTransferFee;   ///< true if owner, not sender, pays fee
+    bool const offerCrossing;          ///< true if offer crossing, not payment
+    bool const isDefaultPath;          ///< true if Strand is default path
+    size_t const strandSize;           ///< Length of Strand
+    /** The previous step in the strand. Needed to check the no ripple
+        constraint
+     */
     Step const* const prevStep = nullptr;
-    // A strand may not include the same account node more than once
-    // in the same currency. In a direct step, an account will show up
-    // at most twice: once as a src and once as a dst (hence the two element array).
-    // The strandSrc and strandDst will only show up once each.
+    /** A strand may not include the same account node more than once
+        in the same currency. In a direct step, an account will show up
+        at most twice: once as a src and once as a dst (hence the two element array).
+        The strandSrc and strandDst will only show up once each.
+    */
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues;
-    // A strand may not include an offer that output the same issue more than once
+    /** A strand may not include an offer that output the same issue more
+        than once
+    */
     boost::container::flat_set<Issue>& seenBookOuts;
-    beast::Journal j;
+    beast::Journal j;                    ///< Journal for logging
 
+    /** StrandContext constructor. */
     StrandContext (ReadView const& view_,
         std::vector<std::unique_ptr<Step>> const& strand_,
         // A strand may not include an inner node that
         // replicates the source or destination.
-        AccountID strandSrc_,
-        AccountID strandDst_,
+        AccountID const& strandSrc_,
+        AccountID const& strandDst_,
+        Issue const& strandDeliver_,
+        boost::optional<Quality> const& limitQuality_,
         bool isLast_,
         bool ownerPaysTransferFee_,
-        std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
-        boost::container::flat_set<Issue>& seenBookOuts_,
-        beast::Journal j);
+        bool offerCrossing_,
+        bool isDefaultPath_,
+        std::array<boost::container::flat_set<Issue>, 2>&
+            seenDirectIssues_,                             ///< For detecting currency loops
+        boost::container::flat_set<Issue>& seenBookOuts_,  ///< For detecting book loops
+        beast::Journal j_);                                ///< Journal for logging
 };
 
+/// @cond INTERNAL
 namespace test {
 // Needed for testing
 bool directStepEqual (Step const& step,
@@ -457,6 +545,7 @@ make_XRPEndpointStep (
 template<class InAmt, class OutAmt>
 bool
 isDirectXrpToXrp(Strand const& strand);
+/// @endcond
 
 } // ripple
 

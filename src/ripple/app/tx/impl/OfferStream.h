@@ -84,7 +84,7 @@ protected:
 
     virtual
     void
-    permRmOffer (std::shared_ptr<SLE> const& sle) = 0;
+    permRmOffer (uint256 const& offerIndex) = 0;
 
 public:
     TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
@@ -140,7 +140,7 @@ class OfferStream : public TOfferStreamBase<STAmount, STAmount>
 {
 protected:
     void
-    permRmOffer (std::shared_ptr<SLE> const& sle) override;
+    permRmOffer (uint256 const& offerIndex) override;
 public:
     using TOfferStreamBase<STAmount, STAmount>::TOfferStreamBase;
 };
@@ -167,12 +167,16 @@ class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
     boost::container::flat_set<uint256> permToRemove_;
-protected:
-    void
-    permRmOffer (std::shared_ptr<SLE> const& sle) override;
 
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
+
+    // The following interface allows offer crossing to permanently
+    // remove self crossed offers.  The motivation is somewhat
+    // unintuitive.  See the discussion in the comments for
+    // BookOfferCrossingStep::limitSelfCrossQuality().
+    void
+    permRmOffer (uint256 const& offerIndex) override;
 
     boost::container::flat_set<uint256> const& permToRemove () const
     {

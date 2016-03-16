@@ -20,55 +20,55 @@
 #ifndef RIPPLE_TX_CREATEOFFER_H_INCLUDED
 #define RIPPLE_TX_CREATEOFFER_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/tx/impl/OfferStream.h>
 #include <ripple/app/tx/impl/Taker.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/Log.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/beast/utility/WrappedSink.h>
-#include <memory>
-#include <stdexcept>
 #include <utility>
 
 namespace ripple {
 
+class PaymentSandbox;
+
+/** Transactor specialized for creating offers in the ledger. */
 class CreateOffer
     : public Transactor
 {
 public:
+    /** Construct a Transactor subclass that creates an offer in the ledger. */
     CreateOffer (ApplyContext& ctx)
         : Transactor(ctx)
         , stepCounter_ (1000, j_)
     {
     }
 
+    /** Override default behavior provided by Transactor base class. */
     static
     XRPAmount
     calculateMaxSpend(STTx const& tx);
 
+    /** Enforce constraints beyond those of the Transactor base class. */
     static
     TER
     preflight (PreflightContext const& ctx);
 
+    /** Enforce constraints beyond those of the Transactor base class. */
     static
     TER
     preclaim(PreclaimContext const& ctx);
 
+    /** Gather information beyond what the Transactor base class gathers. */
     void
     preCompute() override;
 
-    std::pair<TER, bool>
-    applyGuts (ApplyView& view, ApplyView& view_cancel);
-
+    /** Precondition: fee collection is likely.  Attempt to create the offer. */
     TER
     doApply() override;
 
 private:
-    /** Determine if we are authorized to hold the asset we want to get */
+    std::pair<TER, bool>
+    applyGuts (PaymentSandbox& view, PaymentSandbox& view_cancel);
+
+    // Determine if we are authorized to hold the asset we want to get.
     static
     TER
     checkAcceptAsset(ReadView const& view,
@@ -115,10 +115,27 @@ private:
     //
     // Charges fees on top to taker.
     std::pair<TER, Amounts>
+    takerCross (
+        PaymentSandbox& psb,
+        PaymentSandbox& psbCancel,
+        Amounts const& takerAmount);
+
+    // Use the payment flow code to perform offer crossing.
+    std::pair<TER, Amounts>
+    flowCross (
+        PaymentSandbox& psb,
+        PaymentSandbox& psbCancel,
+        Amounts const& takerAmount);
+
+    // Temporary
+    // This is a central location that invokes both versions of cross
+    // so the results can be compared.  Eventually this layer will be
+    // removed once flowCross is determined to be stable.
+    std::pair<TER, Amounts>
     cross (
-        ApplyView& view,
-        ApplyView& cancel_view,
-        Amounts const& taker_amount);
+        PaymentSandbox& psb,
+        PaymentSandbox& psbCancel,
+        Amounts const& takerAmount);
 
     static
     std::string

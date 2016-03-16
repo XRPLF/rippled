@@ -280,6 +280,20 @@ public:
         BEAST_EXPECT(q12 < q13);
         BEAST_EXPECT(q31 < q21);
         BEAST_EXPECT(q21 < q11);
+        BEAST_EXPECT(q11 >= q11);
+        BEAST_EXPECT(q12 >= q11);
+        BEAST_EXPECT(q13 >= q12);
+        BEAST_EXPECT(q21 >= q31);
+        BEAST_EXPECT(q11 >= q21);
+        BEAST_EXPECT(q12 > q11);
+        BEAST_EXPECT(q13 > q12);
+        BEAST_EXPECT(q21 > q31);
+        BEAST_EXPECT(q11 > q21);
+        BEAST_EXPECT(q11 <= q11);
+        BEAST_EXPECT(q11 <= q12);
+        BEAST_EXPECT(q12 <= q13);
+        BEAST_EXPECT(q31 <= q21);
+        BEAST_EXPECT(q21 <= q11);
         BEAST_EXPECT(q31 != q21);
     }
 

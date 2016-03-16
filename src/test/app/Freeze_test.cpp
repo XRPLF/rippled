@@ -533,6 +533,7 @@ public:
         testAll({});
         testAll({featureFlow});
         testAll({featureFlow, fix1373});
+        testAll({featureFlow, fix1373, featureFlowCross});
     }
 };
 

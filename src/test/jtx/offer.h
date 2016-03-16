@@ -31,7 +31,11 @@ namespace jtx {
 /** Create an offer. */
 Json::Value
 offer (Account const& account,
-    STAmount const& in, STAmount const& out);
+    STAmount const& in, STAmount const& out, std::uint32_t flags = 0);
+
+/** Cancel an offer. */
+Json::Value
+offer_cancel (Account const& account, std::uint32_t offerSeq);
 
 } // jtx
 } // test

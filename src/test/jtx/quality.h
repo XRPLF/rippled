@@ -42,7 +42,7 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the QualityIn on a trust JTx as a percentage. */
+/** Sets the QualityIn on a trust JTx. */
 class qualityInPercent
 {
 private:

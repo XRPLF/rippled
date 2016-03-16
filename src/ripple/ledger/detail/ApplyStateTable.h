@@ -88,7 +88,7 @@ public:
         Keylet const& k);
 
     std::size_t
-    size ();
+    size () const;
 
     void
     visit (ReadView const& base,
