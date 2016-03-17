@@ -39,9 +39,9 @@ class InboundLedger
 public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
-    using pointer = std::shared_ptr <InboundLedger>;
-    using PeerDataPairType = std::pair<std::weak_ptr<Peer>,
-                                       std::shared_ptr<protocol::TMLedgerData>>;
+    using PeerDataPairType = std::pair<
+        std::weak_ptr<Peer>,
+        std::shared_ptr<protocol::TMLedgerData>>;
 
     // These are the reasons we might acquire a ledger
     enum fcReason
@@ -72,9 +72,6 @@ public:
         return mSeq;
     }
 
-    enum class TriggerReason { trAdded, trReply, trTimeout };
-    void trigger (Peer::ptr const&, TriggerReason);
-
     bool checkLocal ();
     void init (ScopedLockType& collectionLock);
 
@@ -89,9 +86,18 @@ public:
     void runData ();
 
 private:
+    enum class TriggerReason
+    {
+        added,
+        reply,
+        timeout
+    };
+
     void filterNodes (
         std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
         TriggerReason reason);
+
+    void trigger (Peer::ptr const&, TriggerReason);
 
     std::vector<neededHash_t> getNeededHashes ();
 
@@ -107,7 +113,7 @@ private:
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
         if (mReason != fcHISTORY)
-            trigger (peer, TriggerReason::trAdded);
+            trigger (peer, TriggerReason::added);
     }
 
     std::weak_ptr <PeerSet> pmDowncast ();
@@ -130,11 +136,11 @@ private:
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
 
     std::vector<uint256>
-    getNeededTransactionHashes (
+    neededTxHashes (
         int max, SHAMapSyncFilter* filter) const;
 
     std::vector<uint256>
-    getNeededAccountStateHashes (
+    neededStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
 private:
