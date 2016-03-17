@@ -206,6 +206,12 @@ ManifestCache::configManifest (
     }
 }
 
+bool
+ManifestCache::trusted (PublicKey const& identity) const
+{
+    return map_.count(identity);
+}
+
 void
 ManifestCache::addTrustedKey (PublicKey const& pk, std::string comment)
 {
@@ -220,6 +226,13 @@ ManifestCache::addTrustedKey (PublicKey const& pk, std::string comment)
     }
 
     value.comment = std::move(comment);
+}
+
+std::size_t
+ManifestCache::size () const
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+    return map_.size ();
 }
 
 ManifestDisposition
@@ -263,6 +276,16 @@ ManifestDisposition
 ManifestCache::applyManifest (
     Manifest m, ValidatorList& unl, beast::Journal journal)
 {
+    /*
+        Move master public key from permanent trusted key list
+        to manifest cache.
+    */
+    if (auto unlComment = unl.member (m.masterKey))
+    {
+        addTrustedKey (m.masterKey, *unlComment);
+        unl.removePermanentKey (m.masterKey);
+    }
+
     {
         std::lock_guard<std::mutex> lock (mutex_);
 
@@ -388,6 +411,11 @@ void ManifestCache::load (
             {
                 Throw<std::runtime_error> ("Unverifiable manifest in db");
             }
+
+            // Remove master public key from permanent trusted key list
+            if (unl.trusted(mo->masterKey))
+                unl.removePermanentKey (mo->masterKey);
+
             // add trusted key
             map_[mo->masterKey];
 

@@ -438,7 +438,8 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         journal_);
 
     if (!loaded)
-        Throw<std::runtime_error> ("Unable to load validator keys");
+        Throw<std::runtime_error> (
+            "Unable to load keys from [validator_keys]");
 
     auto const validation_manifest =
         config.section ("validation_manifest");
