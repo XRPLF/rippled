@@ -96,8 +96,6 @@ void PathRequests::updateAll (std::shared_ptr <ReadView const> const& inLedger,
                 {
                     if (auto ipSub = request->getSubscriber ())
                     {
-                        ipSub->getConsumer ().charge (
-                            Resource::feePathFindUpdate);
                         if (!ipSub->getConsumer ().warn ())
                         {
                             Json::Value update = request->doUpdate (cache, false);
@@ -228,13 +226,15 @@ Json::Value
 PathRequests::makeLegacyPathRequest(
     PathRequest::pointer& req,
     std::function <void (void)> completion,
+    Resource::Consumer& consumer,
     std::shared_ptr<ReadView const> const& inLedger,
     Json::Value const& request)
 {
     // This assignment must take place before the
     // completion function is called
     req = std::make_shared<PathRequest> (
-        app_, completion, ++mLastIdentifier, *this, mJournal);
+        app_, completion, consumer, ++mLastIdentifier,
+            *this, mJournal);
 
     auto result = req->doCreate (
         getLineCache (inLedger, false), request);

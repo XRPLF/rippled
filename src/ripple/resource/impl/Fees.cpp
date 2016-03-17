@@ -36,7 +36,6 @@ Charge const feeLightRPC          (   5, "light RPC"              ); // DAVID: C
 Charge const feeLowBurdenRPC      (  20, "low RPC"                );
 Charge const feeMediumBurdenRPC   (  40, "medium RPC"             );
 Charge const feeHighBurdenRPC     ( 300, "heavy RPC"              );
-Charge const feePathFindUpdate    ( 100, "path update"            );
 
 Charge const feeLightPeer         (1, "trivial peer request"      );
 Charge const feeLowBurdenPeer     (2, "simple peer request"       );
