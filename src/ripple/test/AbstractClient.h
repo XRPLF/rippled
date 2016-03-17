@@ -34,6 +34,9 @@ class AbstractClient
 {
 public:
     virtual ~AbstractClient() = default;
+    AbstractClient() = default;
+    AbstractClient(AbstractClient const&) = delete;
+    AbstractClient& operator=(AbstractClient const&) = delete;
 
     /** Submit a command synchronously.
 

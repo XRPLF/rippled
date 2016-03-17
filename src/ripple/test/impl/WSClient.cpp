@@ -297,7 +297,7 @@ private:
     void
     on_read_done()
     {
-        std::lock_guard<std::mutex> lock(m_);
+        std::lock_guard<std::mutex> lock(m0_);
         b0_ = true;
         cv0_.notify_all();
     }
