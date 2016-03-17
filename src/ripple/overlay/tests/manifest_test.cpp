@@ -36,6 +36,20 @@ namespace tests {
 class manifest_test : public ripple::TestSuite
 {
 private:
+    static PublicKey randomNode ()
+    {
+        return derivePublicKey (
+            KeyType::secp256k1,
+            randomSecretKey());
+    }
+
+    static PublicKey randomMasterKey ()
+    {
+        return derivePublicKey (
+            KeyType::ed25519,
+            randomSecretKey());
+    }
+
     static void cleanupDatabaseDir (boost::filesystem::path const& dbPath)
     {
         using namespace boost::filesystem;
@@ -122,7 +136,95 @@ public:
         return Manifest (m.serialized, m.masterKey, m.signingKey, m.sequence);
     }
 
-    void testLoadStore (ManifestCache const& m, ValidatorList& unl)
+
+    void
+    testConfigLoad ()
+    {
+        testcase ("Config Load");
+
+        ManifestCache cache;
+        beast::Journal journal;
+
+        std::vector<PublicKey> network;
+        network.reserve(8);
+
+        while (network.size () != 8)
+            network.push_back (randomMasterKey());
+
+        auto format = [](
+            PublicKey const &publicKey,
+            char const* comment = nullptr)
+        {
+            auto ret = toBase58(
+                TokenType::TOKEN_NODE_PUBLIC,
+                publicKey);
+
+            if (comment)
+                ret += comment;
+
+            return ret;
+        };
+
+        Section s1;
+
+        // Correct (empty) configuration
+        expect (cache.loadValidatorKeys (s1, journal));
+        expect (cache.size() == 0);
+
+        // Correct configuration
+        s1.append (format (network[0]));
+        s1.append (format (network[1], " Comment"));
+        s1.append (format (network[2], " Multi Word Comment"));
+        s1.append (format (network[3], "    Leading Whitespace"));
+        s1.append (format (network[4], " Trailing Whitespace    "));
+        s1.append (format (network[5], "    Leading & Trailing Whitespace    "));
+        s1.append (format (network[6], "    Leading, Trailing & Internal    Whitespace    "));
+        s1.append (format (network[7], "    "));
+
+        expect (cache.loadValidatorKeys (s1, journal));
+
+        for (auto const& n : network)
+            expect (cache.trusted (n));
+
+        // Incorrect configurations:
+        Section s2;
+        s2.append ("NotAPublicKey");
+        expect (!cache.loadValidatorKeys (s2, journal));
+
+        Section s3;
+        s3.append (format (network[0], "!"));
+        expect (!cache.loadValidatorKeys (s3, journal));
+
+        Section s4;
+        s4.append (format (network[0], "!  Comment"));
+        expect (!cache.loadValidatorKeys (s4, journal));
+
+        // Check if we properly terminate when we encounter
+        // a malformed or unparseable entry:
+        auto const masterKey1 = randomMasterKey();
+        auto const masterKey2 = randomMasterKey ();
+
+        Section s5;
+        s5.append (format (masterKey1, "XXX"));
+        s5.append (format (masterKey2));
+        expect (!cache.loadValidatorKeys (s5, journal));
+        expect (!cache.trusted (masterKey1));
+        expect (!cache.trusted (masterKey2));
+
+        // Reject secp256k1 permanent validator keys
+        auto const node1 = randomNode ();
+        auto const node2 = randomNode ();
+
+        Section s6;
+        s6.append (format (node1));
+        s6.append (format (node2, " Comment"));
+        expect (!cache.loadValidatorKeys (s6, journal));
+        expect (!cache.trusted (node1));
+        expect (!cache.trusted (node2));
+    }
+
+    void testLoadStore (ManifestCache const& m, ValidatorList& unl,
+        PublicKey& pk)
     {
         testcase ("load/store");
 
@@ -138,7 +240,14 @@ public:
 
             ManifestCache loaded;
             beast::Journal journal;
+
+            // load should remove master key from permanent key list
+            expect (m.trusted(pk));
+            expect (unl.insertPermanentKey(pk, "trusted key"));
+            expect (unl.trusted(pk));
             loaded.load (dbCon, unl, journal);
+            expect (!unl.trusted(pk));
+            expect (loaded.trusted(pk));
 
             auto getPopulatedManifests =
                     [](ManifestCache const& cache) -> std::vector<Manifest const*>
@@ -206,6 +315,7 @@ public:
         ManifestCache cache;
         beast::Journal journal;
         auto unl = std::make_unique<ValidatorList> (journal);
+        PublicKey pk;
         {
             testcase ("apply");
             auto const accepted = ManifestDisposition::accepted;
@@ -246,8 +356,22 @@ public:
 
             expect (!ripple::make_Manifest(fake));
             expect (cache.applyManifest (clone (s_b2), *unl, journal) == invalid);
+
+            // When trusted permanent key is found as manifest master key
+            // move to manifest cache
+            auto const sk_c = randomSecretKey();
+            pk = derivePublicKey(KeyType::ed25519, sk_c);
+            auto const kp_c = randomKeyPair(KeyType::secp256k1);
+            auto const s_c0 = make_Manifest (KeyType::ed25519, sk_c, kp_c.first, 0);
+            expect (unl->insertPermanentKey(pk, "trusted key"));
+            expect (unl->trusted(pk));
+            expect (!cache.trusted(pk));
+            expect (cache.applyManifest(clone (s_c0), *unl, journal) == accepted);
+            expect (!unl->trusted(pk));
+            expect (cache.trusted(pk));
         }
-        testLoadStore (cache, *unl);
+        testConfigLoad();
+        testLoadStore (cache, *unl, pk);
         testGetSignature ();
     }
 };

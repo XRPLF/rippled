@@ -168,7 +168,16 @@ public:
 
     void configManifest (Manifest m, ValidatorList& unl, beast::Journal journal);
 
+    /** Determines whether a node is in the trusted master key list */
+    bool
+    trusted (
+        PublicKey const& identity) const;
+
     void addTrustedKey (PublicKey const& pk, std::string comment);
+
+    /** The number of installed trusted master keys */
+    std::size_t
+    size () const;
 
     ManifestDisposition
     applyManifest (

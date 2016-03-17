@@ -39,6 +39,15 @@ private:
     }
 
     static
+    PublicKey
+    randomMasterKey ()
+    {
+        return derivePublicKey (
+            KeyType::ed25519,
+            randomSecretKey());
+    }
+
+    static
     bool
     isPresent (
         std::vector<PublicKey> container,
@@ -60,6 +69,7 @@ private:
         auto validators = std::make_unique <ValidatorList> (beast::Journal ());
 
         std::vector<PublicKey> network;
+        network.reserve(8);
 
         while (network.size () != 8)
             network.push_back (randomNode());
@@ -86,13 +96,13 @@ private:
 
         // Correct configuration
         s1.append (format (network[0]));
-        s1.append (format (network[1]) + " Comment");
-        s1.append (format (network[2]) + " Multi Word Comment");
-        s1.append (format (network[3]) + "    Leading Whitespace");
-        s1.append (format (network[4]) + " Trailing Whitespace    ");
-        s1.append (format (network[5]) + "    Leading & Trailing Whitespace    ");
-        s1.append (format (network[6]) + "    Leading, Trailing & Internal    Whitespace    ");
-        s1.append (format (network[7]) + "    ");
+        s1.append (format (network[1], " Comment"));
+        s1.append (format (network[2], " Multi Word Comment"));
+        s1.append (format (network[3], "    Leading Whitespace"));
+        s1.append (format (network[4], " Trailing Whitespace    "));
+        s1.append (format (network[5], "    Leading & Trailing Whitespace    "));
+        s1.append (format (network[6], "    Leading, Trailing & Internal    Whitespace    "));
+        s1.append (format (network[7], "    "));
 
         expect (validators->load (s1));
 
@@ -123,6 +133,17 @@ private:
         expect (!validators->load (s5));
         expect (!validators->trusted (node1));
         expect (!validators->trusted (node2));
+
+        // Add Ed25519 master public keys to permanent validators list
+        auto const masterNode1 = randomMasterKey ();
+        auto const masterNode2 = randomMasterKey ();
+
+        Section s6;
+        s6.append (format (masterNode1));
+        s6.append (format (masterNode2, " Comment"));
+        expect (validators->load (s6));
+        expect (validators->trusted (masterNode1));
+        expect (validators->trusted (masterNode2));
     }
 
     void
