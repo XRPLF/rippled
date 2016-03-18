@@ -176,6 +176,7 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
         port_.protocol.count("peer") > 0)
     , plain_ (
         //port_.protocol.count("ws") > 0 ||
+        port_.protocol.count("ws2") > 0 ||
         port_.protocol.count("http") > 0)
 {
     error_code ec;

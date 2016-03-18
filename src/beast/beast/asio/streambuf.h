@@ -26,6 +26,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <algorithm>
 #include <cassert>
+#include <iterator>
 #include <memory>
 #include <exception>
 #include <type_traits>
@@ -53,6 +54,14 @@ private:
         boost::intrusive::constant_time_size <true>>::type;
     using iterator = typename list_type::iterator;
     using const_iterator = typename list_type::const_iterator;
+
+    static_assert(std::is_base_of<std::bidirectional_iterator_tag,
+		typename std::iterator_traits<iterator>::iterator_category>::value,
+            "type does not meet the iterator requirements");
+
+    static_assert(std::is_base_of<std::bidirectional_iterator_tag,
+		typename std::iterator_traits<const_iterator>::iterator_category>::value,
+            "type does not meet the iterator requirements");
 
     /*  These diagrams illustrate the layout and state variables.
 
@@ -222,80 +231,147 @@ public:
 template <class Allocator>
 class basic_streambuf<Allocator>::const_buffers_type
 {
+private:
+    basic_streambuf const* sb_ = nullptr;
+
 public:
     using value_type = const_buffer;
 
-private:
-    struct transform
-    {
-        using argument_type = element;
-        using result_type = value_type;
-
-        basic_streambuf const* streambuf_ = nullptr;
-
-        transform() = default;
-
-        explicit
-        transform (basic_streambuf const& streambuf)
-            : streambuf_ (&streambuf)
-        {
-        }
-
-        value_type const
-        operator() (element const& e) const;
-    };
-
-    basic_streambuf const* streambuf_ = nullptr;
-
-public:
-    using const_iterator = boost::transform_iterator<
-        transform, typename list_type::const_iterator,
-            value_type, value_type>;
+    class const_iterator;
 
     const_buffers_type() = default;
-    const_buffers_type (const_buffers_type const&) = default;
-    const_buffers_type& operator= (const_buffers_type const&) = default;
+    const_buffers_type(const_buffers_type const&) = default;
+    const_buffers_type& operator=(const_buffers_type const&) = default;
 
     const_iterator
-    begin() const
-    {
-        return const_iterator (streambuf_->list_.begin(),
-            transform(*streambuf_));
-    }
+    begin() const;
 
     const_iterator
-    end() const
-    {
-        return const_iterator (streambuf_->out_ ==
-            streambuf_->list_.end() ? streambuf_->list_.end() :
-                std::next(streambuf_->out_), transform(*streambuf_));
-    }
+    end() const;
 
 private:
     friend class basic_streambuf;
 
     explicit
-    const_buffers_type (basic_streambuf const& streambuf);
+    const_buffers_type(basic_streambuf const& sb);
 };
 
 template <class Allocator>
-basic_streambuf<Allocator>::const_buffers_type::const_buffers_type (
-    basic_streambuf const& streambuf)
-    : streambuf_ (&streambuf)
+class basic_streambuf<Allocator>::const_buffers_type::const_iterator
+{
+public:
+    using value_type =
+        typename const_buffers_type::value_type;
+
+private:
+    basic_streambuf const* sb_ = nullptr;
+    typename list_type::const_iterator it_;
+    value_type mutable v_;
+
+public:
+    using pointer = value_type const*;
+    using reference = value_type const&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category =
+        std::bidirectional_iterator_tag;
+
+    const_iterator() = default;
+    const_iterator(const_iterator&& other) = default;
+    const_iterator(const_iterator const& other) = default;
+    const_iterator& operator=(const_iterator&& other) = default;
+    const_iterator& operator=(const_iterator const& other) = default;
+
+    const_iterator(basic_streambuf const& sb,
+            typename list_type::const_iterator const& it)
+        : sb_(&sb)
+        , it_(it)
+    {
+    }
+
+    bool
+    operator==(const_iterator const& other) const
+    {
+        return sb_ == other.sb_ && it_ == other.it_;
+    }
+
+    bool
+    operator!=(const_iterator const& other) const
+    {
+        return !(*this == other);
+    }
+
+    reference
+    operator*() const
+    {
+        auto const& e = *it_;
+        v_ = value_type{e.data(),
+            (sb_->out_ == sb_->list_.end() ||
+                &e != &*sb_->out_) ? e.size() : sb_->out_pos_};
+        v_ = v_ + (&e == &*sb_->list_.begin() ?
+            sb_->in_pos_ : 0);
+        return v_;
+    }
+
+    pointer
+    operator->() const
+    {
+        return &**this;
+    }
+
+    const_iterator&
+    operator++()
+    {
+        ++it_;
+        return *this;
+    }
+
+    const_iterator
+    operator++(int)
+    {
+        auto temp = *this;
+        ++(*this);
+        return temp;
+    }
+
+    const_iterator&
+    operator--()
+    {
+        --it_;
+        return *this;
+    }
+
+    const_iterator
+    operator--(int)
+    {
+        auto temp = *this;
+        --(*this);
+        return temp;
+    }
+};
+
+template <class Allocator>
+basic_streambuf<Allocator>::const_buffers_type::const_buffers_type(
+    basic_streambuf const& sb)
+    : sb_(&sb)
 {
 }
 
 template <class Allocator>
 auto
-basic_streambuf<Allocator>::const_buffers_type::
-    transform::operator() (element const& e) const ->
-        value_type const
+basic_streambuf<Allocator>::const_buffers_type::begin() const ->
+    const_iterator
 {
-    return value_type (e.data(),
-        (streambuf_->out_ == streambuf_->list_.end() ||
-            &e != &*streambuf_->out_) ? e.size() : streambuf_->out_pos_) +
-                (&e == &*streambuf_->list_.begin() ?
-                    streambuf_->in_pos_ : 0);
+    return const_iterator{*sb_, sb_->list_.begin()};
+}
+
+template <class Allocator>
+auto
+basic_streambuf<Allocator>::const_buffers_type::end() const ->
+    const_iterator
+{
+    return const_iterator{*sb_, sb_->out_ ==
+        sb_->list_.end() ? sb_->list_.end() :
+            std::next(sb_->out_)};
 }
 
 //------------------------------------------------------------------------------
@@ -303,75 +379,144 @@ basic_streambuf<Allocator>::const_buffers_type::
 template <class Allocator>
 class basic_streambuf<Allocator>::mutable_buffers_type
 {
+private:
+    basic_streambuf const* sb_;
+
 public:
     using value_type = mutable_buffer;
 
-private:
-    struct transform
-    {
-        using argument_type = element;
-        using result_type = value_type;
-
-        basic_streambuf const* streambuf_ = nullptr;
-
-        transform() = default;
-
-        explicit
-        transform (basic_streambuf const& streambuf)
-            : streambuf_ (&streambuf)
-        {
-        }
-
-        value_type const
-        operator() (element const& e) const;
-    };
-
-    basic_streambuf const* streambuf_;
-
-public:
-    using const_iterator = boost::transform_iterator<
-        transform, typename list_type::const_iterator,
-            value_type, value_type>;
+    class const_iterator;
 
     mutable_buffers_type() = default;
-    mutable_buffers_type (mutable_buffers_type const&) = default;
-    mutable_buffers_type& operator= (mutable_buffers_type const&) = default;
+    mutable_buffers_type(mutable_buffers_type const&) = default;
+    mutable_buffers_type& operator=(mutable_buffers_type const&) = default;
 
     const_iterator
-    begin() const
-    {
-        return const_iterator (streambuf_->out_,
-            transform(*streambuf_));
-    }
+    begin() const;
 
     const_iterator
-    end() const
-    {
-        return const_iterator (streambuf_->list_.end(),
-            transform(*streambuf_));
-    }
+    end() const;
 
 private:
     friend class basic_streambuf;
-    mutable_buffers_type (basic_streambuf const& streambuf);
+    
+    explicit
+    mutable_buffers_type(basic_streambuf const& sb);
+};
+
+template <class Allocator>
+class basic_streambuf<Allocator>::mutable_buffers_type::const_iterator
+{
+public:
+    using value_type =
+        typename mutable_buffers_type::value_type;
+
+private:
+    basic_streambuf const* sb_ = nullptr;
+    typename list_type::const_iterator it_;
+    value_type mutable v_;
+
+public:
+    using pointer = value_type const*;
+    using reference = value_type const&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category =
+        std::bidirectional_iterator_tag;
+
+    const_iterator() = default;
+    const_iterator(const_iterator&& other) = default;
+    const_iterator(const_iterator const& other) = default;
+    const_iterator& operator=(const_iterator&& other) = default;
+    const_iterator& operator=(const_iterator const& other) = default;
+
+    const_iterator(basic_streambuf const& sb,
+            typename list_type::const_iterator const& it)
+        : sb_(&sb)
+        , it_(it)
+    {
+    }
+
+    bool
+    operator==(const_iterator const& other) const
+    {
+        return sb_ == other.sb_ && it_ == other.it_;
+    }
+
+    bool
+    operator!=(const_iterator const& other) const
+    {
+        return !(*this == other);
+    }
+
+    reference
+    operator*() const
+    {
+        auto const& e = *it_;
+        v_ = value_type{e.data(),
+            &e == &*std::prev(sb_->list_.end()) ?
+                sb_->out_end_ : e.size()};
+        v_ = v_ + (&e == &*sb_->out_ ? sb_->out_pos_ : 0);
+        return v_;
+    }
+
+    pointer
+    operator->() const
+    {
+        return &**this;
+    }
+
+    const_iterator&
+    operator++()
+    {
+        ++it_;
+        return *this;
+    }
+
+    const_iterator
+    operator++(int)
+    {
+        auto temp = *this;
+        ++(*this);
+        return temp;
+    }
+
+    const_iterator&
+    operator--()
+    {
+        --it_;
+        return *this;
+    }
+
+    const_iterator
+    operator--(int)
+    {
+        auto temp = *this;
+        --(*this);
+        return temp;
+    }
 };
 
 template <class Allocator>
 basic_streambuf<Allocator>::mutable_buffers_type::mutable_buffers_type (
-    basic_streambuf const& streambuf)
-    : streambuf_ (&streambuf)
+    basic_streambuf const& sb)
+    : sb_ (&sb)
 {
 }
 
 template <class Allocator>
 auto
-basic_streambuf<Allocator>::mutable_buffers_type::
-    transform::operator() (element const& e) const ->
-        value_type const
+basic_streambuf<Allocator>::mutable_buffers_type::begin() const ->
+    const_iterator
 {
-    return value_type (e.data(), &e == &*std::prev(streambuf_->list_.end()) ?
-        streambuf_->out_end_ : e.size()) + (&e == &*streambuf_->out_ ?
-            streambuf_->out_pos_ : 0);
+    return const_iterator{*sb_, sb_->out_};
+}
+
+template <class Allocator>
+auto
+basic_streambuf<Allocator>::mutable_buffers_type::end() const ->
+    const_iterator
+{
+    return const_iterator{*sb_, sb_->list_.end()};
 }
 
 //------------------------------------------------------------------------------

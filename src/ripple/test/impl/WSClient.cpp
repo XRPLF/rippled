@@ -24,7 +24,9 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <ripple/wsproto/wsproto.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/streambuf.h>
+#include <beast/wsproto.h>
 #include <condition_variable>
 
 #include <beast/unit_test/suite.h>
@@ -47,89 +49,21 @@ class WSClientImpl : public WSClient
         }
     };
 
-    class read_frame_op
-    {
-        struct data
-        {
-            WSClientImpl& wsc;
-            wsproto::frame_header fh;
-            boost::asio::streambuf sb;
-
-            data(WSClientImpl& wsc_)
-                : wsc(wsc_)
-            {
-            }
-
-            ~data()
-            {
-                wsc.on_read_done();
-            }
-        };
-
-        std::shared_ptr<data> d_;
-
-    public:
-        read_frame_op(read_frame_op const&) = default;
-        read_frame_op(read_frame_op&&) = default;
-
-        explicit
-        read_frame_op(WSClientImpl& wsc)
-            : d_(std::make_shared<data>(wsc))
-        {
-            read_one();
-        }
-
-        void read_one()
-        {
-            // hack
-            d_->sb.consume(d_->sb.size());
-            d_->wsc.ws_.async_read_fh(
-                d_->fh, std::move(*this));
-        }
-
-        void operator()(error_code const& ec)
-        {
-            if(ec)
-                return d_->wsc.on_read_frame(
-                    ec, d_->fh, 0, d_->sb.data(),
-                        std::move(*this));
-            d_->wsc.ws_.async_read(d_->fh,
-                d_->sb.prepare(d_->fh.len), std::move(*this));
-        }
-
-        void operator()(error_code const& ec,
-            wsproto::frame_header const& fh,
-                std::size_t bytes_transferred)
-        {
-            if(ec)
-                return d_->wsc.on_read_frame(
-                    ec, d_->fh, 0, d_->sb.data(),
-                        std::move(*this));
-            if(d_->fh.mask)
-            {
-                // TODO: apply key mask to payload
-            }
-            d_->sb.commit(bytes_transferred);
-            return d_->wsc.on_read_frame(
-                ec, d_->fh, bytes_transferred, d_->sb.data(),
-                    std::move(*this));
-       }
-    };
-
     static
     boost::asio::ip::tcp::endpoint
-    getEndpoint(BasicConfig const& cfg)
+    getEndpoint(BasicConfig const& cfg, bool v2)
     {
         auto& log = std::cerr;
         ParsedPort common;
         parse_Port (common, cfg["server"], log);
+        auto const ps = v2 ? "ws2" : "ws";
         for (auto const& name : cfg.section("server").values())
         {
             if (! cfg.exists(name))
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if(pp.protocol.count("ws") == 0)
+            if(pp.protocol.count(ps) == 0)
                 continue;
             using boost::asio::ip::address_v4;
             if(*pp.ip == address_v4{0x00000000})
@@ -154,44 +88,43 @@ class WSClientImpl : public WSClient
     boost::asio::io_service ios_;
     boost::optional<
         boost::asio::io_service::work> work_;
+    boost::asio::io_service::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
-    wsproto::basic_socket<boost::asio::ip::tcp::socket&> ws_;
+    beast::wsproto::stream<boost::asio::ip::tcp::socket&> ws_;
+    beast::asio::streambuf rb_;
 
     // synchronize destructor
     bool b0_ = false;
     std::mutex m0_;
     std::condition_variable cv0_;
 
-    // sychronize message queue
+    // synchronize message queue
     std::mutex m_;
     std::condition_variable cv_;
     std::list<std::shared_ptr<msg>> msgs_;
 
 public:
-    explicit
-    WSClientImpl(Config const& cfg)
+    WSClientImpl(Config const& cfg, bool v2)
         : work_(ios_)
+        , strand_(ios_)
         , thread_([&]{ ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
     {
         using namespace boost::asio;
-        stream_.connect(getEndpoint(cfg));
-        error_code ec;
-        ws_.connect(ec);
-        if(ec)
-            throw ec;
-        read_frame_op{*this};
+        auto const ep = getEndpoint(cfg, v2);
+        stream_.connect(ep);
+        ws_.upgrade(ep.address().to_string() +
+            ":" + std::to_string(ep.port()), "/");
+        beast::wsproto::async_read_msg(ws_, rb_,
+            strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
+                this, beast::asio::placeholders::error)));
     }
 
     ~WSClientImpl() override
     {
         stream_.close();
-        {
-            std::unique_lock<std::mutex> lock(m0_);
-            cv0_.wait(lock, [&]{ return b0_; });
-        }
         work_ = boost::none;
         thread_.join();
 
@@ -212,7 +145,7 @@ public:
                jp = params;
             jp["command"] = cmd;
             auto const s = to_string(jp);
-            ws_.write(buffer(s));
+            ws_.write(beast::wsproto::opcode::text, true, buffer(s));
         }
 
         auto jv = findMsg(5s,
@@ -270,19 +203,15 @@ public:
     }
 
 private:
-    template<class ConstBuffers>
     void
-    on_read_frame(error_code const& ec,
-        wsproto::frame_header const& fh,
-            std::size_t bytes_transferred,
-                ConstBuffers const& b,
-                    read_frame_op&& op)
+    on_read_msg(error_code const& ec)
     {
-        if(bytes_transferred == 0)
+        if(ec)
             return;
         Json::Value jv;
         Json::Reader jr;
-        jr.parse(buffer_string(b), jv);
+        jr.parse(buffer_string(rb_.data()), jv);
+        rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(
             std::move(jv));
         {
@@ -290,14 +219,16 @@ private:
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        op.read_one();
+        beast::wsproto::async_read_msg(ws_, rb_,
+            strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
+                this, beast::asio::placeholders::error)));
     }
 
     // Called when the read op terminates
     void
     on_read_done()
     {
-        std::lock_guard<std::mutex> lock(m_);
+        std::lock_guard<std::mutex> lock(m0_);
         b0_ = true;
         cv0_.notify_all();
     }
@@ -306,7 +237,13 @@ private:
 std::unique_ptr<WSClient>
 makeWSClient(Config const& cfg)
 {
-    return std::make_unique<WSClientImpl>(cfg);
+    return std::make_unique<WSClientImpl>(cfg, false);
+}
+
+std::unique_ptr<WSClient>
+makeWS2Client(Config const& cfg)
+{
+    return std::make_unique<WSClientImpl>(cfg, true);
 }
 
 } // test
