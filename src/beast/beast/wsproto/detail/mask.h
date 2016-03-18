@@ -24,6 +24,7 @@
 #include <array>
 #include <cstdint>
 #include <random>
+#include <type_traits>
 
 namespace beast {
 namespace wsproto {
@@ -89,6 +90,26 @@ maskgen_t<_>::rekey()
 using maskgen = maskgen_t<>;
 
 //------------------------------------------------------------------------------
+
+static_assert(
+    std::is_same<std::uint32_t, std::size_t>::value ||
+    std::is_same<std::uint64_t, std::size_t>::value,
+        "Unsupported std::size_t");
+
+inline
+void
+prepare_mask(std::uint32_t& prepared, std::uint32_t key)
+{
+    prepared = key;
+}
+
+inline
+void
+prepare_mask(std::uint64_t& prepared, std::uint32_t key)
+{
+    prepared =
+        (static_cast<std::uint64_t>(key) << 32) | key;
+}
 
 // Apply mask in place to a buffer
 //
