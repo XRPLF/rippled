@@ -834,22 +834,14 @@ public:
             boost::system::error_code const& error // result of operation
         ); @endcode
     */
-    template<class Stream, class Streambuf, class Handler>
+    template<class U, class Streambuf, class Handler>
     friend 
     void
-    async_read_msg(stream<Stream>& ws, Streambuf& sb, Handler&& handler);
+    async_read_msg(stream<U>& ws, Streambuf& sb, Handler&& handler);
 
 private:
-    template<class Handler>
-    class read_fh_op;
-
     template<class Buffers, class Handler>
-    class read_frame_op;
-
-    template<class Buffers, class Handler>
-    class read_some_op;
-
-    class read_control_op;
+    class read_op;
 
     template<class Handler>
     class write_op;

@@ -34,7 +34,7 @@ stream_base::process_fh()
 {
     error_code ec;
     
-    if(ec = detail::validate_fh(role_, rs_.fh))
+    if((ec = detail::validate_fh(role_, rs_.fh)))
         return ec;
 
     // continuation without an active message
@@ -178,9 +178,10 @@ stream<Stream>::async_read_fh(frame_header& fh, Handler&& h)
     static_assert(beast::is_call_possible<Handler,
         void(error_code)>::value,
             "Type does not meet the handler requirements");
-    get_io_service().dispatch(read_fh_op<
-        std::decay_t<Handler>>{*this, fh,
-            std::forward<Handler>(h)});
+    get_io_service().dispatch(read_op<
+        boost::asio::null_buffers,
+            std::decay_t<Handler>>{*this, fh,
+                std::forward<Handler>(h)});
 }
 
 template<class Stream>
@@ -192,7 +193,7 @@ stream<Stream>::async_read_some(
     static_assert(beast::is_call_possible<Handler,
         void(error_code, std::size_t)>::value,
             "Type does not meet the handler requirements");
-    get_io_service().dispatch(read_some_op<
+    get_io_service().dispatch(read_op<
         std::decay_t<Buffers>, std::decay_t<Handler>>{
             *this, std::forward<Buffers>(b),
                 std::forward<Handler>(h)});

@@ -127,129 +127,20 @@ public:
 
 //------------------------------------------------------------------------------
 
-// read a frame header
-template<class Stream>
-template<class Handler>
-class stream<Stream>::read_fh_op
-{
-    struct data
-    {
-        stream<Stream>& ws;
-        frame_header& fh;
-        Handler h;
-        int state = 0;
-        detail::fh_buffer fb;
-        bool cont = false;
-
-        template<class DeducedHandler>
-        data(stream<Stream>& ws_, frame_header& fh_,
-                DeducedHandler&& h_)
-            : ws(ws_)
-            , fh(fh_)
-            , h(std::forward<Handler>(h_))
-        {
-        }
-    };
-
-    std::shared_ptr<data> d_;
-
-public:
-    read_fh_op(read_fh_op&&) = default;
-    read_fh_op(read_fh_op const&) = default;
-
-    template<class... Args>
-    explicit
-    read_fh_op(Args&&... args)
-        : d_(std::make_shared<data>(
-            std::forward<Args>(args)...))
-    {
-    }
-
-    void operator()()
-    {
-        using namespace boost::asio;
-        if(d_->ws.rs_.need != 0)
-            throw std::logic_error(
-                "mismatched read_state");
-        // read fixed part of frame header
-        return boost::asio::async_read(d_->ws.stream_,
-            mutable_buffers_1(d_->fb.data(), 2),
-                std::move(*this));
-    }
-
-    void operator()(error_code ec,
-        std::size_t bytes_transferred)
-    {
-        d_->cont = true;
-        using namespace boost::asio;
-        if(! ec)
-        {
-            do
-            {
-                if(d_->state == 0)
-                {
-                    d_->state = 1;
-                    // read variable part of frame header
-                    return boost::asio::async_read(d_->ws.stream_,
-                        mutable_buffers_1(d_->fb.data() + 2,
-                            detail::decode_fh1(d_->ws.rs_.fh,
-                                d_->fb)), std::move(*this));
-                }
-                if(! (ec = detail::decode_fh2(
-                        d_->ws.rs_.fh, d_->fb)))
-                    ec = d_->ws.process_fh();
-            }
-            while(false);
-        }
-        d_->fh = d_->ws.rs_.fh;
-        d_->h(ec);
-    }
-
-    friend
-    auto asio_handler_allocate(
-        std::size_t size, read_fh_op* op)
-    {
-        return boost_asio_handler_alloc_helpers::
-            allocate(size, op->d_->h);
-    }
-
-    friend
-    auto asio_handler_deallocate(
-        void* p, std::size_t size, read_fh_op* op)
-    {
-        return boost_asio_handler_alloc_helpers::
-            deallocate(p, size, op->d_->h);
-    }
-
-    friend
-    auto asio_handler_is_continuation(read_fh_op* op)
-    {
-        return op->d_->cont ||
-            boost_asio_handler_invoke_helpers::
-                invoke(f, op->d_->h);
-    }
-
-    template <class Function>
-    friend
-    auto asio_handler_invoke(Function&& f, read_fh_op* op)
-    {
-        return boost_asio_handler_invoke_helpers::
-            invoke(f, op->d_->h);
-    }
-};
-
-//------------------------------------------------------------------------------
-
-// read message data
+// Multi-function composed read operation.
+// Reads a frame header, or some payload data.
+// Handles control frames.
+//
 template<class Stream>
 template<class Buffers, class Handler>
-class stream<Stream>::read_some_op
+class stream<Stream>::read_op
 {
     struct data
     {
         stream<Stream>& ws;
         Buffers bs;
         Handler h;
+        frame_header* fh;
         int state = 0;
         detail::fh_buffer fb;
         //std::array<std::uint8_t, 125> cbuf;
@@ -261,6 +152,16 @@ class stream<Stream>::read_some_op
             : ws(ws_)
             , bs(std::forward<DeducedBuffers>(bs_))
             , h(std::forward<DeducedHandler>(h_))
+            , fh(nullptr)
+        {
+        }
+
+        template<class DeducedHandler>
+        data(stream<Stream>& ws_, frame_header& fh_,
+                DeducedHandler&& h_)
+            : ws(ws_)
+            , h(std::forward<DeducedHandler>(h_))
+            , fh(&fh_)
         {
         }
     };
@@ -268,12 +169,12 @@ class stream<Stream>::read_some_op
     std::shared_ptr<data> d_;
 
 public:
-    read_some_op(read_some_op&&) = default;
-    read_some_op(read_some_op const&) = default;
+    read_op(read_op&&) = default;
+    read_op(read_op const&) = default;
 
     template<class... Args>
     explicit
-    read_some_op(Args&&... args)
+    read_op(Args&&... args)
         : d_(std::make_shared<data>(
             std::forward<Args>(args)...))
     {
@@ -287,11 +188,10 @@ public:
             return boost::asio::async_read(d_->ws.stream_,
                 mutable_buffers_1(d_->fb.data(), 2),
                     std::move(*this));
+        if(d_->fh)
+            throw std::logic_error("bad read state");
         d_->state = 2;
-        // continue reading the frame payload
-        return boost::asio::async_read(d_->ws.stream_,
-            asio::clip_buffers(d_->ws.rs_.need, d_->bs),
-                std::move(*this));
+        (*this)(error_code{}, 0);
     }
 
     void operator()(error_code ec,
@@ -302,25 +202,33 @@ public:
         {
             switch(d_->state)
             {
+            // got fixed frame header data
             case 0:
                 d_->state = 1;
-                // read variable part of frame header
                 return boost::asio::async_read(d_->ws.stream_,
                     mutable_buffers_1(d_->fb.data() + 2,
                         detail::decode_fh1(d_->ws.rs_.fh,
                             d_->fb)), std::move(*this));
+
+            // got variable frame header data
             case 1:
-                if(ec = detail::decode_fh2(
-                        d_->ws.rs_.fh, d_->fb))
+                if((ec = detail::decode_fh2(
+                        d_->ws.rs_.fh, d_->fb)))
                     break;
-                if(ec = d_->ws.process_fh())
+                if((ec = d_->ws.process_fh()))
                     break;
+#if 0
+                if(d_->fh)
+                    // caller wants just the frame header
+                    d_->h(ec);
+                    return;
+#endif
                 d_->state = 2;
-                // continue reading the frame payload
                 return boost::asio::async_read(d_->ws.stream_,
                     asio::clip_buffers(d_->ws.rs_.need, d_->bs),
                         std::move(*this));
 
+            // got frame payload data
             case 2:
                 if(bytes_transferred > d_->ws.rs_.need)
                     throw std::logic_error("extra data");
@@ -334,12 +242,12 @@ public:
                 break;
             }
         }
-        d_->h(ec, bytes_transferred);
+        //d_->h(ec, bytes_transferred);
     }
 
     friend
     auto asio_handler_allocate(
-        std::size_t size, read_some_op* op)
+        std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
             allocate(size, op->d_->h);
@@ -347,23 +255,23 @@ public:
 
     friend
     auto asio_handler_deallocate(
-        void* p, std::size_t size, read_some_op* op)
+        void* p, std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
             deallocate(p, size, op->d_->h);
     }
 
     friend
-    auto asio_handler_is_continuation(read_some_op* op)
+    auto asio_handler_is_continuation(read_op* op)
     {
-        return op->d_->cont ||
+        return op->d_->state ||
             boost_asio_handler_invoke_helpers::
                 invoke(f, op->d_->h);
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, read_some_op* op)
+    auto asio_handler_invoke(Function&& f, read_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
