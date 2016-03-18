@@ -259,6 +259,10 @@ public:
         lastMedian = 500;
         checkMetrics(env, 2, 8, 5, 4, 256, lastMedian);
 
+        // TODO: Duplicate the full queue test case with equal fees.
+        // Verify that the last transaction added is always the first
+        // dropped.
+
         lastMedian = 500;
         env.close();
         checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);

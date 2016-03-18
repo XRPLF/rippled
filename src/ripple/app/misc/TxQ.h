@@ -57,7 +57,6 @@ public:
         std::size_t ledgersInQueue = 20;
         std::uint32_t retrySequencePercent = 25;
         std::uint32_t multiTxnPercent = 25;
-        std::uint32_t invalidationPenaltyPercent = 25;
         std::uint32_t minimumEscalationMultiplier = 500;
         std::uint32_t minimumTxnInLedger = 5;
         std::uint32_t minimumTxnInLedgerSA = 1000;
@@ -257,38 +256,8 @@ private:
 
         std::shared_ptr<STTx const> txn;
 
-        /* The rule for determining if more than one transaction
-           for a given account can be held in the queue is,
-           "if all prior transactions from the account successfully
-            claim a fee in a relatively recent OpenView, and the
-            latest transaction is likely to claim a fee in that same
-            OpenView, then the latest transaction can be held".
-
-           To see if the new transaction is likely to claim
-           a fee, we copy the OpenView, test apply all the
-           transactions which are already in the queue and have
-           not been applied, and store the OpenView in each
-           applied Candidate for reuse by later transactions.
-
-           The stored OpenView can be invalidated if the account
-           performs certain operations outside of the TxQ logic
-           (e.g. by submitting transactions to different servers),
-           or replaces a queued transaction which has been test
-           applied (by sequence number). Normally, each transaction
-           will only be applied to a ledger at most once, and at
-           most one copy of the OpenView will be created.
-
-           An alternative implementation would be to make only
-           a local OpenView copy or "sandbox" in TxQ::apply, test
-           apply all the prior transactions for this account, then
-           discard the copy.
-        */
-        /* view Defaults to empty. Only set when test applying
-           multiple transactions per account. If set, this
-           candidate HAS BEEN applied to the view.
-        */
-        std::shared_ptr<OpenView> view;
-        std::uint32_t invalidations;
+        //TODO : boost::optional struct for transaction category,
+        // and max XRP consumption
 
         uint64_t const feeLevel;
         TxID const txID;
@@ -352,10 +321,6 @@ private:
 
         bool
         removeCandidate(TxSeq const& sequence);
-
-        void
-        invalidate(TxMap::iterator);
-
     };
 
     using FeeHook = boost::intrusive::member_hook
@@ -391,8 +356,7 @@ private:
     // Erase and return the next entry for the account (if fee level
     // is higher), or next entry in byFee_ (lower fee level).
     // Used to get the next "applyable" candidate for accept().
-    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type,
-        bool invalidate = false);
+    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
 
 };
 

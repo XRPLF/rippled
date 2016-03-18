@@ -71,32 +71,11 @@ getFeeLevelPaid(
 
 static
 std::uint64_t
-increaseWithPenalty(std::uint64_t level,
-    std::uint32_t increasePercent,
-    std::uint32_t penaltyPercent,
-    std::uint32_t penaltyCount)
+increase(std::uint64_t level,
+    std::uint32_t increasePercent)
 {
-    // Divvy these operations out, because 100 ^ 10
-    // overflows uint64, and while it's pretty unlikely
-    // that we'll get that many retries, it is within the
-    // realm of reality.
-    // Don't care about the overflow flag
-    level = mulDiv(
+    return mulDiv(
         level, 100 + increasePercent, 100).second;
-    for (; penaltyCount >= 5; penaltyCount -= 5)
-    {
-        level = mulDiv(level,
-            std::pow(100 + penaltyPercent, 5),
-                std::pow(100, 5)).second;
-    }
-    if (penaltyCount)
-    {
-        level = mulDiv(level,
-            std::pow(100 + penaltyPercent, penaltyCount),
-                std::pow(100, penaltyCount)).second;
-    }
-
-    return level;
 }
 
 
@@ -216,8 +195,6 @@ TxQ::CandidateTxn::CandidateTxn(
             ApplyFlags const flags_,
                 PreflightResult const& pfresult_)
     : txn(txn_)
-    , view()
-    , invalidations(0)
     , feeLevel(feeLevel_)
     , txID(txID_)
     , account(txn_->getAccountID(sfAccount))
@@ -282,27 +259,6 @@ TxQ::TxQAccount::removeCandidate(TxSeq const& sequence)
     return transactions.erase(sequence) != 0;
 }
 
-void
-TxQ::TxQAccount::invalidate(TxMap::iterator txIter)
-{
-    // If the view has been set, then tx has been
-    // applied to the view. Since the view is shared,
-    // we need to invalidate all the transactions
-    // for this account.
-    if (txIter->second.view)
-    {
-        assert(transactions.find(txIter->first) == txIter);
-        for (auto& it : transactions)
-        {
-            if (it.second.view)
-            {
-                it.second.view.reset();
-                ++it.second.invalidations;
-            }
-        }
-    }
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 TxQ::TxQ(Setup const& setup,
@@ -357,8 +313,7 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter)
 }
 
 auto
-TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter,
-    bool invalidate)
+TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
 -> FeeMultiSet::iterator_type
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
@@ -367,9 +322,6 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter,
     assert(accountIter != txQAccount.transactions.end());
     assert(accountIter == txQAccount.transactions.begin());
     assert(byFee_.iterator_to(accountIter->second) == candidateIter);
-    if(invalidate)
-        // Invalidate the queued txns, if appropriate
-        txQAccount.invalidate(accountIter);
     auto accountNextIter = std::next(accountIter);
     // Check if the next transaction for this account has the
     // next sequence number, and a higher fee, which means we
@@ -415,7 +367,7 @@ TxQ::apply(Application& app, OpenView& view,
     {
         TxQAccount::TxMap::iterator nextAcctIter;
         TxQAccount::TxMap::iterator prevTxnIter;
-        std::shared_ptr<OpenView> workingView;
+        std::shared_ptr<ApplyViewImpl> workingView;
     };
 
     boost::optional<MultiTxn> multiTxn;
@@ -444,13 +396,9 @@ TxQ::apply(Application& app, OpenView& view,
         {
             // Is the current transaction's fee higher than
             // the queued transaction's fee + a percentage
-            // + a penalty for invalidations?
-            // TODO: Do we want a penalty for invalidations?
-            auto requiredRetryLevel = increaseWithPenalty(
+            auto requiredRetryLevel = increase(
                 existingIter->second.feeLevel,
-                    setup_.retrySequencePercent,
-                        setup_.invalidationPenaltyPercent,
-                            existingIter->second.invalidations);
+                    setup_.retrySequencePercent);
             JLOG(j_.trace()) << "Found transaction in queue for account " <<
                 account << " with sequence number " << t_seq <<
                 " new txn fee level is " << feeLevelPaid <<
@@ -462,6 +410,15 @@ TxQ::apply(Application& app, OpenView& view,
                 || (existingIter->second.feeLevel < requiredFeeLevel &&
                     feeLevelPaid >= requiredFeeLevel))
             {
+                /* TODO: Check that the category is safe to change,
+                    or that we're replacing the last txn for the account.
+                    A safe txn can't be replaced by a blocker, unless it's
+                    last.
+                    TODO: Is this worth a new TER?
+                    On fail, return telCAN_NOT_QUEUE.
+                */
+
+
                 // The fee is high enough to either retry or
                 // the prior txn could not get into the open ledger,
                 //  but this one can.
@@ -526,26 +483,17 @@ TxQ::apply(Application& app, OpenView& view,
             {
                 // Is the current transaction's fee higher than
                 // the previous transaction's fee + a percentage
-                // + a penalty for invalidations?
-                // TODO: Do we want a penalty for invalidations?
-                auto requiredMultiLevel = increaseWithPenalty(
+                auto requiredMultiLevel = increase(
                     multiTxn->prevTxnIter->second.feeLevel,
-                        setup_.multiTxnPercent,
-                            setup_.invalidationPenaltyPercent,
-                                multiTxn->prevTxnIter->second.invalidations);
+                        setup_.multiTxnPercent);
 
                 if (feeLevelPaid > requiredMultiLevel)
                 {
-                    /*
-                        Note that the OpenView stored in the candidates can
-                        easily become obsolete, and the account state could
-                        potentially change, however, the only state the TxQ
-                        is concerned with is the account's XRP balance, so
-                        a `balanceAdjustment` is computed based on the stored
-                        OpenView and the live OpenView. Transactions created
-                        by other accounts can not change state in any other
-                        way that would prevent taking a fee.
-                    */
+
+
+                    // TODO: Here's where we get the big rewrite.
+
+
                     auto workingIter = multiTxn->prevTxnIter;
                     // search backwards for an existing view to use
                     while (workingIter != multiTxn->nextAcctIter &&
@@ -847,7 +795,7 @@ TxQ::accept(Application& app,
                 JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID << " failed with " <<
                     transToken(txnResult) << ". Remove from queue.";
-                candidateIter = eraseAndAdvance(candidateIter, true);
+                candidateIter = eraseAndAdvance(candidateIter);
             }
             else
             {

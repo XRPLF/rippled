@@ -105,7 +105,9 @@ already in the queue, and a sequence number that is sequential with the other
 transactions in the queue for that account, it must pay a
 [fee level](#fee-level) at least 25% higher than the transaction with the
 previous sequence number, and will be considered for the queue if all prior
-transactions for that account are still valid against the open ledger.
+queued transactions for that account, in their worst case, leave enough
+XRP balance to pay the fee, and none of the queued transactions affect
+the ability of subsequent transactions to claim a fee.
 
 Currently, there is an additional restriction that the queue can not work with
 transactions using the `sfPreviousTxnID` or `sfAccountTxnID` fields.
