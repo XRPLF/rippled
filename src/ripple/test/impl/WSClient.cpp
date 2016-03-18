@@ -24,6 +24,8 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/streambuf.h>
 #include <beast/wsproto.h>
 #include <condition_variable>
 
@@ -45,71 +47,6 @@ class WSClientImpl : public WSClient
             : jv(jv_)
         {
         }
-    };
-
-    class read_frame_op
-    {
-        struct data
-        {
-            WSClientImpl& wsc;
-            beast::wsproto::frame_header fh;
-            boost::asio::streambuf sb;
-
-            data(WSClientImpl& wsc_)
-                : wsc(wsc_)
-            {
-            }
-
-            ~data()
-            {
-                wsc.on_read_done();
-            }
-        };
-
-        std::shared_ptr<data> d_;
-
-    public:
-        read_frame_op(read_frame_op const&) = default;
-        read_frame_op(read_frame_op&&) = default;
-
-        explicit
-        read_frame_op(WSClientImpl& wsc)
-            : d_(std::make_shared<data>(wsc))
-        {
-            read_one();
-        }
-
-        void read_one()
-        {
-            // hack
-            d_->sb.consume(d_->sb.size());
-            d_->wsc.ws_.async_read_fh(
-                d_->fh, std::move(*this));
-        }
-
-        void operator()(error_code const& ec)
-        {
-            if(ec)
-                return d_->wsc.on_read_frame(
-                    ec, d_->fh, 0, d_->sb.data(),
-                        std::move(*this));
-            d_->wsc.ws_.async_read(d_->fh,
-                d_->sb.prepare(d_->fh.len), std::move(*this));
-        }
-
-        void operator()(error_code const& ec,
-            beast::wsproto::frame_header const& fh,
-                std::size_t bytes_transferred)
-        {
-            if(ec)
-                return d_->wsc.on_read_frame(
-                    ec, d_->fh, 0, d_->sb.data(),
-                        std::move(*this));
-            d_->sb.commit(bytes_transferred);
-            return d_->wsc.on_read_frame(
-                ec, d_->fh, bytes_transferred, d_->sb.data(),
-                    std::move(*this));
-       }
     };
 
     static
@@ -151,9 +88,11 @@ class WSClientImpl : public WSClient
     boost::asio::io_service ios_;
     boost::optional<
         boost::asio::io_service::work> work_;
+    boost::asio::io_service::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
     beast::wsproto::stream<boost::asio::ip::tcp::socket&> ws_;
+    beast::asio::streambuf rb_;
 
     // synchronize destructor
     bool b0_ = false;
@@ -168,6 +107,7 @@ class WSClientImpl : public WSClient
 public:
     WSClientImpl(Config const& cfg, bool v2)
         : work_(ios_)
+        , strand_(ios_)
         , thread_([&]{ ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
@@ -177,16 +117,14 @@ public:
         stream_.connect(ep);
         ws_.upgrade(ep.address().to_string() +
             ":" + std::to_string(ep.port()), "/");
-        read_frame_op{*this};
+        beast::wsproto::async_read_msg(ws_, rb_,
+            strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
+                this, beast::asio::placeholders::error)));
     }
 
     ~WSClientImpl() override
     {
         stream_.close();
-        {
-            std::unique_lock<std::mutex> lock(m0_);
-            cv0_.wait(lock, [&]{ return b0_; });
-        }
         work_ = boost::none;
         thread_.join();
 
@@ -265,19 +203,15 @@ public:
     }
 
 private:
-    template<class ConstBuffers>
     void
-    on_read_frame(error_code const& ec,
-        beast::wsproto::frame_header const& fh,
-            std::size_t bytes_transferred,
-                ConstBuffers const& b,
-                    read_frame_op&& op)
+    on_read_msg(error_code const& ec)
     {
-        if(bytes_transferred == 0)
+        if(ec)
             return;
         Json::Value jv;
         Json::Reader jr;
-        jr.parse(buffer_string(b), jv);
+        jr.parse(buffer_string(rb_.data()), jv);
+        rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(
             std::move(jv));
         {
@@ -285,7 +219,9 @@ private:
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        op.read_one();
+        beast::wsproto::async_read_msg(ws_, rb_,
+            strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
+                this, beast::asio::placeholders::error)));
     }
 
     // Called when the read op terminates
