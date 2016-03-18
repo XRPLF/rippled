@@ -112,17 +112,15 @@ prepare_key(std::uint64_t& prepared, std::uint32_t key)
 }
 
 // Apply mask in place to a buffer
-//
+//  generic unoptimized 32-bit version
+// TODO: Intel optimized 32/64,
+//       generic optimized 32/64
 template<class = void>
 void
 mask_inplace(
     boost::asio::mutable_buffer const& b,
         std::uint32_t& key)
 {
-    // VFALCO This is the unoptimized version.
-    //        On Intel platforms we can process
-    //        an unaligned size_t at a time instead.
-    //
     using namespace boost::asio;
     auto n = buffer_size(b);
     auto p = buffer_cast<std::uint8_t*>(b);
