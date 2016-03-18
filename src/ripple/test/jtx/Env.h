@@ -289,13 +289,6 @@ public:
         trace_ = 0;
     }
 
-    /** Turn off testing. */
-    void
-    disable_testing()
-    {
-        testing_ = false;
-    }
-
     /** Turn off signature checks. */
     void
     disable_sigs()
@@ -540,7 +533,6 @@ public:
 
 protected:
     int trace_ = 0;
-    bool testing_ = true;
     TestStopwatch stopwatch_;
     uint256 txid_;
     TER ter_ = tesSUCCESS;
