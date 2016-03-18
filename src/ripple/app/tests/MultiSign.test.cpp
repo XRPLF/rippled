@@ -196,9 +196,7 @@ public:
         env.fund(XRP(1000), alice);
         env.close();
 
-        // Make sure multisign is disabled in production.
         // NOTE: These six tests will fail when multisign is default enabled.
-        env.disable_testing();
         env(signers(alice, 1, {{bogie, 1}}), ter(temDISABLED));
         env.close();
         env.require (owners (alice, 0));
