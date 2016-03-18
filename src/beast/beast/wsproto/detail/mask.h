@@ -132,9 +132,6 @@ std::size_t
 mask_and_copy(MutableBuffers const& mbs,
     ConstBuffers const& cbs, std::uint32_t key)
 {
-    // hack for now
-    key = boost::endian::endian_reverse(key);
-
     // VFALCO This is the unoptimized version.
     //        On Intel platforms we can process
     //        an unaligned size_t at a time instead.
