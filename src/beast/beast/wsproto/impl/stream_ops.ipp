@@ -31,6 +31,7 @@
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 #include <boost/optional.hpp>
+#include <array>
 #include <memory>
 #include <stdexcept>
 
@@ -251,6 +252,8 @@ class stream<Stream>::read_some_op
         Handler h;
         int state = 0;
         detail::fh_buffer fb;
+        //std::array<std::uint8_t, 125> cbuf;
+        //boost::asio::mutable_buffers_1 cbs;
 
         template<class DeducedBuffers, class DeducedHandler>
         data(stream<Stream>& ws_,

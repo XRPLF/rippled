@@ -151,6 +151,7 @@ protected:
         bool closed = false;
         bool cont = false;
         bool text;
+        std::function<void(error_code)> resume;
     };
 
     read_state rs_;
@@ -847,6 +848,8 @@ private:
 
     template<class Buffers, class Handler>
     class read_some_op;
+
+    class read_control_op;
 
     template<class Handler>
     class write_op;
