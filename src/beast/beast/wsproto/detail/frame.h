@@ -145,7 +145,7 @@ encode_fh(fh_buffer& b, frame_header const& fh)
     }
     if(fh.mask)
     {
-        big_uint32_buf_t key(fh.key);
+        little_uint32_buf_t key(fh.key);
         std::copy(key.data(),
             key.data() + 4, &b[n]);
         n += 4;
