@@ -106,9 +106,6 @@ private:
     do_read();
 
     void
-    on_read_fh(error_code const& ec);
-
-    void
     on_read(error_code const& ec);
 };
 
@@ -226,19 +223,7 @@ BaseWSPeer<Impl>::do_read()
         return strand_.post(std::bind(
             &BaseWSPeer::do_read, impl().shared_from_this()));
     using namespace beast::asio;
-    impl().ws_.async_read_fh(fh_, strand_.wrap(std::bind(
-        &BaseWSPeer::on_read_fh, impl().shared_from_this(),
-            placeholders::error)));
-}
-
-template<class Impl>
-void
-BaseWSPeer<Impl>::on_read_fh(error_code const& ec)
-{
-    if(ec)
-        return fail(ec, "read_fh");
-    using namespace beast::asio;
-    impl().ws_.async_read(fh_, rb_.prepare(fh_.len),
+    beast::wsproto::async_read_msg(impl().ws_, rb_,
         strand_.wrap(std::bind(&BaseWSPeer::on_read,
             impl().shared_from_this(), placeholders::error)));
 }
@@ -249,14 +234,6 @@ BaseWSPeer<Impl>::on_read(error_code const& ec)
 {
     if(ec)
         return fail(ec, "read");
-    rb_.commit(fh_.len);
-    if(! fh_.fin)
-    {
-        using namespace beast::asio;
-        return impl().ws_.async_read_fh(fh_, strand_.wrap(std::bind(
-            &BaseWSPeer::on_read_fh, impl().shared_from_this(),
-                placeholders::error)));
-    }
     auto const& data = rb_.data();
     std::vector<boost::asio::const_buffer> b;
     b.reserve(std::distance(data.begin(), data.end()));
