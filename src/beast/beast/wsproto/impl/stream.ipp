@@ -49,7 +49,7 @@ stream_base::process_fh()
     if(! is_control(rs_.fh.op))
     {
         if(rs_.fh.mask)
-            prepare_mask(rs_.key, rs_.fh.key);
+            prepare_key(rs_.key, rs_.fh.key);
         if(rs_.fh.op != opcode::cont)
         {
             rs_.need = rs_.fh.len;

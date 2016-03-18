@@ -98,14 +98,14 @@ static_assert(
 
 inline
 void
-prepare_mask(std::uint32_t& prepared, std::uint32_t key)
+prepare_key(std::uint32_t& prepared, std::uint32_t key)
 {
     prepared = key;
 }
 
 inline
 void
-prepare_mask(std::uint64_t& prepared, std::uint32_t key)
+prepare_key(std::uint64_t& prepared, std::uint32_t key)
 {
     prepared =
         (static_cast<std::uint64_t>(key) << 32) | key;

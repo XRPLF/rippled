@@ -433,7 +433,7 @@ public:
                     ec = error::eom;
                 if(d_->ws.rs_.fh.mask)
                     detail::mask_inplace(d_->bs,
-                        d_->ws.rs_.fh.key);
+                        d_->ws.rs_.key);
 
                 break;
             }

@@ -145,7 +145,8 @@ protected:
     struct read_state
     {
         frame_header fh;
-        std::size_t key;
+        //std::size_t key;
+        std::uint32_t key;
         std::size_t need = 0;
         bool closed = false;
         bool cont = false;
