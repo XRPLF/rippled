@@ -236,10 +236,14 @@
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\append_buffers.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\clip_buffers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\error.h">
     </ClInclude>
@@ -260,6 +264,9 @@
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\tests\buffers_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
