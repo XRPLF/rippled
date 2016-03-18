@@ -186,21 +186,6 @@ stream<Stream>::async_read_fh(frame_header& fh, Handler&& h)
 template<class Stream>
 template<class Buffers, class Handler>
 void
-stream<Stream>::async_read(frame_header const& fh,
-    Buffers&& b, Handler&& h)
-{
-    static_assert(beast::is_call_possible<Handler,
-        void(error_code, frame_header, std::size_t)>::value,
-            "Type does not meet the handler requirements");
-    get_io_service().dispatch(read_frame_op<
-        std::decay_t<Buffers>, std::decay_t<Handler>>{
-            *this, fh, std::forward<Buffers>(b),
-                std::forward<Handler>(h)});
-}
-
-template<class Stream>
-template<class Buffers, class Handler>
-void
 stream<Stream>::async_read_some(
     Buffers&& b, Handler&& h)
 {

@@ -695,32 +695,6 @@ public:
     void
     async_read_fh(frame_header& fh, Handler&& handler);
 
-    /// Start reading a frame payload asynchronously.
-    /**
-        This function is used to asynchronously read a WebSocket frame payload
-        on the stream. This function call always returns immediately.
-
-        @param fh The contents of the corresponding frame header.
-
-        @param b A object meeting the requirements of MutableBufferSequence
-        which will receive the payload data. Although the buffers object may be
-        copied as necessary, ownership of the underlying buffers is retained by
-        the caller, which must guarantee that they remain valid until the
-        handler is called. Requires:
-        @code boost::asio::buffer_size(b) == fh.len @endcode
-
-        @param h The handler to be called when the read completes. Copies will
-        be made of the handler as required. The equivalent function signature of
-        the handler must be:
-        @code void handler(
-            boost::system::error_code const& error // result of operation
-        ); @endcode
-    */
-    template<class MutableBuffers, class Handler>
-    void
-    async_read(frame_header const& fh,
-        MutableBuffers&& b, Handler&& h);
-
     /// Start reading message data asynchronously.
     /**
         This function is used to asynchronously read WebSocket message data on
