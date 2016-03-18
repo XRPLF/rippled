@@ -17,13 +17,20 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_ASIO_ASYNC_TYPES_H_INLUDED
+#define BEAST_ASIO_ASYNC_TYPES_H_INLUDED
+
+#include <boost/asio/async_result.hpp>
+#include <boost/asio/handler_type.hpp>
+
+namespace beast {
+namespace asio {
+
+template<class Handler, class... Args>
+using handler_type =
+    typename boost::asio::handler_type<Handler, Args...>::type;
+
+} // asio
+} // beast
+
 #endif
-
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
-
