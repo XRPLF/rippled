@@ -26,6 +26,8 @@
 namespace beast {
 namespace wsproto {
 
+namespace detail {
+
 template<class _>
 error_code
 stream_base::process_fh()
@@ -47,12 +49,17 @@ stream_base::process_fh()
     if(! is_control(rs_.fh.op))
     {
         if(rs_.fh.op != opcode::cont)
+        {
+            rs_.need = rs_.fh.len;
             rs_.text = rs_.fh.op == opcode::text;
+        }
         rs_.cont = ! rs_.fh.fin;
     }
 
     return ec;
 }
+
+} // detail
 
 template<class Stream>
 template<class... Args>
@@ -175,19 +182,18 @@ stream<Stream>::async_read_fh(frame_header& fh, Handler&& h)
 }
 
 template<class Stream>
-template<class MutableBuffers, class Handler>
+template<class Buffers, class Handler>
 void
 stream<Stream>::async_read(frame_header const& fh,
-    MutableBuffers&& b, Handler&& h)
+    Buffers&& b, Handler&& h)
 {
     static_assert(beast::is_call_possible<Handler,
         void(error_code, frame_header, std::size_t)>::value,
             "Type does not meet the handler requirements");
-    get_io_service().dispatch(detail::read_op<
-        Stream, std::decay_t<MutableBuffers>,
-            std::decay_t<Handler>>{stream_, fh,
-                std::forward<MutableBuffers>(b),
-                    std::forward<Handler>(h)});
+    get_io_service().dispatch(read_frame_op<
+        std::decay_t<Buffers>, std::decay_t<Handler>>{
+            *this, fh, std::forward<Buffers>(b),
+                std::forward<Handler>(h)});
 }
 
 template<class Stream>

@@ -32,153 +32,11 @@
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 #include <boost/optional.hpp>
 #include <memory>
+#include <stdexcept>
 
 namespace beast {
 namespace wsproto {
 namespace detail {
-
-#if 0
-template<class Op>
-class async_wrapper
-{
-    struct State
-    {
-        Op op;
-        bool cont = false;
-
-        template<class... Args>
-        State(Args&&... args)
-            : op(std::forward<Args>(args)...)
-        {
-        }
-    };
-
-    std::shared_ptr<State> s_;
-
-public:
-    async_wrapper(async_wrapper&&) = default;
-    async_wrapper(async_wrapper const&) = default;
-
-    template<class... Args>
-    explicit
-    async_wrapper(Args&&... args)
-        : s_(std::make_shared<State>(
-            std::forward<Args>(args)...))
-    {
-    }
-
-    template<class... Args>
-    void operator()()
-    {
-        s_->cont = true;
-        s_->op(std::move(*this));
-    }
-
-    template<class... Args>
-    void operator()(Args&&... args)
-    {
-        s_->cont = true;
-        s_->op(std::move(*this),
-            std::forward<Args>(args)...);
-    }
-
-    friend
-    auto asio_handler_allocate(
-        std::size_t size, async_wrapper* w)
-    {
-        return boost_asio_handler_alloc_helpers::
-            allocate(size, w->s_->op.h);
-    }
-
-    friend
-    auto asio_handler_deallocate(
-        void* p, std::size_t size, async_wrapper* w)
-    {
-        return boost_asio_handler_alloc_helpers::
-            deallocate(p, size, w->s_->op.h);
-    }
-
-    friend
-    auto asio_handler_is_continuation(async_wrapper* w)
-    {
-        return w->s_->cont ||
-            boost_asio_handler_cont_helpers::
-                is_continuation(w->s_->op.h);
-    }
-
-    template <class Function>
-    friend
-    auto asio_handler_invoke(
-        Function&& f, async_wrapper* w)
-    {
-        return boost_asio_handler_invoke_helpers::
-            invoke(f, w->s_->op.h);
-    }
-};
-
-// write a frame
-template<class Stream, class ConstBuffers, class Handler>
-struct write_plain_frame_op
-{
-    Stream& s_;
-    frame_header fh_;
-    ConstBuffers bs_;
-    fh_buffer fb_;
-    boost::asio::const_buffers_1 b_;
-
-public:
-    Handler h;
-
-    template<class DeducedConstBuffers, class DeducedHandler>
-    write_plain_frame_op(Stream& s, frame_header const& fh,
-            DeducedConstBuffers&& bs, DeducedHandler&& h_)
-        : s_(s)
-        , fh_(fh)
-        , bs_(std::forward<DeducedConstBuffers>(bs))
-        , h(std::forward<DeducedHandler>(h_))
-    {
-        b_ = encode_fh(fb_, fh);
-    }
-
-    Handler&
-    handler()
-    {
-        return h;
-    }
-
-    template<class Op>
-    void
-    operator()(Op&& op)
-    {
-        using namespace boost::asio;
-        async_write(s_,
-            beast::asio::append_buffers(
-                b_, bs_), std::move(*this));
-    }
-
-    template<class Op>
-    void
-    operator()(Op&& op, error_code const& ec,
-        std::size_t bytes_transferred)
-    {
-        h_(ec, std::move(fh_));
-    }
-};
-
-template<class Stream, class ConstBuffers, class Handler>
-void
-async_write_plain_frame(Stream& stream,
-    frame_header const& fh, ConstBuffers&& bs,
-        Handler&& h)
-{
-#if 0
-    async_wrapper<write_plain_frame_op<
-        std::decay_t<Stream>
-#endif
-}
-#endif
-
-//------------------------------------------------------------------------------
 
 // send the entire contents of a streambuf
 template<class Stream,
@@ -258,109 +116,6 @@ public:
     template <class Function>
     friend
     auto asio_handler_invoke(Function&& f, streambuf_op* op)
-    {
-        return boost_asio_handler_invoke_helpers::
-            invoke(f, op->d_->h);
-    }
-};
-
-//------------------------------------------------------------------------------
-
-// read a frame body
-template<class Stream,
-    class MutableBuffers, class Handler>
-struct read_op
-{
-    struct data
-    {
-        Stream& stream;
-        frame_header fh;
-        MutableBuffers b;
-        Handler h;
-        beast::asio::streambuf sb;
-        bool cont = false;
-
-        template<class DeducedBuffers, class DeducedHandler>
-        data(Stream& stream_, frame_header const& fh_,
-                DeducedBuffers&& b_, DeducedHandler&& h_)
-            : stream(stream_)
-            , fh(fh_)
-            , b(std::forward<DeducedBuffers>(b_))
-            , h(std::forward<DeducedHandler>(h_))
-        {
-        }
-    };
-
-    std::shared_ptr<data> d_;
-
-public:
-    read_op(read_op&&) = default;
-    read_op(read_op const&) = default;
-
-    template<class... Args>
-    explicit
-    read_op(Args&&... args)
-        : d_(std::make_shared<data>(
-            std::forward<Args>(args)...))
-    {
-    }
-    
-    void operator()()
-    {
-        using namespace boost::asio;
-        if(d_->fh.mask)
-            async_read(d_->stream,
-                d_->sb.prepare(d_->fh.len),
-                    std::move(*this));
-        else
-            async_read(d_->stream,
-                d_->b, std::move(*this));
-    }
-
-    void operator()(error_code const& ec,
-        std::size_t bytes_transferred)
-    {
-        d_->cont = true;
-        using namespace boost::asio;
-        if(! ec)
-        {
-            if(d_->fh.mask)
-            {
-                d_->sb.commit(bytes_transferred);
-                mask_and_copy(d_->b, d_->sb.data(),
-                    d_->fh.key);
-            }
-        }
-        d_->h(ec, std::move(d_->fh), bytes_transferred);
-    }
-
-    friend
-    auto asio_handler_allocate(
-        std::size_t size, read_op* op)
-    {
-        return boost_asio_handler_alloc_helpers::
-            allocate(size, op->d_->h);
-    }
-
-    friend
-    auto asio_handler_deallocate(
-        void* p, std::size_t size, read_op* op)
-    {
-        return boost_asio_handler_alloc_helpers::
-            deallocate(p, size, op->d_->h);
-    }
-
-    friend
-    auto asio_handler_is_continuation(read_op* op)
-    {
-        return op->d_->cont ||
-            boost_asio_handler_invoke_helpers::
-                invoke(f, op->d_->h);
-    }
-
-    template <class Function>
-    friend
-    auto asio_handler_invoke(Function&& f, read_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -484,6 +239,113 @@ public:
 
 //------------------------------------------------------------------------------
 
+// read a frame body
+template<class Stream>
+template<class Buffers, class Handler>
+class stream<Stream>::read_frame_op
+{
+    struct data
+    {
+        stream<Stream>& ws;
+        frame_header fh;
+        Buffers b;
+        Handler h;
+        beast::asio::streambuf sb;
+        bool cont = false;
+
+        template<class DeducedBuffers, class DeducedHandler>
+        data(stream<Stream>& ws_, frame_header const& fh_,
+                DeducedBuffers&& b_, DeducedHandler&& h_)
+            : ws(ws_)
+            , fh(fh_)
+            , b(std::forward<DeducedBuffers>(b_))
+            , h(std::forward<DeducedHandler>(h_))
+        {
+        }
+    };
+
+    std::shared_ptr<data> d_;
+
+public:
+    read_frame_op(read_frame_op&&) = default;
+    read_frame_op(read_frame_op const&) = default;
+
+    template<class... Args>
+    explicit
+    read_frame_op(Args&&... args)
+        : d_(std::make_shared<data>(
+            std::forward<Args>(args)...))
+    {
+    }
+    
+    void operator()()
+    {
+        using namespace boost::asio;
+        if(d_->ws.rs_.need == 0)
+            throw std::logic_error(
+                "no frame header");
+        if(d_->fh.mask)
+            boost::asio::async_read(d_->ws.stream_,
+                d_->sb.prepare(d_->fh.len),
+                    std::move(*this));
+        else
+            boost::asio::async_read(d_->ws.stream_,
+                d_->b, std::move(*this));
+    }
+
+    void operator()(error_code const& ec,
+        std::size_t bytes_transferred)
+    {
+        d_->cont = true;
+        using namespace boost::asio;
+        if(! ec)
+        {
+            d_->ws.rs_.need -= bytes_transferred;
+            if(d_->fh.mask)
+            {
+                d_->sb.commit(bytes_transferred);
+                detail::mask_and_copy(d_->b, d_->sb.data(),
+                    d_->fh.key);
+            }
+        }
+        d_->h(ec, std::move(d_->fh), bytes_transferred);
+    }
+
+    friend
+    auto asio_handler_allocate(
+        std::size_t size, read_frame_op* op)
+    {
+        return boost_asio_handler_alloc_helpers::
+            allocate(size, op->d_->h);
+    }
+
+    friend
+    auto asio_handler_deallocate(
+        void* p, std::size_t size, read_frame_op* op)
+    {
+        return boost_asio_handler_alloc_helpers::
+            deallocate(p, size, op->d_->h);
+    }
+
+    friend
+    auto asio_handler_is_continuation(read_frame_op* op)
+    {
+        return op->d_->cont ||
+            boost_asio_handler_invoke_helpers::
+                invoke(f, op->d_->h);
+    }
+
+    template <class Function>
+    friend
+    auto asio_handler_invoke(Function&& f, read_frame_op* op)
+    {
+        return boost_asio_handler_invoke_helpers::
+            invoke(f, op->d_->h);
+    }
+};
+
+//------------------------------------------------------------------------------
+
 // read message data
 template<class Stream>
 template<class Buffers, class Handler>
@@ -564,6 +426,14 @@ public:
                         std::move(*this));
 
             case 2:
+                if(bytes_transferred > d_->ws.rs_.need)
+                    throw std::logic_error("extra data");
+                d_->ws.rs_.need -= bytes_transferred;
+                if(d_->ws.rs_.need == 0 && d_->ws.rs_.fh.fin)
+                    ec = error::eom;
+                if(d_->ws.rs_.fh.mask)
+                    detail::mask_inplace(d_->bs,
+                        d_->ws.rs_.fh.key);
 
                 break;
             }
@@ -743,7 +613,7 @@ public:
         d_->cont = true;
         if(! ec)
             return d_->ws.async_read_some(
-                d_->sb.prepare(d_->fh.len),
+                d_->sb.prepare(d_->ws.rs_.fh.len),
                     std::move(*this));
         d_->h(ec);
     }
@@ -751,15 +621,15 @@ public:
     void operator()(error_code ec,
         std::size_t bytes_transferred)
     {
-        d_->cont = true;
         using namespace boost::asio;
         auto const eom = ec == error::eom;
         if(! ec || eom)
         {
             d_->sb.commit(bytes_transferred);
             if(! eom)
-                return d_->ws.async_read_fh(d_->fh,
-                    std::move(*this));
+                return d_->ws.async_read_fh(
+                    d_->ws.rs_.fh, std::move(*this));
+            ec = {};
         }
         d_->h(ec);
     }

@@ -110,6 +110,8 @@ private:
 
 //------------------------------------------------------------------------------
 
+namespace detail {
+
 class stream_base
 {
 protected:
@@ -145,7 +147,7 @@ protected:
         frame_header fh;
         std::size_t need = 0;
         bool closed = false;
-        bool cont = false; // expecting continuation
+        bool cont = false;
         bool text;
     };
 
@@ -155,7 +157,12 @@ protected:
     template<class = void>
     error_code
     process_fh();
+
+    template<class Stream, class Streambuf, class Handler>
+    friend class read_msg_op;
 };
+
+} // detail
 
 /// Provides message-oriented functionality using WebSockets.
 /**
@@ -181,7 +188,7 @@ protected:
     Stream, SyncReadStream, SyncWriteStream.
 */
 template<class Stream>
-class stream : public stream_base
+class stream : public detail::stream_base
 {
 public:
     /// The type of the next layer.
@@ -858,6 +865,9 @@ public:
 private:
     template<class Handler>
     class read_fh_op;
+
+    template<class Buffers, class Handler>
+    class read_frame_op;
 
     template<class Buffers, class Handler>
     class read_some_op;

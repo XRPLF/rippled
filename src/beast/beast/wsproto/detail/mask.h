@@ -90,6 +90,41 @@ using maskgen = maskgen_t<>;
 
 //------------------------------------------------------------------------------
 
+// Apply mask in place to a buffer
+//
+template<class = void>
+void
+mask_inplace(
+    boost::asio::mutable_buffer const& b,
+        std::uint32_t& key)
+{
+    // VFALCO This is the unoptimized version.
+    //        On Intel platforms we can process
+    //        an unaligned size_t at a time instead.
+    //
+    using namespace boost::asio;
+    auto n = buffer_size(b);
+    auto p = buffer_cast<std::uint8_t*>(b);
+    for(auto i = n / 4; i; --i)
+    {
+        *p = *p ^  key      ; ++p;
+        *p = *p ^ (key >> 8); ++p;
+        *p = *p ^ (key >>16); ++p;
+        *p = *p ^ (key >>24); ++p;
+    }
+    n %= 4;
+    switch(n)
+    {
+    case 3: p[2] = p[2] ^ (key >>16);
+    case 2: p[1] = p[1] ^ (key >> 8);
+    case 1: p[0] = p[0] ^  key;
+        n *= 8;
+        key = (key << n) | (key >> (32 - n));
+    default:
+        break;
+    }
+}
+
 // Apply mask key and copy a buffer in one step
 //
 template<class MutableBuffers, class ConstBuffers>
@@ -117,31 +152,8 @@ mask_and_copy(MutableBuffers const& mbs,
         [](std::uint32_t& key,
             void* dest, void const* src, std::size_t n)
         {
-            auto pm = reinterpret_cast<
-                std::uint8_t const*>(&key);
-            auto pd = reinterpret_cast<
-                std::uint8_t*>(dest);
-            auto ps = reinterpret_cast<
-                std::uint8_t const*>(src);
-            while(n >= 4)
-            {
-                *pd++ = *ps++ ^ pm[0];
-                *pd++ = *ps++ ^ pm[1];
-                *pd++ = *ps++ ^ pm[2];
-                *pd++ = *ps++ ^ pm[3];
-                n -= 4;
-                
-            }
-            switch(n)
-            {
-            case 3: pd[2] = ps[2] ^ pm[2];
-            case 2: pd[1] = ps[1] ^ pm[1];
-            case 1: pd[0] = ps[0] ^ pm[0];
-                n *= 8;
-                key = (key << n) | (key >> (32 - n));
-            default:
-                break;
-            }
+            std::memcpy(dest, src, n);
+            mask_inplace(mutable_buffer(dest, n), key);
         };
     for(;;)
     {
@@ -165,6 +177,17 @@ mask_and_copy(MutableBuffers const& mbs,
         }
     }
     return size;
+}
+
+// Apply mask in place
+//
+template<class MutableBuffers>
+void
+mask_inplace(
+    MutableBuffers const& bs, std::uint32_t& key)
+{
+    for(auto const& b : bs)
+        mask_inplace(b, key);
 }
 
 } // detail
