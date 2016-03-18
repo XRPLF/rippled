@@ -111,7 +111,7 @@ decode_fh2(frame_header& fh, fh_buffer const& b)
     }
     if(fh.mask)
         fh.key = reinterpret_cast<
-            big_uint32_buf_t const*>(&b[n])->value();
+            little_uint32_buf_t const*>(&b[n])->value();
     return {};
 }
 

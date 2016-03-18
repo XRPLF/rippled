@@ -45,7 +45,7 @@ public:
     maskgen_t& operator=(maskgen_t const&) = delete;
 
     maskgen_t();
- 
+
     result_type
     operator()() noexcept;
 
@@ -58,7 +58,7 @@ maskgen_t<_>::maskgen_t()
 {
     rekey();
 }
- 
+
 template<class _>
 auto
 maskgen_t<_>::operator()() noexcept ->
