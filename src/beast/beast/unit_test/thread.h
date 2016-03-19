@@ -112,6 +112,15 @@ private:
         catch (suite::abort_exception const&)
         {
         }
+        catch (std::exception const& e)
+        {
+            s_->fail ("unhandled exception: " +
+                std::string (e.what()));
+        }
+        catch (...)
+        {
+            s_->fail ("unhandled exception");
+        }
     }
 };
 
