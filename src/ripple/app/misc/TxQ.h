@@ -266,7 +266,7 @@ private:
         boost::optional<LedgerIndex> lastValid;
         TxSeq const sequence;
         ApplyFlags const flags;
-        // pfresult is never allowed to be empty. The
+        // Invariant: pfresult is never allowed to be empty. The
         // boost::optional is leveraged to allow `emplace`d
         // construction and replacement without a copy
         // assignment operation.

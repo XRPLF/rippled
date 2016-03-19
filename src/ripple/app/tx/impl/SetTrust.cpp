@@ -28,6 +28,15 @@
 
 namespace ripple {
 
+TxConsequences
+SetTrust::calculateConsequences(
+    PreflightResult const& preflightResult)
+{
+    return{ TxConsequences::normal,
+        preflightResult.tx[sfFee].xrp(),
+            beast::zero, 1 };
+}
+
 TER
 SetTrust::preflight (PreflightContext const& ctx)
 {

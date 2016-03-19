@@ -157,6 +157,33 @@ invoke_calculateBaseFee(PreclaimContext const& ctx)
 }
 
 static
+TxConsequences
+invoke_calculateConsequences(PreflightResult const& preflightResult)
+{
+    switch (preflightResult.tx.getTxnType())
+    {
+    case ttACCOUNT_SET:     return SetAccount::calculateConsequences(preflightResult);
+    case ttOFFER_CANCEL:    return CancelOffer::calculateConsequences(preflightResult);
+    case ttOFFER_CREATE:    return CreateOffer::calculateConsequences(preflightResult);
+    case ttPAYMENT:         return Payment::calculateConsequences(preflightResult);
+    case ttSUSPAY_CREATE:   return SusPayCreate::calculateConsequences(preflightResult);
+    case ttSUSPAY_FINISH:   return SusPayFinish::calculateConsequences(preflightResult);
+    case ttSUSPAY_CANCEL:   return SusPayCancel::calculateConsequences(preflightResult);
+    case ttREGULAR_KEY_SET: return SetRegularKey::calculateConsequences(preflightResult);
+    case ttSIGNER_LIST_SET: return SetSignerList::calculateConsequences(preflightResult);
+    case ttTICKET_CANCEL:   return CancelTicket::calculateConsequences(preflightResult);
+    case ttTICKET_CREATE:   return CreateTicket::calculateConsequences(preflightResult);
+    case ttTRUST_SET:       return SetTrust::calculateConsequences(preflightResult);
+    case ttAMENDMENT:
+    case ttFEE:
+        // fall through to default
+    default:
+        assert(false);
+        return { TxConsequences::blocker, beast::zero, beast::zero, 0 };
+    }
+}
+
+static
 std::pair<TER, bool>
 invoke_apply (ApplyContext& ctx)
 {
@@ -243,6 +270,12 @@ calculateBaseFee(Application& app, ReadView const& view,
             tapNONE, j);
 
     return invoke_calculateBaseFee(ctx);
+}
+
+TxConsequences
+calculateConsequences(PreflightResult const& preflightResult)
+{
+    return invoke_calculateConsequences(preflightResult);
 }
 
 std::pair<TER, bool>

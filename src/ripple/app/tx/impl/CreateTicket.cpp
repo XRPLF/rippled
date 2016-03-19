@@ -26,6 +26,15 @@
 
 namespace ripple {
 
+TxConsequences
+CreateTicket::calculateConsequences(
+    PreflightResult const& preflightResult)
+{
+    return{ TxConsequences::normal,
+        preflightResult.tx[sfFee].xrp(),
+            beast::zero, 1 };
+}
+
 TER
 CreateTicket::preflight (PreflightContext const& ctx)
 {

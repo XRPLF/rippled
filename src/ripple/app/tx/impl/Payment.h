@@ -45,6 +45,10 @@ public:
     }
 
     static
+    TxConsequences
+    calculateConsequences(PreflightResult const& preflightResult);
+
+    static
     TER
     preflight (PreflightContext const& ctx);
 

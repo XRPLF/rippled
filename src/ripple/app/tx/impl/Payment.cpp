@@ -30,6 +30,26 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
+TxConsequences
+Payment::calculateConsequences(
+    PreflightResult const& preflightResult)
+{
+    auto const& tx = preflightResult.tx;
+
+    auto const feePaid = tx[sfFee].xrp();
+
+    auto const sendMax = tx[~sfSendMax];
+    auto const saDstAmount(tx.getFieldAmount(sfAmount));
+
+    /* If there's no sfSendMax in XRP, and the sfAmount isn't
+        in XRP, then the transaction can not send XRP. */
+    auto const maxSpend = sendMax ?
+        (sendMax->native() ? sendMax->xrp() : beast::zero) :
+        (saDstAmount.native() ? saDstAmount.xrp() : beast::zero);
+
+    return{ TxConsequences::normal, feePaid, maxSpend, 0 };
+}
+
 TER
 Payment::preflight (PreflightContext const& ctx)
 {

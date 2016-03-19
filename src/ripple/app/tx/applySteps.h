@@ -92,6 +92,37 @@ public:
     PreclaimResult& operator=(PreclaimResult const&) = delete;
 };
 
+struct TxConsequences
+{
+    enum Category
+    {
+        // Moves currency around, creates offers, etc.
+        normal = 0,
+        // Affects the ability of subsequent transactions
+        // to claim a fee. Eg. SetRegularKey
+        blocker
+    };
+
+    Category const category;
+    XRPAmount const fee;
+    // Does NOT include the fee.
+    XRPAmount const potentialSpend;
+    int const ownerCountAdjustment;
+
+    TxConsequences(Category const category_,
+        XRPAmount const fee_, XRPAmount const spend_,
+        int ownerCountAdjustment_)
+        : category(category_)
+        , fee(fee_)
+        , potentialSpend(spend_)
+        , ownerCountAdjustment(ownerCountAdjustment_)
+    {
+    }
+
+    TxConsequences& operator=(TxConsequences const&) = delete;
+
+};
+
 /** Gate a transaction based on static information.
 
     The transaction is checked against all possible
@@ -142,6 +173,13 @@ preclaim(PreflightResult const& preflightResult,
 std::uint64_t
 calculateBaseFee(Application& app, ReadView const& view,
     STTx const& tx, beast::Journal j);
+
+/** Determine the XRP balance consequences if a transaction
+    consumes the maximum XRP allowed.
+*/
+TxConsequences
+calculateConsequences(PreflightResult const& preflightResult);
+
 /** Apply a prechecked transaction to an OpenView.
 
     See also: apply()

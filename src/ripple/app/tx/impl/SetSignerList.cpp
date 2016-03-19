@@ -70,6 +70,15 @@ SetSignerList::determineOperation(STTx const& tx,
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
 }
 
+TxConsequences
+SetSignerList::calculateConsequences(
+    PreflightResult const& preflightResult)
+{
+    return{ TxConsequences::blocker,
+        preflightResult.tx[sfFee].xrp(),
+        beast::zero, 0 };
+}
+
 TER
 SetSignerList::preflight (PreflightContext const& ctx)
 {
