@@ -95,6 +95,12 @@ public:
     }
 
     void
+    detach()
+    {
+        t_.detach();
+    }
+
+    void
     swap (thread& other)
     {
         std::swap(s_, other.s_);
