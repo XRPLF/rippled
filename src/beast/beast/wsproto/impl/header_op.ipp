@@ -127,11 +127,13 @@ public:
                     d.sb.reset();
                     d.ws.write_ping<asio::static_streambuf>(
                         d.sb, opcode::pong, data);
-                    d.state = 1;
-                    // write pong frame
-                    boost::asio::async_write(d.ws.stream_,
-                        d.sb.data(), std::move(*this));
-                    return;
+                    /*
+                    if(d.ws.wr_active_)
+                        // suspend
+                    else
+                        goto 6; //??
+                    */
+                    break;
                 }
                 else if(d.ws.rd_fh_.op == opcode::pong)
                 {
@@ -203,6 +205,15 @@ public:
             // sent close frame
             case 5:
                 ec = error::closed;
+                break;
+
+            // send pong
+            case 6:
+                d.state = 1;
+                // write pong frame
+                boost::asio::async_write(d.ws.stream_,
+                    d.sb.data(), std::move(*this));
+                return;
             }
         }
         d.ws.rd_active_ = false;
