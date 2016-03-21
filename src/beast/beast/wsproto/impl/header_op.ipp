@@ -70,6 +70,7 @@ public:
     {
         using namespace boost::asio;
         auto& d = *d_;
+
         if(d.ws.rd_need_ != 0)
             throw std::logic_error("bad read state");
         d.ws.rd_active_ = true;
@@ -129,13 +130,13 @@ public:
                     d.ws.template write_ping<
                         asio::static_streambuf>(
                             d.sb, opcode::pong, data);
-                    /*
                     if(d.ws.wr_active_)
-                        // suspend
-                    else
-                        goto 6; //??
-                    */
-                    break;
+                    {
+                        d.state = 6;
+                        // suspend...
+                        return;
+                    }
+                    goto do_send_pong;
                 }
                 else if(d.ws.rd_fh_.op == opcode::pong)
                 {
@@ -148,11 +149,13 @@ public:
                     d.ws.template write_ping<
                         asio::static_streambuf>(
                             d.sb, opcode::ping, data);
-                    d.state = 1;
-                    // write ping frame
-                    boost::asio::async_write(d.ws.stream_,
-                        d.sb.data(), std::move(*this));
-                    return;
+                    if(d.ws.wr_active_)
+                    {
+                        d.state = 8;
+                        // suspend...
+                        return;
+                    }
+                    goto do_send_ping;
                 }
                 else
                 {
@@ -163,6 +166,7 @@ public:
                 d.sb.reset();
 
             // start or repeat
+            do_read_header:
             case 0:
             case 1:
                 d.state = 2;
@@ -198,8 +202,8 @@ public:
                 if(d.ws.rd_fh_.len == 0)
                     // empty control frame payload
                     goto do_control_frame;
-                d.state = 4;
                 d.mb = d.sb.prepare(d.ws.rd_fh_.len);
+                d.state = 4;
                 // read control frame payload
                 boost::asio::async_read(d.ws.stream_,
                     d.mb, std::move(*this));
@@ -210,13 +214,29 @@ public:
                 ec = error::closed;
                 break;
 
-            // send pong
+            do_send_pong:
             case 6:
-                d.state = 1;
+                d.state = 8;
+                d.ws.wr_active_ = true;
                 // write pong frame
                 boost::asio::async_write(d.ws.stream_,
                     d.sb.data(), std::move(*this));
                 return;
+
+            do_send_ping:
+            case 7:
+                d.state = 8;
+                d.ws.wr_active_ = true;
+                // write ping frame
+                boost::asio::async_write(d.ws.stream_,
+                    d.sb.data(), std::move(*this));
+                return;
+
+            // sent ping/pong
+            case 8:
+                d.ws.wr_active_ = false;
+                goto do_read_header;
+
             }
         }
         d.ws.rd_active_ = false;
