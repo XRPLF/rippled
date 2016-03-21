@@ -256,8 +256,7 @@ private:
 
         std::shared_ptr<STTx const> txn;
 
-        //TODO : boost::optional struct for transaction category,
-        // and max XRP consumption
+        boost::optional<TxConsequences const> consequences;
 
         uint64_t const feeLevel;
         TxID const txID;

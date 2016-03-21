@@ -152,6 +152,17 @@ std::uint64_t Transactor::calculateBaseFee (
     return baseFee + (signerCount * baseFee);
 }
 
+TxConsequences
+Transactor::calculateConsequences(
+    PreflightResult const& preflightResult)
+{
+    auto const& tx = preflightResult.tx;
+
+    auto const feePaid = tx[sfFee].xrp();
+
+    return{ TxConsequences::normal, feePaid, beast::zero, 0 };
+}
+
 TER
 Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
 {

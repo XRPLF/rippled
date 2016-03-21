@@ -371,6 +371,8 @@ TxQ::apply(Application& app, OpenView& view,
     };
 
     boost::optional<MultiTxn> multiTxn;
+    boost::optional<TxConsequences> consequences;
+    boost::optional<FeeMultiSet::iterator> replacedItemDeleteIter;
 
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -408,34 +410,61 @@ TxQ::apply(Application& app, OpenView& view,
                 requiredRetryLevel;
             if (feeLevelPaid > requiredRetryLevel
                 || (existingIter->second.feeLevel < requiredFeeLevel &&
-                    feeLevelPaid >= requiredFeeLevel))
+                    feeLevelPaid >= requiredFeeLevel &&
+                    existingIter == txQAcct.transactions.begin()))
             {
-                /* TODO: Check that the category is safe to change,
-                    or that we're replacing the last txn for the account.
-                    A safe txn can't be replaced by a blocker, unless it's
-                    last.
-                    TODO: Is this worth a new TER?
-                    On fail, return telCAN_NOT_QUEUE.
+                /* Either the fee is high enough to retry or
+                    the prior txn is the first for this account, and
+                    could not get into the open ledger, but this one can.
                 */
 
+                /* A normal tx can't be replaced by a blocker, unless it's
+                    the last tx in the queue for the account.
+                */
+                if (std::next(existingIter) != txQAcct.transactions.end())
+                {
+                    if (!existingIter->second.consequences)
+                        existingIter->second.consequences.emplace(
+                            calculateConsequences(
+                                *existingIter->second.pfresult));
 
-                // The fee is high enough to either retry or
-                // the prior txn could not get into the open ledger,
-                //  but this one can.
+                    if (existingIter->second.consequences->category ==
+                        TxConsequences::normal)
+                    {
+                        assert(!consequences);
+                        consequences.emplace(calculateConsequences(
+                            pfresult));
+                        if (consequences->category ==
+                            TxConsequences::blocker)
+                        {
+                            // Can't replace a normal transaction in the
+                            // middle of the queue with a blocker.
+                            JLOG(j_.trace()) <<
+                                "Ignoring blocker transaction " <<
+                                transactionID <<
+                                " in favor of normal queued " <<
+                                existingIter->second.txID;
+                            return{ telCAN_NOT_QUEUE, false };
+                        }
+                    }
+                }
+
+
                 // Remove the queued transaction and continue
                 JLOG(j_.trace()) <<
                     "Removing transaction from queue " <<
                     existingIter->second.txID <<
                     " in favor of " << transactionID;
-                // Invalidate the queued txns, if appropriate
-                txQAcct.invalidate(existingIter);
-                // Then remove this one from the queue.
-                auto byFeeIter = byFee_.iterator_to(existingIter->second);
-                assert(byFeeIter != byFee_.end());
-                assert(&existingIter->second == &*byFeeIter);
-                assert(byFeeIter->sequence == t_seq);
-                assert(byFeeIter->account == txQAcct.account);
-                erase(byFeeIter);
+                // Then save the queued tx to remove from the queue if
+                // the new tx succeeds or gets queued. DO NOT REMOVE
+                // if the new tx fails, because there may be other txs
+                // dependent on it in the queue.
+                auto deleteIter = byFee_.iterator_to(existingIter->second);
+                assert(deleteIter != byFee_.end());
+                assert(&existingIter->second == &*deleteIter);
+                assert(deleteIter->sequence == t_seq);
+                assert(deleteIter->account == txQAcct.account);
+                replacedItemDeleteIter = deleteIter;
             }
             else
             {
@@ -445,7 +474,7 @@ TxQ::apply(Application& app, OpenView& view,
                     transactionID <<
                     " in favor of queued " <<
                     existingIter->second.txID;
-                return{ telINSUF_FEE_P, false };
+                return{ telCAN_NOT_QUEUE, false };
             }
         }
     }
@@ -467,7 +496,7 @@ TxQ::apply(Application& app, OpenView& view,
             {
                 // Only if the queue has entries for all the
                 // seq's in [a_seq, t_seq), create the multiTxn
-                // object containing the info we need to test apply
+                // object containing the info we need to adjust for
                 // prior txns. Otherwise, let preclaim fail as if
                 // we didn't have the queue at all.
                 auto nextAcctIter = txQAcct.transactions.find(a_seq);
@@ -494,12 +523,24 @@ TxQ::apply(Application& app, OpenView& view,
                     // TODO: Here's where we get the big rewrite.
 
 
-                    auto workingIter = multiTxn->prevTxnIter;
-                    // search backwards for an existing view to use
-                    while (workingIter != multiTxn->nextAcctIter &&
-                        !workingIter->second.view)
+                    // Sum up the consequences of the queued txs.
+                    // Abort if a blocker is found.
+                    XRPAmount fee(beast::zero);
+                    XRPAmount potentialSpend(beast::zero);
+                    int ownerCountAdjustment = 0;
+                    auto workingIter = multiTxn->nextAcctIter;
+                    for (; multiTxn && workingIter != multiTxn->prevTxnIter; ++workingIter)
                     {
-                        --workingIter;
+                        if (!workingIter->second.consequences)
+                            workingIter->second.consequences.emplace(
+                                *workingIter->second.pfresult
+                                );
+                        if (workingIter->second.consequences->category ==
+                            TxConsequences::blocker)
+                        {
+                            multiTxn.reset();
+                            break;
+                        }
                     }
                     if (workingIter->second.view)
                     {
@@ -603,6 +644,8 @@ TxQ::apply(Application& app, OpenView& view,
                     " failed with ") <<
                         transToken(txnResult);
 
+        if (didApply && replacedItemDeleteIter)
+            erase(*replacedItemDeleteIter);
         return { txnResult, didApply };
     }
 
@@ -639,7 +682,10 @@ TxQ::apply(Application& app, OpenView& view,
                 lastRIter->feeLevel << " in favor of " <<
                 transactionID << " with fee of " <<
                 feeLevelPaid;
-            erase(byFee_.iterator_to(*lastRIter));
+            auto endIter = byFee_.iterator_to(*lastRIter);
+            if (replacedItemDeleteIter && *replacedItemDeleteIter == endIter)
+                replacedItemDeleteIter.reset();
+            erase(endIter);
         }
         else
         {
@@ -651,6 +697,8 @@ TxQ::apply(Application& app, OpenView& view,
     }
 
     // Hold the transaction in the queue.
+    if (replacedItemDeleteIter)
+        erase(*replacedItemDeleteIter);
     if (!accountExists)
     {
         // Create a new TxQAccount object and add the byAccount lookup.
@@ -662,6 +710,8 @@ TxQ::apply(Application& app, OpenView& view,
     }
     auto& candidate = accountIter->second.addCandidate(
         { tx, transactionID, feeLevelPaid, flags, pfresult });
+    if (consequences)
+        candidate.consequences = std::move(consequences);
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
     JLOG(j_.debug()) << "Added transaction " << candidate.txID <<

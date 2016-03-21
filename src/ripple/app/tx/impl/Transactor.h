@@ -127,6 +127,10 @@ public:
         PreclaimContext const& ctx);
 
     static
+    TxConsequences
+    calculateConsequences(PreflightResult const& preflightResult);
+
+    static
     TER
     preclaim(PreclaimContext const &ctx)
     {
