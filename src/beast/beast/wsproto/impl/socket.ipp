@@ -90,9 +90,9 @@ socket_base::write_close(Streambuf& sb,
         2 + reason.size();
     if((fh.mask = (role_ == role_type::client)))
         fh.key = maskgen_();
-
     detail::write(sb, fh);
-
+    if(code == close::none)
+        return;
     detail::prepared_key_type key;
     if(fh.mask)
         detail::prepare_key(key, fh.key);
@@ -106,6 +106,8 @@ socket_base::write_close(Streambuf& sb,
             detail::mask_inplace(d, key);
         sb.commit(2);
     }
+    if(reason.empty())
+        return;
     if(reason.size() > 123)
         reason.resize(123);
     // TODO utf8_check(reason);
@@ -116,6 +118,37 @@ socket_base::write_close(Streambuf& sb,
             detail::mask_inplace(d, key);
         sb.commit(reason.size());
     }
+}
+
+template<class Streambuf>
+void
+socket_base::write_ping(Streambuf& sb,
+    opcode::value op, std::string data)
+{
+    using namespace boost::asio;
+    frame_header fh;
+    fh.op = op;
+    fh.fin = true;
+    fh.rsv1 = false;
+    fh.rsv2 = false;
+    fh.rsv3 = false;
+    fh.len = data.size();
+    if((fh.mask = (role_ == role_type::client)))
+        fh.key = maskgen_();
+    detail::write(sb, fh);
+    if(data.empty())
+        return;
+    detail::prepared_key_type key;
+    if(fh.mask)
+        detail::prepare_key(key, fh.key);
+    if(data.size() > 123)
+        data.resize(123);
+    // TODO utf8_check(data); VFALCO Is this necessary?
+    auto d = sb.prepare(data.size());
+    buffer_copy(d, buffer(data));
+    if(fh.mask)
+        detail::mask_inplace(d, key);
+    sb.commit(data.size());
 }
 
 } // detail

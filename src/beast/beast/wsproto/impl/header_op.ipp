@@ -119,9 +119,35 @@ public:
                 }
                 else if(d.ws.rd_fh_.op == opcode::ping)
                 {
+                    std::string data;
+                    ec = detail::read(data, d.sb.data());
+                    if(ec)
+                        break;
+
+                    d.sb.reset();
+                    d.ws.write_ping<asio::static_streambuf>(
+                        d.sb, opcode::pong, data);
+                    d.state = 1;
+                    // write pong frame
+                    boost::asio::async_write(d.ws.stream_,
+                        d.sb.data(), std::move(*this));
+                    return;
                 }
                 else if(d.ws.rd_fh_.op == opcode::pong)
                 {
+                    std::string data;
+                    ec = detail::read(data, d.sb.data());
+                    if(ec)
+                        break;
+
+                    d.sb.reset();
+                    d.ws.write_ping<asio::static_streambuf>(
+                        d.sb, opcode::ping, data);
+                    d.state = 1;
+                    // write ping frame
+                    boost::asio::async_write(d.ws.stream_,
+                        d.sb.data(), std::move(*this));
+                    return;
                 }
                 else
                 {

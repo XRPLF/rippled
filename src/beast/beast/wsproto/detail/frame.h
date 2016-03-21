@@ -220,6 +220,21 @@ write(Streambuf& sb, frame_header const& fh)
         sb.prepare(n), buffer(b)));
 }
 
+// Read data from buffers
+// This is for ping and pong payloads
+//
+template<class Buffers>
+error_code
+read(std::string& data, Buffers const& bs)
+{
+    using namespace boost::asio;
+    for(auto const& b : bs)
+        data.append(buffer_cast<char const*>(b),
+            buffer_size(b));
+    // TODO utf8_check(s) VFALCO Is this needed?
+    return error_code{};
+}
+
 // Read reason_code from buffers
 //
 template<class Buffers>

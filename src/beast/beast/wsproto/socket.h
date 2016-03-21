@@ -244,6 +244,11 @@ protected:
     write_close(Streambuf& sb,
         close::value code, std::string reason);
 
+    template<class Streambuf>
+    void
+    write_ping(Streambuf& sb,
+        opcode::value op, std::string data);
+
     detail::maskgen maskgen_;
     std::unique_ptr<abstract_decorator> decorate_;
     bool keep_alive_ = false;
