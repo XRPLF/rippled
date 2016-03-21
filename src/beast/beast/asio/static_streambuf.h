@@ -21,6 +21,7 @@
 #define BEAST_ASIO_STATIC_STREAMBUF_H_INLUDED
 
 #include <boost/asio/buffer.hpp>
+#include <boost/utility/base_from_member.hpp>
 #include <algorithm>
 #include <cstring>
 #include <iterator>
@@ -408,10 +409,11 @@ static_streambuf::data() const ->
     To pass one of these as a parameter, use the base static_streambuf
 */
 template<std::size_t N>
-class static_streambuf_n : public static_streambuf
+class static_streambuf_n
+    : private boost::base_from_member<
+        std::array<std::uint8_t, N>>
+    , public static_streambuf
 {
-    std::array<std::uint8_t, N> buf_;
-
 public:
     static_streambuf_n(
         static_streambuf_n const&) = delete;
@@ -419,14 +421,14 @@ public:
         static_streambuf_n const&) = delete;
 
     static_streambuf_n()
-        : static_streambuf(buf_.data(), buf_.size())
+        : static_streambuf(member.data(), member.size())
     {
     }
 
     void
     reset()
     {
-        static_streambuf::reset(buf_.data(), buf_.size());
+        static_streambuf::reset(member.data(), member.size());
     }
 };
 
