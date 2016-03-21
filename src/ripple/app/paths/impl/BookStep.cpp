@@ -372,13 +372,23 @@ BookStep<TIn, TOut>::revImp (
         }
     }
 
-
-    if (remainingOut < beast::zero)
+    switch(remainingOut.signum())
     {
-        // something went very wrong
-        assert (0);
-        cache_.emplace (beast::zero, beast::zero);
-        return {beast::zero, beast::zero};
+        case -1:
+        {
+            // something went very wrong
+            JLOG (j_.error ())
+                << "BookStep remainingOut < 0 " << to_string (remainingOut);
+            assert (0);
+            cache_.emplace (beast::zero, beast::zero);
+            return {beast::zero, beast::zero};
+        }
+        case 0:
+        {
+            // due to normalization, remainingOut can be zero without
+            // result.out == out. Force result.out == out for this case
+            result.out = out;
+        }
     }
 
     cache_.emplace (result.in, result.out);
@@ -460,12 +470,23 @@ BookStep<TIn, TOut>::fwdImp (
         }
     }
 
-    if (remainingIn < beast::zero)
+    switch(remainingIn.signum())
     {
-        // something went very wrong
-        assert (0);
-        cache_.emplace (beast::zero, beast::zero);
-        return {beast::zero, beast::zero};
+        case -1:
+        {
+            // something went very wrong
+            JLOG (j_.error ())
+                << "BookStep remainingIn < 0 " << to_string (remainingIn);
+            assert (0);
+            cache_.emplace (beast::zero, beast::zero);
+            return {beast::zero, beast::zero};
+        }
+        case 0:
+        {
+            // due to normalization, remainingIn can be zero without
+            // result.in == in. Force result.in == in for this case
+            result.in = in;
+        }
     }
 
     cache_.emplace (result.in, result.out);
