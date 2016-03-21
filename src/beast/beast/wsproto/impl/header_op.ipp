@@ -82,91 +82,11 @@ public:
     {
         using namespace boost::asio;
         auto& d = *d_;
-        if(! ec)
+        for(;! ec && d.state != 99;)
         {
             switch(d.state)
             {
-            // got control frame payload
-            case 4:
-                if(d.ws.rd_fh_.mask)
-                    detail::mask_inplace(
-                        d.mb, d.ws.rd_key_);
-                d.sb.commit(bytes_transferred);
-
-            // process control frame
-            do_control_frame:
-                if(d.ws.rd_fh_.op == opcode::close)
-                {
-                    if(d.ws.closing_)
-                    {
-                        ec = error::closed;
-                        break;
-                    }
-                    d.ws.closing_ = true;
-                    reason_code rc;
-                    ec = detail::read(rc, d.sb.data());
-                    // VFALCO How should we handle the error?
-                    if(ec)
-                        break;
-
-                    d.sb.reset();
-                    d.ws.template write_close<
-                        asio::static_streambuf>(
-                            d.sb, rc.code, rc.reason);
-                    d.state = 5;
-                    // write close frame
-                    boost::asio::async_write(d.ws.stream_,
-                        d.sb.data(), std::move(*this));
-                    return;
-                }
-                else if(d.ws.rd_fh_.op == opcode::ping)
-                {
-                    std::string data;
-                    ec = detail::read(data, d.sb.data());
-                    if(ec)
-                        break;
-
-                    d.sb.reset();
-                    d.ws.template write_ping<
-                        asio::static_streambuf>(
-                            d.sb, opcode::pong, data);
-                    if(d.ws.wr_active_)
-                    {
-                        d.state = 6;
-                        // suspend...
-                        return;
-                    }
-                    goto do_send_pong;
-                }
-                else if(d.ws.rd_fh_.op == opcode::pong)
-                {
-                    std::string data;
-                    ec = detail::read(data, d.sb.data());
-                    if(ec)
-                        break;
-
-                    d.sb.reset();
-                    d.ws.template write_ping<
-                        asio::static_streambuf>(
-                            d.sb, opcode::ping, data);
-                    if(d.ws.wr_active_)
-                    {
-                        d.state = 8;
-                        // suspend...
-                        return;
-                    }
-                    goto do_send_ping;
-                }
-                else
-                {
-                    // Will never get here, because the frame
-                    // header would have failed validation.
-                    throw std::logic_error("unknown opcode");
-                }
-                d.sb.reset();
-
             // start or repeat
-            do_read_header:
             case 0:
             case 1:
                 d.state = 2;
@@ -197,11 +117,16 @@ public:
                 if(! is_control(d.ws.rd_fh_.op))
                 {
                     d.fh = d.ws.rd_fh_;
+                    // call handler
+                    d.state = 99;
                     break;
                 }
                 if(d.ws.rd_fh_.len == 0)
+                {
                     // empty control frame payload
-                    goto do_control_frame;
+                    d.state = 5;
+                    break;
+                }
                 d.mb = d.sb.prepare(d.ws.rd_fh_.len);
                 d.state = 4;
                 // read control frame payload
@@ -209,13 +134,91 @@ public:
                     d.mb, std::move(*this));
                 return;
 
-            // sent close frame
-            case 5:
-                ec = error::closed;
+            // got control frame payload
+            case 4:
+                if(d.ws.rd_fh_.mask)
+                    detail::mask_inplace(
+                        d.mb, d.ws.rd_key_);
+                d.sb.commit(bytes_transferred);
+                d.state = 5;
                 break;
 
-            do_send_pong:
+            // process control frame
+            case 5:
+                if(d.ws.rd_fh_.op == opcode::close)
+                {
+                    if(d.ws.closing_)
+                    {
+                        ec = error::closed;
+                        // call handler
+                        break;
+                    }
+                    d.ws.closing_ = true;
+                    reason_code rc;
+                    ec = detail::read(rc, d.sb.data());
+                    // VFALCO How should we handle the error?
+                    if(ec)
+                        // call handler
+                        break;
+                    d.sb.reset();
+                    d.ws.template write_close<
+                        asio::static_streambuf>(
+                            d.sb, rc.code, rc.reason);
+                    d.state = 6;
+                    d.ws.wr_active_ = true;
+                    // write close frame
+                    boost::asio::async_write(d.ws.stream_,
+                        d.sb.data(), std::move(*this));
+                    return;
+                }
+                else if(d.ws.rd_fh_.op == opcode::ping)
+                {
+                    std::string data;
+                    ec = detail::read(data, d.sb.data());
+                    if(ec)
+                        break;
+                    d.sb.reset();
+                    d.ws.template write_ping<
+                        asio::static_streambuf>(
+                            d.sb, opcode::pong, data);
+                    d.state = 7;
+                    if(d.ws.wr_active_)
+                    {
+                        // suspend...
+                        return;
+                    }
+                    break;
+                }
+                else if(d.ws.rd_fh_.op == opcode::pong)
+                {
+                    std::string data;
+                    ec = detail::read(data, d.sb.data());
+                    if(ec)
+                        break;
+                    d.sb.reset();
+                    d.ws.template write_ping<
+                        asio::static_streambuf>(
+                            d.sb, opcode::ping, data);
+                    d.state = 7;
+                    if(d.ws.wr_active_)
+                    {
+                        // suspend...
+                        return;
+                    }
+                    break;
+                }
+                // Will never get here, because the frame
+                // header would have failed validation.
+                throw std::logic_error("unknown opcode");
+
+            // sent close frame
             case 6:
+                d.ws.wr_active_ = false;
+                ec = error::closed;
+                // call handler
+                break;
+
+            case 7:
                 d.state = 8;
                 d.ws.wr_active_ = true;
                 // write pong frame
@@ -223,20 +226,11 @@ public:
                     d.sb.data(), std::move(*this));
                 return;
 
-            do_send_ping:
-            case 7:
-                d.state = 8;
-                d.ws.wr_active_ = true;
-                // write ping frame
-                boost::asio::async_write(d.ws.stream_,
-                    d.sb.data(), std::move(*this));
-                return;
-
             // sent ping/pong
             case 8:
                 d.ws.wr_active_ = false;
-                goto do_read_header;
-
+                d.state = 1;
+                break;
             }
         }
         d.ws.rd_active_ = false;
