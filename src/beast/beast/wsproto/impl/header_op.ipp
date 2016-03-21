@@ -109,8 +109,9 @@ public:
                         break;
 
                     d.sb.reset();
-                    d.ws.write_close<asio::static_streambuf>(
-                        d.sb, rc.code, rc.reason);
+                    d.ws.template write_close<
+                        asio::static_streambuf>(
+                            d.sb, rc.code, rc.reason);
                     d.state = 5;
                     // write close frame
                     boost::asio::async_write(d.ws.stream_,
@@ -125,8 +126,9 @@ public:
                         break;
 
                     d.sb.reset();
-                    d.ws.write_ping<asio::static_streambuf>(
-                        d.sb, opcode::pong, data);
+                    d.ws.template write_ping<
+                        asio::static_streambuf>(
+                            d.sb, opcode::pong, data);
                     /*
                     if(d.ws.wr_active_)
                         // suspend
@@ -143,8 +145,9 @@ public:
                         break;
 
                     d.sb.reset();
-                    d.ws.write_ping<asio::static_streambuf>(
-                        d.sb, opcode::ping, data);
+                    d.ws.template write_ping<
+                        asio::static_streambuf>(
+                            d.sb, opcode::ping, data);
                     d.state = 1;
                     // write ping frame
                     boost::asio::async_write(d.ws.stream_,

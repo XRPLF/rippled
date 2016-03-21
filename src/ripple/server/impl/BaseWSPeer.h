@@ -35,6 +35,14 @@ class BaseWSPeer
     : public BasePeer<Impl>
     , public WSSession
 {
+protected:
+    using clock_type = std::chrono::system_clock;
+    using error_code = boost::system::error_code;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
+    using BasePeer<Impl>::fail;
+    using BasePeer<Impl>::strand_;
+
 private:
     friend class BasePeer<Impl>;
 
@@ -77,13 +85,6 @@ public:
     send(std::shared_ptr<WSMsg> w) override;
 
 protected:
-    using clock_type = std::chrono::system_clock;
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
-    using BasePeer<Impl>::fail;
-    using BasePeer<Impl>::strand_;
-
     Impl&
     impl()
     {
