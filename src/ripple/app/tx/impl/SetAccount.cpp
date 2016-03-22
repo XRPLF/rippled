@@ -38,8 +38,8 @@ SetAccount::calculateConsequences(
     auto const feePaid = tx[sfFee].xrp();
 
     auto const uTxFlags = tx.getFlags();
-    auto const uSetFlag = tx[sfSetFlag];
-    auto const uClearFlag = tx[sfClearFlag];
+    auto const uSetFlag = tx[~sfSetFlag].value_or(0);
+    auto const uClearFlag = tx[~sfClearFlag].value_or(0);
     /*
     TODO: This would be a lot simpler and safer, but
     probably too aggressive, as:

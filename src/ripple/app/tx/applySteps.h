@@ -119,7 +119,10 @@ struct TxConsequences
     {
     }
 
+    TxConsequences(TxConsequences const&) = default;
     TxConsequences& operator=(TxConsequences const&) = delete;
+    TxConsequences(TxConsequences&&) = default;
+    TxConsequences& operator=(TxConsequences&&) = delete;
 
 };
 

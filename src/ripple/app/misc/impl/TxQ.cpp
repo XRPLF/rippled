@@ -382,7 +382,7 @@ TxQ::apply(Application& app, OpenView& view,
     };
 
     boost::optional<MultiTxn> multiTxn;
-    boost::optional<TxConsequences> consequences;
+    boost::optional<TxConsequences const> consequences;
     boost::optional<FeeMultiSet::iterator> replacedItemDeleteIter;
 
     std::lock_guard<std::mutex> lock(mutex_);
@@ -455,7 +455,8 @@ TxQ::apply(Application& app, OpenView& view,
                                 transactionID <<
                                 " in favor of normal queued " <<
                                 existingIter->second.txID;
-                            return{ telCAN_NOT_QUEUE, false };
+                            return{existingIter == txQAcct.transactions.begin() ?
+                                telINSUF_FEE_P : telCAN_NOT_QUEUE, false };
                         }
                     }
                 }
@@ -485,7 +486,7 @@ TxQ::apply(Application& app, OpenView& view,
                     transactionID <<
                     " in favor of queued " <<
                     existingIter->second.txID;
-                return{ telCAN_NOT_QUEUE, false };
+                return{ telINSUF_FEE_P, false };
             }
         }
     }
@@ -514,8 +515,8 @@ TxQ::apply(Application& app, OpenView& view,
                 auto prevTxnIter = txQAcct.transactions.find(t_seq - 1);
                 if ((nextAcctIter != txQAcct.transactions.end()) &&
                     (prevTxnIter != txQAcct.transactions.end()) &&
-                    std::distance(nextAcctIter, prevTxnIter) ==
-                    t_seq - a_seq - 1)
+                        std::distance(nextAcctIter, prevTxnIter) ==
+                            t_seq - a_seq - 1)
                     multiTxn.emplace(nextAcctIter, prevTxnIter);
             }
 
@@ -542,12 +543,13 @@ TxQ::apply(Application& app, OpenView& view,
                     {
                         if (!workingIter->second.consequences)
                             workingIter->second.consequences.emplace(
-                                *workingIter->second.pfresult
-                                );
+                                calculateConsequences(
+                                    *workingIter->second.pfresult));
                         if (workingIter->second.consequences->category ==
                             TxConsequences::blocker)
                         {
-                            // Drop the current transaction
+                            // Drop the current transaction, because it's
+                            // blocked by this one.
                             JLOG(j_.trace()) <<
                                 "Ignoring transaction " <<
                                 transactionID <<
@@ -555,6 +557,31 @@ TxQ::apply(Application& app, OpenView& view,
                                 "is in the queue.";
                             return{ telCAN_NOT_QUEUE, false };
                         }
+                        multiTxn->fee +=
+                            workingIter->second.consequences->fee;
+                        multiTxn->potentialSpend +=
+                            workingIter->second.consequences->potentialSpend;
+                        multiTxn->ownerCountAdjustment +=
+                            workingIter->second.consequences->ownerCountAdjustment;
+                    }
+                    /* If there are any transactions AFTER this one, include their
+                        fees in the in-flight total.
+                    */
+                    if (workingIter != txQAcct.transactions.end()
+                        && workingIter->first == t_seq)
+                    {
+                        ++workingIter;
+                    }
+                    for (; workingIter != txQAcct.transactions.end();
+                        ++workingIter)
+                    {
+                        if (!workingIter->second.consequences)
+                            workingIter->second.consequences.emplace(
+                                calculateConsequences(
+                                    *workingIter->second.pfresult));
+                        // Don't worry about the blocker status, since this
+                        // one comes first. (And its blocker status was
+                        // already checked.)
                         multiTxn->fee +=
                             workingIter->second.consequences->fee;
                         multiTxn->potentialSpend +=
@@ -573,14 +600,48 @@ TxQ::apply(Application& app, OpenView& view,
                         requiredMultiLevel <<
                         ". Only paid " <<
                         feeLevelPaid;
-                    return{ telCAN_NOT_QUEUE, false };
+                    return{ telINSUF_FEE_P, false };
                 }
             }
             if (multiTxn)
             {
                 auto const balance = (*sle)[sfBalance].xrp();
-                if (multiTxn->fee > balance ||
-                    multiTxn->fee > view.fees().accountReserve(0))
+                /* Check if the total fees in flight are greater
+                    than the account's current balance, or the
+                    minimum reserve. If it is, then there's a risk
+                    that the fees won't get paid, so don't allow
+                    this transaction.
+                TODO: Decide whether to count the current txn fee
+                    in this limit if it's the last transaction for
+                    this account. Currently, it will not count,
+                    for the same reason that it is not checked on
+                    the first transaction.
+                    Assume: Minimum account reserve is 20 XRP.
+                    Example 1: If I have 1,000,000 XRP, I can queue
+                        a transaction with a 1,000,000 XRP fee. When
+                        the transaction executes, I will either
+                        spend the 1,000,000 XRP, or I will forfeit my
+                        reserve (and have a 0 balance).
+                    Example 2: If I have 1,000,000 XRP, and I queue
+                        10 transactions with 0.1 XRP fee, I have 1 XRP
+                        in flight. I can now queue another tx with a
+                        999,999 XRP fee. When the first 10 execute,
+                        they're guaranteed to pay their fee, because
+                        I'll have my reserve. The last transaction,
+                        again, will either spend the 999,999 XRP, or
+                        will forfeit the reserve (0 balance).
+                    Example 3: If I have 1,000,000 XRP, and I queue
+                        7 transactions with 3 XRP fee, I have 21 XRP
+                        in flight. I can not queue any more transactions,
+                        no matter how small or large the fee.
+                */
+                auto totalFee = multiTxn->fee;
+                if (replacedItemDeleteIter
+                        && std::next(multiTxn->prevTxnIter, 2) !=
+                            txQAcct.transactions.end())
+                    totalFee += (*tx)[sfFee].xrp();
+                if (totalFee >= balance ||
+                    totalFee >= view.fees().accountReserve(0))
                 {
                     // Drop the current transaction
                     JLOG(j_.trace()) <<
@@ -589,27 +650,25 @@ TxQ::apply(Application& app, OpenView& view,
                         ". Total fees in flight too high.";
                     return{ telCAN_NOT_QUEUE, false };
                 }
-            }
-            if (multiTxn)
-            {
+
                 // Create the test view from the current view
                 multiTxn->applyView =
-                    std::make_unique<ApplyViewImpl>(view, flags);
+                    std::make_unique<ApplyViewImpl>(&view, flags);
                 multiTxn->openView =
-                    std::make_unique<OpenView>(*multiTxn->applyView,
-                        multiTxn->applyView);
+                    std::make_unique<OpenView>(&*multiTxn->applyView);
 
                 auto const sleBump = multiTxn->applyView->peek(
                     keylet::account(account));
-                // TODO: Is update necessary?
-                multiTxn->applyView->update(sleBump);
+                //// TODO: Is update necessary?
+                //multiTxn->applyView->update(sleBump);
 
                 sleBump->setFieldAmount(sfBalance,
-                    STAmount(multiTxn->fee
-                        + multiTxn->potentialSpend));
+                    (*sleBump)[sfBalance] - STAmount(
+                        multiTxn->fee + multiTxn->potentialSpend));
                 sleBump->setFieldU32(sfSequence, t_seq);
-                adjustOwnerCount(*multiTxn->applyView, sleBump,
-                    multiTxn->ownerCountAdjustment, j_);
+                if(multiTxn->ownerCountAdjustment)
+                    adjustOwnerCount(*multiTxn->applyView, sleBump,
+                        multiTxn->ownerCountAdjustment, j_);
             }
         }
     }
@@ -663,7 +722,7 @@ TxQ::apply(Application& app, OpenView& view,
             transactionID <<
             " can not be held";
         return { feeLevelPaid >= requiredFeeLevel ?
-            terPRE_SEQ : telINSUF_FEE_P, false };
+            telCAN_NOT_QUEUE : telINSUF_FEE_P, false };
     }
 
     // It's pretty unlikely that the queue will be "overfilled",
@@ -678,7 +737,7 @@ TxQ::apply(Application& app, OpenView& view,
                 transactionID <<
                 " would kick a transaction from the same account (" <<
                 account << ") out of the queue.";
-            return { terPRE_SEQ, false };
+            return { telCAN_NOT_QUEUE, false };
         }
         if (feeLevelPaid > lastRIter->feeLevel)
         {
@@ -690,7 +749,8 @@ TxQ::apply(Application& app, OpenView& view,
                 transactionID << " with fee of " <<
                 feeLevelPaid;
             auto endIter = byFee_.iterator_to(*lastRIter);
-            if (replacedItemDeleteIter && *replacedItemDeleteIter == endIter)
+            if (replacedItemDeleteIter &&
+                    *replacedItemDeleteIter == endIter)
                 replacedItemDeleteIter.reset();
             erase(endIter);
         }
@@ -717,8 +777,12 @@ TxQ::apply(Application& app, OpenView& view,
     }
     auto& candidate = accountIter->second.addCandidate(
         { tx, transactionID, feeLevelPaid, flags, pfresult });
+    /* Normally we defer figuring out the consequences until
+        something later requires us to, but if we did, save
+        the result for later.
+    */
     if (consequences)
-        candidate.consequences = std::move(consequences);
+        candidate.consequences.emplace(*consequences);
     // Then index it into the byFee lookup.
     byFee_.insert(candidate);
     JLOG(j_.debug()) << "Added transaction " << candidate.txID <<
@@ -955,7 +1019,6 @@ setup_TxQ(Config const& config)
     set(setup.ledgersInQueue, "ledgers_in_queue", section);
     set(setup.retrySequencePercent, "retry_sequence_percent", section);
     set(setup.multiTxnPercent, "multi_txn_percent", section);
-    set(setup.invalidationPenaltyPercent, "invalidation_penalty_percent", section);
     set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
     set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
     set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);

@@ -331,10 +331,9 @@ public:
         env(noop(alice), queued);
         checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
 
-        // Alice - fee does not include the multi-transaction
-        // factor, so won't queue.
-        env(noop(alice), seq(env.seq(alice) + 1),
-            ter(telINSUF_FEE_P));
+        // Alice - sequence is too far ahead, so won't queue.
+        env(noop(alice), seq(env.seq(alice) + 2),
+            ter(terPRE_SEQ));
         checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
 
         // Bob with really high fee - applies
@@ -345,12 +344,17 @@ public:
         env(noop(charlie), fee(1000), queued);
         checkMetrics(env, 2, boost::none, 4, 2, 256, 500);
 
+        // Alice with normal fee: hold
+        env(noop(alice), seq(env.seq(alice) + 1),
+            queued);
+        checkMetrics(env, 3, boost::none, 4, 2, 256, 500);
+
         env.close();
         // Verify that the held transactions got applied
         auto lastMedian = 500;
         // Alice's bad transaction applied from the
         // Local Txs.
-        checkMetrics(env, 0, 8, 3, 4, 256, lastMedian);
+        checkMetrics(env, 0, 8, 4, 4, 256, lastMedian);
     }
 
     void testLastLedgerSeq()
@@ -502,7 +506,7 @@ public:
 
         // Carol can not take that 8th entry away from Bob.
         env(noop(carol), fee(feeCarol),
-            seq(seqCarol), ter(terPRE_SEQ));
+            seq(seqCarol), ter(telCAN_NOT_QUEUE));
 
         env.close();
         // All the "lost" transactions are reapplied
@@ -623,12 +627,6 @@ public:
         env(noop(alice), queued);
         checkMetrics(env, 1, boost::none, 4, 3, 256, lastMedian);
 
-        // Alice - try to queue a second transaction, but don't
-        // set the fee high enough to overcome the multiTxnPercent.
-        env(noop(alice), seq(env.seq(alice) + 1), fee(12),
-            ter(telINSUF_FEE_P));
-        checkMetrics(env, 1, boost::none, 4, 3, 256, lastMedian);
-
         // Alice - try to queue a second transaction, but leave a gap
         env(noop(alice), seq(env.seq(alice) + 2), fee(100),
             ter(terPRE_SEQ));
@@ -637,12 +635,6 @@ public:
         // Alice - queue a second transaction. Yay.
         env(noop(alice), seq(env.seq(alice) + 1), fee(13),
             queued);
-        checkMetrics(env, 2, boost::none, 4, 3, 256, lastMedian);
-
-        // Alice - try to queue a third transaction, but don't
-        // set fee high enough
-        env(noop(alice), seq(env.seq(alice) + 2), fee(16),
-            ter(telINSUF_FEE_P));
         checkMetrics(env, 2, boost::none, 4, 3, 256, lastMedian);
 
         // Alice - queue a third transaction. Yay.
@@ -700,7 +692,7 @@ public:
         // queue.
         env(noop(alice), seq(aliceSeq),
             json(jss::LastLedgerSequence, lastLedgerSeq + 7),
-                fee(aliceFee), ter(terPRE_SEQ));
+                fee(aliceFee), ter(telCAN_NOT_QUEUE));
         checkMetrics(env, 8, 8, 5, 4, 257, lastMedian);
 
         // Charlie - add another item to the queue, which
@@ -731,6 +723,7 @@ public:
         aliceFee = 27;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), ter(telINSUF_FEE_P));
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Replace a middle item from the queue successfully
         ++aliceFee;
@@ -739,12 +732,12 @@ public:
         checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Try to replace the next item in the queue
-        // without enough fee. This time, we also pay
-        // the invalidation penalty.
+        // without enough fee.
         ++aliceSeq;
-        aliceFee = aliceFee * 125 * 125 / (100 * 100);
+        aliceFee = aliceFee * 125 / 100 - 1;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), ter(telINSUF_FEE_P));
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Replace a middle item from the queue successfully
         ++aliceFee;
@@ -752,55 +745,52 @@ public:
             fee(aliceFee), queued);
         checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
-        // Replace that item again with a transaction that will
-        // bankrupt Alice
+        // Try to replace that item with a transaction that will
+        // bankrupt Alice. Fails, because an account can't have
+        // more than the minimum reserve in flight before the
+        // last queued transaction
         aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops()
-            - (14 + aliceFee);
+            - (198);
+        env(noop(alice), seq(aliceSeq),
+            fee(aliceFee), ter(telCAN_NOT_QUEUE));
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
+
+        // Try to spend more than Alice can afford with all the other txs.
+        aliceSeq = env.seq(alice) + 6;
+        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops()
+            - (174);
+        env(noop(alice), seq(aliceSeq),
+            fee(aliceFee), ter(terINSUF_FEE_B));
+        checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
+
+        // Replace the last queued item with a transaction that will
+        // bankrupt Alice
+        --aliceFee;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), queued);
         checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         // Alice - Attempt to queue a last transaction, but it
-        // fails because the intermediate transactions can't
-        // apply to the test view.
+        // fails because the fee in flight is too high, before
+        // the fee is checked against the balance
+        aliceFee = aliceFee * 125 / 100 + 1;
         env(noop(alice), seq(env.seq(alice) + 7),
-            fee(73), ter(terPRE_SEQ));
+            fee(aliceFee), ter(telCAN_NOT_QUEUE));
         checkMetrics(env, 7, 10, 3, 5, 256, lastMedian);
 
         env.close();
-        // Some of Alice's transactions applied, but the others
-        // get terINSUF_FEE_B and are stuck until Alice
-        // gets funded again.
+        // All of Alice's transactions applied.
         lastMedian = 768;
-        checkMetrics(env, 3, 10, 4, 5, 256, lastMedian);
+        checkMetrics(env, 0, 10, 7, 5, 256, lastMedian);
 
         env.close();
-        lastMedian = 576;
-        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
-
-        env.close();
-        lastMedian = 500;
-        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
-
-        env.close();
-        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
-
-        env.close();
-        checkMetrics(env, 3, 10, 0, 5, 256, lastMedian);
-
-        env.close();
-        // LastLedgerSequence starts expiring
-        checkMetrics(env, 2, 10, 0, 5, 256, lastMedian);
-
-        env.close();
-        checkMetrics(env, 1, 10, 0, 5, 256, lastMedian);
-
-        env.close();
-        checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
+        lastMedian = 896;
+        checkMetrics(env, 0, 14, 0, 7, 256, lastMedian);
 
         // Alice is still broke
+        env.require(balance(alice, XRP(0)));
         env(noop(alice), ter(terINSUF_FEE_B));
-        checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
+        checkMetrics(env, 0, 14, 0, 7, 256, lastMedian);
     }
 
     void testDisabled()
@@ -952,14 +942,13 @@ public:
             env(noop(alice));
         checkMetrics(env, 0, 6, 4, 3, 256, lastMedian);
 
-        // Queue up a couple of really expensive transactions
+        // Queue up a couple of transactions, plus one
+        // really expensive one.
         auto aliceSeq = env.seq(alice);
         env(noop(alice), seq(aliceSeq++), queued);
+        env(noop(alice), seq(aliceSeq++), queued);
+        env(noop(alice), seq(aliceSeq++), queued);
         env(noop(alice), fee(XRP(1000)),
-            seq(aliceSeq++), queued);
-        env(noop(alice), fee(XRP(1251)),
-            seq(aliceSeq++), queued);
-        env(noop(alice), fee(XRP(1564)),
             seq(aliceSeq), queued);
         checkMetrics(env, 4, 6, 4, 3, 256, lastMedian);
 
@@ -970,22 +959,17 @@ public:
                 owners(alice, 1), lines(alice, 1)));
         checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
 
-        // Try adding a new transaction. This will
-        // test the main loop check.
-        env(noop(alice), fee(XRP(1956)), seq(aliceSeq+1),
-            ter(terPRE_SEQ));
+        // Try adding a new transaction.
+        // Too many fees in flight.
+        env(noop(alice), fee(XRP(2000)), seq(aliceSeq+1),
+            ter(telCAN_NOT_QUEUE));
         checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
 
-        // Replace that last transaction, which failed in
-        // the previous attempt. This avoids invalidation,
-        // and tests the edge case where no queued
-        // transactions are test applied.
-        env(noop(alice), fee(XRP(1956)), seq(aliceSeq),
-            ter(terPRE_SEQ));
-        checkMetrics(env, 3, 6, 5, 3, 256, lastMedian);
-
+        // Close the ledger. All of Alice's transactions
+        // take a fee, leaving Alice broke.
         env.close();
-        checkMetrics(env, 2, 10, 1, 5, 256, lastMedian);
+        checkMetrics(env, 0, 10, 4, 5, 256, lastMedian);
+        env.require(balance(alice, XRP(0)));
     }
 
     void run()

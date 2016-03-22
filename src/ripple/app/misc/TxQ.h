@@ -56,7 +56,8 @@ public:
     {
         std::size_t ledgersInQueue = 20;
         std::uint32_t retrySequencePercent = 25;
-        std::uint32_t multiTxnPercent = 25;
+        // TODO: multiTxn support is cheap now. Can we remove this?
+        std::int32_t multiTxnPercent = -90;
         std::uint32_t minimumEscalationMultiplier = 500;
         std::uint32_t minimumTxnInLedger = 5;
         std::uint32_t minimumTxnInLedgerSA = 1000;
