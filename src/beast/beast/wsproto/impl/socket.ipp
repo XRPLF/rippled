@@ -161,6 +161,80 @@ socket<Stream>::socket(Args&&... args)
 }
 
 template<class Stream>
+template<class Buffers>
+void
+socket<Stream>::accept(Buffers const& bs, error_code& ec)
+{
+    using namespace boost::asio;
+    boost::asio::streambuf sb;
+    sb.commit(buffer_copy(
+        sb.prepare(buffer_size(bs)), bs));
+    boost::asio::read_until(stream_, sb, "\r\n\r\n", ec);
+    if(ec)
+        return;
+    std::string body;
+    http::message m;
+    http::parser p(
+        [&](void const* data, std::size_t len)
+        {
+            auto begin =
+                reinterpret_cast<char const*>(data);
+            auto end = begin + len;
+            body.append(begin, end);
+        }, m, true);
+    auto result = p.write(sb.data());
+    if(ec = result.first)
+        return;
+    accept(m, ec);
+}
+
+template<class Stream>
+void
+socket<Stream>::accept(
+    beast::http::message const& m, error_code& ec)
+{
+    beast::asio::streambuf sb;
+    auto req_ec = do_accept(m);
+    if(req_ec)
+        write_error(sb, req_ec);
+    else
+        write_response(sb, m);
+    boost::asio::write(stream_, sb.data(), ec);
+    if(ec)
+        return;
+    ec = req_ec;
+    if(ec)
+        return;
+    role_ = role_type::server;
+}
+
+template<class Stream>
+template<class Buffers, class Handler>
+void
+socket<Stream>::async_accept(Buffers&& buffers, Handler&& h)
+{
+    static_assert(beast::is_call_possible<Handler,
+        void(error_code)>::value,
+            "Type does not meet the handler requirements");
+    accept_op<std::decay_t<Handler>>{*this,
+        std::forward<Buffers>(buffers),
+            std::forward<Handler>(h)}();
+}
+
+template<class Stream>
+template<class Handler>
+void
+socket<Stream>::async_accept_request(
+    beast::http::message const& m, Handler&& h)
+{
+    static_assert(beast::is_call_possible<Handler,
+        void(error_code)>::value,
+            "Type does not meet the handler requirements");
+    accept_op<std::decay_t<Handler>>{*this,
+        m, std::forward<Handler>(h), nullptr}();
+}
+
+template<class Stream>
 void
 socket<Stream>::handshake(std::string const& host,
     std::string const& resource, error_code& ec)
@@ -202,52 +276,6 @@ socket<Stream>::async_handshake(std::string const& host,
     role_ = role_type::client;
     // TODO
     throw std::runtime_error("unimplemented");
-}
-
-template<class Stream>
-template<class Buffers>
-void
-socket<Stream>::accept(Buffers const& b, error_code& ec)
-{
-    role_ = role_type::server;
-    // TODO
-    throw std::runtime_error("unimplemented");
-}
-
-template<class Stream>
-void
-socket<Stream>::accept(
-    beast::http::message const& m, error_code& ec)
-{
-    role_ = role_type::server;
-    // TODO
-    throw std::runtime_error("unimplemented");
-}
-
-template<class Stream>
-template<class Buffers, class Handler>
-void
-socket<Stream>::async_accept(Buffers&& buffers, Handler&& h)
-{
-    static_assert(beast::is_call_possible<Handler,
-        void(error_code)>::value,
-            "Type does not meet the handler requirements");
-    accept_op<std::decay_t<Handler>>{*this,
-        std::forward<Buffers>(buffers),
-            std::forward<Handler>(h)}();
-}
-
-template<class Stream>
-template<class Handler>
-void
-socket<Stream>::async_accept_request(
-    beast::http::message const& m, Handler&& h)
-{
-    static_assert(beast::is_call_possible<Handler,
-        void(error_code)>::value,
-            "Type does not meet the handler requirements");
-    accept_op<std::decay_t<Handler>>{*this,
-        m, std::forward<Handler>(h), nullptr}();
 }
 
 template<class Stream>

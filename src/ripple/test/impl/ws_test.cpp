@@ -57,66 +57,6 @@ public:
     using socket_type = boost::asio::ip::tcp::socket;
 
 private:
-    class Peer
-    {
-        struct data
-        {
-            int state = 0;
-            wsproto::socket<socket_type> ws;
-            unit_test::suite& suite;
-
-            data(socket_type&& sock_,
-                    unit_test::suite& suite_)
-                : ws(std::move(sock_))
-                , suite(suite_)
-            {
-            }
-        };
-
-        std::shared_ptr<data> d_;
-
-    public:
-        template<class... Args>
-        Peer(Args&&... args)
-            : d_(std::make_shared<data>(
-                std::forward<Args>(args)...))
-        {
-        }
-
-        void operator()()
-        {
-            d_->ws.async_accept(std::move(*this));
-        }
-
-        void operator()(error_code ec)
-        {
-            if(ec)
-                return fail(ec, "peer");
-            switch(d_->state)
-            {
-            // connection established
-            case 0:
-                break;
-
-            // got frame header
-            case 1:
-                break;
-
-            // got frame data
-            case 2:
-                break;
-            }
-        }
-
-    private:
-        void
-        fail(error_code ec, std::string what)
-        {
-            d_->suite.log <<
-                what << ": " << ec.message();
-        }
-    };
-
     unit_test::suite& suite_;
     boost::asio::io_service ios_;
     socket_type sock_;
@@ -268,26 +208,32 @@ private:
         void operator()(error_code ec)
         {
             auto& d = *d_;
-            if(ec)
-                return fail(ec, "peer");
             switch(d_->state)
             {
-            // got connection
+            // did accept
             case 0:
+                if(ec)
+                    return fail(ec, "accept");
 
-            // sent message
+            // start
             case 1:
+                if(ec)
+                    return fail(ec, "write_msg");
                 d.sb.consume(d.sb.size());
                 d.state = 2;
+                // read message
                 wsproto::async_read_msg(
                     d.ws, d.op, d.sb, std::move(*this));
                 return;
 
             // got message
             case 2:
-                d.suite.log <<
-                    buffers_to_string(d.sb.data());
+                if(ec == boost::asio::error::eof)
+                    return;
+                if(ec)
+                    return fail(ec, "read_msg");
                 d.state = 1;
+                // write message
                 wsproto::async_write_msg(
                     d.ws, d.op, d.sb.data(),
                         std::move(*this));
@@ -300,7 +246,7 @@ private:
         fail(error_code ec, std::string what)
         {
             d_->suite.log <<
-                what << ": " << ec.message();
+                "server " << what << ": " << ec.message();
         }
     };
 
@@ -422,12 +368,11 @@ public:
             WSAsyncEchoServer s(ep, *this);
             syncEchoClient(ep);
         }
-    #if 0
+
         {
             WSEchoServer s(ep, *this);
             syncEchoClient(ep);
         }
-    #endif
     }
 };
 

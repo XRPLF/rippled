@@ -168,7 +168,7 @@ public:
                     if(d.ws.wr_active_)
                     {
                         // suspend
-                        d.ws.wr_invoke_.emplace<
+                        d.ws.wr_invoke_.template emplace<
                             header_op>(std::move(*this));
                         return;
                     }
@@ -188,7 +188,7 @@ public:
                     if(d.ws.wr_active_)
                     {
                         // suspend
-                        d.ws.wr_invoke_.emplace<
+                        d.ws.wr_invoke_.template emplace<
                             header_op>(std::move(*this));
                         return;
                     }
@@ -208,7 +208,7 @@ public:
                     if(d.ws.wr_active_)
                     {
                         // suspend
-                        d.ws.wr_invoke_.emplace<
+                        d.ws.wr_invoke_.template emplace<
                             header_op>(std::move(*this));
                         return;
                     }

@@ -278,110 +278,6 @@ public:
                 std::forward<Decorator>(d));
     }
 
-    /// Send a WebSocket Upgrade request.
-    /**
-        This function is used to synchronously send the WebSocket
-        upgrade HTTP request. The call blocks until one of the
-        following conditions is true:
-
-        @li An error occurs on the socket
-
-        @li A complete HTTP response with the result of the upgrade
-        request is received.
-
-        @throws boost::system::system_error Thrown on failure.
-
-        @param host The name of the remote host, required by
-        the HTTP protocol.
-
-        @param resource The requesting URI, which may not be empty,
-        required by the HTTP protocol.
-
-        @par Example
-        @code
-        wsproto::socket<boost::asio::ip::tcp::socket> ws(io_service);
-        ...
-        try
-        {
-            ws.upgrade("localhost", "/");
-        }
-        catch(...)
-        {
-            // An error occurred.
-        }
-        @endcode
-    */
-    void
-    handshake(std::string const& host,
-        std::string const& resource)
-    {
-        error_code ec;
-        handshake(host, resource, ec);
-        detail::maybe_throw(ec, "upgrade");
-    }
-
-    /// Send a WebSocket Upgrade request.
-    /*
-        This function is used to synchronously send the WebSocket
-        upgrade HTTP request. The call blocks until one of the
-        following conditions is true:
-
-        @li An error occurs on the socket
-
-        @li A complete HTTP response with the result of the upgrade
-        request is received.
-        
-        @param host The name of the remote host, required by
-        the HTTP protocol.
-
-        @param resource The requesting URI, which may not be empty,
-        required by the HTTP protocol.
-
-        @param ec Set to indicate what error occurred, if any. If
-        the remote host refuses the upgrade request, then ec is set
-        to <TBD>.
-        
-        @par Example
-        @code
-        wsproto::socket<boost::asio::ip::tcp::socket> ws(io_service);
-        ...
-        error_code ec;
-        ws.upgrade(host, resource, ec);
-        if(ec)
-        {
-            // An error occurred.
-        }
-        @endcode
-    */
-    void
-    handshake(std::string const& host,
-        std::string const& resource, error_code& ec);
-
-    /// Asynchronously send a WebSocket Upgrade request.
-    /*
-        This function is used to asynchronously send the WebSocket
-        upgrade HTTP request. This function call always returns
-        immediately.
-
-        @param host The name of the remote host, required by
-        the HTTP protocol. Copies may be made as needed.
-
-        @param resource The requesting URI, which may not be empty,
-        required by the HTTP protocol. Copies may be made as
-        needed.
-
-        @param h The handler to be called when the request completes.
-        Copies will be made of the handler as required. The equivalent
-        function signature of the handler must be:
-        @code void handler(
-            error_code const& error // result of operation
-        ); @endcode
-    */
-    template<class Handler>
-    void
-    async_handshake(std::string const& host,
-        std::string const& resource, Handler&& h);
-
     /// Read and respond to a WebSocket HTTP Upgrade request.
     /**
         TBD
@@ -522,6 +418,110 @@ public:
     void
     async_accept_request(beast::http::message const& m,
         Handler&& h);
+
+    /// Send a WebSocket Upgrade request.
+    /**
+        This function is used to synchronously send the WebSocket
+        upgrade HTTP request. The call blocks until one of the
+        following conditions is true:
+
+        @li An error occurs on the socket
+
+        @li A complete HTTP response with the result of the upgrade
+        request is received.
+
+        @throws boost::system::system_error Thrown on failure.
+
+        @param host The name of the remote host, required by
+        the HTTP protocol.
+
+        @param resource The requesting URI, which may not be empty,
+        required by the HTTP protocol.
+
+        @par Example
+        @code
+        wsproto::socket<boost::asio::ip::tcp::socket> ws(io_service);
+        ...
+        try
+        {
+            ws.upgrade("localhost", "/");
+        }
+        catch(...)
+        {
+            // An error occurred.
+        }
+        @endcode
+    */
+    void
+    handshake(std::string const& host,
+        std::string const& resource)
+    {
+        error_code ec;
+        handshake(host, resource, ec);
+        detail::maybe_throw(ec, "upgrade");
+    }
+
+    /// Send a WebSocket Upgrade request.
+    /*
+        This function is used to synchronously send the WebSocket
+        upgrade HTTP request. The call blocks until one of the
+        following conditions is true:
+
+        @li An error occurs on the socket
+
+        @li A complete HTTP response with the result of the upgrade
+        request is received.
+        
+        @param host The name of the remote host, required by
+        the HTTP protocol.
+
+        @param resource The requesting URI, which may not be empty,
+        required by the HTTP protocol.
+
+        @param ec Set to indicate what error occurred, if any. If
+        the remote host refuses the upgrade request, then ec is set
+        to <TBD>.
+        
+        @par Example
+        @code
+        wsproto::socket<boost::asio::ip::tcp::socket> ws(io_service);
+        ...
+        error_code ec;
+        ws.upgrade(host, resource, ec);
+        if(ec)
+        {
+            // An error occurred.
+        }
+        @endcode
+    */
+    void
+    handshake(std::string const& host,
+        std::string const& resource, error_code& ec);
+
+    /// Asynchronously send a WebSocket Upgrade request.
+    /*
+        This function is used to asynchronously send the WebSocket
+        upgrade HTTP request. This function call always returns
+        immediately.
+
+        @param host The name of the remote host, required by
+        the HTTP protocol. Copies may be made as needed.
+
+        @param resource The requesting URI, which may not be empty,
+        required by the HTTP protocol. Copies may be made as
+        needed.
+
+        @param h The handler to be called when the request completes.
+        Copies will be made of the handler as required. The equivalent
+        function signature of the handler must be:
+        @code void handler(
+            error_code const& error // result of operation
+        ); @endcode
+    */
+    template<class Handler>
+    void
+    async_handshake(std::string const& host,
+        std::string const& resource, Handler&& h);
 
     /// Perform a WebSocket close.
     /**
