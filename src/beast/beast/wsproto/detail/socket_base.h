@@ -210,6 +210,7 @@ protected:
     bool wr_cont_ = false;
     std::size_t wr_frag_ = 0;
     bool wr_active_ = false;
+    std::unique_ptr<invokable> wr_invoke_;
 
     bool closing_ = false;
 

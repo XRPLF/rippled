@@ -165,11 +165,15 @@ public:
                         asio::static_streambuf>(
                             d.sb, rc.code, rc.reason);
                     d.state = 6;
-                    d.ws.wr_active_ = true;
-                    // write close frame
-                    boost::asio::async_write(d.ws.stream_,
-                        d.sb.data(), std::move(*this));
-                    return;
+                    if(d.ws.wr_active_)
+                    {
+                        // suspend
+                        d.ws.wr_invoke_ = std::make_unique<
+                            detail::invokable_op<header_op>>(
+                                std::move(*this));
+                        return;
+                    }
+                    break;
                 }
                 else if(d.ws.rd_fh_.op == opcode::ping)
                 {
@@ -181,10 +185,13 @@ public:
                     d.ws.template write_ping<
                         asio::static_streambuf>(
                             d.sb, opcode::pong, data);
-                    d.state = 7;
+                    d.state = 8;
                     if(d.ws.wr_active_)
                     {
-                        // suspend...
+                        // suspend
+                        d.ws.wr_invoke_ = std::make_unique<
+                            detail::invokable_op<header_op>>(
+                                std::move(*this));
                         return;
                     }
                     break;
@@ -199,10 +206,13 @@ public:
                     d.ws.template write_ping<
                         asio::static_streambuf>(
                             d.sb, opcode::ping, data);
-                    d.state = 7;
+                    d.state = 8;
                     if(d.ws.wr_active_)
                     {
-                        // suspend...
+                        // suspend
+                        d.ws.wr_invoke_ = std::make_unique<
+                            detail::invokable_op<header_op>>(
+                                std::move(*this));
                         return;
                     }
                     break;
@@ -211,15 +221,23 @@ public:
                 // header would have failed validation.
                 throw std::logic_error("unknown opcode");
 
-            // sent close frame
             case 6:
+                d.state = 7;
+                d.ws.wr_active_ = true;
+                // write close frame
+                boost::asio::async_write(d.ws.stream_,
+                    d.sb.data(), std::move(*this));
+                return;
+
+            // sent close frame
+            case 7:
                 d.ws.wr_active_ = false;
                 ec = error::closed;
                 // call handler
                 break;
 
-            case 7:
-                d.state = 8;
+            case 8:
+                d.state = 9;
                 d.ws.wr_active_ = true;
                 // write pong frame
                 boost::asio::async_write(d.ws.stream_,
@@ -227,7 +245,7 @@ public:
                 return;
 
             // sent ping/pong
-            case 8:
+            case 9:
                 d.ws.wr_active_ = false;
                 d.state = 1;
                 break;

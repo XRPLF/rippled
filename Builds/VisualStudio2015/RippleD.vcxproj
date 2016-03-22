@@ -860,6 +860,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\detail\mask.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\socket_base.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\error.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\frame.h">

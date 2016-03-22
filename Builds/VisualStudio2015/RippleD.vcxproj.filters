@@ -1398,6 +1398,9 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\detail\mask.h">
       <Filter>beast\wsproto\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\socket_base.h">
+      <Filter>beast\wsproto\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\error.h">
       <Filter>beast\wsproto</Filter>
     </ClInclude>

@@ -116,6 +116,11 @@ public:
             }
         }
         d.ws.wr_active_ = false;
+        if(d.ws.wr_invoke_)
+        {
+            auto p = std::move(d.ws.wr_invoke_);
+            (*p)();
+        }
         d.h(ec);
     }
 
