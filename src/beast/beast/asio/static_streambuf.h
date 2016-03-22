@@ -414,6 +414,8 @@ class static_streambuf_n
         std::array<std::uint8_t, N>>
     , public static_streambuf
 {
+    using member_type = boost::base_from_member<
+        std::array<std::uint8_t, N>>;
 public:
     static_streambuf_n(
         static_streambuf_n const&) = delete;
@@ -421,14 +423,18 @@ public:
         static_streambuf_n const&) = delete;
 
     static_streambuf_n()
-        : static_streambuf(member.data(), member.size())
+        : static_streambuf(
+            member_type::member.data(),
+                member_type::member.size())
     {
     }
 
     void
     reset()
     {
-        static_streambuf::reset(member.data(), member.size());
+        static_streambuf::reset(
+            member_type::member.data(),
+                member_type::member.size());
     }
 };
 
