@@ -431,7 +431,24 @@ public:
     }
 };
 
+class ws_server_test : public unit_test::suite
+{
+public:
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using address_type = boost::asio::ip::address;
+
+    void
+    run() override
+    {
+        endpoint_type ep{
+            address_type::from_string("127.0.0.1"), 6000 };
+        WSAsyncEchoServer serv(ep, *this);
+        for (;;) {}
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(ws,asio,beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(ws_server, asio, beast);
 
 } // test
 } // beast
