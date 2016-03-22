@@ -389,15 +389,17 @@ public:
     void
     run() override
     {
-        endpoint_type ep1{
-            address_type::from_string("127.0.0.1"), 6000 };
-        WSAsyncEchoServer s1(ep1, *this);
+        WSAsyncEchoServer s1(endpoint_type{
+            address_type::from_string("127.0.0.1"),
+                6000 }, *this);
 
-        endpoint_type ep2{
-            address_type::from_string("127.0.0.1"), 6001 };
-        WSEchoServer s2(ep, *this);
+        WSEchoServer s2(endpoint_type{
+            address_type::from_string("127.0.0.1"),
+                6001 }, *this);
 
-        for (;;) {}
+        for(;;)
+        {
+        }
     }
 };
 

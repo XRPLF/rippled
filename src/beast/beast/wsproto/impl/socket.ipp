@@ -183,7 +183,7 @@ socket<Stream>::accept(Buffers const& bs, error_code& ec)
             body.append(begin, end);
         }, m, true);
     auto result = p.write(sb.data());
-    if(ec = result.first)
+    if((ec = result.first))
         return;
     accept(m, ec);
 }

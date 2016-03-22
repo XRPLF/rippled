@@ -23,6 +23,7 @@
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/WSSession.h>
 #include <beast/asio/ssl_bundle.h>
+#include <beast/asio/placeholders.h>
 #include <memory>
 
 namespace ripple {
@@ -58,6 +59,9 @@ public:
 private:
     void
     do_close() override;
+
+    void
+    on_shutdown(error_code ec);
 };
 
 //------------------------------------------------------------------------------
@@ -80,8 +84,18 @@ SSLWSPeer::SSLWSPeer(
 void
 SSLWSPeer::do_close()
 {
-    auto& sock = ws_.next_layer();
-    //sock.aync_shutdown(...);
+    //start_timer();
+    using namespace beast::asio;
+    ws_.next_layer().async_shutdown(
+        strand_.wrap(std::bind(&SSLWSPeer::on_shutdown,
+            shared_from_this(), placeholders::error)));
+}
+
+void
+SSLWSPeer::on_shutdown(error_code ec)
+{
+    //cancel_timer();
+    ws_.lowest_layer().close(ec);
 }
 
 } // ripple
