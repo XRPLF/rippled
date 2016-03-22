@@ -367,7 +367,18 @@ TxQ::apply(Application& app, OpenView& view,
     {
         TxQAccount::TxMap::iterator nextAcctIter;
         TxQAccount::TxMap::iterator prevTxnIter;
-        std::shared_ptr<ApplyViewImpl> workingView;
+        std::unique_ptr<ApplyViewImpl> applyView;
+        std::unique_ptr<OpenView> openView;
+
+        XRPAmount fee = beast::zero;
+        XRPAmount potentialSpend = beast::zero;
+        int ownerCountAdjustment = 0;
+
+        MultiTxn(TxQAccount::TxMap::iterator nextAcctIter_,
+            TxQAccount::TxMap::iterator prevTxnIter_)
+            : nextAcctIter(nextAcctIter_)
+            , prevTxnIter(prevTxnIter_)
+        { }
     };
 
     boost::optional<MultiTxn> multiTxn;
@@ -502,10 +513,10 @@ TxQ::apply(Application& app, OpenView& view,
                 auto nextAcctIter = txQAcct.transactions.find(a_seq);
                 auto prevTxnIter = txQAcct.transactions.find(t_seq - 1);
                 if ((nextAcctIter != txQAcct.transactions.end()) &&
-                        (prevTxnIter != txQAcct.transactions.end()) &&
-                            std::distance(nextAcctIter, prevTxnIter) ==
-                               t_seq - a_seq - 1)
-                    multiTxn = { nextAcctIter, prevTxnIter };
+                    (prevTxnIter != txQAcct.transactions.end()) &&
+                    std::distance(nextAcctIter, prevTxnIter) ==
+                    t_seq - a_seq - 1)
+                    multiTxn.emplace(nextAcctIter, prevTxnIter);
             }
 
             if (multiTxn)
@@ -525,11 +536,9 @@ TxQ::apply(Application& app, OpenView& view,
 
                     // Sum up the consequences of the queued txs.
                     // Abort if a blocker is found.
-                    XRPAmount fee(beast::zero);
-                    XRPAmount potentialSpend(beast::zero);
-                    int ownerCountAdjustment = 0;
                     auto workingIter = multiTxn->nextAcctIter;
-                    for (; multiTxn && workingIter != multiTxn->prevTxnIter; ++workingIter)
+                    for (auto const end = std::next(multiTxn->prevTxnIter);
+                        workingIter != end; ++workingIter)
                     {
                         if (!workingIter->second.consequences)
                             workingIter->second.consequences.emplace(
@@ -538,57 +547,20 @@ TxQ::apply(Application& app, OpenView& view,
                         if (workingIter->second.consequences->category ==
                             TxConsequences::blocker)
                         {
-                            multiTxn.reset();
-                            break;
+                            // Drop the current transaction
+                            JLOG(j_.trace()) <<
+                                "Ignoring transaction " <<
+                                transactionID <<
+                                ". A blocker-type transaction " <<
+                                "is in the queue.";
+                            return{ telCAN_NOT_QUEUE, false };
                         }
-                    }
-                    if (workingIter->second.view)
-                    {
-                        // Found a view we can use on a tx that's already
-                        // been processed.
-                        multiTxn->workingView = workingIter->second.view;
-                        ++workingIter;
-                    }
-                    else
-                    {
-                        // Create the test view from the current view
-                        multiTxn->workingView =
-                            std::make_shared<OpenView>(view);
-                    }
-                    auto const actualBalance = (*sle)[sfBalance].xrp();
-                    auto workingBalance = (*multiTxn->workingView->
-                        read(keylet::account(account)))[sfBalance].xrp();
-                    auto const balanceAdjustment = workingBalance -
-                        actualBalance;
-                    // Apply the transactions to the working view
-                    auto end = std::next(multiTxn->prevTxnIter);
-                    for (; multiTxn && workingIter != end; ++workingIter)
-                    {
-                        auto result = workingIter->second.apply(app,
-                            *multiTxn->workingView);
-                        workingBalance = (*multiTxn->workingView->
-                            read(keylet::account(account)))[sfBalance].xrp();
-                        // Don't care about the TER, just that it applied.
-                        if (result.second &&
-                            workingBalance >= balanceAdjustment)
-                        {
-                            workingIter->second.view = multiTxn->workingView;
-                        }
-                        else
-                        {
-                            // Prior transactions fail to apply or drive the
-                            // real balance too low, we can't queue this one.
-                            multiTxn.reset();
-                        }
-                    }
-                    if (multiTxn && balanceAdjustment.signum() > 0 &&
-                        (workingBalance - (*tx)[sfFee].xrp() <
-                            balanceAdjustment))
-                    {
-                        // This transaction will take the balance too low
-                        // in the live OpenView, but may not get detected
-                        // by preclaim with the workingView.
-                        multiTxn.reset();
+                        multiTxn->fee +=
+                            workingIter->second.consequences->fee;
+                        multiTxn->potentialSpend +=
+                            workingIter->second.consequences->potentialSpend;
+                        multiTxn->ownerCountAdjustment +=
+                            workingIter->second.consequences->ownerCountAdjustment;
                     }
                 }
                 else
@@ -601,16 +573,51 @@ TxQ::apply(Application& app, OpenView& view,
                         requiredMultiLevel <<
                         ". Only paid " <<
                         feeLevelPaid;
-                    return{ telINSUF_FEE_P, false };
+                    return{ telCAN_NOT_QUEUE, false };
                 }
+            }
+            if (multiTxn)
+            {
+                auto const balance = (*sle)[sfBalance].xrp();
+                if (multiTxn->fee > balance ||
+                    multiTxn->fee > view.fees().accountReserve(0))
+                {
+                    // Drop the current transaction
+                    JLOG(j_.trace()) <<
+                        "Ignoring transaction " <<
+                        transactionID <<
+                        ". Total fees in flight too high.";
+                    return{ telCAN_NOT_QUEUE, false };
+                }
+            }
+            if (multiTxn)
+            {
+                // Create the test view from the current view
+                multiTxn->applyView =
+                    std::make_unique<ApplyViewImpl>(view, flags);
+                multiTxn->openView =
+                    std::make_unique<OpenView>(*multiTxn->applyView,
+                        multiTxn->applyView);
+
+                auto const sleBump = multiTxn->applyView->peek(
+                    keylet::account(account));
+                // TODO: Is update necessary?
+                multiTxn->applyView->update(sleBump);
+
+                sleBump->setFieldAmount(sfBalance,
+                    STAmount(multiTxn->fee
+                        + multiTxn->potentialSpend));
+                sleBump->setFieldU32(sfSequence, t_seq);
+                adjustOwnerCount(*multiTxn->applyView, sleBump,
+                    multiTxn->ownerCountAdjustment, j_);
             }
         }
     }
 
     // See if the transaction is likely to claim a fee.
-    assert(!multiTxn || multiTxn->workingView);
+    assert(!multiTxn || multiTxn->openView);
     auto const pcresult = preclaim(pfresult, app,
-        multiTxn ? *multiTxn->workingView : view);
+        multiTxn ? *multiTxn->openView : view);
     if (!pcresult.likelyToClaimFee)
         return{ pcresult.ter, false };
 
