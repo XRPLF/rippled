@@ -47,6 +47,7 @@ private:
     friend class BasePeer<Impl>;
 
     beast::http::message req_;
+    beast::wsproto::opcode::value op_;
     beast::asio::streambuf rb_;
     beast::asio::streambuf wb_;
     beast::wsproto::frame_header fh_;
@@ -198,13 +199,15 @@ BaseWSPeer<Impl>::on_write(error_code const& ec)
     if(boost::indeterminate(result.first))
         return;
     if(! result.first)
-        impl().ws_.async_write(result.first, result.second,
-            strand_.wrap(std::bind(&BaseWSPeer::on_write,
-                impl().shared_from_this(), placeholders::error)));
+        impl().ws_.async_write(beast::wsproto::opcode::text,
+            result.first, result.second, strand_.wrap(std::bind(
+                &BaseWSPeer::on_write, impl().shared_from_this(),
+                    placeholders::error)));
     else
-        impl().ws_.async_write(result.first, result.second,
-            strand_.wrap(std::bind(&BaseWSPeer::on_write_fin,
-                impl().shared_from_this(), placeholders::error)));
+        impl().ws_.async_write(beast::wsproto::opcode::text,
+            result.first, result.second, strand_.wrap(std::bind(
+                &BaseWSPeer::on_write_fin, impl().shared_from_this(),
+                    placeholders::error)));
 }
 
 template<class Impl>
@@ -226,7 +229,7 @@ BaseWSPeer<Impl>::do_read()
         return strand_.post(std::bind(
             &BaseWSPeer::do_read, impl().shared_from_this()));
     using namespace beast::asio;
-    beast::wsproto::async_read_msg(impl().ws_, rb_,
+    beast::wsproto::async_read_msg(impl().ws_, op_, rb_,
         strand_.wrap(std::bind(&BaseWSPeer::on_read,
             impl().shared_from_this(), placeholders::error)));
 }

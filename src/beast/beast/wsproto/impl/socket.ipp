@@ -27,7 +27,6 @@
 #include <beast/wsproto/impl/header_op.ipp>
 #include <beast/wsproto/impl/read_msg_op.ipp>
 #include <beast/wsproto/impl/read_op.ipp>
-#include <beast/wsproto/impl/write_msg_op.ipp>
 #include <beast/wsproto/impl/write_op.ipp>
 #include <beast/asio/append_buffers.h>
 #include <beast/asio/static_streambuf.h>
@@ -365,11 +364,17 @@ socket<Stream>::async_read(
 template<class Stream>
 template<class ConstBufferSequence>
 void
-socket<Stream>::write(bool fin,
+socket<Stream>::write(opcode::value op, bool fin,
     ConstBufferSequence const& bs, error_code& ec)
 {
+    if(wr_cont_ && op != opcode::cont)
+        throw std::invalid_argument("cont opcode expected");
+    else if(! wr_cont_ && op == opcode::cont)
+        throw std::invalid_argument("non-cont opcode expected");
+    wr_cont_ = ! fin;
+
     frame_header fh;
-    fh.op = wr_op_;
+    fh.op = op;
     fh.fin = fin;
     fh.rsv1 = false;
     fh.rsv2 = false;
@@ -405,13 +410,19 @@ socket<Stream>::write(bool fin,
 template<class Stream>
 template<class Buffers, class Handler>
 void
-socket<Stream>::async_write(bool fin, Buffers&& bs, Handler&& h)
+socket<Stream>::async_write(opcode::value op, bool fin,
+    Buffers&& bs, Handler&& h)
 {
     static_assert(beast::is_call_possible<Handler,
         void(error_code)>::value,
             "Type does not meet the handler requirements");
+    if(wr_cont_ && op != opcode::cont)
+        throw std::invalid_argument("cont opcode expected");
+    else if(! wr_cont_ && op == opcode::cont)
+        throw std::invalid_argument("non-cont opcode expected");
+    wr_cont_ = ! fin;
     write_op<std::decay_t<Buffers>, std::decay_t<Handler>>{
-        *this, fin, std::forward<Buffers>(bs),
+        *this, op, fin, std::forward<Buffers>(bs),
             std::forward<Handler>(h)}();
 }
 
@@ -516,8 +527,10 @@ socket<Stream>::do_accept(beast::http::message const& r)
 
 template<class Stream, class Streambuf>
 void
-read_msg(socket<Stream>& ws, Streambuf& sb, error_code& ec)
+read_msg(socket<Stream>& ws, opcode::value& op,
+    Streambuf& sb, error_code& ec)
 {
+    bool cont = false;
     for(;;)
     {
         frame_header fh;
@@ -529,6 +542,11 @@ read_msg(socket<Stream>& ws, Streambuf& sb, error_code& ec)
         if(ec)
             return;
         sb.commit(fh.len);
+        if(! cont)
+        {
+            op = fh.op;
+            cont = true;
+        }
         if(fh.fin)
             break;
     }
@@ -536,37 +554,34 @@ read_msg(socket<Stream>& ws, Streambuf& sb, error_code& ec)
 
 template<class Stream, class Streambuf, class Handler>
 void
-async_read_msg(socket<Stream>& ws, Streambuf& sb, Handler&& h)
+async_read_msg(socket<Stream>& ws, opcode::value& op,
+    Streambuf& sb, Handler&& h)
 {
     static_assert(beast::is_call_possible<Handler,
         void(error_code)>::value,
             "Type does not meet the handler requirements");
     detail::read_msg_op<Stream, Streambuf,
-        std::decay_t<Handler>>{ws, sb,
+        std::decay_t<Handler>>{ws, op, sb,
             std::forward<Handler>(h)}();
 }
 
 template<class Stream, class Buffers>
 void
-write_msg(socket<Stream>& ws, Buffers const& bs, error_code& ec)
+write_msg(socket<Stream>& ws, opcode::value op,
+    Buffers const& bs, error_code& ec)
 {
 }
 
 template<class Stream, class Buffers, class Handler>
 void
-async_write_msg(socket<Stream>& ws, Buffers&& bs, Handler&& h)
+async_write_msg(socket<Stream>& ws,
+    opcode::value op, Buffers&& bs, Handler&& h)
 {
     static_assert(beast::is_call_possible<Handler,
         void(error_code)>::value,
             "Type does not meet the handler requirements");
-#if 0
-    detail::write_msg_op<Stream, std::decay_t<Buffers>,
-        std::decay_t<Handler>>{ws, std::forward<Buffers>(bs),
-            std::forward<Handler>(h)}();
-#else
-    ws.async_write(true, std::forward<Buffers>(bs),
+    ws.async_write(op, true, std::forward<Buffers>(bs),
         std::forward<Handler>(h));
-#endif
 }
 
 } // wsproto

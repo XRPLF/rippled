@@ -206,11 +206,12 @@ private:
         }
         for(;;)
         {
+            wsproto::opcode::value op;
             beast::asio::streambuf sb;
-            wsproto::read_msg(ws, sb, ec);
+            wsproto::read_msg(ws, op, sb, ec);
             if(ec)
                 break;
-            wsproto::write_msg(ws, sb, ec);
+            wsproto::write_msg(ws, op, sb, ec);
             if(ec)
                 break;
         }
@@ -237,6 +238,7 @@ private:
             int state = 0;
             wsproto::socket<socket_type> ws;
             unit_test::suite& suite;
+            wsproto::opcode::value op;
             beast::asio::streambuf sb;
 
             data(socket_type&& sock_,
@@ -278,7 +280,7 @@ private:
                 d.sb.consume(d.sb.size());
                 d.state = 2;
                 wsproto::async_read_msg(
-                    d.ws, d.sb, std::move(*this));
+                    d.ws, d.op, d.sb, std::move(*this));
                 return;
 
             // got message
@@ -287,7 +289,7 @@ private:
                     buffers_to_string(d.sb.data());
                 d.state = 1;
                 wsproto::async_write_msg(
-                    d.ws, d.sb.data(),
+                    d.ws, d.op, d.sb.data(),
                         std::move(*this));
                 return;
             }
@@ -399,11 +401,13 @@ public:
         ws.handshake(ep.address().to_string(), "/", ec);
         maybe_fail(ec, "upgrade");
         std::string const s = "Hello, world!";
-        ws.write(true, buffer(s), ec);
+        ws.write(wsproto::opcode::text, true, buffer(s), ec);
         maybe_fail(ec, "write");
         streambuf sb;
-        read_msg(ws, sb, ec);
+        wsproto::opcode::value op;
+        read_msg(ws, op, sb, ec);
         maybe_fail(ec, "read");
+        expect(op == wsproto::opcode::text);
         expect(buffers_to_string(sb.data()) == s);
         ws.close(0, "", ec);
         maybe_fail(ec, "close");
@@ -418,10 +422,12 @@ public:
             WSAsyncEchoServer s(ep, *this);
             syncEchoClient(ep);
         }
+    #if 0
         {
             WSEchoServer s(ep, *this);
             syncEchoClient(ep);
         }
+    #endif
     }
 };
 

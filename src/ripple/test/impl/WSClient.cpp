@@ -92,6 +92,7 @@ class WSClientImpl : public WSClient
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
     beast::wsproto::socket<boost::asio::ip::tcp::socket&> ws_;
+    beast::wsproto::opcode::value op_;
     beast::asio::streambuf rb_;
 
     // synchronize destructor
@@ -117,7 +118,7 @@ public:
         stream_.connect(ep);
         ws_.handshake(ep.address().to_string() +
             ":" + std::to_string(ep.port()), "/");
-        beast::wsproto::async_read_msg(ws_, rb_,
+        beast::wsproto::async_read_msg(ws_, op_, rb_,
             strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
                 this, beast::asio::placeholders::error)));
     }
@@ -145,7 +146,8 @@ public:
                jp = params;
             jp["command"] = cmd;
             auto const s = to_string(jp);
-            ws_.write(true, buffer(s));
+            ws_.write(beast::wsproto::opcode::text,
+                true, buffer(s));
         }
 
         auto jv = findMsg(5s,
@@ -219,7 +221,7 @@ private:
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        beast::wsproto::async_read_msg(ws_, rb_,
+        beast::wsproto::async_read_msg(ws_, op_, rb_,
             strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
                 this, beast::asio::placeholders::error)));
     }

@@ -880,8 +880,6 @@
     </None>
     <None Include="..\..\src\beast\beast\wsproto\impl\socket.ipp">
     </None>
-    <None Include="..\..\src\beast\beast\wsproto\impl\write_msg_op.ipp">
-    </None>
     <None Include="..\..\src\beast\beast\wsproto\impl\write_op.ipp">
     </None>
     <ClInclude Include="..\..\src\beast\beast\wsproto\role.h">

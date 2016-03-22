@@ -130,23 +130,6 @@ struct keep_alive
     }
 };
 
-namespace detail {
-struct text_type {};
-struct binary_type {};
-} // detail
-
-/// Text payload type option.
-/**
-    Sets the payload type to text (the default).
-*/
-static detail::text_type constexpr text{};
-
-/// Binary payload type option.
-/**
-    Sets the payload type to binary.
-*/
-static detail::binary_type constexpr binary{};
-
 /// Message fragment size option.
 /**
     Sets the maximum size of fragments generated when sending
@@ -263,7 +246,7 @@ protected:
     bool rd_active_ = false;
 
     // write state
-    opcode::value wr_op_ = opcode::text;
+    bool wr_cont_ = false;
     std::size_t wr_frag_ = 0;
     bool wr_active_ = false;
 
@@ -449,18 +432,6 @@ public:
     set_option(keep_alive const& o)
     {
         keep_alive_ = o.value;
-    }
-
-    void
-    set_option(detail::text_type)
-    {
-        wr_op_ = opcode::text;
-    }
-
-    void
-    set_option(detail::binary_type)
-    {
-        wr_op_ = opcode::binary;
     }
 
     void
@@ -970,6 +941,8 @@ public:
         to the stream's write_some function. The actual payload sent
         may be transformed as per the WebSocket protocol settings.
 
+        @param op The opcode, which must be text or binary.
+
         @param fin `true` if this is the last frame in the message.
 
         @param buffers One or more buffers containing the frame's
@@ -979,7 +952,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(bool fin,
+    write(opcode::value op, bool fin,
         ConstBufferSequence const& buffers, error_code& ec);
 
     /// Write an entire frame to a stream before returning.
@@ -1004,10 +977,11 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(bool fin, ConstBufferSequence const& buffers)
+    write(opcode::value op, bool fin,
+        ConstBufferSequence const& buffers)
     {
         error_code ec;
-        write(fin, buffers, ec);
+        write(op, fin, buffers, ec);
         detail::maybe_throw(ec, "write");
     }
 
@@ -1016,6 +990,8 @@ public:
         This function is used to asynchronously write a WebSocket
         frame on the stream. This function call always returns
         immediately.
+
+        @param op The opcode, which must be text or binary.
 
         @param fin A bool indicating whether or not the frame is the
         last frame in the corresponding WebSockets message.
@@ -1036,7 +1012,7 @@ public:
     */
     template<class ConstBufferSequence, class Handler>
     void
-    async_write(bool fin,
+    async_write(opcode::value op, bool fin,
         ConstBufferSequence&& buffers, Handler&& handler);
 
 private:
@@ -1076,10 +1052,11 @@ private:
 */
 template<class Stream, class Streambuf>
 void
-read_msg(socket<Stream>& ws, Streambuf& sb)
+read_msg(socket<Stream>& ws,
+    opcode::value& op, Streambuf& sb)
 {
     error_code ec;
-    read_msg(ws, sb, ec);
+    read_msg(ws, op, sb, ec);
     detail::maybe_throw(ec, "read_msg");
 }
 
@@ -1089,7 +1066,8 @@ read_msg(socket<Stream>& ws, Streambuf& sb)
 */
 template<class Stream, class Streambuf>
 void
-read_msg(socket<Stream>& ws, Streambuf& sb, error_code& ec);
+read_msg(socket<Stream>& ws,
+    opcode::value& op, Streambuf& sb, error_code& ec);
 
 /// Read a complete WebSocket message asynchronously.
 /*
@@ -1109,17 +1087,19 @@ read_msg(socket<Stream>& ws, Streambuf& sb, error_code& ec);
 */
 template<class Stream, class Streambuf, class Handler>
 void
-async_read_msg(socket<Stream>& ws, Streambuf& sb, Handler&& handler);
+async_read_msg(socket<Stream>& ws, opcode::value& op,
+    Streambuf& sb, Handler&& handler);
 
 /// Write a complete WebSocket message.
 /*
 */
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, ConstBufferSequence const& buffers)
+write_msg(socket<Stream>& ws, opcode::value op,
+    ConstBufferSequence const& buffers)
 {
     error_code ec;
-    write_msg(ws, buffers, ec);
+    write_msg(ws, op, buffers, ec);
     detail::maybe_throw(ec, "write_msg");
 }
 
@@ -1128,12 +1108,12 @@ write_msg(socket<Stream>& ws, ConstBufferSequence const& buffers)
 */
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws,
+write_msg(socket<Stream>& ws, opcode::value op,
     ConstBufferSequence const& buffers, error_code& ec);
 
 template<class Stream, class ConstBufferSequence, class Handler>
 void
-async_write_msg(socket<Stream>& ws,
+async_write_msg(socket<Stream>& ws, opcode::value op,
     ConstBufferSequence&& buffers, Handler&& handler);
 
 } // wsproto

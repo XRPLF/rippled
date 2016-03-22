@@ -36,20 +36,20 @@ class socket<Stream>::write_op
     {
         socket<Stream>& ws;
         Buffers bs;
+        Handler h;
         frame_header fh;
         asio::static_streambuf_n<14> fh_buf;
-        Handler h;
         std::unique_ptr<std::uint8_t[]> p;
         int state = 0;
 
         template<class DeducedBuffers, class DeducedHandler>
-        data(socket<Stream>& ws_, bool fin,
+        data(socket<Stream>& ws_, opcode::value op_, bool fin,
                 DeducedBuffers&& bs_, DeducedHandler&& h_)
             : ws(ws_)
             , bs(std::forward<DeducedBuffers>(bs_))
             , h(std::forward<DeducedHandler>(h_))
         {
-            fh.op = ws.wr_op_;
+            fh.op = op_;
             fh.fin = fin;
             fh.rsv1 = 0;
             fh.rsv2 = 0;
@@ -57,6 +57,8 @@ class socket<Stream>::write_op
             fh.len = boost::asio::buffer_size(bs);
             if((fh.mask = (ws.role_ == role_type::client)))
                 fh.key = ws.maskgen_();
+            detail::write<
+                asio::static_streambuf>(fh_buf, fh);
         }
     };
 
@@ -78,9 +80,6 @@ public:
     {
         using namespace boost::asio;
         auto& d = *d_;
-        d.ws.wr_active_ = true;
-        detail::write<
-            asio::static_streambuf>(d.fh_buf, d.fh);
         if(d.fh.mask)
         {
             detail::prepared_key_type key;
@@ -89,12 +88,14 @@ public:
             mutable_buffers_1 mb{d.p.get(), d.fh.len};
             buffer_copy(mb, d.bs);
             detail::mask_inplace(mb, key);
+            d.ws.wr_active_ = true;
             boost::asio::async_write(d.ws.stream_,
                 beast::asio::append_buffers(
                     d.fh_buf.data(), mb), std::move(*this));
         }
         else
         {
+            d.ws.wr_active_ = true;
             boost::asio::async_write(d.ws.stream_,
                 beast::asio::append_buffers(
                     d.fh_buf.data(), d.bs), std::move(*this));

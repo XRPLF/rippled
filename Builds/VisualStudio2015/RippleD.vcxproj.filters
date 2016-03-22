@@ -1428,9 +1428,6 @@
     <None Include="..\..\src\beast\beast\wsproto\impl\socket.ipp">
       <Filter>beast\wsproto\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\beast\wsproto\impl\write_msg_op.ipp">
-      <Filter>beast\wsproto\impl</Filter>
-    </None>
     <None Include="..\..\src\beast\beast\wsproto\impl\write_op.ipp">
       <Filter>beast\wsproto\impl</Filter>
     </None>

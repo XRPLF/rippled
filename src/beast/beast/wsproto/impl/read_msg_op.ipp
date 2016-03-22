@@ -32,15 +32,17 @@ class read_msg_op
     struct data
     {
         socket<Stream>& ws;
+        opcode::value& op;
         Streambuf& sb;
         Handler h;
         frame_header fh;
         int state = 0;
 
         template<class DeducedHandler>
-        data(socket<Stream>& ws_, Streambuf& sb_,
-                DeducedHandler&& h_)
+        data(socket<Stream>& ws_, opcode::value& op_,
+                Streambuf& sb_, DeducedHandler&& h_)
             : ws(ws_)
+            , op(op_)
             , sb(sb_)
             , h(std::forward<DeducedHandler>(h_))
         {
@@ -72,6 +74,8 @@ public:
         if(! ec)
         {
             // got frame header
+            if(d.fh.op != opcode::cont)
+                d.op = d.fh.op;
             if(d.fh.len > 0)
             {
                 d_->state = 1;
