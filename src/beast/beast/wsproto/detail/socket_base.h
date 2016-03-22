@@ -32,81 +32,6 @@ namespace beast {
 namespace wsproto {
 namespace detail {
 
-template<class T, std::size_t Size>
-class small_object_ptr
-{
-    T* t_ = nullptr;
-    std::unique_ptr<T> p_;
-    std::array<std::uint8_t, Size> buf_;
-
-public:
-    small_object_ptr() = default;
-
-    ~small_object_ptr()
-    {
-        clear();
-    }
-
-    template<class U, class... Args>
-    void
-    emplace(Args&&... args)
-    {
-        clear();
-        if(sizeof(U) <= Size)
-        {
-            p_ = nullptr;
-            t_ = new(buf_.data()) U(
-                std::forward<Args>(args)...);
-            return;
-        }
-        auto u = std::make_unique<U>(
-            std::forward<Args>(args)...);
-        t_ = u.get();
-        p_ = std::move(u);
-    }
-
-    T* get()
-    {
-        return t_;
-    }
-
-    T const* get() const
-    {
-        return t_;
-    }
-
-    T* operator->()
-    {
-        return get();
-    }
-
-    T const* operator->() const
-    {
-        return get();
-    }
-
-    explicit
-    operator bool() const
-    {
-        return get() != nullptr;
-    }
-
-private:
-    void
-    clear()
-    {
-        if(! t_)
-            return;
-        if(p_)
-            p_ = nullptr;
-        else
-            t_->~T();
-        t_ = nullptr;
-    }
-};
-
-//------------------------------------------------------------------------------
-
 struct at_most
 {
     std::size_t n;
@@ -163,36 +88,105 @@ struct decorator : abstract_decorator
     }
 };
 
-struct invokable
+class invokable
 {
-    virtual ~invokable() = default;
-    virtual void operator()() = 0;
-};
-
-template<class Op>
-struct invokable_op : invokable
-{
-    Op op;
-
-    template<class... Args>
-    explicit
-    invokable_op(Args&&... args)
-        : op(std::forward<Args>(args)...)
+    struct base
     {
+        virtual ~base() = default;
+        virtual void operator()() = 0;
+    };
+
+    template<class F>
+    struct holder : base
+    {
+        F f;
+
+        holder(holder&&) = default;
+        holder(holder const&) = default;
+
+        template<class U>
+        explicit
+        holder(U&& u)
+            : f(std::forward<U>(u))
+        {
+        }
+
+        void
+        operator()() override
+        {
+            F f_(std::move(f));
+            this->~holder();
+            // invocation of f_() can
+            // assign a new invokable.
+            f_();
+        }
+    };
+
+    struct exemplar
+    {
+        std::shared_ptr<int> _;
+        void operator()() {}
+    };
+
+    bool b_ = false;
+    std::array<std::uint8_t,
+        sizeof(holder<exemplar>)> buf_;
+
+public:
+    invokable() = default;
+
+    ~invokable()
+    {
+        if(b_)
+            get().~base();
     }
+
+    explicit
+    operator bool() const
+    {
+        return b_;
+    }
+
+    template<class F>
+    void
+    emplace(F&& f);
 
     void
-    operator()() override
+    maybe_invoke()
     {
-        op();
+        if(b_)
+        {
+            b_ = false;
+            get()();
+        }
+    }
+
+private:
+    base&
+    get()
+    {
+        return *reinterpret_cast<base*>(buf_.data());
     }
 };
+
+template<class F>
+void
+invokable::emplace(F&& f)
+{
+    if(b_)
+    {
+        get().~base();
+        b_ = false;
+    }
+    ::new(buf_.data()) holder<F>(
+        std::forward<F>(f));
+    b_ = true;
+}
 
 //------------------------------------------------------------------------------
 
-class socket_base
+struct socket_base
 {
-protected:
     detail::maskgen maskgen_;
     std::unique_ptr<abstract_decorator> decorate_;
     bool keep_alive_ = false;
@@ -210,11 +204,10 @@ protected:
     bool wr_cont_ = false;
     std::size_t wr_frag_ = 0;
     bool wr_active_ = false;
-    std::unique_ptr<invokable> wr_invoke_;
+    invokable wr_invoke_;
 
     bool closing_ = false;
 
-protected:
     template<class = void>
     error_code
     prepare_fh();

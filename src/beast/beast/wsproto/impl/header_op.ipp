@@ -168,9 +168,8 @@ public:
                     if(d.ws.wr_active_)
                     {
                         // suspend
-                        d.ws.wr_invoke_ = std::make_unique<
-                            detail::invokable_op<header_op>>(
-                                std::move(*this));
+                        d.ws.wr_invoke_.emplace<
+                            header_op>(std::move(*this));
                         return;
                     }
                     break;
@@ -189,9 +188,8 @@ public:
                     if(d.ws.wr_active_)
                     {
                         // suspend
-                        d.ws.wr_invoke_ = std::make_unique<
-                            detail::invokable_op<header_op>>(
-                                std::move(*this));
+                        d.ws.wr_invoke_.emplace<
+                            header_op>(std::move(*this));
                         return;
                     }
                     break;
@@ -210,9 +208,8 @@ public:
                     if(d.ws.wr_active_)
                     {
                         // suspend
-                        d.ws.wr_invoke_ = std::make_unique<
-                            detail::invokable_op<header_op>>(
-                                std::move(*this));
+                        d.ws.wr_invoke_.emplace<
+                            header_op>(std::move(*this));
                         return;
                     }
                     break;

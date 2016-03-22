@@ -105,7 +105,7 @@ struct frag_size
     Decorator, Streambuf, SyncReadStream, SyncWriteStream.
 */
 template<class Stream>
-class socket : public detail::socket_base
+class socket : protected detail::socket_base
 {
 public:
     /// The type of the next layer.
