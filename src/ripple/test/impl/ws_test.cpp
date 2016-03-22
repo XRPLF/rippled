@@ -46,120 +46,6 @@ buffers_to_string(Buffers const& bs)
 
 //------------------------------------------------------------------------------
 
-// Synchronous WebSocket echo server
-//
-class WSEchoServer
-{
-public:
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using address_type = boost::asio::ip::address;
-    using socket_type = boost::asio::ip::tcp::socket;
-
-private:
-    unit_test::suite& suite_;
-    boost::asio::io_service ios_;
-    socket_type sock_;
-    boost::asio::ip::tcp::acceptor acceptor_;
-    unit_test::thread thread_;
-
-public:
-    WSEchoServer(endpoint_type ep, unit_test::suite& suite)
-        : suite_(suite)
-        , sock_(ios_)
-        , acceptor_(ios_)
-    {
-        error_code ec;
-        acceptor_.open(ep.protocol(), ec);
-        maybe_throw(ec, "open");
-        acceptor_.bind(ep, ec);
-        maybe_throw(ec, "bind");
-        acceptor_.listen(
-            boost::asio::socket_base::max_connections, ec);
-        maybe_throw(ec, "listen");
-        acceptor_.async_accept(sock_,
-            std::bind(&WSEchoServer::on_accept, this,
-                beast::asio::placeholders::error));
-        thread_ = unit_test::thread(suite_,
-            [&]
-            {
-                ios_.run();
-            });
-    }
-
-    ~WSEchoServer()
-    {
-        error_code ec;
-        acceptor_.close(ec);
-        thread_.join();
-    }
-
-private:
-    void
-    fail(error_code ec, std::string what)
-    {
-        suite_.log <<
-            what << ": " << ec.message();
-    }
-
-    void
-    maybe_throw(error_code ec, std::string what)
-    {
-        if(ec)
-        {
-            fail(ec, what);
-            throw ec;
-        }
-    }
-
-    void
-    on_accept(error_code ec)
-    {
-        using namespace boost::asio;
-        if(ec == error::operation_aborted)
-            return;
-        maybe_throw(ec, "accept");
-        std::thread{
-            [
-                this,
-                sock = std::move(sock_),
-                work = io_service::work{ios_}
-            ]() mutable
-            {
-                do_peer(std::move(sock));
-            }}.detach();
-        acceptor_.async_accept(sock_,
-            std::bind(&WSEchoServer::on_accept, this,
-                beast::asio::placeholders::error));
-    }
-
-    void
-    do_peer(socket_type&& sock)
-    {
-        wsproto::socket<socket_type> ws(std::move(sock));
-        error_code ec;
-        ws.accept(ec);
-        if(ec)
-        {
-            fail(ec, "accept");
-            return;
-        }
-        for(;;)
-        {
-            wsproto::opcode::value op;
-            beast::asio::streambuf sb;
-            wsproto::read_msg(ws, op, sb, ec);
-            if(ec)
-                break;
-            wsproto::write_msg(ws, op, sb, ec);
-            if(ec)
-                break;
-        }
-    }
-};
-
-//------------------------------------------------------------------------------
-
 // Asynchronous WebSocket echo server
 //
 class WSAsyncEchoServer
@@ -321,6 +207,120 @@ private:
 
 //------------------------------------------------------------------------------
 
+// Synchronous WebSocket echo server
+//
+class WSEchoServer
+{
+public:
+    using error_code = boost::system::error_code;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using address_type = boost::asio::ip::address;
+    using socket_type = boost::asio::ip::tcp::socket;
+
+private:
+    unit_test::suite& suite_;
+    boost::asio::io_service ios_;
+    socket_type sock_;
+    boost::asio::ip::tcp::acceptor acceptor_;
+    unit_test::thread thread_;
+
+public:
+    WSEchoServer(endpoint_type ep, unit_test::suite& suite)
+        : suite_(suite)
+        , sock_(ios_)
+        , acceptor_(ios_)
+    {
+        error_code ec;
+        acceptor_.open(ep.protocol(), ec);
+        maybe_throw(ec, "open");
+        acceptor_.bind(ep, ec);
+        maybe_throw(ec, "bind");
+        acceptor_.listen(
+            boost::asio::socket_base::max_connections, ec);
+        maybe_throw(ec, "listen");
+        acceptor_.async_accept(sock_,
+            std::bind(&WSEchoServer::on_accept, this,
+                beast::asio::placeholders::error));
+        thread_ = unit_test::thread(suite_,
+            [&]
+            {
+                ios_.run();
+            });
+    }
+
+    ~WSEchoServer()
+    {
+        error_code ec;
+        acceptor_.close(ec);
+        thread_.join();
+    }
+
+private:
+    void
+    fail(error_code ec, std::string what)
+    {
+        suite_.log <<
+            what << ": " << ec.message();
+    }
+
+    void
+    maybe_throw(error_code ec, std::string what)
+    {
+        if(ec)
+        {
+            fail(ec, what);
+            throw ec;
+        }
+    }
+
+    void
+    on_accept(error_code ec)
+    {
+        using namespace boost::asio;
+        if(ec == error::operation_aborted)
+            return;
+        maybe_throw(ec, "accept");
+        std::thread{
+            [
+                this,
+                sock = std::move(sock_),
+                work = io_service::work{ios_}
+            ]() mutable
+            {
+                do_peer(std::move(sock));
+            }}.detach();
+        acceptor_.async_accept(sock_,
+            std::bind(&WSEchoServer::on_accept, this,
+                beast::asio::placeholders::error));
+    }
+
+    void
+    do_peer(socket_type&& sock)
+    {
+        wsproto::socket<socket_type> ws(std::move(sock));
+        error_code ec;
+        ws.accept(ec);
+        if(ec)
+        {
+            fail(ec, "accept");
+            return;
+        }
+        for(;;)
+        {
+            wsproto::opcode::value op;
+            beast::asio::streambuf sb;
+            wsproto::read_msg(ws, op, sb, ec);
+            if(ec)
+                break;
+            wsproto::write_msg(ws, op, sb.data(), ec);
+            if(ec)
+                break;
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
+
 class ws_test : public unit_test::suite
 {
 public:
@@ -376,6 +376,10 @@ public:
     }
 };
 
+BEAST_DEFINE_TESTSUITE(ws,asio,beast);
+
+//------------------------------------------------------------------------------
+
 class ws_server_test : public unit_test::suite
 {
 public:
@@ -385,14 +389,18 @@ public:
     void
     run() override
     {
-        endpoint_type ep{
+        endpoint_type ep1{
             address_type::from_string("127.0.0.1"), 6000 };
-        WSAsyncEchoServer serv(ep, *this);
+        WSAsyncEchoServer s1(ep1, *this);
+
+        endpoint_type ep2{
+            address_type::from_string("127.0.0.1"), 6001 };
+        WSEchoServer s2(ep, *this);
+
         for (;;) {}
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ws,asio,beast);
 BEAST_DEFINE_TESTSUITE_MANUAL(ws_server, asio, beast);
 
 } // test

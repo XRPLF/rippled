@@ -395,6 +395,7 @@ void
 socket<Stream>::write(opcode::value op, bool fin,
     ConstBufferSequence const& bs, error_code& ec)
 {
+    using namespace boost::asio;
     if(wr_cont_ && op != opcode::cont)
         throw std::invalid_argument("cont opcode expected");
     else if(! wr_cont_ && op == opcode::cont)
@@ -598,6 +599,7 @@ void
 write_msg(socket<Stream>& ws, opcode::value op,
     Buffers const& bs, error_code& ec)
 {
+    ws.write(op, true, bs, ec);
 }
 
 template<class Stream, class Buffers, class Handler>
