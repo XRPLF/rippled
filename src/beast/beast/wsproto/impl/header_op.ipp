@@ -37,9 +37,8 @@ class socket<Stream>::header_op
         socket<Stream>& ws;
         frame_header& fh;
         Handler h;
-        detail::fh_buffer fb; // VFALCO could use buf instead
+        asio::static_streambuf_n<139> sb;
         typename asio::static_streambuf::mutable_buffers_type mb;
-        asio::static_streambuf_n<131> sb;
         int state = 0;
 
         template<class DeducedHandler>
@@ -92,23 +91,23 @@ public:
                 d.state = 2;
                 // read fixed frame header
                 boost::asio::async_read(d.ws.stream_,
-                    mutable_buffers_1(d.fb.data(), 2),
-                        std::move(*this));
+                    d.sb.prepare(2), std::move(*this));
                 return;
 
             // got fixed frame header
             case 2:
+                d.sb.commit(bytes_transferred);
                 d.state = 3;
                 // read variable frame header
                 boost::asio::async_read(d.ws.stream_,
-                    mutable_buffers_1(d.fb.data() + 2,
-                        detail::decode_fh1(d.ws.rd_fh_,
-                            d.fb)), std::move(*this));
+                    d.sb.prepare(detail::read_fh1(d.ws.rd_fh_,
+                        d.sb)), std::move(*this));
                 return;
 
             // got variable frame header
             case 3:
-                ec = detail::decode_fh2(d.ws.rd_fh_, d.fb);
+                d.sb.commit(bytes_transferred);
+                ec = detail::read_fh2(d.ws.rd_fh_, d.sb);
                 if(ec)
                     break;
                 ec = d.ws.prepare_fh();
@@ -176,6 +175,8 @@ public:
                 }
                 else if(d.ws.rd_fh_.op == opcode::ping)
                 {
+                    // VFALCO We should avoid a memory
+                    // alloc, use char[] here instead?
                     std::string data;
                     ec = detail::read(data, d.sb.data());
                     if(ec)
@@ -196,6 +197,8 @@ public:
                 }
                 else if(d.ws.rd_fh_.op == opcode::pong)
                 {
+                    // VFALCO We should avoid a memory
+                    // alloc, use char[] here instead?
                     std::string data;
                     ec = detail::read(data, d.sb.data());
                     if(ec)
@@ -236,7 +239,7 @@ public:
             case 8:
                 d.state = 9;
                 d.ws.wr_active_ = true;
-                // write pong frame
+                // write ping/pong frame
                 boost::asio::async_write(d.ws.stream_,
                     d.sb.data(), std::move(*this));
                 return;
@@ -245,6 +248,7 @@ public:
             case 9:
                 d.ws.wr_active_ = false;
                 d.state = 1;
+                d.sb.reset();
                 break;
             }
         }

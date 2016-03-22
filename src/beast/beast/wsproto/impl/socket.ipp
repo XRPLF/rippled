@@ -303,44 +303,61 @@ socket<Stream>::read(frame_header& fh, error_code& ec)
     using namespace boost::asio;
     for(;;)
     {
+        asio::static_streambuf_n<139> sb;
         // read frame header
         {
-            detail::fh_buffer buf;
             boost::asio::read(stream_,
-                buffer(buf.data(), 2), ec);
+                sb.prepare(2), ec);
             if(ec)
-                return;
-            boost::asio::read(stream_,
-                mutable_buffers_1(buf.data() + 2,
-                    detail::decode_fh1(rd_fh_, buf)), ec);
+                break;
+            sb.commit(boost::asio::read(stream_,
+                sb.prepare(detail::read_fh1(
+                    rd_fh_, sb)), ec));
             if(ec)
-                return;
-            ec = detail::decode_fh2(rd_fh_, buf);
+                break;
+            ec = detail::read_fh2(rd_fh_, sb);
             if(ec)
-                return;
+                break;
         }
         ec = prepare_fh();
         if(ec)
-            return;
+            break;
         if(! is_control(rd_fh_.op))
         {
             fh = rd_fh_;
             break;
         }
         // read control frame payload
-        std::array<std::uint8_t, 125> buf;
-        mutable_buffers_1 mb(buf.data(), rd_fh_.len);
         if(rd_fh_.len > 0)
         {
+            auto mb = sb.prepare(rd_fh_.len);
             boost::asio::read(stream_, mb, ec);
             if(ec)
-                return;
+                break;
             if(rd_fh_.mask)
                 detail::mask_inplace(mb, rd_key_);
+            sb.commit(rd_fh_.len);
         }
-        //
-        // TODO handle control frame
-        //
+        if(rd_fh_.op == opcode::close)
+        {
+            if(closing_)
+            {
+                ec = error::closed;
+                break;
+            }
+        }
+        else if(rd_fh_.op == opcode::ping)
+        {
+        }
+        else if(rd_fh_.op == opcode::pong)
+        {
+        }
+        else
+        {
+            // Will never get here, because the frame
+            // header would have failed validation.
+            throw std::logic_error("unknown opcode");
+        }
     }
 }
 

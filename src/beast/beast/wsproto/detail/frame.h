@@ -30,6 +30,7 @@
 #include <boost/endian/buffers.hpp>
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cstdint>
 
 namespace beast {
@@ -40,11 +41,6 @@ namespace detail {
 // 14 = 2 + max(0,2,8) + 4
 //
 using fh_buffer = std::array<std::uint8_t, 14>;
-
-// holds any complete control frame
-// 131 = 2 + 4 + 125
-//
-using cf_buffer = std::array<std::uint8_t, 131>;
 
 // decode first 2 bytes of frame header
 // return: number of additional bytes needed
@@ -220,6 +216,80 @@ write(Streambuf& sb, frame_header const& fh)
         sb.prepare(n), buffer(b)));
 }
 
+// Read fixed frame header
+// Requires at least 2 bytes
+//
+template<class Streambuf>
+std::size_t
+read_fh1(frame_header& fh, Streambuf& sb)
+{
+    using namespace boost::asio;
+    std::uint8_t b[2];
+    assert(buffer_size(sb.data()) >= sizeof(b));
+    sb.consume(buffer_copy(buffer(b), sb.data()));
+    std::size_t need;
+    fh.len = b[1] & 0x7f;
+    switch(fh.len)
+    {
+        case 126: need = 2; break;
+        case 127: need = 8; break;
+        default:
+            need = 0;
+    }
+    if((fh.mask = (b[1] & 0x80)))
+        need += 4;
+    fh.op   = static_cast<opcode::value>(b[0] & 0x0f);
+    fh.fin  = b[0] & 0x80;
+    fh.rsv1 = b[0] & 0x40;
+    fh.rsv2 = b[0] & 0x20;
+    fh.rsv3 = b[0] & 0x10;
+    return need;
+}
+
+template<class Streambuf>
+error_code
+read_fh2(frame_header& fh, Streambuf& sb)
+{
+    using namespace boost::asio;
+    using namespace boost::endian;
+    switch(fh.len)
+    {
+    case 126:
+    {
+        std::uint8_t b[2];
+        assert(buffer_size(sb.data()) >= sizeof(b));
+        sb.consume(buffer_copy(buffer(b), sb.data()));
+        fh.len = reinterpret_cast<
+            big_uint16_buf_t const*>(&b[0])->value();
+        // length not canonical
+        if(fh.len < 126)
+            return error::frame_header_invalid;
+        break;
+    }
+    case 127:
+    {
+        std::uint8_t b[8];
+        assert(buffer_size(sb.data()) >= sizeof(b));
+        sb.consume(buffer_copy(buffer(b), sb.data()));
+        fh.len = reinterpret_cast<
+            big_uint64_buf_t const*>(&b[0])->value();
+        // length not canonical
+        if(fh.len < 65536)
+            return error::frame_header_invalid;
+        break;
+    }
+    }
+    if(fh.mask)
+    {
+        std::uint8_t b[4];
+        assert(buffer_size(sb.data()) >= sizeof(b));
+        sb.consume(buffer_copy(buffer(b), sb.data()));
+        fh.key = reinterpret_cast<
+            little_uint32_buf_t const*>(&b[0])->value();
+    }
+    return {};
+}
+
 // Read data from buffers
 // This is for ping and pong payloads
 //
@@ -236,6 +306,7 @@ read(std::string& data, Buffers const& bs)
 }
 
 // Read reason_code from buffers
+// This is for the close payload
 //
 template<class Buffers>
 error_code
