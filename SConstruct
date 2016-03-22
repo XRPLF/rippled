@@ -81,6 +81,8 @@ The following extra options may be used:
 
     --sanitize=[address, thread]  On gcc & clang, add sanitizer instrumentation
 
+    --assert Enable asserts, even in release builds.
+
 GCC 5: If the gcc toolchain is used, gcc version 5 or better is required. On
     linux distros that ship with gcc 4 (ubuntu < 15.10), rippled will force gcc
     to use gcc4's ABI (there was an ABI change between versions). This allows us
@@ -135,6 +137,9 @@ AddOption('--sanitize', dest='sanitize', choices=['address', 'thread'],
 
 AddOption('--static', dest='static', action='store_true',
           help='On linux, link protobuf, openssl, libc++, and boost statically')
+
+AddOption('--assert', dest='assert', action='store_true',
+          help='Enable asserts, even in release mode')
 
 def parse_time(t):
     l = len(t.split())
@@ -473,13 +478,16 @@ def add_boost_and_protobuf(toolchain, env):
     except KeyError:
         pass
 
+def enable_asserts ():
+    return GetOption('assert')
+
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
     add_boost_and_protobuf(toolchain, env)
     if is_debug_variant(variant):
         env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
 
-    elif variant == 'release' or variant == 'profile':
+    elif (variant == 'release' or variant == 'profile') and (not enable_asserts()):
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if should_link_static() and not Beast.system.linux:
