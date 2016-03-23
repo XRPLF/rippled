@@ -442,6 +442,7 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
                     ++pos;
                     break;
                 }
+                out_end_ = pos->size();
                 n -= pos->size();
             }
         }
