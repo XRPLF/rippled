@@ -32,20 +32,13 @@
 
 namespace ripple {
 
-TxConsequences
-CreateOffer::calculateConsequences(
-    PreflightResult const& preflightResult)
+XRPAmount
+CreateOffer::calculateMaxSpend(STTx const& tx)
 {
-    auto const& tx = preflightResult.tx;
-
-    auto const feePaid = tx[sfFee].xrp();
-
     auto const saTakerGets = tx[sfTakerGets];
 
-    return{ TxConsequences::normal,
-        feePaid, saTakerGets.native() ?
-            saTakerGets.xrp() : beast::zero,
-                1};
+    return saTakerGets.native() ?
+        saTakerGets.xrp() : beast::zero;
 }
 
 TER

@@ -45,8 +45,8 @@ public:
     }
 
     static
-    TxConsequences
-    calculateConsequences(PreflightResult const& preflightResult);
+    XRPAmount
+    calculateMaxSpend(STTx const& tx);
 
     static
     TER

@@ -128,17 +128,10 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-TxConsequences
-SusPayCreate::calculateConsequences(
-    PreflightResult const& preflightResult)
+XRPAmount
+SusPayCreate::calculateMaxSpend(STTx const& tx)
 {
-    auto const& tx = preflightResult.tx;
-
-    auto const feePaid = tx[sfFee].xrp();
-
-    auto const spend = tx[sfAmount].xrp();
-
-    return{ TxConsequences::normal, feePaid, spend, 1 };
+    return tx[sfAmount].xrp();
 }
 
 TER

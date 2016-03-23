@@ -29,34 +29,26 @@
 
 namespace ripple {
 
-TxConsequences
-SetAccount::calculateConsequences(
-    PreflightResult const& preflightResult)
+bool
+SetAccount::affectsSubsequentTransactionAuth(STTx const& tx)
 {
-    auto const& tx = preflightResult.tx;
-
-    auto const feePaid = tx[sfFee].xrp();
-
     auto const uTxFlags = tx.getFlags();
     auto const uSetFlag = tx[~sfSetFlag].value_or(0);
     auto const uClearFlag = tx[~sfClearFlag].value_or(0);
     /*
     TODO: This would be a lot simpler and safer, but
     probably too aggressive, as:
-    `(uTxFlags || uSetFlag || uClearFlag) ? blocker : normal`
+    `return (uTxFlags || uSetFlag || uClearFlag)`
     ie. Only a noop to flags would be treated as `normal`.
     */
-    auto const category = (uTxFlags & tfRequireAuth) ||
+    return (uTxFlags & tfRequireAuth) ||
         (uSetFlag == asfRequireAuth) ||
         (uTxFlags & tfOptionalAuth) ||
         (uClearFlag == asfRequireAuth) ||
         (uSetFlag == asfDisableMaster) ||
         (uClearFlag == asfDisableMaster) ||
         (uSetFlag == asfAccountTxnID) ||
-        (uClearFlag == asfAccountTxnID) ?
-        TxConsequences::blocker : TxConsequences::normal;
-
-    return{ category, feePaid, beast::zero, 0 };
+        (uClearFlag == asfAccountTxnID);
 }
 
 TER

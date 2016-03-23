@@ -38,8 +38,11 @@ public:
     }
 
     static
-    TxConsequences
-    calculateConsequences(PreflightResult const& preflightResult);
+    bool
+    canIncreaseOwners(STTx const& tx)
+    {
+        return true;
+    }
 
     static
     TER

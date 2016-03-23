@@ -25,15 +25,6 @@
 
 namespace ripple {
 
-TxConsequences
-SetRegularKey::calculateConsequences(
-    PreflightResult const& preflightResult)
-{
-    return{ TxConsequences::blocker,
-        preflightResult.tx[sfFee].xrp(),
-            beast::zero, 0 };
-}
-
 std::uint64_t
 SetRegularKey::calculateBaseFee (
     PreclaimContext const& ctx)

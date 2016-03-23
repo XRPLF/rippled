@@ -54,8 +54,11 @@ public:
     }
 
     static
-    TxConsequences
-    calculateConsequences(PreflightResult const& preflightResult);
+    bool
+    affectsSubsequentTransactionAuth(STTx const& tx)
+    {
+        return true;
+    }
 
     static
     TER

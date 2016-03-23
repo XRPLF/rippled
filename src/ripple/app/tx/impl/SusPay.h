@@ -35,8 +35,15 @@ public:
     }
 
     static
-    TxConsequences
-    calculateConsequences(PreflightResult const& preflightResult);
+    XRPAmount
+    calculateMaxSpend(STTx const& tx);
+
+    static
+    bool
+    canIncreaseOwners(STTx const& tx)
+    {
+        return true;
+    }
 
     static
     TER

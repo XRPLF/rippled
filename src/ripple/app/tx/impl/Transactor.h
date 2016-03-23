@@ -70,6 +70,9 @@ public:
     PreclaimContext& operator=(PreclaimContext const&) = delete;
 };
 
+struct TxConsequences;
+struct PreflightResult;
+
 class Transactor
 {
 protected:
@@ -127,8 +130,26 @@ public:
         PreclaimContext const& ctx);
 
     static
-    TxConsequences
-    calculateConsequences(PreflightResult const& preflightResult);
+    bool
+    affectsSubsequentTransactionAuth(STTx const& tx)
+    {
+        return false;
+    }
+
+    static
+    XRPAmount
+    calculateFeePaid(STTx const& tx);
+
+    static
+    XRPAmount
+    calculateMaxSpend(STTx const& tx);
+
+    static
+    bool
+    canIncreaseOwners(STTx const& tx)
+    {
+        return false;
+    }
 
     static
     TER

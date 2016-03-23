@@ -152,21 +152,22 @@ std::uint64_t Transactor::calculateBaseFee (
     return baseFee + (signerCount * baseFee);
 }
 
-TxConsequences
-Transactor::calculateConsequences(
-    PreflightResult const& preflightResult)
+XRPAmount
+Transactor::calculateFeePaid(STTx const& tx)
 {
-    auto const& tx = preflightResult.tx;
+    return tx[sfFee].xrp();
+}
 
-    auto const feePaid = tx[sfFee].xrp();
-
-    return{ TxConsequences::normal, feePaid, beast::zero, 0 };
+XRPAmount
+Transactor::calculateMaxSpend(STTx const& tx)
+{
+    return beast::zero;
 }
 
 TER
 Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
 {
-    auto const feePaid = ctx.tx[sfFee].xrp ();
+    auto const feePaid = calculateFeePaid(ctx.tx);
     if (!isLegalAmount (feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -209,7 +210,7 @@ Transactor::checkFee (PreclaimContext const& ctx, std::uint64_t baseFee)
 
 TER Transactor::payFee ()
 {
-    auto const feePaid = ctx_.tx[sfFee].xrp();
+    auto const feePaid = calculateFeePaid(ctx_.tx);
 
     auto const sle = view().peek(
         keylet::account(account_));
