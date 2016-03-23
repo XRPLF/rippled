@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2016 Ripple Labs Inc.
@@ -21,8 +21,6 @@
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
-#include <beast/websocket/detail/utf8_checker.hpp>
-
 #include <beast/handler_alloc.hpp>
 
 namespace ripple {
@@ -31,19 +29,8 @@ namespace test {
 class WSClient_test : public beast::unit_test::suite
 {
 public:
-    void
-    test_utf8checker()
-    {
-        beast::websocket::detail::utf8_checker utf8c;
-
-        std::uint8_t buffer[] = {0Xff};
-        expect(! utf8c.write(buffer, 3));
-    }
-
     void run() override
     {
-        test_utf8checker();
-
         using namespace jtx;
         Env env(*this);
         auto wsc = makeWSClient(env.app().config());

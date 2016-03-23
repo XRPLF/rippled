@@ -45,6 +45,7 @@ unit-test core_tests :
     streambuf.cpp
     streambuf_readstream.cpp
     type_check.cpp
+    utf8_checker.cpp
     detail/base64.cpp
     detail/empty_base_optimization.cpp
     ;
