@@ -966,10 +966,23 @@ public:
         checkMetrics(env, 4, 6, 5, 3, 256, lastMedian);
 
         // Close the ledger. All of Alice's transactions
-        // take a fee, leaving Alice broke.
+        // take a fee, except the last one.
         env.close();
-        checkMetrics(env, 0, 10, 4, 5, 256, lastMedian);
-        env.require(balance(alice, XRP(0)));
+        checkMetrics(env, 1, 10, 3, 5, 256, lastMedian);
+        env.require(balance(alice, XRP(250) - drops(30)));
+
+        // Still can't add a new transaction for Alice,
+        // no matter the fee.
+        env(noop(alice), fee(XRP(2000)), seq(aliceSeq + 1),
+            ter(telCAN_NOT_QUEUE));
+        checkMetrics(env, 1, 10, 3, 5, 256, lastMedian);
+
+        /* At this point, Alice's transaction is indefinitely
+            stuck in the queue. Eventually it will either
+            expire, get forced off the end by more valuable
+            transactions, get replaced by Alice, or Alice
+            will get more XRP, and it'll process.
+        */
     }
 
     void run()
