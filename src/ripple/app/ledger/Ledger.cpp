@@ -1071,34 +1071,6 @@ bool pendSaveValidated (
     return true;
 }
 
-void
-ownerDirDescriber (SLE::ref sle, bool, AccountID const& owner)
-{
-    sle->setAccountID (sfOwner, owner);
-}
-
-void
-qualityDirDescriber (
-    SLE::ref sle, bool isNew,
-    Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
-    Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-    const std::uint64_t& uRate,
-    Application& app)
-{
-    sle->setFieldH160 (sfTakerPaysCurrency, uTakerPaysCurrency);
-    sle->setFieldH160 (sfTakerPaysIssuer, uTakerPaysIssuer);
-    sle->setFieldH160 (sfTakerGetsCurrency, uTakerGetsCurrency);
-    sle->setFieldH160 (sfTakerGetsIssuer, uTakerGetsIssuer);
-    sle->setFieldU64 (sfExchangeRate, uRate);
-    if (isNew)
-    {
-        // VFALCO NO! This shouldn't be done here!
-        app.getOrderBookDB().addOrderBook(
-            {{uTakerPaysCurrency, uTakerPaysIssuer},
-                {uTakerGetsCurrency, uTakerGetsIssuer}});
-    }
-}
-
 //------------------------------------------------------------------------------
 
 /*

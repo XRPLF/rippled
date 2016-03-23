@@ -687,107 +687,114 @@ dirNext (ApplyView& view,
     return true;
 }
 
-std::function<void (SLE::ref, bool)>
+std::function<void (SLE::ref)>
 describeOwnerDir(AccountID const& account)
 {
-    return [account](std::shared_ptr<SLE> const& sle, bool)
+    return [&account](std::shared_ptr<SLE> const& sle)
     {
         (*sle)[sfOwner] = account;
     };
 }
 
-TER
+std::pair<TER, bool>
 dirAdd (ApplyView& view,
     std::uint64_t&                          uNodeDir,
-    uint256 const&                          uRootIndex, // VFALCO Should be Keylet
+    Keylet const&                           dir,
     uint256 const&                          uLedgerIndex,
-    std::function<void (SLE::ref, bool)>    fDescriber,
+    std::function<void (SLE::ref)>          fDescriber,
     beast::Journal j)
 {
     JLOG (j.trace()) << "dirAdd:" <<
-        " uRootIndex=" << to_string (uRootIndex) <<
+        " dir=" << to_string (dir.key) <<
         " uLedgerIndex=" << to_string (uLedgerIndex);
 
-    SLE::pointer        sleNode;
-    STVector256         svIndexes;
-    auto const k = keylet::page(uRootIndex);
-    auto sleRoot = view.peek(k);
+    auto sleRoot = view.peek(dir);
 
     if (! sleRoot)
     {
         // No root, make it.
-        sleRoot = std::make_shared<SLE>(k);
-        sleRoot->setFieldH256 (sfRootIndex, uRootIndex);
+        sleRoot = std::make_shared<SLE>(dir);
+        sleRoot->setFieldH256 (sfRootIndex, dir.key);
         view.insert (sleRoot);
-        fDescriber (sleRoot, true);
-        sleNode     = sleRoot;
-        uNodeDir    = 0;
+        fDescriber (sleRoot);
+
+        STVector256 v;
+        v.push_back (uLedgerIndex);
+        sleRoot->setFieldV256 (sfIndexes, v);
+
+        JLOG (j.trace()) <<
+            "dirAdd: created root " << to_string (dir.key) <<
+            " for entry " << to_string (uLedgerIndex);
+
+        uNodeDir = 0;
+
+        return { tesSUCCESS, true };
+    }
+
+    SLE::pointer sleNode;
+    STVector256 svIndexes;
+
+    uNodeDir = sleRoot->getFieldU64 (sfIndexPrevious);       // Get index to last directory node.
+
+    if (uNodeDir)
+    {
+        // Try adding to last node.
+        sleNode = view.peek (keylet::page(dir, uNodeDir));
+        assert (sleNode);
     }
     else
     {
-        uNodeDir = sleRoot->getFieldU64 (sfIndexPrevious);       // Get index to last directory node.
+        // Try adding to root.  Didn't have a previous set to the last node.
+        sleNode     = sleRoot;
+    }
 
-        if (uNodeDir)
-        {
-            // Try adding to last node.
-            sleNode = view.peek (keylet::page(uRootIndex, uNodeDir));
+    svIndexes = sleNode->getFieldV256 (sfIndexes);
 
-            assert (sleNode);
-        }
-        else
-        {
-            // Try adding to root.  Didn't have a previous set to the last node.
-            sleNode     = sleRoot;
-        }
+    if (DIR_NODE_MAX != svIndexes.size ())
+    {
+        // Add to current node.
+        view.update(sleNode);
+    }
+    // Add to new node.
+    else if (!++uNodeDir)
+    {
+        return { tecDIR_FULL, false };
+    }
+    else
+    {
+        // Have old last point to new node
+        sleNode->setFieldU64 (sfIndexNext, uNodeDir);
+        view.update(sleNode);
 
-        svIndexes = sleNode->getFieldV256 (sfIndexes);
+        // Have root point to new node.
+        sleRoot->setFieldU64 (sfIndexPrevious, uNodeDir);
+        view.update (sleRoot);
 
-        if (DIR_NODE_MAX != svIndexes.size ())
-        {
-            // Add to current node.
-            view.update(sleNode);
-        }
-        // Add to new node.
-        else if (!++uNodeDir)
-        {
-            return tecDIR_FULL;
-        }
-        else
-        {
-            // Have old last point to new node
-            sleNode->setFieldU64 (sfIndexNext, uNodeDir);
-            view.update(sleNode);
+        // Create the new node.
+        sleNode = std::make_shared<SLE>(
+            keylet::page(dir, uNodeDir));
+        sleNode->setFieldH256 (sfRootIndex, dir.key);
+        view.insert (sleNode);
 
-            // Have root point to new node.
-            sleRoot->setFieldU64 (sfIndexPrevious, uNodeDir);
-            view.update (sleRoot);
+        if (uNodeDir != 1)
+            sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
 
-            // Create the new node.
-            sleNode = std::make_shared<SLE>(
-                keylet::page(uRootIndex, uNodeDir));
-            sleNode->setFieldH256 (sfRootIndex, uRootIndex);
-            view.insert (sleNode);
+        fDescriber (sleNode);
 
-            if (uNodeDir != 1)
-                sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
-
-            fDescriber (sleNode, false);
-
-            svIndexes   = STVector256 ();
-        }
+        svIndexes   = STVector256 ();
     }
 
     svIndexes.push_back (uLedgerIndex); // Append entry.
     sleNode->setFieldV256 (sfIndexes, svIndexes);   // Save entry.
 
     JLOG (j.trace()) <<
-        "dirAdd:   creating: root: " << to_string (uRootIndex);
+        "dirAdd:   creating: root: " << to_string (dir.key);
     JLOG (j.trace()) <<
         "dirAdd:  appending: Entry: " << to_string (uLedgerIndex);
     JLOG (j.trace()) <<
         "dirAdd:  appending: Node: " << strHex (uNodeDir);
 
-    return tesSUCCESS;
+    return { tesSUCCESS, false };
 }
 
 // Ledger must be in a state for this to work.
@@ -1011,27 +1018,19 @@ trustCreate (ApplyView& view,
     std::uint64_t   uLowNode;
     std::uint64_t   uHighNode;
 
-    TER terResult = dirAdd (view,
-        uLowNode,
-        getOwnerDirIndex (uLowAccountID),
+    TER terResult;
+
+    std::tie (terResult, std::ignore) = dirAdd (view,
+        uLowNode, keylet::ownerDir (uLowAccountID),
         sleRippleState->getIndex (),
-        [uLowAccountID](std::shared_ptr<SLE> const& sle, bool)
-            {
-                sle->setAccountID (sfOwner, uLowAccountID);
-            },
-        j);
+        describeOwnerDir (uLowAccountID), j);
 
     if (tesSUCCESS == terResult)
     {
-        terResult = dirAdd (view,
-            uHighNode,
-            getOwnerDirIndex (uHighAccountID),
+        std::tie (terResult, std::ignore) = dirAdd (view,
+            uHighNode, keylet::ownerDir (uHighAccountID),
             sleRippleState->getIndex (),
-            [uHighAccountID](std::shared_ptr<SLE> const& sle, bool)
-                {
-                    sle->setAccountID (sfOwner, uHighAccountID);
-                },
-            j);
+            describeOwnerDir (uHighAccountID), j);
     }
 
     if (tesSUCCESS == terResult)

@@ -229,11 +229,11 @@ SusPayCreate::doApply()
     // Add SusPay to owner directory
     {
         uint64_t page;
-        TER ter = dirAdd(ctx_.view(), page,
-            keylet::ownerDir(account).key,
-                slep->key(), describeOwnerDir(account), ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
+        auto result = dirAdd(ctx_.view(), page,
+            keylet::ownerDir(account), slep->key(),
+            describeOwnerDir(account), ctx_.app.journal ("View"));
+        if (! isTesSuccess(result.first))
+            return result.first;
         (*slep)[sfOwnerNode] = page;
     }
 

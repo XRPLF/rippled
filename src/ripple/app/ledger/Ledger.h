@@ -407,19 +407,6 @@ cachedRead (ReadView const& ledger, uint256 const& key,
     return ledger.read(keylet::unchecked(key));
 }
 
-//------------------------------------------------------------------------------
-
-void
-ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
-
-// VFALCO NOTE This is referenced from only one place
-void
-qualityDirDescriber (
-    SLE::ref, bool,
-    Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
-    Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-    const std::uint64_t & uRate, Application& app);
-
 } // ripple
 
 #endif

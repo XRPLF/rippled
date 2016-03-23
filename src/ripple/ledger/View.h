@@ -215,7 +215,7 @@ dirNext (ApplyView& view,
     uint256& uEntryIndex,       // <-- The entry, if available. Otherwise, zero.
     beast::Journal j);
 
-std::function<void (SLE::ref, bool)>
+std::function<void (SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
@@ -223,12 +223,24 @@ describeOwnerDir(AccountID const& account);
 // --> uLedgerIndex: Value to add to directory.
 // Only append. This allow for things that watch append only structure to just monitor from the last node on ward.
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
-TER
+
+/** Add an entry to directory, creating the directory if necessary
+
+    @param uNodeDir node of entry - makes deletion efficient
+    @param uRootIndex The index of the base of the directory.
+                      Nodes are based off of this.
+    @param uLedgerIndex Value to add to directory.
+
+    @return a pair containing a code indicating success or
+            failure, and if successful, a boolean indicating
+            whether the directory was just created.
+*/
+std::pair<TER, bool>
 dirAdd (ApplyView& view,
     std::uint64_t&                      uNodeDir,      // Node of entry.
-    uint256 const&                      uRootIndex,
+    Keylet const&                       uRootIndex,
     uint256 const&                      uLedgerIndex,
-    std::function<void (SLE::ref, bool)> fDescriber,
+    std::function<void (SLE::ref)>      fDescriber,
     beast::Journal j);
 
 TER
