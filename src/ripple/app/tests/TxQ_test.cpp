@@ -983,6 +983,17 @@ public:
             transactions, get replaced by Alice, or Alice
             will get more XRP, and it'll process.
         */
+
+        for (int i = 0; i < 9; ++i)
+        {
+            env.close();
+            checkMetrics(env, 1, 10, 0, 5, 256, lastMedian);
+        }
+
+        // And Alice's transaction expires (via the retry limit,
+        // not LastLedgerSequence).
+        env.close();
+        checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
     }
 
     void run()

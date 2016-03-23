@@ -198,6 +198,7 @@ TxQ::CandidateTxn::CandidateTxn(
     , feeLevel(feeLevel_)
     , txID(txID_)
     , account(txn_->getAccountID(sfAccount))
+    , retriesRemaining(retriesAllowed)
     , sequence(txn_->getSequence())
     , flags(flags_)
     , pfresult(pfresult_)
@@ -911,7 +912,7 @@ TxQ::accept(Application& app,
                 ledgerChanged = true;
             }
             else if (isTefFailure(txnResult) || isTemMalformed(txnResult) ||
-                isTelLocal(txnResult))
+                isTelLocal(txnResult) || candidateIter->retriesRemaining <= 0)
             {
                 JLOG(j_.debug()) << "Queued transaction " <<
                     candidateIter->txID << " failed with " <<
@@ -923,7 +924,8 @@ TxQ::accept(Application& app,
                 JLOG(j_.debug()) << "Transaction " <<
                     candidateIter->txID << " failed with " <<
                     transToken(txnResult) << ". Leave in queue.";
-                candidateIter++;
+                --candidateIter->retriesRemaining;
+                ++candidateIter;
             }
 
         }

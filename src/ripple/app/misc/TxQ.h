@@ -264,6 +264,7 @@ private:
         boost::optional<TxID> priorTxID;
         AccountID const account;
         boost::optional<LedgerIndex> lastValid;
+        int retriesRemaining;
         TxSeq const sequence;
         ApplyFlags const flags;
         // Invariant: pfresult is never allowed to be empty. The
@@ -271,6 +272,19 @@ private:
         // construction and replacement without a copy
         // assignment operation.
         boost::optional<PreflightResult const> pfresult;
+
+        /* In TxQ::accept, the required fee level may be low
+            enough that this transaction gets a chance to apply
+            to the ledger, but it may get a retry ter result for
+            another reason (eg. insufficient balance). When that
+            happens, the transaction is left in the queue to try
+            again later, but it shouldn't be allowed to fail
+            indefinitely. The number of failures allowed is
+            essentially arbitrary. It should be large enough to
+            allow temporary failures to clear up, but small enough
+            that the queue doesn't fill up with stale transactions.
+        */
+        static int const retriesAllowed = 10;
 
     public:
         CandidateTxn(std::shared_ptr<STTx const> const&,
