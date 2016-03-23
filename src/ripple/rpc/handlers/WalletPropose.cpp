@@ -31,8 +31,29 @@
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ed25519-donna/ed25519.h>
 #include <boost/optional.hpp>
+#include <cmath>
+#include <map>
 
 namespace ripple {
+
+double
+shannon_entropy (std::string const& input)
+{
+    std::map<int, double> freq;
+
+    for (auto const& c : input)
+        freq[c]++;
+
+    double se = 0;
+
+    for (auto& f : freq)
+        f.second /= input.length();
+
+    for (auto const& f : freq)
+        se += (f.second) * log2(f.second);
+
+    return std::floor (-se * input.length());
+}
 
 // {
 //  passphrase: <string>
@@ -56,7 +77,8 @@ Json::Value walletPropose (Json::Value const& params)
         if (keyType == KeyType::invalid)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (params.isMember (jss::passphrase) || params.isMember (jss::seed) ||
+        if (params.isMember (jss::passphrase) ||
+            params.isMember (jss::seed) ||
             params.isMember (jss::seed_hex))
         {
             seed = RPC::getSeedFromRPC (params);
@@ -90,6 +112,25 @@ Json::Value walletPropose (Json::Value const& params)
     obj[jss::public_key] = toBase58(TOKEN_ACCOUNT_PUBLIC, publicKey);
     obj[jss::key_type] = to_string (keyType);
     obj[jss::public_key_hex] = strHex (publicKey.data(), publicKey.size());
+
+    if (params.isMember (jss::passphrase))
+    {
+        auto const entropy = shannon_entropy (
+            params[jss::passphrase].asString());
+
+        // 80 bits of entropy isn't bad, but it's better to
+        // err on the side of caution and be conservative.
+        if (entropy < 80.0)
+            obj[jss::warning] =
+                "This wallet was generated using a user-supplied "
+                "passphrase that has low entropy and is vulnerable "
+                "to brute-force attacks.";
+        else
+            obj[jss::warning] =
+                "This wallet was generated using a user-supplied "
+                "passphrase. It may be vulnerable to brute-force "
+                "attacks.";
+    }
 
     return obj;
 }
