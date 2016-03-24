@@ -482,7 +482,7 @@ public:
         checkMetrics(env, 5, 8, 5, 4, 256, 500);
 
         // Unfortunately bob can't get any more txns into
-        // the queue, because off the multiTxnPercent.
+        // the queue, because of the multiTxnPercent.
         // TANSTAAFL
         env(noop(bob), fee(XRP(100)),
             seq(seqBob), ter(telINSUF_FEE_P));
@@ -1137,6 +1137,78 @@ public:
         checkMetrics(env, 0, 10, 0, 5, 256, lastMedian);
     }
 
+    void testBlockers()
+    {
+        using namespace jtx;
+
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation), features(featureMultiSign));
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        auto charlie = Account("charlie");
+        auto daria = Account("daria");
+
+        auto queued = ter(terQUEUED);
+
+        auto openLedgerFee =
+            [&]()
+        {
+            return fee(env.app().getTxQ().openLedgerFee(*env.current()));
+        };
+
+        expect(env.current()->fees().base == 10);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 3, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(alice, bob));
+        env.memoize(charlie);
+        env.memoize(daria);
+        checkMetrics(env, 0, boost::none, 2, 3, 256, lastMedian);
+
+        // Fill up the open ledger
+        env(noop(alice));
+        // Set a regular key just to clear the password spent flag
+        env(regkey(alice, charlie));
+        checkMetrics(env, 0, boost::none, 4, 3, 256, lastMedian);
+
+        // Put some "normal" txs in the queue
+        auto aliceSeq = env.seq(alice);
+        env(noop(alice), queued);
+        env(noop(alice), seq(aliceSeq + 1), queued);
+        env(noop(alice), seq(aliceSeq + 2), queued);
+
+        // Can't replace the first tx with a blocker
+        env(fset(alice, asfAccountTxnID), fee(20), ter(telINSUF_FEE_P));
+        // Can't replace the second / middle tx with a blocker
+        env(regkey(alice, bob), seq(aliceSeq + 1), fee(20),
+            ter(telCAN_NOT_QUEUE));
+        env(signers(alice, 2, { {bob}, {charlie}, {daria} }), fee(20),
+            seq(aliceSeq + 1), ter(telCAN_NOT_QUEUE));
+        // CAN replace the last tx with a blocker
+        env(signers(alice, 2, { { bob },{ charlie },{ daria } }), fee(20),
+            seq(aliceSeq + 2), queued);
+        env(regkey(alice, bob), seq(aliceSeq + 2), fee(30),
+            queued);
+
+        // Can't queue up any more transactions after the blocker
+        env(noop(alice), seq(aliceSeq + 3), ter(telCAN_NOT_QUEUE));
+
+        // Other accounts are not affected
+        env(noop(bob), queued);
+
+        // Can replace the tranactions before the blocker
+        env(noop(alice), fee(14), queued);
+
+        // Can replace the blocker itself
+        env(noop(alice), seq(aliceSeq + 2), fee(40), queued);
+
+        // And now there's no block.
+        env(noop(alice), seq(aliceSeq + 3), queued);
+    }
+
     void run()
     {
         testQueue();
@@ -1151,6 +1223,7 @@ public:
         testAcctTxnID();
         testMaximum();
         testUnexpectedBalanceChange();
+        testBlockers();
     }
 };
 
