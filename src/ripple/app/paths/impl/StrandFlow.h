@@ -31,6 +31,8 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <sstream>
 
@@ -43,14 +45,14 @@ struct StrandResult
     TInAmt in = beast::zero;
     TOutAmt out = beast::zero;
     boost::optional<PaymentSandbox> sandbox;
-    std::vector<uint256> ofrsToRm; // offers to remove
+    boost::container::flat_set<uint256> ofrsToRm; // offers to remove
 
     StrandResult () = default;
 
     StrandResult (TInAmt const& in_,
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
-        std::vector<uint256> ofrsToRm_)
+        boost::container::flat_set<uint256> ofrsToRm_)
         : ter (tesSUCCESS)
         , in (in_)
         , out (out_)
@@ -59,7 +61,7 @@ struct StrandResult
     {
     }
 
-    StrandResult (TER ter_, std::vector<uint256> ofrsToRm_)
+    StrandResult (TER ter_, boost::container::flat_set<uint256> ofrsToRm_)
         : ter (ter_), ofrsToRm (std::move (ofrsToRm_))
     {
     }
@@ -92,7 +94,7 @@ flow (
         return {};
     }
 
-    std::vector<uint256> ofrsToRm;
+    boost::container::flat_set<uint256> ofrsToRm;
 
     if (isDirectXrpToXrp<TInAmt, TOutAmt> (strand))
     {
@@ -222,28 +224,36 @@ struct FlowResult
     TInAmt in = beast::zero;
     TOutAmt out = beast::zero;
     boost::optional<PaymentSandbox> sandbox;
+    boost::container::flat_set<uint256> removableOffers;
     TER ter = temUNKNOWN;
 
     FlowResult () = default;
 
     FlowResult (TInAmt const& in_,
         TOutAmt const& out_,
-        PaymentSandbox&& sandbox_)
+        PaymentSandbox&& sandbox_,
+        boost::container::flat_set<uint256> ofrsToRm)
         : in (in_)
         , out (out_)
         , sandbox (std::move (sandbox_))
+        , removableOffers(std::move (ofrsToRm))
         , ter (tesSUCCESS)
     {
     }
 
-    FlowResult (TER ter_)
-        : ter (ter_)
+    FlowResult (TER ter_, boost::container::flat_set<uint256> ofrsToRm)
+        : removableOffers(std::move (ofrsToRm))
+        , ter (ter_)
     {
     }
 
-    FlowResult (TER ter_, TInAmt const& in_, TOutAmt const& out_)
+    FlowResult (TER ter_,
+        TInAmt const& in_,
+        TOutAmt const& out_,
+        boost::container::flat_set<uint256> ofrsToRm)
         : in (in_)
         , out (out_)
+        , removableOffers (std::move (ofrsToRm))
         , ter (ter_)
     {
     }
@@ -395,18 +405,22 @@ flow (PaymentSandbox const& baseView,
         return std::accumulate (col.begin () + 1, col.end (), *col.begin ());
     };
 
+    // These offers only need to be removed if the payment is not
+    // successful
+    boost::container::flat_set<uint256> ofrsToRmOnFail;
+
     while (remainingOut > beast::zero &&
         (!remainingIn || *remainingIn > beast::zero))
     {
         ++curTry;
         if (curTry >= maxTries)
         {
-            return Result (telFAILED_PROCESSING);
+            return {telFAILED_PROCESSING, std::move(ofrsToRmOnFail)};
         }
 
         activeStrands.activateNext();
 
-        std::set<uint256> ofrsToRm;
+        boost::container::flat_set<uint256> ofrsToRm;
         boost::optional<BestStrand> best;
         for (auto strand : activeStrands)
         {
@@ -414,7 +428,8 @@ flow (PaymentSandbox const& baseView,
                 sb, *strand, remainingIn, remainingOut, j);
 
             // rm bad offers even if the strand fails
-            ofrsToRm.insert (f.ofrsToRm.begin (), f.ofrsToRm.end ());
+            ofrsToRm.insert (boost::container::ordered_unique_range_t{},
+                f.ofrsToRm.begin (), f.ofrsToRm.end ());
 
             if (f.ter != tesSUCCESS || f.out == beast::zero)
                 continue;
@@ -469,9 +484,16 @@ flow (PaymentSandbox const& baseView,
 
         best.reset ();  // view in best must be destroyed before modifying base
                         // view
-        for (auto const& o : ofrsToRm)
-            if (auto ok = sb.peek (keylet::offer (o)))
-                offerDelete (sb, ok, j);
+        if (!ofrsToRm.empty ())
+        {
+            ofrsToRmOnFail.insert (boost::container::ordered_unique_range_t{},
+                ofrsToRm.begin (), ofrsToRm.end ());
+            for (auto const& o : ofrsToRm)
+            {
+                if (auto ok = sb.peek (keylet::offer (o)))
+                    offerDelete (sb, ok, j);
+            }
+        }
 
         if (shouldBreak)
             break;
@@ -489,19 +511,19 @@ flow (PaymentSandbox const& baseView,
         if (actualOut > outReq)
         {
             assert (0);
-            return {tefEXCEPTION};
+            return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
         if (!partialPayment)
         {
-            return {tecPATH_PARTIAL, actualIn, actualOut};
+            return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
         }
         else if (actualOut == beast::zero)
         {
-            return {tecPATH_DRY};
+            return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
 
-    return Result (actualIn, actualOut, std::move (sb));
+    return Result (actualIn, actualOut, std::move (sb), std::move(ofrsToRmOnFail));
 }
 
 } // ripple

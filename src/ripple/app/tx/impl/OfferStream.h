@@ -28,6 +28,8 @@
 #include <ripple/protocol/Quality.h>
 #include <beast/utility/Journal.h>
 
+#include <boost/container/flat_set.hpp>
+
 namespace ripple {
 
 template<class TIn, class TOut>
@@ -163,7 +165,7 @@ template <class TIn, class TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    std::vector<uint256> toRemove_;
+    boost::container::flat_set<uint256> toRemove_;
 protected:
     void
     permRmOffer (std::shared_ptr<SLE> const& sle) override;
@@ -171,7 +173,7 @@ protected:
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
 
-    std::vector<uint256> const& toRemove () const
+    boost::container::flat_set<uint256> const& toRemove () const
     {
         return toRemove_;
     };

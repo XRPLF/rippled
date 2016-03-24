@@ -26,6 +26,8 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
 
+#include <boost/container/flat_set.hpp>
+
 namespace ripple {
 class Config;
 namespace path {
@@ -53,6 +55,12 @@ public:
         // The computed output amount.
         STAmount actualAmountOut;
 
+        // Collection of offers found expired or unfunded. When a payment
+        // succeeds, unfunded and expired offers are removed. When a payment
+        // fails, they are not removed. This vector contains the offers that
+        // could have been removed but were not because the payment fails. It is
+        // useful for offer crossing, which does remove the offers.
+        boost::container::flat_set<uint256> removableOffers;
     private:
         TER calculationResult_ = temUNKNOWN;
 
@@ -105,7 +113,7 @@ public:
     // unfunded offers in a deterministic order (hence the ordered container).
     //
     // Offers that were found unfunded.
-    std::set<uint256> permanentlyUnfundedOffers_;
+    boost::container::flat_set<uint256> permanentlyUnfundedOffers_;
 
     // First time working in reverse a funding source was mentioned.  Source may
     // only be used there.
