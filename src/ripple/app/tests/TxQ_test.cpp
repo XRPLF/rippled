@@ -216,7 +216,6 @@ public:
 
         //////////////////////////////////////////////////////////////
 
-        // At this point, the queue should have a limit of 6.
         // Stuff the ledger and queue so we can verify that
         // stuff gets kicked out.
         env(noop(hank));
@@ -227,14 +226,15 @@ public:
 
         // Use explicit fees so we can control which txn
         // will get dropped
-        env(noop(alice), fee(20), queued);
-        env(noop(hank), fee(19), queued);
-        env(noop(gwen), fee(18), queued);
-        env(noop(fred), fee(17), queued);
-        env(noop(elmo), fee(16), queued);
         // This one gets into the queue, but gets dropped when the
         // higher fee one is added later.
         env(noop(daria), fee(15), queued);
+        // These stay in the queue.
+        env(noop(elmo), fee(16), queued);
+        env(noop(fred), fee(17), queued);
+        env(noop(gwen), fee(18), queued);
+        env(noop(hank), fee(19), queued);
+        env(noop(alice), fee(20), queued);
 
         // Queue is full now.
         checkMetrics(env, 6, 6, 4, 3, 385, lastMedian);
@@ -258,10 +258,6 @@ public:
         env.close();
         lastMedian = 500;
         checkMetrics(env, 2, 8, 5, 4, 256, lastMedian);
-
-        // TODO: Duplicate the full queue test case with equal fees.
-        // Verify that the last transaction added is always the first
-        // dropped.
 
         lastMedian = 500;
         env.close();
@@ -793,6 +789,152 @@ public:
         checkMetrics(env, 0, 14, 0, 7, 256, lastMedian);
     }
 
+    void testTieBreaking()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "4" } }),
+            features(featureFeeEscalation));
+        auto& txq = env.app().getTxQ();
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        auto charlie = Account("charlie");
+        auto daria = Account("daria");
+        auto elmo = Account("elmo");
+        auto fred = Account("fred");
+        auto gwen = Account("gwen");
+        auto hank = Account("hank");
+
+        auto queued = ter(terQUEUED);
+
+        expect(env.current()->fees().base == 10);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 4, 256, lastMedian);
+
+        // Create several accounts while the fee is cheap so they all apply.
+        env.fund(XRP(50000), noripple(alice, bob, charlie, daria));
+        checkMetrics(env, 0, boost::none, 4, 4, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 8, 0, 4, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(elmo, fred, gwen, hank));
+        checkMetrics(env, 0, 8, 4, 4, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 8, 0, 4, 256, lastMedian);
+
+        //////////////////////////////////////////////////////////////
+
+        // TODO: Duplicate the full queue test case with equal fees.
+        // Verify that the last transaction added is always the first
+        // dropped.
+
+        // Stuff the ledger and queue so we can verify that
+        // stuff gets kicked out.
+        env(noop(gwen));
+        env(noop(hank));
+        env(noop(gwen));
+        env(noop(fred));
+        env(noop(elmo));
+        checkMetrics(env, 0, 8, 5, 4, 256, lastMedian);
+
+        auto aliceSeq = env.seq(alice);
+        auto bobSeq = env.seq(bob);
+        auto charlieSeq = env.seq(charlie);
+        auto dariaSeq = env.seq(daria);
+        auto elmoSeq = env.seq(elmo);
+        auto fredSeq = env.seq(fred);
+        auto gwenSeq = env.seq(gwen);
+        auto hankSeq = env.seq(hank);
+
+        // This time, use identical fees.
+        env(noop(alice), fee(15), queued);
+        env(noop(bob), fee(15), queued);
+        env(noop(charlie), fee(15), queued);
+        env(noop(daria), fee(15), queued);
+        env(noop(elmo), fee(15), queued);
+        env(noop(fred), fee(15), queued);
+        env(noop(gwen), fee(15), queued);
+        // This one gets into the queue, but gets dropped when the
+        // higher fee one is added later.
+        env(noop(hank), fee(15), queued);
+
+        // Queue is full now. Minimum fee now reflects the
+        // lowest fee in the queue.
+        checkMetrics(env, 8, 8, 5, 4, 385, lastMedian);
+
+        // Try to add another transaction with the default (low) fee,
+        // it should fail because it can't replace the one already
+        // there.
+        env(noop(charlie), ter(telINSUF_FEE_P));
+
+        // Add another transaction, with a higher fee,
+        // Not high enough to get into the ledger, but high
+        // enough to get into the queue (and kick somebody out)
+        env(noop(charlie), fee(100), seq(charlieSeq + 1), queued);
+
+        // Queue is still full.
+        checkMetrics(env, 8, 8, 5, 4, 385, lastMedian);
+
+        // alice, bob, charlie, daria, and elmo's txs
+        // are processed out of the queue into the ledger,
+        // leaving fred and gwen's txs. hank's tx is
+        // retried from localTxs, and put back into the
+        // queue.
+        env.close();
+        lastMedian = 500;
+        checkMetrics(env, 3, 10, 6, 5, 256, lastMedian);
+
+        expect(aliceSeq + 1 == env.seq(alice));
+        expect(bobSeq + 1 == env.seq(bob));
+        expect(charlieSeq + 2 == env.seq(charlie));
+        expect(dariaSeq + 1 == env.seq(daria));
+        expect(elmoSeq + 1 == env.seq(elmo));
+        expect(fredSeq == env.seq(fred));
+        expect(gwenSeq == env.seq(gwen));
+        expect(hankSeq == env.seq(hank));
+
+        aliceSeq = env.seq(alice);
+        bobSeq = env.seq(bob);
+        charlieSeq = env.seq(charlie);
+        dariaSeq = env.seq(daria);
+        elmoSeq = env.seq(elmo);
+
+        // Fill up the queue again
+        env(noop(alice), fee(15), queued);
+        env(noop(alice), seq(aliceSeq + 1), fee(15), queued);
+        env(noop(alice), seq(aliceSeq + 2), fee(15), queued);
+        env(noop(bob), fee(15), queued);
+        env(noop(charlie), fee(15), queued);
+        env(noop(daria), fee(15), queued);
+        // This one gets into the queue, but gets dropped when the
+        // higher fee one is added later.
+        env(noop(elmo), fee(15), queued);
+        checkMetrics(env, 10, 10, 6, 5, 385, lastMedian);
+
+        // Add another transaction, with a higher fee,
+        // Not high enough to get into the ledger, but high
+        // enough to get into the queue (and kick somebody out)
+        env(noop(alice), fee(100), seq(aliceSeq + 3), queued);
+
+        lastMedian = 500;
+        env.close();
+        checkMetrics(env, 4, 12, 7, 6, 256, lastMedian);
+
+        expect(fredSeq + 1 == env.seq(fred));
+        expect(gwenSeq + 1 == env.seq(gwen));
+        expect(hankSeq + 1 == env.seq(hank));
+        expect(aliceSeq + 4 == env.seq(alice));
+        expect(bobSeq == env.seq(bob));
+        expect(charlieSeq == env.seq(charlie));
+        expect(dariaSeq == env.seq(daria));
+        expect(elmoSeq == env.seq(elmo));
+    }
+
     void testDisabled()
     {
         using namespace jtx;
@@ -1004,6 +1146,7 @@ public:
         testPreclaimFailures();
         testQueuedFailure();
         testMultiTxnPerAccount();
+        testTieBreaking();
         testDisabled();
         testAcctTxnID();
         testMaximum();

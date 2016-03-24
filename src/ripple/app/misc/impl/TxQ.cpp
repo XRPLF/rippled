@@ -315,7 +315,7 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter)
 
 auto
 TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
--> FeeMultiSet::iterator_type
+    -> FeeMultiSet::iterator_type
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto accountIter = txQAccount.transactions.find(
@@ -435,6 +435,9 @@ TxQ::apply(Application& app, OpenView& view,
                 */
                 if (std::next(existingIter) != txQAcct.transactions.end())
                 {
+                    // Only the last tx in the queue should have
+                    // !consequences, and this can't be the last tx.
+                    assert(existingIter->second.consequences);
                     if (!existingIter->second.consequences)
                         existingIter->second.consequences.emplace(
                             calculateConsequences(
@@ -531,11 +534,6 @@ TxQ::apply(Application& app, OpenView& view,
 
                 if (feeLevelPaid > requiredMultiLevel)
                 {
-
-
-                    // TODO: Here's where we get the big rewrite.
-
-
                     // Sum up the consequences of the queued txs.
                     // Abort if a blocker is found.
                     auto workingIter = multiTxn->nextAcctIter;
@@ -612,29 +610,34 @@ TxQ::apply(Application& app, OpenView& view,
                     minimum reserve. If it is, then there's a risk
                     that the fees won't get paid, so don't allow
                     this transaction.
-                TODO: Decide whether to count the current txn fee
-                    in this limit if it's the last transaction for
-                    this account. Currently, it will not count,
-                    for the same reason that it is not checked on
-                    the first transaction.
+                    TODO: Decide whether to count the current txn fee
+                        in this limit if it's the last transaction for
+                        this account. Currently, it will not count,
+                        for the same reason that it is not checked on
+                        the first transaction.
                     Assume: Minimum account reserve is 20 XRP.
                     Example 1: If I have 1,000,000 XRP, I can queue
-                        a transaction with a 1,000,000 XRP fee. When
+                        a transaction with a 1,000,000 XRP fee. In
+                        the meantime, some other transaction may
+                        lower my balance (eg. taking an offer). When
                         the transaction executes, I will either
-                        spend the 1,000,000 XRP, or I will forfeit my
-                        reserve (and have a 0 balance).
+                        spend the 1,000,000 XRP, or the transaction
+                        will get stuck in the queue with a
+                        `terINSUF_FEE_B`.
                     Example 2: If I have 1,000,000 XRP, and I queue
                         10 transactions with 0.1 XRP fee, I have 1 XRP
                         in flight. I can now queue another tx with a
                         999,999 XRP fee. When the first 10 execute,
                         they're guaranteed to pay their fee, because
-                        I'll have my reserve. The last transaction,
-                        again, will either spend the 999,999 XRP, or
-                        will forfeit the reserve (0 balance).
+                        nothing can eat into my reserve. The last
+                        transaction, again, will either spend the
+                        999,999 XRP, or get stuck in the queue.
                     Example 3: If I have 1,000,000 XRP, and I queue
                         7 transactions with 3 XRP fee, I have 21 XRP
                         in flight. I can not queue any more transactions,
                         no matter how small or large the fee.
+                    Transactions stuck in the queue are mitigated by
+                    LastLedgerSeq and CandidateTxn::retriesRemaining.
                 */
                 auto totalFee = multiTxn->fee;
                 if (replacedItemDeleteIter
@@ -660,8 +663,6 @@ TxQ::apply(Application& app, OpenView& view,
 
                 auto const sleBump = multiTxn->applyView->peek(
                     keylet::account(account));
-                //// TODO: Is update necessary?
-                //multiTxn->applyView->update(sleBump);
 
                 sleBump->setFieldAmount(sfBalance,
                     (*sleBump)[sfBalance] - STAmount(
@@ -727,8 +728,14 @@ TxQ::apply(Application& app, OpenView& view,
     }
 
     // It's pretty unlikely that the queue will be "overfilled",
-    // but should it happen, take the opportunity to fix it now.
-    while (isFull())
+    // but should it happen, take the opportunity to fix it now,
+    // unless the transaction is replacing one already there.
+    /* TODO: Rethink how a full queue is handled. If account1
+        has several transactions queued, and account2 pushes
+        an early one out, that could orphan the remainder of
+        account1's, and no fees will be claimed for account1.
+    */
+    while (!replacedItemDeleteIter && isFull())
     {
         auto lastRIter = byFee_.rbegin();
         if (lastRIter->account == account &&
@@ -750,9 +757,6 @@ TxQ::apply(Application& app, OpenView& view,
                 transactionID << " with fee of " <<
                 feeLevelPaid;
             auto endIter = byFee_.iterator_to(*lastRIter);
-            if (replacedItemDeleteIter &&
-                    *replacedItemDeleteIter == endIter)
-                replacedItemDeleteIter.reset();
             erase(endIter);
         }
         else
