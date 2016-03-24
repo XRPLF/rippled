@@ -194,35 +194,19 @@ Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     setup(config);
 }
 
-Ledger::Ledger (uint256 const& parentHash,
-                uint256 const& transHash,
-                uint256 const& accountHash,
-                std::uint64_t totDrops,
-                NetClock::time_point closeTime,
-                NetClock::time_point parentCloseTime,
-                int closeFlags,
-                NetClock::duration closeResolution,
-                std::uint32_t ledgerSeq,
-                bool& loaded,
-                Config const& config,
-                Family& family,
-                beast::Journal j)
+Ledger::Ledger (
+        LedgerInfo info,
+        bool& loaded,
+        Config const& config,
+        Family& family,
+        beast::Journal j)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, transHash, family))
+        SHAMapType::TRANSACTION, info.txHash, family))
     , stateMap_ (std::make_shared <SHAMap> (
-        SHAMapType::STATE, accountHash, family))
+        SHAMapType::STATE, info.accountHash, family))
+    , info_ (info)
 {
-    info_.seq = ledgerSeq;
-    info_.parentCloseTime = parentCloseTime;
-    info_.closeTime = closeTime;
-    info_.drops = totDrops;
-    info_.txHash = transHash;
-    info_.accountHash = accountHash;
-    info_.parentHash = parentHash;
-    info_.closeTimeResolution = closeResolution;
-    info_.closeFlags = closeFlags;
-
     loaded = true;
 
     if (info_.txHash.isNonZero () &&
@@ -287,13 +271,29 @@ Ledger::Ledger (void const* data,
     std::size_t size, bool hasPrefix,
         Config const& config, Family& family)
     : mImmutable (true)
-    , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family))
-    , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family))
 {
     SerialIter sit (data, size);
-    setRaw (sit, hasPrefix, family);
+
+    if (hasPrefix)
+        sit.get32 ();
+
+    info_.seq = sit.get32 ();
+    info_.drops = sit.get64 ();
+    info_.parentHash = sit.get256 ();
+    info_.txHash = sit.get256 ();
+    info_.accountHash = sit.get256 ();
+    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info_.closeTimeResolution = NetClock::duration{sit.get8()};
+    info_.closeFlags = sit.get8 ();
+
+    updateHash ();
+
+    txMap_ = std::make_shared<SHAMap> (
+        SHAMapType::TRANSACTION, info_.txHash, family);
+    stateMap_ = std::make_shared<SHAMap> (
+        SHAMapType::STATE, info_.accountHash, family);
+
     // Can't set up until the stateMap is filled in
 }
 
@@ -620,9 +620,7 @@ Ledger::setup (Config const& config)
 
     try
     {
-        auto const sle = read(keylet::fees());
-
-        if (sle)
+        if (auto const sle = read(keylet::fees()))
         {
             // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
 
@@ -681,32 +679,6 @@ Ledger::peek (Keylet const& k) const
 }
 
 //------------------------------------------------------------------------------
-
-static void visitHelper (
-    std::function<void (std::shared_ptr<SLE> const&)>& callback,
-        std::shared_ptr<SHAMapItem const> const& item)
-{
-    callback(std::make_shared<SLE>(SerialIter{item->data(), item->size()},
-                                    item->key()));
-}
-
-void Ledger::visitStateItems (std::function<void (SLE::ref)> callback) const
-{
-    try
-    {
-        if (stateMap_)
-        {
-            stateMap_->visitLeaves(
-                std::bind(&visitHelper, std::ref(callback),
-                          std::placeholders::_1));
-        }
-    }
-    catch (SHAMapMissingNode&)
-    {
-        stateMap_->family().missing_node (info_.hash);
-        Throw();
-    }
-}
 
 bool Ledger::walkLedger (beast::Journal j) const
 {
@@ -844,27 +816,6 @@ void Ledger::updateSkipList ()
         rawInsert(sle);
     else
         rawReplace(sle);
-}
-
-void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
-{
-    if (hasPrefix)
-        sit.get32 ();
-
-    info_.seq = sit.get32 ();
-    info_.drops = sit.get64 ();
-    info_.parentHash = sit.get256 ();
-    info_.txHash = sit.get256 ();
-    info_.accountHash = sit.get256 ();
-    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTimeResolution = NetClock::duration{sit.get8()};
-    info_.closeFlags = sit.get8 ();
-    updateHash ();
-    txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
-        family);
-    stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
-        family);
 }
 
 static bool saveValidatedLedger (
@@ -1166,40 +1117,6 @@ qualityDirDescriber (
     }
 }
 
-std::vector<uint256>
-Ledger::getNeededTransactionHashes (
-    int max, SHAMapSyncFilter* filter) const
-{
-    std::vector<uint256> ret;
-
-    if (info_.txHash.isNonZero ())
-    {
-        if (txMap_->getHash ().isZero ())
-            ret.push_back (info_.txHash);
-        else
-            ret = txMap_->getNeededHashes (max, filter);
-    }
-
-    return ret;
-}
-
-std::vector<uint256>
-Ledger::getNeededAccountStateHashes (
-    int max, SHAMapSyncFilter* filter) const
-{
-    std::vector<uint256> ret;
-
-    if (info_.accountHash.isNonZero ())
-    {
-        if (stateMap_->getHash ().isZero ())
-            ret.push_back (info_.accountHash);
-        else
-            ret = stateMap_->getNeededHashes (max, filter);
-    }
-
-    return ret;
-}
-
 //------------------------------------------------------------------------------
 
 /*
@@ -1267,18 +1184,22 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app)
 
     using time_point = NetClock::time_point;
     using duration = NetClock::duration;
+
+    LedgerInfo info;
+    info.parentHash = prevHash;
+    info.txHash = transHash;
+    info.accountHash = accountHash;
+    info.drops = totDrops.value_or(0);
+    info.closeTime = time_point{duration{closingTime.value_or(0)}};
+    info.parentCloseTime = time_point{duration{prevClosingTime.value_or(0)}};
+    info.closeFlags = closeFlags.value_or(0);
+    info.closeTimeResolution = duration{closeResolution.value_or(0)};
+    info.seq = ledgerSeq;
+
     bool loaded = false;
 
     auto ledger = std::make_shared<Ledger>(
-        prevHash,
-        transHash,
-        accountHash,
-        totDrops.value_or(0),
-        time_point{duration{closingTime.value_or(0)}},
-        time_point{duration{prevClosingTime.value_or(0)}},
-        closeFlags.value_or(0),
-        duration{closeResolution.value_or(0)},
-        ledgerSeq,
+        info,
         loaded,
         app.config(),
         app.family(),
