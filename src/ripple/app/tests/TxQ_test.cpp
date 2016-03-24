@@ -798,7 +798,6 @@ public:
         using namespace jtx;
 
         Env env(*this);
-        env.disable_testing();
         size_t constexpr txPerLedger = 1000;
 
         auto alice = Account("alice");
