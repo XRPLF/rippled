@@ -26,6 +26,8 @@
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/Quality.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <numeric>
 #include <sstream>
 
@@ -111,14 +113,14 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
     revImp (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         IOUAmount const& out);
 
     std::pair<IOUAmount, IOUAmount>
     fwdImp (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         IOUAmount const& in);
 
     std::pair<bool, EitherAmount>
@@ -195,7 +197,7 @@ std::pair<IOUAmount, IOUAmount>
 DirectStepI::revImp (
     PaymentSandbox& sb,
     ApplyView& /*afView*/,
-    std::vector<uint256>& /*ofrsToRm*/,
+    boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& out)
 {
     cache_.reset ();
@@ -313,7 +315,7 @@ std::pair<IOUAmount, IOUAmount>
 DirectStepI::fwdImp (
     PaymentSandbox& sb,
     ApplyView& /*afView*/,
-    std::vector<uint256>& /*ofrsToRm*/,
+    boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
     assert (cache_);
@@ -409,7 +411,7 @@ DirectStepI::validFwd (
 
     try
     {
-        std::vector<uint256> dummy;
+        boost::container::flat_set<uint256> dummy;
         fwdImp (sb, afView, dummy, in.iou);  // changes cache
     }
     catch (FlowException const&)

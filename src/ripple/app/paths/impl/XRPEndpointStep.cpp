@@ -28,6 +28,7 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/XRPAmount.h>
 
+#include <boost/container/flat_set.hpp>
 
 #include <numeric>
 #include <sstream>
@@ -83,14 +84,14 @@ class XRPEndpointStep : public StepImp<XRPAmount, XRPAmount, XRPEndpointStep>
     revImp (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         XRPAmount const& out);
 
     std::pair<XRPAmount, XRPAmount>
     fwdImp (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         XRPAmount const& in);
 
     std::pair<bool, EitherAmount>
@@ -154,7 +155,7 @@ std::pair<XRPAmount, XRPAmount>
 XRPEndpointStep::revImp (
     PaymentSandbox& sb,
     ApplyView& afView,
-    std::vector<uint256>& ofrsToRm,
+    boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& out)
 {
     auto const balance = xrpLiquid (sb, acc_);
@@ -174,7 +175,7 @@ std::pair<XRPAmount, XRPAmount>
 XRPEndpointStep::fwdImp (
     PaymentSandbox& sb,
     ApplyView& afView,
-    std::vector<uint256>& ofrsToRm,
+    boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
     assert (cache_);

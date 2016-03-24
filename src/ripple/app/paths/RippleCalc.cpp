@@ -33,7 +33,7 @@ namespace path {
 static
 TER
 deleteOffers (ApplyView& view,
-    std::set<uint256> const& offers, beast::Journal j)
+    boost::container::flat_set<uint256> const& offers, beast::Journal j)
 {
     for (auto& e: offers)
         if (TER r = offerDelete (view,
@@ -100,6 +100,8 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         flowV1Out.setResult (result);
         flowV1Out.actualAmountIn = rc.actualAmountIn_;
         flowV1Out.actualAmountOut = rc.actualAmountOut_;
+        if (result != tesSUCCESS && !rc.permanentlyUnfundedOffers_.empty ())
+            flowV1Out.removableOffers = std::move (rc.permanentlyUnfundedOffers_);
     }
 
     Output flowV2Out;
@@ -139,7 +141,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         {
             JLOG (j.trace()) << "Exception from flow" << e.what ();
             if (!useFlowV1Output)
-                throw;
+                Throw();
         }
 
         if (callFlowV2 && callFlowV1 &&
@@ -281,7 +283,7 @@ TER RippleCalc::rippleCalculate ()
             getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
 
     // Offers that became unfunded.
-    std::set<uint256> unfundedOffersFromBestPaths;
+    boost::container::flat_set<uint256> unfundedOffersFromBestPaths;
 
     int iPass = 0;
 

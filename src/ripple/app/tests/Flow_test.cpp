@@ -17,9 +17,12 @@
 
 #include <BeastConfig.h>
 #include <ripple/test/jtx.h>
+#include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
+#include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/ledger/Sandbox.h>
 #include <ripple/ledger/tests/PathSet.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
@@ -132,6 +135,28 @@ bool equal (Strand const& strand, Args&&... args)
 
 struct Flow_test : public beast::unit_test::suite
 {
+    // Account path element
+    static auto APE(AccountID const& a)
+    {
+        return STPathElement (
+            STPathElement::typeAccount, a, xrpCurrency (), xrpAccount ());
+    };
+
+    // Issue path element
+    static auto IPE(Issue const& iss)
+    {
+        return STPathElement (
+            STPathElement::typeCurrency | STPathElement::typeIssuer,
+            xrpAccount (), iss.currency, iss.account);
+    };
+
+    // Currency path element
+    static auto CPE(Currency const& c)
+    {
+        return STPathElement (
+            STPathElement::typeCurrency, xrpAccount (), c, xrpAccount ());
+    };
+
     void testToStrand ()
     {
         testcase ("To Strand");
@@ -151,28 +176,6 @@ struct Flow_test : public beast::unit_test::suite
         using D = DirectStepInfo;
         using B = ripple::Book;
         using XRPS = XRPEndpointStepInfo;
-
-        // Account path element
-        auto APE = [](AccountID const& a)
-        {
-            return STPathElement (
-                STPathElement::typeAccount, a, xrpCurrency (), xrpAccount ());
-        };
-
-        // Issue path element
-        auto IPE = [](Issue const& iss)
-        {
-            return STPathElement (
-                STPathElement::typeCurrency | STPathElement::typeIssuer,
-                xrpAccount (), iss.currency, iss.account);
-        };
-
-        // Currency path element
-        auto CPE = [](Currency const& c)
-        {
-            return STPathElement (
-                STPathElement::typeCurrency, xrpAccount (), c, xrpAccount ());
-        };
 
         auto test = [&, this](jtx::Env& env, Issue const& deliver,
             boost::optional<Issue> const& sendMaxIssue, STPath const& path,
@@ -556,7 +559,7 @@ struct Flow_test : public beast::unit_test::suite
             expect (!isOffer (env, bob, USD (50), XRP (50)));
         }
         {
-            // test unfunded offers are removed
+            // test unfunded offers are removed when payment succeeds
             Env env (*this, features(featureFlowV2));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
@@ -593,6 +596,74 @@ struct Flow_test : public beast::unit_test::suite
             expect (!isOffer (env, bob, BTC (60), EUR (50)));
             // unfunded, but should not yet be found unfunded
             expect (isOffer (env, bob, EUR (50), USD (50)));
+        }
+        {
+            // test unfunded offers are returned when the payment fails.
+            // bob makes two offers: a funded 50 USD for 50 BTC and an unfunded 50
+            // EUR for 60 BTC. alice pays carol 61 USD with 61 BTC. alice only
+            // has 60 BTC, so the payment will fail. The payment uses two paths:
+            // one through bob's funded offer and one through his unfunded
+            // offer. When the payment fails `flow` should return the unfunded
+            // offer. This test is intentionally similar to the one that removes
+            // unfunded offers when the payment succeeds.
+            Env env (*this, features(featureFlowV2));
+
+            env.fund (XRP (10000), alice, bob, carol, gw);
+            env.trust (USD (1000), alice, bob, carol);
+            env.trust (BTC (1000), alice, bob, carol);
+            env.trust (EUR (1000), alice, bob, carol);
+
+            env (pay (gw, alice, BTC (60)));
+            env (pay (gw, bob, USD (50)));
+            env (pay (gw, bob, EUR (50)));
+
+            env (offer (bob, BTC (50), USD (50)));
+            env (offer (bob, BTC (60), EUR (50)));
+            env (offer (bob, EUR (50), USD (50)));
+
+            // unfund offer
+            env (pay (bob, gw, EUR (50)));
+            expect (isOffer (env, bob, BTC (50), USD (50)));
+            expect (isOffer (env, bob, BTC (60), EUR (50)));
+
+            auto flowJournal = env.app ().logs ().journal ("Flow");
+            auto const flowResult = [&]
+            {
+                STAmount deliver (USD (51));
+                STAmount smax (BTC (61));
+                PaymentSandbox sb (env.current ().get (), tapNONE);
+                STPathSet paths;
+                {
+                    // BTC -> USD
+                    STPath p1 ({IPE (USD.issue ())});
+                    paths.push_back (p1);
+                    // BTC -> EUR -> USD
+                    STPath p2 ({IPE (EUR.issue ()), IPE (USD.issue ())});
+                    paths.push_back (p2);
+                }
+
+                return flow (sb, deliver, alice, carol, paths, false, false,
+                    boost::none, smax, flowJournal);
+            }();
+
+            expect (flowResult.removableOffers.size () == 1);
+            env.app ().openLedger ().modify (
+                [&](OpenView& view, beast::Journal j)
+                {
+                    if (flowResult.removableOffers.empty())
+                        return false;
+                    Sandbox sb (&view, tapNONE);
+                    for (auto const& o : flowResult.removableOffers)
+                        if (auto ok = sb.peek (keylet::offer (o)))
+                            offerDelete (sb, ok, flowJournal);
+                    sb.apply (view);
+                    return true;
+                });
+
+            // used in payment, but since payment failed should be untouched
+            expect (isOffer (env, bob, BTC (50), USD (50)));
+            // found unfunded
+            expect (!isOffer (env, bob, BTC (60), EUR (50)));
         }
     }
 

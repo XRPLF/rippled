@@ -27,10 +27,31 @@
 #include <ripple/protocol/IOUAmount.h>
 #include <ripple/protocol/XRPAmount.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <numeric>
 #include <sstream>
 
 namespace ripple {
+
+template<class FlowResult>
+static
+auto finishFlow (PaymentSandbox& sb,
+    Issue const& srcIssue, Issue const& dstIssue,
+    FlowResult&& f)
+{
+    path::RippleCalc::Output result;
+    if (f.ter == tesSUCCESS)
+        f.sandbox->apply (sb);
+    else
+        result.removableOffers = std::move (f.removableOffers);
+
+    result.setResult (f.ter);
+    result.actualAmountIn = toSTAmount (f.in, srcIssue);
+    result.actualAmountOut = toSTAmount (f.out, dstIssue);
+
+    return result;
+};
 
 path::RippleCalc::Output
 flow (
@@ -45,7 +66,6 @@ flow (
     boost::optional<STAmount> const& sendMax,
     beast::Journal j)
 {
-    path::RippleCalc::Output result;
 
     Issue const srcIssue =
         sendMax ? sendMax->issue () : Issue (deliver.issue ().currency, src);
@@ -63,6 +83,7 @@ flow (
 
     if (sr.first != tesSUCCESS)
     {
+        path::RippleCalc::Output result;
         result.setResult (sr.first);
         return result;
     }
@@ -88,67 +109,40 @@ flow (
     const bool dstIsXRP = isXRP (dstIssue.currency);
 
     auto const asDeliver = toAmountSpec (deliver);
-    boost::optional<PaymentSandbox> strandSB;
 
     // The src account may send either xrp or iou. The dst account may receive
     // either xrp or iou. Since XRP and IOU amounts are represented by different
     // types, use templates to tell `flow` about the amount types.
     if (srcIsXRP && dstIsXRP)
     {
-        auto f = flow<XRPAmount, XRPAmount> (
-            sb, strands, asDeliver.xrp, defaultPaths, partialPayment, limitQuality, sendMax, j);
-
-        if (f.ter == tesSUCCESS)
-            strandSB.emplace (std::move (*f.sandbox));
-
-        result.setResult (f.ter);
-        result.actualAmountIn = toSTAmount (f.in);
-        result.actualAmountOut = toSTAmount (f.out);
+        return finishFlow (sb, srcIssue, dstIssue,
+            flow<XRPAmount, XRPAmount> (
+                sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
+                limitQuality, sendMax, j));
     }
-    else if (srcIsXRP && !dstIsXRP)
+
+    if (srcIsXRP && !dstIsXRP)
     {
-        auto f = flow<XRPAmount, IOUAmount> (
+        return finishFlow (sb, srcIssue, dstIssue,
+            flow<XRPAmount, IOUAmount> (
+                sb, strands, asDeliver.iou, defaultPaths, partialPayment,
+                limitQuality, sendMax, j));
+    }
+
+    if (!srcIsXRP && dstIsXRP)
+    {
+        return finishFlow (sb, srcIssue, dstIssue,
+            flow<IOUAmount, XRPAmount> (
+                sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
+                limitQuality, sendMax, j));
+    }
+
+    assert (!srcIsXRP && !dstIsXRP);
+    return finishFlow (sb, srcIssue, dstIssue,
+        flow<IOUAmount, IOUAmount> (
             sb, strands, asDeliver.iou, defaultPaths, partialPayment,
-            limitQuality, sendMax, j);
+            limitQuality, sendMax, j));
 
-        if (f.ter == tesSUCCESS)
-            strandSB.emplace (std::move (*f.sandbox));
-
-        result.setResult (f.ter);
-        result.actualAmountIn = toSTAmount (f.in);
-        result.actualAmountOut = toSTAmount (f.out, dstIssue);
-    }
-    else if (!srcIsXRP && dstIsXRP)
-    {
-        auto f = flow<IOUAmount, XRPAmount> (
-            sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
-            limitQuality, sendMax, j);
-
-        if (f.ter == tesSUCCESS)
-            strandSB.emplace (std::move (*f.sandbox));
-
-        result.setResult (f.ter);
-        result.actualAmountIn = toSTAmount (f.in, srcIssue);
-        result.actualAmountOut = toSTAmount (f.out);
-    }
-    else if (!srcIsXRP && !dstIsXRP)
-    {
-        auto f = flow<IOUAmount, IOUAmount> (
-            sb, strands, asDeliver.iou, defaultPaths, partialPayment,
-            limitQuality, sendMax, j);
-
-        if (f.ter == tesSUCCESS)
-            strandSB.emplace (std::move (*f.sandbox));
-
-        result.setResult (f.ter);
-        result.actualAmountIn = toSTAmount (f.in, srcIssue);
-        result.actualAmountOut = toSTAmount (f.out, dstIssue);
-    }
-
-    // strandSB is only valid when flow was successful
-    if (strandSB)
-        strandSB->apply (sb);
-    return result;
 }
 
 } // ripple

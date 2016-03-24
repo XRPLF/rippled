@@ -79,7 +79,7 @@ class Step
     rev (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& out) = 0;
 
     /**
@@ -98,7 +98,7 @@ class Step
     fwd (
         PaymentSandbox&,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& in) = 0;
 
     virtual
@@ -238,7 +238,7 @@ struct StepImp : public Step
     rev (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& out) override
     {
         auto const r =
@@ -252,7 +252,7 @@ struct StepImp : public Step
     fwd (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& in) override
     {
         auto const r =

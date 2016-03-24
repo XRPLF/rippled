@@ -31,6 +31,8 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/XRPAmount.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <numeric>
 #include <sstream>
 
@@ -104,14 +106,14 @@ public:
     revImp (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         TOut const& out);
 
     std::pair<TIn, TOut>
     fwdImp (
         PaymentSandbox& sb,
         ApplyView& afView,
-        std::vector<uint256>& ofrsToRm,
+        boost::container::flat_set<uint256>& ofrsToRm,
         TIn const& in);
 
     std::pair<bool, EitherAmount>
@@ -210,7 +212,7 @@ void limitStepOut (Quality const& ofrQ,
 */
 template <class TAmtIn, class TAmtOut, class Callback>
 static
-std::pair<std::vector<uint256>, std::uint32_t>
+std::pair<boost::container::flat_set<uint256>, std::uint32_t>
 forEachOffer (
     PaymentSandbox& sb,
     ApplyView& afView,
@@ -300,7 +302,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut>::revImp (
     PaymentSandbox& sb,
     ApplyView& afView,
-    std::vector<uint256>& ofrsToRm,
+    boost::container::flat_set<uint256>& ofrsToRm,
     TOut const& out)
 {
     cache_.reset ();
@@ -358,11 +360,10 @@ BookStep<TIn, TOut>::revImp (
         auto const r = forEachOffer<TIn, TOut> (
             sb, afView, book_,
             strandSrc_, strandDst_, eachOffer, maxOffersToConsume_, j_);
-        std::vector<uint256> toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
-        ofrsToRm.reserve (ofrsToRm.size () + toRm.size ());
-        for (auto& o : toRm)
-            ofrsToRm.emplace_back (std::move (o));
+        ofrsToRm.insert (boost::container::ordered_unique_range_t{},
+            toRm.begin (), toRm.end ());
 
         if (offersConsumed >= maxOffersToConsume_)
         {
@@ -400,7 +401,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut>::fwdImp (
     PaymentSandbox& sb,
     ApplyView& afView,
-    std::vector<uint256>& ofrsToRm,
+    boost::container::flat_set<uint256>& ofrsToRm,
     TIn const& in)
 {
     assert(cache_);
@@ -456,11 +457,10 @@ BookStep<TIn, TOut>::fwdImp (
         auto const r = forEachOffer<TIn, TOut> (
             sb, afView, book_,
             strandSrc_, strandDst_, eachOffer, maxOffersToConsume_, j_);
-        std::vector<uint256> toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
-        ofrsToRm.reserve (ofrsToRm.size () + toRm.size ());
-        for (auto& o : toRm)
-            ofrsToRm.emplace_back (std::move (o));
+        ofrsToRm.insert (boost::container::ordered_unique_range_t{},
+            toRm.begin (), toRm.end ());
 
         if (offersConsumed >= maxOffersToConsume_)
         {
@@ -510,7 +510,7 @@ BookStep<TIn, TOut>::validFwd (
 
     try
     {
-        std::vector<uint256> dummy;
+        boost::container::flat_set<uint256> dummy;
         fwdImp (sb, afView, dummy, get<TIn> (in));  // changes cache
     }
     catch (FlowException const&)
