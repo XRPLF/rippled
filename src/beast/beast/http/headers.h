@@ -124,6 +124,13 @@ public:
     cend() const;
     /** @} */
 
+    /** Returns `true` if the specified field exists. */
+    bool
+    exists(std::string const& field) const
+    {
+        return set_.find(field, less{}) != set_.end();
+    }
+
     /** Returns an iterator to the case-insensitive matching header. */
     template <class = void>
     iterator
@@ -280,11 +287,11 @@ template <class>
 std::string const&
 headers::operator[] (std::string const& field) const
 {
-    static std::string none;
-    auto const found (find (field));
-    if (found == end())
+    static std::string const none;
+    auto const it = find(field);
+    if(it == end())
         return none;
-    return found->second;
+    return it->second;
 }
 
 template <class>

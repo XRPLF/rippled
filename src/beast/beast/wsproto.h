@@ -17,13 +17,12 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_WSPROTO_H_INCLUDED
+#define BEAST_WSPROTO_H_INCLUDED
+
+#include <beast/wsproto/error.h>
+#include <beast/wsproto/frame.h>
+#include <beast/wsproto/role.h>
+#include <beast/wsproto/socket.h>
+
 #endif
-
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
-

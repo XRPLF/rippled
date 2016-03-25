@@ -42,7 +42,7 @@
 #include <beast/streams/streams.unity.cpp>
 #include <beast/threads/Threads.unity.cpp>
 #include <beast/utility/Utility.unity.cpp>
-
 #include <beast/unit_test/define_print.cpp>
+//#include <beast/wsproto/test/ws_test.cpp>
 
 #endif

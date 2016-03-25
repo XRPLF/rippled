@@ -23,13 +23,44 @@
 #include <ripple/core/Job.h>
 #include <ripple/core/JobCoro.h>
 #include <ripple/json/Output.h>
+#include <ripple/json/to_string.h>
+#include <ripple/net/InfoSub.h>
 #include <ripple/server/Handler.h>
+#include <ripple/server/JsonWriter.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
+#include <ripple/server/WSSession.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
 
 namespace ripple {
+
+class WSInfoSub : public InfoSub
+{
+    std::weak_ptr<WSSession> ws_;
+
+public:
+    WSInfoSub(Source& source, Consumer consumer,
+            std::shared_ptr<WSSession> const& ws)
+        : InfoSub(source, consumer)
+        , ws_(ws)
+    {
+    }
+
+    void
+    send(Json::Value const& jv, bool)
+    {
+        auto sp = ws_.lock();
+        if(! sp)
+            return;
+        beast::asio::streambuf sb;
+        write(sb, jv);
+        auto m = std::make_shared<
+            StreambufWSMsg<decltype(sb)>>(
+                std::move(sb));
+        sp->send(m);
+    }
+};
 
 // Private implementation
 class ServerHandlerImp
@@ -37,6 +68,7 @@ class ServerHandlerImp
     , public Handler
 {
 private:
+
     Application& app_;
     Resource::Manager& m_resourceManager;
     beast::Journal m_journal;
@@ -76,7 +108,7 @@ private:
     onStop() override;
 
     //
-    // HTTP::Handler
+    // Handler
     //
 
     void
@@ -100,6 +132,10 @@ private:
     onRequest (Session& session) override;
 
     void
+    onWSMessage(std::shared_ptr<WSSession> session,
+        std::vector<boost::asio::const_buffer> const& buffers) override;
+
+    void
     onClose (Session& session,
         boost::system::error_code const&) override;
 
@@ -107,6 +143,12 @@ private:
     onStopped (Server&) override;
 
     //--------------------------------------------------------------------------
+
+    Json::Value
+    processSession(
+        std::shared_ptr<WSSession> const& session,
+            std::shared_ptr<JobCoro> const& coro,
+                Json::Value const& jv);
 
     void
     processSession (std::shared_ptr<Session> const&,
