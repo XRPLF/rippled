@@ -23,6 +23,7 @@
 
 namespace ripple {
 
+// Detects legacy websockets only.
 bool
 Port::websockets() const
 {
@@ -33,7 +34,9 @@ bool
 Port::secure() const
 {
     return protocol.count("peer") > 0 ||
-        protocol.count("https") > 0 || protocol.count("wss") > 0;
+        protocol.count("https") > 0 ||
+        protocol.count("wss") > 0 ||
+        protocol.count("wss2") > 0;
 }
 
 std::string

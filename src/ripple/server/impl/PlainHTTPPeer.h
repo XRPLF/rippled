@@ -99,7 +99,6 @@ PlainHTTPPeer::websocketUpgrade()
         port_, handler_, remote_address_,
             std::move(message_), std::move(stream_),
                 journal_);
-    ws->run();
     return ws;
 }
 

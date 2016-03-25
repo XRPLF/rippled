@@ -24,7 +24,7 @@
 
 #include <ripple/json/json_forwards.h>
 #include <ripple/json/json_value.h>
-
+#include <boost/asio/buffer.hpp>
 #include <stack>
 
 namespace Json
@@ -63,6 +63,16 @@ public:
     /// \brief Parse from input stream.
     /// \see Json::operator>>(std::istream&, Json::Value&).
     bool parse ( std::istream& is, Value& root);
+
+    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer sequence.
+     * \param root [out] Contains the root value of the document if it was
+     *             successfully parsed.
+     * \param UTF-8 encoded buffer sequence.
+     * \return \c true if the buffer was successfully parsed, \c false if an error occurred.
+     */
+    template<class BufferSequence>
+    bool
+    parse(Value& root, BufferSequence const& bs);
 
     /** \brief Returns a user friendly string that list errors in the parsed document.
      * \return Formatted error message with the list of errors with their location in
@@ -160,6 +170,20 @@ private:
     Location lastValueEnd_;
     Value* lastValue_;
 };
+
+template<class BufferSequence>
+bool
+Reader::parse(Value& root, BufferSequence const& bs)
+{
+    using namespace boost::asio;
+    for (auto const& b : bs)
+    {
+        auto begin = buffer_cast<const char*>(b);
+        if(! parse(begin, begin + buffer_size(b), root))
+            return false;
+    }
+    return true;
+}
 
 /** \brief Read from 'sin' into 'root'.
 
