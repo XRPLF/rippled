@@ -78,7 +78,7 @@ JSS ( affected );                   // out: AcceptedLedgerTx
 JSS ( age );                        // out: NetworkOPs, Peers
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
-JSS ( amendments );                 // in: AccountObjects
+JSS ( amendments );                 // in: AccountObjects, out: NetworkOPs
 JSS ( asks );                       // out: Subscribe
 JSS ( assets );                     // out: GatewayBalances
 JSS ( authorized );                 // out: AccountLines
