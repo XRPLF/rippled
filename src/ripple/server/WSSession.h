@@ -112,8 +112,16 @@ struct WSSession
     std::shared_ptr<void> appDefined;
 
     virtual
+    void
+    run() = 0;
+
+    virtual
     Port const&
     port() const = 0;
+
+    virtual
+    http_request_type const&
+    request() const = 0;
 
     virtual
     boost::asio::ip::tcp::endpoint const&
@@ -127,6 +135,14 @@ struct WSSession
     virtual
     void
     close() = 0;
+
+    /** Indicate that the response is complete.
+        The handler should call this when it has completed writing
+        the response.
+    */
+    virtual
+    void
+    complete() = 0;
 };
 
 } // ripple

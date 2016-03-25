@@ -45,13 +45,39 @@ bool operator< (Port const& lhs, Port const& rhs)
 class WSInfoSub : public InfoSub
 {
     std::weak_ptr<WSSession> ws_;
+    std::string user_;
+    std::string fwdfor_;
 
 public:
-    WSInfoSub(Source& source, Consumer consumer,
+    WSInfoSub(Source& source,
             std::shared_ptr<WSSession> const& ws)
-        : InfoSub(source, consumer)
+        : InfoSub(source)
         , ws_(ws)
     {
+        auto const& h = ws->request().headers;
+        auto it = h.find("X-User");
+        if (it != h.end() &&
+            isIdentified(
+                ws->port(), beast::IPAddressConversion::from_asio(
+                    ws->remote_endpoint()).address(), it->second))
+        {
+            user_ = it->second;
+            it = h.find("X-Forwarded-For");
+            if (it != h.end())
+                fwdfor_ = it->second;
+        }
+    }
+
+    std::string
+    user() const
+    {
+        return user_;
+    }
+
+    std::string
+    forwarded_for() const
+    {
+        return fwdfor_;
     }
 
     void

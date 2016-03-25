@@ -118,6 +118,7 @@ public:
     };
 
 public:
+    InfoSub (Source& source);
     InfoSub (Source& source, Consumer consumer);
 
     virtual ~InfoSub ();
@@ -156,6 +157,14 @@ private:
     hash_set <AccountID> normalSubscriptions_;
     std::shared_ptr <PathRequest> mPathRequest;
     std::uint64_t                 mSeq;
+
+    static
+    int
+    assign_id()
+    {
+        static std::atomic<std::uint64_t> id(0);
+        return ++id;
+    }
 };
 
 } // ripple

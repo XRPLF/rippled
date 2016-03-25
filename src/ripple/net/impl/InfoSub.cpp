@@ -43,12 +43,17 @@ InfoSub::Source::Source (char const* name, Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-InfoSub::InfoSub (Source& source, Consumer consumer)
-    : m_consumer (consumer)
-    , m_source (source)
+InfoSub::InfoSub(Source& source)
+    : m_source(source)
+    , mSeq(assign_id())
 {
-    static std::atomic <int> s_seq_id (0);
-    mSeq = ++s_seq_id;
+}
+
+InfoSub::InfoSub(Source& source, Consumer consumer)
+    : m_consumer(consumer)
+    , m_source(source)
+    , mSeq(assign_id())
+{
 }
 
 InfoSub::~InfoSub ()

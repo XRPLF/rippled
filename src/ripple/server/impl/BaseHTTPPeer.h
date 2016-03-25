@@ -67,7 +67,6 @@ protected:
 
         // Max seconds without completing a message
         timeoutSeconds = 30
-
     };
 
     struct buffer
@@ -105,7 +104,6 @@ protected:
     bool complete_ = false;
     boost::system::error_code ec_;
 
-    clock_type::time_point when_;
     int request_count_ = 0;
     std::size_t bytes_in_ = 0;
     std::size_t bytes_out_ = 0;
@@ -233,7 +231,6 @@ BaseHTTPPeer<Impl>::BaseHTTPPeer (Port const& port, Handler& handler,
     id_ = std::string("#") + std::to_string(nid_) + " ";
     JLOG(journal_.trace()) << id_ <<
         "accept:    " << remote_address_.address();
-    when_ = clock_type::now();
 }
 
 template <class Impl>

@@ -104,7 +104,6 @@ SSLHTTPPeer::websocketUpgrade()
         port_, handler_, remote_address_,
             std::move(message_), std::move(ssl_bundle_),
                 journal_);
-    ws->run();
     return ws;
 }
 
@@ -118,10 +117,11 @@ SSLHTTPPeer::do_handshake (yield_context yield)
         stream_type::server, read_buf_.data(), yield[ec]));
     cancel_timer();
     if (ec)
-        return fail (ec, "handshake");
+        return fail(ec, "handshake");
     bool const http =
         port().protocol.count("peer") > 0 ||
-        //|| port().protocol.count("wss") > 0
+        //port().protocol.count("wss") > 0 ||
+        port().protocol.count("wss2") > 0 ||
         port().protocol.count("https") > 0;
     if (http)
     {
