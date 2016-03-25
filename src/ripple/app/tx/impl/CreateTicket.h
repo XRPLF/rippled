@@ -37,13 +37,6 @@ public:
     }
 
     static
-    bool
-    canIncreaseOwners(STTx const& tx)
-    {
-        return true;
-    }
-
-    static
     TER
     preflight (PreflightContext const& ctx);
 

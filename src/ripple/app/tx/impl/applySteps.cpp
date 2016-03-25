@@ -165,9 +165,8 @@ invoke_calculateConsequences(STTx const& tx)
         TxConsequences::blocker : TxConsequences::normal;
     auto const feePaid = T::calculateFeePaid(tx);
     auto const maxSpend = T::calculateMaxSpend(tx);
-    auto const ownerAdjust = T::canIncreaseOwners(tx) ? 1 : 0;
 
-    return{ category, feePaid, maxSpend, ownerAdjust };
+    return{ category, feePaid, maxSpend };
 }
 
 static
@@ -194,7 +193,7 @@ invoke_calculateConsequences(STTx const& tx)
     default:
         assert(false);
         return { TxConsequences::blocker, Transactor::calculateFeePaid(tx),
-            beast::zero, 0 };
+            beast::zero };
     }
 }
 
@@ -294,7 +293,7 @@ calculateConsequences(PreflightResult const& preflightResult)
     if (preflightResult.ter != tesSUCCESS)
         return{ TxConsequences::blocker,
             Transactor::calculateFeePaid(preflightResult.tx),
-                beast::zero, 0 };
+                beast::zero };
     return invoke_calculateConsequences(preflightResult.tx);
 }
 

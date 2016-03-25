@@ -107,15 +107,12 @@ struct TxConsequences
     XRPAmount const fee;
     // Does NOT include the fee.
     XRPAmount const potentialSpend;
-    int const ownerCountAdjustment;
 
     TxConsequences(Category const category_,
-        XRPAmount const fee_, XRPAmount const spend_,
-        int ownerCountAdjustment_)
+        XRPAmount const fee_, XRPAmount const spend_)
         : category(category_)
         , fee(fee_)
         , potentialSpend(spend_)
-        , ownerCountAdjustment(ownerCountAdjustment_)
     {
     }
 

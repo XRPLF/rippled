@@ -145,13 +145,6 @@ public:
     calculateMaxSpend(STTx const& tx);
 
     static
-    bool
-    canIncreaseOwners(STTx const& tx)
-    {
-        return false;
-    }
-
-    static
     TER
     preclaim(PreclaimContext const &ctx)
     {

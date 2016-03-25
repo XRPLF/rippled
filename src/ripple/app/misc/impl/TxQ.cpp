@@ -373,7 +373,6 @@ TxQ::apply(Application& app, OpenView& view,
 
         XRPAmount fee = beast::zero;
         XRPAmount potentialSpend = beast::zero;
-        int ownerCountAdjustment = 0;
 
         MultiTxn(TxQAccount::TxMap::iterator nextAcctIter_,
             TxQAccount::TxMap::iterator prevTxnIter_)
@@ -560,8 +559,6 @@ TxQ::apply(Application& app, OpenView& view,
                             workingIter->second.consequences->fee;
                         multiTxn->potentialSpend +=
                             workingIter->second.consequences->potentialSpend;
-                        multiTxn->ownerCountAdjustment +=
-                            workingIter->second.consequences->ownerCountAdjustment;
                     }
                     /* If there are any transactions AFTER this one, include their
                         fees in the in-flight total.
@@ -585,8 +582,6 @@ TxQ::apply(Application& app, OpenView& view,
                             workingIter->second.consequences->fee;
                         multiTxn->potentialSpend +=
                             workingIter->second.consequences->potentialSpend;
-                        multiTxn->ownerCountAdjustment +=
-                            workingIter->second.consequences->ownerCountAdjustment;
                     }
                 }
                 else
@@ -604,7 +599,6 @@ TxQ::apply(Application& app, OpenView& view,
             }
             if (multiTxn)
             {
-                auto const balance = (*sle)[sfBalance].xrp();
                 /* Check if the total fees in flight are greater
                     than the account's current balance, or the
                     minimum reserve. If it is, then there's a risk
@@ -639,6 +633,7 @@ TxQ::apply(Application& app, OpenView& view,
                     Transactions stuck in the queue are mitigated by
                     LastLedgerSeq and CandidateTxn::retriesRemaining.
                 */
+                auto const balance = (*sle)[sfBalance].xrp();
                 auto totalFee = multiTxn->fee;
                 if (replacedItemDeleteIter
                         && std::next(multiTxn->prevTxnIter, 2) !=
@@ -665,12 +660,9 @@ TxQ::apply(Application& app, OpenView& view,
                     keylet::account(account));
 
                 sleBump->setFieldAmount(sfBalance,
-                    (*sleBump)[sfBalance] - STAmount(
-                        multiTxn->fee + multiTxn->potentialSpend));
+                    balance - (multiTxn->fee +
+                        multiTxn->potentialSpend));
                 sleBump->setFieldU32(sfSequence, t_seq);
-                if(multiTxn->ownerCountAdjustment)
-                    adjustOwnerCount(*multiTxn->applyView, sleBump,
-                        multiTxn->ownerCountAdjustment, j_);
             }
         }
     }
