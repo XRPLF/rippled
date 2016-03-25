@@ -1630,6 +1630,13 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         if (seq != 0)
             jvObj [jss::ledger_index]      = to_string (seq);
 
+        if (val->isFieldPresent (sfAmendments))
+        {
+            jvObj[jss::amendments] = Json::Value (Json::arrayValue);
+            for (auto const& amendment : val->getFieldV256(sfAmendments))
+                jvObj [jss::amendments].append (to_string (amendment));
+        }
+
         for (auto i = mSubValidations.begin (); i != mSubValidations.end (); )
         {
             if (auto p = i->second.lock())
