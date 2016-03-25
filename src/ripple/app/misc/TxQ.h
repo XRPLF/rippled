@@ -247,6 +247,7 @@ private:
         scaleFeeLevel(OpenView const& view) const;
     };
 
+    // Alternate name: MaybeTx
     class CandidateTxn
     {
     public:

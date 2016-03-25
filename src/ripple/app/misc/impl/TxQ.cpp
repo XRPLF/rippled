@@ -368,8 +368,8 @@ TxQ::apply(Application& app, OpenView& view,
     {
         TxQAccount::TxMap::iterator nextAcctIter;
         TxQAccount::TxMap::iterator prevTxnIter;
-        std::unique_ptr<ApplyViewImpl> applyView;
-        std::unique_ptr<OpenView> openView;
+        boost::optional<ApplyViewImpl> applyView;
+        boost::optional<OpenView> openView;
 
         XRPAmount fee = beast::zero;
         XRPAmount potentialSpend = beast::zero;
@@ -499,13 +499,12 @@ TxQ::apply(Application& app, OpenView& view,
     // so we don't get a false terPRE_SEQ.
     if (accountExists)
     {
-        auto const sle = view.read(
-            keylet::account(account));
+        auto const sle = view.read(keylet::account(account));
 
         if (sle)
         {
             auto& txQAcct = accountIter->second;
-            auto const a_seq = sle->getFieldU32(sfSequence);
+            auto const a_seq = (*sle)[sfSequence];
 
             if (a_seq != t_seq)
             {
@@ -602,8 +601,8 @@ TxQ::apply(Application& app, OpenView& view,
                 /* Check if the total fees in flight are greater
                     than the account's current balance, or the
                     minimum reserve. If it is, then there's a risk
-                    that the fees won't get paid, so don't allow
-                    this transaction.
+                    that the fees won't get paid, so drop this
+                    transaction with a telCAN_NOT_QUEUE result.
                     TODO: Decide whether to count the current txn fee
                         in this limit if it's the last transaction for
                         this account. Currently, it will not count,
@@ -651,10 +650,8 @@ TxQ::apply(Application& app, OpenView& view,
                 }
 
                 // Create the test view from the current view
-                multiTxn->applyView =
-                    std::make_unique<ApplyViewImpl>(&view, flags);
-                multiTxn->openView =
-                    std::make_unique<OpenView>(&*multiTxn->applyView);
+                multiTxn->applyView.emplace(&view, flags);
+                multiTxn->openView.emplace(&*multiTxn->applyView);
 
                 auto const sleBump = multiTxn->applyView->peek(
                     keylet::account(account));

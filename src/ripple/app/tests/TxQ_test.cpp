@@ -28,6 +28,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/test/jtx.h>
+#include <ripple/test/jtx/ticket.h>
 
 namespace ripple {
 namespace test {
@@ -1152,12 +1153,6 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        auto openLedgerFee =
-            [&]()
-        {
-            return fee(env.app().getTxQ().openLedgerFee(*env.current()));
-        };
-
         expect(env.current()->fees().base == 10);
 
         auto lastMedian = 500;
@@ -1209,6 +1204,129 @@ public:
         env(noop(alice), seq(aliceSeq + 3), queued);
     }
 
+    void testInFlightBalance()
+    {
+        using namespace jtx;
+
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation), features(featureTickets));
+
+        auto alice = Account("alice");
+        auto charlie = Account("charlie");
+        auto gw = Account("gw");
+
+        auto queued = ter(terQUEUED);
+
+        expect(env.current()->fees().base == 10);
+        expect(env.current()->fees().reserve == 200 * 1000000);
+        expect(env.current()->fees().increment == 50 * 1000000);
+
+        auto lastMedian = 500;
+        checkMetrics(env, 0, boost::none, 0, 3, 256, lastMedian);
+
+        env.fund(XRP(50000), noripple(alice, charlie), gw);
+        checkMetrics(env, 0, boost::none, 4, 3, 256, lastMedian);
+
+        auto USD = gw["USD"];
+        auto BUX = charlie["BUX"];
+
+        //////////////////////////////////////////
+        auto aliceSeq = env.seq(alice);
+        auto aliceBal = env.balance(alice);
+
+        env.require(balance(alice, XRP(50000)),
+            owners(alice, 0));
+
+        // If this offer crosses, all of alice's
+        // XRP will be taken (except the reserve).
+        env(offer(alice, BUX(5000), XRP(50000)),
+            queued);
+
+        // So even a noop will look like alice
+        // doesn't have the balance to pay the fee
+        env(noop(alice), seq(aliceSeq + 1), ter(terINSUF_FEE_B));
+
+        env.close();
+        checkMetrics(env, 0, 8, 2, 4, 256, lastMedian);
+
+        // But once we close the ledger, we find alice
+        // has plenty of XRP, because the offer didn't
+        // cross (of course).
+        env.require(balance(alice, aliceBal - drops(20)),
+            owners(alice, 1));
+
+        //////////////////////////////////////////
+        for (auto i = 2; i < 5; ++i)
+        {
+            env(noop(alice));
+        }
+        checkMetrics(env, 0, 8, 5, 4, 256, lastMedian);
+
+        aliceSeq = env.seq(alice);
+        aliceBal = env.balance(alice);
+
+        // If this payment succeeds, alice will
+        // send her entire balance to charlie
+        // (minus the reserve).
+        env(pay(alice, charlie, XRP(50000)),
+            queued);
+
+        // So even a noop will look like alice
+        // doesn't have the balance to pay the fee
+        env(noop(alice), seq(aliceSeq + 1), ter(terINSUF_FEE_B));
+
+        env.close();
+        checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);
+
+        // But once we close the ledger, we find alice
+        // still has most of her balance, because the
+        // payment was unfunded!
+        env.require(balance(alice, aliceBal - drops(20)),
+            owners(alice, 1));
+
+        //////////////////////////////////////////
+        auto const amount = USD(500000);
+        env(trust(alice, USD(50000000)));
+        env(trust(charlie, USD(50000000)));
+        checkMetrics(env, 0, 10, 4, 5, 256, lastMedian);
+        env(pay(gw, alice, amount));
+        checkMetrics(env, 0, 10, 5, 5, 256, lastMedian);
+
+        for (auto i = 5; i < 6; ++i)
+        {
+            env(noop(alice));
+        }
+        checkMetrics(env, 0, 10, 6, 5, 256, lastMedian);
+
+        aliceSeq = env.seq(alice);
+        aliceBal = env.balance(alice);
+        auto aliceUSD = env.balance(alice, USD);
+
+        // If this payment succeeds, alice will
+        // send her entire USD balance to charlie.
+        env(pay(alice, charlie, amount),
+            queued);
+
+        // But that's fine, because it doesn't affect
+        // alice's XRP balance (other than the fee, of course).
+        env(noop(alice), seq(aliceSeq + 1), queued);
+
+        env.close();
+        checkMetrics(env, 0, 12, 2, 6, 256, lastMedian);
+
+        // So once we close the ledger, alice has her
+        // XRP balance, but not her USD balance
+        env.require(balance(alice, aliceBal - drops(20)),
+            balance(alice, USD(0)),
+            balance(charlie, aliceUSD),
+            owners(alice, 2));
+
+        //////////////////////////////////////////
+
+
+    }
+
     void run()
     {
         testQueue();
@@ -1224,6 +1342,7 @@ public:
         testMaximum();
         testUnexpectedBalanceChange();
         testBlockers();
+        testInFlightBalance();
     }
 };
 
