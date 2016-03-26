@@ -343,7 +343,6 @@ void Ledger::updateHash()
         std::uint32_t(info_.closeTime.time_since_epoch().count()),
         std::uint8_t(info_.closeTimeResolution.count()),
         std::uint8_t(info_.closeFlags));
-    mValidHash = true;
 }
 
 void

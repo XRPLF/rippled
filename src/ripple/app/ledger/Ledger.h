@@ -315,7 +315,6 @@ private:
     void
     updateHash();
 
-    bool mValidHash = false;
     bool mImmutable;
 
     std::shared_ptr<SHAMap> txMap_;
