@@ -843,7 +843,6 @@ def list_sources(base, suffixes):
                     yield os.path.normpath(path)
     return list(_iter(base))
 
-
 def append_sources(result, *filenames, **kwds):
     result.append([filenames, kwds])
 
@@ -1146,6 +1145,23 @@ for tu_style in ['classic', 'unity']:
                 CPPPATH=[
                     'src/snappy/snappy',
                     'src/snappy/config',
+                ]
+            )
+
+            object_builder.add_source_files(
+                'src/beast/beast/wsproto/impl/zlib/adler32.c',
+                'src/beast/beast/wsproto/impl/zlib/compress.c',
+                'src/beast/beast/wsproto/impl/zlib/crc32.c',
+                'src/beast/beast/wsproto/impl/zlib/deflate.c',
+                'src/beast/beast/wsproto/impl/zlib/infback.c',
+                'src/beast/beast/wsproto/impl/zlib/inffast.c',
+                'src/beast/beast/wsproto/impl/zlib/inflate.c',
+                'src/beast/beast/wsproto/impl/zlib/inftrees.c',
+                'src/beast/beast/wsproto/impl/zlib/trees.c',
+                'src/beast/beast/wsproto/impl/zlib/uncompr.c',
+                'src/beast/beast/wsproto/impl/zlib/zutil.c',
+                CPPPATH=[
+                    'src/beast/beast/wsproto/impl/zlib'
                 ]
             )
 
