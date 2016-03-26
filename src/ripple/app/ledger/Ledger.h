@@ -97,6 +97,11 @@ public:
     */
     Ledger (create_genesis_t, Config const& config, Family& family);
 
+    Ledger (
+        LedgerInfo const& info,
+        Config const& config,
+        Family& family);
+
     // Used for ledgers loaded from JSON files
     Ledger (
         LedgerInfo info,
@@ -113,10 +118,6 @@ public:
     */
     Ledger (Ledger const& previous,
         NetClock::time_point closeTime);
-
-    Ledger (void const* data,
-        std::size_t size, bool hasPrefix,
-            Config const& config, Family& family);
 
     // used for database ledgers
     Ledger (std::uint32_t ledgerSeq,

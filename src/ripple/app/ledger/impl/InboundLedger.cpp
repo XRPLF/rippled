@@ -188,6 +188,31 @@ InboundLedger::neededStateHashes (
     return ret;
 }
 
+LedgerInfo
+InboundLedger::deserializeHeader (
+    Slice data,
+    bool hasPrefix)
+{
+    SerialIter sit (data.data(), data.size());
+
+    if (hasPrefix)
+        sit.get32 ();
+
+    LedgerInfo info;
+
+    info.seq = sit.get32 ();
+    info.drops = sit.get64 ();
+    info.parentHash = sit.get256 ();
+    info.txHash = sit.get256 ();
+    info.accountHash = sit.get256 ();
+    info.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info.closeTimeResolution = NetClock::duration{sit.get8()};
+    info.closeFlags = sit.get8 ();
+
+    return std::move(info);
+}
+
 /** See how much of the ledger data, if any, is
     in our node store
 */
@@ -209,17 +234,19 @@ bool InboundLedger::tryLocal ()
 
             JLOG (m_journal.trace()) <<
                 "Ledger header found in fetch pack";
+
             mLedger = std::make_shared<Ledger> (
-                data.data(), data.size(), true,
+                deserializeHeader (makeSlice(data), true),
                 app_.config(), app_.family());
+
             app_.getNodeStore ().store (
                 hotLEDGER, std::move (data), mHash);
         }
         else
         {
             mLedger = std::make_shared<Ledger>(
-                node->getData().data(), node->getData().size(),
-                true, app_.config(), app_.family());
+                deserializeHeader (makeSlice (node->getData()), true),
+                app_.config(), app_.family());
         }
 
         if (mLedger->info().hash != mHash)
@@ -758,7 +785,7 @@ bool InboundLedger::takeHeader (std::string const& data)
         return true;
 
     mLedger = std::make_shared<Ledger>(
-        data.data(), data.size(), false,
+        deserializeHeader (makeSlice(data), false),
         app_.config(), app_.family());
 
     if (mLedger->info().hash != mHash)

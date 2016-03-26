@@ -267,34 +267,18 @@ Ledger::Ledger (Ledger const& prevLedger,
     }
 }
 
-Ledger::Ledger (void const* data,
-    std::size_t size, bool hasPrefix,
-        Config const& config, Family& family)
+Ledger::Ledger (
+        LedgerInfo const& info,
+        Config const& config,
+        Family& family)
     : mImmutable (true)
+    , txMap_ (std::make_shared<SHAMap> (
+        SHAMapType::TRANSACTION, info.txHash, family))
+    , stateMap_ (std::make_shared<SHAMap> (
+        SHAMapType::STATE, info.accountHash, family))
+    , info_ (info)
 {
-    SerialIter sit (data, size);
-
-    if (hasPrefix)
-        sit.get32 ();
-
-    info_.seq = sit.get32 ();
-    info_.drops = sit.get64 ();
-    info_.parentHash = sit.get256 ();
-    info_.txHash = sit.get256 ();
-    info_.accountHash = sit.get256 ();
-    info_.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
-    info_.closeTimeResolution = NetClock::duration{sit.get8()};
-    info_.closeFlags = sit.get8 ();
-
     updateHash ();
-
-    txMap_ = std::make_shared<SHAMap> (
-        SHAMapType::TRANSACTION, info_.txHash, family);
-    stateMap_ = std::make_shared<SHAMap> (
-        SHAMapType::STATE, info_.accountHash, family);
-
-    // Can't set up until the stateMap is filled in
 }
 
 Ledger::Ledger (std::uint32_t ledgerSeq,

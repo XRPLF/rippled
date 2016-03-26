@@ -143,6 +143,11 @@ private:
     neededStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
+    LedgerInfo
+    deserializeHeader (
+        Slice data,
+        bool hasPrefix);
+
 private:
     std::shared_ptr<Ledger> mLedger;
     bool               mHaveHeader;
