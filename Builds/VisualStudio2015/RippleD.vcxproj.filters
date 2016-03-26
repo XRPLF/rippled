@@ -175,6 +175,15 @@
     <Filter Include="beast\utility\tests">
       <UniqueIdentifier>{AEAB3B1B-0F60-B397-8707-B57A4D5DAC09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\wsproto">
+      <UniqueIdentifier>{53D8D640-BEB0-1F2C-61D4-5459CDAC7EB4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\impl">
+      <UniqueIdentifier>{63AB4C85-5B2E-B2A7-9E4F-9F0899402D1D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\impl\zlib">
+      <UniqueIdentifier>{F6E19E39-7B3C-45CB-3DA4-5AE7B7B613AD}</UniqueIdentifier>
+    </Filter>
     <Filter Include="build">
       <UniqueIdentifier>{65697F48-7FC6-2A4B-DB6C-56781F3990B5}</UniqueIdentifier>
     </Filter>
@@ -1454,6 +1463,72 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
       <Filter>beast</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\adler32.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\compress.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\crc32.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\crc32.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\deflate.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\deflate.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\gzguts.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\infback.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\inffast.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\inffast.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\inffixed.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\inflate.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\inflate.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\inftrees.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\inftrees.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\trees.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\trees.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\uncompr.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\zconf.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\zlib.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\impl\zlib\zutil.c">
+      <Filter>beast\wsproto\impl\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\zutil.h">
+      <Filter>beast\wsproto\impl\zlib</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\xor_shift_engine.h">
       <Filter>beast</Filter>
