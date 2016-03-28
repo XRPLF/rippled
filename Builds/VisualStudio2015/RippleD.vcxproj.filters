@@ -633,6 +633,9 @@
     <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\read_until.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
       <Filter>beast\asio</Filter>
     </ClInclude>

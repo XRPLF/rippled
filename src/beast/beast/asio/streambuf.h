@@ -57,11 +57,11 @@ private:
 
     static_assert(std::is_base_of<std::bidirectional_iterator_tag,
 		typename std::iterator_traits<iterator>::iterator_category>::value,
-            "type does not meet the iterator requirements");
+            "BidirectionalIterator requirements not met");
 
     static_assert(std::is_base_of<std::bidirectional_iterator_tag,
 		typename std::iterator_traits<const_iterator>::iterator_category>::value,
-            "type does not meet the iterator requirements");
+            "BidirectionalIterator requirements not met");
 
     /*  These diagrams illustrate the layout and state variables.
 
@@ -182,7 +182,17 @@ public:
     void
     consume (size_type n);
 
+    // Helper for read_until
+    template<class Allocator>
+    friend
+    std::size_t
+    read_size_helper(basic_streambuf<
+        Allocator> const& streambuf, std::size_t max_size);
+
 private:
+    std::size_t
+    prepare_size() const;
+
     void
     debug_check() const;
 };
@@ -752,6 +762,22 @@ basic_streambuf<Allocator>::consume (size_type n)
     }
 }
 
+// Returns the number of bytes which can be
+// prepared without causing a memory allocation.
+template <class Allocator>
+std::size_t
+basic_streambuf<Allocator>::prepare_size() const
+{
+    std::size_t n;
+    iterator pos = out_;
+    if(pos == list_.end())
+        return 0;
+    n = pos->size() - out_pos_;
+    while(++pos != list_.end())
+        n += pos->size();
+    return n;
+}
+
 template <class Allocator>
 void
 basic_streambuf<Allocator>::debug_check() const
@@ -803,6 +829,15 @@ operator<< (basic_streambuf<Alloc>& buf, T const& t)
 }
 
 //------------------------------------------------------------------------------
+
+template<class Allocator>
+std::size_t
+read_size_helper(basic_streambuf<
+    Allocator> const& streambuf, std::size_t max_size)
+{
+    return std::min<std::size_t>(max_size,
+        std::max<std::size_t>(512, streambuf.prepare_size()));
+}
 
 using streambuf = basic_streambuf<std::allocator<char>>;
 
