@@ -45,6 +45,9 @@ class buffered_readstream
     Stream next_layer_;
 
 public:
+    /// The type of the internal buffer
+    using streambuf_type = Streambuf;
+
     /// The type of the next layer.
     using next_layer_type =
         std::remove_reference_t<Stream>;
@@ -85,7 +88,33 @@ public:
         return next_layer_.get_io_service();
     }
 
-    /** Set the buffer size.
+    /** Access the internal buffer.
+
+        The internal buffer is returned. It is possible for the
+        caller to break invariants with this function. For example,
+        by causing the internal buffer size to increase beyond
+        the caller defined maximum.
+    */
+    Streambuf&
+    buffer()
+    {
+        return sb_;
+    }
+
+    /** Access the internal buffer.
+
+        The internal buffer is returned. It is possible for the
+        caller to break invariants with this function. For example,
+        by causing the internal buffer size to increase beyond
+        the caller defined maximum.
+    */
+    Streambuf const&
+    buffer() const
+    {
+        return sb_;
+    }
+
+    /** Set the maximum buffer size.
 
         This changes the maximum size of the internal buffer used
         to hold read data. No bytes are discarded by this call. If
@@ -96,6 +125,9 @@ public:
             made from the same implicit or explicit strand.
 
         @param size The number of bytes in the read buffer.
+
+        @note This is a soft limit. If the new maximum size is smaller
+        than the amount of data in the buffer, no bytes are discarded.
     */
     void
     reserve(std::size_t size)
