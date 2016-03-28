@@ -70,6 +70,9 @@ public:
     PreclaimContext& operator=(PreclaimContext const&) = delete;
 };
 
+struct TxConsequences;
+struct PreflightResult;
+
 class Transactor
 {
 protected:
@@ -125,6 +128,21 @@ public:
     std::uint64_t
     calculateBaseFee (
         PreclaimContext const& ctx);
+
+    static
+    bool
+    affectsSubsequentTransactionAuth(STTx const& tx)
+    {
+        return false;
+    }
+
+    static
+    XRPAmount
+    calculateFeePaid(STTx const& tx);
+
+    static
+    XRPAmount
+    calculateMaxSpend(STTx const& tx);
 
     static
     TER

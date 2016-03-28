@@ -57,7 +57,7 @@ in the fee escalation formula for the next open ledger.
   which is 15,000 drops for a
   [reference transaction](#reference-transaction).
   * This will cause the first 21 transactions only require 10
-  drops, but the 22st transaction will require
+  drops, but the 22nd transaction will require
   a level of about 110,000,000 or about 4.3 million drops (4.3XRP).
 
 ## Transaction Queue
@@ -93,17 +93,26 @@ but in practice, either
   * it will eventually get applied to the ledger,
   * its last ledger sequence number will expire,
   * the user will replace it by submitting another transaction with the same
-  sequence number and a higher fee, or
+  sequence number and at least a 25% higher fee, or
   * it will get dropped when the queue fills up with more valuable transactions.
   The size limit is computed dynamically, and can hold transactions for
   the next [20 ledgers](#other-constants).
   The lower the transaction's fee, the more likely that it will get dropped if the
   network is busy.
 
-Currently, there is an additional restriction that the queue can only hold one
-transaction per account at a time. Future development will make the queue
-aware of transaction dependencies so that more than one can be
-queued up at a time per account.
+If a transaction is submitted for an account with one or more transactions
+already in the queue, and a sequence number that is sequential with the other
+transactions in the queue for that account, it must pay a
+[fee level](#fee-level) at least 25% higher than the transaction with the
+previous sequence number, and will be considered for the queue if all prior
+queued transactions for that account, in their worst case, leave enough
+XRP balance to pay the fee, and none of the queued transactions affect
+the ability of subsequent transactions to claim a fee.
+
+Currently, there is an additional restriction that the queue can not work with
+transactions using the `sfPreviousTxnID` or `sfAccountTxnID` fields.
+`sfPreviousTxnID` is deprecated and shouldn't be used anyway. Future
+development will make the queue aware of `sfAccountTxnID` mechanisms.
 
 ## Technical Details
 

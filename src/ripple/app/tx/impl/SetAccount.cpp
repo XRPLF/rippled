@@ -29,6 +29,28 @@
 
 namespace ripple {
 
+bool
+SetAccount::affectsSubsequentTransactionAuth(STTx const& tx)
+{
+    auto const uTxFlags = tx.getFlags();
+    auto const uSetFlag = tx[~sfSetFlag].value_or(0);
+    auto const uClearFlag = tx[~sfClearFlag].value_or(0);
+    /*
+    TODO: This would be a lot simpler and safer, but
+    probably too aggressive, as:
+    `return (uTxFlags || uSetFlag || uClearFlag)`
+    ie. Only a noop to flags would be treated as `normal`.
+    */
+    return (uTxFlags & tfRequireAuth) ||
+        (uSetFlag == asfRequireAuth) ||
+        (uTxFlags & tfOptionalAuth) ||
+        (uClearFlag == asfRequireAuth) ||
+        (uSetFlag == asfDisableMaster) ||
+        (uClearFlag == asfDisableMaster) ||
+        (uSetFlag == asfAccountTxnID) ||
+        (uClearFlag == asfAccountTxnID);
+}
+
 TER
 SetAccount::preflight (PreflightContext const& ctx)
 {
