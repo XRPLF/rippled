@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WSPROTO_H_INCLUDED
-#define RIPPLE_WSPROTO_H_INCLUDED
+#ifndef BEAST_WSPROTO_H_INCLUDED
+#define BEAST_WSPROTO_H_INCLUDED
 
-#include <ripple/wsproto/basic_socket.h>
+#include <beast/wsproto/error.h>
+#include <beast/wsproto/rfc6455.h>
+#include <beast/wsproto/socket.h>
 
 #endif

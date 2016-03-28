@@ -170,13 +170,15 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
     , handler_(handler)
     , acceptor_(io_service)
     , strand_(io_service)
-    , ssl_ (
+    , ssl_(
         port_.protocol.count("https") > 0 ||
         //port_.protocol.count("wss") > 0 ||
-        port_.protocol.count("peer") > 0)
-    , plain_ (
+        port_.protocol.count("wss2")  > 0 ||
+        port_.protocol.count("peer")  > 0)
+    , plain_(
+        port_.protocol.count("http") > 0 ||
         //port_.protocol.count("ws") > 0 ||
-        port_.protocol.count("http") > 0)
+        port_.protocol.count("ws2"))
 {
     error_code ec;
     endpoint_type const local_address =
