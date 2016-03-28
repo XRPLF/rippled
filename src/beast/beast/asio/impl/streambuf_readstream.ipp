@@ -29,8 +29,9 @@ namespace beast {
 namespace asio {
 
 template<class Stream, class Streambuf>
-template<class Buffers, class Handler>
-class streambuf_readstream<Stream, Streambuf>::read_some_op
+template<class MutableBufferSequence, class Handler>
+class streambuf_readstream<
+    Stream, Streambuf>::read_some_op
 {
     using alloc_type =
         handler_alloc<char, Handler>;
@@ -38,14 +39,14 @@ class streambuf_readstream<Stream, Streambuf>::read_some_op
     struct data
     {
         streambuf_readstream& brs;
-        Buffers bs;
+        MutableBufferSequence bs;
         Handler h;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
             streambuf_readstream& brs_,
-                Buffers const& bs_)
+                MutableBufferSequence const& bs_)
             : brs(brs_)
             , bs(bs_)
             , h(std::forward<DeducedHandler>(h_))
@@ -105,33 +106,25 @@ public:
 };
 
 template<class Stream, class Streambuf>
-template<class Buffers, class Handler>
+template<class MutableBufferSequence, class Handler>
 void
 streambuf_readstream<Stream, Streambuf>::
-read_some_op<Buffers, Handler>::operator()(
+read_some_op<MutableBufferSequence, Handler>::operator()(
     error_code ec, std::size_t bytes_transferred)
 {
-    using namespace boost::asio;
     auto& d = *d_;
     while(! ec && d.state != 99)
     {
         switch(d.state)
         {
         case 0:
-            if(buffer_size(d.bs) > 0)
+            if(d.brs.sb_.size() == 0)
             {
-                if(d.brs.sb_.size() == 0)
-                {
-                    d.state =
-                        d.brs.size_ > 0 ? 2 : 1;
-                    break;
-                }
-                d.state = 4;
+                d.state =
+                    d.brs.size_ > 0 ? 2 : 1;
+                break;
             }
-            else
-            {
-                d.state = 99;
-            }
+            d.state = 4;
             d.brs.get_io_service().post(
                 beast::asio::bind_handler(
                     std::move(*this), ec, 0));
@@ -161,7 +154,8 @@ read_some_op<Buffers, Handler>::operator()(
         // copy
         case 4:
             bytes_transferred =
-                buffer_copy(d.bs, d.brs.sb_.data());
+                boost::asio::buffer_copy(
+                    d.bs, d.brs.sb_.data());
             d.brs.sb_.consume(bytes_transferred);
             // call handler
             d.state = 99;

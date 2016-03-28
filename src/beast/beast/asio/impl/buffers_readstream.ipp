@@ -118,7 +118,7 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
         switch(d.state)
         {
         case 0:
-            if(boost::asio::buffer_size(d.brs.cb_) = 0)
+            if(d.brs.size_ == 0)
             {
                 d.state = 1;
                 break;
@@ -139,7 +139,8 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
         // copy
         case 2:
             bytes_transferred =
-                buffer_copy(d.bs, d.brs.sb_.data());
+                boost::asio::buffer_copy(
+                    d.bs, d.brs.cb_);
             d.brs.size_ -= bytes_transferred;
             d.brs.cb_.consume(bytes_transferred);
             // call handler
