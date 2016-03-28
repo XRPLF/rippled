@@ -1290,10 +1290,17 @@ public:
         env(trust(alice, USD(50000000)));
         env(trust(charlie, USD(50000000)));
         checkMetrics(env, 0, 10, 4, 5, 256, lastMedian);
-        env(pay(gw, alice, amount));
-        checkMetrics(env, 0, 10, 5, 5, 256, lastMedian);
+        // Close so we don't have to deal
+        // with tx ordering in consensus.
+        env.close();
 
-        for (auto i = 5; i < 6; ++i)
+        env(pay(gw, alice, amount));
+        checkMetrics(env, 0, 10, 1, 5, 256, lastMedian);
+        // Close so we don't have to deal
+        // with tx ordering in consensus.
+        env.close();
+
+        for (auto i = 0; i < 6; ++i)
         {
             env(noop(alice));
         }
