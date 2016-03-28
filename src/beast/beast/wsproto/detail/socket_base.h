@@ -30,6 +30,7 @@
 #include <beast/http/message.h>
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <memory>
 
 namespace beast {
@@ -45,39 +46,15 @@ maybe_throw(error_code const& ec, String const&)
         throw boost::system::system_error{ec};
 }
 
-struct abstract_decorator
-{
-    virtual ~abstract_decorator() = default;
-        
-    virtual
-    void
-    operator()(beast::http::message& m) const = 0;
-};
-
-template<class Decorator>
-struct decorator : abstract_decorator
-{
-    Decorator d;
-
-    template<class DeducedDecorator>
-    decorator(DeducedDecorator&& d_)
-        : d(std::forward<DeducedDecorator>(d_))
-    {
-    }
-
-    void
-    operator()(beast::http::message& m) const override
-    {
-        d(m);
-    }
-};
+using decorator_type =
+    std::function<void(beast::http::message&)>;
 
 //------------------------------------------------------------------------------
 
 struct socket_base
 {
     detail::maskgen maskgen_;
-    std::unique_ptr<abstract_decorator> decorate_;
+    decorator_type decorate_;
     bool keep_alive_ = false;
     role_type role_;
 
@@ -110,9 +87,15 @@ struct socket_base
     bool wr_active_ = false;
 
     invokable wr_invoke_;
+
     invokable rd_invoke_;
 
     bool fail_ = false;
+
+    socket_base()
+        : decorate_([](auto&){})
+    {
+    }
 
     template<class = void>
     void

@@ -117,14 +117,14 @@ private:
         void run()
         {
             auto& d = *d_;
-            d.ws.decorate(
+            d.ws.set_option(beast::wsproto::decorator(
                 [&](auto& m)
                 {
                     if(d.ep)
                         m.headers.append("Server", "AsyncEchoClient");
                     else
                         m.headers.append("Server", "AsyncEchoServer");
-                });
+                }));
             if(! d.ep)
             {
                 d.ws.async_accept(std::move(*this));
@@ -374,11 +374,11 @@ private:
     do_peer(socket_type&& sock)
     {
         wsproto::socket<socket_type> ws(std::move(sock));
-        ws.decorate(
+        ws.set_option(beast::wsproto::decorator(
             [&](auto& m)
             {
                 m.headers.append("Server", "WSEchoServer");
-            });
+            }));
         error_code ec;
         ws.accept(ec);
         if(ec)
@@ -428,6 +428,8 @@ public:
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
+    endpoint_type ep_;
+
     void
     maybe_fail(error_code const& ec, std::string const& what)
     {
@@ -435,12 +437,12 @@ public:
     }
 
     int
-    request(endpoint_type ep, std::string const& s)
+    request(std::string const& s)
     {
         using namespace boost::asio;
         io_service ios;
         ip::tcp::socket sock(ios);
-        sock.connect(ep);
+        sock.connect(ep_);
         write(sock, asio::append_buffers(
             buffer(s), buffer("\r\n")));
         http::body b;
@@ -457,20 +459,18 @@ public:
     }
 
     void
-    expect_status(int status, std::string const& s)
+    check(int status, std::string const& s)
     {
-        //expect(request(
+        expect(request(s) == status);
     }
 
-#if 0
     void
     testHandshake(endpoint_type ep)
     {
-        expect(request(
-            "GET / HTTP/1.0\r\n"
-            ) != 400);
+        ep_ = ep;
+
+        check(40, "GET / HTTP/1.0\r\n");
     }
-#endif
 
     void
     syncEchoClient(endpoint_type ep)
@@ -505,14 +505,14 @@ public:
         {
             testcase("Echo Server");
             WSEchoServer s(ep, *this);
-            //testHandshake(ep);
+            testHandshake(ep);
             syncEchoClient(ep);
         }
 
         {
             testcase("Async Echo Server");
             WSAsyncEchoPeer s(true, ep, *this);
-            //testHandshake(ep);
+            testHandshake(ep);
             syncEchoClient(ep);
         }
     }

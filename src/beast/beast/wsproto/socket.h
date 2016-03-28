@@ -29,13 +29,69 @@
 namespace beast {
 namespace wsproto {
 
-/// Keep-alive option.
-/**
-    Determines if the connection is closed after a failed
-    upgrade request. 
+/** HTTP decorator option.
 
-    The default setting is to close connections after a failed
-    upgrade request.
+    The decorator transforms the HTTP requests and responses used
+    when requesting or responding to the WebSocket Upgrade. This may
+    be used to set or change header fields. For example to set the
+    Server or User-Agent fields. The default setting applies no
+    transformation to the HTTP message.
+
+    For synchronous operations, the implementation will call the
+    decorator before the function call to perform the operation
+    returns.
+
+    For asynchronous operations, the implementation guarantees that
+    calls to the decorator will be made from the same implicit or
+    explicit strand used to call the asynchronous initiation
+    function.
+
+    Usage:
+    @code
+    void f(beast::http::message&);
+    ws.set_option(decorator(f));
+    @endcode
+
+    Objects of this type are passed to stream::set_option.
+*/
+template<class... Args>
+inline
+auto
+decorator(Args&&... args)
+{
+    return detail::decorator_type{
+        std::forward<Args>(args)...};
+}
+
+/** Outgoing message fragment size option.
+
+    Sets the maximum size of fragments generated when sending
+    messages on a WebSocket socket.
+
+    The default setting is to not automatically fragment frames.
+
+    Objects of this type are passed to stream::set_option.
+*/
+struct frag_size
+{
+    std::size_t value;
+
+    frag_size(std::size_t n)
+        : value(n)
+    {
+    }
+};
+
+/** Keep-alive option.
+
+    Determines if the connection is closed after a failed upgrade
+    request. The default setting is to close connections after a
+    failed upgrade request.
+
+    This setting only affects the behavior of HTTP requests that
+    implicitly or explicitly ask for a keepalive. For HTTP requests
+    that indicate the connection should be closed, the connection is
+    closed as per rfc2616.
 
     Objects of this type are passed to stream::set_option.
 */
@@ -49,25 +105,20 @@ struct keep_alive
     }
 };
 
-/// Message fragment size option.
-/**
-    Sets the maximum size of fragments generated when sending
-    messages on a WebSocket socket.
+/** Read buffer size option.
 
-    The default setting is to not automatically fragment frames.
+    Sets the number of bytes allocated to the socket's read buffer.
+    If this is zero, then reads are not buffered. Setting this
+    higher can improve performance when many small frames are
+    received.
 
-    Objects of this type are passed to stream::set_option.
+    The default is no buffering.
 */
-struct frag_size
+struct read_buffer
 {
     std::size_t value;
 
-    /// Set the fragment size.
-    /**
-        @param n The maximum number of bytes per fragment. If
-        this is zero, then messages are not fragmented.
-    */
-    frag_size(std::size_t n)
+    read_buffer(std::size_t n)
         : value(n)
     {
     }
@@ -75,9 +126,14 @@ struct frag_size
 
 //--------------------------------------------------------------------
 
+/** WebSocket message metadata.
+*/
 struct msg_info
 {
+    /// Indicates the type of message (binary or text).
     opcode::value op;
+
+    /// `true` if all octets for the current message are received.
     bool fin;
 };
 
@@ -135,23 +191,19 @@ public:
         typename protocol_type::resolver;
 
 private:
-#if 0
-    Stream next_layer_;
-    next_layer_type& stream_;
-#else
     Stream next_layer_;
     asio::buffered_readstream<
         next_layer_type&, beast::asio::streambuf> stream_;
-#endif
+
 public:
     socket(socket&&) = default;
     socket(socket const&) = delete;
     socket& operator=(socket&&) = delete;
     socket& operator=(socket const&) = delete;
 
-    /// Construct a socket.
-    /**
-        This constructor creates a socket and initialises the
+    /** Construct a websocket.
+
+        This constructor creates a websocket and initialises the
         underlying stream object.
 
         @throws Any exceptions thrown by the Stream constructor.
@@ -164,11 +216,12 @@ public:
     explicit
     socket(Args&&... args);
 
-    /// Destructor.
+    /** Destructor.
+    */
     ~socket() = default;
 
-    /// Get the io_service associated with the object.
-    /**
+    /** Get the io_service associated with the scket.
+
         This function may be used to obtain the io_service object
         that the socket uses to dispatch handlers for asynchronous
         operations.
@@ -183,8 +236,8 @@ public:
         return next_layer_.lowest_layer().get_io_service();
     }
 
-    /// Get a reference to the next layer.
-    /**
+    /** Get a reference to the next layer.
+
         This function returns a reference to the next layer
         in a stack of stream layers.
 
@@ -197,8 +250,8 @@ public:
         return next_layer_;
     }
 
-    /// Get a reference to the next layer.
-    /**
+    /** Get a reference to the next layer.
+
         This function returns a reference to the next layer in a
         stack of stream layers.
 
@@ -225,8 +278,8 @@ public:
         return next_layer_.lowest_layer();
     }
 
-    /// Get a reference to the lowest layer.
-    /**
+    /** Get a reference to the lowest layer.
+
         This function returns a reference to the lowest layer
         in a stack of stream layers.
 
@@ -239,8 +292,8 @@ public:
         return next_layer_.lowest_layer();
     }
 
-    /// Set options on the socket.
-    /**
+    /** Set options on the socket.
+
         The application must ensure that calls to set options
         are performed within the same implicit or explicit strand.
 
@@ -255,9 +308,9 @@ public:
     }
 
     void
-    set_option(keep_alive const& o)
+    set_option(detail::decorator_type o)
     {
-        keep_alive_ = o.value;
+        decorate_ = std::move(o);
     }
 
     void
@@ -266,15 +319,17 @@ public:
         wr_frag_ = o.value;
     }
 
-    /// Set the HTTP message decorator on this object.
-    /*
-        The decorator is used to add custom fields to outbound
-        HTTP messages. This could be used, for example, to set
-        the Server or other fields.
-    */
-    template<class Decorator>
     void
-    decorate(Decorator&& d);
+    set_option(keep_alive const& o)
+    {
+        keep_alive_ = o.value;
+    }
+
+    void
+    set_option(read_buffer const& o)
+    {
+        stream_.reserve(o.value);
+    }
 
     /// Read and respond to a WebSocket HTTP Upgrade request.
     /**
@@ -288,10 +343,7 @@ public:
         TBD
     */
     void
-    accept(error_code& ec)
-    {
-        accept(boost::asio::null_buffers{}, ec);
-    }
+    accept(error_code& ec);
 
     /// Read and respond to a WebSocket HTTP Upgrade request.
     /**
@@ -367,12 +419,12 @@ public:
     */
     template<class AcceptHandler>
     void
-    async_accept(AcceptHandler&& handler)
-    {
-        async_accept(boost::asio::null_buffers{},
-            std::forward<AcceptHandler>(handler));
-    }
+    async_accept(AcceptHandler&& handler);
 
+    /// Asynchronously read and respond to a WebSocket HTTP Upgrade request.
+    /**
+        TODO
+    */
     template<class ConstBufferSequence, class AcceptHandler>
     void
     async_accept(ConstBufferSequence const& buffers,

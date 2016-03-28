@@ -185,32 +185,18 @@ buffered_readstream(Args&&... args)
 }
 
 template<class Stream, class Streambuf>
-template<class... Args>
-buffered_readstream<Stream, Streambuf>::
-buffered_readstream(buffered_size size, Args&&... args)
-    : size_(size.n)
-    , next_layer_(std::forward<Args>(args)...)
-{
-    static_assert(is_Stream<next_layer_type>::value,
-        "Stream requirements not met");
-    static_assert(is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
-}
-
-template<class Stream, class Streambuf>
 template<class ConstBufferSequence, class WriteHandler>
 void
 buffered_readstream<Stream, Streambuf>::
 async_write_some(ConstBufferSequence const& buffers,
     WriteHandler&& handler)
 {
-    static_assert(
-        is_ConstBufferSequence<ConstBufferSequence>::value,
+    static_assert(is_ConstBufferSequence<
+        ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
-    static_assert(
-        is_Handler<WriteHandler,
-            void(boost::system::error_code, std::size_t)>::value,
-                "WriteHandler requirements not met");
+    static_assert(is_Handler<WriteHandler,
+        void(error_code, std::size_t)>::value,
+            "WriteHandler requirements not met");
     using namespace boost::asio;
     next_layer_.async_write_some(buffers,
         std::forward<WriteHandler>(handler));
@@ -223,6 +209,9 @@ buffered_readstream<Stream, Streambuf>::
 read_some(
     MutableBufferSequence const& buffers)
 {
+    static_assert(is_MutableBufferSequence<
+        MutableBufferSequence>::value,
+            "MutableBufferSequence requirements not met");
     error_code ec;
     auto n = read_some(buffers, ec);
     if(ec)
@@ -237,10 +226,10 @@ buffered_readstream<Stream, Streambuf>::
 read_some(MutableBufferSequence const& buffers,
     error_code& ec)
 {
-    using namespace boost::asio;
-    static_assert(
-        is_MutableBufferSequence<MutableBufferSequence>::value,
+    static_assert(is_MutableBufferSequence<
+        MutableBufferSequence>::value,
             "MutableBufferSequence requirements not met");
+    using namespace boost::asio;
     if(buffer_size(buffers) == 0)
         return 0;
     std::size_t bytes_transferred;
@@ -267,13 +256,12 @@ async_read_some(
     MutableBufferSequence const& buffers,
         ReadHandler&& handler)
 {
-    static_assert(
-        is_MutableBufferSequence<MutableBufferSequence>::value,
+    static_assert(is_MutableBufferSequence<
+        MutableBufferSequence>::value,
             "MutableBufferSequence requirements not met");
-    static_assert(
-        is_Handler<ReadHandler,
-            void(error_code, std::size_t)>::value,
-                "ReadHandler requirements not met");
+    static_assert(is_Handler<ReadHandler,
+        void(error_code, std::size_t)>::value,
+            "ReadHandler requirements not met");
     read_some_op<MutableBufferSequence,
         std::decay_t<ReadHandler>>{
             std::forward<ReadHandler>(handler),

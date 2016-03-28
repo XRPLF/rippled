@@ -140,12 +140,12 @@ BaseWSPeer<Impl>::run()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::run, impl().shared_from_this()));
-    impl().ws_.decorate(
+    impl().ws_.set_option(beast::wsproto::decorator(
         [](auto& m)
         {
             m.headers.append("Server",
                 BuildInfo::getFullVersionString());
-        });
+        }));
     using namespace beast::asio;
     impl().ws_.async_accept_request(req_, strand_.wrap(std::bind(
         &BaseWSPeer::on_write_sb, impl().shared_from_this(),

@@ -151,29 +151,10 @@ template<class Stream>
 template<class... Args>
 socket<Stream>::socket(Args&&... args)
     : next_layer_(std::forward<Args>(args)...)
-#if 0
     , stream_(next_layer_)
-#else
-    // VFALCO TODO Decide if we should buffer
-    , stream_(asio::buffered_size(8*1024), next_layer_)
-#endif
 {
     static_assert(asio::is_Stream<next_layer_type>::value,
         "Stream requirements not met");
-    decorate([](auto const&) { });
-}
-
-template<class Stream>
-template<class Decorator>
-void
-socket<Stream>::decorate(Decorator&& d)
-{
-    static_assert(asio::is_Handler<Decorator,
-        void(beast::http::message&)>::value,
-            "Decorator requirements not met");
-    decorate_ = std::make_unique<
-        detail::decorator<std::decay_t<Decorator>>>(
-            std::forward<Decorator>(d));
 }
 
 template<class Stream>
@@ -186,20 +167,35 @@ socket<Stream>::accept()
 }
 
 template<class Stream>
-template<class Buffers>
 void
-socket<Stream>::accept(Buffers const& bs)
+socket<Stream>::accept(error_code& ec)
 {
+    accept(boost::asio::null_buffers{}, ec);
+}
+
+template<class Stream>
+template<class ConstBufferSequence>
+void
+socket<Stream>::accept(
+    ConstBufferSequence const& buffers)
+{
+    static_assert(beast::asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
+            "ConstBufferSequence requirements not met");
     error_code ec;
-    accept(bs, ec);
+    accept(buffers, ec);
     detail::maybe_throw(ec, "accept");
 }
 
 template<class Stream>
-template<class Buffers>
+template<class ConstBufferSequence>
 void
-socket<Stream>::accept(Buffers const& bs, error_code& ec)
+socket<Stream>::accept(
+    ConstBufferSequence const& bs, error_code& ec)
 {
+    static_assert(beast::asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
+            "ConstBufferSequence requirements not met");
     using namespace boost::asio;
     boost::asio::streambuf sb;
     sb.commit(buffer_copy(
@@ -207,16 +203,9 @@ socket<Stream>::accept(Buffers const& bs, error_code& ec)
     boost::asio::read_until(stream_, sb, "\r\n\r\n", ec);
     if(ec)
         return;
-    std::string body;
+    http::body body;
     http::message m;
-    http::parser p(
-        [&](void const* data, std::size_t len)
-        {
-            auto begin =
-                reinterpret_cast<char const*>(data);
-            auto end = begin + len;
-            body.append(begin, end);
-        }, m, true);
+    http::parser p(m, body, true);
     auto const result = p.write(sb.data());
     if(! p.complete() || result.first)
         ec = error::request_malformed;
@@ -254,13 +243,28 @@ socket<Stream>::accept(
 }
 
 template<class Stream>
-template<class Buffers, class AcceptHandler>
+template<class AcceptHandler>
+void
+socket<Stream>::async_accept(AcceptHandler&& handler)
+{
+    static_assert(beast::asio::is_Handler<
+        AcceptHandler, void(error_code)>::value,
+            "AcceptHandler requirements not met");
+    async_accept(boost::asio::null_buffers{},
+        std::forward<AcceptHandler>(handler));
+}
+
+template<class Stream>
+template<class ConstBufferSequence, class AcceptHandler>
 void
 socket<Stream>::async_accept(
-    Buffers const& bs, AcceptHandler&& h)
+    ConstBufferSequence const& bs, AcceptHandler&& h)
 {
-    static_assert(asio::is_Handler<AcceptHandler,
-        void(error_code)>::value,
+    static_assert(beast::asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
+            "ConstBufferSequence requirements not met");
+    static_assert(beast::asio::is_Handler<
+        AcceptHandler, void(error_code)>::value,
             "AcceptHandler requirements not met");
     accept_op<std::decay_t<AcceptHandler>>{
         std::forward<AcceptHandler>(h), *this, bs};
@@ -272,8 +276,8 @@ void
 socket<Stream>::async_accept_request(
     beast::http::message const& m, AcceptHandler&& h)
 {
-    static_assert(asio::is_Handler<AcceptHandler,
-        void(error_code)>::value,
+    static_assert(beast::asio::is_Handler<
+        AcceptHandler, void(error_code)>::value,
             "AcceptHandler requirements not met");
     accept_op<std::decay_t<AcceptHandler>>{
         std::forward<AcceptHandler>(h), *this, m, nullptr};
@@ -284,7 +288,7 @@ void
 socket<Stream>::handshake(std::string const& host,
     std::string const& resource, error_code& ec)
 {
-    // VFALCO Used for tests, not production quality
+    // VFALCO This could use improvement
     {
         auto m = make_upgrade(host, resource);
         beast::asio::streambuf sb;
@@ -315,9 +319,8 @@ void
 socket<Stream>::async_handshake(std::string const& host,
     std::string const& resource, HandshakeHandler&& handler)
 {
-    using namespace boost::asio;
-    static_assert(asio::is_Handler<HandshakeHandler,
-        void(error_code)>::value,
+    static_assert(beast::asio::is_Handler<
+        HandshakeHandler, void(error_code)>::value,
             "HandshakeHandler requirements not met");
     handshake_op<std::decay_t<HandshakeHandler>>{
         std::forward<HandshakeHandler>(handler),
@@ -329,6 +332,7 @@ void
 socket<Stream>::close(std::uint16_t code,
     std::string const& description, error_code& ec)
 {
+    // VFALCO TODO
 }
 
 template<class Stream>
@@ -530,9 +534,8 @@ socket<Stream>::async_read_some(msg_info& mi,
     Streambuf& streambuf, ReadHandler&& handler)
 {
     using namespace boost::asio;
-    static_assert(
-        asio::is_Streambuf<Streambuf>::value,
-            "Streambuf requirements not met");
+    static_assert(asio::is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
     static_assert(asio::is_Handler<ReadHandler,
         void(error_code)>::value,
             "ReadHandler requirements not met");
@@ -542,13 +545,13 @@ socket<Stream>::async_read_some(msg_info& mi,
 }
 
 template<class Stream>
-template<class Buffers>
+template<class ConstBufferSequence>
 void
 socket<Stream>::write(opcode::value op, bool fin,
-    Buffers const& bs, error_code& ec)
+    ConstBufferSequence const& bs, error_code& ec)
 {
-    static_assert(
-        asio::is_ConstBufferSequence<Buffers>::value,
+    static_assert(asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
     using namespace boost::asio;
     if(wr_cont_ && op != opcode::cont)
@@ -590,24 +593,24 @@ socket<Stream>::write(opcode::value op, bool fin,
 }
 
 template<class Stream>
-template<class Buffers, class WriteHandler>
+template<class ConstBufferSequence, class WriteHandler>
 void
 socket<Stream>::async_write(opcode::value op, bool fin,
-    Buffers const& bs, WriteHandler&& handler)
+    ConstBufferSequence const& bs, WriteHandler&& handler)
 {
-    using namespace boost::asio;
     static_assert(asio::is_Handler<WriteHandler,
         void(error_code)>::value,
             "WriteHandler requirements not met");
-    static_assert(
-        asio::is_ConstBufferSequence<Buffers>::value,
+    static_assert(asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
+    using namespace boost::asio;
     assert((! wr_cont_ && op != opcode::cont) ||
         (wr_cont_ && op == opcode::cont));
     wr_cont_ = ! fin;
-    write_op<Buffers, std::decay_t<WriteHandler>>{
-        std::forward<WriteHandler>(handler),
-            *this, op, fin, bs};
+    write_op<ConstBufferSequence, std::decay_t<
+        WriteHandler>>{std::forward<WriteHandler>(
+            handler), *this, op, fin, bs};
 }
 
 //------------------------------------------------------------------------------
@@ -632,7 +635,7 @@ socket<Stream>::write_error(Streambuf& sb, error_code const& ec)
     m.headers.append("Content-Type", "text/html");
     m.headers.append("Content-Length",
         std::to_string(body.size()));
-    (*decorate_)(m);
+    decorate_(m);
     beast::http::write(sb, m);
 }
 
@@ -654,7 +657,7 @@ socket<Stream>::write_response(Streambuf& sb,
     m.headers.append("Sec-WebSocket-Key", key);
     m.headers.append("Sec-WebSocket-Accept",
         detail::make_sec_ws_accept(key));
-    (*decorate_)(m);
+    decorate_(m);
     beast::http::write(sb, m);
 }
 
@@ -674,7 +677,7 @@ socket<Stream>::make_upgrade(std::string const& host,
     m.headers.append("Sec-WebSocket-Key",
         detail::make_sec_ws_key(maskgen_));
     m.headers.append("Sec-WebSocket-Version", "13");
-    (*decorate_)(m);
+    decorate_(m);
     return m;
 }
 

@@ -30,19 +30,7 @@
 namespace beast {
 namespace asio {
 
-struct buffered_size
-{
-    std::size_t n;
-
-    explicit
-    buffered_size(std::size_t n_)
-        : n(n_)
-    {
-    }
-};
-
-/// A read/write stream with a buffer in between 
-// the read side.
+/** A read/write stream with a buffer in between the read side. */
 template<class Stream,
     class Streambuf = beast::asio::streambuf>
 class buffered_readstream
@@ -53,7 +41,7 @@ class buffered_readstream
     class read_some_op;
 
     Streambuf sb_;
-    std::size_t size_ = 1024;
+    std::size_t size_ = 0;
     Stream next_layer_;
 
 public:
@@ -68,11 +56,6 @@ public:
     template<class... Args>
     explicit
     buffered_readstream(Args&&... args);
-
-    template<class... Args>
-    explicit
-    buffered_readstream(
-        buffered_size size, Args&&... args);
 
     /// Get a reference to the next layer.
     next_layer_type&
@@ -100,6 +83,24 @@ public:
     get_io_service()
     {
         return next_layer_.get_io_service();
+    }
+
+    /** Set the buffer size.
+
+        This changes the maximum size of the internal buffer used
+        to hold read data. No bytes are discarded by this call. If
+        the buffer size is set to zero, no more data will be buffered.
+
+        Thread safety:
+            The caller is responsible for making sure the call is
+            made from the same implicit or explicit strand.
+
+        @param size The number of bytes in the read buffer.
+    */
+    void
+    reserve(std::size_t size)
+    {
+        size_ = size;
     }
 
     /// Write the given data to the stream. Returns the number of bytes written.
