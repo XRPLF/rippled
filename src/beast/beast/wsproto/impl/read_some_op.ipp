@@ -25,6 +25,7 @@
 #include <beast/asio/prepare_buffers.h>
 #include <beast/asio/static_streambuf.h>
 #include <cassert>
+#include <memory>
 
 namespace beast {
 namespace wsproto {

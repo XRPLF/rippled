@@ -21,6 +21,7 @@
 #define BEAST_WSPROTO_CLOSE_OP_H_INCLUDED
 
 #include <beast/asio/handler_alloc.h>
+#include <memory>
 
 namespace beast {
 namespace wsproto {

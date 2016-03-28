@@ -26,6 +26,7 @@
 #include <beast/asio/static_streambuf.h>
 #include <beast/wsproto/detail/frame.h>
 #include <cassert>
+#include <memory>
 
 namespace beast {
 namespace wsproto {

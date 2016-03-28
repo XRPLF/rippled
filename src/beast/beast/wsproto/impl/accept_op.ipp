@@ -24,6 +24,7 @@
 #include <beast/http/parser.h>
 #include <boost/optional.hpp>
 #include <cassert>
+#include <memory>
 
 namespace beast {
 namespace wsproto {

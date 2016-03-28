@@ -24,7 +24,6 @@
 #include <beast/asio/async_types.h>
 #include <beast/asio/buffered_readstream.h>
 #include <boost/asio.hpp>
-#include <memory>
 
 namespace beast {
 namespace wsproto {

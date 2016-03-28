@@ -30,10 +30,12 @@
 #include <beast/wsproto/impl/write_op.ipp>
 #include <beast/asio/append_buffers.h>
 #include <beast/asio/buffers_adapter.h>
+#include <beast/asio/read_until.h>
 #include <beast/asio/static_streambuf.h>
 #include <beast/asio/streambuf.h>
 #include <beast/asio/type_check.h>
 #include <boost/endian/buffers.hpp>
+#include <memory>
 #include <utility>
 
 namespace beast {
@@ -191,21 +193,22 @@ template<class Stream>
 template<class ConstBufferSequence>
 void
 socket<Stream>::accept(
-    ConstBufferSequence const& bs, error_code& ec)
+    ConstBufferSequence const& buffers, error_code& ec)
 {
     static_assert(beast::asio::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
-    using namespace boost::asio;
-    boost::asio::streambuf sb;
-    sb.commit(buffer_copy(
-        sb.prepare(buffer_size(bs)), bs));
-    boost::asio::read_until(stream_, sb, "\r\n\r\n", ec);
+    beast::asio::streambuf sb;
+    sb.commit(boost::asio::buffer_copy(
+        sb.prepare(boost::asio::buffer_size(buffers)), buffers));
+    boost::asio::read_until(
+        stream_, sb, "\r\n\r\n", ec);
+    // VFALCO What if ec == eof?
     if(ec)
         return;
-    http::body body;
-    http::message m;
-    http::parser p(m, body, true);
+    beast::http::body body;
+    beast::http::message m;
+    beast::http::parser p(m, body, true);
     auto const result = p.write(sb.data());
     if(! p.complete() || result.first)
         ec = error::request_malformed;
@@ -298,7 +301,7 @@ socket<Stream>::handshake(std::string const& host,
             return;
     }
     {
-        boost::asio::streambuf sb;
+        beast::asio::streambuf sb;
         boost::asio::read_until(stream_, sb, "\r\n\r\n", ec);
         if(ec)
             return;

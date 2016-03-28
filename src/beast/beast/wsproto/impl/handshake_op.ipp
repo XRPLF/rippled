@@ -24,6 +24,7 @@
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
 #include <cassert>
+#include <memory>
 
 namespace beast {
 namespace wsproto {
