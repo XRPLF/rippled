@@ -61,6 +61,16 @@ class TxQ_test : public beast::unit_test::suite
         expect(metrics.expFeeLevel == expectedCurFeeLevel, "expFeeLevel");
     }
 
+    void
+    fillQueue(
+        jtx::Env& env,
+        jtx::Account const& account)
+    {
+        auto metrics = env.app().getTxQ().getMetrics(*env.current());
+        for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
+            env(noop(account));
+    }
+
     static
     std::unique_ptr<Config>
     makeConfig(std::map<std::string, std::string> extra = {})
@@ -460,8 +470,7 @@ public:
         env.close();
         checkMetrics(env, 0, 8, 1, 4, 256, 500);
 
-        for (int i = 0; i < 4; ++i)
-            env(noop(bob));
+        fillQueue(env, bob);
         checkMetrics(env, 0, 8, 5, 4, 256, 500);
 
         auto feeBob = 30;
@@ -1080,8 +1089,7 @@ public:
         checkMetrics(env, 0, 6, 0, 3, 256, lastMedian);
 
         // Fill up the ledger
-        for (int i = 0; i < 4; ++i)
-            env(noop(alice));
+        fillQueue(env, alice);
         checkMetrics(env, 0, 6, 4, 3, 256, lastMedian);
 
         // Queue up a couple of transactions, plus one
@@ -1194,7 +1202,7 @@ public:
         // Other accounts are not affected
         env(noop(bob), queued);
 
-        // Can replace the tranactions before the blocker
+        // Can replace the txs before the blocker
         env(noop(alice), fee(14), queued);
 
         // Can replace the blocker itself
@@ -1229,9 +1237,10 @@ public:
         checkMetrics(env, 0, boost::none, 4, 3, 256, lastMedian);
 
         auto USD = gw["USD"];
-        auto BUX = charlie["BUX"];
+        auto BUX = gw["BUX"];
 
         //////////////////////////////////////////
+        // Offer with high XRP out blocks later txs
         auto aliceSeq = env.seq(alice);
         auto aliceBal = env.balance(alice);
 
@@ -1246,6 +1255,7 @@ public:
         // So even a noop will look like alice
         // doesn't have the balance to pay the fee
         env(noop(alice), seq(aliceSeq + 1), ter(terINSUF_FEE_B));
+        checkMetrics(env, 1, boost::none, 4, 3, 256, lastMedian);
 
         env.close();
         checkMetrics(env, 0, 8, 2, 4, 256, lastMedian);
@@ -1257,11 +1267,34 @@ public:
             owners(alice, 1));
 
         //////////////////////////////////////////
-        for (auto i = 2; i < 5; ++i)
-        {
-            env(noop(alice));
-        }
+        // Offer with low XRP out allows later txs
+        fillQueue(env, alice);
         checkMetrics(env, 0, 8, 5, 4, 256, lastMedian);
+        aliceSeq = env.seq(alice);
+        aliceBal = env.balance(alice);
+
+        // If this offer crosses, just a bit
+        // of alice's XRP will be taken.
+        env(offer(alice, BUX(50), XRP(500)),
+            queued);
+
+        // And later transactions are just fine
+        env(noop(alice), seq(aliceSeq + 1), queued);
+        checkMetrics(env, 2, 8, 5, 4, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);
+
+        // But once we close the ledger, we find alice
+        // has plenty of XRP, because the offer didn't
+        // cross (of course).
+        env.require(balance(alice, aliceBal - drops(20)),
+            owners(alice, 2));
+
+        //////////////////////////////////////////
+        // Large XRP payment blocks later txs
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 10, 6, 5, 256, lastMedian);
 
         aliceSeq = env.seq(alice);
         aliceBal = env.balance(alice);
@@ -1275,36 +1308,59 @@ public:
         // So even a noop will look like alice
         // doesn't have the balance to pay the fee
         env(noop(alice), seq(aliceSeq + 1), ter(terINSUF_FEE_B));
+        checkMetrics(env, 1, 10, 6, 5, 256, lastMedian);
 
         env.close();
-        checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);
+        checkMetrics(env, 0, 12, 2, 6, 256, lastMedian);
 
         // But once we close the ledger, we find alice
         // still has most of her balance, because the
         // payment was unfunded!
         env.require(balance(alice, aliceBal - drops(20)),
-            owners(alice, 1));
+            owners(alice, 2));
 
         //////////////////////////////////////////
+        // Small XRP payment allows later txs
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 12, 7, 6, 256, lastMedian);
+
+        aliceSeq = env.seq(alice);
+        aliceBal = env.balance(alice);
+
+        // If this payment succeeds, alice will
+        // send just a bit of balance to charlie
+        env(pay(alice, charlie, XRP(500)),
+            queued);
+
+        // And later transactions are just fine
+        env(noop(alice), seq(aliceSeq + 1), queued);
+        checkMetrics(env, 2, 12, 7, 6, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 14, 2, 7, 256, lastMedian);
+
+        // The payment succeeds
+        env.require(balance(alice, aliceBal - XRP(500) - drops(20)),
+            owners(alice, 2));
+
+        //////////////////////////////////////////
+        // Large IOU payment allows later txs
         auto const amount = USD(500000);
         env(trust(alice, USD(50000000)));
         env(trust(charlie, USD(50000000)));
-        checkMetrics(env, 0, 10, 4, 5, 256, lastMedian);
+        checkMetrics(env, 0, 14, 4, 7, 256, lastMedian);
         // Close so we don't have to deal
         // with tx ordering in consensus.
         env.close();
 
         env(pay(gw, alice, amount));
-        checkMetrics(env, 0, 10, 1, 5, 256, lastMedian);
+        checkMetrics(env, 0, 14, 1, 7, 256, lastMedian);
         // Close so we don't have to deal
         // with tx ordering in consensus.
         env.close();
 
-        for (auto i = 0; i < 6; ++i)
-        {
-            env(noop(alice));
-        }
-        checkMetrics(env, 0, 10, 6, 5, 256, lastMedian);
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 14, 8, 7, 256, lastMedian);
 
         aliceSeq = env.seq(alice);
         aliceBal = env.balance(alice);
@@ -1318,19 +1374,92 @@ public:
         // But that's fine, because it doesn't affect
         // alice's XRP balance (other than the fee, of course).
         env(noop(alice), seq(aliceSeq + 1), queued);
+        checkMetrics(env, 2, 14, 8, 7, 256, lastMedian);
 
         env.close();
-        checkMetrics(env, 0, 12, 2, 6, 256, lastMedian);
+        checkMetrics(env, 0, 16, 2, 8, 256, lastMedian);
 
         // So once we close the ledger, alice has her
-        // XRP balance, but not her USD balance
+        // XRP balance, but her USD balance went to charlie.
         env.require(balance(alice, aliceBal - drops(20)),
             balance(alice, USD(0)),
             balance(charlie, aliceUSD),
-            owners(alice, 2));
+            owners(alice, 3),
+            owners(charlie, 1));
 
         //////////////////////////////////////////
+        // Large XRP to IOU payment blocks later txs.
 
+        env(offer(gw, XRP(500000), USD(50000)));
+        // Close so we don't have to deal
+        // with tx ordering in consensus.
+        env.close();
+
+        fillQueue(env, charlie);
+        checkMetrics(env, 0, 16, 9, 8, 256, lastMedian);
+
+        aliceSeq = env.seq(alice);
+        aliceBal = env.balance(alice);
+        aliceUSD = env.balance(alice, USD);
+        auto charlieUSD = env.balance(charlie, USD);
+
+        // If this payment succeeds, and uses the
+        // entire sendMax, alice will send her
+        // entire XRP balance to charlie in the
+        // form of USD.
+        expect(XRP(60000) > aliceBal);
+        env(pay(alice, charlie, USD(1000)),
+            sendmax(XRP(60000)), queued);
+
+        // So even a noop will look like alice
+        // doesn't have the balance to pay the fee
+        env(noop(alice), seq(aliceSeq + 1), ter(terINSUF_FEE_B));
+        checkMetrics(env, 1, 16, 9, 8, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 18, 2, 9, 256, lastMedian);
+
+        // So once we close the ledger, alice sent a payment
+        // to charlie using only a portion of her XRP balance
+        env.require(balance(alice, aliceBal - XRP(10000) - drops(20)),
+            balance(alice, USD(0)),
+            balance(charlie, charlieUSD + USD(1000)),
+            owners(alice, 3),
+            owners(charlie, 1));
+
+        //////////////////////////////////////////
+        // Small XRP to IOU payment allows later txs.
+
+        fillQueue(env, charlie);
+        checkMetrics(env, 0, 18, 10, 9, 256, lastMedian);
+
+        aliceSeq = env.seq(alice);
+        aliceBal = env.balance(alice);
+        aliceUSD = env.balance(alice, USD);
+        charlieUSD = env.balance(charlie, USD);
+
+        // If this payment succeeds, and uses the
+        // entire sendMax, alice will only send
+        // a portion of her XRP balance to charlie
+        // in the form of USD.
+        expect(aliceBal > XRP(6001));
+        env(pay(alice, charlie, USD(500)),
+            sendmax(XRP(6000)), queued);
+
+        // And later transactions are just fine
+        env(noop(alice), seq(aliceSeq + 1), queued);
+        checkMetrics(env, 2, 18, 10, 9, 256, lastMedian);
+
+        env.close();
+        checkMetrics(env, 0, 20, 2, 10, 256, lastMedian);
+
+        // So once we close the ledger, alice sent a payment
+        // to charlie using only a portion of her XRP balance
+        env.require(balance(alice, aliceBal - XRP(5000) - drops(20)),
+            balance(alice, USD(0)),
+            balance(charlie, charlieUSD + USD(500)),
+            owners(alice, 3),
+            owners(charlie, 1));
 
     }
 
