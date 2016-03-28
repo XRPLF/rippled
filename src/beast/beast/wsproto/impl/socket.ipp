@@ -30,6 +30,7 @@
 #include <beast/wsproto/impl/write_op.ipp>
 #include <beast/asio/append_buffers.h>
 #include <beast/asio/buffers_adapter.h>
+#include <beast/asio/buffers_readstream.h>
 #include <beast/asio/read_until.h>
 #include <beast/asio/static_streambuf.h>
 #include <beast/asio/streambuf.h>

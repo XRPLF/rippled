@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERED_READSTREAM_IPP_INLUDED
-#define BEAST_ASIO_BUFFERED_READSTREAM_IPP_INLUDED
+#ifndef BEAST_ASIO_STREAMBUF_READSTREAM_IPP_INLUDED
+#define BEAST_ASIO_STREAMBUF_READSTREAM_IPP_INLUDED
 
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/handler_alloc.h>
@@ -30,21 +30,21 @@ namespace asio {
 
 template<class Stream, class Streambuf>
 template<class Buffers, class Handler>
-class buffered_readstream<Stream, Streambuf>::read_some_op
+class streambuf_readstream<Stream, Streambuf>::read_some_op
 {
     using alloc_type =
         handler_alloc<char, Handler>;
 
     struct data
     {
-        buffered_readstream& brs;
+        streambuf_readstream& brs;
         Buffers bs;
         Handler h;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
-            buffered_readstream& brs_,
+            streambuf_readstream& brs_,
                 Buffers const& bs_)
             : brs(brs_)
             , bs(bs_)
@@ -107,7 +107,7 @@ public:
 template<class Stream, class Streambuf>
 template<class Buffers, class Handler>
 void
-buffered_readstream<Stream, Streambuf>::
+streambuf_readstream<Stream, Streambuf>::
 read_some_op<Buffers, Handler>::operator()(
     error_code ec, std::size_t bytes_transferred)
 {
@@ -175,8 +175,8 @@ read_some_op<Buffers, Handler>::operator()(
 
 template<class Stream, class Streambuf>
 template<class... Args>
-buffered_readstream<Stream, Streambuf>::
-buffered_readstream(Args&&... args)
+streambuf_readstream<Stream, Streambuf>::
+streambuf_readstream(Args&&... args)
     : next_layer_(std::forward<Args>(args)...)
 {
     static_assert(is_Stream<next_layer_type>::value,
@@ -188,7 +188,7 @@ buffered_readstream(Args&&... args)
 template<class Stream, class Streambuf>
 template<class ConstBufferSequence, class WriteHandler>
 void
-buffered_readstream<Stream, Streambuf>::
+streambuf_readstream<Stream, Streambuf>::
 async_write_some(ConstBufferSequence const& buffers,
     WriteHandler&& handler)
 {
@@ -206,7 +206,7 @@ async_write_some(ConstBufferSequence const& buffers,
 template<class Stream, class Streambuf>
 template<class MutableBufferSequence>
 std::size_t
-buffered_readstream<Stream, Streambuf>::
+streambuf_readstream<Stream, Streambuf>::
 read_some(
     MutableBufferSequence const& buffers)
 {
@@ -223,7 +223,7 @@ read_some(
 template<class Stream, class Streambuf>
 template<class MutableBufferSequence>
 std::size_t
-buffered_readstream<Stream, Streambuf>::
+streambuf_readstream<Stream, Streambuf>::
 read_some(MutableBufferSequence const& buffers,
     error_code& ec)
 {
@@ -251,7 +251,7 @@ read_some(MutableBufferSequence const& buffers,
 template<class Stream, class Streambuf>
 template<class MutableBufferSequence, class ReadHandler>
 void
-buffered_readstream<Stream, Streambuf>::
+streambuf_readstream<Stream, Streambuf>::
 async_read_some(
     MutableBufferSequence const& buffers,
         ReadHandler&& handler)

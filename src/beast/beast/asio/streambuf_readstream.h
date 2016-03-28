@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BUFFERED_READSTREAM_H_INLUDED
-#define BEAST_ASIO_BUFFERED_READSTREAM_H_INLUDED
+#ifndef BEAST_ASIO_STREAMBUF_READSTREAM_H_INLUDED
+#define BEAST_ASIO_STREAMBUF_READSTREAM_H_INLUDED
 
 #include <beast/asio/streambuf.h>
 #include <boost/asio/buffer.hpp>
@@ -30,10 +30,10 @@
 namespace beast {
 namespace asio {
 
-/** A read/write stream with a buffer in between the read side. */
+/** A read/write stream with a Streambuf on the read side. */
 template<class Stream,
     class Streambuf = beast::asio::streambuf>
-class buffered_readstream
+class streambuf_readstream
 {
     using error_code = boost::system::error_code;
 
@@ -58,7 +58,7 @@ public:
 
     template<class... Args>
     explicit
-    buffered_readstream(Args&&... args);
+    streambuf_readstream(Args&&... args);
 
     /// Get a reference to the next layer.
     next_layer_type&
@@ -185,6 +185,6 @@ public:
 } // asio
 } // beast
 
-#include <beast/asio/impl/buffered_readstream.ipp>
+#include <beast/asio/impl/streambuf_readstream.ipp>
 
 #endif

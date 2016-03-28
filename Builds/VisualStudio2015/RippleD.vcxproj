@@ -245,9 +245,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\buffered_readstream.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_readstream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\consuming_buffers.h">
     </ClInclude>
@@ -255,7 +255,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\handler_alloc.h">
     </ClInclude>
-    <None Include="..\..\src\beast\beast\asio\impl\buffered_readstream.ipp">
+    <None Include="..\..\src\beast\beast\asio\impl\buffers_readstream.ipp">
     </None>
     <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -263,6 +263,8 @@
     <ClCompile Include="..\..\src\beast\beast\asio\impl\IPAddressConversion.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
+    </None>
     <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\IPAddressConversion.h">
@@ -278,6 +280,8 @@
     <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

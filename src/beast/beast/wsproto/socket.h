@@ -22,7 +22,7 @@
 
 #include <beast/wsproto/detail/socket_base.h>
 #include <beast/asio/async_types.h>
-#include <beast/asio/buffered_readstream.h>
+#include <beast/asio/streambuf_readstream.h>
 #include <boost/asio.hpp>
 
 namespace beast {
@@ -191,7 +191,7 @@ public:
 
 private:
     Stream next_layer_;
-    asio::buffered_readstream<
+    asio::streambuf_readstream<
         next_layer_type&, beast::asio::streambuf> stream_;
 
 public:
