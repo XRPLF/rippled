@@ -1460,7 +1460,74 @@ public:
             balance(charlie, charlieUSD + USD(500)),
             owners(alice, 3),
             owners(charlie, 1));
+    }
 
+    void testConsequences()
+    {
+        using namespace jtx;
+        using namespace std::chrono;
+        Env env(*this, features(featureTickets));
+        auto const alice = Account("alice");
+        env.memoize(alice);
+        env.memoize("bob");
+        env.memoize("carol");
+        {
+            Json::Value cancelOffer;
+            cancelOffer[jss::Account] = alice.human();
+            cancelOffer[jss::OfferSequence] = 3;
+            cancelOffer[jss::TransactionType] = "OfferCancel";
+            auto const jtx = env.jt(cancelOffer,
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(0));
+        }
+
+        {
+            auto USD = alice["USD"];
+
+            auto const jtx = env.jt(trust("carol", USD(50000000)),
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(0));
+        }
+
+        {
+            auto const jtx = env.jt(ticket::create(alice, "bob", 60),
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(0));
+        }
+
+        {
+            Json::Value cancelTicket;
+            cancelTicket[jss::Account] = alice.human();
+            cancelTicket["TicketID"] = to_string(uint256());
+            cancelTicket[jss::TransactionType] = "TicketCancel";
+            auto const jtx = env.jt(cancelTicket,
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(0));
+        }
     }
 
     void run()
@@ -1479,6 +1546,7 @@ public:
         testUnexpectedBalanceChange();
         testBlockers();
         testInFlightBalance();
+        testConsequences();
     }
 };
 

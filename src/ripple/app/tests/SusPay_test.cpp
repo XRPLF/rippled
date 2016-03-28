@@ -363,17 +363,47 @@ struct SusPay_test : public beast::unit_test::suite
         {
             return env.now() + d;
         };
-        env.fund(XRP(5000), "alice", "bob", "carol");
+        env.memoize("alice");
+        env.memoize("bob");
+        env.memoize("carol");
         auto const c = cond("receipt");
-        auto const jtx = env.jt(
-            condpay("alice", "carol", XRP(1000), c.first, T(1s)));
-        auto const pf = preflight(env.app(), env.current()->rules(),
-            *jtx.stx, tapNONE, env.journal);
-        expect(pf.ter == tesSUCCESS);
-        auto const conseq = calculateConsequences(pf);
-        expect(conseq.category == TxConsequences::normal);
-        expect(conseq.fee == drops(10));
-        expect(conseq.potentialSpend == XRP(1000));
+        {
+            auto const jtx = env.jt(
+                condpay("alice", "carol", XRP(1000), c.first, T(1s)),
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(1000));
+        }
+
+        {
+            auto const jtx = env.jt(cancel("bob", "alice", 3),
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(0));
+        }
+
+        {
+            auto const jtx = env.jt(
+                finish("bob", "alice", 3, c.first, c.second),
+                seq(1), fee(10));
+            auto const pf = preflight(env.app(), env.current()->rules(),
+                *jtx.stx, tapNONE, env.journal);
+            expect(pf.ter == tesSUCCESS);
+            auto const conseq = calculateConsequences(pf);
+            expect(conseq.category == TxConsequences::normal);
+            expect(conseq.fee == drops(10));
+            expect(conseq.potentialSpend == XRP(0));
+        }
     }
 
     void run() override
