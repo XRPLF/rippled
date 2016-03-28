@@ -21,6 +21,9 @@
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
 #include <beast/unit_test/suite.h>
+#include <beast/wsproto/detail/utf8_checker.h>
+
+#include <beast/asio/handler_alloc.h>
 
 namespace ripple {
 namespace test {
@@ -28,8 +31,19 @@ namespace test {
 class WSClient_test : public beast::unit_test::suite
 {
 public:
+    void
+    test_utf8checker()
+    {
+        beast::wsproto::detail::utf8_checker utf8c;
+
+        std::uint8_t buffer[] = {0Xff};
+        expect(! utf8c.write(buffer, 3));
+    }
+
     void run() override
     {
+        test_utf8checker();
+
         using namespace jtx;
         Env env(*this);
         auto wsc = makeWSClient(env.app().config());
