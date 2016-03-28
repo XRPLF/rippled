@@ -91,9 +91,8 @@ public:
     friend
     auto asio_handler_is_continuation(read_some_op* op)
     {
-        return op->d_->state >= 4 ||
-            boost_asio_handler_cont_helpers::
-                is_continuation(op->d_->h);
+        return boost_asio_handler_cont_helpers::
+            is_continuation(op->d_->h);
     }
 
     template <class Function>
@@ -123,41 +122,43 @@ read_some_op<Buffers, Handler>::operator()(
             {
                 if(d.brs.sb_.size() == 0)
                 {
-                    d.state = 2;
+                    d.state =
+                        d.brs.size_ > 0 ? 2 : 1;
                     break;
                 }
-                d.state = 3;
+                d.state = 4;
             }
             else
             {
-                d.state = 1;
+                d.state = 99;
             }
             d.brs.get_io_service().post(
                 beast::asio::bind_handler(
                     std::move(*this), ec, 0));
             return;
 
-        // call handler
         case 1:
+            // read (unbuffered)
             d.state = 99;
-            break;
+            d.brs.next_layer_.async_read_some(
+                d.bs, std::move(*this));
+            return;
 
         case 2:
             // read
-            d.state = 5;
+            d.state = 3;
             d.brs.next_layer_.async_read_some(
                 d.brs.sb_.prepare(d.brs.size_),
                     std::move(*this));
             return;
 
         // got data
-        case 5:
+        case 3:
             d.state = 4;
             d.brs.sb_.commit(bytes_transferred);
             break;
 
-        // copy from buffer
-        case 3:
+        // copy
         case 4:
             bytes_transferred =
                 buffer_copy(d.bs, d.brs.sb_.data());
@@ -232,19 +233,18 @@ read_some(MutableBufferSequence const& buffers,
     using namespace boost::asio;
     if(buffer_size(buffers) == 0)
         return 0;
-    std::size_t bytes_transferred;
-    for(;;)
+    if(size_ == 0)
+        return next_layer_.read_some(buffers, ec);
+    if(sb_.size() == 0)
     {
-        bytes_transferred =
-            buffer_copy(buffers, sb_.data());
-        sb_.consume(bytes_transferred);
-        if(bytes_transferred > 0)
-            break;
         sb_.commit(next_layer_.read_some(
             sb_.prepare(size_), ec));
         if(ec)
             return 0;
     }
+    auto bytes_transferred =
+        buffer_copy(buffers, sb_.data());
+    sb_.consume(bytes_transferred);
     return bytes_transferred;
 }
 
