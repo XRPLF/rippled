@@ -44,13 +44,13 @@ class socket<Stream>::accept_op
     struct data
     {
         socket<Stream>& ws;
+        http::body body;
         http::message m;
         Handler h;
         error_code ec;
         streambuf_type rb;
         streambuf_type wb;
         boost::optional<http::parser> p;
-        std::string body;
         int state;
 
         template<class DeducedHandler, class Buffers>
@@ -66,14 +66,7 @@ class socket<Stream>::accept_op
             // by parsing the buffers immediately
             rb.commit(buffer_copy(rb.prepare(
                 buffer_size(bs)), bs));
-            p.emplace(
-                [&](void const* data, std::size_t len)
-                {
-                    auto begin =
-                        reinterpret_cast<char const*>(data);
-                    auto end = begin + len;
-                    body.append(begin, end);
-                }, m, true);
+            p.emplace(m, body, true);
         }
 
         template<class DeducedHandler, class DeducedMessage>
@@ -101,23 +94,6 @@ public:
             std::forward<DeducedHandler>(h),
                 std::forward<Args>(args)...))
     {
-        auto& d = *d_;
-        if(d.p)
-        {
-            d.state = 0;
-            boost::asio::async_read_until(
-                d.ws.stream_, d.rb, "\r\n\r\n",
-                    std::move(*this));
-        }
-        else
-        {
-            d.state = 1;
-            (*this)(error_code{}, 0);
-        }
-    }
-
-    void operator()()
-    {
         (*this)(error_code{}, 0);
     }
 
@@ -143,7 +119,7 @@ public:
     friend
     auto asio_handler_is_continuation(accept_op* op)
     {
-        return op->d_->state >= 4 ||
+        return op->d_->state >= 2 ||
             boost_asio_handler_cont_helpers::
                 is_continuation(op->d_->h);
     }
@@ -181,7 +157,7 @@ socket<Stream>::accept_op<
                 return;
             }
             // process message
-            d.state = 3;
+            d.state = 1;
             break;
 
         // got data
@@ -198,19 +174,19 @@ socket<Stream>::accept_op<
             assert(d.p->complete());
             d.rb.consume(result.second);
             // VFALCO What about bytes left in d.rb?
-            d.state = 4;
+            d.state = 3;
             break;
         }
 
         // got message
+        case 1:
         case 3:
-        case 4:
             ec = d.ws.do_accept(d.m);
             if(ec)
             {
                 // send error response
                 d.ec = ec;
-                d.state = 5;
+                d.state = 4;
                 d.ws.write_error(d.wb, ec);
                 boost::asio::async_write(d.ws.stream_,
                     d.wb.data(), std::move(*this));
@@ -218,20 +194,20 @@ socket<Stream>::accept_op<
             }
             // send response
             d.ws.write_response(d.wb, d.m);
-            d.state = 6;
+            d.state = 5;
             boost::asio::async_write(d.ws.stream_,
                 d.wb.data(), std::move(*this));
             return;
 
         // sent error response
-        case 5:
+        case 4:
             // call handler
             ec = d.ec;
             d.state = 99;
             break;
 
         // sent response
-        case 6:
+        case 5:
             // call handler
             d.state = 99;
             d.ws.role_ = role_type::server;
