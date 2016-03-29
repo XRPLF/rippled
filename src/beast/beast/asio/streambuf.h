@@ -588,7 +588,6 @@ basic_streambuf<Allocator>::prepare(size_type n) ->
             out_end_ = out_pos_ + n;
             n = 0;
         }
-        debug_check();
     }
 
     if(n > 0)
