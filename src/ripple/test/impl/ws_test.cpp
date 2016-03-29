@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/asio/placeholders.h>
-#include <beast/wsproto.h>
 #include <beast/unit_test/suite.h>
 #include <beast/unit_test/thread.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/streambuf.h>
+#include <beast/wsproto.h>
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
@@ -170,7 +171,7 @@ private:
                     return fail(ec, "async_read");
                 // write message
                 d.state = 1;
-                wsproto::async_write_msg(
+                wsproto::async_write(
                     d.ws, d.op, d.sb.data(),
                         std::move(*this));
                 return;
@@ -232,12 +233,7 @@ public:
         {
             Peer{std::move(sock_), ep, suite_};
         }
-#if 0
-        auto const n = std::min<std::size_t>(
-                std::thread::hardware_concurrency(), 12);
-#else
-        auto const n = 1;
-#endif
+        auto const n = 8;
         thread_.reserve(n);
         for(int i = 0; i < n; ++i)
             thread_.emplace_back(suite_,
@@ -484,7 +480,7 @@ public:
         using endpoint_type = boost::asio::ip::tcp::endpoint;
         using address_type = boost::asio::ip::address;
         using socket_type = boost::asio::ip::tcp::socket;
-    
+   
         endpoint_type const ep{
             address_type::from_string("127.0.0.1"), 6000};
         boost::asio::io_service ios1;
@@ -502,6 +498,18 @@ public:
                 socket<socket_type&> ws(sock);
                 ws.async_accept(yield[ec]);
                 log << "accepted";
+                opcode::value op = opcode::text;
+                beast::asio::streambuf sb;
+                async_read(ws, op, sb,
+                    [&](error_code ec)
+                    {
+                        this->expect(ec == error::closed);
+                    });
+                async_write(ws, op,
+                    boost::asio::null_buffers{}, yield[ec]);
+                expect(ec ==
+                    boost::asio::error::operation_aborted);
+                log << "closed: " << ec.message();
             });
 
         boost::asio::io_service ios2;
@@ -518,22 +526,43 @@ public:
                 socket<socket_type&> ws(sock);
                 ws.async_handshake(ep.address().to_string() + ":" +
                     std::to_string(ep.port()), "/", yield[ec]);
-                log << "handshaked";
+                log << "handshake";
+                detail::frame_header fh;
+                fh.op = opcode::rsv5; // bad opcode
+                fh.fin = true;
+                fh.mask = true;
+                fh.rsv1 = false;
+                fh.rsv2 = false;
+                fh.rsv3 = false;
+                fh.len = 0;
+                fh.key = 0;
+                beast::asio::static_streambuf_n<14> sb;
+                detail::write(sb, fh);
+                boost::asio::async_write(
+                    ws.next_layer(), sb.data(), yield[ec]);
+                ws.next_layer().shutdown(
+                    socket_type::shutdown_both, ec);
+                ws.next_layer().close(ec);
             });
 
-        ios1.run_one(); // async_accept
-        ios2.run_one(); //                      async_connect
-        ios1.run_one(); // async_accept(ws)
-        ios2.run_one(); //                      async_handshake
-        ios1.run_one(); //...
+        for(;;)
+        {
+            std::size_t n = 0;
+            n += ios1.poll_one();
+            n += ios2.poll_one();
+            if(! n)
+                break;
+        }
     }
 
     void
     testHandshake(endpoint_type ep)
     {
+#if 0
         ep_ = ep;
 
         check(40, "GET / HTTP/1.0\r\n");
+#endif
     }
 
     void

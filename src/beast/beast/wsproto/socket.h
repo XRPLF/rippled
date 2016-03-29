@@ -934,7 +934,7 @@ write_msg(socket<Stream>& ws, opcode::value op,
 template<class Stream,
     class ConstBufferSequence, class WriteHandler>
 auto
-async_write_msg(socket<Stream>& ws, opcode::value op,
+async_write(socket<Stream>& ws, opcode::value op,
     ConstBufferSequence const& buffers, WriteHandler&& handler);
 
 } // wsproto
