@@ -21,7 +21,6 @@
 #define BEAST_WSPROTO_SOCKET_H_INCLUDED
 
 #include <beast/wsproto/detail/socket_base.h>
-#include <beast/asio/async_types.h>
 #include <beast/asio/streambuf_readstream.h>
 #include <boost/asio.hpp>
 

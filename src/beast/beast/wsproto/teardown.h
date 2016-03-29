@@ -21,7 +21,6 @@
 #define BEAST_WSPROTO_TEARDOWN_H_INCLUDED
 
 #include <beast/wsproto/error.h>
-#include <beast/asio/async_types.h>
 #include <beast/asio/type_check.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>

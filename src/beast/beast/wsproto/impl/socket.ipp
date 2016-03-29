@@ -336,8 +336,8 @@ auto
 socket<Stream>::async_handshake(std::string const& host,
     std::string const& resource, HandshakeHandler&& handler)
 {
-    using real_type = beast::asio::handler_type<
-        HandshakeHandler, void(error_code)>;
+    using real_type = typename boost::asio::handler_type<
+        HandshakeHandler, void(error_code)>::type;
     static_assert(beast::asio::is_Handler<
         real_type, void(error_code)>::value,
             "HandshakeHandler requirements not met");
