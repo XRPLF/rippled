@@ -291,6 +291,9 @@ public:
         // Swap, don't move, so we keep the reserve in next_
         cur_.clear ();
         std::swap (cur_, next_);
+        for(auto& strand : cur_)
+            for(auto& step : *strand)
+                step->restart ();
     }
 
     void

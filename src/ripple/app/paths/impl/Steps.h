@@ -28,7 +28,8 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 
-namespace ripple {
+namespace ripple
+{
 class PaymentSandbox;
 class ReadView;
 class ApplyView;
@@ -54,13 +55,15 @@ class ApplyView;
    when executing `fwd` or `rev`, but all those offers will be from the same
    quality directory.
 
-   A step may not have enough liquidity to transform the entire requested amount. Both
-   `fwd` and `rev` return a pair of amounts (one for input amount, one for output amount)
+   A step may not have enough liquidity to transform the entire requested
+   amount. Both
+   `fwd` and `rev` return a pair of amounts (one for input amount, one for
+   output amount)
    that show how much of the requested amount the step was actually able use.
  */
 class Step
 {
-  public:
+public:
     virtual ~Step () = default;
 
     /**
@@ -70,14 +73,12 @@ class Step
        @param sb view with the strands state of balances and offers
        @param afView view the the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
-       @param ofrsToRm offers found unfunded or in an error state are added to this collection
+       @param ofrsToRm offers found unfunded or in an error state are added to
+       this collection
        @param out requested step output
        @return actual step input and output
      */
-    virtual
-    std::pair<EitherAmount, EitherAmount>
-    rev (
-        PaymentSandbox& sb,
+    virtual std::pair<EitherAmount, EitherAmount> rev (PaymentSandbox& sb,
         ApplyView& afView,
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& out) = 0;
@@ -89,37 +90,28 @@ class Step
        @param sb view with the strands state of balances and offers
        @param afView view the the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
-       @param ofrsToRm offers found unfunded or in an error state are added to this collection
+       @param ofrsToRm offers found unfunded or in an error state are added to
+       this collection
        @param in requested step input
        @return actual step input and output
     */
-    virtual
-    std::pair<EitherAmount, EitherAmount>
-    fwd (
-        PaymentSandbox&,
+    virtual std::pair<EitherAmount, EitherAmount> fwd (PaymentSandbox&,
         ApplyView& afView,
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& in) = 0;
 
-    virtual
-    boost::optional<EitherAmount>
-    cachedIn () const = 0;
+    virtual boost::optional<EitherAmount> cachedIn () const = 0;
 
-    virtual
-    boost::optional<EitherAmount>
-    cachedOut () const = 0;
+    virtual boost::optional<EitherAmount> cachedOut () const = 0;
+
+    virtual void restart () {}
 
     /**
        Check if amount is zero
     */
-    virtual
-    bool
-    dry (EitherAmount const& out) const = 0;
+    virtual bool dry (EitherAmount const& out) const = 0;
 
-    virtual
-    bool
-    equalOut (
-        EitherAmount const& lhs,
+    virtual bool equalOut (EitherAmount const& lhs,
         EitherAmount const& rhs) const = 0;
 
     /**
@@ -129,12 +121,10 @@ class Step
        @param afView view the the state of balances before the strand runs
        this determines if an offer becomes unfunded or is found unfunded
        @param in requested step input
-       @return first element is true is step is valid, second element is out amount
+       @return first element is true is step is valid, second element is out
+       amount
     */
-    virtual
-    std::pair<bool, EitherAmount>
-    validFwd (
-        PaymentSandbox& sb,
+    virtual std::pair<bool, EitherAmount> validFwd (PaymentSandbox& sb,
         ApplyView& afView,
         EitherAmount const& in) = 0;
 
@@ -145,30 +135,24 @@ class Step
 
     friend bool operator!=(Step const& lhs, Step const& rhs)
     {
-        return ! (lhs == rhs);
+        return !(lhs == rhs);
     }
 
-    friend
-    std::ostream&
-    operator << (
-        std::ostream& stream,
-        Step const& step)
+    friend std::ostream& operator<<(std::ostream& stream, Step const& step)
     {
         stream << step.logString ();
         return stream;
     }
+
 private:
-    virtual
-    std::string
-    logString () const = 0;
+    virtual std::string logString () const = 0;
 
     virtual bool equal (Step const& rhs) const = 0;
 };
 
 using Strand = std::vector<std::unique_ptr<Step>>;
 
-inline
-bool operator==(Strand const& lhs, Strand const& rhs)
+inline bool operator==(Strand const& lhs, Strand const& rhs)
 {
     if (lhs.size () != rhs.size ())
         return false;
@@ -194,9 +178,7 @@ bool operator==(Strand const& lhs, Strand const& rhs)
    @param l logs to write journal messages to
    @return error code and collection of strands
 */
-std::pair<TER, Strand>
-toStrand (
-    ReadView const& sb,
+std::pair<TER, Strand> toStrand (ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
     Issue const& deliver,
@@ -221,8 +203,7 @@ toStrand (
    @param l logs to write journal messages to
    @return error code and collection of strands
 */
-std::pair<TER, std::vector<Strand>>
-toStrands (ReadView const& sb,
+std::pair<TER, std::vector<Strand>> toStrands (ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
     Issue const& deliver,
@@ -235,63 +216,56 @@ template <class TIn, class TOut, class TDerived>
 struct StepImp : public Step
 {
     std::pair<EitherAmount, EitherAmount>
-    rev (
-        PaymentSandbox& sb,
+    rev (PaymentSandbox& sb,
         ApplyView& afView,
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& out) override
     {
-        auto const r =
-            static_cast<TDerived*> (this)->revImp (sb, afView, ofrsToRm, get<TOut>(out));
+        auto const r = static_cast<TDerived*> (this)->revImp (
+            sb, afView, ofrsToRm, get<TOut> (out));
         return {EitherAmount (r.first), EitherAmount (r.second)};
     }
 
     // Given the requested amount to consume, compute the amount produced.
     // Return the consumed/produced
     std::pair<EitherAmount, EitherAmount>
-    fwd (
-        PaymentSandbox& sb,
+    fwd (PaymentSandbox& sb,
         ApplyView& afView,
         boost::container::flat_set<uint256>& ofrsToRm,
         EitherAmount const& in) override
     {
-        auto const r =
-            static_cast<TDerived*> (this)->fwdImp (sb, afView, ofrsToRm, get<TIn>(in));
+        auto const r = static_cast<TDerived*> (this)->fwdImp (
+            sb, afView, ofrsToRm, get<TIn> (in));
         return {EitherAmount (r.first), EitherAmount (r.second)};
     }
 
     bool
     dry (EitherAmount const& out) const override
     {
-        return get<TOut>(out) == beast::zero;
+        return get<TOut> (out) == beast::zero;
     }
 
     bool
-    equalOut (
-        EitherAmount const& lhs,
-        EitherAmount const& rhs) const override
+    equalOut (EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
-        return get<TOut> (lhs) == get <TOut> (rhs);
+        return get<TOut> (lhs) == get<TOut> (rhs);
     }
 };
 
 // Thrown when unexpected errors occur
 class FlowException : public std::runtime_error
 {
-  public:
+public:
     TER ter;
     std::string msg;
 
     FlowException (TER t, std::string const& msg)
-        : std::runtime_error (msg)
-        , ter (t)
+        : std::runtime_error (msg), ter (t)
     {
     }
 
-    explicit
-    FlowException (TER t)
-        : std::runtime_error (transHuman (t))
-        , ter (t)
+    explicit FlowException (TER t)
+        : std::runtime_error (transHuman (t)), ter (t)
     {
     }
 };
@@ -312,10 +286,11 @@ struct StrandContext
     bool const isLast = false;
     size_t const strandSize;
     // The previous step in the strand. Needed to check the no ripple constraint
-    Step const * const prevStep = nullptr;
+    Step const* const prevStep = nullptr;
     // A strand may not include the same account node more than once
     // in the same currency. In a direct step, an account will show up
-    // at most twice: once as a src and once as a dst (hence the two element array).
+    // at most twice: once as a src and once as a dst (hence the two element
+    // array).
     // The strandSrc and strandDst will only show up once each.
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues;
     // A strand may not include the same offer book more than once
@@ -347,38 +322,29 @@ bool xrpEndpointStepEqual (Step const& step, AccountID const& acc);
 bool bookStepEqual (Step const& step, ripple::Book const& book);
 }
 
-std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepI (
+std::pair<TER, std::unique_ptr<Step>> make_DirectStepI (
     StrandContext const& ctx,
     AccountID const& src,
     AccountID const& dst,
     Currency const& c);
 
-std::pair<TER, std::unique_ptr<Step>>
-make_BookStepII (
-    StrandContext const& ctx,
+std::pair<TER, std::unique_ptr<Step>> make_BookStepII (StrandContext const& ctx,
     Issue const& in,
     Issue const& out);
 
-std::pair<TER, std::unique_ptr<Step>>
-make_BookStepIX (
-    StrandContext const& ctx,
+std::pair<TER, std::unique_ptr<Step>> make_BookStepIX (StrandContext const& ctx,
     Issue const& in);
 
-std::pair<TER, std::unique_ptr<Step>>
-make_BookStepXI (
-    StrandContext const& ctx,
+std::pair<TER, std::unique_ptr<Step>> make_BookStepXI (StrandContext const& ctx,
     Issue const& out);
 
-std::pair<TER, std::unique_ptr<Step>>
-make_XRPEndpointStep (
+std::pair<TER, std::unique_ptr<Step>> make_XRPEndpointStep (
     StrandContext const& ctx,
     AccountID const& acc);
 
-template<class InAmt, class OutAmt>
-bool
-isDirectXrpToXrp(Strand const& strand);
+template <class InAmt, class OutAmt>
+bool isDirectXrpToXrp (Strand const& strand);
 
-} // ripple
+}  // ripple
 
 #endif

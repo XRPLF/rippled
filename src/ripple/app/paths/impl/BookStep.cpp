@@ -68,6 +68,9 @@ private:
 
     boost::optional<Cache> cache_;
 
+    // Offers that were not used in the reverse pass because they becaue unfunded
+    // in a step preceeding it
+    boost::container::flat_set<uint256> becameUnfunded_;
 public:
     BookStep (Issue const& in,
         Issue const& out,
@@ -101,6 +104,8 @@ public:
             return boost::none;
         return EitherAmount (cache_->out);
     }
+
+    void restart () override;
 
     std::pair<TIn, TOut>
     revImp (
@@ -221,6 +226,8 @@ forEachOffer (
     AccountID const& dst,
     Callback& callback,
     std::uint32_t limit,
+    boost::container::flat_set<uint256> const& ofrsToSkip,
+    boost::container::flat_set<uint256>& becameUnfundedOffers,
     beast::Journal j)
 {
     auto transferRate = [&](AccountID const& id)->std::uint32_t
@@ -240,6 +247,8 @@ forEachOffer (
     while (offers.step ())
     {
         auto& offer = offers.tip ();
+        if (ofrsToSkip.count (offer.key ()))
+            continue;
         if (!ofrQ)
             ofrQ = offer.quality ();
         else if (*ofrQ != offer.quality ())
@@ -258,7 +267,8 @@ forEachOffer (
             break;
     }
 
-    return {offers.toRemove (), counter.count()};
+    becameUnfundedOffers = std::move(offers.becameUnfunded());
+    return {offers.permUnfunded (), counter.count()};
 }
 
 template <class TIn, class TOut>
@@ -296,6 +306,13 @@ auto sum (TCollection const& col)
         return TResult{beast::zero};
     return std::accumulate (col.begin () + 1, col.end (), *col.begin ());
 };
+
+template <class TIn, class TOut>
+void
+BookStep<TIn, TOut>::restart ()
+{
+    becameUnfunded_.clear ();
+}
 
 template<class TIn, class TOut>
 std::pair<TIn, TOut>
@@ -357,9 +374,14 @@ BookStep<TIn, TOut>::revImp (
     };
 
     {
+        boost::container::flat_set<uint256> new_unfunded;
         auto const r = forEachOffer<TIn, TOut> (
             sb, afView, book_,
-            strandSrc_, strandDst_, eachOffer, maxOffersToConsume_, j_);
+            strandSrc_, strandDst_, eachOffer, maxOffersToConsume_,
+            becameUnfunded_, new_unfunded,
+            j_);
+        becameUnfunded_.insert(boost::container::ordered_unique_range_t{},
+                               new_unfunded.begin(), new_unfunded.end());
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         ofrsToRm.insert (boost::container::ordered_unique_range_t{},
@@ -454,9 +476,12 @@ BookStep<TIn, TOut>::fwdImp (
     };
 
     {
+        boost::container::flat_set<uint256> dummy;
         auto const r = forEachOffer<TIn, TOut> (
             sb, afView, book_,
-            strandSrc_, strandDst_, eachOffer, maxOffersToConsume_, j_);
+            strandSrc_, strandDst_, eachOffer, maxOffersToConsume_,
+            becameUnfunded_, dummy,
+            j_);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         ofrsToRm.insert (boost::container::ordered_unique_range_t{},
