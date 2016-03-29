@@ -334,7 +334,7 @@ template<class Stream>
 template<class HandshakeHandler>
 typename boost::asio::async_result<
     typename boost::asio::handler_type<
-        HandshakeHandler, void(error)>::type>::type
+        HandshakeHandler, void(error_code)>::type>::type
 socket<Stream>::async_handshake(std::string const& host,
     std::string const& resource, HandshakeHandler&& handler)
 {

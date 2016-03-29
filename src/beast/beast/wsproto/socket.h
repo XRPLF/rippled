@@ -558,7 +558,7 @@ public:
     */
     template<class HandshakeHandler>
     typename boost::asio::async_result<
-        typename boost::asio::handler_type<HandshakeHandler, void(error)>::type
+        typename boost::asio::handler_type<HandshakeHandler, void(error_code)>::type
             >::type
     async_handshake(std::string const& host,
         std::string const& resource, HandshakeHandler&& h);
