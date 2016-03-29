@@ -479,7 +479,6 @@ public:
     void
     testInvokable()
     {
-#if 0
         using error_code = boost::system::error_code;
         using endpoint_type = boost::asio::ip::tcp::endpoint;
         using address_type = boost::asio::ip::address;
@@ -501,10 +500,10 @@ public:
                     boost::asio::socket_base::max_connections, ec);
                 maybe_throw(ec, "listen");
                 socket_type sock(ios1);
-                acceptor.async_accept(sock, yield[ec]);
+                //acceptor.async_accept(sock, yield[ec]);
                 maybe_throw(ec, "accept");
                 socket<socket_type&> ws(sock);
-                ws.async_accept(yield[ec]);
+                //ws.async_accept(yield[ec]);
                 log << "accepted";
             });
 
@@ -517,7 +516,7 @@ public:
                     address_type::from_string(
                         "127.0.0.1"), 6000};
                 socket_type sock(ios2);
-                sock.async_connect(ep, yield[ec]);
+                //sock.async_connect(ep, yield[ec]);
                 maybe_throw(ec, "connect");
                 socket<socket_type&> ws(sock);
                 ws.async_handshake(ep.address().to_string() + ":" +
@@ -530,7 +529,6 @@ public:
         ios1.run_one(); // async_accept(ws)
         ios2.run_one(); //                      async_handshake
         ios1.run_one(); //...
-#endif
     }
 
     void
