@@ -370,7 +370,7 @@ socket<Stream>::close(std::uint16_t code,
 template<class Stream>
 template<class CloseHandler>
 auto
-socket<Stream>::async_close(CloseHandler&& h)
+socket<Stream>::async_close(CloseHandler&& handler)
 {
     using real_type = typename boost::asio::handler_type<
         CloseHandler, void(error_code)>::type;
@@ -389,7 +389,7 @@ template<class Stream>
 template<class CloseHandler>
 auto
 socket<Stream>::async_close(std::uint16_t code,
-    std::string const& description, CloseHandler&& h)
+    std::string const& description, CloseHandler&& handler)
 {
     using real_type = typename boost::asio::handler_type<
         CloseHandler, void(error_code)>::type;
