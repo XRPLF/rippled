@@ -30,6 +30,7 @@
 #include <memory>
 #include <exception>
 #include <type_traits>
+#include <sstream>
 #include <string>
 #include <utility>
 

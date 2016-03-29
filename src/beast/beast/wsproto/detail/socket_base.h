@@ -28,6 +28,7 @@
 #include <beast/wsproto/detail/utf8_checker.h>
 #include <beast/asio/streambuf.h>
 #include <beast/http/message.h>
+#include <boost/asio/error.hpp>
 #include <cassert>
 #include <cstdint>
 #include <functional>
