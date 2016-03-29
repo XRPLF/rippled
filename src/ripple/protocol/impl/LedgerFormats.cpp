@@ -101,13 +101,11 @@ LedgerFormats::LedgerFormats ()
             ;
 
     add ("Amendments", ltAMENDMENTS)
-            << SOElement (sfLedgerSequence,      SOE_OPTIONAL)
             << SOElement (sfAmendments,          SOE_OPTIONAL) // Enabled
             << SOElement (sfMajorities,          SOE_OPTIONAL)
             ;
 
     add ("FeeSettings", ltFEE_SETTINGS)
-            << SOElement (sfLedgerSequence,      SOE_OPTIONAL)
             << SOElement (sfBaseFee,             SOE_REQUIRED)
             << SOElement (sfReferenceFeeUnits,   SOE_REQUIRED)
             << SOElement (sfReserveBase,         SOE_REQUIRED)
