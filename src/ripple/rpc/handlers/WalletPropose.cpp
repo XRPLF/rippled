@@ -37,21 +37,27 @@
 namespace ripple {
 
 double
-shannon_entropy (std::string const& input)
+estimate_entropy (std::string const& input)
 {
+    // First, we calculate the Shannon entropy. This gives
+    // the average number of bits per symbol that we would
+    // need to encode the input.
     std::map<int, double> freq;
 
     for (auto const& c : input)
         freq[c]++;
 
-    double se = 0;
-
-    for (auto& f : freq)
-        f.second /= input.length();
+    double se = 0.0;
 
     for (auto const& f : freq)
-        se += (f.second) * log2(f.second);
+    {
+        auto x = f.second / input.length();
+        se += (x) * log2(x);
+    }
 
+    // We multiply it by the length, to get an estimate of
+    // the number of bits in the input. We floor because it
+    // is better to be conservative.
     return std::floor (-se * input.length());
 }
 
@@ -115,7 +121,7 @@ Json::Value walletPropose (Json::Value const& params)
 
     if (params.isMember (jss::passphrase))
     {
-        auto const entropy = shannon_entropy (
+        auto const entropy = estimate_entropy (
             params[jss::passphrase].asString());
 
         // 80 bits of entropy isn't bad, but it's better to
