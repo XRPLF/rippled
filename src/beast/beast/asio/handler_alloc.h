@@ -64,11 +64,13 @@ public:
     handler_alloc& operator=(handler_alloc&&) = default;
     handler_alloc& operator=(handler_alloc const&) = default;
 
+    explicit
     handler_alloc(Handler&& h)
         : h_(std::move(h))
     {
     }
 
+    explicit
     handler_alloc(Handler const& h)
         : h_(h)
     {

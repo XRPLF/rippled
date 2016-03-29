@@ -21,6 +21,7 @@
 #define BEAST_WSPROTO_ACCEPT_OP_H_INCLUDED
 
 #include <beast/asio/handler_alloc.h>
+#include <beast/asio/read_until.h>
 #include <beast/http/parser.h>
 #include <boost/optional.hpp>
 #include <cassert>
@@ -38,9 +39,8 @@ class socket<Stream>::accept_op
     using alloc_type =
         asio::handler_alloc<char, Handler>;
 
-    // VFALCO TODO Use beast?
     using streambuf_type =
-        boost::asio::basic_streambuf<alloc_type>;
+        beast::asio::basic_streambuf<alloc_type>;
 
     struct data
     {
@@ -49,24 +49,23 @@ class socket<Stream>::accept_op
         http::message m;
         Handler h;
         error_code ec;
-        streambuf_type rb;
         streambuf_type wb;
         boost::optional<http::parser> p;
         int state;
 
         template<class DeducedHandler, class Buffers>
         data(DeducedHandler&& h_,
-            socket<Stream>& ws_, Buffers const& bs)
+            socket<Stream>& ws_, Buffers const& buffers)
             : ws(ws_)
             , h(std::forward<DeducedHandler>(h_))
-            , rb(std::numeric_limits<std::size_t>::max(), h)
-            , wb(std::numeric_limits<std::size_t>::max(), h)
+            , wb(1024, alloc_type{h})
+            , state(0)
         {
-            using namespace boost::asio;
-            // VFALCO TODO We can avoid some copying
-            // by parsing the buffers immediately
-            rb.commit(buffer_copy(rb.prepare(
-                buffer_size(bs)), bs));
+            ws.stream_.buffer().commit(
+                boost::asio::buffer_copy(
+                    ws.stream_.buffer().prepare(
+                        boost::asio::buffer_size(buffers)),
+                            buffers));
             p.emplace(m, body, true);
         }
 
@@ -76,8 +75,8 @@ class socket<Stream>::accept_op
             : ws(ws_)
             , m(std::forward<DeducedMessage>(m_))
             , h(std::forward<DeducedHandler>(h_))
-            , rb(std::numeric_limits<std::size_t>::max(), h)
-            , wb(std::numeric_limits<std::size_t>::max(), h)
+            , wb(1024, alloc_type{h})
+            , state(1)
         {
         }
     };
@@ -141,43 +140,18 @@ socket<Stream>::accept_op<
     Handler>::operator()(error_code ec,
         std::size_t bytes_transferred)
 {
-    using namespace boost::asio;
     auto& d = *d_;
     while(! ec && d.state != 99)
     {
         switch(d.state)
         {
         case 0:
-            if(d.p)
-            {
-                // read data
-                d.state = 2;
-                boost::asio::async_read_until(
-                    d.ws.stream_, d.rb, "\r\n\r\n",
-                        std::move(*this));
-                return;
-            }
-            // process message
-            d.state = 1;
-            break;
-
-        // got data
-        case 2:
-        {
-            d.rb.commit(bytes_transferred);
-            auto result = d.p->write(d.rb.data());
-            if((ec = result.first))
-            {
-                // call handler
-                break;
-            }
-            // VFALCO What about calling parser::write_eof?
-            assert(d.p->complete());
-            d.rb.consume(result.second);
-            // VFALCO What about bytes left in d.rb?
-            d.state = 3;
-            break;
-        }
+            // read data
+            d.state = 2;
+            boost::asio::async_read_until(
+                d.ws.next_layer_, d.ws.stream_.buffer(),
+                    "\r\n\r\n", std::move(*this));
+            return;
 
         // got message
         case 1:
@@ -193,25 +167,41 @@ socket<Stream>::accept_op<
                     d.wb.data(), std::move(*this));
                 return;
             }
-            // send response
             d.ws.write_response(d.wb, d.m);
-            d.state = 5;
+            // send response
+            d.state = 99;
+            d.ws.role_ = role_type::server;
             boost::asio::async_write(d.ws.stream_,
                 d.wb.data(), std::move(*this));
             return;
+
+        // got data
+        case 2:
+        {
+            // VFALCO What about calling parser::write_eof?
+            auto const result = d.p->write(
+                d.ws.stream_.buffer().data());
+            if((ec = result.first))
+            {
+                // call handler
+                break;
+            }
+            if(! d.p->complete())
+            {
+                // call handler
+                ec = error::response_malformed;
+                break;
+            }
+            d.ws.stream_.buffer().consume(result.second);
+            d.state = 3;
+            break;
+        }
 
         // sent error response
         case 4:
             // call handler
             ec = d.ec;
             d.state = 99;
-            break;
-
-        // sent response
-        case 5:
-            // call handler
-            d.state = 99;
-            d.ws.role_ = role_type::server;
             break;
         }
     }

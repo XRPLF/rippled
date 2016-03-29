@@ -58,7 +58,7 @@ class socket<Stream>::handshake_op
             , h(std::forward<DeducedHandler>(h_))
             , host(host_)
             , resource(resource_)
-            , sb(std::numeric_limits<std::size_t>::max(), h)
+            , sb(1024, alloc_type{h})
         {
         }
     };
