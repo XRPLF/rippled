@@ -23,6 +23,7 @@
 #include <beast/unit_test/suite.h>
 #include <beast/unit_test/thread.h>
 #include <boost/asio.hpp>
+#include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
 #include <functional>
 #include <condition_variable>
@@ -437,6 +438,16 @@ public:
         expect(! ec, what + ": " + ec.message());
     }
 
+    void
+    maybe_throw(error_code ec, std::string what)
+    {
+        if(ec)
+        {
+            maybe_fail(ec, what);
+            throw ec;
+        }
+    }
+
     int
     request(std::string const& s)
     {
@@ -463,6 +474,61 @@ public:
     check(int status, std::string const& s)
     {
         expect(request(s) == status);
+    }
+
+    void
+    testInvokable()
+    {
+        using error_code = boost::system::error_code;
+        using endpoint_type = boost::asio::ip::tcp::endpoint;
+        using address_type = boost::asio::ip::address;
+        using socket_type = boost::asio::ip::tcp::socket;
+    
+        endpoint_type const ep{
+            address_type::from_string("127.0.0.1"), 6000};
+        boost::asio::io_service ios1;
+        boost::asio::spawn(ios1,
+            [&](auto yield)
+            {
+                error_code ec;
+                boost::asio::ip::tcp::acceptor acceptor(ios1);
+                acceptor.open(ep.protocol(), ec);
+                maybe_throw(ec, "open");
+                acceptor.bind(ep, ec);
+                maybe_throw(ec, "bind");
+                acceptor.listen(
+                    boost::asio::socket_base::max_connections, ec);
+                maybe_throw(ec, "listen");
+                socket_type sock(ios1);
+                acceptor.async_accept(sock, yield[ec]);
+                maybe_throw(ec, "accept");
+                socket<socket_type&> ws(sock);
+                ws.async_accept(yield[ec]);
+                log << "accepted";
+            });
+
+        boost::asio::io_service ios2;
+        boost::asio::spawn(ios2,
+            [&](boost::asio::yield_context yield)
+            {
+                error_code ec;
+                endpoint_type const ep{
+                    address_type::from_string(
+                        "127.0.0.1"), 6000};
+                socket_type sock(ios2);
+                sock.async_connect(ep, yield[ec]);
+                maybe_throw(ec, "connect");
+                socket<socket_type&> ws(sock);
+                ws.async_handshake(ep.address().to_string() + ":" +
+                    std::to_string(ep.port()), "/", yield[ec]);
+                log << "handshaked";
+            });
+
+        ios1.run_one(); // async_accept
+        ios2.run_one(); //                      async_connect
+        ios1.run_one(); // async_accept(ws)
+        ios2.run_one(); //                      async_handshake
+        ios1.run_one(); //...
     }
 
     void
@@ -500,6 +566,8 @@ public:
     void
     run() override
     {
+        testInvokable();
+
         endpoint_type ep{
             address_type::from_string("127.0.0.1"), 6000};
 
