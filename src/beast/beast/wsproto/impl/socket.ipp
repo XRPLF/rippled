@@ -29,7 +29,6 @@
 #include <beast/wsproto/impl/read_some_op.ipp>
 #include <beast/wsproto/impl/write_op.ipp>
 #include <beast/asio/append_buffers.h>
-#include <beast/asio/async_types.h>
 #include <beast/asio/buffers_readstream.h>
 #include <beast/asio/read_until.h>
 #include <beast/asio/static_streambuf.h>
@@ -333,24 +332,29 @@ socket<Stream>::handshake(std::string const& host,
 
 template<class Stream>
 template<class HandshakeHandler>
-void
+typename boost::asio::async_result<
+    typename boost::asio::handler_type<
+        HandshakeHandler, void(error)>::type>::type
 socket<Stream>::async_handshake(std::string const& host,
     std::string const& resource, HandshakeHandler&& handler)
 {
     using real_type = beast::asio::handler_type<
         HandshakeHandler, void(error_code)>;
+
     static_assert(beast::asio::is_Handler<
         real_type, void(error_code)>::value,
             "HandshakeHandler requirements not met");
+
     real_type real_handler{
         std::forward<HandshakeHandler>(handler)};
 
     boost::asio::async_result<
         real_type> result(real_handler);
 
-    handshake_op<std::decay_t<HandshakeHandler>>{
-        std::forward<HandshakeHandler>(handler),
-            *this, host, resource};
+    handshake_op<real_type>{real_handler,
+        *this, host, resource};
+
+    return result.get();
 }
 
 template<class Stream>
