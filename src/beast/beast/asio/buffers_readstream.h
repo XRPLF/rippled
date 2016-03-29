@@ -21,6 +21,7 @@
 #define BEAST_ASIO_BUFFERS_READSTREAM_H_INLUDED
 
 #include <beast/asio/consuming_buffers.h>
+#include <boost/asio/async_result.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/system/error_code.hpp>
@@ -115,7 +116,7 @@ public:
     /// Start an asynchronous write. The data being written must be valid for the
     /// lifetime of the asynchronous operation.
     template<class OtherConstBufferSequence, class WriteHandler>
-    void
+    auto
     async_write_some(OtherConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -135,7 +136,7 @@ public:
     /// Start an asynchronous read. The buffer into which the data will be read
     /// must be valid for the lifetime of the asynchronous operation.
     template<class MutableBufferSequence, class ReadHandler>
-    void
+    auto
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler);
 };

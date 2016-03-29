@@ -417,7 +417,7 @@ public:
         TODO
     */
     template<class AcceptHandler>
-    void
+    auto
     async_accept(AcceptHandler&& handler);
 
     /// Asynchronously read and respond to a WebSocket HTTP Upgrade request.
@@ -425,7 +425,7 @@ public:
         TODO
     */
     template<class ConstBufferSequence, class AcceptHandler>
-    void
+    auto
     async_accept(ConstBufferSequence const& buffers,
         AcceptHandler&& handler);
 
@@ -453,7 +453,7 @@ public:
         ); @endcode
     */
     template<class AcceptHandler>
-    void
+    auto
     async_accept_request(beast::http::message const& m,
         AcceptHandler&& h);
 
@@ -587,7 +587,7 @@ public:
         close procedure.
     */
     template<class CloseHandler>
-    void
+    auto
     async_close(CloseHandler&& handler);
 
     /// Asynchronously perform a WebSocket close.
@@ -595,7 +595,7 @@ public:
         This function initiates the WebSocket close procedure.
     */
     template<class CloseHandler>
-    void
+    auto
     async_close(std::uint16_t code,
         std::string const& reason, CloseHandler&& handler);
 
@@ -696,7 +696,7 @@ public:
         @see async_read
     */
     template<class Streambuf, class ReadHandler>
-    void
+    auto
     async_read_some(msg_info& mi,
         Streambuf& streambuf, ReadHandler&& handler);
 
@@ -783,7 +783,7 @@ public:
         ); @endcode
     */
     template<class ConstBufferSequence, class WriteHandler>
-    void
+    auto
     async_write(opcode::value op, bool fin,
         ConstBufferSequence const& buffers,
             WriteHandler&& handler);
@@ -807,9 +807,6 @@ private:
     beast::http::message
     make_upgrade(std::string const& host,
         std::string const& resource);
-
-    beast::asio::streambuf
-    make_response(beast::http::message const& r);
 
     error_code
     do_accept(beast::http::message const& req);
@@ -909,8 +906,7 @@ read(socket<Stream>& ws, opcode::value& op,
     manner equivalent to using boost::asio::io_service::post().
 */
 template<class Stream, class Streambuf, class ReadHandler>
-BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler,
-    void(error_code))
+auto
 async_read(socket<Stream>& ws, opcode::value& op,
     Streambuf& streambuf, ReadHandler&& handler);
 
@@ -937,7 +933,7 @@ write_msg(socket<Stream>& ws, opcode::value op,
 
 template<class Stream,
     class ConstBufferSequence, class WriteHandler>
-void
+auto
 async_write_msg(socket<Stream>& ws, opcode::value op,
     ConstBufferSequence const& buffers, WriteHandler&& handler);
 

@@ -493,18 +493,14 @@ public:
             {
                 error_code ec;
                 boost::asio::ip::tcp::acceptor acceptor(ios1);
-                acceptor.open(ep.protocol(), ec);
-                maybe_throw(ec, "open");
-                acceptor.bind(ep, ec);
-                maybe_throw(ec, "bind");
+                acceptor.open(ep.protocol());
+                acceptor.bind(ep);
                 acceptor.listen(
-                    boost::asio::socket_base::max_connections, ec);
-                maybe_throw(ec, "listen");
+                    boost::asio::socket_base::max_connections);
                 socket_type sock(ios1);
-                //acceptor.async_accept(sock, yield[ec]);
-                maybe_throw(ec, "accept");
+                acceptor.async_accept(sock, yield[ec]);
                 socket<socket_type&> ws(sock);
-                //ws.async_accept(yield[ec]);
+                ws.async_accept(yield[ec]);
                 log << "accepted";
             });
 
@@ -517,7 +513,7 @@ public:
                     address_type::from_string(
                         "127.0.0.1"), 6000};
                 socket_type sock(ios2);
-                //sock.async_connect(ep, yield[ec]);
+                sock.async_connect(ep, yield[ec]);
                 maybe_throw(ec, "connect");
                 socket<socket_type&> ws(sock);
                 ws.async_handshake(ep.address().to_string() + ":" +

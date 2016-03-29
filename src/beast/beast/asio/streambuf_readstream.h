@@ -157,7 +157,7 @@ public:
     /// Start an asynchronous write. The data being written must be valid for the
     /// lifetime of the asynchronous operation.
     template<class ConstBufferSequence, class WriteHandler>
-    void
+    auto
     async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -177,7 +177,7 @@ public:
     /// Start an asynchronous read. The buffer into which the data will be read
     /// must be valid for the lifetime of the asynchronous operation.
     template<class MutableBufferSequence, class ReadHandler>
-    void
+    auto
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler);
 };

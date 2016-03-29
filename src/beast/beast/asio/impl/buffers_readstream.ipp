@@ -171,7 +171,7 @@ buffers_readstream(
 
 template<class Stream, class ConstBufferSequence>
 template<class OtherConstBufferSequence, class WriteHandler>
-void
+auto
 buffers_readstream<Stream, ConstBufferSequence>::
 async_write_some(OtherConstBufferSequence const& buffers,
     WriteHandler&& handler)
@@ -182,8 +182,7 @@ async_write_some(OtherConstBufferSequence const& buffers,
     static_assert(is_Handler<WriteHandler,
         void(error_code, std::size_t)>::value,
             "WriteHandler requirements not met");
-    using namespace boost::asio;
-    next_layer_.async_write_some(buffers,
+    return next_layer_.async_write_some(buffers,
         std::forward<WriteHandler>(handler));
 }
 
@@ -224,22 +223,28 @@ read_some(MutableBufferSequence const& buffers,
 
 template<class Stream, class ConstBufferSequence>
 template<class MutableBufferSequence, class ReadHandler>
-void
+auto
 buffers_readstream<Stream, ConstBufferSequence>::
 async_read_some(
     MutableBufferSequence const& buffers,
         ReadHandler&& handler)
 {
+    using real_type = typename boost::asio::handler_type<
+        ReadHandler, void(error_code)>::type;
     static_assert(is_MutableBufferSequence<
         MutableBufferSequence>::value,
             "MutableBufferSequence requirements not met");
-    static_assert(is_Handler<ReadHandler,
+    static_assert(is_Handler<real_type,
         void(error_code, std::size_t)>::value,
             "ReadHandler requirements not met");
-    read_some_op<MutableBufferSequence,
-        std::decay_t<ReadHandler>>{
-            std::forward<ReadHandler>(handler),
-                *this, buffers};
+    real_type real_handler{
+        std::forward<ReadHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    read_some_op<MutableBufferSequence, real_type>{
+        real_handler, *this, buffers};
+    return result.get();
+
 }
 
 } // asio

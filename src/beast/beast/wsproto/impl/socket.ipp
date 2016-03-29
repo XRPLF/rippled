@@ -155,7 +155,7 @@ socket<Stream>::socket(Args&&... args)
     : next_layer_(std::forward<Args>(args)...)
     , stream_(next_layer_)
 {
-    static_assert(asio::is_Stream<next_layer_type>::value,
+    static_assert(beast::asio::is_Stream<next_layer_type>::value,
         "Stream requirements not met");
 }
 
@@ -261,43 +261,52 @@ socket<Stream>::accept(
 
 template<class Stream>
 template<class AcceptHandler>
-void
+auto
 socket<Stream>::async_accept(AcceptHandler&& handler)
 {
-    static_assert(beast::asio::is_Handler<
-        AcceptHandler, void(error_code)>::value,
-            "AcceptHandler requirements not met");
-    async_accept(boost::asio::null_buffers{},
+    return async_accept(boost::asio::null_buffers{},
         std::forward<AcceptHandler>(handler));
 }
 
 template<class Stream>
 template<class ConstBufferSequence, class AcceptHandler>
-void
+auto
 socket<Stream>::async_accept(
-    ConstBufferSequence const& bs, AcceptHandler&& h)
+    ConstBufferSequence const& bs, AcceptHandler&& handler)
 {
+    using real_type = typename boost::asio::handler_type<
+        AcceptHandler, void(error_code)>::type;
     static_assert(beast::asio::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
     static_assert(beast::asio::is_Handler<
-        AcceptHandler, void(error_code)>::value,
+        real_type, void(error_code)>::value,
             "AcceptHandler requirements not met");
-    accept_op<std::decay_t<AcceptHandler>>{
-        std::forward<AcceptHandler>(h), *this, bs};
+    real_type real_handler{
+        std::forward<AcceptHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    accept_op<real_type>{real_handler, *this, bs};
+    return result.get();
 }
 
 template<class Stream>
 template<class AcceptHandler>
-void
+auto
 socket<Stream>::async_accept_request(
-    beast::http::message const& m, AcceptHandler&& h)
+    beast::http::message const& m, AcceptHandler&& handler)
 {
+    using real_type = typename boost::asio::handler_type<
+        AcceptHandler, void(error_code)>::type;
     static_assert(beast::asio::is_Handler<
-        AcceptHandler, void(error_code)>::value,
+        real_type, void(error_code)>::value,
             "AcceptHandler requirements not met");
-    accept_op<std::decay_t<AcceptHandler>>{
-        std::forward<AcceptHandler>(h), *this, m, nullptr};
+    real_type real_handler{
+        std::forward<AcceptHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    accept_op<real_type>{real_handler, *this, m, nullptr};
+    return result.get();
 }
 
 template<class Stream>
@@ -360,27 +369,39 @@ socket<Stream>::close(std::uint16_t code,
 
 template<class Stream>
 template<class CloseHandler>
-void
+auto
 socket<Stream>::async_close(CloseHandler&& h)
 {
-    static_assert(asio::is_Handler<CloseHandler,
+    using real_type = typename boost::asio::handler_type<
+        CloseHandler, void(error_code)>::type;
+    static_assert(beast::asio::is_Handler<real_type,
         void(error_code)>::value,
             "CloseHandler requirements not met");
-    close_op<std::decay_t<CloseHandler>>{
-        std::forward<CloseHandler>(h), *this};
+    real_type real_handler{
+        std::forward<CloseHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    close_op<real_type>{real_handler, *this};
+    return result.get();
 }
 
 template<class Stream>
 template<class CloseHandler>
-void
+auto
 socket<Stream>::async_close(std::uint16_t code,
     std::string const& description, CloseHandler&& h)
 {
-    static_assert(asio::is_Handler<CloseHandler,
+    using real_type = typename boost::asio::handler_type<
+        CloseHandler, void(error_code)>::type;
+    static_assert(beast::asio::is_Handler<real_type,
         void(error_code)>::value,
             "CloseHandler requirements not met");
-    close_op<std::decay_t<CloseHandler>>{
-        std::forward<CloseHandler>(h), *this};
+    real_type real_handler{
+        std::forward<CloseHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    close_op<real_type>{real_handler, *this};
+    return result.get();
 }
 
 template<class Stream>
@@ -552,19 +573,24 @@ socket<Stream>::read_some(msg_info& mi,
 
 template<class Stream>
 template<class Streambuf, class ReadHandler>
-void
+auto
 socket<Stream>::async_read_some(msg_info& mi,
     Streambuf& streambuf, ReadHandler&& handler)
 {
-    using namespace boost::asio;
-    static_assert(asio::is_Streambuf<Streambuf>::value,
+    using real_type = typename boost::asio::handler_type<
+        ReadHandler, void(error_code)>::type;
+    static_assert(beast::asio::is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
-    static_assert(asio::is_Handler<ReadHandler,
+    static_assert(beast::asio::is_Handler<real_type,
         void(error_code)>::value,
             "ReadHandler requirements not met");
-    read_some_op<Streambuf, std::decay_t<ReadHandler>>{
-        std::forward<ReadHandler>(handler),
-            *this, mi, streambuf};
+    real_type real_handler{
+        std::forward<ReadHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    read_some_op<Streambuf, real_type>{
+        real_handler, *this, mi, streambuf};
+    return result.get();
 }
 
 template<class Stream>
@@ -573,7 +599,7 @@ void
 socket<Stream>::write(opcode::value op, bool fin,
     ConstBufferSequence const& bs, error_code& ec)
 {
-    static_assert(asio::is_ConstBufferSequence<
+    static_assert(beast::asio::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
     using namespace boost::asio;
@@ -617,23 +643,28 @@ socket<Stream>::write(opcode::value op, bool fin,
 
 template<class Stream>
 template<class ConstBufferSequence, class WriteHandler>
-void
+auto
 socket<Stream>::async_write(opcode::value op, bool fin,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
-    static_assert(asio::is_Handler<WriteHandler,
+    using real_type = typename boost::asio::handler_type<
+        WriteHandler, void(error_code)>::type;
+    static_assert(beast::asio::is_Handler<real_type,
         void(error_code)>::value,
             "WriteHandler requirements not met");
-    static_assert(asio::is_ConstBufferSequence<
+    static_assert(beast::asio::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
-    using namespace boost::asio;
+    real_type real_handler{
+        std::forward<WriteHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
     assert((! wr_cont_ && op != opcode::cont) ||
         (wr_cont_ && op == opcode::cont));
     wr_cont_ = ! fin;
-    write_op<ConstBufferSequence, std::decay_t<
-        WriteHandler>>{std::forward<WriteHandler>(
-            handler), *this, op, fin, bs};
+    write_op<ConstBufferSequence, real_type>{
+        real_handler, *this, op, fin, bs};
+    return result.get();
 }
 
 //------------------------------------------------------------------------------
@@ -705,16 +736,6 @@ socket<Stream>::make_upgrade(std::string const& host,
 }
 
 template<class Stream>
-beast::asio::streambuf
-socket<Stream>::make_response(
-    beast::http::message const& r)
-{
-    beast::asio::streambuf sb;
-    write_response(sb, r);
-    return sb;
-}
-
-template<class Stream>
 error_code
 socket<Stream>::do_accept(beast::http::message const& r)
 {
@@ -782,45 +803,58 @@ read(socket<Stream>& ws, opcode::value& op,
 }
 
 template<class Stream, class Streambuf, class ReadHandler>
-BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler,
-    void(error_code))
+auto
 async_read(socket<Stream>& ws, opcode::value& op,
     Streambuf& streambuf, ReadHandler&& handler)
 {
-    static_assert(asio::is_Streambuf<Streambuf>::value,
+    using real_type = typename boost::asio::handler_type<
+        ReadHandler, void(error_code)>::type;
+    static_assert(beast::asio::is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
-    static_assert(asio::is_Handler<ReadHandler,
+    static_assert(beast::asio::is_Handler<real_type,
         void(error_code)>::value,
             "ReadHandler requirements not met");
-    detail::read_op<Stream, Streambuf,
-        std::decay_t<ReadHandler>>{
-            std::forward<ReadHandler>(handler),
-                ws, op, streambuf};
+    real_type real_handler{
+        std::forward<ReadHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    detail::read_op<Stream, Streambuf, real_type>{
+        real_handler, ws, op, streambuf};
+    return result.get();
 }
 
-template<class Stream, class Buffers>
+template<class Stream, class ConstBufferSequence>
 void
 write_msg(socket<Stream>& ws, opcode::value op,
-    Buffers const& bs, error_code& ec)
+    ConstBufferSequence const& bs, error_code& ec)
 {
-    static_assert(
-        asio::is_ConstBufferSequence<Buffers>::value,
+    static_assert(beast::asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
     ws.write(op, true, bs, ec);
 }
 
-template<class Stream, class Buffers, class Handler>
-void
-async_write_msg(socket<Stream>& ws,
-    opcode::value op, Buffers const& bs, Handler&& h)
+template<class Stream,
+    class ConstBufferSequence, class WriteHandler>
+auto
+async_write_msg(socket<Stream>& ws, opcode::value op,
+    ConstBufferSequence const& bs, WriteHandler&& handler)
 {
-    static_assert(asio::is_Handler<Handler,
+    using real_type = typename boost::asio::handler_type<
+        WriteHandler, void(error_code)>::type;
+    static_assert(beast::asio::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
+            "ConstBufferSequence requirements not met");
+    static_assert(beast::asio::is_Handler<real_type,
         void(error_code)>::value,
             "WriteHandler requirements not met");
-    static_assert(
-        asio::is_ConstBufferSequence<Buffers>::value,
-            "ConstBufferSequence requirements not met");
-    ws.async_write(op, true, bs, std::forward<Handler>(h));
+    real_type real_handler{
+        std::forward<WriteHandler>(handler)};
+    boost::asio::async_result<
+        real_type> result(real_handler);
+    ws.async_write(op, true, bs,
+        std::forward<real_type>(real_handler));
+    return result.get();
 }
 
 } // wsproto

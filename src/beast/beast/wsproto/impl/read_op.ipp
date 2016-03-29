@@ -64,9 +64,10 @@ public:
 
     template<class DeducedHandler, class... Args>
     explicit
-    read_op(DeducedHandler&& h, Args&&... args)
+    read_op(DeducedHandler&& h,
+            socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
-            std::forward<DeducedHandler>(h),
+            std::forward<DeducedHandler>(h), ws,
                 std::forward<Args>(args)...))
     {
         (*this)(error_code{}, 0);
