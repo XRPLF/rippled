@@ -479,6 +479,7 @@ public:
     void
     testInvokable()
     {
+#if 0
         using error_code = boost::system::error_code;
         using endpoint_type = boost::asio::ip::tcp::endpoint;
         using address_type = boost::asio::ip::address;
@@ -529,6 +530,7 @@ public:
         ios1.run_one(); // async_accept(ws)
         ios2.run_one(); //                      async_handshake
         ios1.run_one(); //...
+#endif
     }
 
     void

@@ -286,7 +286,7 @@ static_assert(! is_Streambuf<int>::value, "");
 // VFALCO TODO Use boost::asio::handler_type
 template<class Handler, class Signature>
 using is_Handler = std::integral_constant<bool,
-    //std::is_copy_constructible<std::decay_t<Handler>>::value &&
+    std::is_copy_constructible<std::decay_t<Handler>>::value &&
         is_call_possible<Handler, Signature>::value>;
 
 } // asio
