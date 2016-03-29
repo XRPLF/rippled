@@ -97,15 +97,17 @@ public:
     */
     Ledger (create_genesis_t, Config const& config, Family& family);
 
+    Ledger (
+        LedgerInfo const& info,
+        Family& family);
+
     // Used for ledgers loaded from JSON files
-    Ledger (uint256 const& parentHash, uint256 const& transHash,
-            uint256 const& accountHash,
-            std::uint64_t totDrops, NetClock::time_point closeTime,
-            NetClock::time_point parentCloseTime, int closeFlags,
-            NetClock::duration closeResolution,
-            std::uint32_t ledgerSeq, bool & loaded, Config const& config,
-            Family& family,
-            beast::Journal j);
+    Ledger (
+        LedgerInfo info,
+        bool& loaded,
+        Config const& config,
+        Family& family,
+        beast::Journal j);
 
     /** Create a new ledger following a previous ledger
 
@@ -115,10 +117,6 @@ public:
     */
     Ledger (Ledger const& previous,
         NetClock::time_point closeTime);
-
-    Ledger (void const* data,
-        std::size_t size, bool hasPrefix,
-            Config const& config, Family& family);
 
     // used for database ledgers
     Ledger (std::uint32_t ledgerSeq,
@@ -299,15 +297,6 @@ public:
 
     void updateSkipList ();
 
-    void visitStateItems (std::function<void (SLE::ref)>) const;
-
-
-    std::vector<uint256> getNeededTransactionHashes (
-        int max, SHAMapSyncFilter* filter) const;
-
-    std::vector<uint256> getNeededAccountStateHashes (
-        int max, SHAMapSyncFilter* filter) const;
-
     bool walkLedger (beast::Journal j) const;
 
     bool assertSane (beast::Journal ledgerJ);
@@ -315,8 +304,6 @@ public:
 private:
     class sles_iter_impl;
     class txs_iter_impl;
-
-    void setRaw (SerialIter& sit, bool hasPrefix, Family& family);
 
     bool
     setup (Config const& config);
@@ -327,7 +314,6 @@ private:
     void
     updateHash();
 
-    bool mValidHash = false;
     bool mImmutable;
 
     std::shared_ptr<SHAMap> txMap_;
@@ -420,19 +406,6 @@ cachedRead (ReadView const& ledger, uint256 const& key,
         return ledger.read(Keylet(*type, key));
     return ledger.read(keylet::unchecked(key));
 }
-
-//------------------------------------------------------------------------------
-
-void
-ownerDirDescriber (SLE::ref, bool, AccountID const& owner);
-
-// VFALCO NOTE This is referenced from only one place
-void
-qualityDirDescriber (
-    SLE::ref, bool,
-    Currency const& uTakerPaysCurrency, AccountID const& uTakerPaysIssuer,
-    Currency const& uTakerGetsCurrency, AccountID const& uTakerGetsIssuer,
-    const std::uint64_t & uRate, Application& app);
 
 } // ripple
 

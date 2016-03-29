@@ -77,20 +77,46 @@ InboundLedger::InboundLedger (
     , mReason (reason)
     , mReceiveDispatched (false)
 {
-
     JLOG (m_journal.trace()) <<
         "Acquiring ledger " << mHash;
+}
+
+void InboundLedger::init (ScopedLockType& collectionLock)
+{
+    ScopedLockType sl (mLock);
+    collectionLock.unlock ();
+
+    if (!tryLocal ())
+    {
+        addPeers ();
+        setTimer ();
+    }
+    else if (!isFailed ())
+    {
+        JLOG (m_journal.debug()) <<
+            "Acquiring ledger we already have locally: " << getHash ();
+        mLedger->setImmutable (app_.config());
+
+        if (mReason != fcHISTORY)
+            app_.getLedgerMaster ().storeLedger (mLedger);
+
+        // Check if this could be a newer fully-validated ledger
+        if (mReason == fcVALIDATION ||
+            mReason == fcCURRENT ||
+            mReason == fcCONSENSUS)
+        {
+            app_.getLedgerMaster ().checkAccept (mLedger);
+        }
+    }
 }
 
 void InboundLedger::update (std::uint32_t seq)
 {
     ScopedLockType sl (mLock);
 
+    // If we didn't know the sequence number, but now do, save it
     if ((seq != 0) && (mSeq == 0))
-    {
-        // If we didn't know the sequence number, but now do, save it
         mSeq = seq;
-    }
 
     // Prevent this from being swept
     touch ();
@@ -128,33 +154,63 @@ InboundLedger::~InboundLedger ()
     }
 }
 
-void InboundLedger::init (ScopedLockType& collectionLock)
+std::vector<uint256>
+InboundLedger::neededTxHashes (
+    int max, SHAMapSyncFilter* filter) const
 {
-    ScopedLockType sl (mLock);
-    collectionLock.unlock ();
+    std::vector<uint256> ret;
 
-    if (!tryLocal ())
+    if (mLedger->info().txHash.isNonZero ())
     {
-        addPeers ();
-        setTimer ();
+        if (mLedger->txMap().getHash().isZero ())
+            ret.push_back (mLedger->info().txHash);
+        else
+            ret = mLedger->txMap().getNeededHashes (max, filter);
     }
-    else if (!isFailed ())
+
+    return ret;
+}
+
+std::vector<uint256>
+InboundLedger::neededStateHashes (
+    int max, SHAMapSyncFilter* filter) const
+{
+    std::vector<uint256> ret;
+
+    if (mLedger->info().accountHash.isNonZero ())
     {
-        JLOG (m_journal.debug()) <<
-            "Acquiring ledger we already have locally: " << getHash ();
-        mLedger->setImmutable (app_.config());
-
-        if (mReason != fcHISTORY)
-            app_.getLedgerMaster ().storeLedger (mLedger);
-
-        // Check if this could be a newer fully-validated ledger
-        if (mReason == fcVALIDATION ||
-            mReason == fcCURRENT ||
-            mReason == fcCONSENSUS)
-        {
-            app_.getLedgerMaster ().checkAccept (mLedger);
-        }
+        if (mLedger->stateMap().getHash().isZero ())
+            ret.push_back (mLedger->info().accountHash);
+        else
+            ret = mLedger->stateMap().getNeededHashes (max, filter);
     }
+
+    return ret;
+}
+
+LedgerInfo
+InboundLedger::deserializeHeader (
+    Slice data,
+    bool hasPrefix)
+{
+    SerialIter sit (data.data(), data.size());
+
+    if (hasPrefix)
+        sit.get32 ();
+
+    LedgerInfo info;
+
+    info.seq = sit.get32 ();
+    info.drops = sit.get64 ();
+    info.parentHash = sit.get256 ();
+    info.txHash = sit.get256 ();
+    info.accountHash = sit.get256 ();
+    info.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
+    info.closeTimeResolution = NetClock::duration{sit.get8()};
+    info.closeFlags = sit.get8 ();
+
+    return std::move(info);
 }
 
 /** See how much of the ledger data, if any, is
@@ -178,17 +234,19 @@ bool InboundLedger::tryLocal ()
 
             JLOG (m_journal.trace()) <<
                 "Ledger header found in fetch pack";
+
             mLedger = std::make_shared<Ledger> (
-                data.data(), data.size(), true,
-                app_.config(), app_.family());
+                deserializeHeader (makeSlice(data), true),
+                app_.family());
+
             app_.getNodeStore ().store (
                 hotLEDGER, std::move (data), mHash);
         }
         else
         {
             mLedger = std::make_shared<Ledger>(
-                node->getData().data(), node->getData().size(),
-                true, app_.config(), app_.family());
+                deserializeHeader (makeSlice (node->getData()), true),
+                app_.family());
         }
 
         if (mLedger->info().hash != mHash)
@@ -218,8 +276,7 @@ bool InboundLedger::tryLocal ()
             if (mLedger->txMap().fetchRoot (
                 SHAMapHash{mLedger->info().txHash}, &filter))
             {
-                auto h (mLedger->getNeededTransactionHashes (1, &filter));
-
+                auto h = neededTxHashes (1, &filter);
                 if (h.empty ())
                 {
                     JLOG (m_journal.trace()) <<
@@ -246,8 +303,7 @@ bool InboundLedger::tryLocal ()
             if (mLedger->stateMap().fetchRoot (
                 SHAMapHash{mLedger->info().accountHash}, &filter))
             {
-                auto h (mLedger->getNeededAccountStateHashes (1, &filter));
-
+                auto h = neededStateHashes (1, &filter);
                 if (h.empty ())
                 {
                     JLOG (m_journal.trace()) <<
@@ -315,10 +371,10 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         // otherwise, we need to trigger before we add
         // so each peer gets triggered once
         if (mReason != fcHISTORY)
-            trigger (Peer::ptr (), TriggerReason::trTimeout);
+            trigger (Peer::ptr (), TriggerReason::timeout);
         addPeers ();
         if (mReason == fcHISTORY)
-            trigger (Peer::ptr (), TriggerReason::trTimeout);
+            trigger (Peer::ptr (), TriggerReason::timeout);
     }
 }
 
@@ -505,7 +561,7 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
     if (mLedger)
         tmGL.set_ledgerseq (mLedger->info().seq);
 
-    if (reason != TriggerReason::trReply)
+    if (reason != TriggerReason::reply)
     {
         // If we're querying blind, don't query deep
         tmGL.set_querydepth (0);
@@ -690,7 +746,7 @@ void InboundLedger::filterNodes (
         JLOG (m_journal.trace()) <<
             "filterNodes: all duplicates";
 
-        if (reason != TriggerReason::trTimeout)
+        if (reason != TriggerReason::timeout)
         {
             nodes.clear ();
             return;
@@ -704,7 +760,7 @@ void InboundLedger::filterNodes (
         nodes.erase (dup, nodes.end());
     }
 
-    std::size_t const limit = (reason == TriggerReason::trReply)
+    std::size_t const limit = (reason == TriggerReason::reply)
         ? reqNodesReply
         : reqNodes;
 
@@ -729,8 +785,8 @@ bool InboundLedger::takeHeader (std::string const& data)
         return true;
 
     mLedger = std::make_shared<Ledger>(
-        data.data(), data.size(), false,
-        app_.config(), app_.family());
+        deserializeHeader (makeSlice(data), false),
+        app_.family());
 
     if (mLedger->info().hash != mHash)
     {
@@ -956,8 +1012,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     if (!mHaveState)
     {
         AccountStateSF filter(app_);
-        // VFALCO NOTE What's the number 4?
-        for (auto const& h : mLedger->getNeededAccountStateHashes (4, &filter))
+        for (auto const& h : neededStateHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
                 protocol::TMGetObjectByHash::otSTATE_NODE, h));
@@ -967,8 +1022,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     if (!mHaveTransactions)
     {
         TransactionStateSF filter(app_);
-        // VFALCO NOTE What's the number 4?
-        for (auto const& h : mLedger->getNeededTransactionHashes (4, &filter))
+        for (auto const& h : neededTxHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
                 protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
@@ -985,12 +1039,12 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 bool InboundLedger::gotData (std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> data)
 {
-    ScopedLockType sl (mReceivedDataLock);
+    std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
 
     if (isDone ())
         return false;
 
-    mReceivedData.push_back (PeerDataPairType (peer, data));
+    mReceivedData.emplace_back (peer, data);
 
     if (mReceiveDispatched)
         return false;
@@ -1131,13 +1185,14 @@ void InboundLedger::runData ()
     {
         data.clear();
         {
-            ScopedLockType sl (mReceivedDataLock);
+            std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
 
             if (mReceivedData.empty ())
             {
                 mReceiveDispatched = false;
                 break;
             }
+
             data.swap(mReceivedData);
         }
 
@@ -1159,7 +1214,7 @@ void InboundLedger::runData ()
     } while (1);
 
     if (chosenPeer)
-        trigger (chosenPeer, TriggerReason::trReply);
+        trigger (chosenPeer, TriggerReason::reply);
 }
 
 Json::Value InboundLedger::getJson (int)
@@ -1192,10 +1247,7 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveHeader && !mHaveState)
     {
         Json::Value hv (Json::arrayValue);
-
-        // VFALCO Why 16?
-        auto v = mLedger->getNeededAccountStateHashes (16, nullptr);
-        for (auto const& h : v)
+        for (auto const& h : neededStateHashes (16, nullptr))
         {
             hv.append (to_string (h));
         }
@@ -1205,9 +1257,7 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveHeader && !mHaveTransactions)
     {
         Json::Value hv (Json::arrayValue);
-        // VFALCO Why 16?
-        auto v = mLedger->getNeededTransactionHashes (16, nullptr);
-        for (auto const& h : v)
+        for (auto const& h : neededTxHashes (16, nullptr))
         {
             hv.append (to_string (h));
         }

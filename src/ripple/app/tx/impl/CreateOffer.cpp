@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/st.h>
 #include <ripple/basics/Log.h>
@@ -657,10 +658,6 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
 
-    auto const& uPaysIssuerID = saTakerPays.getIssuer ();
-
-    auto const& uGetsIssuerID = saTakerGets.getIssuer ();
-
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
     // FIXME understand why we use SequenceNext instead of current transaction
@@ -711,8 +708,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         return{ tesSUCCESS, true };
     }
 
-    bool const bOpenLedger =
-        ctx_.view().open();
+    bool const bOpenLedger = ctx_.view().open();
     bool crossed = false;
 
     if (result == tesSUCCESS)
@@ -845,15 +841,11 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     auto const offer_index = getOfferIndex (account_, uSequence);
 
     std::uint64_t uOwnerNode;
-    std::uint64_t uBookNode;
-    uint256 uDirectory;
 
     // Add offer to owner's directory.
-    result = dirAdd(view, uOwnerNode,
-        getOwnerDirIndex (account_), offer_index,
-        std::bind (
-            &ownerDirDescriber, std::placeholders::_1,
-            std::placeholders::_2, account_), viewJ);
+    std::tie(result, std::ignore) = dirAdd(view, uOwnerNode,
+        keylet::ownerDir (account_), offer_index,
+        describeOwnerDir (account_), viewJ);
 
     if (result == tesSUCCESS)
     {
@@ -864,39 +856,49 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
             "adding to book: " << to_string (saTakerPays.issue ()) <<
             " : " << to_string (saTakerGets.issue ());
 
-        uint256 const book_base (getBookBase (
-            { saTakerPays.issue (), saTakerGets.issue () }));
+        Book const book { saTakerPays.issue(), saTakerGets.issue() };
+        std::uint64_t uBookNode;
+        bool isNewBook;
 
-        // We use the original rate to place the offer.
-        uDirectory = getQualityIndex (book_base, uRate);
+        // Add offer to order book, using the original rate
+        // before any crossing occured.
+        auto dir = keylet::quality (keylet::book (book), uRate);
 
-        // Add offer to order book.
-        result = dirAdd (view, uBookNode, uDirectory, offer_index,
-            std::bind (
-                &qualityDirDescriber, std::placeholders::_1,
-                std::placeholders::_2, saTakerPays.getCurrency (),
-                uPaysIssuerID, saTakerGets.getCurrency (),
-                uGetsIssuerID, uRate, std::ref(ctx_.app)),
-            viewJ);
-    }
+        std::tie(result, isNewBook) = dirAdd (view, uBookNode,
+            dir, offer_index, [&](SLE::ref sle)
+            {
+                sle->setFieldH160 (sfTakerPaysCurrency,
+                    saTakerPays.issue().currency);
+                sle->setFieldH160 (sfTakerPaysIssuer,
+                    saTakerPays.issue().account);
+                sle->setFieldH160 (sfTakerGetsCurrency,
+                    saTakerGets.issue().currency);
+                sle->setFieldH160 (sfTakerGetsIssuer,
+                    saTakerGets.issue().account);
+                sle->setFieldU64 (sfExchangeRate, uRate);
+            }, viewJ);
 
-    if (result == tesSUCCESS)
-    {
-        auto sleOffer = std::make_shared<SLE>(ltOFFER, offer_index);
-        sleOffer->setAccountID (sfAccount, account_);
-        sleOffer->setFieldU32 (sfSequence, uSequence);
-        sleOffer->setFieldH256 (sfBookDirectory, uDirectory);
-        sleOffer->setFieldAmount (sfTakerPays, saTakerPays);
-        sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
-        sleOffer->setFieldU64 (sfOwnerNode, uOwnerNode);
-        sleOffer->setFieldU64 (sfBookNode, uBookNode);
-        if (expiration)
-            sleOffer->setFieldU32 (sfExpiration, *expiration);
-        if (bPassive)
-            sleOffer->setFlag (lsfPassive);
-        if (bSell)
-            sleOffer->setFlag (lsfSell);
-        view.insert(sleOffer);
+        if (result == tesSUCCESS)
+        {
+            auto sleOffer = std::make_shared<SLE>(ltOFFER, offer_index);
+            sleOffer->setAccountID (sfAccount, account_);
+            sleOffer->setFieldU32 (sfSequence, uSequence);
+            sleOffer->setFieldH256 (sfBookDirectory, dir.key);
+            sleOffer->setFieldAmount (sfTakerPays, saTakerPays);
+            sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
+            sleOffer->setFieldU64 (sfOwnerNode, uOwnerNode);
+            sleOffer->setFieldU64 (sfBookNode, uBookNode);
+            if (expiration)
+                sleOffer->setFieldU32 (sfExpiration, *expiration);
+            if (bPassive)
+                sleOffer->setFlag (lsfPassive);
+            if (bSell)
+                sleOffer->setFlag (lsfSell);
+            view.insert(sleOffer);
+
+            if (isNewBook)
+                ctx_.app.getOrderBookDB().addOrderBook(book);
+        }
     }
 
     if (result != tesSUCCESS)

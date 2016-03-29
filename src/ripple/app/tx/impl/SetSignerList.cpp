@@ -238,21 +238,23 @@ SetSignerList::replaceSignerList ()
     auto viewJ = ctx_.app.journal ("View");
     // Add the signer list to the account's directory.
     std::uint64_t hint;
-    TER result = dirAdd(ctx_.view (), hint, ownerDirKeylet.key,
+
+    auto result = dirAdd(ctx_.view (), hint, ownerDirKeylet,
         signerListKeylet.key, describeOwnerDir (account_), viewJ);
 
     JLOG(j_.trace()) << "Create signer list for account " <<
-        toBase58(account_) << ": " << transHuman (result);
+        toBase58(account_) << ": " << transHuman (result.first);
 
-    if (result != tesSUCCESS)
-        return result;
+    if (result.first == tesSUCCESS)
+    {
+        signerList->setFieldU64 (sfOwnerNode, hint);
 
-    signerList->setFieldU64 (sfOwnerNode, hint);
+        // If we succeeded, the new entry counts against the
+        // creator's reserve.
+        adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    }
 
-    // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
-
-    return result;
+    return result.first;
 }
 
 TER
