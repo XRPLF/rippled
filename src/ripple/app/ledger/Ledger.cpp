@@ -269,7 +269,6 @@ Ledger::Ledger (Ledger const& prevLedger,
 
 Ledger::Ledger (
         LedgerInfo const& info,
-        Config const& config,
         Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared<SHAMap> (
