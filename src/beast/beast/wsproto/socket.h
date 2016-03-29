@@ -168,6 +168,13 @@ struct msg_info
 template<class Stream>
 class socket : protected detail::socket_base
 {
+    friend class ws_test;
+
+    Stream next_layer_;
+    asio::streambuf_readstream<
+        std::remove_reference_t<Stream>&,
+            beast::asio::streambuf> stream_;
+
 public:
     /// The type of the next layer.
     using next_layer_type =
@@ -189,12 +196,6 @@ public:
     using resolver_type =
         typename protocol_type::resolver;
 
-private:
-    Stream next_layer_;
-    asio::streambuf_readstream<
-        next_layer_type&, beast::asio::streambuf> stream_;
-
-public:
     socket(socket&&) = default;
     socket(socket const&) = delete;
     socket& operator=(socket&&) = default;

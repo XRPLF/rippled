@@ -30,7 +30,6 @@
 
 namespace beast {
 namespace wsproto {
-namespace test {
 
 template<class Buffers>
 static
@@ -573,6 +572,5 @@ public:
 BEAST_DEFINE_TESTSUITE_MANUAL(ws_server, asio, beast);
 BEAST_DEFINE_TESTSUITE_MANUAL(ws_client, asio, beast);
 
-} // test
 } // wsproto
 } // beast
