@@ -182,11 +182,11 @@ public:
     consume(size_type n);
 
     // Helper for read_until
-    template<class Allocator>
+    template<class OtherAllocator>
     friend
     std::size_t
     read_size_helper(basic_streambuf<
-        Allocator> const& streambuf, std::size_t max_size);
+        OtherAllocator> const& streambuf, std::size_t max_size);
 
 private:
     std::size_t
@@ -836,7 +836,7 @@ to_string(basic_streambuf<Allocator> const& buf)
     return s;
 }
 
-}
-}
+} // asio
+} // detail
 
 #endif
