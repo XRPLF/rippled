@@ -36,6 +36,7 @@ class invokable
     struct base
     {
         virtual ~base() = default;
+        virtual void move(void* p) = 0;
         virtual void operator()() = 0;
     };
 
@@ -55,6 +56,12 @@ class invokable
         }
 
         void
+        move(void* p) override
+        {
+            ::new(p) holder(std::move(*this));
+        }
+
+        void
         operator()() override
         {
             F f_(std::move(f));
@@ -68,7 +75,7 @@ class invokable
     struct exemplar
     {
         std::shared_ptr<int> _;
-        void operator()() {}
+        void operator()(){}
     };
 
     using buf_type = std::uint8_t[
@@ -79,6 +86,9 @@ class invokable
 
 public:
     invokable() = default;
+    invokable(invokable const&) = delete;
+    invokable& operator=(invokable&&) = delete;
+    invokable& operator=(invokable const&) = delete;
 
 #ifndef NDEBUG
     ~invokable()
@@ -89,6 +99,13 @@ public:
         assert(! b_);
     }
 #endif
+
+    invokable(invokable&& other)
+        : b_(other.b_)
+    {
+        if(other.b_)
+            other.get().move(buf_);
+    }
 
     template<class F>
     void

@@ -138,8 +138,8 @@ struct msg_info
 
 //--------------------------------------------------------------------
 
-/// Provides message-oriented functionality using WebSocket.
-/**
+/** Provides message-oriented functionality using WebSocket.
+
     The socket class template provides asynchronous and blocking
     message-oriented functionality necessary for clients and servers
     to utilize the WebSocket protocol.
@@ -197,7 +197,7 @@ private:
 public:
     socket(socket&&) = default;
     socket(socket const&) = delete;
-    socket& operator=(socket&&) = delete;
+    socket& operator=(socket&&) = default;
     socket& operator=(socket const&) = delete;
 
     /** Construct a websocket.

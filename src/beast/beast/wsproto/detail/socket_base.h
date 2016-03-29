@@ -92,10 +92,17 @@ struct socket_base
 
     bool fail_ = false;
 
+    //-----------------------------------------------------------
+
     socket_base()
         : decorate_([](auto&){})
     {
     }
+
+    socket_base(socket_base&&) = default;
+    socket_base(socket_base const&) = delete;
+    socket_base& operator=(socket_base&&) = default;
+    socket_base& operator=(socket_base const&) = delete;
 
     template<class = void>
     void
