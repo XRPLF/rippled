@@ -37,7 +37,7 @@ namespace beast {
 namespace asio {
 
 /** Implements asio::streambuf interface using multiple buffers. */
-template <class Allocator>
+template<class Allocator>
 class basic_streambuf
     : private empty_base_optimization<Allocator>
 {
@@ -50,8 +50,8 @@ private:
     class element;
 
     using alloc_traits = std::allocator_traits<Allocator>;
-    using list_type = typename boost::intrusive::make_list <element,
-        boost::intrusive::constant_time_size <true>>::type;
+    using list_type = typename boost::intrusive::make_list<element,
+        boost::intrusive::constant_time_size<true>>::type;
     using iterator = typename list_type::iterator;
     using const_iterator = typename list_type::const_iterator;
 
@@ -128,8 +128,7 @@ private:
     */
 
     list_type list_;
-    size_type block_size_;
-    size_type block_size_next_;
+    size_type alloc_size_;
     size_type in_size_ = 0; // size of the input sequence
     iterator out_;          // element that contains out_pos_
     size_type in_pos_ = 0;  // input offset in list_.front()
@@ -140,17 +139,17 @@ public:
     class const_buffers_type;
     class mutable_buffers_type;
 
-    basic_streambuf (basic_streambuf const& other) = delete;
-    basic_streambuf& operator= (basic_streambuf const& other) = delete;
-    basic_streambuf& operator= (basic_streambuf&& other) = delete;
+    basic_streambuf(basic_streambuf const& other) = delete;
+    basic_streambuf& operator=(basic_streambuf const& other) = delete;
+    basic_streambuf& operator=(basic_streambuf&& other) = delete;
 
     ~basic_streambuf();
 
     explicit
-    basic_streambuf(std::size_t block_size = 16*1024,
+    basic_streambuf(std::size_t alloc_size = 1024,
         Allocator const& alloc = Allocator{});
 
-    basic_streambuf (basic_streambuf&& other);
+    basic_streambuf(basic_streambuf&& other);
 
     /** Get the maximum size of the basic_streambuf. */
     size_type
@@ -168,11 +167,11 @@ public:
 
     /** Get a list of buffers that represents the output sequence, with the given size. */
     mutable_buffers_type
-    prepare (size_type n);
+    prepare(size_type n);
 
     /** Move bytes from the output sequence to the input sequence. */
     void
-    commit (size_type n);
+    commit(size_type n);
 
     /** Get a list of buffers that represents the input sequence. */
     const_buffers_type
@@ -180,7 +179,7 @@ public:
 
     /** Remove bytes from the input sequence. */
     void
-    consume (size_type n);
+    consume(size_type n);
 
     // Helper for read_until
     template<class Allocator>
@@ -199,33 +198,28 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class Allocator>
+template<class Allocator>
 class basic_streambuf<Allocator>::element
-    : public boost::intrusive::list_base_hook <
-        boost::intrusive::link_mode <boost::intrusive::normal_link>>
+    : public boost::intrusive::list_base_hook<
+        boost::intrusive::link_mode<
+            boost::intrusive::normal_link>>
 {
-private:
-    size_type const size_;  // size of the allocation minus sizeof(element)
+    size_type const size_;
 
 public:
-    element (element const&) = delete;
-    element& operator= (element const&) = delete;
+    element(element const&) = delete;
+    element& operator=(element const&) = delete;
 
     explicit
-    element (size_type block_size)
-        : size_(block_size)
-        { }
+    element(size_type n)
+        : size_(n)
+    {
+    }
 
     size_type
     size() const
     {
         return size_;
-    }
-
-    size_type
-    alloc_size() const
-    {
-        return size_ + sizeof(*this);
     }
 
     char*
@@ -238,11 +232,15 @@ public:
 
 //------------------------------------------------------------------------------
 
-template <class Allocator>
+template<class Allocator>
 class basic_streambuf<Allocator>::const_buffers_type
 {
-private:
     basic_streambuf const* sb_ = nullptr;
+
+    friend class basic_streambuf;
+
+    explicit
+    const_buffers_type(basic_streambuf const& sb);
 
 public:
     using value_type = const_buffer;
@@ -258,26 +256,17 @@ public:
 
     const_iterator
     end() const;
-
-private:
-    friend class basic_streambuf;
-
-    explicit
-    const_buffers_type(basic_streambuf const& sb);
 };
 
-template <class Allocator>
+template<class Allocator>
 class basic_streambuf<Allocator>::const_buffers_type::const_iterator
 {
-public:
-    using value_type =
-        typename const_buffers_type::value_type;
-
-private:
     basic_streambuf const* sb_ = nullptr;
     typename list_type::const_iterator it_;
 
 public:
+    using value_type =
+        typename const_buffers_type::value_type;
     using pointer = value_type const*;
     using reference = value_type;
     using difference_type = std::ptrdiff_t;
@@ -314,19 +303,18 @@ public:
     {
         auto const& e = *it_;
         return value_type{e.data(),
-            (sb_->out_ == sb_->list_.end() ||
+           (sb_->out_ == sb_->list_.end() ||
                 &e != &*sb_->out_) ? e.size() : sb_->out_pos_} +
-                    (&e == &*sb_->list_.begin() ? sb_->in_pos_ : 0);
+                   (&e == &*sb_->list_.begin() ? sb_->in_pos_ : 0);
     }
 
-    // Unsupported since we return by value
-    /*
     pointer
     operator->() const
     {
-        return &**this;
+        static_assert(sizeof(Allocator) == -1,
+            "Unsupported operation");
+        return nullptr;
     }
-    */
 
     const_iterator&
     operator++()
@@ -359,14 +347,14 @@ public:
     }
 };
 
-template <class Allocator>
+template<class Allocator>
 basic_streambuf<Allocator>::const_buffers_type::const_buffers_type(
     basic_streambuf const& sb)
     : sb_(&sb)
 {
 }
 
-template <class Allocator>
+template<class Allocator>
 auto
 basic_streambuf<Allocator>::const_buffers_type::begin() const ->
     const_iterator
@@ -374,7 +362,7 @@ basic_streambuf<Allocator>::const_buffers_type::begin() const ->
     return const_iterator{*sb_, sb_->list_.begin()};
 }
 
-template <class Allocator>
+template<class Allocator>
 auto
 basic_streambuf<Allocator>::const_buffers_type::end() const ->
     const_iterator
@@ -386,11 +374,15 @@ basic_streambuf<Allocator>::const_buffers_type::end() const ->
 
 //------------------------------------------------------------------------------
 
-template <class Allocator>
+template<class Allocator>
 class basic_streambuf<Allocator>::mutable_buffers_type
 {
-private:
     basic_streambuf const* sb_;
+
+    friend class basic_streambuf;
+
+    explicit
+    mutable_buffers_type(basic_streambuf const& sb);
 
 public:
     using value_type = mutable_buffer;
@@ -406,26 +398,17 @@ public:
 
     const_iterator
     end() const;
-
-private:
-    friend class basic_streambuf;
-    
-    explicit
-    mutable_buffers_type(basic_streambuf const& sb);
 };
 
-template <class Allocator>
+template<class Allocator>
 class basic_streambuf<Allocator>::mutable_buffers_type::const_iterator
 {
-public:
-    using value_type =
-        typename mutable_buffers_type::value_type;
-
-private:
     basic_streambuf const* sb_ = nullptr;
     typename list_type::const_iterator it_;
 
 public:
+    using value_type =
+        typename mutable_buffers_type::value_type;
     using pointer = value_type const*;
     using reference = value_type;
     using difference_type = std::ptrdiff_t;
@@ -464,17 +447,16 @@ public:
         return value_type{e.data(),
             &e == &*std::prev(sb_->list_.end()) ?
                 sb_->out_end_ : e.size()} +
-                    (&e == &*sb_->out_ ? sb_->out_pos_ : 0);
+                   (&e == &*sb_->out_ ? sb_->out_pos_ : 0);
     }
 
-    // Unsupported since we return by value
-    /*
     pointer
     operator->() const
     {
-        return &**this;
+        static_assert(sizeof(Allocator) == -1,
+            "Unsupported operation");
+        return nullptr;
     }
-    */
 
     const_iterator&
     operator++()
@@ -507,14 +489,14 @@ public:
     }
 };
 
-template <class Allocator>
-basic_streambuf<Allocator>::mutable_buffers_type::mutable_buffers_type (
+template<class Allocator>
+basic_streambuf<Allocator>::mutable_buffers_type::mutable_buffers_type(
     basic_streambuf const& sb)
-    : sb_ (&sb)
+    : sb_(&sb)
 {
 }
 
-template <class Allocator>
+template<class Allocator>
 auto
 basic_streambuf<Allocator>::mutable_buffers_type::begin() const ->
     const_iterator
@@ -522,7 +504,7 @@ basic_streambuf<Allocator>::mutable_buffers_type::begin() const ->
     return const_iterator{*sb_, sb_->out_};
 }
 
-template <class Allocator>
+template<class Allocator>
 auto
 basic_streambuf<Allocator>::mutable_buffers_type::end() const ->
     const_iterator
@@ -532,43 +514,41 @@ basic_streambuf<Allocator>::mutable_buffers_type::end() const ->
 
 //------------------------------------------------------------------------------
 
-template <class Allocator>
+template<class Allocator>
 basic_streambuf<Allocator>::~basic_streambuf()
 {
     for(auto iter = list_.begin(); iter != list_.end();)
     {
         auto& e = *iter++;
-        size_type const n = e.alloc_size();
+        auto const n = e.size() + sizeof(e);
         alloc_traits::destroy(this->member(), &e);
         alloc_traits::deallocate(this->member(),
             reinterpret_cast<char*>(&e), n);
     }
 }
 
-template <class Allocator>
-basic_streambuf<Allocator>::basic_streambuf(std::size_t block_size,
-        Allocator const& alloc)
+template<class Allocator>
+basic_streambuf<Allocator>::basic_streambuf(
+        std::size_t alloc_size, Allocator const& alloc)
     : empty_base_optimization<Allocator>(alloc)
-    , block_size_ (block_size)
-    , block_size_next_ (block_size)
-    , out_ (list_.end())
+    , alloc_size_(alloc_size)
+    , out_(list_.end())
 {
-    if (! (block_size > 0))
+    if(!(alloc_size > 0))
         throw std::invalid_argument(
-            "basic_streambuf: invalid block_size");
+            "basic_streambuf: invalid alloc_size");
 }
 
-template <class Allocator>
-basic_streambuf<Allocator>::basic_streambuf (basic_streambuf&& other)
+template<class Allocator>
+basic_streambuf<Allocator>::basic_streambuf(basic_streambuf&& other)
     : empty_base_optimization<Allocator>(other.member())
-    , list_ (std::move(other.list_))
-    , block_size_ (other.block_size_)
-    , block_size_next_ (other.block_size_next_)
-    , in_size_ (other.in_size_)
-    , out_ (other.out_)
-    , in_pos_ (other.in_pos_)
-    , out_pos_ (other.out_pos_)
-    , out_end_ (other.out_end_)
+    , list_(std::move(other.list_))
+    , alloc_size_(other.alloc_size_)
+    , in_size_(other.in_size_)
+    , out_(other.out_)
+    , in_pos_(other.in_pos_)
+    , out_pos_(other.out_pos_)
+    , out_end_(other.out_end_)
 {
     other.in_size_ = 0;
     other.out_ = other.list_.end();
@@ -577,22 +557,22 @@ basic_streambuf<Allocator>::basic_streambuf (basic_streambuf&& other)
     other.out_end_ = 0;
 }
 
-template <class Allocator>
+template<class Allocator>
 auto
-basic_streambuf<Allocator>::prepare (size_type n) ->
+basic_streambuf<Allocator>::prepare(size_type n) ->
     mutable_buffers_type
 {
     iterator pos = out_;
-    if (pos != list_.end())
+    if(pos != list_.end())
     {
         auto const avail = pos->size() - out_pos_;
-        if (n > avail)
+        if(n > avail)
         {
             n -= avail;
             out_end_ = pos->size();
-            while (++pos != list_.end())
+            while(++pos != list_.end())
             {
-                if (n < pos->size())
+                if(n < pos->size())
                 {
                     out_end_ = n;
                     n = 0;
@@ -611,37 +591,38 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
         debug_check();
     }
 
-    if (n > 0)
+    if(n > 0)
     {
         assert(pos == list_.end());
         for(;;)
         {
-            auto const avail = block_size_next_;
-            auto& e = *reinterpret_cast<element*>(alloc_traits::allocate(
-                this->member(), avail + sizeof(element)));
-            alloc_traits::construct(this->member(), &e, avail);
+            auto const size = std::max(alloc_size_, n);
+            auto& e = *reinterpret_cast<element*>
+                (alloc_traits::allocate(this->member(),
+                    size + sizeof(element)));
+            alloc_traits::construct(this->member(), &e, size);
             list_.push_back(e);
-            if (out_ == list_.end())
+            if(out_ == list_.end())
             {
                 out_ = list_.iterator_to(e);
                 debug_check();
             }
-            if (n <= avail)
+            if(n <= size)
             {
                 out_end_ = n;
                 debug_check();
                 break;
             }
-            n -= avail;
+            n -= size;
         }
     }
     else
     {
-        while (pos != list_.end())
+        while(pos != list_.end())
         {
             auto& e = *pos++;
             list_.erase(list_.iterator_to(e));
-            auto const len = e.alloc_size();
+            auto const len = e.size() + sizeof(e);
             alloc_traits::destroy(this->member(), &e);
             alloc_traits::deallocate(this->member(),
                 reinterpret_cast<char*>(&e), len);
@@ -649,23 +630,23 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
         debug_check();
     }
 
-    return mutable_buffers_type (*this);
+    return mutable_buffers_type(*this);
 }
 
-template <class Allocator>
+template<class Allocator>
 void
-basic_streambuf<Allocator>::commit (size_type n)
+basic_streambuf<Allocator>::commit(size_type n)
 {
-    if (list_.empty())
+    if(list_.empty())
         return;
-    if (out_ == list_.end())
+    if(out_ == list_.end())
         return;
     auto const last = std::prev(list_.end());
-    while (out_ != last)
+    while(out_ != last)
     {
         auto const avail =
             out_->size() - out_pos_;
-        if (n < avail)
+        if(n < avail)
         {
             out_pos_ += n;
             in_size_ += n;
@@ -679,10 +660,10 @@ basic_streambuf<Allocator>::commit (size_type n)
         debug_check();
     }
 
-    n = std::min (n, out_end_ - out_pos_);
+    n = std::min(n, out_end_ - out_pos_);
     out_pos_ += n;
     in_size_ += n;
-    if (out_pos_ == out_->size())
+    if(out_pos_ == out_->size())
     {
         ++out_;
         out_pos_ = 0;
@@ -691,7 +672,7 @@ basic_streambuf<Allocator>::commit (size_type n)
     debug_check();
 }
 
-template <class Allocator>
+template<class Allocator>
 auto
 basic_streambuf<Allocator>::data() const ->
     const_buffers_type
@@ -699,20 +680,20 @@ basic_streambuf<Allocator>::data() const ->
     return const_buffers_type(*this);
 }
 
-template <class Allocator>
+template<class Allocator>
 void
-basic_streambuf<Allocator>::consume (size_type n)
+basic_streambuf<Allocator>::consume(size_type n)
 {
-    if (list_.empty())
+    if(list_.empty())
         return;
 
     auto pos = list_.begin();
     for(;;)
     {
-        if (pos != out_)
+        if(pos != out_)
         {
             auto const avail = pos->size() - in_pos_;
-            if (n < avail)
+            if(n < avail)
             {
                 in_size_ -= n;
                 in_pos_ += n;
@@ -726,7 +707,7 @@ basic_streambuf<Allocator>::consume (size_type n)
 
             element& e = *pos++;
             list_.erase(list_.iterator_to(e));
-            size_type const len = e.alloc_size();
+            auto const len = e.size() + sizeof(e);
             alloc_traits::destroy(this->member(), &e);
             alloc_traits::deallocate(this->member(),
                 reinterpret_cast<char*>(&e), len);
@@ -734,7 +715,7 @@ basic_streambuf<Allocator>::consume (size_type n)
         else
         {
             auto const avail = out_pos_ - in_pos_;
-            if (n < avail)
+            if(n < avail)
             {
                 in_size_ -= n;
                 in_pos_ += n;
@@ -742,7 +723,7 @@ basic_streambuf<Allocator>::consume (size_type n)
             else
             {
                 in_size_ -= avail;
-                if (out_pos_ != out_end_||
+                if(out_pos_ != out_end_||
                     out_ != list_.iterator_to(list_.back()))
                 {
                     in_pos_ = out_pos_;
@@ -764,7 +745,7 @@ basic_streambuf<Allocator>::consume (size_type n)
 
 // Returns the number of bytes which can be
 // prepared without causing a memory allocation.
-template <class Allocator>
+template<class Allocator>
 std::size_t
 basic_streambuf<Allocator>::prepare_size() const
 {
@@ -778,12 +759,12 @@ basic_streambuf<Allocator>::prepare_size() const
     return n;
 }
 
-template <class Allocator>
+template<class Allocator>
 void
 basic_streambuf<Allocator>::debug_check() const
 {
 #ifndef NDEBUG
-    if (list_.empty())
+    if(list_.empty())
     {
         assert(in_pos_ == 0);
         assert(in_size_ == 0);
@@ -797,7 +778,7 @@ basic_streambuf<Allocator>::debug_check() const
 
     assert(in_pos_ < front.size());
 
-    if (out_ == list_.end())
+    if(out_ == list_.end())
     {
         assert(out_pos_ == 0);
         assert(out_end_ == 0);
@@ -816,9 +797,9 @@ basic_streambuf<Allocator>::debug_check() const
 #endif
 }
 
-template <class Alloc, class T>
+template<class Alloc, class T>
 basic_streambuf<Alloc>&
-operator<< (basic_streambuf<Alloc>& buf, T const& t)
+operator<<(basic_streambuf<Alloc>& buf, T const& t)
 {
     std::stringstream ss;
     ss << t;
@@ -844,9 +825,9 @@ using streambuf = basic_streambuf<std::allocator<char>>;
 /** Convert the entire basic_streambuf to a string.
     @note It is more efficient to deal directly in the streambuf instead.
 */
-template <class Allocator>
+template<class Allocator>
 std::string
-to_string (basic_streambuf<Allocator> const& buf)
+to_string(basic_streambuf<Allocator> const& buf)
 {
     std::string s;
     s.resize(buf.size());
