@@ -30,6 +30,12 @@ template<class Handler, class... Args>
 using handler_type =
     typename boost::asio::handler_type<Handler, Args...>::type;
 
+template<class Handler, class... Args>
+using async_return_type =
+    typename boost::asio::async_result<
+        typename boost::asio::handler_type<
+            Handler, Args...>::type>::type;
+
 } // asio
 } // beast
 

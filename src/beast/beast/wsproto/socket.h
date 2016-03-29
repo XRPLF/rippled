@@ -21,6 +21,7 @@
 #define BEAST_WSPROTO_SOCKET_H_INCLUDED
 
 #include <beast/wsproto/detail/socket_base.h>
+#include <beast/asio/async_types.h>
 #include <beast/asio/streambuf_readstream.h>
 #include <boost/asio.hpp>
 
@@ -557,9 +558,7 @@ public:
         ); @endcode
     */
     template<class HandshakeHandler>
-    typename boost::asio::async_result<
-        typename boost::asio::handler_type<HandshakeHandler, void(error_code)>::type
-            >::type
+    auto
     async_handshake(std::string const& host,
         std::string const& resource, HandshakeHandler&& h);
 
