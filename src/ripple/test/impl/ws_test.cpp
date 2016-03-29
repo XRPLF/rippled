@@ -107,11 +107,13 @@ private:
         Peer& operator=(Peer&&) = delete;
         Peer& operator=(Peer const&) = delete;
 
-        template<class... Args>
+        template<class A0, class A1, class... An>
         explicit
-        Peer(Args&&... args)
+        Peer(A0&& a0, A1&& a1, An&&... an)
             : d_(std::make_shared<data>(
-                std::forward<Args>(args)...))
+                std::forward<A0>(a0),
+                    std::forward<A1>(a1),
+                        std::forward<An>(an)...))
         {
             run();
         }
