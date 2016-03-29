@@ -25,7 +25,9 @@
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <functional>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 namespace beast {
@@ -538,9 +540,22 @@ public:
             address_type::from_string("127.0.0.1"),
                 6001 }, *this);
 
-        for(;;)
-        {
-        }
+        boost::asio::io_service ios;
+        boost::asio::signal_set signals(
+            ios, SIGINT, SIGTERM);
+        std::mutex m;
+        bool stop = false;
+        std::condition_variable cv;
+        signals.async_wait(
+            [&](boost::system::error_code const& ec,
+                int signal_number)
+            {
+                std::lock_guard<std::mutex> lock(m);
+                stop = true;
+                cv.notify_one();
+            });
+        std::unique_lock<std::mutex> lock(m);
+        cv.wait(lock, [&]{ return stop; });
     }
 };
 
