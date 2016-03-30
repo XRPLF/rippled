@@ -941,4 +941,8 @@ async_write(socket<Stream>& ws, opcode::value op,
 
 #include <beast/wsproto/impl/socket.ipp>
 
+#if DOXYGEN
+#include <beast/wsproto/README.md>
+#endif
+
 #endif

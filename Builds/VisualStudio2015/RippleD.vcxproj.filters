@@ -1521,6 +1521,9 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\zutil.h">
       <Filter>beast\wsproto\impl\zlib</Filter>
     </ClInclude>
+    <None Include="..\..\src\beast\beast\wsproto\README.md">
+      <Filter>beast\wsproto</Filter>
+    </None>
     <ClInclude Include="..\..\src\beast\beast\wsproto\rfc6455.h">
       <Filter>beast\wsproto</Filter>
     </ClInclude>

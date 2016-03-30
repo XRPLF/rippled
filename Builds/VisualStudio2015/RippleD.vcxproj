@@ -983,6 +983,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\wsproto\impl\zlib\zutil.h">
     </ClInclude>
+    <None Include="..\..\src\beast\beast\wsproto\README.md">
+    </None>
     <ClInclude Include="..\..\src\beast\beast\wsproto\rfc6455.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\socket.h">
