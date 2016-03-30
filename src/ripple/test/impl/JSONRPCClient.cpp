@@ -52,7 +52,8 @@ class JSONRPCClient : public AbstractClient
                 *pp.ip = address_v4{0x7f000001};
             return { *pp.ip, *pp.port };
         }
-        throw std::runtime_error("Missing HTTP port");
+        Throw<std::runtime_error>("Missing HTTP port");
+        return {}; // Silence compiler control paths return value warning
     }
 
     template <class ConstBufferSequence>
@@ -133,7 +134,8 @@ public:
         {
             auto const result = p.write(bin_.data());
             if (result.first)
-                throw result.first;
+                Throw<boost::system::system_error>(result.first);
+
             bin_.consume(result.second);
             if(p.complete())
                 break;
