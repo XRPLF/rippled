@@ -330,38 +330,38 @@ public:
         stream_.reserve(o.value);
     }
 
-    /// Read and respond to a WebSocket HTTP Upgrade request.
-    /**
+    /** Read and respond to a WebSocket HTTP Upgrade request.
+
         TBD
     */
     void
     accept();
 
-    /// Read and respond to a WebSocket HTTP Upgrade request.
-    /**
+    /** Read and respond to a WebSocket HTTP Upgrade request.
+
         TBD
     */
     void
     accept(error_code& ec);
 
-    /// Read and respond to a WebSocket HTTP Upgrade request.
-    /**
+    /** Read and respond to a WebSocket HTTP Upgrade request.
+
         TBD
     */
     template<class ConstBufferSequence>
     void
     accept(ConstBufferSequence const& buffers);
 
-    /// Read and respond to a WebSocket HTTP Upgrade request.
-    /**
+    /** Read and respond to a WebSocket HTTP Upgrade request.
+
         TBD
     */
     template<class ConstBufferSequence>
     void
     accept(ConstBufferSequence const& buffers, error_code& ec);
 
-    /// Respond to a WebSocket HTTP Upgrade request
-    /*
+    /** Respond to a WebSocket HTTP Upgrade request
+
         This function is used to synchronously send the HTTP response
         to a WebSocket HTTP Upgrade request.
         
@@ -386,8 +386,8 @@ public:
     void
     accept(beast::http::message const& m);
 
-    /// Respond to a WebSocket HTTP Upgrade request
-    /*
+    /** Respond to a WebSocket HTTP Upgrade request
+
         This function is used to synchronously send the HTTP response
         to a WebSocket HTTP Upgrade request. If the contents of the
         request are valid, the HTTP response indicates a successful
@@ -412,16 +412,16 @@ public:
     void
     accept(beast::http::message const& m, error_code& ec);
 
-    /// Asynchronously read and respond to a WebSocket HTTP Upgrade request.
-    /**
+    /** Asynchronously read and respond to a WebSocket HTTP Upgrade request.
+
         TODO
     */
     template<class AcceptHandler>
     auto
     async_accept(AcceptHandler&& handler);
 
-    /// Asynchronously read and respond to a WebSocket HTTP Upgrade request.
-    /**
+    /** Asynchronously read and respond to a WebSocket HTTP Upgrade request.
+
         TODO
     */
     template<class ConstBufferSequence, class AcceptHandler>
@@ -429,8 +429,8 @@ public:
     async_accept(ConstBufferSequence const& buffers,
         AcceptHandler&& handler);
 
-    /// Asynchronously responsd to a WebSocket HTTP Upgrade request.
-    /*
+    /** Asynchronously responsd to a WebSocket HTTP Upgrade request.
+
         This function is used to asynchronously send the HTTP response
         to a WebSocket HTTP Upgrade request. This function call always
         returns immediately.
@@ -457,8 +457,8 @@ public:
     async_accept_request(beast::http::message const& m,
         AcceptHandler&& h);
 
-    /// Send a WebSocket Upgrade request.
-    /**
+    /** Send a WebSocket Upgrade request.
+
         This function is used to synchronously send the WebSocket
         upgrade HTTP request. The call blocks until one of the
         following conditions is true:
@@ -499,8 +499,8 @@ public:
         detail::maybe_throw(ec, "upgrade");
     }
 
-    /// Send a WebSocket Upgrade request.
-    /*
+    /** Send a WebSocket Upgrade request.
+
         This function is used to synchronously send the WebSocket
         upgrade HTTP request. The call blocks until one of the
         following conditions is true:
@@ -536,8 +536,8 @@ public:
     handshake(std::string const& host,
         std::string const& resource, error_code& ec);
 
-    /// Asynchronously send a WebSocket Upgrade request.
-    /*
+    /** Asynchronously send a WebSocket Upgrade request.
+
         This function is used to asynchronously send the WebSocket
         upgrade HTTP request. This function call always returns
         immediately.
@@ -561,8 +561,8 @@ public:
     async_handshake(std::string const& host,
         std::string const& resource, HandshakeHandler&& h);
 
-    /// Perform a WebSocket close.
-    /**
+    /** Perform a WebSocket close.
+
         This function initiates the WebSocket close procedure.
     */
     void
@@ -573,16 +573,16 @@ public:
         detail::maybe_throw(ec, "close");
     }
 
-    /// Perform a WebSocket close.
-    /**
+    /** Perform a WebSocket close.
+
         This function initiates the WebSocket close procedure.
     */
     void
     close(std::uint16_t code,
         std::string const& reason, error_code& ec);
 
-    /// Asynchronously perform a WebSocket close.
-    /**
+    /** Asynchronously perform a WebSocket close.
+
         This function initiates or completes the WebSocket
         close procedure.
     */
@@ -590,8 +590,8 @@ public:
     auto
     async_close(CloseHandler&& handler);
 
-    /// Asynchronously perform a WebSocket close.
-    /**
+    /** Asynchronously perform a WebSocket close.
+
         This function initiates the WebSocket close procedure.
     */
     template<class CloseHandler>
@@ -700,8 +700,8 @@ public:
     async_read_some(msg_info& mi,
         Streambuf& streambuf, ReadHandler&& handler);
 
-    /// Write an entire frame to a stream before returning.
-    /**
+    /** Write an entire frame to a stream before returning.
+
         This function is used to write a frame to a stream. The
         call will block until one of the following conditions is true:
 
@@ -727,8 +727,8 @@ public:
     write(opcode::value op, bool fin,
         ConstBufferSequence const& buffers, error_code& ec);
 
-    /// Write an entire frame to a stream before returning.
-    /**
+    /** Write an entire frame to a stream before returning.
+
         This function is used to write a frame to a stream. The
         call will block until one of the following conditions is true:
 
@@ -757,8 +757,8 @@ public:
         detail::maybe_throw(ec, "write");
     }
 
-    /// Start writing a frame asynchronously
-    /**
+    /** Start writing a frame asynchronously
+
         This function is used to asynchronously write a WebSocket
         frame on the stream. This function call always returns
         immediately.
@@ -910,8 +910,7 @@ auto
 async_read(socket<Stream>& ws, opcode::value& op,
     Streambuf& streambuf, ReadHandler&& handler);
 
-/// Write a complete WebSocket message.
-/*
+/** Write a complete WebSocket message.
 */
 template<class Stream, class ConstBufferSequence>
 void
@@ -923,8 +922,8 @@ write_msg(socket<Stream>& ws, opcode::value op,
     detail::maybe_throw(ec, "write_msg");
 }
 
-/// Write a complete WebSocket message.
-/*
+/** Write a complete WebSocket message.
+
 */
 template<class Stream, class ConstBufferSequence>
 void
