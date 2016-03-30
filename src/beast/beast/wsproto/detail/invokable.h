@@ -85,7 +85,9 @@ class invokable
     buf_type buf_;
 
 public:
-    invokable() = default;
+    invokable()
+    {
+    }
     invokable(invokable const&) = delete;
     invokable& operator=(invokable&&) = delete;
     invokable& operator=(invokable const&) = delete;

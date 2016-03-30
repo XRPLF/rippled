@@ -494,10 +494,10 @@ public:
                 acceptor.listen(
                     boost::asio::socket_base::max_connections);
                 socket_type sock(ios1);
-                acceptor.async_accept(sock, yield[ec]);
+                acceptor.async_accept(sock, yield);
                 socket<socket_type&> ws(sock);
-                ws.async_accept(yield[ec]);
-                log << "accepted";
+                ws.async_accept(yield);
+                log << "#1 accepted";
                 opcode::value op = opcode::text;
                 beast::asio::streambuf sb;
                 async_read(ws, op, sb,
@@ -509,7 +509,7 @@ public:
                     boost::asio::null_buffers{}, yield[ec]);
                 expect(ec ==
                     boost::asio::error::operation_aborted);
-                log << "closed: " << ec.message();
+                log << "#1 closed: " << ec.message();
             });
 
         boost::asio::io_service ios2;
@@ -521,12 +521,11 @@ public:
                     address_type::from_string(
                         "127.0.0.1"), 6000};
                 socket_type sock(ios2);
-                sock.async_connect(ep, yield[ec]);
-                maybe_throw(ec, "connect");
+                sock.async_connect(ep, yield);
                 socket<socket_type&> ws(sock);
                 ws.async_handshake(ep.address().to_string() + ":" +
-                    std::to_string(ep.port()), "/", yield[ec]);
-                log << "handshake";
+                    std::to_string(ep.port()), "/", yield);
+                log << "#2 handshake";
                 detail::frame_header fh;
                 fh.op = opcode::rsv5; // bad opcode
                 fh.fin = true;
@@ -543,6 +542,7 @@ public:
                 ws.next_layer().shutdown(
                     socket_type::shutdown_both, ec);
                 ws.next_layer().close(ec);
+                log << "#2 closed: " << ec.message();
             });
 
         for(;;)
