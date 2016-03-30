@@ -507,7 +507,7 @@ public:
                     });
                 async_write(ws, op,
                     boost::asio::null_buffers{}, yield[ec]);
-                expect(ec ==
+                this->expect(ec ==
                     boost::asio::error::operation_aborted);
                 log << "#1 closed: " << ec.message();
             });
