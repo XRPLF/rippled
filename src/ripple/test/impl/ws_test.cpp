@@ -582,9 +582,10 @@ public:
         streambuf sb;
         wsproto::opcode::value op;
         read(ws, op, sb, ec);
-        expect(op == wsproto::opcode::text);
-        expect(buffers_to_string(sb.data()) == s);
         maybe_fail(ec, "read");
+        if(! ec)
+            expect(op == wsproto::opcode::text);
+        expect(buffers_to_string(sb.data()) == s);
         ws.close(0, "", ec);
         maybe_fail(ec, "close");
     }

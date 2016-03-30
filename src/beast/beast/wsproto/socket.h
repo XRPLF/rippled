@@ -23,6 +23,9 @@
 #include <beast/wsproto/detail/socket_base.h>
 #include <beast/asio/streambuf_readstream.h>
 #include <boost/asio.hpp>
+#if DOXYGEN
+#include <beast/wsproto/README.md>
+#endif
 
 namespace beast {
 namespace wsproto {

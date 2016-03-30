@@ -594,6 +594,9 @@
     <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
       <Filter>beast\asio</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\async_completion.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>

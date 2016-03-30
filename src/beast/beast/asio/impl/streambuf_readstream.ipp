@@ -20,10 +20,10 @@
 #ifndef BEAST_ASIO_STREAMBUF_READSTREAM_IPP_INLUDED
 #define BEAST_ASIO_STREAMBUF_READSTREAM_IPP_INLUDED
 
+#include <beast/asio/async_completion.h>
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/handler_alloc.h>
 #include <beast/asio/type_check.h>
-#include <boost/asio/async_result.hpp>
 
 namespace beast {
 namespace asio {
@@ -249,21 +249,16 @@ async_read_some(
     MutableBufferSequence const& buffers,
         ReadHandler&& handler)
 {
-    using real_type = typename boost::asio::handler_type<
-        ReadHandler, void(error_code)>::type;
     static_assert(is_MutableBufferSequence<
         MutableBufferSequence>::value,
             "MutableBufferSequence requirements not met");
-    static_assert(is_Handler<real_type,
-        void(error_code, std::size_t)>::value,
-            "ReadHandler requirements not met");
-    real_type real_handler{
-        std::forward<ReadHandler>(handler)};
-    boost::asio::async_result<
-        real_type> result(real_handler);
-    read_some_op<MutableBufferSequence, real_type>{
-        real_handler, *this, buffers};
-    return result.get();
+    beast::asio::async_completion<
+        ReadHandler, void(error_code, std::size_t)
+            > completion(handler);
+    read_some_op<MutableBufferSequence,
+        decltype(completion.handler)>{
+            completion.handler, *this, buffers};
+    return completion.result.get();
 }
 
 } // asio
