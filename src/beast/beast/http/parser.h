@@ -78,7 +78,7 @@ public:
     message_type const&
     get() const
     {
-        return m_;
+        return *m_;
     }
 
     message_type
