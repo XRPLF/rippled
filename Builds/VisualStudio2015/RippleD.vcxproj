@@ -299,7 +299,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
+    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
     </ClInclude>
