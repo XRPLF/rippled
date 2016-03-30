@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_SESSION_H_INCLUDED
 
 #include <ripple/server/Writer.h>
+#include <ripple/server/WSSession.h>
 #include <beast/http/body.h>
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
@@ -135,6 +136,11 @@ public:
     virtual
     void
     close (bool graceful) = 0;
+
+    /** Convert the connection to WebSocket. */
+    virtual
+    std::shared_ptr<WSSession>
+    websocketUpgrade() = 0;
 };
 
 }  // ripple
