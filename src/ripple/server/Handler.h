@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_HANDLER_H_INCLUDED
 
 #include <ripple/server/Handoff.h>
+#include <ripple/server/WSSession.h>
 #include <beast/asio/ssl_bundle.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -87,6 +88,20 @@ struct Handler
 
     /** Called when the server has finished its stop. */
     virtual void onStopped (Server& server) = 0;
+
+    //
+    // WebSockets
+    //
+
+    /** Called on a WebSocket Upgrade request. */
+
+
+    /** Called for each complete WebSocket message. */
+    virtual
+    void
+    onWSMessage(std::shared_ptr<WSSession> session,
+        std::vector<boost::asio::const_buffer> const& buffers) = 0;
+
 };
 
 } // ripple
