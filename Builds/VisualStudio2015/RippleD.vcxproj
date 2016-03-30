@@ -399,6 +399,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">

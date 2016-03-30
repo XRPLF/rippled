@@ -52,6 +52,9 @@
     <Filter Include="beast\cxx14">
       <UniqueIdentifier>{A3DFF000-1717-AE18-DD13-75DC3A36F594}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\cxx17">
+      <UniqueIdentifier>{DED08E50-BA3F-9E32-7501-3B77F31A5C11}</UniqueIdentifier>
+    </Filter>
     <Filter Include="beast\hash">
       <UniqueIdentifier>{FE3C8FFD-FEE1-BDEA-DE7F-24A8DEDCAD20}</UniqueIdentifier>
     </Filter>
@@ -806,6 +809,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
       <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
+      <Filter>beast\cxx17</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
       <Filter>beast\hash</Filter>
