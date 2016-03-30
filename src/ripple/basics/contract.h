@@ -33,10 +33,17 @@ namespace ripple {
     preconditions, postconditions, and invariants.
 */
 
+[[noreturn]]
+inline
 void
-Throw ();
+Throw ()
+{
+    throw;
+}
 
 template <class E, class... Args>
+[[noreturn]]
+inline
 void
 Throw (Args&&... args)
 {
