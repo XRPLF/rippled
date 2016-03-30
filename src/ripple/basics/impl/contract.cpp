@@ -47,10 +47,4 @@ LogicError (std::string const& s) noexcept
     detail::accessViolation();
 }
 
-void
-Throw ()
-{
-    throw;
-}
-
 } // ripple
