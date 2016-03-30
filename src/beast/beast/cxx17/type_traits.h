@@ -17,14 +17,24 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CXX14_TYPE_TRAITS_H_INCLUDED
-#define BEAST_CXX14_TYPE_TRAITS_H_INCLUDED
+#ifndef BEAST_CXX17_TYPE_TRAITS_H_INCLUDED
+#define BEAST_CXX17_TYPE_TRAITS_H_INCLUDED
 
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
 namespace std {
+
+#ifndef _MSC_VER
+
+template<class...>
+using void_t = void;
+
+template<bool B>
+using bool_constant = std::integral_constant<bool, B>;
+
+#endif
 
 // Ideas from Howard Hinnant
 //
@@ -41,6 +51,6 @@ struct is_constructible <pair <T, U>>
 {
 };
 
-}
+} // std
 
 #endif
