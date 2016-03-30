@@ -25,30 +25,6 @@ namespace test {
 
 struct Transaction_ordering_test : public beast::unit_test::suite
 {
-    template <class Ftest>
-    void submitWait(jtx::Env& env, jtx::JTx const& tx, Ftest&& test)
-    {
-        using namespace std::chrono_literals;
-
-        std::condition_variable cv;
-        env.app().getJobQueue().postCoro(
-            jtCLIENT, "Coroutine-Test",
-            [&](std::shared_ptr<JobCoro> jc)
-        {
-            env(tx);
-            cv.notify_one();
-        });
-
-        {
-            std::mutex m;
-            std::unique_lock<std::mutex> lk(m);
-            // If stepping through this test in a debugger,
-            // make the timeout much longer, or use
-            //cv.wait(lk, test);
-            expect(cv.wait_for(lk, 2s, test));
-        }
-    }
-
     void testCorrectOrder()
     {
         using namespace jtx;
@@ -99,11 +75,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         env(tx2, ter(terPRE_SEQ));
         expect(env.seq(alice) == aliceSequence);
-        submitWait(env, tx1,
-            [&]()
-            {
-                return env.seq(alice) == aliceSequence + 2;
-            });
+        env(tx1);
+        env.app().getJobQueue().rendezvous();
         expect(env.seq(alice) == aliceSequence + 2);
 
         env.close();
@@ -144,11 +117,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
             expect(env.seq(alice) == aliceSequence);
         }
 
-        submitWait(env, tx[0],
-            [&]()
-            {
-                return env.seq(alice) == aliceSequence + 5;
-            });
+        env(tx[0]);
+        env.app().getJobQueue().rendezvous();
         expect(env.seq(alice) == aliceSequence + 5);
 
         env.close();
