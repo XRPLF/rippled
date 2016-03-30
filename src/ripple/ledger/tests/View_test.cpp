@@ -698,7 +698,7 @@ class View_test
             auto cfg = std::make_unique<Config>();
             setupConfigForUnitTests(*cfg);
 
-            for (auto const sectionName : {"port_peer", "port_http", "port_ws"})
+            for (auto const sectionName : {"port_peer", "port_rpc", "port_ws"})
             {
                 Section& s = (*cfg)[sectionName];
                 auto const port = s.get<std::int32_t>("port");

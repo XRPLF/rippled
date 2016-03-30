@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_SSLHTTPPEER_H_INCLUDED
 
 #include <ripple/server/impl/BaseHTTPPeer.h>
+#include <ripple/server/impl/SSLWSPeer.h>
 #include <beast/asio/ssl_bundle.h>
 #include <memory>
 
@@ -47,15 +48,18 @@ public:
     void
     run();
 
+    std::shared_ptr<WSSession>
+    websocketUpgrade() override;
+
 private:
     void
     do_handshake (yield_context yield);
 
     void
-    do_request();
+    do_request() override;
 
     void
-    do_close();
+    do_close() override;
 
     void
     on_shutdown (error_code ec);
@@ -84,6 +88,17 @@ SSLHTTPPeer::run()
 
     boost::asio::spawn (strand_, std::bind (&SSLHTTPPeer::do_handshake,
         shared_from_this(), std::placeholders::_1));
+}
+
+std::shared_ptr<WSSession>
+SSLHTTPPeer::websocketUpgrade()
+{
+    auto ws = ios().emplace<SSLWSPeer>(
+        port_, handler_, remote_address_,
+            message_, std::move(ssl_bundle_),
+                journal_);
+    ws->run();
+    return ws;
 }
 
 void
