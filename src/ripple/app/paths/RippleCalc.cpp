@@ -139,7 +139,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         {
             JLOG (j.trace()) << "Exception from flow" << e.what ();
             if (!useFlowV1Output)
-                throw;
+                Throw();
         }
 
         if (callFlowV2 && callFlowV1 &&

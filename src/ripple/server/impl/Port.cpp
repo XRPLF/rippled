@@ -101,7 +101,7 @@ populate (Section const& section, std::string const& field, std::ostream& log,
                     log << "0.0.0.0 not allowed'" <<
                         "' for key '" << field << "' in [" <<
                         section.name () << "]\n";
-                    throw std::exception ();
+                    Throw<std::exception> ();
                 }
                 else
                 {
@@ -127,7 +127,7 @@ populate (Section const& section, std::string const& field, std::ostream& log,
             {
                 log << "IP specified for " << field << " is also for " <<
                     "admin: " << ip << " in [" << section.name() << "]\n";
-                throw std::exception();
+                Throw<std::exception> ();
             }
 
             ips->emplace_back (addr.first.address ());

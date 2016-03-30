@@ -136,7 +136,8 @@ class WSClientImpl : public WSClient
                 *pp.ip = address_v4{0x7f000001};
             return { *pp.ip, *pp.port };
         }
-        throw std::runtime_error("Missing WebSocket port");
+        Throw<std::runtime_error>("Missing WebSocket port");
+        return {}; // Silence compiler control paths return value warning
     }
 
     template <class ConstBuffers>
@@ -181,7 +182,8 @@ public:
         error_code ec;
         ws_.connect(ec);
         if(ec)
-            throw ec;
+            Throw<boost::system::system_error>(ec);
+
         read_frame_op{*this};
     }
 
