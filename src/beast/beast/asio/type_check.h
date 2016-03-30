@@ -25,7 +25,7 @@
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_service.hpp>
 #include <iterator>
-#include <type_traits>
+#include <beast/cxx17/type_traits.h>
 #include <utility>
 
 namespace beast {
@@ -234,54 +234,22 @@ using is_MutableBufferSequence =
 static_assert(! is_ConstBufferSequence<int>::value, "");
 static_assert(! is_MutableBufferSequence<int>::value, "");
 
-template<class C>
-class is_Streambuf
-{
-    template<class T, class R = std::integral_constant<bool,
-        is_MutableBufferSequence<
-            decltype(std::declval<T>().prepare(1))>::value>>
-    static R check1(int);
-    template<class>
-    static std::false_type check1(...);
-    using type1 = decltype(check1<C>(0));
-
-    template<class T, class R = std::integral_constant<bool,
-        is_ConstBufferSequence<
-            decltype(std::declval<T>().data())>::value>>
-    static R check2(int);
-    template<class>
-    static std::false_type check2(...);
-    using type2 = decltype(check2<C>(0));
-
-    template<class T, class R = decltype(
-        std::declval<T>().commit(1),
-            std::true_type{})>
-    static R check3(int);
-    template<class>
-    static std::false_type check3(...);
-    using type3 = decltype(check3<C>(0));
-
-    template<class T, class R = decltype(
-        std::declval<T>().consume(1),
-            std::true_type{})>
-    static R check4(int);
-    template<class>
-    static std::false_type check4(...);
-    using type4 = decltype(check4<C>(0));
-
-    template<class T, class R = std::is_same<
-        decltype(std::declval<T>().size()), std::size_t>>
-    static R check5(int);
-    template<class>
-    static std::false_type check5(...);
-    using type5 = decltype(check5<C>(0));
-
-public:
-    static bool const value =
-        type1::value && type2::value && type3::value &&
-        type4::value && type5::value;
-};
-static_assert(! is_Streambuf<int>::value, "");
+template<class C, class = void>
+struct is_Streambuf : std::false_type {};
+template <class C>
+struct is_Streambuf<C, std::void_t<
+    // VFALCO TODO Add check for const_buffers_type, mutable_buffers_type, max_size(?)
+    std::integral_constant<bool,
+        is_MutableBufferSequence<decltype(
+            std::declval<C>().prepare(1))>::value>,
+    std::integral_constant<bool,
+        is_ConstBufferSequence<decltype(
+            std::declval<C>().data())>::value>,
+    decltype(std::declval<C>().commit(1), std::true_type{}),
+    decltype(std::declval<C>().consume(1), std::true_type{}),
+    std::is_same<decltype(
+        std::declval<C>().size()), std::size_t>
+>>:std::true_type{};
 
 // VFALCO TODO Use boost::asio::handler_type
 template<class Handler, class Signature>

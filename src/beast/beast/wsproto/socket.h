@@ -677,8 +677,9 @@ public:
         @param mi An object to store metadata about the message.
         This object must remain valid until the handler is called.
 
-        @param streambuf A stream buffer to hold the message data.
-        This object must remain valid until the handler is called.
+        @param streambuf A stream buffer to hold the message data after
+        any masking or decompression has been applied. This object must
+        remain valid until the handler is called.
 
         @param handler The handler to be called when the read operation
         completes. Copies will be made of the handler as required. The
@@ -741,6 +742,8 @@ public:
         may be transformed as per the WebSocket protocol settings.
 
         @throws boost::system::system_error Thrown on failure.
+
+        @param op The opcode, which must be text or binary.
 
         @param fin `true` if this is the last frame in the message.
 

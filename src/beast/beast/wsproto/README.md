@@ -26,6 +26,15 @@ logical for Beast.WSProto to choose Boost.Asio as its network transport.
 
 Beast.WSProto addresses the following goals:
 
+* **Ease of Use.** WSProto offers only one socket object, whose interface
+resembles that of Boost.Asio socket as closely as possible. Users familiar
+with Boost.Asio will be immediately comfortable using a `wsproto::socket`.
+
+* **Flexibility.** Library interfaces should provide callers with maximum
+flexibility in implementation; Important decisions such as how to manage
+buffers or be notified of completed asynchronous operations should be made
+by callers not the library.
+
 * **Performance.** The implementation should achieve the highest level
 of performance possible, with no penalty for using abstractions.
 
@@ -35,13 +44,23 @@ network applications that scale to thousands of concurrent connections.
 * **Efficiency.** The library should support techniques such as
 scatter-gather I/O, and allow programs to minimise data copying.
 
-* **Flexibility.** Library interfaces should provide callers with maximum
-flexibility in implementation; Important decisions such as how to manage
-buffers or be notified of completed asynchronous operations should be made
-by callers not the library.
-
 * **Basis for further abstraction.** The library should permit the
 development of other libraries that provide higher levels of abstraction.
+
+Beast.WSProto takes advantage of Boost.Asio's universal Asynchronous
+model, handler allocation, and handler invocation hooks. Calls to wsproto
+asynchronous initiation functions allow callers the choice of using a
+completion handler, stackful or stackless coroutines, futures, or user
+defined customizations (for example, Boost.Fiber). The implementation
+uses handler invocation hooks (`asio_handler_invoke`), providing
+execution guarantees on composed operations in a manner identical to
+Boost.Asio. The implementation also uses handler allocation hooks
+(`asio_handler_allocate`) when allocating memory internally for composed
+operations.
+
+There is no need for inheritance or virtual members in `wsproto::socket`.
+All operations are templated and transparent to the compiler, allowing for
+maximum inlining and optimization.
 
 ## Introduction
 
@@ -57,16 +76,16 @@ of `wsproto::socket` templated on the `Stream` argument, which must meet
 the requirements of `AsyncReadStream`, `AsyncWriteStream`, `SyncReadStream`,
 and `SyncWriteStream`. Examples of types that meet these requirements are
 `ip::tcp::socket` and `ssl::stream<...>`:
-```c++
-io_service ios;
-wsproto::socket<ip::tcp::socket> ws1(ios);      // owns the socket
-
-ip::tcp::socket sock(ios);
-wsproto::socket<ip::tcp::socket&> ws2(sock);    // does not own the socket
-
-ssl::context ctx(ssl::context::sslv23);
-wsproto::socket<ssl::stream<
-    ip::tcp::socket>> wss(ios, ctx);            // owns the socket
+```c++  
+io_service ios;  
+wsproto::socket<ip::tcp::socket> ws1(ios);      // owns the socket  
+  
+ip::tcp::socket sock(ios);  
+wsproto::socket<ip::tcp::socket&> ws2(sock);    // does not own the socket  
+  
+ssl::context ctx(ssl::context::sslv23);  
+wsproto::socket<ssl::stream<  
+    ip::tcp::socket>> wss(ios, ctx);            // owns the socket  
 ```
 
 Callers are responsible for performing tasks such as connection establishment
@@ -75,7 +94,7 @@ before attempting websocket activities.
 io_service ios;
 wsproto::socket<ip::tcp::socket> ws(ios);
 ws.next_layer().connect(ip::tcp::endpoint(
-    ip::tcp::address::from_string("0.0.0.0"), 80));
+    ip::tcp::address::from_string("127.0.0.1"), 80));
 
 // send a WebSocket Upgrade request.
 ws.handshake();
@@ -87,8 +106,9 @@ messages synchronously:
 void echo(wsproto::socket<ip::tcp::socket>& ws)
 {
     streambuf sb;
-    wsproto::read(ws, sb);
-    wsproto::write(ws, sb.data());
+    wsproto::opcode::value op;
+    wsproto::read(ws, op, sb);
+    wsproto::write(ws, op, sb.data());
 }
 ```
 
@@ -98,13 +118,13 @@ In the table below, `X` denotes a class, `a` denotes a value
 of type `X`, `n` denotes a value convertible to `std::size_t`,
 and `U` and `T` denote unspecified types.
 
-expression                  | return        | type assertion/note/pre/post-condition
---------------------------- | ------------- | --------------------------------------
-`X::const_buffers_type`     | `T`           | `T` meets the requirements for `ConstBufferSequence`.
-`X::mutable_buffers_type`   | `U`           | `U` meets the requirements for `MutableBufferSequence`.
-`a.commit(n)`               |               | Moves bytes from the output sequence to the input sequence.
-`a.consume(n)`              |               | Removes bytes from the input sequence.
-`a.data()`                  | `T`           | Returns a list of buffers that represents the input sequence.
-`a.prepare(n)`              | `U`           | Returns a list of buffers that represents the output sequence, with the given size.
-`a.size()`                  | `std::size_t` | Returns the size of the input sequence.
-`a.max_size()`              | `std::size_t` | Returns the maximum size of the `Streambuf`.
+expression                | return        | type assertion/note/pre/post-condition
+------------------------- | ------------- | --------------------------------------
+`X::const_buffers_type`   | `T`           | `T` meets the requirements for `ConstBufferSequence`.
+`X::mutable_buffers_type` | `U`           | `U` meets the requirements for `MutableBufferSequence`.
+`a.commit(n)`             |               | Moves bytes from the output sequence to the input sequence.
+`a.consume(n)`            |               | Removes bytes from the input sequence.
+`a.data()`                | `T`           | Returns a list of buffers that represents the input sequence.
+`a.prepare(n)`            | `U`           | Returns a list of buffers that represents the output sequence, with the given size.
+`a.size()`                | `std::size_t` | Returns the size of the input sequence.
+`a.max_size()`            | `std::size_t` | Returns the maximum size of the `Streambuf`.
