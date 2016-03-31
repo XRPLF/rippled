@@ -1002,6 +1002,9 @@ Value::removeMember ( std::string const& key )
 bool
 Value::isMember ( const char* key ) const
 {
+    if (type_ != objectValue)
+        return false;
+
     const Value* value = & ((*this)[key]);
     return value != &null;
 }
