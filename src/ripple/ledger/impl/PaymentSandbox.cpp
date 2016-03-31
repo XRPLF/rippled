@@ -19,16 +19,19 @@
 
 #include <BeastConfig.h>
 #include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/ledger/View.h>
+
+#include <boost/optional.hpp>
+
 #include <cassert>
 
 namespace ripple {
 
 namespace detail {
 
-auto
-DeferredCredits::makeKey (AccountID const& a1,
-    AccountID const& a2, Currency const& c) ->
-        Key
+auto DeferredCredits::makeKey (AccountID const& a1,
+    AccountID const& a2,
+    Currency const& c) -> Key
 {
     if (a1 < a2)
         return std::make_tuple(a1, a2, c);
@@ -36,12 +39,12 @@ DeferredCredits::makeKey (AccountID const& a1,
         return std::make_tuple(a2, a1, c);
 }
 
-void DeferredCredits::credit (AccountID const& sender,
-                              AccountID const& receiver,
-                              STAmount const& amount)
+void
+DeferredCredits::credit (AccountID const& sender,
+    AccountID const& receiver,
+    STAmount const& amount,
+    STAmount const& preCreditBalanceSender)
 {
-    using std::get;
-
     assert (sender != receiver);
     assert (!amount.negative());
 
@@ -53,52 +56,55 @@ void DeferredCredits::credit (AccountID const& sender,
 
         if (sender < receiver)
         {
-            get<1> (v) = amount;
-            get<0> (v) = amount.zeroed ();
+            v.highAccCredits = amount;
+            v.lowAccCredits = amount.zeroed ();
+            v.lowAccOrgBalance = preCreditBalanceSender;
         }
         else
         {
-            get<1> (v) = amount.zeroed ();
-            get<0> (v) = amount;
+            v.highAccCredits = amount.zeroed ();
+            v.lowAccCredits = amount;
+            v.lowAccOrgBalance = -preCreditBalanceSender;
         }
 
         map_[k] = v;
     }
     else
     {
+        // only record the balance the first time, do not record it here
         auto& v = i->second;
         if (sender < receiver)
-            get<1> (v) += amount;
+            v.highAccCredits += amount;
         else
-            get<0> (v) += amount;
+            v.lowAccCredits += amount;
     }
 }
 
-// Get the adjusted balance of main for the
-// balance between main and other.
-STAmount DeferredCredits::adjustedBalance (AccountID const& main,
-                                           AccountID const& other,
-                                           STAmount const& curBalance) const
+// Get the adjustments for the balance between main and other.
+auto
+DeferredCredits::adjustments (AccountID const& main,
+    AccountID const& other,
+    Currency const& currency) const -> boost::optional<adjustment>
 {
-    using std::get;
-    STAmount result (curBalance);
+    boost::optional<adjustment> result;
 
-    Key const k = makeKey (main, other, curBalance.getCurrency ());
+    Key const k = makeKey (main, other, currency);
     auto i = map_.find (k);
-    if (i != map_.end ())
-    {
-        auto const& v = i->second;
-        if (main < other)
-        {
-            result -= get<0> (v);
-        }
-        else
-        {
-            result -= get<1> (v);
-        }
-    }
+    if (i == map_.end ())
+        return result;
 
-    return result;
+    auto const& v = i->second;
+
+    if (main < other)
+    {
+        result.emplace (v.highAccCredits, v.lowAccCredits, v.lowAccOrgBalance);
+        return result;
+    }
+    else
+    {
+        result.emplace (v.lowAccCredits, v.highAccCredits, -v.lowAccOrgBalance);
+        return result;
+    }
 }
 
 void DeferredCredits::apply(
@@ -110,9 +116,11 @@ void DeferredCredits::apply(
             to.map_.emplace(p);
         if (! r.second)
         {
-            using std::get;
-            get<0>(r.first->second) += get<0>(p.second);
-            get<1>(r.first->second) += get<1>(p.second);
+            auto& toVal = r.first->second;
+            auto const& fromVal = p.second;
+            toVal.lowAccCredits += fromVal.lowAccCredits;
+            toVal.highAccCredits += fromVal.highAccCredits;
+            // Do not update the org balance, it's already correct
         }
     }
 }
@@ -129,19 +137,54 @@ PaymentSandbox::balanceHook (AccountID const& account,
     AccountID const& issuer,
         STAmount const& amount) const
 {
-    if (ps_)
-        return tab_.adjustedBalance (
-            account, issuer, ps_->balanceHook (account, issuer, amount));
-    return tab_.adjustedBalance(
-        account, issuer, amount);
+    // There are two algorithms here. The first takes the current amount and
+    // subtracts the recorded credits. The second algorithm remembers the origional
+    // balance, and subtracts the debits. The second algorithm should be more numerically
+    // stable than the first. Consider a large credit with a small initial balance.
+    // The first algorithm computes (B+C)-C (where B+C will the the amount passed in).
+    // The second algorithm return B. When B and C differ by large magnitudes, (B+C)-C may
+    // not equal B.
+
+    auto const currency = amount.getCurrency ();
+    auto const switchover = flowV2Switchover (info ().parentCloseTime);
+
+    auto adjustedAmt = amount;
+    if (switchover)
+    {
+        auto delta = amount.zeroed ();
+        auto lastBal = amount;
+        for (auto curSB = this; curSB; curSB = curSB->ps_)
+        {
+            if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
+            {
+                delta += adj->debits;
+                lastBal = adj->orgBalance;
+            }
+        }
+        adjustedAmt = std::min(amount, lastBal - delta);
+    }
+    else
+    {
+        for (auto curSB = this; curSB; curSB = curSB->ps_)
+        {
+            if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
+            {
+                adjustedAmt -= adj->credits;
+            }
+        }
+    }
+
+    assert (!isXRP(issuer) || adjustedAmt >= beast::zero);
+    return adjustedAmt;
 }
 
 void
 PaymentSandbox::creditHook (AccountID const& from,
     AccountID const& to,
-        STAmount const& amount)
+        STAmount const& amount,
+            STAmount const& preCreditBalance)
 {
-    tab_.credit(from, to, amount);
+    tab_.credit (from, to, amount, preCreditBalance);
 }
 
 void
