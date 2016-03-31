@@ -21,6 +21,7 @@
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/tests/PathSet.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 namespace test {
@@ -253,11 +254,49 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
     }
 
+    void testTinyBalance ()
+    {
+        testcase ("Tiny balance");
+
+        // Add and subtract a huge credit from a tiny balance, expect the tiny
+        // balance back. Numerical stability problems could cause the balance to
+        // be zero.
+
+        using namespace jtx;
+
+        Env env (*this);
+
+        Account const gw ("gw");
+        Account const alice ("alice");
+        auto const USD = gw["USD"];
+
+        auto const issue = USD.issue ();
+        STAmount tinyAmt (issue, STAmount::cMinValue, STAmount::cMinOffset + 1,
+            false, false, STAmount::unchecked{});
+        STAmount hugeAmt (issue, STAmount::cMaxValue, STAmount::cMaxOffset - 1,
+            false, false, STAmount::unchecked{});
+
+        for (auto timeDelta : {-env.closed ()->info ().closeTimeResolution,
+                 env.closed ()->info ().closeTimeResolution})
+        {
+            auto const closeTime = flowV2SoTime () + timeDelta;
+            env.close (closeTime);
+            ApplyViewImpl av (&*env.current (), tapNONE);
+            PaymentSandbox pv (&av);
+            pv.creditHook (gw, alice, hugeAmt, -tinyAmt);
+            if (closeTime > flowV2SoTime ())
+                expect (pv.balanceHook (alice, gw, hugeAmt) == tinyAmt);
+            else
+                expect (pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
+        }
+    }
+
 public:
     void run ()
     {
         testSelfFunding ();
         testSubtractCredits ();
+        testTinyBalance ();
     }
 };
 

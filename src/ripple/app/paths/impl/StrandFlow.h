@@ -181,7 +181,19 @@ flow (
         {
             EitherAmount stepIn (limitStepOut);
             for (auto i = limitingStep + 1; i < s; ++i)
-                stepIn = strand[i]->fwd (*sb, *afView, ofrsToRm, stepIn).second;
+            {
+                auto const r = strand[i]->fwd (*sb, *afView, ofrsToRm, stepIn);
+                if (strand[i]->dry (r.second) ||
+                    !strand[i]->equalIn (r.first, stepIn))
+                {
+                    // The limits should already have been found, so executing a strand forward
+                    // from the limiting step should not find a new limit
+                    JLOG (j.fatal()) << "Re-executed forward pass failed";
+                    assert (0);
+                    return {telFAILED_PROCESSING, std::move (ofrsToRm)};
+                }
+                stepIn = r.second;
+            }
         }
 
         auto const strandIn = *strand.front ()->cachedIn ();

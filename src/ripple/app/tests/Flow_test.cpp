@@ -274,6 +274,30 @@ struct Flow_test : public beast::unit_test::suite
             test (env, EUR, USD.issue (), STPath ({IPE (EUR), IPE (USD), IPE (EUR)}),
                   temBAD_PATH_LOOP);
         }
+
+        {
+            // cannot have more than one offer with the same output issue
+
+            using namespace jtx;
+            Env env (*this, features (featureFlowV2));
+
+            env.fund (XRP (10000), alice, bob, carol, gw);
+            env.trust (USD (10000), alice, bob, carol);
+            env.trust (EUR (10000), alice, bob, carol);
+
+            env (pay (gw, bob, USD (100)));
+            env (pay (gw, bob, EUR (100)));
+
+            env (offer (bob, XRP (100), USD (100)));
+            env (offer (bob, USD (100), EUR (100)), txflags (tfPassive));
+            env (offer (bob, EUR (100), USD (100)), txflags (tfPassive));
+
+            // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
+            env (pay (alice, carol, USD (100)), path (~USD, ~EUR, ~USD),
+                sendmax (XRP (200)), txflags (tfNoRippleDirect),
+                ter (temBAD_PATH_LOOP));
+        }
+
         {
             Env env (*this, features(featureFlowV2));
             env.fund (XRP (10000), alice, bob, noripple (gw));
