@@ -36,31 +36,38 @@ namespace detail {
 class DeferredCredits
 {
 public:
-    // Get the adjusted balance of main for the
-    // balance between main and other.
-    STAmount
-    adjustedBalance (AccountID const& main,
+    struct Adjustment
+    {
+        Adjustment (STAmount const& d, STAmount const& c, STAmount const& b)
+            : debits (d), credits (c), origBalance (b) {}
+        STAmount debits;
+        STAmount credits;
+        STAmount origBalance;
+    };
+
+    // Get the adjustments for the balance between main and other.
+    // Returns the debits, credits and the original balance
+    boost::optional<Adjustment> adjustments (
+        AccountID const& main,
         AccountID const& other,
-            STAmount const& curBalance) const;
+        Currency const& currency) const;
 
     void credit (AccountID const& sender,
-                 AccountID const& receiver,
-                 STAmount const& amount);
+        AccountID const& receiver,
+        STAmount const& amount,
+        STAmount const& preCreditSenderBalance);
 
     void apply (DeferredCredits& to);
-
-    // VFALCO Is this needed?
-    // DEPRECATED
-    void clear ();
-
 private:
     // lowAccount, highAccount
     using Key = std::tuple<
         AccountID, AccountID, Currency>;
-
-    // lowAccountCredits, highAccountCredits
-    using Value = std::tuple<
-        STAmount, STAmount>;
+    struct Value
+    {
+        STAmount lowAcctCredits;
+        STAmount highAcctCredits;
+        STAmount lowAcctOrigBalance;
+    };
 
     static
     Key
@@ -145,7 +152,8 @@ public:
     void
     creditHook (AccountID const& from,
         AccountID const& to,
-            STAmount const& amount) override;
+            STAmount const& amount,
+                STAmount const& preCreditBalance) override;
 
     /** Apply changes to base view.
 
@@ -154,8 +162,7 @@ public:
         behavior will result.
     */
     /** @{ */
-    void
-    apply (RawView& to);
+    void apply (RawView& to);
 
     void
     apply (PaymentSandbox& to);
