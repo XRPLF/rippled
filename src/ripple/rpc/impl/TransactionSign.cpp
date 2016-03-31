@@ -785,6 +785,9 @@ static Json::Value checkMultiSignFields (Json::Value const& jvRequest)
 
     Json::Value const& tx_json (jvRequest [jss::tx_json]);
 
+    if (!tx_json.isObject())
+        return RPC::invalid_field_message (jss::tx_json);
+
     // There are a couple of additional fields we need to check before
     // we serialize.  If we serialize first then we generate less useful
     //error messages.
@@ -878,13 +881,17 @@ Json::Value transactionSignFor (
             RPC::invalid_field_message (accountField));
     }
 
-    // If the tx_json.SigningPubKey field is missing, insert an empty one.
-    // RIPD-1036.
    if (! jvRequest.isMember (jss::tx_json))
         return RPC::missing_field_error (jss::tx_json);
 
     {
         Json::Value& tx_json (jvRequest [jss::tx_json]);
+
+        if (!tx_json.isObject())
+            return RPC::object_field_error (jss::tx_json);
+
+        // If the tx_json.SigningPubKey field is missing,
+        // insert an empty one.
         if (!tx_json.isMember (sfSigningPubKey.getJsonName()))
             tx_json[sfSigningPubKey.getJsonName()] = "";
     }
