@@ -54,13 +54,14 @@ class ApplyView;
    when executing `fwd` or `rev`, but all those offers will be from the same
    quality directory.
 
-   A step may not have enough liquidity to transform the entire requested amount. Both
-   `fwd` and `rev` return a pair of amounts (one for input amount, one for output amount)
-   that show how much of the requested amount the step was actually able use.
+   A step may not have enough liquidity to transform the entire requested
+   amount. Both `fwd` and `rev` return a pair of amounts (one for input amount,
+   one for output amount) that show how much of the requested amount the step
+   was actually able to use.
  */
 class Step
 {
-  public:
+public:
     virtual ~Step () = default;
 
     /**
@@ -110,6 +111,25 @@ class Step
     cachedOut () const = 0;
 
     /**
+       If this step is DirectStepI (IOU->IOU direct step), return the src
+       account. This is needed for checkNoRipple.
+    */
+    virtual boost::optional<AccountID>
+    directStepSrcAcct () const
+    {
+        return boost::none;
+    }
+
+    /**
+       If this step is a BookStep, return the book.
+    */
+    virtual boost::optional<Book>
+    bookStepBook () const
+    {
+        return boost::none;
+    }
+
+    /**
        Check if amount is zero
     */
     virtual
@@ -119,6 +139,10 @@ class Step
     virtual
     bool
     equalOut (
+        EitherAmount const& lhs,
+        EitherAmount const& rhs) const = 0;
+
+    virtual bool equalIn (
         EitherAmount const& lhs,
         EitherAmount const& rhs) const = 0;
 
@@ -267,18 +291,22 @@ struct StepImp : public Step
     }
 
     bool
-    equalOut (
-        EitherAmount const& lhs,
-        EitherAmount const& rhs) const override
+    equalOut (EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
-        return get<TOut> (lhs) == get <TOut> (rhs);
+        return get<TOut> (lhs) == get<TOut> (rhs);
+    }
+
+    bool
+    equalIn (EitherAmount const& lhs, EitherAmount const& rhs) const override
+    {
+        return get<TIn> (lhs) == get<TIn> (rhs);
     }
 };
 
 // Thrown when unexpected errors occur
 class FlowException : public std::runtime_error
 {
-  public:
+public:
     TER ter;
     std::string msg;
 
@@ -312,14 +340,14 @@ struct StrandContext
     bool const isLast = false;
     size_t const strandSize;
     // The previous step in the strand. Needed to check the no ripple constraint
-    Step const * const prevStep = nullptr;
+    Step const* const prevStep = nullptr;
     // A strand may not include the same account node more than once
     // in the same currency. In a direct step, an account will show up
     // at most twice: once as a src and once as a dst (hence the two element array).
     // The strandSrc and strandDst will only show up once each.
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues;
-    // A strand may not include the same offer book more than once
-    boost::container::flat_set<Book>& seenBooks;
+    // A strand may not include an offer that output the same issue more than once
+    boost::container::flat_set<Issue>& seenBookOuts;
     beast::Journal j;
 
     StrandContext (ReadView const& view_,
@@ -330,12 +358,11 @@ struct StrandContext
         AccountID strandDst_,
         bool isLast_,
         std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
-        boost::container::flat_set<Book>& seenBooks_,
+        boost::container::flat_set<Issue>& seenBookOuts_,
         beast::Journal j);
 };
 
-namespace test
-{
+namespace test {
 // Needed for testing
 bool directStepEqual (Step const& step,
     AccountID const& src,

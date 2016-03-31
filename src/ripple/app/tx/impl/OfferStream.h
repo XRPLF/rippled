@@ -85,6 +85,7 @@ protected:
     virtual
     void
     permRmOffer (std::shared_ptr<SLE> const& sle) = 0;
+
 public:
     TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
         Book const& book, NetClock::time_point when,
@@ -149,11 +150,11 @@ public:
     The `view_' ` `ApplyView` accumulates changes to the ledger.
     The `cancelView_` is used to determine if an offer is found
     unfunded or became unfunded.
-    The `toRemove` collection identifies offers that should be
+    The `permToRemove` collection identifies offers that should be
     removed even if the strand associated with this OfferStream
     is not applied.
 
-    Certain invalid offers are added to the `toRemove` collection:
+    Certain invalid offers are added to the `permToRemove` collection:
     - Offers with missing ledger entries
     - Offers that expired
     - Offers found unfunded:
@@ -165,7 +166,7 @@ template <class TIn, class TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    boost::container::flat_set<uint256> toRemove_;
+    boost::container::flat_set<uint256> permToRemove_;
 protected:
     void
     permRmOffer (std::shared_ptr<SLE> const& sle) override;
@@ -173,9 +174,9 @@ protected:
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
 
-    boost::container::flat_set<uint256> const& toRemove () const
+    boost::container::flat_set<uint256> const& permToRemove () const
     {
-        return toRemove_;
+        return permToRemove_;
     };
 };
 }

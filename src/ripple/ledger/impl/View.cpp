@@ -31,12 +31,17 @@
 
 namespace ripple {
 
-bool flowV2Switchover (NetClock::time_point const closeTime)
+NetClock::time_point const& flowV2SoTime ()
 {
     using namespace std::chrono_literals;
     // Mon March 28, 2016 10:00:00am PST
     static NetClock::time_point const soTime{512503200s};
-    return closeTime > soTime;
+    return soTime;
+}
+
+bool flowV2Switchover (NetClock::time_point const closeTime)
+{
+    return closeTime > flowV2SoTime();
 }
 
 // VFALCO NOTE A copy of the other one for now
@@ -1092,7 +1097,7 @@ trustCreate (ApplyView& view,
         sleRippleState->setFieldAmount (sfBalance, bSetHigh ? -saBalance : saBalance);
 
         view.creditHook (uSrcAccountID,
-            uDstAccountID, saBalance);
+            uDstAccountID, saBalance, saBalance.zeroed());
     }
 
     return terResult;
@@ -1239,13 +1244,13 @@ rippleCredit (ApplyView& view,
     }
     else
     {
-        view.creditHook (uSenderID,
-            uReceiverID, saAmount);
-
         STAmount saBalance   = sleRippleState->getFieldAmount (sfBalance);
 
         if (bSenderHigh)
             saBalance.negate ();    // Put balance in sender terms.
+
+        view.creditHook (uSenderID,
+            uReceiverID, saAmount, saBalance);
 
         STAmount    saBefore    = saBalance;
 
@@ -1432,8 +1437,12 @@ accountSend (ApplyView& view,
         return rippleSend (view, uSenderID, uReceiverID, saAmount, saActual, j);
     }
 
-    view.creditHook (uSenderID,
-        uReceiverID, saAmount);
+    auto const fv2Switch = flowV2Switchover (view.info ().parentCloseTime);
+    if (!fv2Switch)
+    {
+        auto const dummyBalance = saAmount.zeroed();
+        view.creditHook (uSenderID, uReceiverID, saAmount, dummyBalance);
+    }
 
     /* XRP send which does not check reserve and can do pure adjustment.
      * Note that sender or receiver may be null and this not a mistake; this
@@ -1479,9 +1488,12 @@ accountSend (ApplyView& view,
         }
         else
         {
+            auto const sndBal = sender->getFieldAmount (sfBalance);
+            if (fv2Switch)
+                view.creditHook (uSenderID, xrpAccount (), saAmount, sndBal);
+
             // Decrement XRP balance.
-            sender->setFieldAmount (sfBalance,
-                sender->getFieldAmount (sfBalance) - saAmount);
+            sender->setFieldAmount (sfBalance, sndBal - saAmount);
             view.update (sender);
         }
     }
@@ -1489,8 +1501,12 @@ accountSend (ApplyView& view,
     if (tesSUCCESS == terResult && receiver)
     {
         // Increment XRP balance.
-        receiver->setFieldAmount (sfBalance,
-            receiver->getFieldAmount (sfBalance) + saAmount);
+        auto const rcvBal = receiver->getFieldAmount (sfBalance);
+        receiver->setFieldAmount (sfBalance, rcvBal + saAmount);
+
+        if (fv2Switch)
+            view.creditHook (xrpAccount (), uReceiverID, saAmount, -rcvBal);
+
         view.update (receiver);
     }
 
@@ -1619,11 +1635,10 @@ issueIOU (ApplyView& view,
     auto const must_delete = updateTrustLine(view, state, bSenderHigh, issue.account,
         start_balance, final_balance, j);
 
+    view.creditHook (issue.account, account, amount, start_balance);
+
     if (bSenderHigh)
         final_balance.negate ();
-
-    view.creditHook (issue.account,
-        account, amount);
 
     // Adjust the balance on the trust line if necessary. We do this even if we
     // are going to delete the line to reflect the correct balance at the time
@@ -1687,11 +1702,11 @@ redeemIOU (ApplyView& view,
     auto const must_delete = updateTrustLine (view, state, bSenderHigh, account,
         start_balance, final_balance, j);
 
+    view.creditHook (account, issue.account, amount, start_balance);
+
     if (bSenderHigh)
         final_balance.negate ();
 
-    view.creditHook (account,
-        issue.account, amount);
 
     // Adjust the balance on the trust line if necessary. We do this even if we
     // are going to delete the line to reflect the correct balance at the time

@@ -102,6 +102,12 @@ public:
         return EitherAmount (cache_->out);
     }
 
+    boost::optional<Book>
+    bookStepBook () const override
+    {
+        return book_;
+    }
+
     std::pair<TIn, TOut>
     revImp (
         PaymentSandbox& sb,
@@ -258,7 +264,7 @@ forEachOffer (
             break;
     }
 
-    return {offers.toRemove (), counter.count()};
+    return {offers.permToRemove (), counter.count()};
 }
 
 template <class TIn, class TOut>
@@ -546,11 +552,16 @@ BookStep<TIn, TOut>::check(StrandContext const& ctx) const
         JLOG (j_.debug()) << "Book: currency is inconsistent with issuer." << *this;
         return temBAD_PATH;
     }
-    if (!ctx.seenBooks.insert (book_).second)
+
+    // Do not allow two books to output the same issue. This may cause offers on
+    // one step to unfund offers in another step.
+    if (!ctx.seenBookOuts.insert (book_.out).second ||
+        ctx.seenDirectIssues[0].count (book_.out))
     {
         JLOG (j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
     }
+
     return tesSUCCESS;
 }
 

@@ -226,14 +226,14 @@ toStrand (
     */
     std::array<boost::container::flat_set<Issue>, 2> seenDirectIssues;
     // A strand may not include the same offer book more than once
-    boost::container::flat_set<Book> seenBooks;
+    boost::container::flat_set<Issue> seenBookOuts;
     seenDirectIssues[0].reserve (pes.size());
     seenDirectIssues[1].reserve (pes.size());
-    seenBooks.reserve (pes.size());
+    seenBookOuts.reserve (pes.size());
     auto ctx = [&](bool isLast = false)
     {
         return StrandContext{view, result, strandSrc, strandDst, isLast,
-            seenDirectIssues, seenBooks, j};
+            seenDirectIssues, seenBookOuts, j};
     };
 
     for (int i = 0; i < pes.size () - 1; ++i)
@@ -456,7 +456,7 @@ StrandContext::StrandContext (
     AccountID strandDst_,
     bool isLast_,
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
-    boost::container::flat_set<Book>& seenBooks_,
+    boost::container::flat_set<Issue>& seenBookOuts_,
     beast::Journal j_)
         : view (view_)
         , strandSrc (strandSrc_)
@@ -467,7 +467,7 @@ StrandContext::StrandContext (
         , prevStep (!strand_.empty () ? strand_.back ().get ()
                      : nullptr)
         , seenDirectIssues(seenDirectIssues_)
-        , seenBooks(seenBooks_)
+        , seenBookOuts(seenBookOuts_)
         , j (j_)
 {
 }
