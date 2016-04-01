@@ -901,6 +901,7 @@ def get_classic_sources(toolchain):
             'src/soci/src/core',
             'src/sqlite']
     )
+    append_sources(result, *list_sources('src/beast/beast/asio/src', '.cpp'))
     append_sources(result, *list_sources('src/ripple/app', '.cpp'))
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
     append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
@@ -940,6 +941,7 @@ def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
+        'src/beast/beast/unity/beast_asio_unity.cpp',
         'src/ripple/unity/app_ledger.cpp',
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',

@@ -64,10 +64,10 @@ private:
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     beast::asio::ssl_bundle::socket_type& socket_;
     beast::asio::ssl_bundle::stream_type& stream_;
-    beast::asio::streambuf read_buf_;
-    beast::asio::streambuf write_buf_;
+    beast::streambuf read_buf_;
+    beast::streambuf write_buf_;
     beast::http::message response_;
-    beast::asio::streambuf body_;
+    beast::streambuf body_;
     beast::http::parser parser_;
     PeerFinder::Slot::ptr slot_;
 

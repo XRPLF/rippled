@@ -152,10 +152,10 @@ private:
     Resource::Consumer usage_;
     Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
-    beast::asio::streambuf read_buffer_;
+    beast::streambuf read_buffer_;
     beast::http::message http_message_;
     beast::http::body http_body_;
-    beast::asio::streambuf write_buffer_;
+    beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
