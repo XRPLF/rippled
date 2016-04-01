@@ -13,8 +13,11 @@
     <Filter Include="beast\asio\impl">
       <UniqueIdentifier>{FF54D3F4-A81E-22BE-41BE-3B9033F5D19F}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\asio\tests">
-      <UniqueIdentifier>{EF067C64-19DB-3B0D-6FBD-CE9F1219DC75}</UniqueIdentifier>
+    <Filter Include="beast\asio\src">
+      <UniqueIdentifier>{D091E064-34B3-D521-C542-E4CB4E1DB6B0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\asio\src\test">
+      <UniqueIdentifier>{1C9418C5-092B-040C-16B7-1FA56E86CAF6}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\clock">
       <UniqueIdentifier>{4570DEF7-7325-D45D-57DE-6B99056FE3FC}</UniqueIdentifier>
@@ -534,39 +537,69 @@
     <ClInclude Include="..\..\src\BeastConfig.h">
       <Filter>.</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
+    <ClInclude Include="..\..\src\beast\beast\asio\append_buffers.h">
       <Filter>beast\asio</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\async_completion.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\basic_streambuf.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\error.h">
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
+    <ClInclude Include="..\..\src\beast\beast\asio\consuming_buffers.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\handler_alloc.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\asio\impl\basic_streambuf.ipp">
       <Filter>beast\asio\impl</Filter>
-    </ClCompile>
+    </None>
+    <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
+      <Filter>beast\asio\impl</Filter>
+    </None>
     <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_bind_handler_test.cpp">
+      <Filter>beast\asio\src\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_buffers_test.cpp">
+      <Filter>beast\asio\src\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_error_test.cpp">
+      <Filter>beast\asio\src\test</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\ssl_error.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -762,6 +795,9 @@
     <ClInclude Include="..\..\src\beast\beast\type_name.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
+      <Filter>beast\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_clock_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>

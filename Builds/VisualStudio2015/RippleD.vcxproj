@@ -236,33 +236,54 @@
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\append_buffers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\async_completion.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\basic_streambuf.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\error.h">
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\consuming_buffers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\handler_alloc.h">
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\asio\impl\basic_streambuf.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
+    </None>
     <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_bind_handler_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_buffers_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_error_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\ssl_error.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\clock\abstract_clock.h">
@@ -419,6 +440,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\type_name.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_clock_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>

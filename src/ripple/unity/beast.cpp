@@ -30,7 +30,6 @@
 // Include this to get all the basic includes included, to prevent errors
 #include <ripple/beast/core/core.unity.cpp>
 
-#include <beast/asio/Asio.unity.cpp>
 #include <beast/http/HTTP.unity.cpp>
 
 #include <beast/unit_test/define_print.cpp>

@@ -1,0 +1,29 @@
+#
+# Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+import os ;
+
+path-constant main : ../../beast/unit_test/src/main.cpp ;
+
+unit-test all :
+    append_buffers.cpp
+    asio.cpp
+    async_completion.cpp
+    basic_streambuf.cpp
+    bind_handler.cpp
+    buffers_adapter.cpp
+    buffers_debug.cpp
+    consuming_buffers.cpp
+    handler_alloc.cpp
+    placeholders.cpp
+    prepare_buffers.cpp
+    static_streambuf.cpp
+    streambuf.cpp
+    streambuf_readstream.cpp
+    type_check.cpp
+    $(main)
+    ;
