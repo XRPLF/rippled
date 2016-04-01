@@ -17,15 +17,27 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_STREAMBUF_H_INCLUDED
-#define BEAST_ASIO_STREAMBUF_H_INCLUDED
-
-#include <beast/asio/basic_streambuf.h>
+#include <beast/asio/ssl_error.h>
+#include <beast/unit_test/suite.h>
+#include <string>
 
 namespace beast {
 
-using streambuf = basic_streambuf<std::allocator<char>>;
+class error_test : public unit_test::suite
+{
+public:
+    void run()
+    {
+        {
+            boost::system::error_code ec =
+                boost::system::error_code (335544539,
+                    boost::asio::error::get_ssl_category ());
+            std::string const s = beast::error_message_with_ssl(ec);
+            expect(s == " (20,0,219) error:140000DB:SSL routines:SSL routines:short read");
+        }
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(error,asio,beast);
 
 } // beast
-
-#endif

@@ -17,39 +17,6 @@
 */
 //==============================================================================
 
-// LIBS: boost_system
-
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
-
-#include <beast/unit_test/suite.h>
-
-#include <beast/asio/bind_handler.h>
-
-#include <functional>
-
-namespace beast {
-namespace asio {
-
-class bind_handler_test : public unit_test::suite
-{
-public:
-    static void foo (int)
-    {
-    }
-
-    void run()
-    {
-        auto f (bind_handler (
-            std::bind (&foo, std::placeholders::_1),
-            42));
-        f();
-        pass();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
-
-}
-}
+#include <beast/asio/src/test/beast_asio_bind_handler_test.cpp>
+#include <beast/asio/src/test/beast_asio_buffers_test.cpp>
+#include <beast/asio/src/test/beast_asio_error_test.cpp>

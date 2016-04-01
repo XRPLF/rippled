@@ -20,14 +20,13 @@
 #ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 #define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/config.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <stdexcept>
-
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/config.hpp>
 
 namespace beast {
 
