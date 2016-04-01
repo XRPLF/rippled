@@ -71,7 +71,7 @@ class JSONRPCClient : public AbstractClient
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
     boost::asio::streambuf bin_;
-    beast::asio::streambuf bout_;
+    beast::streambuf bout_;
 
 public:
     explicit
@@ -121,7 +121,7 @@ public:
         write(stream_, buffer(r));
 
         read_until(stream_, bin_, "\r\n\r\n");
-        beast::asio::streambuf body;
+        beast::streambuf body;
         beast::http::message m;
         beast::http::parser p(
             [&](void const* data, std::size_t size)
