@@ -2799,13 +2799,7 @@
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\HTTPRequest.h">
-      <Filter>ripple\net</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\net\impl\HTTPClient.cpp">
-      <Filter>ripple\net\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\net\impl\HTTPRequest.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\InfoSub.cpp">
