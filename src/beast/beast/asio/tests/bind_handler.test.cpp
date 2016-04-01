@@ -17,20 +17,15 @@
 */
 //==============================================================================
 
-// LIBS: boost_system
-
 #if BEAST_INCLUDE_BEASTCONFIG
 #include <BeastConfig.h>
 #endif
-
 #include <beast/unit_test/suite.h>
-
 #include <beast/asio/bind_handler.h>
-
 #include <functional>
 
 namespace beast {
-namespace asio {
+namespace test {
 
 class bind_handler_test : public unit_test::suite
 {
@@ -51,5 +46,6 @@ public:
 
 BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
 
-}
-}
+} // test
+} // beast
+

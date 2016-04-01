@@ -23,76 +23,57 @@
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
-
 #include <functional>
 #include <type_traits>
 #include <utility>
 
 namespace beast {
-namespace asio {
 
 namespace detail {
 
 /** Nullary handler that calls Handler with bound arguments.
-    The rebound handler provides the same io_service execution
+
+    The bound handler provides the same io_service execution
     guarantees as the original handler.
 */
-template <class DeducedHandler, class... Args>
+template<class DeducedHandler, class... Args>
 class bound_handler
 {
 private:
     using args_type = std::tuple <std::decay_t <Args>...>;
+    
+    std::decay_t<DeducedHandler> h_;
+    args_type args_;
 
-    std::decay_t <DeducedHandler> m_handler;
-    args_type m_args;
-
-    template <class Handler, class Tuple, std::size_t... S>
-    static void invoke (Handler& h, Tuple& args,
+    template<class Handler, class Tuple, std::size_t... S>
+    static void invoke(Handler& h, Tuple& args,
         std::index_sequence <S...>)
     {
-        h (std::get <S> (args)...);
+        h(std::get<S>(args)...);
     }
 
 public:
     using result_type = void;
 
     explicit
-    bound_handler (DeducedHandler&& handler, Args&&... args)
-        : m_handler (std::forward <DeducedHandler> (handler))
-        , m_args (std::forward <Args> (args)...)
+    bound_handler(DeducedHandler&& handler, Args&&... args)
+        : h_(std::forward<DeducedHandler>(handler))
+        , args_(std::forward<Args>(args)...)
     {
     }
 
     void
-    operator() ()
+    operator()()
     {
-        invoke (m_handler, m_args,
-            std::index_sequence_for <Args...> ());
+        invoke(h_, args_,
+            std::index_sequence_for<Args...> ());
     }
 
     void
-    operator() () const
+    operator()() const
     {
-        invoke (m_handler, m_args,
-            std::index_sequence_for <Args...> ());
-    }
-
-    template <class Function>
-    friend
-    void
-    asio_handler_invoke (Function& f, bound_handler* h)
-    {
-        boost_asio_handler_invoke_helpers::
-            invoke (f, h->m_handler);
-    }
-
-    template <class Function>
-    friend
-    void
-    asio_handler_invoke (Function const& f, bound_handler* h)
-    {
-        boost_asio_handler_invoke_helpers::
-            invoke (f, h->m_handler);
+        invoke(h_, args_,
+            std::index_sequence_for<Args...> ());
     }
 
     friend
@@ -100,7 +81,7 @@ public:
     asio_handler_allocate (std::size_t size, bound_handler* h)
     {
         return boost_asio_handler_alloc_helpers::
-            allocate (size, h->m_handler);
+            allocate(size, h->h_);
     }
 
     friend
@@ -108,7 +89,7 @@ public:
     asio_handler_deallocate (void* p, std::size_t size, bound_handler* h)
     {
         boost_asio_handler_alloc_helpers::
-            deallocate (p, size, h->m_handler);
+            deallocate(p, size, h->h_);
     }
 
     friend
@@ -116,49 +97,45 @@ public:
     asio_handler_is_continuation (bound_handler* h)
     {
         return boost_asio_handler_cont_helpers::
-            is_continuation (h->m_handler);
+            is_continuation (h->h_);
+    }
+
+    template<class F>
+    friend
+    void
+    asio_handler_invoke(F&& f, bound_handler* h)
+    {
+        boost_asio_handler_invoke_helpers::
+            invoke(f, h->h_);
     }
 };
 
-}
+} // detail
 
 //------------------------------------------------------------------------------
 
 /** Binds parameters to a handler to produce a nullary functor.
+
     The returned handler provides the same io_service execution guarantees
     as the original handler. This is designed to use as a replacement for
     io_service::wrap, to ensure that the handler will not be invoked
     immediately by the calling function.
 */
 template <class DeducedHandler, class... Args>
-detail::bound_handler <DeducedHandler, Args...>
-bind_handler (DeducedHandler&& handler, Args&&... args)
+detail::bound_handler<DeducedHandler, Args...>
+bind_handler(DeducedHandler&& handler, Args&&... args)
 {
-    return detail::bound_handler <DeducedHandler, Args...> (
-        std::forward <DeducedHandler> (handler),
+    return detail::bound_handler<DeducedHandler, Args...>(
+        std::forward<DeducedHandler> (handler),
             std::forward <Args> (args)...);
 }
 
-}
-}
-
-//------------------------------------------------------------------------------
+} // beast
 
 namespace std {
-
-template <class Handler, class... Args>
-void bind (beast::asio::detail::bound_handler <
-    Handler, Args...>, ...)  = delete;
-
-#if 0
-template <class Handler, class... Args>
-struct is_bind_expression <
-    beast::asio::detail::bound_handler <Handler, Args...>
-> : std::true_type
-{
-};
-#endif
-
-}
+template<class Handler, class... Args>
+void bind(beast::detail::bound_handler<
+    Handler, Args...>, ...) = delete;
+} // std
 
 #endif
