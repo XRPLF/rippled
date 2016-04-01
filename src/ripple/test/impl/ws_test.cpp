@@ -91,11 +91,11 @@ public:
                         state_ = 10;
                         acceptor_.async_accept(sock_, (*yield_)[ec_]);
                         if(ec_)
-                            return fail("accept");
+                            return this->fail("accept");
                         state_ = 20;
                         ws_.async_accept((*yield_)[ec_]);
                         if(ec_)
-                            return fail("ws.accept");
+                            return this->fail("ws.accept");
                         invoke(ops...);
                         state_ = -1;
                     });
@@ -109,12 +109,12 @@ public:
                         state_ = 30;
                         sock_.async_connect(ep, (*yield_)[ec_]);
                         if(ec_)
-                            return fail("connect");
+                            return this->fail("connect");
                         state_ = 40;
                         ws_.async_handshake(ep.address().to_string() +
                             std::to_string(ep.port()), "/", (*yield_)[ec_]);
                         if(ec_)
-                            return fail("handshake");
+                            return this->fail("handshake");
                         invoke(ops...);
                         state_ = -1;
                     });
@@ -156,7 +156,7 @@ public:
                 [&](auto ec)
                 {
                     if(ec)
-                        return fail(ec);
+                        return this->fail(ec);
                     rb_.consume(rb_.size());
                 });
             state_ = 100;
