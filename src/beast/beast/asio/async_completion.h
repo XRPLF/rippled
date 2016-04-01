@@ -17,13 +17,38 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
+#ifndef BEAST_ASIO_ASYNC_COMPLETION_H_INLUDED
+#define BEAST_ASIO_ASYNC_COMPLETION_H_INLUDED
+
+#include <beast/asio/type_check.h>
+#include <boost/asio/async_result.hpp>
+#include <boost/asio/handler_type.hpp>
+#include <type_traits>
+#include <utility>
+
+namespace beast {
+namespace asio {
+
+template <class CompletionToken, class Signature>
+struct async_completion
+{
+    using handler_type =
+        typename boost::asio::handler_type<
+            CompletionToken, Signature>::type;
+
+    async_completion(std::remove_reference_t<CompletionToken>& token)
+        : handler(std::forward<CompletionToken>(token))
+        , result(handler)
+    {
+        static_assert(is_Handler<handler_type, Signature>::value,
+            "Handler requirements not met");
+    }
+
+    handler_type handler;
+    boost::asio::async_result<handler_type> result;
+};
+
+} // asio
+} // beast
+
 #endif
-
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
-
