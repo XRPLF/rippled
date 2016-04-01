@@ -62,7 +62,7 @@ public:
         beast::asio::streambuf wb_;
         yield_context* yield_;
         int state_ = 0;
-        unit_test::suite& test_;
+        //unit_test::suite& test_;
 
     public:
         coro_peer(coro_peer&&) = default;
@@ -76,7 +76,7 @@ public:
             : acceptor_(ios_)
             , sock_(ios_)
             , ws_(sock_)
-            , test_(test)
+            //, test_(test)
         {
             if(server)
             {
