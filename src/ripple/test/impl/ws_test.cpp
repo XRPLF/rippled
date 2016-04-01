@@ -333,10 +333,9 @@ public:
     {
         testInvokable();
 
-        endpoint_type ep{
-            address_type::from_string("127.0.0.1"), 6000};
-
         {
+            endpoint_type ep{
+                address_type::from_string("127.0.0.1"), 6000};
             testcase("Echo Server");
             test::sync_echo_peer s(true, ep, *this);
             testHandshake(ep);
@@ -344,6 +343,8 @@ public:
         }
 
         {
+            endpoint_type ep{
+                address_type::from_string("127.0.0.1"), 6001};
             testcase("Async Echo Server");
             test::async_echo_peer s(true, ep, *this);
             testHandshake(ep);
