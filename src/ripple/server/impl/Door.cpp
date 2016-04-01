@@ -132,7 +132,7 @@ Door::Detector::do_detect (boost::asio::yield_context yield)
 {
     bool ssl;
     error_code ec;
-    beast::asio::streambuf buf(16);
+    beast::streambuf buf(16);
     timer_.expires_from_now(std::chrono::seconds(15));
     std::tie(ec, ssl) = detect_ssl(socket_, buf, yield);
     error_code unused;

@@ -17,39 +17,36 @@
 */
 //==============================================================================
 
-// LIBS: boost_system
+#ifndef BEAST_ASIO_ASYNC_COMPLETION_H_INLUDED
+#define BEAST_ASIO_ASYNC_COMPLETION_H_INLUDED
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
-
-#include <beast/unit_test/suite.h>
-
-#include <beast/asio/bind_handler.h>
-
-#include <functional>
+#include <beast/asio/type_check.h>
+#include <boost/asio/async_result.hpp>
+#include <boost/asio/handler_type.hpp>
+#include <type_traits>
+#include <utility>
 
 namespace beast {
-namespace asio {
 
-class bind_handler_test : public unit_test::suite
+template <class CompletionToken, class Signature>
+struct async_completion
 {
-public:
-    static void foo (int)
+    using handler_type =
+        typename boost::asio::handler_type<
+            CompletionToken, Signature>::type;
+
+    async_completion(std::remove_reference_t<CompletionToken>& token)
+        : handler(std::forward<CompletionToken>(token))
+        , result(handler)
     {
+        static_assert(is_Handler<handler_type, Signature>::value,
+            "Handler requirements not met");
     }
 
-    void run()
-    {
-        auto f (bind_handler (
-            std::bind (&foo, std::placeholders::_1),
-            42));
-        f();
-        pass();
-    }
+    handler_type handler;
+    boost::asio::async_result<handler_type> result;
 };
 
-BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
+} // beast
 
-}
-}
+#endif
