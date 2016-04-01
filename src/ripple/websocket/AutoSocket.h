@@ -175,7 +175,7 @@ public:
             // must be plain
             mSecure = false;
             mSocket->get_io_service ().post (
-                beast::asio::bind_handler (cbFunc, error_code()));
+                beast::bind_handler (cbFunc, error_code()));
         }
         else
         {
@@ -208,7 +208,7 @@ public:
                 ec = e.code();
             }
             mSocket->get_io_service ().post (
-                beast::asio::bind_handler (handler, ec));
+                beast::bind_handler (handler, ec));
         }
     }
 

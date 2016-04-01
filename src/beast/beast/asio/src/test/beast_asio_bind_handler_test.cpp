@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,21 +17,32 @@
 */
 //==============================================================================
 
-#if ! BEAST_COMPILE_OBJECTIVE_CPP
+#include <beast/unit_test/suite.h>
+#include <beast/asio/bind_handler.h>
+#include <functional>
 
-/*  This file includes all of the beast sources needed to link.
-    By including them here, we avoid having to muck with the SConstruct
-    Makefile, Project file, or whatever.
-*/
+namespace beast {
+namespace test {
 
-// MUST come first!
-#include <BeastConfig.h>
+class bind_handler_test : public unit_test::suite
+{
+public:
+    static void foo (int)
+    {
+    }
 
-// Include this to get all the basic includes included, to prevent errors
-#include <ripple/beast/core/core.unity.cpp>
+    void run()
+    {
+        auto f (bind_handler (
+            std::bind (&foo, std::placeholders::_1),
+            42));
+        f();
+        pass();
+    }
+};
 
-#include <beast/http/HTTP.unity.cpp>
+BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
 
-#include <beast/unit_test/define_print.cpp>
+} // test
+} // beast
 
-#endif

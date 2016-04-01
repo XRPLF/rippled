@@ -23,6 +23,7 @@
 
 namespace beast {
 namespace http {
+namespace test {
 
 class chunk_encode_test : public unit_test::suite
 {
@@ -98,7 +99,7 @@ public:
     check (std::string const& in, std::string const& answer,
         bool final_chunk = true)
     {
-        asio::streambuf sb(3);
+        streambuf sb(3);
         sb << in;
         auto const out = streambuf_to_string (sb, final_chunk);
         if (! expect (out == answer))
@@ -108,7 +109,7 @@ public:
 
     void testStreambuf()
     {
-        asio::streambuf sb(3);
+        streambuf sb(3);
         std::string const s =
             "0123456789012345678901234567890123456789012345678901234567890123456789"
             "0123456789012345678901234567890123456789012345678901234567890123456789"
@@ -147,5 +148,7 @@ public:
 
 BEAST_DEFINE_TESTSUITE(chunk_encode,http,beast);
 
-}
-}
+} // test
+} // http
+} // beast
+
