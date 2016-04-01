@@ -52,9 +52,6 @@
     <Filter Include="beast\cxx14">
       <UniqueIdentifier>{A3DFF000-1717-AE18-DD13-75DC3A36F594}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\cxx17">
-      <UniqueIdentifier>{DED08E50-BA3F-9E32-7501-3B77F31A5C11}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\hash">
       <UniqueIdentifier>{FE3C8FFD-FEE1-BDEA-DE7F-24A8DEDCAD20}</UniqueIdentifier>
     </Filter>
@@ -579,10 +576,19 @@
     <ClInclude Include="..\..\src\BeastConfig.h">
       <Filter>.</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\append_buffers.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
       <Filter>beast\asio</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\consuming_buffers.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\error.h">
@@ -603,7 +609,13 @@
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
@@ -612,10 +624,10 @@
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
+    <ClCompile Include="..\..\src\beast\beast\asio\tests\buffers_test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
+    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
@@ -758,9 +770,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
       <Filter>beast\cxx14</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
-      <Filter>beast\cxx17</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
       <Filter>beast\hash</Filter>
