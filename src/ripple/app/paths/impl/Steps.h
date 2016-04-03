@@ -114,6 +114,9 @@ public:
     virtual bool equalOut (EitherAmount const& lhs,
         EitherAmount const& rhs) const = 0;
 
+    virtual bool equalIn (EitherAmount const& lhs,
+                           EitherAmount const& rhs) const = 0;
+
     /**
        Check that the step can correctly execute in the forward direction
 
@@ -249,6 +252,12 @@ struct StepImp : public Step
     equalOut (EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
         return get<TOut> (lhs) == get<TOut> (rhs);
+    }
+
+    bool
+    equalIn (EitherAmount const& lhs, EitherAmount const& rhs) const override
+    {
+        return get<TIn> (lhs) == get<TIn> (rhs);
     }
 };
 
