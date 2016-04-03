@@ -70,14 +70,13 @@ private:
 
 public:
     ~message() = default;
-    message (message const&) = delete;
-    message& operator= (message const&) = delete;
+    message (message const&) = default;
+    message (message&& other) = default;
+    message& operator= (message const&) = default;
+    message& operator= (message&& other) = default;
 
     template <class = void>
     message();
-
-    message (message&& other) = default;
-    message& operator= (message&& other) = default;
 
     // Memberspace
     beast::http::headers headers;

@@ -28,21 +28,22 @@ namespace http {
 class message_test : public beast::unit_test::suite
 {
 public:
-    std::pair <message, bool>
-    request (std::string const& text)
+    message
+    request(std::string const& text)
     {
-        message m;
         body b;
-        parser p (m, b, true);
-        auto result (p.write (boost::asio::buffer(text)));
+        message m;
+        parser p(m, b, true);
+        auto const used =
+            p.write(boost::asio::buffer(text));
         p.write_eof();
-        return std::make_pair (std::move(m), result.first);
+        return m;
     }
 
     void
     dump()
     {
-        auto const result = request (
+        auto const m = request (
             "GET / HTTP/1.1\r\n"
             //"Connection: Upgrade\r\n"
             //"Upgrade: Ripple\r\n"
@@ -54,8 +55,8 @@ public:
             "\r\n"
             "x"
             );
-        log << result.first.headers;
-        log << "|" << result.first.headers["Field"] << "|";
+        log << m.headers;
+        log << "|" << m.headers["Field"] << "|";
     }
 
     void
@@ -76,14 +77,13 @@ public:
                 "GET / HTTP/1.1\r\n"
                 "\r\n"
                 ;
-            message m;
             body b;
+            message m;
             parser p (m, b, true);
-            auto result (p.write (boost::asio::buffer(text)));
-            expect (! result.first);
-            auto result2 (p.write_eof());
-            expect (! result2);
-            expect (p.complete());
+            auto const used = p.write(
+                boost::asio::buffer(text));
+            p.write_eof();
+            expect(p.complete());
         }
 
         {
@@ -92,12 +92,13 @@ public:
                 "GET\r\n"
                 "\r\n"
                 ;
-            message m;
             body b;
-            parser p (m, b, true);
-            auto result = p.write (boost::asio::buffer(text));
-            if (expect (result.first))
-                expect (result.first.message() == "invalid HTTP method");
+            message m;
+            parser p(m, b, true);
+            boost::system::error_code ec;
+            auto const used = p.write(boost::asio::buffer(text), ec);
+            if(expect(ec))
+                expect(ec.message() == "invalid HTTP method");
         }
     }
 };
