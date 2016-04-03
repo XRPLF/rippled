@@ -355,14 +355,13 @@ BaseHTTPPeer<Impl>::do_read (yield_context yield)
                 // should request that the handler compose a proper HTTP error
                 // response. This requires refactoring HTTPReply() into
                 // something sensible.
-                std::size_t used;
-                std::tie (ec, used) = parser.write (read_buf_.data());
+                auto used = parser.write (read_buf_.data(), ec);
                 if (! ec)
                     read_buf_.consume (used);
             }
             else
             {
-                ec = parser.write_eof();
+                parser.write_eof(ec);
             }
         }
 

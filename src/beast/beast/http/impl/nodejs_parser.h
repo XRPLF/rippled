@@ -17,46 +17,21 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_DETAIL_HEADER_TRAITS_H_INCLUDED
-#define BEAST_HTTP_DETAIL_HEADER_TRAITS_H_INCLUDED
+#ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+#define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
 
-#include <beast/utility/ci_char_traits.h>
+#include <beast/http/method.h>
 
-#include <boost/utility/string_ref.hpp>
-
-#include <memory>
-#include <string>
+// Wraps the C-language nodejs http parser header in a namespace
 
 namespace beast {
-namespace http {
-namespace detail {
+namespace nodejs {
 
-// Utilities for dealing with HTTP headers
+#include <beast/http/impl/http-parser/http_parser.h>
 
-template <class Allocator = std::allocator <char>>
-using basic_field_string =
-    std::basic_string <char, ci_char_traits, Allocator>;
+http::method_t
+convert_http_method (nodejs::http_method m);
 
-using field_string = basic_field_string <>;
-
-using field_string_ref = boost::basic_string_ref <char, ci_char_traits>;
-
-/** Returns `true` if two header fields are the same.
-    The comparison is case-insensitive.
-*/
-template <class Alloc1, class Alloc2>
-inline
-bool field_eq (
-    std::basic_string <char, std::char_traits <char>, Alloc1> const& s1,
-    std::basic_string <char, std::char_traits <char>, Alloc2> const& s2)
-{
-    return field_string_ref (s1.c_str(), s1.size()) ==
-           field_string_ref (s2.c_str(), s2.size());
-}
-
-/** Returns the string with leading and trailing LWS removed. */
-
-}
 }
 }
 

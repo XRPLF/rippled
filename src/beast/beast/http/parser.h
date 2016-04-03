@@ -32,160 +32,93 @@ namespace http {
 /** Parser for HTTP messages.
     The result is stored in a message object.
 */
-class parser : public beast::http::basic_parser
+class parser
+    : public beast::http::basic_parser<parser>
 {
-private:
-    std::reference_wrapper <message> message_;
+    friend class basic_parser<parser>;
+
+    message& m_;
     std::function<void(void const*, std::size_t)> write_body_;
 
 public:
+    parser(parser&&) = default;
+    parser(parser const&) = delete;
+    parser& operator=(parser&&) = delete;
+    parser& operator=(parser const&) = delete;
+
     /** Construct a parser for HTTP request or response.
         The headers plus request or status line are stored in message.
         The content-body, if any, is passed as a series of calls to
         the write_body function. Transfer encodings are applied before
         any data is passed to the write_body function.
     */
-    parser (std::function<void(void const*, std::size_t)> write_body,
+    parser(std::function<void(void const*, std::size_t)> write_body,
             message& m, bool request)
-        : beast::http::basic_parser (request)
-        , message_(m)
+        : basic_parser(request)
+        , m_(m)
         , write_body_(std::move(write_body))
     {
-        message_.get().request(request);
+        m_.request(request);
     }
 
-    parser (message& m, body& b, bool request)
-        : beast::http::basic_parser (request)
-        , message_(m)
+    parser(message& m, body& b, bool request)
+        : basic_parser(request)
+        , m_(m)
     {
         write_body_ = [&b](void const* data, std::size_t size)
             {
                 b.write(data, size);
             };
-
-        message_.get().request(request);
+        m_.request(request);
     }
-
-    parser& operator= (parser&& other) = default;
 
 private:
-    template <class = void>
     void
-    do_start ();
-
-    template <class = void>
-    bool
-    do_request (method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade);
-
-    template <class = void>
-    bool
-    do_response (int status, std::string const& text,
-        int major, int minor, bool keep_alive, bool upgrade);
-
-    template <class = void>
-    void
-    do_field (std::string const& field, std::string const& value);
-
-    template <class = void>
-    void
-    do_body (void const* data, std::size_t bytes);
-
-    template <class = void>
-    void
-    do_complete();
-
-    void
-    on_start () override
+    on_start()
     {
-        do_start();
     }
 
     bool
-    on_request (method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade) override
+    on_request(method_t method, std::string const& url,
+        int major, int minor, bool keep_alive, bool upgrade)
     {
-        return do_request (method, url, major, minor, keep_alive, upgrade);
+        m_.method(method);
+        m_.url(url);
+        m_.version(major, minor);
+        m_.keep_alive(keep_alive);
+        m_.upgrade(upgrade);
+        return true;
     }
 
     bool
-    on_response (int status, std::string const& text,
-        int major, int minor, bool keep_alive, bool upgrade) override
+    on_response(int status, std::string const& text,
+        int major, int minor, bool keep_alive, bool upgrade)
     {
-        return do_response (status, text, major, minor, keep_alive, upgrade);
+        m_.status(status);
+        m_.reason(text);
+        m_.version(major, minor);
+        m_.keep_alive(keep_alive);
+        m_.upgrade(upgrade);
+        return true;
     }
 
     void
-    on_field (std::string const& field, std::string const& value) override
+    on_field(std::string const& field, std::string const& value)
     {
-        do_field (field, value);
+        m_.headers.append(field, value);
     }
 
     void
-    on_body (void const* data, std::size_t bytes) override
+    on_body(void const* data, std::size_t bytes)
     {
-        do_body (data, bytes);
+        write_body_(data, bytes);
     }
 
     void
-    on_complete() override
+    on_complete()
     {
-        do_complete();
     }
 };
-
-//------------------------------------------------------------------------------
-template <class>
-void
-parser::do_start()
-{
-}
-
-template <class>
-bool
-parser::do_request (method_t method, std::string const& url,
-    int major, int minor, bool keep_alive, bool upgrade)
-{
-    message_.get().method (method);
-    message_.get().url (url);
-    message_.get().version (major, minor);
-    message_.get().keep_alive (keep_alive);
-    message_.get().upgrade (upgrade);
-    return true;
-}
-
-template <class>
-bool
-parser::do_response (int status, std::string const& text,
-    int major, int minor, bool keep_alive, bool upgrade)
-{
-    message_.get().status (status);
-    message_.get().reason (text);
-    message_.get().version (major, minor);
-    message_.get().keep_alive (keep_alive);
-    message_.get().upgrade (upgrade);
-    return true;
-}
-
-template <class>
-void
-parser::do_field (std::string const& field, std::string const& value)
-{
-    message_.get().headers.append (field, value);
-}
-
-template <class>
-void
-parser::do_body (void const* data, std::size_t bytes)
-{
-    write_body_(data, bytes);
-}
-
-template <class>
-void
-parser::do_complete()
-{
-}
 
 } // http
 } // beast

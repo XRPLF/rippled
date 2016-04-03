@@ -546,10 +546,10 @@ public:
         http::body b;
         http::message m;
         http::parser p(m, b, false);
-        auto const result = p.write(sb.data());
-        if (result.first || ! p.complete())
-            throw std::runtime_error(result.first.message());
-        sb.consume(result.second);
+        auto const used = p.write(sb.data(), ec);
+        if (ec || ! p.complete())
+            throw std::runtime_error(ec.message());
+        sb.consume(used);
     }
 
     // write a text message

@@ -293,10 +293,9 @@ ConnectAttempt::onRead (error_code ec, std::size_t bytes_transferred)
 
     if (! ec)
     {
-        write_buf_.commit (bytes_transferred);
-        std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = parser_.write(
-            write_buf_.data());
+        write_buf_.commit(bytes_transferred);
+        auto bytes_consumed = parser_.write(
+            write_buf_.data(), ec);
         if (! ec)
         {
             write_buf_.consume (bytes_consumed);

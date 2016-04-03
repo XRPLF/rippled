@@ -21,9 +21,8 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/http/impl/basic_parser.cpp>
-#include <beast/http/impl/joyent_parser.cpp>
 #include <beast/http/impl/method.cpp>
+#include <beast/http/impl/nodejs_parser.cpp>
 #include <beast/http/impl/URL.cpp>
 
 #include <beast/http/tests/chunked_encoder.test.cpp>
