@@ -70,7 +70,7 @@ exports.servers = {
     'port_admin_ws': lines('port = 5006',
                            'ip = 127.0.0.1',
                            'admin = 127.0.0.1',
-                           'protocol = ws2'),
+                           'protocol = ws'),
 
     'node_db': lines('type=memory', 'path=integration'),
 
