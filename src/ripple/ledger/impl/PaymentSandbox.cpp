@@ -125,11 +125,6 @@ void DeferredCredits::apply(
     }
 }
 
-void DeferredCredits::clear ()
-{
-    map_.clear ();
-}
-
 } // detail
 
 STAmount

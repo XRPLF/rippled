@@ -58,11 +58,6 @@ public:
         STAmount const& preCreditSenderBalance);
 
     void apply (DeferredCredits& to);
-
-    // VFALCO Is this needed?
-    // DEPRECATED
-    void clear ();
-
 private:
     // lowAccount, highAccount
     using Key = std::tuple<
