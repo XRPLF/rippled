@@ -85,6 +85,10 @@ protected:
     virtual
     void
     permRmOffer (std::shared_ptr<SLE> const& sle) = 0;
+
+    virtual
+    void
+    becameUnfundedOffer (std::shared_ptr<SLE> const& sle){};
 public:
     TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
         Book const& book, NetClock::time_point when,
@@ -165,17 +169,30 @@ template <class TIn, class TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    boost::container::flat_set<uint256> toRemove_;
+    boost::container::flat_set<uint256> permToRemove_;
+    boost::container::flat_set<uint256> becameUnfunded_;
 protected:
     void
     permRmOffer (std::shared_ptr<SLE> const& sle) override;
 
+    void
+    becameUnfundedOffer (std::shared_ptr<SLE> const& sle) override;
+
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
 
-    boost::container::flat_set<uint256> const& toRemove () const
+    boost::container::flat_set<uint256> const& permToRemove () const
     {
-        return toRemove_;
+        return permToRemove_;
+    };
+
+    boost::container::flat_set<uint256> const& becameUnfunded () const
+    {
+        return becameUnfunded_;
+    };
+    boost::container::flat_set<uint256>& becameUnfunded ()
+    {
+        return becameUnfunded_;
     };
 };
 }

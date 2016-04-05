@@ -123,6 +123,11 @@ public:
         return to_string (m_entry->getIndex());
     }
 
+    uint256 const& key () const
+    {
+        return m_entry->key();
+    }
+
     Issue issueIn () const;
     Issue issueOut () const;
 };

@@ -201,11 +201,11 @@ public:
 
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
-    virtual
-    void
+    virtual void
     creditHook (AccountID const& from,
         AccountID const& to,
-            STAmount const& amount)
+        STAmount const& amount,
+        STAmount const& preCreditBalance)
     {
     }
 };

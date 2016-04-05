@@ -193,6 +193,7 @@ TOfferStreamBase<TIn, TOut>::step ()
             }
             else
             {
+                becameUnfundedOffer (entry);
                 JLOG(j_.trace()) <<
                     "Removing became unfunded offer " << entry->getIndex();
             }
@@ -216,7 +217,13 @@ OfferStream::permRmOffer (std::shared_ptr<SLE> const& sle)
 template<class TIn, class TOut>
 void FlowOfferStream<TIn, TOut>::permRmOffer (std::shared_ptr<SLE> const& sle)
 {
-    toRemove_.insert (sle->key());
+    permToRemove_.insert (sle->key());
+}
+
+template<class TIn, class TOut>
+void FlowOfferStream<TIn, TOut>::becameUnfundedOffer (std::shared_ptr<SLE> const& sle)
+{
+    becameUnfunded_.insert (sle->key());
 }
 
 template class FlowOfferStream<STAmount, STAmount>;

@@ -181,7 +181,18 @@ flow (
         {
             EitherAmount stepIn (limitStepOut);
             for (auto i = limitingStep + 1; i < s; ++i)
-                stepIn = strand[i]->fwd (*sb, *afView, ofrsToRm, stepIn).second;
+            {
+                auto const r = strand[i]->fwd (*sb, *afView, ofrsToRm, stepIn);
+                if (strand[i]->dry (r.second) ||
+                    !strand[i]->equalIn (r.first, stepIn))
+                {
+                    // limiting step forward
+                    JLOG (j.fatal()) << "Re-executed forward pass failed";
+                    assert (0);
+                    return {telFAILED_PROCESSING, std::move (ofrsToRm)};
+                }
+                stepIn = r.second;
+            }
         }
 
         auto const strandIn = *strand.front ()->cachedIn ();
@@ -291,6 +302,11 @@ public:
         // Swap, don't move, so we keep the reserve in next_
         cur_.clear ();
         std::swap (cur_, next_);
+        // BookSteps keep a blacklist of offers that need to be cleared between
+        // iterations
+        for(auto& strand : cur_)
+            for(auto& step : *strand)
+                step->restart ();
     }
 
     void

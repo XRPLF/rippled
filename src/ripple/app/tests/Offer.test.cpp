@@ -24,6 +24,7 @@
 #include <ripple/test/jtx.h>
 #include <ripple/test/jtx/Account.h>
 #include <ripple/ledger/tests/PathSet.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
 
 namespace ripple {
@@ -40,6 +41,15 @@ class Offer_test : public beast::unit_test::suite
     {
         return env.current()->info().parentCloseTime.time_since_epoch().count();
     }
+
+    static auto
+    xrpMinusFee (jtx::Env const& env, std::int64_t xrpAmount)
+        -> jtx::PrettyAmount
+    {
+        using namespace jtx;
+        auto feeDrops = env.current ()->fees ().base;
+        return drops (dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
+    };
 
 public:
     void testRmFundedOffer ()
@@ -343,15 +353,6 @@ public:
 
             env (pay (alice, carol, USD2 (50)), path (~USD1, bob),
                 sendmax (XRP (50)), txflags (tfNoRippleDirect));
-
-            auto xrpMinusFee = [](jtx::Env const& env,
-                std::int64_t xrpAmount) -> jtx::PrettyAmount
-            {
-                using namespace jtx;
-                auto feeDrops = env.current ()->fees ().base;
-                return drops (
-                    dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
-            };
 
             env.require (balance (alice, xrpMinusFee (env, 10000 - 50)));
             env.require (balance (bob, USD1 (100)));
@@ -795,6 +796,64 @@ public:
             owners ("eve", 1));
     }
 
+    void
+    testRmMadeUnfunded()
+    {
+        // test cases for re-using offers found unfunded
+        testcase ("Made Unfunded");
+
+        // Create an offer that is made unfunded in the reverse pass, hits a
+        // limiting step, and confirms the made unfunded offer is not re-used
+        // when re-executing the limiting step.
+
+        using namespace jtx;
+        Env env (*this, features (featureFlowV2));
+
+        auto const alice = Account ("alice");
+        auto const bob = Account ("bob");
+        auto const carol = Account ("carol");
+        auto const gw = Account ("gw");
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        env.fund (XRP (10000), alice, bob, carol, gw);
+        env.trust (USD (10000), alice, bob, carol);
+        env.trust (EUR (10000), alice, bob, carol);
+
+        env (pay (gw, bob, USD (100)));
+        env (pay (gw, carol, USD (100)));
+        env (pay (gw, carol, EUR (100)));
+
+        // This will be made unfunded in the reverse pass
+        // Confirm that is isn't used in the forward pass
+        env (offer (bob, XRP (100), USD (100)));
+        // This offer makes the XRP/USD offer a limiting step
+        env (offer (carol, XRP (2), USD (2)));
+        // This offer should be used
+        env (offer (carol, XRP (196), USD (98)));
+        env (offer (bob, EUR (100), USD (100)), txflags (tfPassive));
+        env (offer (carol, USD (100), EUR (100)), txflags (tfPassive));
+
+        expect (isOffer (env, bob, XRP (100), USD (100)) &&
+            isOffer (env, bob, EUR (100), USD (100)) &&
+            isOffer (env, carol, XRP (196), USD (98)) &&
+            isOffer (env, carol, XRP (2), USD (2)) &&
+            isOffer (env, carol, USD (100), EUR (100)));
+
+        // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
+        env (pay (alice, carol, USD (100)), path (~USD, ~EUR, ~USD),
+            sendmax (XRP (200)), txflags (tfNoRippleDirect));
+
+        expect (!isOffer (env, bob, XRP (100), USD (100)) &&
+            !isOffer (env, bob, EUR (100), USD (100)) &&
+            !isOffer (env, carol, XRP (196), USD (98)) &&
+            !isOffer (env, carol, XRP (2), USD (2)) &&
+            !isOffer (env, carol, USD (100), EUR (100)));
+
+        // 2XRP carol's good offer, 196 xrp for carol's bad offer = 198
+        env.require (balance (alice, xrpMinusFee (env, 10000 - 198)));
+    }
+
     void run ()
     {
         testCanceledOffer ();
@@ -807,6 +866,7 @@ public:
         testMalformed ();
         testExpiration ();
         testUnfundedCross ();
+        testRmMadeUnfunded ();
     }
 };
 
