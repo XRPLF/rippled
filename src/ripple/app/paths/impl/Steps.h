@@ -28,8 +28,7 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 
-namespace ripple
-{
+namespace ripple {
 class PaymentSandbox;
 class ReadView;
 class ApplyView;
@@ -56,10 +55,9 @@ class ApplyView;
    quality directory.
 
    A step may not have enough liquidity to transform the entire requested
-   amount. Both
-   `fwd` and `rev` return a pair of amounts (one for input amount, one for
-   output amount)
-   that show how much of the requested amount the step was actually able use.
+   amount. Both `fwd` and `rev` return a pair of amounts (one for input amount,
+   one for output amount) that show how much of the requested amount the step
+   was actually able use.
  */
 class Step
 {
@@ -318,8 +316,7 @@ struct StrandContext
         beast::Journal j);
 };
 
-namespace test
-{
+namespace test {
 // Needed for testing
 bool directStepEqual (Step const& step,
     AccountID const& src,

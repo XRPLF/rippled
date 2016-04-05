@@ -68,8 +68,8 @@ private:
 
     boost::optional<Cache> cache_;
 
-    // Offers that were not used in the reverse pass because they becaue unfunded
-    // in a step preceeding it
+    // Offers that were not used in the reverse pass because they because
+    // unfunded in a step preceding it
     boost::container::flat_set<uint256> becameUnfunded_;
 public:
     BookStep (Issue const& in,

@@ -137,13 +137,15 @@ PaymentSandbox::balanceHook (AccountID const& account,
     AccountID const& issuer,
         STAmount const& amount) const
 {
-    // There are two algorithms here. The first takes the current amount and
-    // subtracts the recorded credits. The second algorithm remembers the origional
-    // balance, and subtracts the debits. The second algorithm should be more numerically
-    // stable than the first. Consider a large credit with a small initial balance.
-    // The first algorithm computes (B+C)-C (where B+C will the the amount passed in).
-    // The second algorithm return B. When B and C differ by large magnitudes, (B+C)-C may
-    // not equal B.
+    /*
+    There are two algorithms here. The first takes the current amount and
+    subtracts the recorded credits. The second algorithm remembers the original
+    balance, and subtracts the debits. The second algorithm should be more
+    numerically stable than the first. Consider a large credit with a small
+    initial balance. The first algorithm computes (B+C)-C (where B+C will the
+    the amount passed in). The second algorithm return B. When B and C differ by
+    large magnitudes, (B+C)-C may not equal B.
+    */
 
     auto const currency = amount.getCurrency ();
     auto const switchover = flowV2Switchover (info ().parentCloseTime);
