@@ -302,6 +302,8 @@ public:
         // Swap, don't move, so we keep the reserve in next_
         cur_.clear ();
         std::swap (cur_, next_);
+        // BookSteps keep a blacklist of offers that need to be cleared between
+        // iterations
         for(auto& strand : cur_)
             for(auto& step : *strand)
                 step->restart ();

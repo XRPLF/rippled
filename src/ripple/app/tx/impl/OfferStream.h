@@ -169,7 +169,7 @@ template <class TIn, class TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    boost::container::flat_set<uint256> toRemove_;
+    boost::container::flat_set<uint256> permToRemove_;
     boost::container::flat_set<uint256> becameUnfunded_;
 protected:
     void
@@ -181,9 +181,9 @@ protected:
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
 
-    boost::container::flat_set<uint256> const& permUnfunded () const
+    boost::container::flat_set<uint256> const& permToRemove () const
     {
-        return toRemove_;
+        return permToRemove_;
     };
 
     boost::container::flat_set<uint256> const& becameUnfunded () const

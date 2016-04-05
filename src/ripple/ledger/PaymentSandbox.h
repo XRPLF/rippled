@@ -36,18 +36,18 @@ namespace detail {
 class DeferredCredits
 {
 public:
-    struct adjustment
+    struct Adjustment
     {
-        adjustment (STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits (d), credits (c), orgBalance (b) {}
+        Adjustment (STAmount const& d, STAmount const& c, STAmount const& b)
+            : debits (d), credits (c), origBalance (b) {}
         STAmount debits;
         STAmount credits;
-        STAmount orgBalance;
+        STAmount origBalance;
     };
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    boost::optional<adjustment> adjustments (
+    boost::optional<Adjustment> adjustments (
         AccountID const& main,
         AccountID const& other,
         Currency const& currency) const;
@@ -55,7 +55,7 @@ public:
     void credit (AccountID const& sender,
         AccountID const& receiver,
         STAmount const& amount,
-        STAmount const& preCreditBalance);
+        STAmount const& preCreditSenderBalance);
 
     void apply (DeferredCredits& to);
 
@@ -69,9 +69,9 @@ private:
         AccountID, AccountID, Currency>;
     struct Value
     {
-        STAmount lowAccCredits;
-        STAmount highAccCredits;
-        STAmount lowAccOrgBalance;
+        STAmount lowAcctCredits;
+        STAmount highAcctCredits;
+        STAmount lowAcctOrigBalance;
     };
 
     static

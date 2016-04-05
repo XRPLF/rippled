@@ -43,7 +43,7 @@ void
 DeferredCredits::credit (AccountID const& sender,
     AccountID const& receiver,
     STAmount const& amount,
-    STAmount const& preCreditBalanceSender)
+    STAmount const& preCreditSenderBalance)
 {
     assert (sender != receiver);
     assert (!amount.negative());
@@ -56,15 +56,15 @@ DeferredCredits::credit (AccountID const& sender,
 
         if (sender < receiver)
         {
-            v.highAccCredits = amount;
-            v.lowAccCredits = amount.zeroed ();
-            v.lowAccOrgBalance = preCreditBalanceSender;
+            v.highAcctCredits = amount;
+            v.lowAcctCredits = amount.zeroed ();
+            v.lowAcctOrigBalance = preCreditSenderBalance;
         }
         else
         {
-            v.highAccCredits = amount.zeroed ();
-            v.lowAccCredits = amount;
-            v.lowAccOrgBalance = -preCreditBalanceSender;
+            v.highAcctCredits = amount.zeroed ();
+            v.lowAcctCredits = amount;
+            v.lowAcctOrigBalance = -preCreditSenderBalance;
         }
 
         map_[k] = v;
@@ -74,9 +74,9 @@ DeferredCredits::credit (AccountID const& sender,
         // only record the balance the first time, do not record it here
         auto& v = i->second;
         if (sender < receiver)
-            v.highAccCredits += amount;
+            v.highAcctCredits += amount;
         else
-            v.lowAccCredits += amount;
+            v.lowAcctCredits += amount;
     }
 }
 
@@ -84,9 +84,9 @@ DeferredCredits::credit (AccountID const& sender,
 auto
 DeferredCredits::adjustments (AccountID const& main,
     AccountID const& other,
-    Currency const& currency) const -> boost::optional<adjustment>
+    Currency const& currency) const -> boost::optional<Adjustment>
 {
-    boost::optional<adjustment> result;
+    boost::optional<Adjustment> result;
 
     Key const k = makeKey (main, other, currency);
     auto i = map_.find (k);
@@ -97,12 +97,12 @@ DeferredCredits::adjustments (AccountID const& main,
 
     if (main < other)
     {
-        result.emplace (v.highAccCredits, v.lowAccCredits, v.lowAccOrgBalance);
+        result.emplace (v.highAcctCredits, v.lowAcctCredits, v.lowAcctOrigBalance);
         return result;
     }
     else
     {
-        result.emplace (v.lowAccCredits, v.highAccCredits, -v.lowAccOrgBalance);
+        result.emplace (v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
         return result;
     }
 }
@@ -118,9 +118,9 @@ void DeferredCredits::apply(
         {
             auto& toVal = r.first->second;
             auto const& fromVal = p.second;
-            toVal.lowAccCredits += fromVal.lowAccCredits;
-            toVal.highAccCredits += fromVal.highAccCredits;
-            // Do not update the org balance, it's already correct
+            toVal.lowAcctCredits += fromVal.lowAcctCredits;
+            toVal.highAcctCredits += fromVal.highAcctCredits;
+            // Do not update the orig balance, it's already correct
         }
     }
 }
@@ -160,7 +160,7 @@ PaymentSandbox::balanceHook (AccountID const& account,
             if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
             {
                 delta += adj->debits;
-                lastBal = adj->orgBalance;
+                lastBal = adj->origBalance;
             }
         }
         adjustedAmt = std::min(amount, lastBal - delta);

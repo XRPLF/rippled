@@ -68,7 +68,7 @@ private:
 
     boost::optional<Cache> cache_;
 
-    // Offers that were not used in the reverse pass because they because
+    // Offers that were not used in the reverse pass because they became
     // unfunded in a step preceding it
     boost::container::flat_set<uint256> becameUnfunded_;
 public:
@@ -268,7 +268,7 @@ forEachOffer (
     }
 
     becameUnfundedOffers = std::move(offers.becameUnfunded());
-    return {offers.permUnfunded (), counter.count()};
+    return {offers.permToRemove (), counter.count()};
 }
 
 template <class TIn, class TOut>

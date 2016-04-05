@@ -57,7 +57,7 @@ class ApplyView;
    A step may not have enough liquidity to transform the entire requested
    amount. Both `fwd` and `rev` return a pair of amounts (one for input amount,
    one for output amount) that show how much of the requested amount the step
-   was actually able use.
+   was actually able to use.
  */
 class Step
 {
@@ -122,7 +122,7 @@ public:
        @param afView view the the state of balances before the strand runs
        this determines if an offer becomes unfunded or is found unfunded
        @param in requested step input
-       @return first element is true is step is valid, second element is out
+       @return first element is true if step is valid, second element is out
        amount
     */
     virtual std::pair<bool, EitherAmount> validFwd (PaymentSandbox& sb,
