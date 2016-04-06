@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_DETAIL_ERROR_H_INCLUDED
 #define BEAST_HTTP_DETAIL_ERROR_H_INCLUDED
 
-#include <beast/http/impl/nodejs_parser.h>
+#include <beast/http/src/nodejs_parser.h>
 #include <boost/system/error_code.hpp>
 
 namespace beast {

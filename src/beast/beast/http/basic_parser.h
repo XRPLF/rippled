@@ -21,7 +21,7 @@
 #define BEAST_HTTP_BASIC_PARSER_H_INCLUDED
 
 #include <beast/http/method.h>
-#include <beast/http/impl/nodejs_parser.h>
+#include <beast/http/src/nodejs_parser.h>
 #include <beast/asio/type_check.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>

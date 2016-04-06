@@ -52,6 +52,3 @@
 #include <ripple/test/impl/ManualTimeKeeper.cpp>
 #include <ripple/test/impl/WSClient.cpp>
 #include <ripple/test/impl/WSClient_test.cpp>
-
-// Temporary
-#include <ripple/test/impl/http_test.cpp>

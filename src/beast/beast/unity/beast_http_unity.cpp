@@ -17,17 +17,13 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/http/src/beast_http_method.cpp>
+#include <beast/http/src/beast_http_nodejs_parser.cpp>
+#include <beast/http/src/beast_http_URL.cpp>
 
-#include <beast/http/impl/method.cpp>
-#include <beast/http/impl/nodejs_parser.cpp>
-#include <beast/http/impl/URL.cpp>
-
-#include <beast/http/tests/chunked_encoder.test.cpp>
-#include <beast/http/tests/parser.test.cpp>
-#include <beast/http/tests/rfc2616.test.cpp>
-#include <beast/http/tests/URL.test.cpp>
-#include <beast/http/tests/urls_large_data.cpp>
-
+#include <beast/http/src/test/beast_http_chunked_encoder_test.cpp>
+#include <beast/http/src/test/beast_http_message_test.cpp>
+#include <beast/http/src/test/beast_http_parser_test.cpp>
+#include <beast/http/src/test/beast_http_rfc2616_test.cpp>
+#include <beast/http/src/test/beast_http_URL_test.cpp>
+#include <beast/http/src/test/beast_http_urls_large_data.cpp>

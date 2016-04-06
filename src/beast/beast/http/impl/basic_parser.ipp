@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/http/impl/nodejs_parser.h>
+#include <beast/http/src/nodejs_parser.h>
 #include <beast/http/rfc2616.h>
 #include <beast/http/detail/error.h>
 

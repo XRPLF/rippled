@@ -21,21 +21,25 @@
 #define BEAST_HTTP_WRITES_H_INCLUDED
 
 #include <beast/asio/type_check.h>
+#include <boost/lexical_cast.hpp>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 namespace beast {
 namespace http2 {
 namespace detail {
 
-template<class Streambuf, class Traits, class Allocator,
+template<class Streambuf, class T,
     class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
 void
-write(Streambuf& streambuf,
-    std::basic_string<char, Traits, Allocator> const& s)
+write(Streambuf& streambuf, T&& t)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
+    auto const& s =
+        boost::lexical_cast<std::string>(
+            std::forward<T>(t));
     streambuf.commit(buffer_copy(
         streambuf.prepare(s.size()), buffer(s)));
 }

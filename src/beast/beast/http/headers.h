@@ -322,7 +322,7 @@ void
 headers<Allocator>::insert(
     std::string const& field, std::string const& value)
 {
-    set_t::insert_commit_data d;
+    typename set_t::insert_commit_data d;
     auto const result = set_.insert_check (field, less{}, d);
     if (result.second)
     {
@@ -674,7 +674,7 @@ void
 headers::append (std::string const& field,
     std::string const& value)
 {
-    set_t::insert_commit_data d;
+    typename set_t::insert_commit_data d;
     auto const result (set_.insert_check (field, less{}, d));
     if (result.second)
     {

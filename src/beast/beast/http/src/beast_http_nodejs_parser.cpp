@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/http/impl/nodejs_parser.h>
+#include <beast/http/src/nodejs_parser.h>
 #include <beast/http/method.h>
 #include <boost/system/error_code.hpp>
 

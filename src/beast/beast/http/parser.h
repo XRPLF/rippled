@@ -21,6 +21,7 @@
 #define BEAST_HTTP_PARSER_H_INCLUDED
 
 #include <beast/http/basic_parser.h>
+#include <beast/http/error.h>
 #include <boost/optional.hpp>
 #include <functional>
 #include <beast/cxx17/type_traits.h> // <type_traits>
@@ -63,8 +64,9 @@ public:
     setup(Args&&... args)
     {
         factory_ = {
-        #ifndef _MSC_VER
+        #if 0 //#ifndef _MSC_VER
             // Broken in MSVC
+            // and apparently clang and gcc?
             [args_ = std::forward<Args>(args)...]
             {
                 return message_type{args_...};

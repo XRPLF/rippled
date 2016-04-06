@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
-#endif
-
 #include <beast/http/rfc2616.h>
 #include <beast/unit_test/suite.h>
 #include <string>
