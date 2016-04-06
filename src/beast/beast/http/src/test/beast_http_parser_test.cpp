@@ -36,6 +36,7 @@ public:
         parser p(m, b, true);
         auto const used =
             p.write(boost::asio::buffer(text));
+        expect(used == text.size());
         p.write_eof();
         return m;
     }
@@ -82,6 +83,7 @@ public:
             parser p (m, b, true);
             auto const used = p.write(
                 boost::asio::buffer(text));
+            expect(used == text.size());
             p.write_eof();
             expect(p.complete());
         }
@@ -99,6 +101,7 @@ public:
             auto const used = p.write(boost::asio::buffer(text), ec);
             if(expect(ec))
                 expect(ec.message() == "invalid HTTP method");
+            expect(used == text.size());
         }
     }
 };

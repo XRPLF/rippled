@@ -137,7 +137,7 @@ private:
         m_->url = url;
         m_->version = major * 10 + minor;
         keep_alive_ = keep_alive;
-        upgrade_ = upgrade_;
+        upgrade_ = upgrade;
         return true;
     }
 
@@ -155,7 +155,7 @@ private:
     {
         return on_request(method, url,
             major, minor, keep_alive, upgrade,
-            std::bool_constant<message_type::is_request>{});
+                std::bool_constant<message_type::is_request>{});
     }
 
     bool

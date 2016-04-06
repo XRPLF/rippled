@@ -20,6 +20,7 @@
 #ifndef BEAST_HTTP_WRITE_H_INCLUDED
 #define BEAST_HTTP_WRITE_H_INCLUDED
 
+#include <beast/http/error.h>
 #include <beast/http/message.h>
 #include <boost/system/error_code.hpp>
 #include <type_traits>
@@ -33,10 +34,10 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Allocator>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Allocator> const& m)
+    message<isRequest, Body, Allocator> const& msg)
 {
-    boost::system::error_code ec;
-    write(stream, m, ec);
+    error_code ec;
+    write(stream, msg, ec);
     if(ec)
         throw boost::system::system_error{ec};
 }
@@ -47,8 +48,8 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Allocator>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Allocator> const& m,
-        boost::system::error_code& ec);
+    message<isRequest, Body, Allocator> const& msg,
+        error_code& ec);
 
 /** Start writing a HTTP message to a stream asynchronously.
 
@@ -60,7 +61,7 @@ template<class AsyncWriteStream,
         class CompletionToken>
 auto
 async_write(AsyncWriteStream& stream,
-    message<isRequest, Body, Allocator> const& m,
+    message<isRequest, Body, Allocator> const& msg,
         CompletionToken&& token);
 
 } // http

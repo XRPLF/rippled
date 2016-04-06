@@ -30,7 +30,7 @@ auto const&
 common_fields()
 {
     // Must be sorted
-    static std::array<82, char const*> constexpr h{
+    static std::array<char const*, 82> constexpr h{
          "Accept"
         ,"Accept-Charset"
         ,"Accept-Datetime"

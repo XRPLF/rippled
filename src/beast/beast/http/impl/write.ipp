@@ -25,6 +25,7 @@
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/handler_alloc.h>
 #include <beast/asio/type_check.h>
+#include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>
 
 namespace beast {
@@ -41,9 +42,6 @@ class write_op;
 template<class Stream, class Message, class Handler>
 class write_op<Stream, Message, Handler, true>
 {
-    using error_code =
-        boost::system::error_code;
-
     using alloc_type =
         handler_alloc<char, Handler>;
 
@@ -180,7 +178,7 @@ public:
     {
         auto& d = *d_;
         d.resume = {
-            [self = *this] mutable
+            [self = *this]() mutable
             {
                 auto& ios = self.d_->s.get_io_service();
                 ios.dispatch(bind_handler(std::move(self),
@@ -294,10 +292,10 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Allocator>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Allocator> const& m,
+    message<isRequest, Body, Allocator> const& msg,
         boost::system::error_code& ec, std::false_type)
 {
-    Body::writer w(m);
+    typename Body::writer w(msg);
     std::mutex m;
     std::condition_variable cv;
     bool ready = false;
@@ -335,10 +333,10 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Allocator>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Allocator> const& m,
-        boost::system::error_code& ec)
+    message<isRequest, Body, Allocator> const& msg,
+        error_code& ec)
 {
-    detail::write(stream, m, ec,
+    detail::write(stream, msg, ec,
         std::bool_constant<Body::is_simple>{});
 }
 
@@ -347,19 +345,20 @@ template<class AsyncWriteStream,
         class CompletionToken>
 auto
 async_write(AsyncWriteStream& stream,
-    message<isReq, Body, Allocator> const& m,
-    CompletionToken&& token)
+    message<isReq, Body, Allocator> const& msg,
+        CompletionToken&& token)
 {
-    static_assert(is_AsyncWriteStream<Stream>::value,
-        "AsyncWriteStream requirements not met");
+    static_assert(
+        is_AsyncWriteStream<AsyncWriteStream>::value,
+            "AsyncWriteStream requirements not met");
     beast::async_completion<CompletionToken,
         void(error_code)> completion(token);
     using message_type =
         message<isReq, Body, Allocator>;
-    detail::write_op<Stream, message_type,
+    detail::write_op<AsyncWriteStream, message_type,
         decltype(completion.handler),
             message_type::is_simple>{
-                completion.handler, stream, m};
+                completion.handler, stream, msg};
     return completion.result.get();
 }
 
