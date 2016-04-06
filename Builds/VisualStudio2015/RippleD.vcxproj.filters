@@ -187,6 +187,12 @@
     <Filter Include="beast\wsproto\impl\zlib">
       <UniqueIdentifier>{F6E19E39-7B3C-45CB-3DA4-5AE7B7B613AD}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\wsproto\src">
+      <UniqueIdentifier>{E5986CF5-37A8-1EE5-1085-645EBEE517B6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\wsproto\src\test">
+      <UniqueIdentifier>{28A822FF-4532-9678-23F2-D844CB0FE207}</UniqueIdentifier>
+    </Filter>
     <Filter Include="build">
       <UniqueIdentifier>{65697F48-7FC6-2A4B-DB6C-56781F3990B5}</UniqueIdentifier>
     </Filter>
@@ -1356,6 +1362,9 @@
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_wsproto_unity.cpp">
+      <Filter>beast\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
@@ -1595,6 +1604,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\socket.h">
       <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\async_echo_peer.h">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_echo_test.cpp">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_test.cpp">
+      <Filter>beast\wsproto\src\test</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\sync_echo_peer.h">
+      <Filter>beast\wsproto\src\test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\static_string.h">
       <Filter>beast\wsproto</Filter>
@@ -4218,9 +4239,6 @@
     <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
       <Filter>ripple\test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\impl\async_echo_peer.h">
-      <Filter>ripple\test\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\impl\BasicNetwork_test.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
@@ -4230,19 +4248,10 @@
     <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\test\impl\sync_echo_peer.h">
-      <Filter>ripple\test\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\test\impl\WSClient.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\impl\WSClient_test.cpp">
-      <Filter>ripple\test\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\impl\ws_echo_test.cpp">
-      <Filter>ripple\test\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\impl\ws_test.cpp">
       <Filter>ripple\test\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\test\JSONRPCClient.h">

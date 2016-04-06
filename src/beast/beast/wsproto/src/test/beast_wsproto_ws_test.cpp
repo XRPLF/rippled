@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/test/impl/async_echo_peer.h>
-#include <ripple/test/impl/sync_echo_peer.h>
+#include <beast/wsproto/src/test/async_echo_peer.h>
+#include <beast/wsproto/src/test/sync_echo_peer.h>
 #include <beast/unit_test/suite.h>
 #include <beast/unit_test/thread.h>
 #include <beast/http.h>
