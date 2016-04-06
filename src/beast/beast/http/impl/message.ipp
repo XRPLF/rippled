@@ -101,7 +101,7 @@ write_headers(Streambuf& streambuf,
         detail::write(streambuf, "\r\n");
         break;
     }
-    headers.write(streambuf);
+    fields.write(streambuf);
     detail::write(streambuf, "\r\n");
 }
 
@@ -132,7 +132,7 @@ write_headers(Streambuf& streambuf,
     detail::write(streambuf, " ");
     detail::write(streambuf, this->reason);
     detail::write(streambuf, "\r\n");
-    headers.write(streambuf);
+    fields.write(streambuf);
     detail::write(streambuf, "\r\n");
 }
 

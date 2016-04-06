@@ -116,7 +116,7 @@ private:
     void
     on_field(std::string const& field, std::string const& value)
     {
-        m_->headers.insert(field, value);
+        m_->fields.insert(field, value);
     }
 
     void

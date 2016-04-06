@@ -85,8 +85,8 @@ struct string_body
     void
     prepare(message<isRequest, string_body, Allocator>& m)
     {
-        m.headers.replace("Content-Length", m.body.size());
-        m.headers.replace("Content-Type", "application/text");
+        m.fields.replace("Content-Length", m.body.size());
+        m.fields.replace("Content-Type", "application/text");
     }
 };
 

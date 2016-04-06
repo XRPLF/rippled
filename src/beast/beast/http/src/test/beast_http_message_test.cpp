@@ -170,7 +170,7 @@ public:
             request<string_body> req({
                 beast::http::method_t::http_get, "/", 11},
                     "Beast.HTTP");
-            req.headers.replace("Host",
+            req.fields.replace("Host",
                 ep.address().to_string() + ":" +
                     std::to_string(ep.port()));
 #if 0

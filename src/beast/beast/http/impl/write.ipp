@@ -27,6 +27,8 @@
 #include <beast/asio/type_check.h>
 #include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>
+#include <condition_variable>
+#include <mutex>
 
 namespace beast {
 namespace http2 {
@@ -295,9 +297,9 @@ write(SyncWriteStream& stream,
     message<isRequest, Body, Allocator> const& msg,
         boost::system::error_code& ec, std::false_type)
 {
-    typename Body::writer w(msg);
     std::mutex m;
     std::condition_variable cv;
+    typename Body::writer w(msg);
     bool ready = false;
     resume_context resume{
         [&]
@@ -321,7 +323,7 @@ write(SyncWriteStream& stream,
         if(! result)
             break;
         boost::asio::write(
-            stream, writer.data(), ec);
+            stream, w.data(), ec);
         if(ec)
             return;
     }

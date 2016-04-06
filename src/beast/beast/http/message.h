@@ -86,7 +86,7 @@ struct message final
     static bool constexpr is_request = isReq;
 
     int version; // 10 or 11
-    headers<Allocator> headers;
+    headers<Allocator> fields;
     value_type body;
 
     message(message&&) = default;
