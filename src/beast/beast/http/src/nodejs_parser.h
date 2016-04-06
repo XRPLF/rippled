@@ -17,33 +17,29 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
-#define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+#ifndef BEAST_HTTP_NODEJS_PARSER_H_INCLUDED
+#define BEAST_HTTP_NODEJS_PARSER_H_INCLUDED
 
 #include <beast/http/method.h>
-
-// Wraps the C-language nodejs http parser header in a namespace
-
-// Must be included first otherwise
-// they go into our namespace.
-#include <sys/types.h>
-#if defined(_WIN32) && !defined(__MINGW32__) && \
-  (!defined(_MSC_VER) || _MSC_VER<1600) && !defined(__WINE__)
-#include <BaseTsd.h>
-#include <stddef.h>
-#else
-#include <stdint.h>
-#endif
-
-namespace beast {
-namespace nodejs {
-
 #include <beast/http/impl/http-parser/http_parser.h>
+#include <boost/system/error_code.hpp>
 
-http::method_t
-convert_http_method (nodejs::http_method m);
+beast::http::method_t
+convert_http_method(http_method m);
 
-}
-}
+namespace boost {
+namespace system {
+template<>
+struct is_error_code_enum<http_errno>
+    : std::true_type
+{
+};
+template<>
+struct is_error_condition_enum<http_errno>
+    : std::true_type
+{
+};
+} // system
+} // boost
 
 #endif

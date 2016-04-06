@@ -28,9 +28,9 @@ template<class Derived>
 basic_parser<Derived>::basic_parser(bool request) noexcept
 {
     state_.data = this;
-    nodejs::http_parser_init(&state_, request
-        ? nodejs::http_parser_type::HTTP_REQUEST
-        : nodejs::http_parser_type::HTTP_RESPONSE);
+    http_parser_init(&state_, request
+        ? http_parser_type::HTTP_REQUEST
+        : http_parser_type::HTTP_RESPONSE);
 }
 
 template<class Derived>
@@ -54,7 +54,7 @@ basic_parser<Derived>::write(void const* data,
     std::size_t size, error_code& ec)
 {
     ec_ = &ec;
-    auto const n = nodejs::http_parser_execute(
+    auto const n = http_parser_execute(
         &state_, hooks(),
             static_cast<const char*>(data), size);
     if(! ec)
@@ -70,7 +70,7 @@ void
 basic_parser<Derived>::write_eof(error_code& ec)
 {
     ec_ = &ec;
-    nodejs::http_parser_execute(
+    http_parser_execute(
         &state_, hooks(), nullptr, 0);
     if(! ec)
         ec = detail::make_error(
@@ -93,7 +93,7 @@ basic_parser<Derived>::check_header()
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_message_start(nodejs::http_parser* p)
+basic_parser<Derived>::cb_message_start(http_parser* p)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
     t.complete_ = false;
@@ -107,7 +107,7 @@ basic_parser<Derived>::cb_message_start(nodejs::http_parser* p)
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_url(nodejs::http_parser* p,
+basic_parser<Derived>::cb_url(http_parser* p,
     char const* in, std::size_t bytes)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
@@ -117,7 +117,7 @@ basic_parser<Derived>::cb_url(nodejs::http_parser* p,
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_status(nodejs::http_parser* p,
+basic_parser<Derived>::cb_status(http_parser* p,
     char const* in, std::size_t bytes)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
@@ -127,7 +127,7 @@ basic_parser<Derived>::cb_status(nodejs::http_parser* p,
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_header_field(nodejs::http_parser* p,
+basic_parser<Derived>::cb_header_field(http_parser* p,
     char const* in, std::size_t bytes)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
@@ -138,7 +138,7 @@ basic_parser<Derived>::cb_header_field(nodejs::http_parser* p,
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_header_value(nodejs::http_parser* p,
+basic_parser<Derived>::cb_header_value(http_parser* p,
     char const* in, std::size_t bytes)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
@@ -153,7 +153,7 @@ basic_parser<Derived>::cb_header_value(nodejs::http_parser* p,
 */
 template<class Derived>
 int
-basic_parser<Derived>::cb_headers_complete(nodejs::http_parser* p)
+basic_parser<Derived>::cb_headers_complete(http_parser* p)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
     t.check_header();
@@ -162,11 +162,11 @@ basic_parser<Derived>::cb_headers_complete(nodejs::http_parser* p)
     if(*t.ec_)
         return 1;
     bool const keep_alive =
-        nodejs::http_should_keep_alive(p) != 0;
-    if(p->type == nodejs::http_parser_type::HTTP_REQUEST)
+        http_should_keep_alive(p) != 0;
+    if(p->type == http_parser_type::HTTP_REQUEST)
     {
-        t.call_on_request(nodejs::convert_http_method(
-            nodejs::http_method(p->method)), t.url_,
+        t.call_on_request(convert_http_method(
+            http_method(p->method)), t.url_,
                 p->http_major, p->http_minor, keep_alive,
                     p->upgrade, has_on_request<Derived>{});
         return 0;
@@ -180,7 +180,7 @@ basic_parser<Derived>::cb_headers_complete(nodejs::http_parser* p)
 // after any transfer-encoding is applied.
 template<class Derived>
 int
-basic_parser<Derived>::cb_body(nodejs::http_parser* p,
+basic_parser<Derived>::cb_body(http_parser* p,
     char const* in, std::size_t bytes)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
@@ -192,7 +192,7 @@ basic_parser<Derived>::cb_body(nodejs::http_parser* p,
 // and content body (if any) are complete.
 template<class Derived>
 int
-basic_parser<Derived>::cb_message_complete(nodejs::http_parser* p)
+basic_parser<Derived>::cb_message_complete(http_parser* p)
 {
     auto& t = *reinterpret_cast<basic_parser*>(p->data);
     t.complete_ = true;
@@ -202,14 +202,14 @@ basic_parser<Derived>::cb_message_complete(nodejs::http_parser* p)
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_chunk_header(nodejs::http_parser* p)
+basic_parser<Derived>::cb_chunk_header(http_parser* p)
 {
     return 0;
 }
 
 template<class Derived>
 int
-basic_parser<Derived>::cb_chunk_complete(nodejs::http_parser* p)
+basic_parser<Derived>::cb_chunk_complete(http_parser* p)
 {
     return 0;
 }

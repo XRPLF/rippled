@@ -96,7 +96,7 @@ namespace http {
 template<class Derived>
 class basic_parser
 {
-    nodejs::http_parser state_;
+    http_parser state_;
     boost::system::error_code* ec_;
     bool complete_ = false;
     std::string url_;
@@ -461,22 +461,22 @@ private:
     void
     check_header();
 
-    static int cb_message_start(nodejs::http_parser*);
-    static int cb_url(nodejs::http_parser*, char const*, std::size_t);
-    static int cb_status(nodejs::http_parser*, char const*, std::size_t);
-    static int cb_header_field(nodejs::http_parser*, char const*, std::size_t);
-    static int cb_header_value(nodejs::http_parser*, char const*, std::size_t);
-    static int cb_headers_complete(nodejs::http_parser*);
-    static int cb_body(nodejs::http_parser*, char const*, std::size_t);
-    static int cb_message_complete(nodejs::http_parser*);
-    static int cb_chunk_header(nodejs::http_parser*);
-    static int cb_chunk_complete(nodejs::http_parser*);
+    static int cb_message_start(http_parser*);
+    static int cb_url(http_parser*, char const*, std::size_t);
+    static int cb_status(http_parser*, char const*, std::size_t);
+    static int cb_header_field(http_parser*, char const*, std::size_t);
+    static int cb_header_value(http_parser*, char const*, std::size_t);
+    static int cb_headers_complete(http_parser*);
+    static int cb_body(http_parser*, char const*, std::size_t);
+    static int cb_message_complete(http_parser*);
+    static int cb_chunk_header(http_parser*);
+    static int cb_chunk_complete(http_parser*);
 
-    struct hooks_t : nodejs::http_parser_settings
+    struct hooks_t : http_parser_settings
     {
         hooks_t()
         {
-            nodejs::http_parser_settings_init(this);
+            http_parser_settings_init(this);
             on_message_begin    = &basic_parser::cb_message_start;
             on_url              = &basic_parser::cb_url;
             on_status           = &basic_parser::cb_status;
@@ -491,7 +491,7 @@ private:
     };
 
     static
-    nodejs::http_parser_settings const*
+    http_parser_settings const*
     hooks();
 };
 
@@ -522,7 +522,7 @@ basic_parser<Derived>::write(
 }
 
 template<class Derived>
-nodejs::http_parser_settings const*
+http_parser_settings const*
 basic_parser<Derived>::hooks()
 {
     static hooks_t const h;

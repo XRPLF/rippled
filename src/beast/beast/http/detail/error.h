@@ -40,8 +40,8 @@ public:
     std::string
     message(int ev) const override
     {
-        return nodejs::http_errno_description(
-            static_cast<nodejs::http_errno>(ev));
+        return http_errno_description(
+            static_cast<http_errno>(ev));
     }
 
     boost::system::error_condition

@@ -21,9 +21,6 @@
 #include <beast/http/method.h>
 #include <boost/system/error_code.hpp>
 
-namespace beast {
-namespace nodejs {
-
 #ifdef _MSC_VER
 # pragma warning (push)
 # pragma warning (disable: 4127) // conditional expression is constant
@@ -34,33 +31,10 @@ namespace nodejs {
 # pragma warning (pop)
 #endif
 
-}
-}
-
-namespace boost {
-namespace system {
-
-template <>
-struct is_error_code_enum <beast::nodejs::http_errno>
-    : std::true_type
+beast::http::method_t
+convert_http_method(http_method m)
 {
-};
-
-template <>
-struct is_error_condition_enum <beast::nodejs::http_errno>
-    : std::true_type
-{
-};
-
-}
-}
-
-namespace beast {
-namespace nodejs {
-
-http::method_t
-convert_http_method (nodejs::http_method m)
-{
+    using namespace beast;
     switch (m)
     {
     case HTTP_DELETE:      return http::method_t::http_delete;
@@ -114,6 +88,3 @@ convert_http_method (nodejs::http_method m)
 
     return http::method_t::http_get;
 }
-
-} // nodejs
-} // beast
