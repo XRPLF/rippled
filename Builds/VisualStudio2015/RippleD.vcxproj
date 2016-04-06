@@ -238,23 +238,24 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\append_buffers.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\async_completion.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_readstream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\consuming_buffers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\error.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\impl\IPAddressConversion.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\handler_alloc.h">
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\asio\impl\buffers_readstream.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
+    </None>
     <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\IPAddressConversion.h">
@@ -263,21 +264,36 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\beast_asio_error.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\beast_asio_IPAddressConversion.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_bind_handler_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_buffers_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_error_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\buffers_test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -379,7 +395,7 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
+    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
     </ClInclude>
@@ -759,6 +775,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">

@@ -17,13 +17,32 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/unit_test/suite.h>
+#include <beast/asio/bind_handler.h>
+#include <functional>
 
-#include <beast/asio/impl/IPAddressConversion.cpp>
-#include <beast/asio/impl/error.cpp>
-#include <beast/asio/tests/buffers_test.cpp>
-#include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/error_test.cpp>
+namespace beast {
+namespace test {
+
+class bind_handler_test : public unit_test::suite
+{
+public:
+    static void foo (int)
+    {
+    }
+
+    void run()
+    {
+        auto f (bind_handler (
+            std::bind (&foo, std::placeholders::_1),
+            42));
+        f();
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
+
+} // test
+} // beast
 
