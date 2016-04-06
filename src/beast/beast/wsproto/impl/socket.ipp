@@ -600,9 +600,9 @@ socket<Stream>::build_response(
     auto err =
         [&](auto const& text)
         {
-            return result_type{{400,
-                http::reason_string(400), v},
-                    text};
+            http::response_params params{
+                400, http::reason_string(400), v};
+            return result_type{params, text};
         };
     if(v < 11)
         return err("HTTP version is unsupported");
