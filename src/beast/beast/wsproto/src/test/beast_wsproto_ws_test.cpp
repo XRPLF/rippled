@@ -272,28 +272,11 @@ public:
         write(sock, append_buffers(
             buffer(s), buffer("\r\n")));
 
-#if 0
-        deprecated_http::body b;
-        deprecated_http::message m;
-        http::parser p(m, b, false);
-        boost::asio::streambuf sb;
-        auto const n = read_until(sock, sb, "\r\n\r\n");
-        log << buffers_to_string(
-            prepare_buffers(
-                n, sb.data()));
-        auto const used = p.write(sb.data());
-        sock.shutdown(socket_type::shutdown_both);
-        sock.close();
-        if(! p.complete())
-            return -1;
-        return m.status();
-#else
         using namespace http;
         parser<response<string_body>> p;
         streambuf sb;
         read(sock, sb, p);
-#endif
-        return -1;
+        return p.get().status;
     }
 
     void

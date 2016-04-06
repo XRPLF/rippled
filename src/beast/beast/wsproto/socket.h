@@ -23,6 +23,8 @@
 #include <beast/wsproto/option.h>
 #include <beast/wsproto/detail/socket_base.h>
 #include <beast/asio/streambuf_readstream.h>
+#include <beast/http/message.h>
+#include <beast/http/string_body.h>
 #include <boost/asio.hpp>
 #if DOXYGEN
 #include <beast/wsproto/README.md>
@@ -916,6 +918,9 @@ private:
     template<class Handler> class handshake_op;
     template<class Streambuf, class Handler> class read_some_op;
     template<class Buffers, class Handler> class write_op;
+
+    http::response<http::string_body>
+    build_response(beast::deprecated_http::message const& r);
 
     template<class Streambuf>
     void

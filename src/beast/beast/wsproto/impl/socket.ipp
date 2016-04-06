@@ -35,6 +35,8 @@
 #include <beast/asio/static_streambuf.h>
 #include <beast/asio/streambuf.h>
 #include <beast/asio/type_check.h>
+#include <beast/http/write.h>
+#include <beast/http/reason.h>
 #include <boost/endian/buffers.hpp>
 #include <cassert>
 #include <memory>
@@ -255,6 +257,7 @@ void
 socket<Stream>::accept(
     beast::deprecated_http::message const& m, error_code& ec)
 {
+#if 0
     streambuf sb;
     auto req_ec = do_accept(m);
     if(req_ec)
@@ -270,6 +273,10 @@ socket<Stream>::accept(
     role_ = role_type::server;
     // VFALCO TODO Respect keep alive setting, perform
     //             teardown if Connection: close.
+#else
+    auto r = build_response(m);
+    http::write(stream_, r, ec);
+#endif
 }
 
 template<class Stream>
@@ -580,6 +587,27 @@ socket<Stream>::async_write(opcode::value op, bool fin,
 }
 
 //------------------------------------------------------------------------------
+
+template<class Stream>
+http::response<http::string_body>
+socket<Stream>::build_response(
+    beast::deprecated_http::message const& r)
+{
+    using result_type =
+        http::response<http::string_body>;
+    auto const v =
+        r.version().first * 10 + r.version().second;
+    auto err =
+        [&](auto const& text)
+        {
+            return result_type{{400,
+                http::reason_string(400), v},
+                    text};
+        };
+    if(v < 11)
+        return err("HTTP version is unsupported");
+    return err("Oops!");
+}
 
 template<class Stream>
 template<class Streambuf>
