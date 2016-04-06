@@ -77,7 +77,7 @@ void do_request(ip::tcp::socket& sock,
 ### `basic_http_response`
 ### `http_parser`
 
-#### `Body` requirements
+### `Body` requirements
 
 `X` denotes a class meeting the requirements of `HTTPBody`
 `a` denotes a value of type `X`
@@ -92,7 +92,7 @@ void do_request(ip::tcp::socket& sock,
 `a.prepare(m)`            |               | Prepare `a` for serialization (called once)
 `a.write(sb)`             |               | Serializes `a` to a `Streambuf`
 
-#### `Writer` requirements
+### `Writer` requirements
 
 * `X` denotes a type meeting the requirements of `Writer`
 * `a` denotes a value of type `X`
@@ -102,12 +102,40 @@ expression                | return                | type assertion/note/pre/post
 `a.prepare(resume)`       | `boost::tribool`      | See `Writer` exemplar
 `a.data()`                | `ConstBufferSequence` | See `Writer` exemplar
 
-##### `Writer` exemplar
-
+### Simple `Writer` exemplar
 ```C++
-class Writer
+struct Writer
 {
-public:
+    /** Construct the writer.
+
+        The msg object is guaranteed to exist for the
+        lifetime of the writer.
+    */
+    template<bool isRequest, class Body, class Allocator>
+    writer(message<isRequest, Body, Allocator> const& msg);
+
+    /** Return a buffer sequence representing the entire message.
+
+        @note The implementation of Writer is responsible for
+        serializing the headers, using the provided functions.
+    */
+    ConstBufferSequence
+    data();
+}
+```
+
+### Complex `Writer` exemplar
+```C++
+struct Writer
+{
+    /** Construct the writer.
+
+        The msg object is guaranteed to exist for the
+        lifetime of the writer.
+    */
+    template<bool isRequest, class Body, class Allocator>
+    writer(message<isRequest, Body, Allocator> const& msg);
+
     /** Prepare the next buffer for sending.
 
         Postconditions:
@@ -128,7 +156,17 @@ public:
             * Callee takes ownership of resume.
             * Caller suspends the write operation
               until resume is invoked.
-        
+
+        When the caller takes ownership of resume, the
+        asynchronous operation will not complete until the
+        caller destroys the object.
+
+        @param resume A functor to call to resume the write operation
+        after the writer has returned boost::indeterminate.
+
+        @param ec Set to indicate an error. This will cause an
+        asynchronous write operation to complete with the error.
+
         @return `true` if there is data, `false` when done,
                 boost::indeterminate to suspend.
 
@@ -136,7 +174,7 @@ public:
               of resume but does not return boost::indeterminate.
     */
     boost::tribool
-    prepare(resume_context&& resume);
+    prepare(resume_context&& resume, error_code& ec);
 
     /** Return the next buffers to send.
 

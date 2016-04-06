@@ -247,7 +247,13 @@ write_op<Stream, Message, Handler, false>::
         case 1:
         {
             auto const result =
-                d.w.prepare(std::move(d.copy));
+                d.w.prepare(std::move(d.copy), ec);
+            if(ec)
+            {
+                // call handler
+                d.state = 99;
+                break;
+            }
             if(boost::indeterminate(result))
             {
                 // suspend
@@ -311,7 +317,9 @@ write(SyncWriteStream& stream,
     auto copy = resume;
     for(;;)
     {
-        auto result = w.prepare(std::move(copy));
+        auto result = w.prepare(std::move(copy), ec);
+        if(ec)
+            return;
         if(boost::indeterminate(result))
         {
             copy = resume;
