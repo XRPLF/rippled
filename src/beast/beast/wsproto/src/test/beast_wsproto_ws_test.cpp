@@ -273,8 +273,8 @@ public:
             buffer(s), buffer("\r\n")));
 
 #if 0
-        http::body b;
-        http::message m;
+        deprecated_http::body b;
+        deprecated_http::message m;
         http::parser p(m, b, false);
         boost::asio::streambuf sb;
         auto const n = read_until(sock, sb, "\r\n\r\n");
@@ -288,7 +288,7 @@ public:
             return -1;
         return m.status();
 #else
-        using namespace http2;
+        using namespace http;
         parser<response<string_body>> p;
         streambuf sb;
         read(sock, sb, p);

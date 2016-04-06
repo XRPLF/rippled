@@ -45,12 +45,12 @@ class socket<Stream>::accept_op
     struct data
     {
         socket<Stream>& ws;
-        http::body body;
-        http::message m;
+        deprecated_http::body body;
+        deprecated_http::message m;
         Handler h;
         error_code ec;
         streambuf_type wb;
-        boost::optional<http::parser> p;
+        boost::optional<deprecated_http::parser> p;
         int state;
 
         template<class DeducedHandler, class Buffers>

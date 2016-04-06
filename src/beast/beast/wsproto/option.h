@@ -45,7 +45,7 @@ namespace wsproto {
 
     Usage:
     @code
-    void f(beast::http::message&);
+    void f(beast::deprecated_http::message&);
     ws.set_option(decorator(f));
     @endcode
 

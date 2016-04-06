@@ -48,7 +48,7 @@ maybe_throw(error_code const& ec, String const&)
 }
 
 using decorator_type =
-    std::function<void(beast::http::message&)>;
+    std::function<void(beast::deprecated_http::message&)>;
 
 //------------------------------------------------------------------------------
 

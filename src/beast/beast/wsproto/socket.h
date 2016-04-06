@@ -469,7 +469,7 @@ public:
         @throws boost::system::system_error Thrown on failure.
     */
     void
-    accept(beast::http::message const& m);
+    accept(beast::deprecated_http::message const& m);
 
     /** Respond to a WebSocket HTTP Upgrade request
 
@@ -502,7 +502,7 @@ public:
         @param ec Set to indicate what error occurred, if any.
     */
     void
-    accept(beast::http::message const& m, error_code& ec);
+    accept(beast::deprecated_http::message const& m, error_code& ec);
 
     /** Start reading and responding to a WebSocket HTTP Upgrade request.
 
@@ -535,7 +535,7 @@ public:
     */
     template<class AcceptHandler>
     auto
-    async_accept(beast::http::message const& m,
+    async_accept(beast::deprecated_http::message const& m,
         AcceptHandler&& handler);
 
     /** Send a WebSocket Upgrade request.
@@ -924,17 +924,17 @@ private:
     template<class Streambuf>
     void
     write_response(Streambuf& sb,
-        beast::http::message const& req);
+        beast::deprecated_http::message const& req);
 
-    beast::http::message
+    beast::deprecated_http::message
     make_upgrade(std::string const& host,
         std::string const& resource);
 
     error_code
-    do_accept(beast::http::message const& req);
+    do_accept(beast::deprecated_http::message const& req);
 
     void
-    do_response(beast::http::message const& response,
+    do_response(beast::deprecated_http::message const& response,
         error_code& ec);
 
     void

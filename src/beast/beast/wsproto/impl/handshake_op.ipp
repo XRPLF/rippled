@@ -131,7 +131,7 @@ socket<Stream>::handshake_op<
         {
             auto const m(d.ws.make_upgrade(
                 d.host, d.resource));
-            beast::http::write(d.sb, m);
+            beast::deprecated_http::write(d.sb, m);
             // send http upgrade
             d.state = 1;
             boost::asio::async_write(d.ws.stream_,
@@ -152,9 +152,9 @@ socket<Stream>::handshake_op<
         // got http response
         case 2:
         {
-            http::body b;
-            http::message m;
-            http::parser p(m, b, false);
+            deprecated_http::body b;
+            deprecated_http::message m;
+            deprecated_http::parser p(m, b, false);
             auto const used = p.write(d.sb.data(), ec);
             d.sb.consume(used);
             // VFALCO This is a massive hack to deal with the

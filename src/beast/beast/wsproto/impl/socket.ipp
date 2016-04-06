@@ -211,9 +211,9 @@ socket<Stream>::accept(
             stream_.buffer(), "\r\n\r\n", ec);
     if(ec)
         return;
-    beast::http::body body;
-    beast::http::message m;
-    beast::http::parser p(m, body, true);
+    beast::deprecated_http::body body;
+    beast::deprecated_http::message m;
+    beast::deprecated_http::parser p(m, body, true);
     auto const used = p.write(
         prepare_buffers(bytes_used,
             stream_.buffer().data()), ec);
@@ -243,7 +243,7 @@ socket<Stream>::async_accept(
 
 template<class Stream>
 void
-socket<Stream>::accept(beast::http::message const& m)
+socket<Stream>::accept(beast::deprecated_http::message const& m)
 {
     error_code ec;
     accept(m, ec);
@@ -253,7 +253,7 @@ socket<Stream>::accept(beast::http::message const& m)
 template<class Stream>
 void
 socket<Stream>::accept(
-    beast::http::message const& m, error_code& ec)
+    beast::deprecated_http::message const& m, error_code& ec)
 {
     streambuf sb;
     auto req_ec = do_accept(m);
@@ -276,7 +276,7 @@ template<class Stream>
 template<class AcceptHandler>
 auto
 socket<Stream>::async_accept(
-    beast::http::message const& m, AcceptHandler&& handler)
+    beast::deprecated_http::message const& m, AcceptHandler&& handler)
 {
     beast::async_completion<
         AcceptHandler, void(error_code)
@@ -295,7 +295,7 @@ socket<Stream>::handshake(std::string const& host,
     {
         auto m = make_upgrade(host, resource);
         streambuf sb;
-        beast::http::write(sb, m);
+        beast::deprecated_http::write(sb, m);
         boost::asio::write(stream_, sb.data(), ec);
         if(ec)
             return;
@@ -305,9 +305,9 @@ socket<Stream>::handshake(std::string const& host,
         boost::asio::read_until(stream_, sb, "\r\n\r\n", ec);
         if(ec)
             return;
-        http::body b;
-        http::message m;
-        http::parser p(m, b, false);
+        deprecated_http::body b;
+        deprecated_http::message m;
+        deprecated_http::parser p(m, b, false);
         // VFALCO This is certainly wrong.. throw?!
         auto const used = p.write(sb.data(), ec);
         // VFALCO Should we write EOF to indicate the end of the stream?
@@ -586,10 +586,10 @@ template<class Streambuf>
 void
 socket<Stream>::write_error(Streambuf& sb, error_code const& ec)
 {
-    beast::http::message m;
+    beast::deprecated_http::message m;
     std::string const body = ec.message();
     m.request(false);
-    m.version(beast::http::http_1_1());
+    m.version(beast::deprecated_http::http_1_1());
     m.status(400);
     m.reason("Bad request");
     // VFALCO Do we close on a failed upgrade request?
@@ -602,20 +602,20 @@ socket<Stream>::write_error(Streambuf& sb, error_code const& ec)
     m.headers.append("Content-Length",
         std::to_string(body.size()));
     decorate_(m);
-    beast::http::write(sb, m);
+    beast::deprecated_http::write(sb, m);
 }
 
 template<class Stream>
 template<class Streambuf>
 void
 socket<Stream>::write_response(Streambuf& sb,
-    beast::http::message const& req)
+    beast::deprecated_http::message const& req)
 {
-    beast::http::message m;
+    beast::deprecated_http::message m;
     m.request(false);
     m.status(101);
     m.reason("Switching Protocols");
-    m.version(beast::http::http_1_1());
+    m.version(beast::deprecated_http::http_1_1());
     m.headers.append("Connection", "upgrade");
     m.headers.append("Upgrade", "websocket");
     auto const key =
@@ -624,17 +624,17 @@ socket<Stream>::write_response(Streambuf& sb,
     m.headers.append("Sec-WebSocket-Accept",
         detail::make_sec_ws_accept(key));
     decorate_(m);
-    beast::http::write(sb, m);
+    beast::deprecated_http::write(sb, m);
 }
 
 template<class Stream>
-beast::http::message
+beast::deprecated_http::message
 socket<Stream>::make_upgrade(std::string const& host,
     std::string const& resource)
 {
-    beast::http::message m;
+    beast::deprecated_http::message m;
     m.request(true);
-    m.version(beast::http::http_1_1());
+    m.version(beast::deprecated_http::http_1_1());
     m.method(beast::http::method_t::http_get);
     m.url(resource);
     m.headers.append("Connection", "upgrade");
@@ -649,7 +649,7 @@ socket<Stream>::make_upgrade(std::string const& host,
 
 template<class Stream>
 error_code
-socket<Stream>::do_accept(beast::http::message const& r)
+socket<Stream>::do_accept(beast::deprecated_http::message const& r)
 {
     // VFALCO TODO More robust checking
     auto err =
@@ -659,7 +659,7 @@ socket<Stream>::do_accept(beast::http::message const& r)
         };
     if(r.method() != beast::http::method_t::http_get)
         return err("Bad HTTP method");
-    if(r.version() != beast::http::http_1_1())
+    if(r.version() != beast::deprecated_http::http_1_1())
         return err("Bad HTTP version");
     if(! r.headers.exists("Host"))
         return err("Missing Host field");
@@ -670,7 +670,7 @@ socket<Stream>::do_accept(beast::http::message const& r)
 template<class Stream>
 void
 socket<Stream>::do_response(
-    beast::http::message const& m, error_code& ec)
+    beast::deprecated_http::message const& m, error_code& ec)
 {
     if(m.status() != 101)
     {
