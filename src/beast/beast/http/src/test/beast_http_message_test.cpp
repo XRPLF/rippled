@@ -27,7 +27,7 @@
 #include <boost/asio.hpp>
 
 namespace beast {
-namespace http2 {
+namespace http {
 namespace test {
 
 class sync_echo_http_server
@@ -210,61 +210,3 @@ BEAST_DEFINE_TESTSUITE(http_message,http,beast);
 } // test
 } // http
 } // beast
-
-
-
-#if 0
-class jsonrpc_writer
-{
-    beast::streambuf sb_;
-    bool done_ = false;
-    std::size_t consume_ = 0;
-    std::shared_ptr<JobCoro> coro_;
-    resume_context resume_;
-
-public:
-    jsonrpc_writer(JobQueue& jq, ...);
-
-    boost::tribool
-    async_prepare(resume_context&& resume)
-    {
-        sb_.consume(consume_);
-        consume_ = sb_.size();
-        if(consume_ > 0)
-            return true;
-        if(done_)
-            return false;
-        // run coro
-        resume_ = std::move(resume);
-        coro_->post();
-        return boost::indeterminate;
-    }
-
-    auto
-    data()
-    {
-        return sb_.data();
-        // OR
-        return chunk_encode(done_, sb_.data()); // ? how to set done_
-    }
-
-    beast::streambuf&
-    buffer()
-    {
-        return sb_;
-    }
-
-    void
-    resume()
-    {
-        resume_context rc(std::move(resume_));
-        rc();
-    }
-    
-    void
-    finish()
-    {
-        done_ = true;
-    }
-}
-#endif

@@ -59,14 +59,14 @@ buildHello (uint256 const& sharedValue,
 
 /** Insert HTTP headers based on the TMHello protocol message. */
 void
-appendHello (beast::http::message& m, protocol::TMHello const& hello);
+appendHello (beast::deprecated_http::message& m, protocol::TMHello const& hello);
 
 /** Parse HTTP headers into TMHello protocol message.
     @return A protocol message on success; an empty optional
             if the parsing failed.
 */
 boost::optional<protocol::TMHello>
-parseHello (beast::http::message const& m, beast::Journal journal);
+parseHello (beast::deprecated_http::message const& m, beast::Journal journal);
 
 /** Validate and store the public key in the TMHello.
     This includes signature verification on the shared value.

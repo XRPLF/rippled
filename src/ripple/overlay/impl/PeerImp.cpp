@@ -59,7 +59,7 @@ using namespace std::chrono_literals;
 namespace ripple {
 
 PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
-    PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+    PeerFinder::Slot::ptr const& slot, beast::deprecated_http::message&& request,
         protocol::TMHello const& hello, PublicKey const& publicKey,
             Resource::Consumer consumer,
                 std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
@@ -602,7 +602,7 @@ void PeerImp::doAccept()
     auto resp = makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
             http_message_, remote_address_, *sharedValue);
-    beast::http::write (write_buffer_, resp);
+    beast::deprecated_http::write (write_buffer_, resp);
 
     auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol);
@@ -641,13 +641,13 @@ void PeerImp::doAccept()
     onWriteResponse(error_code(), 0);
 }
 
-beast::http::message
+beast::deprecated_http::message
 PeerImp::makeResponse (bool crawl,
-    beast::http::message const& req,
+    beast::deprecated_http::message const& req,
     beast::IP::Endpoint remote,
     uint256 const& sharedValue)
 {
-    beast::http::message resp;
+    beast::deprecated_http::message resp;
     resp.request(false);
     resp.status(101);
     resp.reason("Switching Protocols");

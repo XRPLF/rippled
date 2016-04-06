@@ -27,7 +27,7 @@
 #include <utility>
 
 namespace beast {
-namespace http2 {
+namespace http {
 namespace detail {
 
 template<class Streambuf, class T,

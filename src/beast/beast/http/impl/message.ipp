@@ -24,7 +24,7 @@
 #include <boost/asio/buffer.hpp>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 template<bool isReq, class Body, class Allocator>
 template<class... Args>

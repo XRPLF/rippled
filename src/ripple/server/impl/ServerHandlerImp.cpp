@@ -109,7 +109,7 @@ ServerHandlerImp::onAccept (Session& session,
 auto
 ServerHandlerImp::onHandoff (Session& session,
     std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-        beast::http::message&& request,
+        beast::deprecated_http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
@@ -131,7 +131,7 @@ ServerHandlerImp::onHandoff (Session& session,
 auto
 ServerHandlerImp::onHandoff (Session& session,
     boost::asio::ip::tcp::socket&& socket,
-        beast::http::message&& request,
+        beast::deprecated_http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
@@ -416,7 +416,7 @@ ServerHandlerImp::processRequest (Port const& port,
 // Returns `true` if the HTTP request is a Websockets Upgrade
 // http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
 bool
-ServerHandlerImp::isWebsocketUpgrade (beast::http::message const& request)
+ServerHandlerImp::isWebsocketUpgrade (beast::deprecated_http::message const& request)
 {
     if (request.upgrade())
         return request.headers["Upgrade"] == "websocket";
@@ -448,7 +448,7 @@ ServerHandlerImp::authorized (Port const& port,
 //------------------------------------------------------------------------------
 
 void
-ServerHandler::appendStandardFields (beast::http::message& message)
+ServerHandler::appendStandardFields (beast::deprecated_http::message& message)
 {
 }
 

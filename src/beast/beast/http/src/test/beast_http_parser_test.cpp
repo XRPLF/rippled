@@ -23,7 +23,8 @@
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
+namespace test {
 
 class message_test : public beast::unit_test::suite
 {
@@ -108,5 +109,6 @@ public:
 
 BEAST_DEFINE_TESTSUITE(message,http,beast);
 
-} // http
+} // test
+} // deprecated_http
 } // beast

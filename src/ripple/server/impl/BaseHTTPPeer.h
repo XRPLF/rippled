@@ -95,8 +95,8 @@ protected:
     std::size_t nid_;
 
     boost::asio::streambuf read_buf_;
-    beast::http::message message_;
-    beast::http::body body_;
+    beast::deprecated_http::message message_;
+    beast::deprecated_http::body body_;
     std::vector<buffer> wq_;
     std::vector<buffer> wq2_;
     std::mutex mutex_;
@@ -186,13 +186,13 @@ protected:
         return beast::IPAddressConversion::from_asio(remote_address_);
     }
 
-    beast::http::message&
+    beast::deprecated_http::message&
     request() override
     {
         return message_;
     }
 
-    beast::http::body const&
+    beast::deprecated_http::body const&
     body() override
     {
         return body_;
@@ -323,7 +323,7 @@ BaseHTTPPeer<Impl>::do_read (yield_context yield)
     error_code ec;
     bool eof = false;
     body_.clear();
-    beast::http::parser parser (message_, body_, true);
+    beast::deprecated_http::parser parser (message_, body_, true);
     for(;;)
     {
         if (read_buf_.size() == 0)
@@ -512,7 +512,7 @@ BaseHTTPPeer<Impl>::complete()
         return strand_.post(std::bind (&BaseHTTPPeer<Impl>::complete,
             impl().shared_from_this()));
 
-    message_ = beast::http::message{};
+    message_ = beast::deprecated_http::message{};
     complete_ = true;
 
     {

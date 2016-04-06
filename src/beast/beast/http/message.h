@@ -29,7 +29,7 @@
 #include <beast/cxx17/type_traits.h> // <type_traits>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 namespace detail {
 
@@ -155,10 +155,6 @@ using response = message<false, Body, Allocator>;
 
 //------------------------------------------------------------------------------
 
-//
-// LEGACY
-//
-
 #include <beast/http/method.h>
 #include <beast/http/headers.h>
 #include <algorithm>
@@ -169,7 +165,7 @@ using response = message<false, Body, Allocator>;
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
 
 inline
 std::pair<int, int>
@@ -214,7 +210,7 @@ public:
     message();
 
     // Memberspace
-    beast::http::headers headers;
+    beast::deprecated_http::headers headers;
 
     bool
     request() const
@@ -397,7 +393,7 @@ to_string (message const& m)
     return ss.str();
 }
 
-} // http
+} // deprecated_http
 } // beast
 
 #endif

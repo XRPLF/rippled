@@ -21,7 +21,7 @@
 #define BEAST_HTTP_REASON_H_INCLUDED
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 /** Returns the text for a known status code integer. */
 template<class = void>

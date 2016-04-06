@@ -23,7 +23,7 @@
 #include <functional>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 using resume_context = std::function<void(void)>;
 

@@ -34,7 +34,7 @@
 #include <utility>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 template<class Allocator>
 class headers
@@ -385,7 +385,7 @@ headers<Allocator>::write(Streambuf& streambuf) const
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
 
 /** Holds a collection of HTTP headers. */
 class headers
@@ -765,7 +765,7 @@ build_map (headers const& h)
     return c;
 }
 
-} // http
+} // deprecated_http
 } // beast
 
 #endif

@@ -122,8 +122,8 @@ public:
 
         read_until(stream_, bin_, "\r\n\r\n");
         beast::streambuf body;
-        beast::http::message m;
-        beast::http::parser p(
+        beast::deprecated_http::message m;
+        beast::deprecated_http::parser p(
             [&](void const* data, std::size_t size)
             {
                 body.commit(buffer_copy(

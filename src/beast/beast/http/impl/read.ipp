@@ -26,7 +26,7 @@
 #include <beast/asio/handler_alloc.h>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 namespace detail {
 

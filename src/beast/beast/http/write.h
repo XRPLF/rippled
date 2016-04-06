@@ -26,7 +26,7 @@
 #include <type_traits>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 /** Write a HTTP message to a stream.
 */

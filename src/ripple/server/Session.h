@@ -66,12 +66,12 @@ public:
 
     /** Returns the current HTTP request. */
     virtual
-    beast::http::message&
+    beast::deprecated_http::message&
     request() = 0;
 
     /** Returns the Content-Body of the current HTTP request. */
     virtual
-    beast::http::body const&
+    beast::deprecated_http::body const&
     body() = 0;
 
     /** Send a copy of data asynchronously. */

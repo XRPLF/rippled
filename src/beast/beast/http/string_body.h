@@ -28,7 +28,7 @@
 #include <string>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 /** A Body represented by a std::string.
 */

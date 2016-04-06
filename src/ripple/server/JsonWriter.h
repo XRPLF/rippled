@@ -144,7 +144,7 @@ write(Streambuf& buf, Json::Value const& json)
 */
 template <class = void>
 std::shared_ptr<Writer>
-make_JsonWriter (beast::http::message& m, Json::Value const& json)
+make_JsonWriter (beast::deprecated_http::message& m, Json::Value const& json)
 {
     beast::streambuf prebody;
     beast::streambuf body;

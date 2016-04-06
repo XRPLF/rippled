@@ -28,7 +28,7 @@
 #include <utility>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 template<class Message>
 class parser
@@ -219,7 +219,7 @@ private:
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
 
 /** Parser for HTTP messages.
     The result is stored in a message object.
@@ -227,7 +227,7 @@ namespace http {
 class parser
     : public beast::http::basic_parser<parser>
 {
-    friend class basic_parser<parser>;
+//    friend class basic_parser<parser>;
 
     message& m_;
     std::function<void(void const*, std::size_t)> write_body_;
@@ -276,7 +276,7 @@ public:
     }
 
     bool
-    on_request(method_t method, std::string const& url,
+    on_request(http::method_t method, std::string const& url,
         int major, int minor, bool keep_alive, bool upgrade)
     {
         m_.method(method);
@@ -317,7 +317,7 @@ public:
     }
 };
 
-} // http
+} // deprecated_http
 } // beast
 
 #endif

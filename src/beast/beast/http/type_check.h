@@ -26,7 +26,7 @@
 #include <beast/cxx17/type_traits.h> // <type_traits>
 
 namespace beast {
-namespace http2 {
+namespace http {
 
 /// Evaluates to std::true_type if `T` models Body
 template<class T>

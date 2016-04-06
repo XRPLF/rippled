@@ -218,7 +218,7 @@ ConnectAttempt::onHandshake (error_code ec)
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
-    beast::http::message req = makeRequest(
+    beast::deprecated_http::message req = makeRequest(
         ! overlay_.peerFinder().config().peerPrivate,
             remote_endpoint_.address());
     auto const hello = buildHello (
@@ -228,8 +228,7 @@ ConnectAttempt::onHandshake (error_code ec)
         app_);
     appendHello (req, hello);
 
-    using beast::http::write;
-    write (write_buf_, req);
+    beast::deprecated_http::write (write_buf_, req);
 
     setTimer();
     stream_.async_write_some (write_buf_.data(),
@@ -331,11 +330,11 @@ ConnectAttempt::onShutdown (error_code ec)
 
 //--------------------------------------------------------------------------
 
-beast::http::message
+beast::deprecated_http::message
 ConnectAttempt::makeRequest (bool crawl,
     boost::asio::ip::address const& remote_address)
 {
-    beast::http::message m;
+    beast::deprecated_http::message m;
     m.method (beast::http::method_t::http_get);
     m.url ("/");
     m.version (1, 1);
@@ -350,7 +349,7 @@ ConnectAttempt::makeRequest (bool crawl,
 
 template <class Streambuf>
 void
-ConnectAttempt::processResponse (beast::http::message const& m,
+ConnectAttempt::processResponse (beast::deprecated_http::message const& m,
     Streambuf const& body)
 {
     if (response_.status() == 503)

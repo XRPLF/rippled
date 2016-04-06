@@ -65,18 +65,18 @@ struct Handler
     Handoff
     onHandoff (Session& session,
         std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-            beast::http::message&& request,
+            beast::deprecated_http::message&& request,
                 boost::asio::ip::tcp::endpoint remote_address) = 0;
 
     virtual
     Handoff
     onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-        beast::http::message&& request,
+        beast::deprecated_http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) = 0;
     /** @} */
 
     /** Called when we have a complete HTTP request. */
-    // VFALCO TODO Pass the beast::http::message as a parameter
+    // VFALCO TODO Pass the beast::deprecated_http::message as a parameter
     virtual void onRequest (Session& session) = 0;
 
     /** Called when the session ends.

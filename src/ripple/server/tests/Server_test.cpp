@@ -112,7 +112,7 @@ public:
         Handoff
         onHandoff (Session& session,
             std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                beast::http::message&& request,
+                beast::deprecated_http::message&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -120,7 +120,7 @@ public:
 
         Handoff
         onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-            beast::http::message&& request,
+            beast::deprecated_http::message&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -319,7 +319,7 @@ public:
             Handoff
             onHandoff (Session& session,
                 std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                    beast::http::message&& request,
+                    beast::deprecated_http::message&& request,
                         boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
@@ -327,7 +327,7 @@ public:
 
             Handoff
             onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-                beast::http::message&& request,
+                beast::deprecated_http::message&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
