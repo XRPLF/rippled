@@ -24,6 +24,17 @@
 
 // Wraps the C-language nodejs http parser header in a namespace
 
+// Must be included first otherwise
+// they go into our namespace.
+#include <sys/types.h>
+#if defined(_WIN32) && !defined(__MINGW32__) && \
+  (!defined(_MSC_VER) || _MSC_VER<1600) && !defined(__WINE__)
+#include <BaseTsd.h>
+#include <stddef.h>
+#else
+#include <stdint.h>
+#endif
+
 namespace beast {
 namespace nodejs {
 
