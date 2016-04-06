@@ -21,6 +21,7 @@
 #define BEAST_WSPROTO_ACCEPT_OP_H_INCLUDED
 
 #include <beast/asio/handler_alloc.h>
+#include <beast/asio/prepare_buffers.h>
 #include <beast/asio/read_until.h>
 #include <beast/http/parser.h>
 #include <boost/optional.hpp>
