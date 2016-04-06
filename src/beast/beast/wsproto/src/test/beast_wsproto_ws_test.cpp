@@ -272,7 +272,7 @@ public:
         write(sock, append_buffers(
             buffer(s), buffer("\r\n")));
 
-#if 1
+#if 0
         http::body b;
         http::message m;
         http::parser p(m, b, false);
@@ -288,9 +288,10 @@ public:
             return -1;
         return m.status();
 #else
+        using namespace http2;
+        parser<response<string_body>> p;
         streambuf sb;
-        http_response::parser p;
-        http_read(sock, sb, p);
+        read(sock, sb, p);
 #endif
         return -1;
     }
