@@ -51,7 +51,7 @@ public:
         Port const& port,
         Handler& handler,
         endpoint_type remote_endpoint,
-        beast::http::message const& m,
+        beast::deprecated_http::message const& m,
         std::unique_ptr<
             beast::asio::ssl_bundle>&& ssl_bundle,
         beast::Journal journal);
@@ -70,7 +70,7 @@ SSLWSPeer::SSLWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_endpoint,
-    beast::http::message const& m,
+    beast::deprecated_http::message const& m,
     std::unique_ptr<
         beast::asio::ssl_bundle>&& ssl_bundle,
     beast::Journal journal)

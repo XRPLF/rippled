@@ -46,7 +46,7 @@ protected:
 private:
     friend class BasePeer<Impl>;
 
-    beast::http::message req_;
+    beast::deprecated_http::message req_;
     beast::wsproto::opcode::value op_;
     beast::streambuf rb_;
     beast::streambuf wb_;
