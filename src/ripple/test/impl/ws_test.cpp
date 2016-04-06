@@ -22,6 +22,7 @@
 #include <ripple/test/impl/sync_echo_peer.h>
 #include <beast/unit_test/suite.h>
 #include <beast/unit_test/thread.h>
+#include <beast/http.h>
 #include <boost/asio/spawn.hpp>
 
 namespace beast {
@@ -271,6 +272,8 @@ public:
         sock.connect(ep);
         write(sock, append_buffers(
             buffer(s), buffer("\r\n")));
+
+#if 1
         http::body b;
         http::message m;
         http::parser p(m, b, false);
@@ -285,6 +288,12 @@ public:
         if(! p.complete())
             return -1;
         return m.status();
+#else
+        streambuf sb;
+        http_response::parser p;
+        http_read(sock, sb, p);
+#endif
+        return -1;
     }
 
     void
@@ -344,7 +353,7 @@ public:
                 address_type::from_string("127.0.0.1"), 6000};
             testcase("Echo Server");
             test::sync_echo_peer s(true, ep, *this);
-            //testHandshake(ep);
+            testHandshake(ep);
             syncEchoClient(ep);
         }
         {
