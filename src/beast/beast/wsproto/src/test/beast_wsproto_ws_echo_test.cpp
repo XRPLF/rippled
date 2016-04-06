@@ -20,6 +20,8 @@
 #include <beast/wsproto/src/test/async_echo_peer.h>
 #include <beast/wsproto/src/test/sync_echo_peer.h>
 #include <boost/asio.hpp>
+#include <condition_variable>
+#include <mutex>
 
 namespace beast {
 namespace wsproto {
