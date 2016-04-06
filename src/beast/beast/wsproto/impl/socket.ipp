@@ -597,11 +597,11 @@ socket<Stream>::build_response(
         http::response<http::string_body>;
     auto const v =
         r.version().first * 10 + r.version().second;
+    http::response_params params{
+        400, http::reason_string(400), v};
     auto err =
         [&](auto const& text)
         {
-            http::response_params params{
-                400, http::reason_string(400), v};
             return result_type{params, text};
         };
     if(v < 11)
