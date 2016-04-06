@@ -122,7 +122,7 @@ message_writer<Streambuf>::data(Streambuf& buf)
 
 } // detail
 
-using streambufs_writer = detail::message_writer<beast::asio::streambuf>;
+using streambufs_writer = detail::message_writer<beast::streambuf>;
 
 //------------------------------------------------------------------------------
 
@@ -144,10 +144,10 @@ write(Streambuf& buf, Json::Value const& json)
 */
 template <class = void>
 std::shared_ptr<Writer>
-make_JsonWriter (beast::http::message& m, Json::Value const& json)
+make_JsonWriter (beast::deprecated_http::message& m, Json::Value const& json)
 {
-    beast::asio::streambuf prebody;
-    beast::asio::streambuf body;
+    beast::streambuf prebody;
+    beast::streambuf body;
     write(body, json);
     // VFALCO TODO Better way to set a field
     m.headers.erase ("Content-Length");

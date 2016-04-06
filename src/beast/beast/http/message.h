@@ -20,12 +20,143 @@
 #ifndef BEAST_HTTP_MESSAGE_H_INCLUDED
 #define BEAST_HTTP_MESSAGE_H_INCLUDED
 
-#include <beast/http/basic_parser.h>
+#include <beast/http/headers.h>
+#include <beast/http/method.h>
+#include <beast/http/type_check.h>
+#include <beast/asio/type_check.h>
+#include <memory>
+#include <string>
+#include <beast/cxx17/type_traits.h> // <type_traits>
+
+namespace beast {
+namespace http {
+
+namespace detail {
+
+struct request_fields
+{
+    http::method_t method;
+    std::string url;
+};
+
+struct response_fields
+{
+    int status;
+    std::string reason;
+};
+
+} // detail
+
+struct request_params
+{
+    http::method_t method;
+    std::string url;
+    int version;
+};
+
+struct response_params
+{
+    int status;
+    std::string reason;
+    int version;
+  };
+
+/** A HTTP message.
+
+    @tparam isReq `true` if this is a request.
+
+    @tparam Body A type meeting the requirements of Body.
+
+    @tparam Allocator The allocator to use.
+*/
+template<bool isReq, class Body, class Allocator>
+struct message final
+    : std::conditional_t<isReq,
+        detail::request_fields, detail::response_fields>
+{
+    static_assert(is_Body<Body>::value,
+        "Body requirements not met");
+
+    using body_type = Body;
+    using value_type = typename Body::value_type;
+    using writer_type = typename Body::writer;
+    using allocator_type = Allocator;
+
+    static bool constexpr is_simple = body_type::is_simple;
+    static bool constexpr is_request = isReq;
+
+    int version; // 10 or 11
+    headers<Allocator> fields;
+    value_type body;
+
+    message(message&&) = default;
+
+    /** Construct a HTTP request.
+    */
+    template<class... Args>
+    explicit
+    message(request_params params, Args&&... args);
+            
+    /** Construct a HTTP response.
+
+        @param args... Additional arguments forwarded
+        to the body's constructor.
+    */
+    template<class... Args>
+    explicit
+    message(response_params params, Args&&... args);
+
+    // Used by the parser, does not prepare
+    template<class... Args>
+    explicit
+    message(Args&&... args);
+
+    /** Serialize the entire message to a Streambuf.
+    */
+    template<class Streambuf,
+        class = std::enable_if_t<is_simple>>
+    void
+    write(Streambuf& streambuf) const;
+
+    /** Serialize all but the body to a Streambuf.
+    */
+    template<class Streambuf>
+    void
+    write_headers(Streambuf& streambuf) const
+    {
+        static_assert(is_Streambuf<Streambuf>{},
+            "Streambuf requirements not met");
+        write_headers(streambuf,
+              std::bool_constant<is_request>{});
+    }
+
+private:
+    template<class Streambuf>
+    void
+    write_headers(Streambuf& streambuf,
+        std::true_type) const;
+
+    template<class Streambuf>
+    void
+    write_headers(Streambuf& streambuf,
+            std::false_type) const;
+};
+
+template<class Body, class Allocator = std::allocator<char>>
+using request = message<true, Body, Allocator>;
+
+template<class Body, class Allocator = std::allocator<char>>
+using response = message<false, Body, Allocator>;
+
+} // http
+} // beast
+
+#include <beast/http/impl/message.ipp>
+
+//------------------------------------------------------------------------------
+
 #include <beast/http/method.h>
 #include <beast/http/headers.h>
-#include <beast/utility/ci_char_traits.h>
-#include <boost/intrusive/list.hpp>
-#include <boost/intrusive/set.hpp>
 #include <algorithm>
 #include <cctype>
 #include <ostream>
@@ -34,7 +165,7 @@
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
 
 inline
 std::pair<int, int>
@@ -70,17 +201,16 @@ private:
 
 public:
     ~message() = default;
-    message (message const&) = delete;
-    message& operator= (message const&) = delete;
+    message (message const&) = default;
+    message (message&& other) = default;
+    message& operator= (message const&) = default;
+    message& operator= (message&& other) = default;
 
     template <class = void>
     message();
 
-    message (message&& other) = default;
-    message& operator= (message&& other) = default;
-
     // Memberspace
-    beast::http::headers headers;
+    beast::deprecated_http::headers headers;
 
     bool
     request() const
@@ -263,7 +393,7 @@ to_string (message const& m)
     return ss.str();
 }
 
-} // http
+} // deprecated_http
 } // beast
 
 #endif

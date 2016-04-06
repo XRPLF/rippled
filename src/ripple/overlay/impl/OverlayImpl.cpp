@@ -171,7 +171,7 @@ OverlayImpl::~OverlayImpl ()
 
 Handoff
 OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
-    beast::http::message&& request,
+    beast::deprecated_http::message&& request,
         endpoint_type remote_endpoint)
 {
     auto const id = next_id_++;
@@ -289,7 +289,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 //------------------------------------------------------------------------------
 
 bool
-OverlayImpl::isPeerUpgrade(beast::http::message const& request)
+OverlayImpl::isPeerUpgrade(beast::deprecated_http::message const& request)
 {
     if (! request.upgrade())
         return false;
@@ -312,7 +312,7 @@ OverlayImpl::makePrefix (std::uint32_t id)
 
 std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
-    beast::http::message const& request, address_type remote_address)
+    beast::deprecated_http::message const& request, address_type remote_address)
 {
     Json::Value json(Json::objectValue);
     {
@@ -322,7 +322,7 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
             ips.append(_.address.to_string());
     }
 
-    beast::http::message m;
+    beast::deprecated_http::message m;
     m.request(false);
     m.status(503);
     m.reason("Service Unavailable");
@@ -823,13 +823,13 @@ OverlayImpl::json ()
 }
 
 bool
-OverlayImpl::processRequest (beast::http::message const& req,
+OverlayImpl::processRequest (beast::deprecated_http::message const& req,
     Handoff& handoff)
 {
     if (req.url() != "/crawl")
         return false;
 
-    beast::http::message resp;
+    beast::deprecated_http::message resp;
     resp.request(false);
     resp.status(200);
     resp.reason("OK");

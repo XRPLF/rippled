@@ -152,10 +152,10 @@ private:
     Resource::Consumer usage_;
     Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
-    beast::asio::streambuf read_buffer_;
-    beast::http::message http_message_;
-    beast::http::body http_body_;
-    beast::asio::streambuf write_buffer_;
+    beast::streambuf read_buffer_;
+    beast::deprecated_http::message http_message_;
+    beast::deprecated_http::body http_body_;
+    beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -171,7 +171,7 @@ public:
 
     /** Create an active incoming peer from an established ssl connection. */
     PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
-        PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+        PeerFinder::Slot::ptr const& slot, beast::deprecated_http::message&& request,
             protocol::TMHello const& hello, PublicKey const& publicKey,
                 Resource::Consumer consumer,
                     std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
@@ -182,7 +182,7 @@ public:
     template <class Buffers>
     PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-            beast::http::message&& response, Resource::Consumer usage,
+            beast::deprecated_http::message&& response, Resource::Consumer usage,
                 protocol::TMHello const& hello,
                     PublicKey const& publicKey, id_t id,
                         OverlayImpl& overlay);
@@ -359,8 +359,8 @@ private:
     void
     doAccept();
 
-    beast::http::message
-    makeResponse (bool crawl, beast::http::message const& req,
+    beast::deprecated_http::message
+    makeResponse (bool crawl, beast::deprecated_http::message const& req,
         beast::IP::Endpoint remoteAddress,
         uint256 const& sharedValue);
 
@@ -476,7 +476,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-        beast::http::message&& response, Resource::Consumer usage,
+        beast::deprecated_http::message&& response, Resource::Consumer usage,
             protocol::TMHello const& hello,
                 PublicKey const& publicKey, id_t id,
                     OverlayImpl& overlay)

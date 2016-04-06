@@ -154,7 +154,7 @@ buildHello (
 }
 
 void
-appendHello (beast::http::message& m,
+appendHello (beast::deprecated_http::message& m,
     protocol::TMHello const& hello)
 {
     auto& h = m.headers;
@@ -224,7 +224,7 @@ parse_ProtocolVersions (std::string const& s)
 }
 
 boost::optional<protocol::TMHello>
-parseHello (beast::http::message const& m, beast::Journal journal)
+parseHello (beast::deprecated_http::message const& m, beast::Journal journal)
 {
     auto const& h = m.headers;
 

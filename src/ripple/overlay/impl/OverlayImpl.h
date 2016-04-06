@@ -166,7 +166,7 @@ public:
 
     Handoff
     onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-        beast::http::message&& request,
+        beast::deprecated_http::message&& request,
             endpoint_type remote_endpoint) override;
 
     PeerSequence
@@ -254,7 +254,7 @@ public:
 
     static
     bool
-    isPeerUpgrade (beast::http::message const& request);
+    isPeerUpgrade (beast::deprecated_http::message const& request);
 
     static
     std::string
@@ -269,7 +269,7 @@ public:
 private:
     std::shared_ptr<Writer>
     makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
-        beast::http::message const& request, address_type remote_address);
+        beast::deprecated_http::message const& request, address_type remote_address);
 
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
@@ -289,7 +289,7 @@ private:
     json() override;
 
     bool
-    processRequest (beast::http::message const& req,
+    processRequest (beast::deprecated_http::message const& req,
         Handoff& handoff);
 
     //--------------------------------------------------------------------------

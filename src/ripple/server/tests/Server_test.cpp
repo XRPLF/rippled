@@ -112,7 +112,7 @@ public:
         Handoff
         onHandoff (Session& session,
             std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                beast::http::message&& request,
+                beast::deprecated_http::message&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -120,7 +120,7 @@ public:
 
         Handoff
         onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-            beast::http::message&& request,
+            beast::deprecated_http::message&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -134,6 +134,12 @@ public:
                 session.complete();
             else
                 session.close (true);
+        }
+
+        void
+        onWSMessage(std::shared_ptr<WSSession> session,
+            std::vector<boost::asio::const_buffer> const&) override
+        {
         }
 
         void
@@ -319,7 +325,7 @@ public:
             Handoff
             onHandoff (Session& session,
                 std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                    beast::http::message&& request,
+                    beast::deprecated_http::message&& request,
                         boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
@@ -327,7 +333,7 @@ public:
 
             Handoff
             onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-                beast::http::message&& request,
+                beast::deprecated_http::message&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
@@ -335,6 +341,12 @@ public:
 
             void
             onRequest (Session& session) override
+            {
+            }
+
+            void
+            onWSMessage(std::shared_ptr<WSSession> session,
+                std::vector<boost::asio::const_buffer> const& buffers) override
             {
             }
 

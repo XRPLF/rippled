@@ -81,7 +81,7 @@ public:
     virtual
     Handoff
     onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-        beast::http::message&& request,
+        beast::deprecated_http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) = 0;
 
     /** Establish a peer connection to the specified endpoint.
