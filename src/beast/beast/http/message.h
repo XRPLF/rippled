@@ -158,9 +158,13 @@ using response = message<false, Body, Allocator>;
     The parsed information is produced by the HTTP parser.
 */
 template<bool isRequest, class Body, class Allocator>
-struct parsed_message
-    : message<isRequest, Body, Allocator>
+class parsed_message
+    : public message<isRequest, Body, Allocator>
 {
+    using base_type =
+        message<isRequest, Body, Allocator>;
+
+public:
     bool keep_alive;
     bool upgrade;
 
@@ -171,9 +175,8 @@ struct parsed_message
     parsed_message& operator=(parsed_message const&) = default;
 
     explicit
-    parsed_message(message&& base)
-        : message<isRequest, Body, Allocator>(
-            std::move(base))
+    parsed_message(base_type&& base)
+        : base_type(std::move(base))
     {
     }
 };
