@@ -232,6 +232,7 @@ struct prepared_message : public message<isRequest, Body, Allocator>
     bool keep_alive;
     bool upgrade;
 
+    prepared_message() = default;
     prepared_message(prepared_message&&) = default;
     prepared_message(prepared_message const&) = default;
     prepared_message& operator=(prepared_message&&) = default;
