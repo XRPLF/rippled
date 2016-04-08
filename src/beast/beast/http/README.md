@@ -124,160 +124,11 @@ requirements may be implemented for custom implementation strategies.
 it defines should typically be declared inline so they become part of the calling
 code.
 
-
-
-
-
-#### `SinglePassWriter`
-
-### `Reader` concept:
-
-
-
-
-
-
-### `Writer` requirements
-
-* `X` denotes a type meeting the requirements of `Writer`
-* `a` denotes a value of type `X`
-
-expression                | return                | type assertion/note/pre/post-condition
-:------------------------ |:----------------      |:--------------------------------------
-`X::is_single_pass`       | `bool`                | `true`
-`a.prepare(resume)`       | `boost::tribool`      | See `Writer` exemplar
-`a.data()`                | `ConstBufferSequence` | See `Writer` exemplar
-
-### Single-pass `Writer` exemplar
-```C++
-struct Writer
-{
-    /** Construct the writer.
-
-        The msg object is guaranteed to exist for the
-        lifetime of the writer.
-
-        Exceptions:
-
-            No-throw guarantee.
-    */
-    template<bool isRequest, class Body, class Allocator>
-    writer(message<isRequest, Body, Allocator> const& msg) nothrow;
-
-    /** Return a buffer sequence representing the entire message.
-
-        Exceptions:
-
-            No-throw guarantee.
-
-        @note The implementation of Writer is responsible for
-        serializing the headers, using the provided functions.
-    */
-    ConstBufferSequence
-    data() nothrow;
-}
-```
-
-### Multi-pass `Writer` exemplar
-```C++
-struct Writer
-{
-    /** Construct the writer.
-
-        The msg object is guaranteed to exist for the
-        lifetime of the writer.
-
-        @param msg The message to be written.
-
-        Exceptions:
-
-            No-throw guarantee.
-    */
-    template<bool isRequest, class Body, class Allocator>
-    writer(message<isRequest, Body, Allocator> const& msg) nothrow;
-
-    /** Initialize the writer.
-
-        Called once before any calls to prepare. The writer
-        can perform initialization which may fail.
-
-        Exceptions:
-
-            No-throw guarantee.
-
-        @param ec Contains the error code if any errors occur.
-    */
-    void
-    init(error_code& ec) noexcept;
-
-    /** Prepare the next buffer for sending.
-
-        Postconditions:
-
-        If return value is `true`:
-
-            * Callee does not take ownership of resume.
-            * Caller calls data() to retrieve the next
-              buffer sequence to send.
-
-        If return value is `false`:
-
-            * Callee does not take ownership of resume.
-            * The write operation is completed.
-
-        If return value is boost::indeterminate:
-
-            * Callee takes ownership of resume.
-            * Caller suspends the write operation
-              until resume is invoked.
-
-        When the caller takes ownership of resume, the
-        asynchronous operation will not complete until the
-        caller destroys the object.
-
-        Exceptions:
-
-            No-throw guarantee.
-
-        @param resume A functor to call to resume the write operation
-        after the writer has returned boost::indeterminate.
-
-        @param ec Set to indicate an error. This will cause an
-        asynchronous write operation to complete with the error.
-
-        @return `true` if there is data, `false` when done,
-                boost::indeterminate to suspend.
-
-        @note Undefined behavior if the callee takes ownership
-              of resume but does not return boost::indeterminate.
-    */
-    boost::tribool
-    prepare(resume_context&& resume, error_code& ec) noexcept;
-
-    /** Return the next buffers to send.
-
-        Preconditions:
-
-            * Previous call to prepare() returned `true`
-
-        Exceptions:
-
-            No-throw guarantee.
-
-        @return A ConstBufferSequence representing the buffers
-        to be sent next.
-
-        @note The implementation of Writer is responsible for
-        serializing the headers, using the provided functions.
-    */
-    ConstBufferSequence
-    data() noexcept;
-};
-```
-
 ## Concepts
 
 ### `Body`
+
+Requirements:
 
 `req` denotes any instance of `prepared_request`.<br>
 `resp` denotes any instance of `prepared_response`.<br>
@@ -286,16 +137,23 @@ struct Writer
  expression                 | return | type assertion/note/pre/post-condition
 :-------------------------- |:------ |:--------------------------------------
 `Body::value_type`          |        | The type of the `message::body` member.
+`Body::value_type{}`        |        | `DefaultConstructible`
 `Body::reader`              |        | A type meeting the requirements of `Reader`
 `Body::writer`              |        | A type meeting the requirements of `SinglePassWriter` or `MultiPassWriter`
 `Body::prepare(req)`        |        | Prepare `req` for serialization
 `Body::prepare(resp, preq)` |        | Prepare `resp` for serialization
+
+An instance of `message` will inherit the movability and copyability attribuytes
+of the associated `Body::value_type`. That is to say, if the `Body::value_type`
+is movable, then `message` objects using that body will also be movable.
 
 ### `Reader`
 
 The implementation for the HTTP parser will construct the body's corresponding
 `reader` object during the parse process. This customization point allows the
 body to determine the strategy for storing incoming body data.
+
+Requirements:
 
 `X`  denotes a type meeting the requirements of `Reader`.<br>
 `a`  denotes a value of type `X`.<br>
@@ -312,7 +170,232 @@ body to determine the strategy for storing incoming body data.
 
 ### `Writer`
 
+Calls to readers and writers used in an asynchronous operations will be made in
+the same fashion as that used to invoke the final completion handler.
 
 ### `SinglePassWriter`
 
+A single-pass writer serializes a HTTP content body that can be fully represented
+in memory as a single `ConstBufferSequence`. The implementation of `write` will
+construct the object of this type corresponding to the `Body` of the message being
+sent, and send the buffer sequence it produces on the socket.
+
+Requirements:
+
+`X` denotes a type meeting the requirements of `SinglePassWriter`.<br>
+`a` denotes a value of type `X`.<br>
+`m` denotes a value of type `message const&` where
+      `std::is_same<decltype(m.body), Body::value_type>:value == true`.<br>
+
+expression                | return                | type assertion/note/pre/post-condition
+:------------------------ |:----------------      |:--------------------------------------
+`X a(m);`                 |                       | `a` is no-throw constructible from `m`.
+`X::is_single_pass`       | `bool`                | `true`
+`a.prepare(resume)`       | `boost::tribool`      | See `Writer` exemplar
+`a.data()`                | `ConstBufferSequence` | See `Writer` exemplar
+
+Exemplar:
+```C++
+struct SinglePassWriter
+{
+    /** Construct the writer.
+        The msg object is guaranteed to exist for the lifetime of the writer.
+        @param msg The message to be written.
+        Exceptions:
+            No-throw guarantee.
+    */
+    template<bool isRequest, class Body, class Allocator>
+    SinglePassWriter(
+        message<isRequest, Body, Allocator> const& msg) noexcept;
+
+    /** Return the next buffers to send.
+        Exceptions:
+            No-throw guarantee.
+        @return A ConstBufferSequence representing the buffers
+        to be sent next.
+        @note The implementation of Writer is responsible for
+        serializing the headers, using the provided functions.
+    */
+    ConstBufferSequence
+    data() noexcept;
+};
+```
+
 ### `MultiPassWriter`
+
+A multi-pass writer serializes HTTP content bodies that may not be fully resident
+in memory, or may be incrementally rendered. For example, a response containing the
+contents of a file on disk. The `write` implementation makes zero or more calls to
+the multi-pass writer to produce each set of buffers. The interface of
+`MultiPassWriter` is intended to allow the following implementation strategies:
+
+* Return a body that does not entirely fit in memory.
+* Return a body produced incrementally from coroutine output.
+* Return a series of buffers when the content size is not known ahead of time.
+* Return body data on demand from foreign threads using suspend and resume semantics.
+* Return a body computed algorithmically.
+
+Requirements:
+
+`X`  denotes a type meeting the requirements of `MultiPassWriter`.<br>
+`a`  denotes a value of type `X`.<br>
+`m`  denotes a value of type `message const&` where
+        `std::is_same<decltype(m.body), Body::value_type>:value == true`.<br>
+`r`  is an object of type resume_context.
+`ec` is a value of type `error_code&`.<br>
+
+expression                | return                | type assertion/note/pre/post-condition
+:------------------------ |:----------------      |:--------------------------------------
+`X a(m);`                 |                       | `a` is no-throw constructible from `m`.
+`X::is_single_pass`       | `bool`                | `false`
+`a.init(ec)`              |                       | Called immediately after construction. No-throw guarantee.
+`a.prepare(r, ec)`        | `boost::tribool`      | No-throw guarantee. See `Writer` exemplar
+`a.data()`                | `ConstBufferSequence` | No-throw guarantee. See `Writer` exemplar
+
+Exemplar:
+```C++
+struct MultiPassWriter
+{
+    /** Construct the writer.
+        The msg object is guaranteed to exist for the lifetime of the writer.
+        @param msg The message to be written.
+        Exceptions:
+            No-throw guarantee.
+    */
+    template<bool isRequest, class Body, class Allocator>
+    MultiPassWriter(
+        message<isRequest, Body, Allocator> const& msg) noexcept;
+
+    /** Initialize the writer.
+        Called once before any calls to prepare. The writer can perform
+        initialization which may fail.
+        Exceptions:
+            No-throw guarantee.
+        @param ec Contains the error code if any errors occur.
+    */
+    void
+    init(error_code& ec) noexcept;
+
+    /** Prepare the next buffer for sending.
+        Postconditions:
+        If return value is `true`:
+            * Callee does not take ownership of resume.
+            * Caller calls data() to retrieve the next
+              buffer sequence to send.
+        If return value is `false`:
+            * Callee does not take ownership of resume.
+            * The write operation is completed.
+        If return value is boost::indeterminate:
+            * Callee takes ownership of resume.
+            * Caller suspends the write operation
+              until resume is invoked.
+        When the caller takes ownership of resume, the
+        asynchronous operation will not complete until the
+        caller destroys the object.
+        Exceptions:
+            No-throw guarantee.
+        @param resume A functor to call to resume the write operation
+        after the writer has returned boost::indeterminate.
+        @param ec Set to indicate an error. This will cause an
+        asynchronous write operation to complete with the error.
+        @return `true` if there is data, `false` when done,
+                boost::indeterminate to suspend.
+        @note Undefined behavior if the callee takes ownership
+              of resume but does not return boost::indeterminate.
+    */
+    boost::tribool
+    prepare(resume_context&& resume, error_code& ec) noexcept;
+
+    /** Return the next buffers to send.
+        Preconditions:
+            * Previous call to prepare() returned `true`
+        Exceptions:
+            No-throw guarantee.
+        @return A ConstBufferSequence representing the buffers
+        to be sent next.
+        @note The implementation of Writer is responsible for
+        serializing the headers, using the provided functions.
+    */
+    ConstBufferSequence
+    data() noexcept;
+};
+```
+
+## `string_body` Example:
+```C++
+struct string_body
+{
+    using value_type = std::string;
+
+    class reader
+    {
+        value_type& s_;
+
+    public:
+        template<bool isReq, class Allocator>
+        explicit
+        reader(message<isReq,
+                string_body, Allocator>& m) noexcept
+            : s_(m.body)
+        {
+        }
+
+        void
+        write(void const* data,
+            std::size_t size, error_code&) noexcept
+        {
+            auto const n = s_.size();
+            s_.resize(n + size);
+            std::memcpy(&s_[n], data, size);
+        }
+    };
+
+    class writer
+    {
+        streambuf sb;
+        boost::asio::const_buffers_1 cb;
+
+    public:
+        static bool constexpr is_single_pass = true;
+
+        template<bool isReq, class Allocator>
+        explicit
+        writer(message<isReq, string_body, Allocator> const& m) noexcept
+            : cb(boost::asio::buffer(m.body))
+        {
+            m.write_headers(sb);
+        }
+
+        void
+        init(error_code& ec) noexcept
+        {
+        }
+
+        auto
+        data() const noexcept
+        {
+            return append_buffers(sb.data(), cb);
+        }
+    };
+
+    template<bool isRequest, class Allocator>
+    static
+    void
+    prepare(prepared_message<isRequest, string_body, Allocator>& msg)
+    {
+        msg.headers.replace("Content-Length", msg.body.size());
+        if(msg.body.size() > 0)
+            msg.headers.replace("Content-Type", "text/html");
+    }
+
+    template<class Allocator,
+        class OtherBody, class OtherAllocator>
+    static
+    void
+    prepare(prepared_message<false, string_body, Allocator>& msg,
+        parsed_message<true, OtherBody, OtherAllocator> const&)
+    {
+        prepare(msg);
+    }
+};
+```
