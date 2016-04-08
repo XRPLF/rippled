@@ -107,6 +107,7 @@ private:
     TreeNodeCache* treeNodeCache_ = nullptr;
     DatabaseCon* transactionDb_ = nullptr;
     DatabaseCon* ledgerDb_ = nullptr;
+    int fdlimit_ = 0;
 
 public:
     bool rotating() const
@@ -167,6 +168,8 @@ public:
     }
 
     void onLedgerClosed (std::shared_ptr<Ledger const> const& ledger) override;
+
+    int fdlimit() const override;
 
 private:
     // callback for visitNodes

@@ -244,6 +244,13 @@ public:
         db_.open (dp, kp, lp,
             arena_alloc_size);
     }
+
+    /** Returns the number of file handles the backend expects to need */
+    int
+    fdlimit() const override
+    {
+        return 3;
+    }
 };
 
 //------------------------------------------------------------------------------

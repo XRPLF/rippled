@@ -99,6 +99,7 @@ public:
     BatchWriter m_batch;
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
+    int fdlimit_ = 2048;
 
     RocksDBBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBEnv* env)
@@ -122,7 +123,8 @@ public:
         if (auto const v = get<int>(keyValues, "filter_bits"))
             table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (v));
 
-        get_if_exists (keyValues, "open_files", options.max_open_files);
+        if (get_if_exists (keyValues, "open_files", options.max_open_files))
+            fdlimit_ = options.max_open_files;
 
         if (keyValues.exists ("file_size_mb"))
         {
@@ -360,6 +362,13 @@ public:
     void
     verify() override
     {
+    }
+
+    /** Returns the number of file handles the backend expects to need */
+    int
+    fdlimit() const override
+    {
+        return fdlimit_;
     }
 };
 

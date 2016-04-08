@@ -97,11 +97,6 @@ public:
 
     struct TestHandler : Handler
     {
-        void
-        onAccept (Session& session) override
-        {
-        }
-
         bool
         onAccept (Session& session,
             boost::asio::ip::tcp::endpoint endpoint) override
@@ -304,11 +299,6 @@ public:
     {
         struct NullHandler : Handler
         {
-            void
-            onAccept (Session& session) override
-            {
-            }
-
             bool
             onAccept (Session& session,
                 boost::asio::ip::tcp::endpoint endpoint) override

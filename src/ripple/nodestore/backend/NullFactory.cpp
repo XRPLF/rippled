@@ -98,6 +98,13 @@ public:
     {
     }
 
+    /** Returns the number of file handles the backend expects to need */
+    int
+    fdlimit() const override
+    {
+        return 0;
+    }
+
 private:
 };
 

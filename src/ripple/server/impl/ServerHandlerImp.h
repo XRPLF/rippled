@@ -28,8 +28,15 @@
 #include <ripple/server/Session.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
+#include <map>
+#include <mutex>
 
 namespace ripple {
+
+bool operator< (Port const& lhs, Port const& rhs)
+{
+    return lhs.name < rhs.name;
+}
 
 // Private implementation
 class ServerHandlerImp
@@ -47,6 +54,8 @@ private:
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_size_;
     beast::insight::Event rpc_time_;
+    std::mutex countlock_;
+    std::map<std::reference_wrapper<Port const>, int> count_;
 
 public:
     ServerHandlerImp (Application& app, Stoppable& parent,
@@ -78,9 +87,6 @@ private:
     //
     // HTTP::Handler
     //
-
-    void
-    onAccept (Session& session) override;
 
     bool
     onAccept (Session& session,
