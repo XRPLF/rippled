@@ -916,7 +916,7 @@ private:
     template<class Streambuf, class Handler> class read_some_op;
 
     template<class Body, class Allocator>
-    auto
+    http::prepared_response<http::string_body>
     build_response(http::parsed_request<
         Body, Allocator> const& req);
 

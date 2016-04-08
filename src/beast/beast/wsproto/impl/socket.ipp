@@ -561,7 +561,7 @@ socket<Stream>::async_write(opcode::value op, bool fin,
 
 template<class Stream>
 template<class Body, class Allocator>
-auto
+http::prepared_response<http::string_body>
 socket<Stream>::build_response(
     http::parsed_request<Body, Allocator> const& req)
 {
