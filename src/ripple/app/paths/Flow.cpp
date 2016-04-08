@@ -66,9 +66,13 @@ flow (
     boost::optional<STAmount> const& sendMax,
     beast::Journal j)
 {
-
-    Issue const srcIssue =
-        sendMax ? sendMax->issue () : Issue (deliver.issue ().currency, src);
+    Issue const srcIssue = [&] {
+        if (sendMax)
+            return sendMax->issue ();
+        if (!isXRP (deliver.issue ().currency))
+            return Issue (deliver.issue ().currency, src);
+        return xrpIssue ();
+    }();
 
     Issue const dstIssue = deliver.issue ();
 
