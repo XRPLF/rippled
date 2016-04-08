@@ -96,7 +96,7 @@ struct basic_streambuf_body
     prepare(prepared_message<
         isRequest, basic_streambuf_body, Allocator>& msg)
     {
-        msg.headers.replace("Content-Length", m.body.size());
+        msg.headers.replace("Content-Length", msg.body.size());
     }
 
     template<class Allocator,
