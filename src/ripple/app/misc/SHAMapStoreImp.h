@@ -108,6 +108,7 @@ private:
     TreeNodeCache* treeNodeCache_ = nullptr;
     DatabaseCon* transactionDb_ = nullptr;
     DatabaseCon* ledgerDb_ = nullptr;
+    int fdlimit_ = 0;
 
 public:
     SHAMapStoreImp (Application& app,
@@ -164,6 +165,7 @@ public:
     void onLedgerClosed (std::shared_ptr<Ledger const> const& ledger) override;
 
     void rendezvous() const override;
+    int fdlimit() const override;
 
 private:
     // callback for visitNodes
