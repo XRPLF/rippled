@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_SESSION_H_INCLUDED
 
 #include <ripple/server/Writer.h>
+#include <ripple/server/WSSession.h>
 #include <beast/http/body.h>
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
@@ -66,13 +67,8 @@ public:
 
     /** Returns the current HTTP request. */
     virtual
-    beast::http::message&
+    http_request_type&
     request() = 0;
-
-    /** Returns the Content-Body of the current HTTP request. */
-    virtual
-    beast::http::body const&
-    body() = 0;
 
     /** Send a copy of data asynchronously. */
     /** @{ */
@@ -135,6 +131,11 @@ public:
     virtual
     void
     close (bool graceful) = 0;
+
+    /** Convert the connection to WebSocket. */
+    virtual
+    std::shared_ptr<WSSession>
+    websocketUpgrade() = 0;
 };
 
 }  // ripple

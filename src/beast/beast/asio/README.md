@@ -1,14 +1,19 @@
-# beast::asio
+# Beast.Asio
 
-Wrappers and utilities to make working with boost::asio easier.
+--------------------------------------------------------------------------------
 
-## Rules for asynchronous objects
+Beast.Asio extends Boost.Asio, providing useful functions and utility classes.
 
-If an object calls asynchronous initiating functions it must either:
-
-    1. Manage its lifetime by being reference counted
-
-    or
-
-    2. Wait for all pending completion handlers to be called before
-       allowing itself to be destroyed.
+#### `append_buffers`
+#### `async_completion`
+#### `bind_handler`
+#### `buffers_adapter`
+#### `buffers_readstream`
+#### `consuming_buffers`
+#### `handler_alloc`
+#### `placeholders`
+#### `prepare_buffers`
+#### `static_streambuf`
+#### `streambuf`
+#### `streambuf_readstream`
+#### `type_check`
