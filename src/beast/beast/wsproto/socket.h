@@ -915,19 +915,22 @@ private:
     template<class Buffers, class Handler> class write_op;
     template<class Streambuf, class Handler> class read_some_op;
 
+    http::prepared_request<http::empty_body>
+    build_request(std::string const& host,
+        std::string const& resource,
+            std::string& key);
+
     template<class Body, class Allocator>
     http::prepared_response<http::string_body>
     build_response(http::parsed_request<
         Body, Allocator> const& req);
 
-    http::prepared_request<http::empty_body>
-    build_request(std::string const& host,
-        std::string const& resource);
-
     template<class Body, class Allocator>
     void
     do_response(http::parsed_response<
-        Body, Allocator> const& resp, error_code& ec);
+        Body, Allocator> const& resp,
+            std::string const& key,
+                error_code& ec);
 
     void
     do_read_fh(detail::frame_streambuf& fb,

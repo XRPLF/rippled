@@ -285,15 +285,16 @@ void
 socket<Stream>::handshake(std::string const& host,
     std::string const& resource, error_code& ec)
 {
+    std::string key;
     http::write(stream_,
-        build_request(host, resource), ec);
+        build_request(host, resource, key), ec);
     if(ec)
         return;
     http::parsed_response<http::string_body> resp;
     http::read(next_layer_, stream_.buffer(), resp, ec);
     if(ec)
         return;
-    do_response(resp, ec);
+    do_response(resp, key, ec);
 }
 
 template<class Stream>
@@ -560,6 +561,25 @@ socket<Stream>::async_write(opcode::value op, bool fin,
 //------------------------------------------------------------------------------
 
 template<class Stream>
+http::prepared_request<http::empty_body>
+socket<Stream>::build_request(std::string const& host,
+    std::string const& resource, std::string& key)
+{
+    http::request<http::empty_body> req;
+    req.url = "/";
+    req.version = 11;
+    req.method = http::method_t::http_get;
+    req.headers.insert("Host", host);
+    req.headers.insert("Upgrade", "websocket");
+    key = detail::make_sec_ws_key(maskgen_);
+    req.headers.insert("Sec-WebSocket-Key", key);
+    req.headers.insert("Sec-WebSocket-Version", "13");
+    (*d_)(req);
+    return http::prepare(req,
+        http::connection(http::upgrade));
+}
+
+template<class Stream>
 template<class Body, class Allocator>
 http::prepared_response<http::string_body>
 socket<Stream>::build_response(
@@ -612,30 +632,11 @@ socket<Stream>::build_response(
 }
 
 template<class Stream>
-http::prepared_request<http::empty_body>
-socket<Stream>::build_request(std::string const& host,
-    std::string const& resource)
-{
-    http::request<http::empty_body> req;
-    req.url = "/";
-    req.version = 11;
-    req.method = http::method_t::http_get;
-    req.headers.insert("Host", host);
-    req.headers.insert("Upgrade", "websocket");
-    req.headers.insert("Sec-WebSocket-Key",
-        detail::make_sec_ws_key(maskgen_));
-    req.headers.insert("Sec-WebSocket-Version", "13");
-    (*d_)(req);
-    return http::prepare(req,
-        http::connection(http::upgrade));
-}
-
-template<class Stream>
 template<class Body, class Allocator>
 void
 socket<Stream>::do_response(
     http::parsed_response<Body, Allocator> const& resp,
-        error_code& ec)
+        std::string const& key, error_code& ec)
 {
     // VFALCO Review these error codes
     auto fail = [&]{ ec = error::response_failed; };
@@ -648,11 +649,8 @@ socket<Stream>::do_response(
         return fail();
     if(! resp.headers.exists("Sec-WebSocket-Accept"))
         return fail();
-    if(! resp.headers.exists("Sec-WebSocket-Key"))
-        return fail();
     if(resp.headers["Sec-WebSocket-Accept"] !=
-        detail::make_sec_ws_accept(
-            resp.headers["Sec-WebSocket-Key"]))
+        detail::make_sec_ws_accept(key))
         return fail();
     role_ = role_type::client;
 }

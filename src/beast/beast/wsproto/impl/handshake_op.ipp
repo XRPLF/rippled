@@ -44,6 +44,7 @@ class socket<Stream>::handshake_op
     {
         socket<Stream>& ws;
         Handler h;
+        std::string key;
         http::prepared_request<http::empty_body> req;
         http::parsed_response<http::string_body> resp;
         int state = 0;
@@ -54,7 +55,7 @@ class socket<Stream>::handshake_op
                 std::string const& resource)
             : ws(ws_)
             , h(std::forward<DeducedHandler>(h_))
-            , req(ws.build_request(host, resource))
+            , req(ws.build_request(host, resource, key))
         {
         }
     };
@@ -152,7 +153,7 @@ socket<Stream>::handshake_op<
         // got response
         case 2:
         {
-            d.ws.do_response(d.resp, ec);
+            d.ws.do_response(d.resp, d.key, ec);
             // call handler
             d.state = 99;
             break;
