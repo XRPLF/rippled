@@ -80,7 +80,7 @@ public:
             message m;
             parser p(m, b, true);
             boost::system::error_code ec;
-            auto const used = p.write(boost::asio::buffer(text), ec);
+            p.write(boost::asio::buffer(text), ec);
             if(expect(ec))
                 expect(ec.message() == "invalid HTTP method");
         }

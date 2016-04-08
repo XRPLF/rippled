@@ -75,7 +75,7 @@ struct basic_streambuf_body
                 Allocator> const& m) noexcept
             : body(m.body)
         {
-            m.write_headers(sh);
+            m.write_headers(sb);
         }
 
         void
@@ -93,9 +93,10 @@ struct basic_streambuf_body
     template<bool isRequest, class Allocator>
     static
     void
-    prepare(prepared_message<isRequest, basic_streambuf_body, Allocator>& msg)
+    prepare(prepared_message<
+        isRequest, basic_streambuf_body, Allocator>& msg)
     {
-        m.headers.replace("Content-Length", m.body.size());
+        msg.headers.replace("Content-Length", m.body.size());
     }
 
     template<class Allocator,
