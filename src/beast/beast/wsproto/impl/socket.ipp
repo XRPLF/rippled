@@ -617,6 +617,9 @@ socket<Stream>::build_request(std::string const& host,
     std::string const& resource)
 {
     http::request<http::empty_body> req;
+    req.url = "/";
+    req.version = 11;
+    req.method = http::method_t::http_get;
     req.headers.insert("Host", host);
     req.headers.insert("Upgrade", "websocket");
     req.headers.insert("Sec-WebSocket-Key",
