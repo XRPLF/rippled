@@ -94,15 +94,24 @@ ServerHandlerImp::onStop()
 
 //------------------------------------------------------------------------------
 
-void
-ServerHandlerImp::onAccept (Session& session)
-{
-}
-
 bool
 ServerHandlerImp::onAccept (Session& session,
     boost::asio::ip::tcp::endpoint endpoint)
 {
+    std::lock_guard<std::mutex> l(countlock_);
+
+    auto& c = count_[session.port()];
+
+    c++;
+
+    if (session.port().limit && c >= session.port().limit)
+    {
+        JLOG (m_journal.trace()) <<
+            session.port().name << " is full; dropping " <<
+            endpoint;
+        return false;
+    }
+
     return true;
 }
 
@@ -188,6 +197,8 @@ void
 ServerHandlerImp::onClose (Session& session,
     boost::system::error_code const&)
 {
+    std::lock_guard<std::mutex> l(countlock_);
+    count_[session.port()]--;
 }
 
 void

@@ -19,9 +19,10 @@
 
 #include <ripple/server/Port.h>
 #include <beast/http/rfc2616.h>
+#include <boost/lexical_cast.hpp>
 
 namespace ripple {
-        
+
 bool
 Port::websockets() const
 {
@@ -183,6 +184,25 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             for (auto const& s : beast::rfc2616::split_commas(
                     result.first.begin(), result.first.end()))
                 port.protocol.insert(s);
+        }
+    }
+
+    {
+        auto const lim = get (section, "limit", "unlimited");
+
+        if (!beast::ci_equal (lim, "unlimited"))
+        {
+            try
+            {
+                port.limit = boost::lexical_cast<int>(lim);
+            }
+            catch (boost::bad_lexical_cast& ex)
+            {
+                log <<
+                    "Invalid value '" << lim << "' for key " <<
+                    "'limit' in [" << section.name() << "]\n";
+                Throw<std::exception> ();
+            }
         }
     }
 

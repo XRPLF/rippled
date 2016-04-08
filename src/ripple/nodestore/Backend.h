@@ -105,6 +105,9 @@ public:
 
     /** Perform consistency checks on database .*/
     virtual void verify() = 0;
+
+    /** Returns the number of file handles the backend expects to need */
+    virtual int fdlimit() const = 0;
 };
 
 }
