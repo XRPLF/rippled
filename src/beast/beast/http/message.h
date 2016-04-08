@@ -23,8 +23,10 @@
 #include <beast/http/headers.h>
 #include <beast/http/method.h>
 #include <beast/http/type_check.h>
+#include <beast/asio/buffers_debug.h>
 #include <beast/asio/type_check.h>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <beast/cxx17/type_traits.h> // <type_traits>
 
@@ -107,6 +109,7 @@ struct message
 
     /** Serialize the entire message to a Streambuf.
     */
+    // VFALCO We could static assert instead of constrain
     template<class Streambuf,
         class = std::enable_if_t<is_simple>>
     void
@@ -133,7 +136,7 @@ private:
     template<class Streambuf>
     void
     write_headers(Streambuf& streambuf,
-            std::false_type) const;
+        std::false_type) const;
 };
 
 template<class Body, class Allocator = std::allocator<char>>
@@ -141,6 +144,21 @@ using request = message<true, Body, Allocator>;
 
 template<class Body, class Allocator = std::allocator<char>>
 using response = message<false, Body, Allocator>;
+
+// Diagnostic output only
+template<bool isRequest, class Body, class Allocator>
+std::ostream&
+operator<<(std::ostream& os,
+    message<isRequest, Body, Allocator> const& m)
+{
+    static_assert(is_Body<Body>::value,
+        "Body requirements not met");
+    //static_assert(Body::Writer::is_single_pass,
+    //    "Multi-pass writer not supported");
+    Body::writer w(m);
+    os << debug::buffers_to_string(w.data());
+    return os;
+}
 
 //------------------------------------------------------------------------------
 

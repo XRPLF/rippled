@@ -66,7 +66,7 @@ struct basic_streambuf_body
     class writer
     {
         Streambuf sb;
-        Streambuf& body;
+        Streambuf const& body;
 
     public:
         template<bool isReq, class Allocator>

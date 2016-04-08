@@ -124,6 +124,7 @@ write_headers(Streambuf& streambuf,
 
 //------------------------------------------------------------------------------
 
+#if 0
 template<class Body, class Allocator,
     class Opt>
 inline
@@ -145,6 +146,7 @@ prepare_one(prepared_response<Body, Allocator>&,
 {
     // forward to Body if possible else static assert
 }
+#endif
 
 namespace detail {
 
