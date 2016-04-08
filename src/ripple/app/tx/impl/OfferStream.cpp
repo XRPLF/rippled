@@ -216,7 +216,7 @@ OfferStream::permRmOffer (std::shared_ptr<SLE> const& sle)
 template<class TIn, class TOut>
 void FlowOfferStream<TIn, TOut>::permRmOffer (std::shared_ptr<SLE> const& sle)
 {
-    toRemove_.insert (sle->key());
+    permToRemove_.insert (sle->key());
 }
 
 template class FlowOfferStream<STAmount, STAmount>;

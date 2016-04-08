@@ -41,6 +41,15 @@ class Offer_test : public beast::unit_test::suite
         return env.current()->info().parentCloseTime.time_since_epoch().count();
     }
 
+    static auto
+    xrpMinusFee (jtx::Env const& env, std::int64_t xrpAmount)
+        -> jtx::PrettyAmount
+    {
+        using namespace jtx;
+        auto feeDrops = env.current ()->fees ().base;
+        return drops (dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
+    };
+
 public:
     void testRmFundedOffer ()
     {
@@ -343,15 +352,6 @@ public:
 
             env (pay (alice, carol, USD2 (50)), path (~USD1, bob),
                 sendmax (XRP (50)), txflags (tfNoRippleDirect));
-
-            auto xrpMinusFee = [](jtx::Env const& env,
-                std::int64_t xrpAmount) -> jtx::PrettyAmount
-            {
-                using namespace jtx;
-                auto feeDrops = env.current ()->fees ().base;
-                return drops (
-                    dropsPerXRP<std::int64_t>::value * xrpAmount - feeDrops);
-            };
 
             env.require (balance (alice, xrpMinusFee (env, 10000 - 50)));
             env.require (balance (bob, USD1 (100)));

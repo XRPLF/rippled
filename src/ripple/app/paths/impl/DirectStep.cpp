@@ -109,6 +109,12 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
         return EitherAmount (cache_->out);
     }
 
+    boost::optional<AccountID>
+    directStepSrcAcct () const override
+    {
+        return src_;
+    }
+
     std::pair<IOUAmount, IOUAmount>
     revImp (
         PaymentSandbox& sb,
@@ -565,21 +571,43 @@ TER DirectStepI::check (StrandContext const& ctx) const
 
     if (ctx.prevStep)
     {
-        if (auto pds = dynamic_cast<DirectStepI const*> (ctx.prevStep))
+        if (auto prevSrc = ctx.prevStep->directStepSrcAcct ())
         {
-            auto const ter = checkNoRipple (
-                ctx.view, pds->src (), src_, dst_, currency_, j_);
+            auto const ter =
+                checkNoRipple (ctx.view, *prevSrc, src_, dst_, currency_, j_);
             if (ter != tesSUCCESS)
                 return ter;
         }
     }
 
-    if (!ctx.seenDirectIssues[0].insert (Issue{currency_, src_}).second ||
-        !ctx.seenDirectIssues[1].insert (Issue{currency_, dst_}).second)
     {
-        JLOG (j_.debug()) << "DirectStepI: loop detected: Index: "
-                        << ctx.strandSize << ' ' << *this;
-        return temBAD_PATH_LOOP;
+        Issue const srcIssue{currency_, src_};
+        Issue const dstIssue{currency_, dst_};
+
+        if (ctx.seenBookOuts.count (srcIssue))
+        {
+            if (!ctx.prevStep)
+            {
+                assert(0); // prev seen book without a prev step!?!
+                return temBAD_PATH_LOOP;
+            }
+
+            // This is OK if the previous step is a book step that outputs this issue
+            if (auto book = ctx.prevStep->bookStepBook())
+            {
+                if (book->out != srcIssue)
+                    return temBAD_PATH_LOOP;
+            }
+        }
+
+        if (!ctx.seenDirectIssues[0].insert (srcIssue).second ||
+            !ctx.seenDirectIssues[1].insert (dstIssue).second)
+        {
+            JLOG (j_.debug ())
+                << "DirectStepI: loop detected: Index: " << ctx.strandSize
+                << ' ' << *this;
+            return temBAD_PATH_LOOP;
+        }
     }
 
     {
