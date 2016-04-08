@@ -92,6 +92,11 @@ public:
     void
     connect (beast::IP::Endpoint const& address) = 0;
 
+    /** Returns the maximum number of peers we are configured to allow. */
+    virtual
+    int
+    limit () = 0;
+
     /** Returns the number of active peers.
         Active peers are only those peers that have completed the
         handshake and are using the peer protocol.

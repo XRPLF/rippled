@@ -147,6 +147,9 @@ public:
     virtual std::uint32_t getFetchHitCount () const = 0;
     virtual std::uint32_t getStoreSize () const = 0;
     virtual std::uint32_t getFetchSize () const = 0;
+
+    /** Return the number of files needed by our backend */
+    virtual int fdlimit() const = 0;
 };
 
 }

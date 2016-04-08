@@ -73,7 +73,14 @@ PlainHTTPPeer::PlainHTTPPeer (Port const& port, Handler& handler,
 void
 PlainHTTPPeer::run ()
 {
-    handler_.onAccept (session());
+    if (!handler_.onAccept (session(), remote_address_))
+    {
+        boost::asio::spawn (strand_,
+            std::bind (&PlainHTTPPeer::do_close,
+                shared_from_this()));
+        return;
+    }
+
     if (! stream_.is_open())
         return;
 

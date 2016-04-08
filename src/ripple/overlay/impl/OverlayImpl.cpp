@@ -775,6 +775,12 @@ OverlayImpl::size()
     return ids_.size ();
 }
 
+int
+OverlayImpl::limit()
+{
+    return m_peerFinder->config().maxPeers;
+}
+
 Json::Value
 OverlayImpl::crawl()
 {
