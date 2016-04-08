@@ -267,20 +267,6 @@ int run (int argc, char** argv)
         return 0;
     }
 
-    // Use a watchdog process unless we're invoking a stand alone type of mode
-    //
-    if (HaveSustain ()
-        && !vm.count ("parameters")
-        && !vm.count ("fg")
-        && !vm.count ("standalone")
-        && !vm.count ("unittest"))
-    {
-        std::string logMe = DoSustain ();
-
-        if (!logMe.empty ())
-            std::cerr << logMe << std::endl;
-    }
-
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
@@ -434,6 +420,17 @@ int run (int argc, char** argv)
     // No arguments. Run server.
     if (!vm.count ("parameters"))
     {
+        if (HaveSustain() && !vm.count ("fg") && !config->RUN_STANDALONE)
+        {
+            auto const ret = DoSustain ();
+
+            if (!ret.empty ())
+            {
+                std::cerr << "Unable to start watchdog: " << ret << std::endl;
+                return -1;
+            }
+        }
+
         if (vm.count ("debug"))
             setDebugJournalSink (logs->get("Debug"));
 
