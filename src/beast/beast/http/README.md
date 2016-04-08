@@ -2,26 +2,26 @@
 
 --------------------------------------------------------------------------------
 
-Beast.HTTP offers programmers simple and performant models of HTTP
-messages and their associated operations including synchronous and
-asynchronous reading and writing using Boost.Asio.
+Beast.HTTP offers programmers simple and performant models of HTTP messages and
+their associated operations including synchronous and asynchronous reading and
+writing using Boost.Asio.
 
 ## Introduction
 
-The HTTP protocol is pervasive in network applications. As C++ is a
-logical choice for high performance network servers, there is great
-utility in solid building blocks for manipulating, sending, and
-receiving HTTP messages compliant with RFC2616 and its supplements
-that follow. Unfortunately popular libraries such as Boost or the
-C++ standard library do not provide support for this popular protocol.
+The HTTP protocol is pervasive in network applications. As C++ is a logical
+choice for high performance network servers, there is great utility in solid
+building blocks for manipulating, sending, and receiving HTTP messages compliant
+with RFC2616 and its supplements that follow. Unfortunately popular libraries
+such as Boost or the C++ standard library do not provide support for this
+popular protocol.
 
-Beast.HTTP is built on Boost.Asio and uses HTTP parser from NodeJS,
-which is extensively field tested and exceptionally robust.
-A proposal to add networking functionality to the C++ standard library,
-based on Boost.Asio, is under consideration by the standards committee.
-Since the final approved networking interface for the C++ standard library
-will likely closely resemble the current interface of Boost.Asio, it is
-logical for Beast.HTTP to use Boost.Asio as its network transport.
+Beast.HTTP is built on Boost.Asio and uses HTTP parser from NodeJS, which is
+extensively field tested and exceptionally robust. A proposal to add networking
+functionality to the C++ standard library, based on Boost.Asio, is under
+consideration by the standards committee. Since the final approved networking
+interface for the C++ standard library will likely closely resemble the current
+interface of Boost.Asio, it is logical for Beast.HTTP to use Boost.Asio as its
+network transport.
 
 Beast.HTTP addresses the following goals:
 
@@ -31,8 +31,8 @@ accessible objects.
 * **Flexibility:** The modeling of the HTTP message should allow for
 multiple implementation strategies for representing the content-body.
 
-* **Performance:** The implementation should run sufficiently fast as to
-make it a competitive choice for building a high performance network
+* **Performance:** The implementation should run sufficiently fast as
+to make it a competitive choice for building a high performance network
 server.
 
 * **Scalability:** The library should facilitate the development of
@@ -56,29 +56,27 @@ req.headers.insert("User-Agent", "Beast.HTTP");
 
 ```
 
-Callers make changes to the `message` (`request` or `response`) until
-the desired final object state is reached. To send a message it must
-first be prepared, which transforms it into a `prepared_message` ready
-for sending. The Body associated with the message will perform any
-steps necessary for preparation. For example, a string body will set
+To send a message it must first be prepared through a call to `prepare`. This
+customization point transforms the `message` into a `prepared_message`,
+filling in some standard HTTP behavior and allowing the Body associated with
+the message to perform preparatory steps. For example, a string body may set
 the Content-Length and Content-Type appropriately.
 ```C++
 void send_request(ip::tcp::socket& sock,
     request<string_body>&& req)
 {
     // Send the request on the socket
-    write(sock, prepare(req, keep_alive{true}));
+    write(sock, prepare(req, connection(keep_alive));
 }
 ```
 
-Messages can be read from the network and parsed into a `parsed_message`
-object, which extends the `message` by adding parse-specific metadata such
-as the keep-alive which is context sensitive (depending on the HTTP version
-for example). When preparing a response for sending, `prepare` must be
-called with an additional parameter, the corresponding parsed request.
-The implementation inspects the contents of the request to set dependent
-fields of the response. This example reads a message, builds a response,
-and sends it.
+Messages can be read from the network and parsed into a `parsed_message` object,
+which extends the `message` by adding parse-specific metadata such as the
+keep-alive which is context sensitive (depending on the HTTP version for
+example). When preparing a response for sending, `prepare` must be called with
+an additional parameter, the corresponding parsed request. The implementation
+inspects the contents of the request to set dependent fields of the response.
+This example reads a message, builds a response, and sends it.
 ```C++
 void handle_connection(ip::tcp::socket& sock)
 {
@@ -98,74 +96,46 @@ template<bool isRequest, class Body, class Allocator>
 class message
 {
     ...
-    typename Body::value_type;
+    typename Body::value_type body;
 }
+
+template<class Body, class Allocator>
+using request = message<true, Body, Allocator>;
+
+template<class Body, class Allocator>
+using response = message<false, Body, Allocator>;
 ```
 
 The template argument `isRequest` is `true` for HTTP requests and `false`
 for HTTP responses, allowing functions to be overloaded or constrained
-based on the type of message they want to be passed. The `Body` argument
-determines the representation of the body, discussed below.
+based on the type of message they want to be passed.
 
-### `Body` concept:
+The `Body` template argument controls the method used to store information
+necessary for receiving or sending the body, as well as providing customizations
+for the actual writing or parsing process. The customizations are used by the
+implementation to perform the `read`, `write`, `async_read`, and `async_write`
+operations on messages.
 
-The `Body` template argument used in a `message` controls the method used
-to store information necessary for receiving or sending the body, as
-well as providing customizations for the actual writing or parsing process.
-The customizations are used by the implementation to perform the `read`,
-`write`, `async_read`, and `async_write` operations on messages.
+Beast.HTTP offers `empty_body`, `string_body`, and `streambuf_body` as common
+choices for the `Body` template argument. User-defined objects that meet the `Body`
+requirements may be implemented for custom implementation strategies.
 
-Note: Definitions for `Body`, `Reader`, and `Writer` member functions should
-typically be declared inline so they become part of the calling code.
+*Note:* Definitions for member functions associated with a `Body` and the types
+it defines should typically be declared inline so they become part of the calling
+code.
 
-#### `Body` requirements:
 
-`req` denotes any instance of `prepared_request`
-`resp` denotes any instance of `prepared_response`
-`preq` denotes any instance of `parsed_request`
 
- expression                | return        | type assertion/note/pre/post-condition
-:------------------------- |:------------- |:--------------------------------------
-`Body::value_type`         |               | The type of the `message::body` member.
-`Body::is_single_pass`     | bool          | `true` if `Body` is a single pass body.
-`Body::reader`             |               | A type meeting the requirements of `Reader`
-`Body::writer`             |               | A type meeting the requirements of `Writer`
-`Body::prepare(req)`       |               | Prepare `req` for serialization
-`Body::prepare(resp,preq)` |               | Prepare `resp` for serialization
+
+
+#### `SinglePassWriter`
 
 ### `Reader` concept:
 
-The implementation for the HTTP parser will construct the body's corresponding
-`reader` object during the parse process. This customization point allows the
-body to determine the strategy for storing incoming body data.
-
-#### `Reader` requirements:
-
-`X`  denotes a type meeting the requirements of `Reader`
-`a`  denotes a value of type `X`
-`m`  denotes a value of type `message const&` where
-       `std::is_same<decltype(m.body), Body::value_type>:value == true`.
-`p`  is any pointer
-`n`  is a value convertible to `std::size_t`.
-`ec` is a value of type `error_code&`.
-
- expression                | return        | type assertion/note/pre/post-condition
-:------------------------- |:------------- |:--------------------------------------
-`X a(m);                   |               | `a` is no-throw constructible from `m`.
-`a.write(p, n, ec)`        |               | No-throw guarantee
 
 
-## Types
 
-### `Reader` requirements
 
-* `X` denotes a type meeting the requirements of `Writer`
-* `a` denotes a value of type `X`
-
-expression                | return                | type assertion/note/pre/post-condition
-:------------------------ |:----------------      |:--------------------------------------
-`a.prepare(resume)`       | `boost::tribool`      | See `Writer` exemplar
-`a.data()`                | `ConstBufferSequence` | See `Writer` exemplar
 
 ### `Writer` requirements
 
@@ -174,6 +144,7 @@ expression                | return                | type assertion/note/pre/post
 
 expression                | return                | type assertion/note/pre/post-condition
 :------------------------ |:----------------      |:--------------------------------------
+`X::is_single_pass`       | `bool`                | `true`
 `a.prepare(resume)`       | `boost::tribool`      | See `Writer` exemplar
 `a.data()`                | `ConstBufferSequence` | See `Writer` exemplar
 
@@ -304,3 +275,44 @@ struct Writer
 };
 ```
 
+## Concepts
+
+### `Body`
+
+`req` denotes any instance of `prepared_request`.<br>
+`resp` denotes any instance of `prepared_response`.<br>
+`preq` denotes any instance of `parsed_request`.<br>
+
+ expression                 | return | type assertion/note/pre/post-condition
+:-------------------------- |:------ |:--------------------------------------
+`Body::value_type`          |        | The type of the `message::body` member.
+`Body::reader`              |        | A type meeting the requirements of `Reader`
+`Body::writer`              |        | A type meeting the requirements of `SinglePassWriter` or `MultiPassWriter`
+`Body::prepare(req)`        |        | Prepare `req` for serialization
+`Body::prepare(resp, preq)` |        | Prepare `resp` for serialization
+
+### `Reader`
+
+The implementation for the HTTP parser will construct the body's corresponding
+`reader` object during the parse process. This customization point allows the
+body to determine the strategy for storing incoming body data.
+
+`X`  denotes a type meeting the requirements of `Reader`.<br>
+`a`  denotes a value of type `X`.<br>
+`m`  denotes a value of type `message const&` where
+       `std::is_same<decltype(m.body), Body::value_type>:value == true`.<br>
+`p`  is any pointer.<br>
+`n`  is a value convertible to `std::size_t`.<br>
+`ec` is a value of type `error_code&`.<br>
+
+ expression         | return | type assertion/note/pre/post-condition
+:------------------ |:------ |:--------------------------------------
+`X a(m);`           |        | `a` is no-throw constructible from `m`.
+`a.write(p, n, ec)` |        | No-throw guarantee
+
+### `Writer`
+
+
+### `SinglePassWriter`
+
+### `MultiPassWriter`
