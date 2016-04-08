@@ -233,48 +233,48 @@ set_connection(prepared_message<
 } // detail
 
 template<bool isRequest, class Body, class Allocator>
-template<class... Opts,
-    class>
+template<class... Opts>
 prepared_message<isRequest, Body, Allocator>::
 prepared_message(request<Body, Allocator>&& msg,
         Opts&&... opts)
     : message<isRequest, Body, Allocator>(std::move(msg))
 {
+    static_assert(isRequest, "");
     construct(std::forward<Opts>(opts)...);
 }
 
 template<bool isRequest, class Body, class Allocator>
-template<class... Opts,
-    class>
+template<class... Opts>
 prepared_message<isRequest, Body, Allocator>::
 prepared_message(request<Body, Allocator> const& msg,
         Opts&&... opts)
     : message<isRequest, Body, Allocator>(msg)
 {
+    static_assert(isRequest, "");
     construct(std::forward<Opts>(opts)...);
 }
 
 template<bool isRequest, class Body, class Allocator>
-template<class ReqBody, class ReqAllocator, class... Opts,
-    class>
+template<class ReqBody, class ReqAllocator, class... Opts>
 prepared_message<isRequest, Body, Allocator>::
 prepared_message(response<Body, Allocator>&& msg,
     parsed_request<ReqBody, ReqAllocator> const& req,
         Opts&&... opts)
     : message<isRequest, Body, Allocator>(std::move(msg))
 {
+    static_assert(! isRequest, "");
     construct(req, std::forward<Opts>(opts)...);
 }
 
 template<bool isRequest, class Body, class Allocator>
-template<class ReqBody, class ReqAllocator, class... Opts,
-    class>
+template<class ReqBody, class ReqAllocator, class... Opts>
 prepared_message<isRequest, Body, Allocator>::
 prepared_message(response<Body, Allocator> const& msg,
     parsed_request<ReqBody, ReqAllocator> const& req,
         Opts&&... opts)
     : message<isRequest, Body, Allocator>(msg)
 {
+    static_assert(! isRequest, "");
     construct(req, std::forward<Opts>(opts)...);
 }
 
