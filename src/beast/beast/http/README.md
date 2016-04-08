@@ -25,17 +25,17 @@ logical for Beast.HTTP to use Boost.Asio as its network transport.
 
 Beast.HTTP addresses the following goals:
 
-* **Ease of Use** HTTP messages are modeled using simple, readily
+* **Ease of Use:** HTTP messages are modeled using simple, readily
 accessible objects.
 
-* **Flexibility** The modeling of the HTTP message should allow for
+* **Flexibility:** The modeling of the HTTP message should allow for
 multiple implementation strategies for representing the content-body.
 
-* **Performance** The implementation should run sufficiently fast as to
+* **Performance:** The implementation should run sufficiently fast as to
 make it a competitive choice for building a high performance network
 server.
 
-* **Scalability.** The library should facilitate the development of
+* **Scalability:** The library should facilitate the development of
 network applications that scale to thousands of concurrent connections.
 
 ## Example
@@ -56,12 +56,12 @@ req.headers.insert("User-Agent", "Beast.HTTP");
 
 ```
 
-A `message` (`request` or `response`) is like an editable document.
-Callers make changes until the desired final object state is reached.
-To send a message it must first be prepared, which transforms it into
-a `prepared_message` ready for sending. The Body associated with the
-message will perform any steps necessary for preparation. For example,
-a string body will set the Content-Length and Content-Type appropriately.
+Callers make changes to the `message` (`request` or `response`) until
+the desired final object state is reached. To send a message it must
+first be prepared, which transforms it into a `prepared_message` ready
+for sending. The Body associated with the message will perform any
+steps necessary for preparation. For example, a string body will set
+the Content-Length and Content-Type appropriately.
 ```C++
 void send_request(ip::tcp::socket& sock,
     request<string_body>&& req)
@@ -92,27 +92,51 @@ void handle_connection(ip::tcp::socket& sock)
 
 ## Modeling the HTTP message
 
+All HTTP messages are modeled using this base class template:
+```C++
+template<bool isRequest, class Body, class Allocator>
+class message
+{
+    ...
+    typename Body::value_type;
+}
+```
+
+The template argument `isRequest` is `true` for HTTP requests and `false`
+for HTTP responses, allowing functions to be overloaded or constrained
+based on the type of message they want to be passed. The `Body` argument
+determines the representation of the body, discussed below.
+
+### `Body` concept:
+
+The `Body` template argument used in a `message` controls the method used
+to store information necessary for receiving or sending the body, as
+well as providing customizations for the actual writing or parsing process.
+The customizations are used by the implementation to perform the `read`,
+`write`, `async_read`, and `async_write` operations on messages.
+
+#### Body requirements:
+
+`X` denotes a class meeting the requirements of `Body`
+`a` denotes a value of type `X`
+`sb` denotes an object meeting the requirements of `Streambuf`.
+
+ expression               | return        | type assertion/note/pre/post-condition
+:------------------------ |:------------- |:--------------------------------------
+`Body::value_type`        |               | The type of the `message::body` member.
+`Body::is_single_pass`    | bool          | `true` if `Body` is a single pass body.
+`Body::reader`            |               | A type meeting the requirements of `Reader`
+`Body::writer`            |               | A type meeting the requirements of `Writer`
+`a.prepare(m)`            |               | Prepare `a` for serialization (called once)
+`a.write(sb)`             |               | Serializes `a` to a `Streambuf`
+
+
 
 
 ## Types
 
 Definitions for Body, Reader, and Writer member functions should typically
 be marked inline so they become part of the code that calls them.
-
-### `Body` requirements
-
-`X` denotes a class meeting the requirements of `HTTPBody`
-`a` denotes a value of type `X`
-`sb` denotes an object meeting the requirements of `Streambuf`.
-
- expression               | return        | type assertion/note/pre/post-condition
-:------------------------ |:------------- |:--------------------------------------
-`X`                       |               | A type meeting the requirements of `HTTPBody`
-`a`                       | `X`           | `a` is a value of type `X`
-`sb`                      |               | `sb` is any `Streambuf`
-`m`                       |               | `m` is any `HTTPMessage`
-`a.prepare(m)`            |               | Prepare `a` for serialization (called once)
-`a.write(sb)`             |               | Serializes `a` to a `Streambuf`
 
 ### `Reader` requirements
 
