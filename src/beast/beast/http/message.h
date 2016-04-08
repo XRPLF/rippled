@@ -242,8 +242,7 @@ struct prepared_message : public message<isRequest, Body, Allocator>
 
         @param msg The request to prepare.
     */
-    template<class... Opts,
-        class = std::enable_if_t<isRequest>>
+    template<class... Opts>
     explicit
     prepared_message(
         request<Body, Allocator>&& msg,
@@ -253,8 +252,7 @@ struct prepared_message : public message<isRequest, Body, Allocator>
 
         @param msg The request to prepare.
     */
-    template<class... Opts,
-        class = std::enable_if_t<isRequest>>
+    template<class... Opts>
     explicit
     prepared_message(
         request<Body, Allocator> const& msg,
@@ -266,8 +264,7 @@ struct prepared_message : public message<isRequest, Body, Allocator>
 
         @param req The request we are preparing the response for.
     */
-    template<class ReqBody, class ReqAllocator, class... Opts,
-        class = std::enable_if_t<! isRequest>>
+    template<class ReqBody, class ReqAllocator, class... Opts>
     prepared_message(response<Body, Allocator>&& msg,
         parsed_request<ReqBody, ReqAllocator> const& req,
             Opts&&... opts);
@@ -278,8 +275,7 @@ struct prepared_message : public message<isRequest, Body, Allocator>
 
         @param req The request we are preparing the response for.
     */
-    template<class ReqBody, class ReqAllocator, class... Opts,
-        class = std::enable_if_t<! isRequest>>
+    template<class ReqBody, class ReqAllocator, class... Opts>
     prepared_message(response<Body, Allocator> const& msg,
         parsed_request<ReqBody, ReqAllocator> const& req,
             Opts&&... opts);
