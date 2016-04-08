@@ -124,6 +124,74 @@ write_headers(Streambuf& streambuf,
 
 //------------------------------------------------------------------------------
 
+template<class Body, class Allocator,
+    class Opt>
+inline
+void
+prepare_one(prepared_request<Body, Allocator>&,
+    Opt&&)
+{
+    // forward to Body if possible else static assert
+}
+
+template<class Body, class Allocator,
+    class ReqBody, class ReqAllocator,
+        class Opt>
+inline
+void
+prepare_one(prepared_response<Body, Allocator>&,
+    parsed_request<ReqBody, ReqAllocator> const&,
+        Opt&&)
+{
+    // forward to Body if possible else static assert
+}
+
+namespace detail {
+
+template<class Body, class Allocator,
+    class ReqBody, class ReqAllocator>
+inline
+void
+prepare_opts(prepared_response<Body, Allocator>&,
+    parsed_request<ReqBody, ReqAllocator> const&)
+{
+}
+
+template<class Body, class Allocator,
+    class ReqBody, class ReqAllocator,
+        class Opt, class... Opts>
+inline
+void
+prepare_opts(prepared_response<Body, Allocator>& msg,
+    parsed_request<ReqBody, ReqAllocator> const& req,
+        Opt&& opt, Opts&&... opts)
+{
+    prepare_one(msg, req, std::forward<Opt>(opt));
+    prepare_opts(msg, req, std::forward<Opts>(opts)...);
+}
+
+template<class Body, class Allocator>
+inline
+void
+prepare_opts(prepared_request<Body, Allocator>&)
+{
+}
+
+template<class Body, class Allocator,
+    class Opt, class... Opts>
+inline
+void
+prepare_opts(prepared_request<Body, Allocator>& msg,
+    Opt&& opt, Opts&&... opts)
+{
+    prepare_one(msg, std::forward<Opt>(opt));
+    prepare_opts(msg, std::forward<Opts>(opts)...);
+}
+
+} // detail
+
+//------------------------------------------------------------------------------
+
 namespace detail {
 
 template<bool isRequest, class Body, class Allocator>
@@ -216,7 +284,7 @@ void
 prepared_message<isRequest, Body, Allocator>::
 construct(Opts&&... opts)
 {
-    detail::set_connection(*this, version >= 11 ?
+    detail::set_connection(*this, this->version >= 11 ?
         connection_value::keep_alive : connection_value::close);
     detail::prepare_opts(*this, std::forward<Opts>(opts)...);
     Body::prepare(*this);
@@ -236,74 +304,6 @@ construct(parsed_request<ReqBody, ReqAllocator> const& req,
         std::forward<Opts>(opts)...);
     Body::prepare(*this, req);
 }
-
-//------------------------------------------------------------------------------
-
-template<class Body, class Allocator,
-    class Opt>
-inline
-void
-prepare_one(prepared_request<Body, Allocator>&,
-    Opt&&)
-{
-    // forward to Body if possible else static assert
-}
-
-template<class Body, class Allocator,
-    class ReqBody, class ReqAllocator,
-        class Opt>
-inline
-void
-prepare_one(prepared_response<Body, Allocator>&,
-    parsed_request<ReqBody, ReqAllocator> const&,
-        Opt&&)
-{
-    // forward to Body if possible else static assert
-}
-
-namespace detail {
-
-template<class Body, class Allocator,
-    class ReqBody, class ReqAllocator>
-inline
-void
-prepare_opts(prepared_response<Body, Allocator>&,
-    parsed_request<ReqBody, ReqAllocator> const&)
-{
-}
-
-template<class Body, class Allocator,
-    class ReqBody, class ReqAllocator,
-        class Opt, class... Opts>
-inline
-void
-prepare_opts(prepared_response<Body, Allocator>& msg,
-    parsed_request<ReqBody, ReqAllocator> const& req,
-        Opt&& opt, Opts&&... opts)
-{
-    prepare_one(msg, req, std::forward<Opt>(opt));
-    prepare_opts(msg, req, std::forward<Opts>(opts)...);
-}
-
-template<class Body, class Allocator>
-inline
-void
-prepare_opts(prepared_request<Body, Allocator>&)
-{
-}
-
-template<class Body, class Allocator,
-    class Opt, class... Opts>
-inline
-void
-prepare_opts(prepared_request<Body, Allocator>& msg,
-    Opt&& opt, Opts&&... opts)
-{
-    prepare_one(msg, std::forward<Opt>(opt));
-    prepare_opts(msg, std::forward<Opts>(opts)...);
-}
-
-} // detail
 
 //------------------------------------------------------------------------------
 
