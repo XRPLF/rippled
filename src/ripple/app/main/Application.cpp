@@ -534,6 +534,7 @@ public:
     void signalStop() override;
     bool checkSigs() const override;
     void checkSigs(bool) override;
+    int fdlimit () const override;
 
     //--------------------------------------------------------------------------
 
@@ -1156,14 +1157,12 @@ ApplicationImp::doStart()
 void
 ApplicationImp::run()
 {
+    if (!config_->RUN_STANDALONE)
     {
-        if (!config_->RUN_STANDALONE)
-        {
-            // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-            //             manager then the deadlock detector can just always be "armed"
-            //
-            getLoadManager ().activateDeadlockDetector ();
-        }
+        // VFALCO NOTE This seems unnecessary. If we properly refactor the load
+        //             manager then the deadlock detector can just always be "armed"
+        //
+        getLoadManager ().activateDeadlockDetector ();
     }
 
     m_stop.wait ();
@@ -1199,6 +1198,22 @@ bool ApplicationImp::checkSigs() const
 void ApplicationImp::checkSigs(bool check)
 {
     checkSigs_ = check;
+}
+
+int ApplicationImp::fdlimit() const
+{
+    // 128 fds for websocket and RPC connections and misc I/O:
+    int needed = 128;
+
+    // 1.5 times the configured peer limit for peer connections:
+    needed += static_cast<int>(0.5 + (1.5 * m_overlay->limit()));
+
+    // the number of fds needed by the backend, doubled if online
+    // delete is enabled.
+    needed += std::max(5, m_shaMapStore->fdlimit());
+
+    // The minimum number of file descriptors we need is 1024:
+    return std::max(1024, needed);
 }
 
 //------------------------------------------------------------------------------

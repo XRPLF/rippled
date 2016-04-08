@@ -266,6 +266,22 @@ public:
         bool isInbound,
         int bytes);
 
+    /*  The number of active peers on the network
+        Active peers are only those peers that have completed the handshake
+        and are running the Ripple protocol.
+    */
+    std::size_t
+    size() override;
+
+    int
+    limit () override;
+
+    Json::Value
+    crawl() override;
+
+    Json::Value
+    json() override;
+
 private:
     std::shared_ptr<Writer>
     makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
@@ -273,20 +289,6 @@ private:
 
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
-
-    /*  The number of active peers on the network
-        Active peers are only those peers that have completed the handshake
-        and are running the Ripple protocol.
-    */
-    // VFALCO Why private?
-    std::size_t
-    size() override;
-
-    Json::Value
-    crawl() override;
-
-    Json::Value
-    json() override;
 
     bool
     processRequest (beast::http::message const& req,

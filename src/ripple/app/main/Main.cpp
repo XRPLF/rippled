@@ -54,23 +54,6 @@ namespace po = boost::program_options;
 
 namespace ripple {
 
-void setupServer (Application& app)
-{
-#ifdef RLIMIT_NOFILE
-    struct rlimit rl;
-    if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
-    {
-         if (rl.rlim_cur != rl.rlim_max)
-         {
-             rl.rlim_cur = rl.rlim_max;
-             setrlimit(RLIMIT_NOFILE, &rl);
-         }
-    }
-#endif
-
-    app.setup ();
-}
-
 boost::filesystem::path
 getEntropyFile(Config const& config)
 {
@@ -78,6 +61,40 @@ getEntropyFile(Config const& config)
     if (path.empty ())
         return {};
     return boost::filesystem::path (path) / "random.seed";
+}
+
+bool
+adjustDescriptorLimit(int needed)
+{
+#ifdef RLIMIT_NOFILE
+    // Get the current limit, then adjust it to what we need.
+    struct rlimit rl;
+
+    int available = 0;
+
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+    {
+        available = rl.rlim_cur;
+
+        if (rl.rlim_cur != rl.rlim_max)
+        {
+            rl.rlim_cur = rl.rlim_max;
+
+            if (setrlimit(RLIMIT_NOFILE, &rl) == 0)
+                available = rl.rlim_cur;
+        }
+    }
+
+    if (needed > available)
+    {
+        std::cerr << "Insufficient number of file descriptors:\n";
+        std::cerr << "     Needed: " << needed << '\n';
+        std::cerr << "  Available: " << available << '\n';
+        return false;
+    }
+#endif
+
+    return true;
 }
 
 void startServer (Application& app)
@@ -441,7 +458,16 @@ int run (int argc, char** argv)
             std::move(config),
             std::move(logs),
             std::move(timeKeeper));
-        setupServer (*app);
+        app->setup ();
+
+        // With our configuration parsed, ensure we get the right number
+        // of file descriptors:
+        if (!adjustDescriptorLimit(app->fdlimit()))
+        {
+            StopSustain();
+            return -1;
+        }
+
         startServer (*app);
         return 0;
     }
@@ -453,8 +479,6 @@ int run (int argc, char** argv)
         vm["parameters"].as<std::vector<std::string>>(),
         *logs);
 }
-
-extern int run (int argc, char** argv);
 
 } // ripple
 
