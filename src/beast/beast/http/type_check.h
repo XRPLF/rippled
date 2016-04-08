@@ -20,7 +20,12 @@
 #ifndef BEAST_HTTP_TYPE_CHECK_H_INCLUDED
 #define BEAST_HTTP_TYPE_CHECK_H_INCLUDED
 
+#include <beast/http/error.h>
+#include <beast/http/message.h>
+#include <beast/http/resume_context.h>
+#include <beast/asio/type_check.h>
 #include <boost/asio/buffer.hpp>
+#include <boost/logic/tribool.hpp>
 #include <boost/system/error_code.hpp>
 #include <functional>
 #include <beast/cxx17/type_traits.h> // <type_traits>
@@ -28,9 +33,50 @@
 namespace beast {
 namespace http {
 
+namespace concept {
+
+struct Reader
+{
+    template<bool isRequest, class Body, class Allocator>
+    Reader(message<isRequest, Body, Allocator>&) noexcept;
+    void write(void const*, std::size_t, error_code&) noexcept;
+};
+
+struct SinglePassWriter
+{
+    static bool const is_single_pass = true;
+    template<bool isRequest, class Body, class Allocator>
+    SinglePassWriter(message<isRequest, Body, Allocator> const&) noexcept;
+    beast::concept::ConstBufferSequence data() noexcept;
+};
+
+struct MultiPassWriter
+{
+    static bool const is_single_pass = false;
+    template<bool isRequest, class Body, class Allocator>
+    MultiPassWriter(message<isRequest, Body, Allocator> const&) noexcept;
+    void init(error_code&);
+    boost::tribool prepare(resume_context, error_code&);
+    beast::concept::ConstBufferSequence data() noexcept;
+};
+
+} // concept
+
 /// Evaluates to std::true_type if `T` models Body
 template<class T>
 struct is_Body : std::true_type
+{
+};
+
+/// Evalulates to std::true_type if Body has a reader
+template<class T>
+struct is_ReadableBody : std::true_type
+{
+};
+
+/// Evalulates to std::true_type if Body has a writer
+template<class T>
+struct is_WritableBody : std::true_type
 {
 };
 

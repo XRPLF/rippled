@@ -230,6 +230,8 @@ read(SyncReadStream& stream, Streambuf& streambuf,
         "SyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
+    static_assert(is_ReadableBody<Body>::value,
+        "ReadableBody requirements not met");
     parser<isRequest, Body, Allocator> p;
     for(;;)
     {
@@ -278,6 +280,8 @@ async_read(AsyncReadStream& stream, Streambuf& streambuf,
         "AsyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
+    static_assert(is_ReadableBody<Body>::value,
+        "ReadableBody requirements not met");
     beast::async_completion<CompletionToken,
         void(error_code)> completion(token);
     detail::read_op<AsyncReadStream, Streambuf,

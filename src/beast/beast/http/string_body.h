@@ -67,6 +67,8 @@ struct string_body
         boost::asio::const_buffers_1 cb;
 
     public:
+        static bool constexpr is_single_pass = true;
+
         template<bool isReq, class Allocator>
         explicit
         writer(message<isReq, string_body, Allocator> const& m) noexcept

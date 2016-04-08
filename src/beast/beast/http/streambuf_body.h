@@ -37,8 +37,6 @@ struct basic_streambuf_body
 {
     using value_type = Streambuf;
 
-    static bool constexpr is_simple = true;
-
     class reader
     {
         value_type& sb_;
@@ -69,6 +67,8 @@ struct basic_streambuf_body
         Streambuf const& body;
 
     public:
+        static bool constexpr is_single_pass = true;
+
         template<bool isReq, class Allocator>
         explicit
         writer(message<isReq, basic_streambuf_body,

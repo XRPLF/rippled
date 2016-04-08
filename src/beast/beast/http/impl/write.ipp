@@ -21,6 +21,7 @@
 #define BEAST_HTTP_WRITE_IPP_H_INCLUDED
 
 #include <beast/http/resume_context.h>
+#include <beast/http/type_check.h>
 #include <beast/asio/async_completion.h>
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/handler_alloc.h>
@@ -29,7 +30,7 @@
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
 #include <mutex>
-#include <type_traits>
+#include <beast/cxx17/type_traits.h> // <type_traits>
 
 namespace beast {
 namespace http {
@@ -37,7 +38,7 @@ namespace http {
 namespace detail {
 
 template<class Stream, class Message, class Handler,
-    bool isSimple>
+    bool isSinglePass>
 class write_op;
 
 //------------------------------------------------------------------------------
@@ -359,8 +360,10 @@ write(SyncWriteStream& stream,
     prepared_message<isRequest, Body, Allocator> const& msg,
         error_code& ec)
 {
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     detail::write(stream, msg, ec,
-        std::bool_constant<Body::is_simple>{});
+        std::bool_constant<Body::writer::is_single_pass>{});
 }
 
 template<class AsyncWriteStream,
@@ -374,13 +377,15 @@ async_write(AsyncWriteStream& stream,
     static_assert(
         is_AsyncWriteStream<AsyncWriteStream>::value,
             "AsyncWriteStream requirements not met");
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     beast::async_completion<CompletionToken,
         void(error_code)> completion(token);
     using message_type =
         prepared_message<isReq, Body, Allocator>;
     detail::write_op<AsyncWriteStream, message_type,
         decltype(completion.handler),
-            message_type::is_simple>{
+            Body::writer::is_single_pass>{
                 completion.handler, stream, std::move(msg)};
     return completion.result.get();
 }
@@ -396,13 +401,15 @@ async_write(AsyncWriteStream& stream,
     static_assert(
         is_AsyncWriteStream<AsyncWriteStream>::value,
             "AsyncWriteStream requirements not met");
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     beast::async_completion<CompletionToken,
         void(error_code)> completion(token);
     using message_type =
         prepared_message<isReq, Body, Allocator>;
     detail::write_op<AsyncWriteStream, message_type,
         decltype(completion.handler),
-            message_type::is_simple>{
+            Body::writer::is_single_pass>{
                 completion.handler, stream, msg};
     return completion.result.get();
 }

@@ -37,8 +37,6 @@ struct empty_body
     {
     };
 
-    static bool constexpr is_simple = true;
-
     struct reader
     {
         template<bool isReq, class Allocator>
@@ -58,6 +56,8 @@ struct empty_body
         streambuf sb;
 
     public:
+        static bool constexpr is_single_pass = true;
+    
         template<bool isReq, class Allocator>
         explicit
         writer(message<isReq, empty_body, Allocator> const& m)

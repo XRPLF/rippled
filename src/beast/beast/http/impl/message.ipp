@@ -20,6 +20,7 @@
 #ifndef BEAST_HTTP_MESSAGE_IPP_INCLUDED
 #define BEAST_HTTP_MESSAGE_IPP_INCLUDED
 
+#include <beast/http/type_check.h>
 #include <beast/http/detail/writes.h>
 #include <boost/asio/buffer.hpp>
 
@@ -28,8 +29,18 @@ namespace http {
 
 template<bool isReq, class Body, class Allocator>
 message<isReq, Body, Allocator>::
+message()
+{
+    static_assert(is_Body<Body>::value,
+        "Body requirements not met");
+}
+
+template<bool isReq, class Body, class Allocator>
+message<isReq, Body, Allocator>::
 message(request_params params)
 {
+    static_assert(is_Body<Body>::value,
+        "Body requirements not met");
     static_assert(isReq, "message is not a request");
     this->method = params.method;
     this->url = params.url;
@@ -40,6 +51,8 @@ template<bool isReq, class Body, class Allocator>
 message<isReq, Body, Allocator>::
 message(response_params params)
 {
+    static_assert(is_Body<Body>::value,
+        "Body requirements not met");
     static_assert(! isReq, "message is not a response");
     this->status = params.status;
     this->reason = params.reason;
@@ -47,11 +60,13 @@ message(response_params params)
 }
 
 template<bool isReq, class Body, class Allocator>
-template<class Streambuf, class>
+template<class Streambuf>
 void
 message<isReq, Body, Allocator>::
 write(Streambuf& streambuf) const
 {
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
     typename Body::writer w(*this);
@@ -120,6 +135,21 @@ write_headers(Streambuf& streambuf,
     detail::write(streambuf, "\r\n");
     headers.write(streambuf);
     detail::write(streambuf, "\r\n");
+}
+
+// Diagnostic output only
+template<bool isRequest, class Body, class Allocator>
+std::ostream&
+operator<<(std::ostream& os,
+    message<isRequest, Body, Allocator> const& m)
+{
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
+    static_assert(Body::Writer::is_single_pass,
+        "Multi-pass writer not supported");
+    typename Body::writer w(m);
+    os << debug::buffers_to_string(w.data());
+    return os;
 }
 
 //------------------------------------------------------------------------------

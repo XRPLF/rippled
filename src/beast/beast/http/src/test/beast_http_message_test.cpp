@@ -148,7 +148,7 @@ public:
     void
     testSyntax()
     {
-        static_assert(string_body::is_simple, "");
+        static_assert(string_body::writer::is_single_pass, "");
         static_assert(std::is_constructible<string_body::value_type>::value, "");
         static_assert(std::is_constructible<request<string_body>>::value, "");
         static_assert(std::is_constructible<response<string_body>>::value, "");

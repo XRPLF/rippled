@@ -22,7 +22,6 @@
 
 #include <beast/http/headers.h>
 #include <beast/http/method.h>
-#include <beast/http/type_check.h>
 #include <beast/asio/buffers_debug.h>
 #include <beast/asio/type_check.h>
 #include <memory>
@@ -76,22 +75,18 @@ struct message
     : std::conditional_t<isRequest,
         detail::request_fields, detail::response_fields>
 {
-    static_assert(is_Body<Body>::value,
-        "Body requirements not met");
-
     using body_type = Body;
     using value_type = typename Body::value_type;
     using writer_type = typename Body::writer;
     using allocator_type = Allocator;
 
-    static bool constexpr is_simple = body_type::is_simple;
     static bool constexpr is_request = isRequest;
 
     int version; // 10 or 11
     beast::http::headers<Allocator> headers;
     value_type body;
 
-    message() = default;
+    message();
     message(message&&) = default;
     message(message const&) = default;
     message& operator=(message&&) = default;
@@ -109,9 +104,7 @@ struct message
 
     /** Serialize the entire message to a Streambuf.
     */
-    // VFALCO We could static assert instead of constrain
-    template<class Streambuf,
-        class = std::enable_if_t<is_simple>>
+    template<class Streambuf>
     void
     write(Streambuf& streambuf) const;
 
@@ -149,16 +142,7 @@ using response = message<false, Body, Allocator>;
 template<bool isRequest, class Body, class Allocator>
 std::ostream&
 operator<<(std::ostream& os,
-    message<isRequest, Body, Allocator> const& m)
-{
-    static_assert(is_Body<Body>::value,
-        "Body requirements not met");
-    //static_assert(Body::Writer::is_single_pass,
-    //    "Multi-pass writer not supported");
-    typename Body::writer w(m);
-    os << debug::buffers_to_string(w.data());
-    return os;
-}
+    message<isRequest, Body, Allocator> const& m);
 
 //------------------------------------------------------------------------------
 
