@@ -115,28 +115,47 @@ well as providing customizations for the actual writing or parsing process.
 The customizations are used by the implementation to perform the `read`,
 `write`, `async_read`, and `async_write` operations on messages.
 
-#### Body requirements:
+Note: Definitions for `Body`, `Reader`, and `Writer` member functions should
+typically be declared inline so they become part of the calling code.
 
-`X` denotes a class meeting the requirements of `Body`
-`a` denotes a value of type `X`
-`sb` denotes an object meeting the requirements of `Streambuf`.
+#### `Body` requirements:
 
- expression               | return        | type assertion/note/pre/post-condition
-:------------------------ |:------------- |:--------------------------------------
-`Body::value_type`        |               | The type of the `message::body` member.
-`Body::is_single_pass`    | bool          | `true` if `Body` is a single pass body.
-`Body::reader`            |               | A type meeting the requirements of `Reader`
-`Body::writer`            |               | A type meeting the requirements of `Writer`
-`a.prepare(m)`            |               | Prepare `a` for serialization (called once)
-`a.write(sb)`             |               | Serializes `a` to a `Streambuf`
+`req` denotes any instance of `prepared_request`
+`resp` denotes any instance of `prepared_response`
+`preq` denotes any instance of `parsed_request`
 
+ expression                | return        | type assertion/note/pre/post-condition
+:------------------------- |:------------- |:--------------------------------------
+`Body::value_type`         |               | The type of the `message::body` member.
+`Body::is_single_pass`     | bool          | `true` if `Body` is a single pass body.
+`Body::reader`             |               | A type meeting the requirements of `Reader`
+`Body::writer`             |               | A type meeting the requirements of `Writer`
+`Body::prepare(req)`       |               | Prepare `req` for serialization
+`Body::prepare(resp,preq)` |               | Prepare `resp` for serialization
 
+### `Reader` concept:
+
+The implementation for the HTTP parser will construct the body's corresponding
+`reader` object during the parse process. This customization point allows the
+body to determine the strategy for storing incoming body data.
+
+#### `Reader` requirements:
+
+`X`  denotes a type meeting the requirements of `Reader`
+`a`  denotes a value of type `X`
+`m`  denotes a value of type `message const&` where
+       `std::is_same<decltype(m.body), Body::value_type>:value == true`.
+`p`  is any pointer
+`n`  is a value convertible to `std::size_t`.
+`ec` is a value of type `error_code&`.
+
+ expression                | return        | type assertion/note/pre/post-condition
+:------------------------- |:------------- |:--------------------------------------
+`X a(m);                   |               | `a` is no-throw constructible from `m`.
+`a.write(p, n, ec)`        |               | No-throw guarantee
 
 
 ## Types
-
-Definitions for Body, Reader, and Writer member functions should typically
-be marked inline so they become part of the code that calls them.
 
 ### `Reader` requirements
 
