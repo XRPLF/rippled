@@ -26,7 +26,6 @@
 #include <beast/chrono/abstract_clock.h>
 #include <beast/utility/empty_base_optimization.h>
 #include <beast/utility/empty_base_optimization.h>
-#include <beast/cxx14/type_traits.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/version.hpp>
@@ -35,7 +34,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include <type_traits>
+#include <beast/cxx17/type_traits.h> // <type_traits>
 #include <utility>
 
 namespace beast {

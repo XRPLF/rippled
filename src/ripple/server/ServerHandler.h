@@ -88,7 +88,7 @@ public:
     /** Fills in boilerplate HTTP header field values. */
     static
     void
-    appendStandardFields (beast::http::message& message);
+    appendStandardFields (beast::deprecated_http::message& message);
 };
 
 //------------------------------------------------------------------------------
