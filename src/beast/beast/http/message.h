@@ -155,7 +155,7 @@ operator<<(std::ostream& os,
         "Body requirements not met");
     //static_assert(Body::Writer::is_single_pass,
     //    "Multi-pass writer not supported");
-    Body::writer w(m);
+    typename Body::writer w(m);
     os << debug::buffers_to_string(w.data());
     return os;
 }
