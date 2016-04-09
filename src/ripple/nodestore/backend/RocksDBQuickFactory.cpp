@@ -95,6 +95,7 @@ public:
     size_t const m_keyBytes;
     std::string m_name;
     std::unique_ptr <rocksdb::DB> m_db;
+    int fdlimit_ = 2048;
 
     RocksDBQuickBackend (int keyBytes, Section const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBQuickEnv* env)
@@ -115,7 +116,6 @@ public:
         get_if_exists (keyValues, "budget", budget);
         get_if_exists (keyValues, "style", style);
         get_if_exists (keyValues, "threads", threads);
-
 
         // Set options
         rocksdb::Options options;
@@ -160,7 +160,8 @@ public:
         // options.memtable_factory.reset(
         //     rocksdb::NewHashCuckooRepFactory(options.write_buffer_size));
 
-        get_if_exists (keyValues, "open_files", options.max_open_files);
+        if (get_if_exists (keyValues, "open_files", options.max_open_files))
+            fdlimit_ = options.max_open_files;
 
         if (keyValues.exists ("compression") &&
             (get<int>(keyValues, "compression") == 0))
@@ -362,6 +363,13 @@ public:
     void
     verify() override
     {
+    }
+
+    /** Returns the number of file handles the backend expects to need */
+    int
+    fdlimit() const override
+    {
+        return fdlimit_;
     }
 };
 

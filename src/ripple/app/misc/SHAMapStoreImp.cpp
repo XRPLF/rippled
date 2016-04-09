@@ -221,6 +221,9 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
                 makeBackendRotating (state.writableDb));
         std::shared_ptr <NodeStore::Backend> archiveBackend (
                 makeBackendRotating (state.archiveDb));
+
+        fdlimit_ = writableBackend->fdlimit() + archiveBackend->fdlimit();
+
         std::unique_ptr <NodeStore::DatabaseRotating> dbr =
                 makeDatabaseRotating (name, readThreads, writableBackend,
                 archiveBackend);
@@ -237,8 +240,9 @@ SHAMapStoreImp::makeDatabase (std::string const& name,
     }
     else
     {
-        db = NodeStore::Manager::instance().make_Database (name, scheduler_, nodeStoreJournal_,
-                readThreads, setup_.nodeDatabase);
+        db = NodeStore::Manager::instance().make_Database (name, scheduler_,
+            nodeStoreJournal_, readThreads, setup_.nodeDatabase);
+        fdlimit_ = db->fdlimit();
     }
 
     return db;
@@ -267,6 +271,12 @@ SHAMapStoreImp::rendezvous() const
     {
         return !working_;
     });
+}
+
+int
+SHAMapStoreImp::fdlimit () const
+{
+    return fdlimit_;
 }
 
 bool

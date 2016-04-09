@@ -54,23 +54,6 @@ namespace po = boost::program_options;
 
 namespace ripple {
 
-void setupServer (Application& app)
-{
-#ifdef RLIMIT_NOFILE
-    struct rlimit rl;
-    if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
-    {
-         if (rl.rlim_cur != rl.rlim_max)
-         {
-             rl.rlim_cur = rl.rlim_max;
-             setrlimit(RLIMIT_NOFILE, &rl);
-         }
-    }
-#endif
-
-    app.setup ();
-}
-
 boost::filesystem::path
 getEntropyFile(Config const& config)
 {
@@ -78,6 +61,40 @@ getEntropyFile(Config const& config)
     if (path.empty ())
         return {};
     return boost::filesystem::path (path) / "random.seed";
+}
+
+bool
+adjustDescriptorLimit(int needed)
+{
+#ifdef RLIMIT_NOFILE
+    // Get the current limit, then adjust it to what we need.
+    struct rlimit rl;
+
+    int available = 0;
+
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+    {
+        available = rl.rlim_cur;
+
+        if (rl.rlim_cur != rl.rlim_max)
+        {
+            rl.rlim_cur = rl.rlim_max;
+
+            if (setrlimit(RLIMIT_NOFILE, &rl) == 0)
+                available = rl.rlim_cur;
+        }
+    }
+
+    if (needed > available)
+    {
+        std::cerr << "Insufficient number of file descriptors:\n";
+        std::cerr << "     Needed: " << needed << '\n';
+        std::cerr << "  Available: " << available << '\n';
+        return false;
+    }
+#endif
+
+    return true;
 }
 
 void startServer (Application& app)
@@ -267,20 +284,6 @@ int run (int argc, char** argv)
         return 0;
     }
 
-    // Use a watchdog process unless we're invoking a stand alone type of mode
-    //
-    if (HaveSustain ()
-        && !vm.count ("parameters")
-        && !vm.count ("fg")
-        && !vm.count ("standalone")
-        && !vm.count ("unittest"))
-    {
-        std::string logMe = DoSustain ();
-
-        if (!logMe.empty ())
-            std::cerr << logMe << std::endl;
-    }
-
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
@@ -434,6 +437,17 @@ int run (int argc, char** argv)
     // No arguments. Run server.
     if (!vm.count ("parameters"))
     {
+        if (HaveSustain() && !vm.count ("fg") && !config->RUN_STANDALONE)
+        {
+            auto const ret = DoSustain ();
+
+            if (!ret.empty ())
+            {
+                std::cerr << "Unable to start watchdog: " << ret << std::endl;
+                return -1;
+            }
+        }
+
         if (vm.count ("debug"))
             setDebugJournalSink (logs->get("Debug"));
 
@@ -444,7 +458,16 @@ int run (int argc, char** argv)
             std::move(config),
             std::move(logs),
             std::move(timeKeeper));
-        setupServer (*app);
+        app->setup ();
+
+        // With our configuration parsed, ensure we get the right number
+        // of file descriptors:
+        if (!adjustDescriptorLimit(app->fdlimit()))
+        {
+            StopSustain();
+            return -1;
+        }
+
         startServer (*app);
         return 0;
     }
@@ -456,8 +479,6 @@ int run (int argc, char** argv)
         vm["parameters"].as<std::vector<std::string>>(),
         *logs);
 }
-
-extern int run (int argc, char** argv);
 
 } // ripple
 
