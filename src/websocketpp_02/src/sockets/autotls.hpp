@@ -133,18 +133,15 @@ public:
             callback(error);
         }
 
-        // note, this function for some reason shouldn't/doesn't need to be
-        // called for plain HTTP connections. not sure why.
+        // Only SSL conections actually need to be shut down
         bool shutdown() {
             boost::system::error_code ignored_ec;
 
             m_socket_ptr->async_shutdown( // Don't block on connection shutdown DJS
                 std::bind(
-		            &autotls<endpoint_type>::handle_shutdown,
+                    &autotls<endpoint_type>::handle_shutdown,
                     m_socket_ptr,
-                    beast::asio::placeholders::error
-				)
-			);
+                    beast::asio::placeholders::error));
 
             if (ignored_ec) {
                 return false;

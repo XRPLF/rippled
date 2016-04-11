@@ -38,7 +38,7 @@ class AutoSocket
 public:
     using ssl_socket   = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
     using endpoint_type     = boost::asio::ip::tcp::socket::endpoint_type;
-    using socket_ptr        = std::shared_ptr<ssl_socket>;
+    using socket_ptr        = std::unique_ptr<ssl_socket>;
     using plain_socket      = ssl_socket::next_layer_type;
     using lowest_layer_type = ssl_socket::lowest_layer_type;
     using handshake_type    = ssl_socket::handshake_type;
@@ -55,7 +55,7 @@ public:
         , mBuffer ((plainOnly || secureOnly) ? 0 : 4)
         , j_ (ripple::debugJournal())
     {
-        mSocket = std::make_shared<ssl_socket> (s, c);
+        mSocket = std::make_unique<ssl_socket> (s, c);
     }
 
     AutoSocket (
