@@ -25,12 +25,16 @@ namespace beast {
 namespace http {
 
 template<class Derived>
-basic_parser<Derived>::basic_parser(bool request) noexcept
+basic_parser<Derived>::
+basic_parser(basic_parser&& other)
 {
+    state_ = other.state_;
     state_.data = this;
-    http_parser_init(&state_, request
-        ? http_parser_type::HTTP_REQUEST
-        : http_parser_type::HTTP_RESPONSE);
+    complete_ = other.complete_;
+    url_ = std::move(other.url_);
+    status_ = std::move(other.status_);
+    field_ = std::move(other.field_);
+    value_ = std::move(other.value_);
 }
 
 template<class Derived>
@@ -46,6 +50,44 @@ basic_parser<Derived>::operator=(basic_parser&& other) ->
     field_ = std::move(other.field_);
     value_ = std::move(other.value_);
     return *this;
+}
+
+template<class Derived>
+basic_parser<Derived>::
+basic_parser(basic_parser const& other)
+{
+    state_ = other.state_;
+    state_.data = this;
+    complete_ = other.complete_;
+    url_ = other.url_;
+    status_ = other.status_;
+    field_ = other.field_;
+    value_ = other.value_;
+}
+
+template<class Derived>
+auto
+basic_parser<Derived>::
+operator=(basic_parser const& other) ->
+    basic_parser&
+{
+    state_ = other.state_;
+    state_.data = this;
+    complete_ = other.complete_;
+    url_ = other.url_;
+    status_ = other.status_;
+    field_ = other.field_;
+    value_ = other.value_;
+    return *this;
+}
+
+template<class Derived>
+basic_parser<Derived>::basic_parser(bool request) noexcept
+{
+    state_.data = this;
+    http_parser_init(&state_, request
+        ? http_parser_type::HTTP_REQUEST
+        : http_parser_type::HTTP_RESPONSE);
 }
 
 template<class Derived>

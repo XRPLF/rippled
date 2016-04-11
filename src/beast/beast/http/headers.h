@@ -210,10 +210,10 @@ public:
         class = std::enable_if_t<
             ! std::is_constructible<std::string, T>::value>>
     void
-    insert(std::string const& field, T&& t)
+    insert(std::string const& field, T const t)
     {
-        insert(field, boost::lexical_cast<std::string>(
-            std::forward<T>(t)));
+        insert(field,
+            boost::lexical_cast<std::string>(t));
     }
 
     /** Replace a field value.
@@ -233,10 +233,10 @@ public:
         class = std::enable_if_t<
             ! std::is_constructible<std::string, T>::value>>
     void
-    replace(std::string const& field, T&& t)
+    replace(std::string const& field, T const& t)
     {
-        replace(field, boost::lexical_cast<std::string>(
-            std::forward<T>(t)));
+        replace(field,
+            boost::lexical_cast<std::string>(t));
     }
 
     /** Write the headers to a Streambuf. */

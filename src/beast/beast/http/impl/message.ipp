@@ -43,7 +43,7 @@ message(request_params params)
         "Body requirements not met");
     static_assert(isReq, "message is not a request");
     this->method = params.method;
-    this->url = params.url;
+    this->url = std::move(params.url);
     version = params.version;
 }
          
@@ -55,7 +55,7 @@ message(response_params params)
         "Body requirements not met");
     static_assert(! isReq, "message is not a response");
     this->status = params.status;
-    this->reason = params.reason;
+    this->reason = std::move(params.reason);
     version = params.version;
 }
 

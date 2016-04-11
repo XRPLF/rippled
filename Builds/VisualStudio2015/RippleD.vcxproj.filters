@@ -789,9 +789,6 @@
     <ClCompile Include="..\..\src\beast\beast\http\src\beast_http_nodejs_parser.cpp">
       <Filter>beast\http\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\beast_http_URL.cpp">
-      <Filter>beast\http\src</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\src\nodejs_parser.h">
       <Filter>beast\http\src</Filter>
     </ClInclude>
@@ -810,9 +807,6 @@
     <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_urls_large_data.cpp">
       <Filter>beast\http\src\test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_URL_test.cpp">
-      <Filter>beast\http\src\test</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\src\test\urls_large_data.h">
       <Filter>beast\http\src\test</Filter>
     </ClInclude>
@@ -823,9 +817,6 @@
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\type_check.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\URL.h">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\write.h">
@@ -2373,6 +2364,9 @@
     <ClCompile Include="..\..\src\ripple\beast\net\impl\IPEndpoint.cpp">
       <Filter>ripple\beast\net\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\URL.cpp">
+      <Filter>ripple\beast\net\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\net\IPAddress.h">
       <Filter>ripple\beast\net</Filter>
     </ClInclude>
@@ -2388,9 +2382,15 @@
     <ClInclude Include="..\..\src\ripple\beast\net\IPEndpoint.h">
       <Filter>ripple\beast\net</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_http_URL_test.cpp">
+      <Filter>ripple\beast\net\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>ripple\beast\net\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\net\URL.h">
+      <Filter>ripple\beast\net</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_container_unity.cpp">
       <Filter>ripple\beast\unity</Filter>
     </ClCompile>

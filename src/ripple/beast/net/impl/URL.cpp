@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/http/URL.h>
+#include <ripple/beast/net/URL.h>
 #include <beast/http/src/nodejs_parser.h>
 
 namespace beast {

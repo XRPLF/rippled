@@ -107,20 +107,33 @@ class basic_parser
 public:
     using error_code = boost::system::error_code;
 
-    /** Construct the parser.
+    /** Move constructor.
 
-        @param request If `true`, the parser is setup for a request.
+        The state of the moved-from object is undefined,
+        but safe to destroy.
     */
-    explicit
-    basic_parser(bool request) noexcept;
+    basic_parser(basic_parser&& other);
 
-    /** Move construct a parser.
+    /** Move assignment.
 
         The state of the moved-from object is undefined,
         but safe to destroy.
     */
     basic_parser&
     operator=(basic_parser&& other);
+
+    /** Copy constructor. */
+    basic_parser(basic_parser const& other);
+
+    /** Copy assignment. */
+    basic_parser& operator=(basic_parser const& other);
+
+    /** Construct the parser.
+
+        @param request If `true`, the parser is setup for a request.
+    */
+    explicit
+    basic_parser(bool request) noexcept;
 
     /** Returns `true` if parsing is complete.
 
@@ -269,8 +282,9 @@ private:
     {
         template<class T, class R =
             decltype(std::declval<T>().on_field(
-                std::declval<std::string>(), std::declval<std::string>()),
-                    std::true_type{})>
+                std::declval<std::string const&>(),
+                    std::declval<std::string const&>()),
+                        std::true_type{})>
         static R check(int);
         template <class>
         static std::false_type check(...);
@@ -283,14 +297,14 @@ private:
         std::bool_constant<has_on_field_t<C>::value>;
 
     void
-    call_on_field(std::string field, std::string value,
-        std::true_type)
+    call_on_field(std::string const& field,
+        std::string const& value, std::true_type)
     {
         impl().on_field(field, value);
     }
 
     void
-    call_on_field(std::string, std::string,
+    call_on_field(std::string const&, std::string const&,
         std::false_type)
     {
     }
