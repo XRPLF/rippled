@@ -359,6 +359,7 @@ template<class ValueType, class... Bs>
 append_buffers_helper<ValueType, Bs...>::
 const_iterator::const_iterator()
     : n_(sizeof...(Bs))
+    , bs_(nullptr)
 {
 }
 
