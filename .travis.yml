@@ -8,8 +8,8 @@ env:
     # Note that for simplicity, BOOST_ROOT's final
     # namepart must match the folder name internal
     # to boost's .tar.gz.
-    - BOOST_ROOT=$HOME/boost_1_59_0
-    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.59.0/boost_1_59_0.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.59.0%2Fboost_1_59_0.tar.gz%2Fdownload&ts=1441761349&use_mirror=skylineservers'
+    - BOOST_ROOT=$HOME/boost_1_60_0
+    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.60.0%2Fboost_1_60_0.tar.gz&ts=1460417589&use_mirror=netix'
 
 
 packages: &gcc5_pkgs
