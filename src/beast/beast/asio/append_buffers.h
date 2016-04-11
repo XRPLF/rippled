@@ -23,6 +23,7 @@
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
 #include <iterator>
+#include <new>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
