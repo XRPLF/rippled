@@ -69,7 +69,7 @@ public:
     }
 
     void
-    operator()(error_code ec,
+    operator()(error_code const& ec,
         std::size_t bytes_transferred);
 
     friend
@@ -109,7 +109,7 @@ template<class MutableBufferSequence, class Handler>
 void
 streambuf_readstream<Stream, Streambuf>::
 read_some_op<MutableBufferSequence, Handler>::operator()(
-    error_code ec, std::size_t bytes_transferred)
+    error_code const& ec, std::size_t bytes_transferred)
 {
     auto& d = *d_;
     while(! ec && d.state != 99)

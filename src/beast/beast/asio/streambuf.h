@@ -543,8 +543,10 @@ basic_streambuf<Allocator>::~basic_streambuf()
 }
 
 template<class Allocator>
-basic_streambuf<Allocator>::basic_streambuf(basic_streambuf&& other)
-    : empty_base_optimization<Allocator>(other.member())
+basic_streambuf<Allocator>::
+basic_streambuf(basic_streambuf&& other)
+    : empty_base_optimization<Allocator>(
+        std::move(other.member()))
     , alloc_size_(other.alloc_size_)
     , in_size_(other.in_size_)
     , in_pos_(other.in_pos_)
@@ -573,6 +575,8 @@ auto
 basic_streambuf<Allocator>::operator=(basic_streambuf&& other)
     -> basic_streambuf&
 {
+    if(this == &other)
+        return *this;
     clear();
     // VFALCO What about allocator propagate_on_container_move_assign?
     this->member() = other.member();
@@ -595,7 +599,7 @@ basic_streambuf<Allocator>::operator=(basic_streambuf&& other)
 
 template<class Allocator>
 basic_streambuf<Allocator>::basic_streambuf(
-    basic_streambuf const& other)
+        basic_streambuf const& other)
     : basic_streambuf()
 {
     // VFALCO What about allocator propagate_on_container_copy_construct?
@@ -606,9 +610,11 @@ basic_streambuf<Allocator>::basic_streambuf(
 template<class Allocator>
 auto
 basic_streambuf<Allocator>::operator=(
-        basic_streambuf const& other)
-    -> basic_streambuf&
+    basic_streambuf const& other) ->
+        basic_streambuf&
 {
+    if(this == &other)
+        return *this;
     // VFALCO What about allocator propagate_on_container_copy_assign?
     consume(size());
     commit(boost::asio::buffer_copy(
@@ -619,7 +625,7 @@ basic_streambuf<Allocator>::operator=(
 template<class Allocator>
 template<class OtherAlloc>
 basic_streambuf<Allocator>::basic_streambuf(
-    basic_streambuf<OtherAlloc> const& other)
+        basic_streambuf<OtherAlloc> const& other)
     : basic_streambuf()
 {
     // VFALCO What about allocator propagate_on_container_copy_construct?
@@ -631,8 +637,8 @@ template<class Allocator>
 template<class OtherAlloc>
 auto
 basic_streambuf<Allocator>::operator=(
-        basic_streambuf<OtherAlloc> const& other)
-    -> basic_streambuf&
+    basic_streambuf<OtherAlloc> const& other) ->
+        basic_streambuf&
 {
     // VFALCO What about allocator propagate_on_container_copy_assign?
     consume(size());

@@ -23,6 +23,7 @@
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
 #include <iterator>
+#include <new>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
@@ -59,30 +60,26 @@ public:
     end() const;
 };
 
+template<class U>
+std::size_t constexpr
+max_sizeof()
+{
+    return sizeof(U);
+}
+
+template<class U0, class U1, class... Us>
+std::size_t constexpr
+max_sizeof()
+{
+    return
+        max_sizeof<U0>() > max_sizeof<U1, Us...>() ?
+        max_sizeof<U0>() : max_sizeof<U1, Us...>();
+}
+
 template<class ValueType, class... Bs>
 class append_buffers_helper<
     ValueType, Bs...>::const_iterator
 {
-    template<class U>
-    static
-    inline
-    std::size_t constexpr
-    max_sizeof()
-    {
-        return sizeof(U);
-    }
-
-    template<class U0, class U1, class... Us>
-    static
-    inline
-    std::size_t constexpr
-    max_sizeof()
-    {
-        return
-            max_sizeof<U0>() > max_sizeof<U1, Us...>() ?
-            max_sizeof<U0>() : max_sizeof<U1, Us...>();
-    }
-
     std::size_t n_;
     std::tuple<Bs...> const* bs_;
     std::array<std::uint8_t,
@@ -98,7 +95,6 @@ class append_buffers_helper<
         I, std::tuple<Bs...>>::const_iterator;
 
     template<std::size_t I>
-    inline
     iter_t<I>&
     iter()
     {
@@ -107,7 +103,6 @@ class append_buffers_helper<
     }
 
     template<std::size_t I>
-    inline
     iter_t<I> const&
     iter() const
     {
@@ -171,7 +166,6 @@ private:
     const_iterator(
         std::tuple<Bs...> const& bs, bool at_end);
 
-    inline
     void
     construct(C<sizeof...(Bs)>)
     {
@@ -180,7 +174,6 @@ private:
     }
 
     template<std::size_t I>
-    inline
     void
     construct(C<I>)
     {
@@ -188,14 +181,13 @@ private:
             std::get<I>(*bs_).end())
         {
             n_ = I;
-            new(&iter<I>()) iter_t<I>(
-                std::get<I>(*bs_).begin());
+            new(buf_.data()) iter_t<I>{
+                std::get<I>(*bs_).begin()};
             return;
         }
         construct(C<I+1>{});
     }
 
-    inline
     void
     destroy(C<sizeof...(Bs)>)
     {
@@ -203,7 +195,6 @@ private:
     }
 
     template<std::size_t I>
-    inline
     void
     destroy(C<I>)
     {
@@ -216,7 +207,6 @@ private:
         destroy(C<I+1>{});
     }
 
-    inline
     void
     move(C<sizeof...(Bs)>, const_iterator&&)
     {
@@ -224,20 +214,18 @@ private:
     }
 
     template<std::size_t I>
-    inline
     void
     move(C<I>, const_iterator&& other)
     {
         if(n_ == I)
         {
-            new(&iter<I>()) iter_t<I>(
-                std::move(other.iter<I>()));
+            new(buf_.data()) iter_t<I>{
+                std::move(other.iter<I>())};
             return;
         }
         move(C<I+1>{}, std::move(other));
     }
 
-    inline
     void
     copy(C<sizeof...(Bs)>, const_iterator const&)
     {
@@ -245,20 +233,18 @@ private:
     }
 
     template<std::size_t I>
-    inline
     void
     copy(C<I>, const_iterator const& other)
     {
         if(n_ == I)
         {
-            new(&iter<I>()) iter_t<I>(
-                other.iter<I>());
+            new(buf_.data()) iter_t<I>{
+                other.iter<I>()};
             return;
         }
         copy(C<I+1>{}, other);
     }
 
-    inline
     bool
     equal(C<sizeof...(Bs)>,
         const_iterator const&) const
@@ -267,7 +253,6 @@ private:
     }
 
     template<std::size_t I>
-    inline
     bool
     equal(C<I>, const_iterator const& other) const
     {
@@ -277,7 +262,6 @@ private:
     }
 
     [[noreturn]]
-    inline
     reference
     dereference(C<sizeof...(Bs)>) const
     {
@@ -285,7 +269,6 @@ private:
     }
 
     template<std::size_t I>
-    inline
     reference
     dereference(C<I>) const
     {
@@ -295,7 +278,6 @@ private:
     }
 
     [[noreturn]]
-    inline
     void
     increment(C<sizeof...(Bs)>)
     {
@@ -303,7 +285,6 @@ private:
     }
 
     template<std::size_t I>
-    inline
     void
     increment(C<I>)
     {
@@ -319,7 +300,6 @@ private:
         increment(C<I+1>{});
     }
 
-    inline
     void
     decrement(C<sizeof...(Bs)>)
     {
@@ -327,13 +307,12 @@ private:
         if(n_ == I)
         {
             --n_;
-            new(&iter<I-1>()) iter_t<I-1>(
-                std::get<I-1>(*bs_).end());
+            new(buf_.data()) iter_t<I-1>{
+                std::get<I-1>(*bs_).end()};
         }
         decrement(C<I-1>{});
     }
 
-    inline
     void
     decrement(C<0>)
     {
@@ -347,7 +326,6 @@ private:
     }
 
     template<std::size_t I>
-    inline
     void
     decrement(C<I>)
     {
@@ -361,8 +339,8 @@ private:
             --n_;
             using Iter = iter_t<I>;
             iter<I>().~Iter();
-            new(&iter<I-1>()) iter_t<I-1>(
-                std::get<I-1>(*bs_).end());
+            new(buf_.data()) iter_t<I-1>{
+                std::get<I-1>(*bs_).end()};
         }
         decrement(C<I-1>{});
     }
@@ -381,6 +359,7 @@ template<class ValueType, class... Bs>
 append_buffers_helper<ValueType, Bs...>::
 const_iterator::const_iterator()
     : n_(sizeof...(Bs))
+    , bs_(nullptr)
 {
 }
 
@@ -420,6 +399,8 @@ append_buffers_helper<ValueType, Bs...>::
 const_iterator::operator=(const_iterator&& other) ->
     const_iterator&
 {
+    if(&other == this)
+        return *this;
     destroy(C<0>{});
     n_ = other.n_;
     bs_ = other.bs_;
@@ -433,6 +414,8 @@ append_buffers_helper<ValueType, Bs...>::
 const_iterator::operator=(const_iterator const& other) ->
 const_iterator&
 {
+    if(&other == this)
+        return *this;
     destroy(C<0>{});
     n_ = other.n_;
     bs_ = other.bs_;

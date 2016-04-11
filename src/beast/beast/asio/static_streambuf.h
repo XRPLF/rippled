@@ -49,8 +49,8 @@ public:
     static_streambuf(
         static_streambuf const& other) noexcept = delete;
 
-    static_streambuf& operator=
-        (static_streambuf const&) noexcept = delete;
+    static_streambuf& operator=(
+        static_streambuf const&) noexcept = delete;
 
     /** Get the maximum size of the basic_streambuf. */
     size_type

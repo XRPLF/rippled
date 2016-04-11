@@ -36,16 +36,16 @@ namespace detail {
     The bound handler provides the same io_service execution
     guarantees as the original handler.
 */
-template<class DeducedHandler, class... Args>
+template<class Handler, class... Args>
 class bound_handler
 {
 private:
-    using args_type = std::tuple <std::decay_t <Args>...>;
-    
-    std::decay_t<DeducedHandler> h_;
+    using args_type = std::tuple<std::decay_t <Args>...>;
+
+    Handler h_;
     args_type args_;
 
-    template<class Handler, class Tuple, std::size_t... S>
+    template<class Tuple, std::size_t... S>
     static void invoke(Handler& h, Tuple& args,
         std::index_sequence <S...>)
     {
@@ -55,6 +55,7 @@ private:
 public:
     using result_type = void;
 
+    template<class DeducedHandler>
     explicit
     bound_handler(DeducedHandler&& handler, Args&&... args)
         : h_(std::forward<DeducedHandler>(handler))
@@ -78,7 +79,8 @@ public:
 
     friend
     void*
-    asio_handler_allocate (std::size_t size, bound_handler* h)
+    asio_handler_allocate(
+        std::size_t size, bound_handler* h)
     {
         return boost_asio_handler_alloc_helpers::
             allocate(size, h->h_);
@@ -86,7 +88,8 @@ public:
 
     friend
     void
-    asio_handler_deallocate (void* p, std::size_t size, bound_handler* h)
+    asio_handler_deallocate(
+        void* p, std::size_t size, bound_handler* h)
     {
         boost_asio_handler_alloc_helpers::
             deallocate(p, size, h->h_);
@@ -94,7 +97,7 @@ public:
 
     friend
     bool
-    asio_handler_is_continuation (bound_handler* h)
+    asio_handler_is_continuation(bound_handler* h)
     {
         return boost_asio_handler_cont_helpers::
             is_continuation (h->h_);
@@ -121,13 +124,14 @@ public:
     io_service::wrap, to ensure that the handler will not be invoked
     immediately by the calling function.
 */
-template <class DeducedHandler, class... Args>
-detail::bound_handler<DeducedHandler, Args...>
-bind_handler(DeducedHandler&& handler, Args&&... args)
+template<class Handler, class... Args>
+auto
+bind_handler(Handler&& handler, Args&&... args)
 {
-    return detail::bound_handler<DeducedHandler, Args...>(
-        std::forward<DeducedHandler> (handler),
-            std::forward <Args> (args)...);
+    return detail::bound_handler<
+        std::decay_t<Handler>, Args...>(
+            std::forward<Handler>(handler),
+                std::forward<Args>(args)...);
 }
 
 } // beast

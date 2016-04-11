@@ -42,9 +42,6 @@ private:
         std::is_constructible<boost::asio::mutable_buffer,
             typename std::iterator_traits<iter_type>::value_type>::value;
 
-    static_assert(is_mutable,
-        "MutableBufferSequence requirements not met");
-
     Buffers bs_;
     iter_type begin_;
     iter_type out_;
@@ -55,18 +52,34 @@ private:
     std::size_t out_pos_ = 0;   // offset in *out_
     std::size_t out_end_ = 0;   // output end offset
 
+    template<class Deduced>
+    buffers_adapter(Deduced&& other,
+        std::size_t nbegin, std::size_t nout,
+            std::size_t nend)
+        : bs_(std::forward<Deduced>(other).bs_)
+        , begin_(std::next(bs_.begin(), nbegin))
+        , out_(std::next(bs_.begin(), nout))
+        , end_(std::next(bs_.begin(), nend))
+        , max_size_(other.max_size_)
+        , in_pos_(other.in_pos_)
+        , in_size_(other.in_size_)
+        , out_pos_(other.out_pos_)
+        , out_end_(other.out_end_)
+    {
+    }
+
 public:
     using size_type = std::size_t;
 
     class const_buffers_type;
     class mutable_buffers_type;
 
-    buffers_adapter(
-        buffers_adapter const& other) noexcept = delete;
+    buffers_adapter(buffers_adapter&& other);
+    buffers_adapter(buffers_adapter const& other);
+    buffers_adapter& operator=(buffers_adapter&& other);
+    buffers_adapter& operator=(buffers_adapter const&);
 
-    buffers_adapter& operator=
-        (buffers_adapter const&) noexcept = delete;
-
+    explicit
     buffers_adapter(Buffers const& bs);
 
     /** Returns the largest size output sequence possible. */
@@ -384,6 +397,72 @@ buffers_adapter<Buffers>::mutable_buffers_type::end() const ->
 
 template<class Buffers>
 buffers_adapter<Buffers>::buffers_adapter(
+        buffers_adapter&& other)
+    : buffers_adapter(std::move(other),
+        std::distance<iter_type>(other.bs_.begin(), other.begin_),
+        std::distance<iter_type>(other.bs_.begin(), other.out_),
+        std::distance<iter_type>(other.bs_.begin(), other.end_))
+{
+}
+
+template<class Buffers>
+buffers_adapter<Buffers>::buffers_adapter(
+        buffers_adapter const& other)
+    : buffers_adapter(other,
+        std::distance<iter_type>(other.bs_.begin(), other.begin_),
+        std::distance<iter_type>(other.bs_.begin(), other.out_),
+        std::distance<iter_type>(other.bs_.begin(), other.end_))
+{
+}
+
+template<class Buffers>
+auto
+buffers_adapter<Buffers>::operator=(
+    buffers_adapter&& other) -> buffers_adapter&
+{
+    auto const nbegin = std::distance<iter_type>(
+        other.bs_.begin(), other.begin_);
+    auto const nout = std::distance<iter_type>(
+        other.bs_.begin(), other.out_);
+    auto const nend = std::distance<iter_type>(
+        other.bs_.begin(), other.end_);
+    bs_ = std::move(other.bs_);
+    begin_ = std::next(bs_.begin(), nbegin);
+    out_ = std::next(bs_.begin(), nout);
+    end_ = std::next(bs_.begin(), nend);
+    max_size_ = other.max_size_;
+    in_pos_ = other.in_pos_;
+    in_size_ = other.in_size_;
+    out_pos_ = other.out_pos_;
+    out_end_ = other.out_end_;
+    return *this;
+}
+
+template<class Buffers>
+auto
+buffers_adapter<Buffers>::operator=(
+    buffers_adapter const& other) -> buffers_adapter&
+{
+    auto const nbegin = std::distance<iter_type>(
+        other.bs_.begin(), other.begin_);
+    auto const nout = std::distance<iter_type>(
+        other.bs_.begin(), other.out_);
+    auto const nend = std::distance<iter_type>(
+        other.bs_.begin(), other.end_);
+    bs_ = other.bs_;
+    begin_ = std::next(bs_.begin(), nbegin);
+    out_ = std::next(bs_.begin(), nout);
+    end_ = std::next(bs_.begin(), nend);
+    max_size_ = other.max_size_;
+    in_pos_ = other.in_pos_;
+    in_size_ = other.in_size_;
+    out_pos_ = other.out_pos_;
+    out_end_ = other.out_end_;
+    return *this;
+}
+
+template<class Buffers>
+buffers_adapter<Buffers>::buffers_adapter(
     Buffers const& bs)
     : bs_(bs)
     , begin_(bs_.begin())
@@ -463,7 +542,7 @@ buffers_adapter<Buffers>::commit(size_type n)
         max_size_ -= avail;
     }
 
-    n = std::min (n, out_end_ - out_pos_);
+    n = std::min(n, out_end_ - out_pos_);
     out_pos_ += n;
     in_size_ += n;
     max_size_ -= n;

@@ -23,9 +23,13 @@
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <cstdlib>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace beast {
+
+// Guidance from
+// http://howardhinnant.github.io/allocator_boilerplate.html
 
 template <class T, class Handler>
 class handler_alloc
@@ -43,19 +47,7 @@ private:
 
 public:
     using value_type = T;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using const_pointer = value_type const*;
-    using const_reference = value_type const&;
-    using difference_type = std::ptrdiff_t;
-    using size_type = std::size_t;
-
-    template <class U>
-    struct rebind
-    {
-    public:
-        using other = handler_alloc<U, Handler>;
-    };
+    using is_always_equal = std::true_type;
 
     handler_alloc() = delete;
     handler_alloc(handler_alloc&&) = default;
@@ -89,17 +81,17 @@ public:
     {
     }
 
-    pointer
+    value_type*
     allocate(std::ptrdiff_t n)
     {
         auto const size = n * sizeof(T);
-        return static_cast<pointer>(
+        return static_cast<value_type*>(
             boost_asio_handler_alloc_helpers::allocate(
                 size, h_));
     }
 
     void
-    deallocate(pointer p, std::ptrdiff_t n)
+    deallocate(value_type* p, std::ptrdiff_t n)
     {
         auto const size = n * sizeof(T);
         boost_asio_handler_alloc_helpers::deallocate(
