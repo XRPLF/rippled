@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <beast/nudb/tests/common.h>
-#include <beast/module/core/diagnostic/UnitTestUtilities.h>
+#include <beast/unit_test/temp_dir.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
@@ -45,7 +45,7 @@ public:
         std::size_t block_size, float load_factor)
     {
         testcase (abort_on_fail);
-        beast::UnitTestUtilities::TempDirectory tempDir;
+        beast::temp_dir tempDir;
 
         auto const dp = tempDir.file ("nudb.dat");
         auto const kp = tempDir.file ("nudb.key");

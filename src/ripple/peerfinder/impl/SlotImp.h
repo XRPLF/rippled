@@ -22,9 +22,9 @@
 
 #include <ripple/peerfinder/Slot.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
-#include <beast/config/CompilerConfig.h>
-#include <beast/container/aged_unordered_map.h>
-#include <beast/container/aged_container_utility.h>
+#include <ripple/beast/core/CompilerConfig.h>
+#include <ripple/beast/container/aged_unordered_map.h>
+#include <ripple/beast/container/aged_container_utility.h>
 #include <boost/optional.hpp>
 #include <atomic>
 
@@ -162,7 +162,7 @@ private:
     boost::optional <beast::IP::Endpoint> m_local_endpoint;
     boost::optional <PublicKey> m_public_key;
 
-    static std::int32_t BEAST_CONSTEXPR unknownPort = -1;
+    static std::int32_t constexpr unknownPort = -1;
     std::atomic <std::int32_t> m_listening_port;
 
 public:

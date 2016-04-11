@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 
 #include <ripple/peerfinder/PeerfinderManager.h>
-#include <beast/smart_ptr/SharedObject.h>
+#include <ripple/beast/core/SharedObject.h>
 #include <boost/system/error_code.hpp>
 
 namespace ripple {

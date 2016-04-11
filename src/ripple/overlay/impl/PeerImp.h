@@ -34,14 +34,14 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
-#include <beast/ByteOrder.h>
-#include <beast/asio/IPAddressConversion.h>
+#include <ripple/beast/core/ByteOrder.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/streambuf.h>
 #include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-#include <beast/utility/WrappedSink.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <cstdint>
 #include <deque>
 #include <queue>

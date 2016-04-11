@@ -22,7 +22,7 @@
 
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

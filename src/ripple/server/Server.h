@@ -21,8 +21,8 @@
 #define RIPPLE_SERVER_SERVER_H_INCLUDED
 
 #include <ripple/server/Port.h>
-#include <beast/utility/Journal.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/beast/utility/PropertyStream.h>
 
 namespace ripple {
 

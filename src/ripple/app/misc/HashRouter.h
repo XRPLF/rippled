@@ -24,7 +24,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/container/aged_unordered_map.h>
+#include <ripple/beast/container/aged_unordered_map.h>
 
 namespace ripple {
 

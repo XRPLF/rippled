@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 
 #include <ripple/protocol/PublicKey.h>
-#include <beast/net/IPEndpoint.h>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <boost/optional.hpp>
 #include <memory>
 

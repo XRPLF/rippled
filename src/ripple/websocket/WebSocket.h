@@ -21,7 +21,7 @@
 #define RIPPLED_RIPPLE_WEBSOCKET_WEBSOCKET_H
 
 #include <ripple/websocket/MakeServer.h>
-#include <beast/asio/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <memory>
 
 namespace ripple {
@@ -29,8 +29,8 @@ namespace websocket {
 
 using ScopedLockType = std::lock_guard <std::mutex>;
 
-std::unique_ptr<beast::Stoppable> makeServer02 (ServerDescription const&);
-std::unique_ptr<beast::Stoppable> makeServer04 (ServerDescription const&);
+std::unique_ptr<Stoppable> makeServer02 (ServerDescription const&);
+std::unique_ptr<Stoppable> makeServer04 (ServerDescription const&);
 
 } // websocket
 } // ripple

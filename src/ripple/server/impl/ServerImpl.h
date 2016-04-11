@@ -24,8 +24,8 @@
 #include <ripple/server/Handler.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/impl/io_list.h>
-#include <beast/intrusive/List.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/List.h>
+#include <ripple/beast/core/Thread.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <array>

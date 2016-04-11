@@ -23,7 +23,7 @@
 #include <ripple/websocket/WebSocket.h>
 
 // LexicalCast must be included before websocketpp_02.
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 
 #include <websocketpp_02/src/sockets/socket_base.hpp>
 #include <websocketpp_02/src/websocketpp.hpp>

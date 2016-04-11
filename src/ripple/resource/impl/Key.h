@@ -21,7 +21,7 @@
 #define RIPPLE_RESOURCE_KEY_H_INCLUDED
 
 #include <ripple/resource/impl/Kind.h>
-#include <beast/net/IPEndpoint.h>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <cassert>
 
 namespace ripple {

@@ -22,7 +22,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/websocket/WebSocket.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -32,7 +32,7 @@ namespace ripple {
 namespace websocket {
 
 template <class WebSocket>
-class Server : public beast::Stoppable
+class Server : public Stoppable
 {
 private:
     ServerDescription desc_;
@@ -42,7 +42,7 @@ private:
     typename WebSocket::EndpointPtr endpoint_;
 public:
     Server (ServerDescription const& desc)
-        : beast::Stoppable (WebSocket::versionName(), desc.source)
+        : Stoppable (WebSocket::versionName(), desc.source)
         , desc_(desc)
         , j_ (desc.app.journal ("WebSocket"))
     {

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/json/json_value.h>
@@ -37,7 +37,7 @@ namespace ripple {
 // }
 Json::Value doUnlAdd (RPC::Context& context)
 {
-    auto lock = beast::make_lock(context.app.getMasterMutex());
+    auto lock = make_lock(context.app.getMasterMutex());
 
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);

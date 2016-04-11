@@ -24,7 +24,7 @@
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/to_string.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -201,7 +201,7 @@ void LoadManager::run ()
 
 std::unique_ptr<LoadManager>
 make_LoadManager (Application& app,
-    beast::Stoppable& parent, beast::Journal journal)
+    Stoppable& parent, beast::Journal journal)
 {
     return std::make_unique<LoadManager>(app, parent, journal);
 }

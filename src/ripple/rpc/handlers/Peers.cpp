@@ -25,7 +25,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 
@@ -34,7 +34,7 @@ Json::Value doPeers (RPC::Context& context)
     Json::Value jvResult (Json::objectValue);
 
     {
-        auto lock = beast::make_lock(context.app.getMasterMutex());
+        auto lock = make_lock(context.app.getMasterMutex());
 
         jvResult[jss::peers] = context.app.overlay ().json ();
 

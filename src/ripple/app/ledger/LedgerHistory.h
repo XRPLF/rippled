@@ -23,8 +23,8 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/protocol/RippleLedgerHash.h>
-#include <beast/insight/Collector.h>
-#include <beast/insight/Event.h>
+#include <ripple/beast/insight/Collector.h>
+#include <ripple/beast/insight/Event.h>
 
 namespace ripple {
 

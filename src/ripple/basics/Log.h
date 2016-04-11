@@ -21,8 +21,8 @@
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/utility/ci_char_traits.h>
-#include <beast/utility/Journal.h>
+#include <beast/ci_char_traits.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/filesystem.hpp>
 #include <map>
 #include <memory>

@@ -116,7 +116,7 @@ public:
     {
         testcase << count << " inserts";
 
-        beast::UnitTestUtilities::TempDirectory tempDir;
+        beast::temp_dir tempDir;
 
         auto const path = tempDir.path();
         for (std::size_t n = 1;;++n)

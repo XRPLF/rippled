@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_HEADERS_H_INCLUDED
 #define BEAST_HTTP_HEADERS_H_INCLUDED
 
-#include <beast/utility/ci_char_traits.h>
+#include <beast/ci_char_traits.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/iterator/transform_iterator.hpp>

@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_STREAMBUF_H_INCLUDED
 #define BEAST_ASIO_STREAMBUF_H_INCLUDED
 
-#include <beast/utility/empty_base_optimization.h>
+#include <beast/empty_base_optimization.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>

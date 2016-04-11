@@ -23,7 +23,7 @@
 #include <ripple/server/Port.h>
 #include <ripple/json/json_value.h>
 #include <ripple/resource/ResourceManager.h>
-#include <beast/net/IPEndpoint.h>
+#include <ripple/beast/net/IPEndpoint.h>
 #include <vector>
 
 namespace ripple {

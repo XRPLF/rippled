@@ -28,8 +28,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Quality.h>
-#include <beast/utility/Journal.h>
-#include <beast/utility/WrappedSink.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <memory>
 #include <stdexcept>
 #include <utility>

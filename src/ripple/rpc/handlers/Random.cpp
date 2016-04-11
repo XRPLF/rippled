@@ -24,7 +24,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/basics/base_uint.h>
-#include <beast/rngfill.h>
+#include <ripple/beast/utility/rngfill.h>
 
 namespace ripple {
 

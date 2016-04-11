@@ -25,7 +25,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/http/message.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <utility>
 
 #include <boost/asio/ssl.hpp>

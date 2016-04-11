@@ -257,7 +257,7 @@ Manager::Manager (Stoppable& parent)
 }
 
 std::unique_ptr<Manager>
-make_Manager (beast::Stoppable& parent, boost::asio::io_service& io_service,
+make_Manager (Stoppable& parent, boost::asio::io_service& io_service,
         clock_type& clock, beast::Journal journal, BasicConfig const& config)
 {
     return std::make_unique<ManagerImp> (

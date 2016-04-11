@@ -26,7 +26,7 @@
 #include <beast/hash/hash_append.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
-#include <beast/utility/type_name.h>
+#include <beast/type_name.h>
 #include <array>
 #include <algorithm>
 #include <cstring>

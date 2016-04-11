@@ -31,7 +31,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <boost/algorithm/clamp.hpp>
 #include <boost/optional.hpp>
 #include <tuple>

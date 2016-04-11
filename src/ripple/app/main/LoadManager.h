@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -40,7 +40,7 @@ class Application;
     The warning system is used instead of merely dropping, because hostile
     peers can just reconnect anyway.
 */
-class LoadManager : public beast::Stoppable
+class LoadManager : public Stoppable
 {
 public:
     // It would be better if the LoadManager constructor could be private
@@ -112,7 +112,7 @@ private:
 
 std::unique_ptr<LoadManager>
 make_LoadManager (
-    Application& app, beast::Stoppable& parent, beast::Journal journal);
+    Application& app, Stoppable& parent, beast::Journal journal);
 
 } // ripple
 

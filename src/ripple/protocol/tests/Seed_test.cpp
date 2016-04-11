@@ -23,7 +23,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Seed.h>
 #include <beast/unit_test/suite.h>
-#include <beast/rngfill.h>
+#include <ripple/beast/utility/rngfill.h>
 #include <beast/xor_shift_engine.h>
 #include <algorithm>
 
