@@ -22,7 +22,7 @@
 
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/protocol/RippleLedgerHash.h>
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <memory>
 
 namespace ripple {
@@ -86,7 +86,7 @@ public:
 
 std::unique_ptr<InboundLedgers>
 make_InboundLedgers (Application& app,
-    InboundLedgers::clock_type& clock, beast::Stoppable& parent,
+    InboundLedgers::clock_type& clock, Stoppable& parent,
     beast::insight::Collector::ptr const& collector);
 
 

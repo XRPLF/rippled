@@ -60,7 +60,7 @@ public:
 
 class InboundTransactionsImp
     : public InboundTransactions
-    , public beast::Stoppable
+    , public Stoppable
 {
 public:
     Application& app_;
@@ -296,7 +296,7 @@ std::unique_ptr <InboundTransactions>
 make_InboundTransactions (
     Application& app,
     InboundLedgers::clock_type& clock,
-    beast::Stoppable& parent,
+    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function <void (uint256 const&,
         std::shared_ptr <SHAMap> const&)> gotSet)

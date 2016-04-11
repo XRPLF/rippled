@@ -25,7 +25,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/overlay/Overlay.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 #include <memory>
 
 namespace ripple {

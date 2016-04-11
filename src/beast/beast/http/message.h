@@ -23,7 +23,7 @@
 #include <beast/http/basic_parser.h>
 #include <beast/http/method.h>
 #include <beast/http/headers.h>
-#include <beast/utility/ci_char_traits.h>
+#include <beast/ci_char_traits.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <algorithm>

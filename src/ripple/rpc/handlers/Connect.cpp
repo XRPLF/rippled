@@ -26,7 +26,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 
@@ -37,7 +37,7 @@ namespace ripple {
 // XXX Might allow domain for manual connections.
 Json::Value doConnect (RPC::Context& context)
 {
-    auto lock = beast::make_lock(context.app.getMasterMutex());
+    auto lock = make_lock(context.app.getMasterMutex());
     if (context.app.config().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 

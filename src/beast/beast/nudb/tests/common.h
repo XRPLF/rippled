@@ -47,11 +47,11 @@ struct test_api : test_api_base
             nudb::fail_file <typename test_api_base::file_type>>;
 };
 
-static std::size_t BEAST_CONSTEXPR arena_alloc_size = 16 * 1024 * 1024;
+static std::size_t constexpr arena_alloc_size = 16 * 1024 * 1024;
 
-static std::uint64_t BEAST_CONSTEXPR appnum = 1337;
+static std::uint64_t constexpr appnum = 1337;
 
-static std::uint64_t BEAST_CONSTEXPR salt = 42;
+static std::uint64_t constexpr salt = 42;
 
 //------------------------------------------------------------------------------
 

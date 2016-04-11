@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <beast/nudb/tests/common.h>
-#include <beast/module/core/diagnostic/UnitTestUtilities.h>
+#include <beast/unit_test/temp_dir.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <cmath>
@@ -98,7 +98,7 @@ public:
 
         testcase (abort_on_fail);
 
-        beast::UnitTestUtilities::TempDirectory tempDir;
+        beast::temp_dir tempDir;
         do_test (N, tempDir.path());
     }
 };

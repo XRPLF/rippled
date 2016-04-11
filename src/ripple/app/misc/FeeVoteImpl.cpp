@@ -23,7 +23,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Validations.h>
 #include <ripple/basics/BasicConfig.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 

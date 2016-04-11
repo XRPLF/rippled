@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/Config.h>
+#include <ripple/beast/core/Config.h>
 
 #ifdef _MSC_VER
 #include <cstddef>

@@ -21,7 +21,7 @@
 #define RIPPLE_CORE_LOADMONITOR_H_INCLUDED
 
 #include <ripple/core/LoadEvent.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <chrono>
 #include <mutex>
 

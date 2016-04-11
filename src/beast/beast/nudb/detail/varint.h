@@ -20,7 +20,6 @@
 #ifndef BEAST_NUDB_VARINT_H_INCLUDED
 #define BEAST_NUDB_VARINT_H_INCLUDED
 
-#include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
 #include <beast/nudb/detail/stream.h>
 #include <cstdint>
 #include <type_traits>
@@ -46,7 +45,7 @@ struct varint_traits;
 template <class T>
 struct varint_traits<T, true>
 {
-    static std::size_t BEAST_CONSTEXPR max =
+    static std::size_t constexpr max =
         (8 * sizeof(T) + 6) / 7;
 };
 

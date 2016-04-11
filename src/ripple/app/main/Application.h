@@ -24,7 +24,7 @@
 #include <ripple/shamap/TreeNodeCache.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/core/Config.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/beast/utility/PropertyStream.h>
 #include <memory>
 #include <mutex>
 

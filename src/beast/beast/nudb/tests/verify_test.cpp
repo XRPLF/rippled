@@ -20,7 +20,7 @@
 #include <beast/nudb/verify.h>
 #include <beast/nudb/tests/common.h>
 #include <beast/unit_test/suite.h>
-#include <beast/chrono/basic_seconds_clock.h>
+#include <beast/clock/basic_seconds_clock.h>
 #include <chrono>
 #include <iomanip>
 #include <ostream>

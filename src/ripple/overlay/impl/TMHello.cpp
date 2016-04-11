@@ -27,7 +27,7 @@
 #include <ripple/overlay/impl/TMHello.h>
 #include <beast/crypto/base64.h>
 #include <beast/http/rfc2616.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 

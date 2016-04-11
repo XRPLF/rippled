@@ -24,7 +24,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/basics/Resolver.h>
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl/context.hpp>
 
@@ -38,7 +38,7 @@ std::unique_ptr <Overlay>
 make_Overlay (
     Application& app,
     Overlay::Setup const& setup,
-    beast::Stoppable& parent,
+    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,

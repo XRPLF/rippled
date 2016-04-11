@@ -22,7 +22,7 @@
 
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/impl/Tuning.h>
-#include <beast/container/aged_set.h>
+#include <ripple/beast/container/aged_set.h>
 #include <cassert>
 #include <iterator>
 #include <type_traits>

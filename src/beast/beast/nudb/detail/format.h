@@ -24,7 +24,6 @@
 #include <beast/nudb/detail/buffer.h>
 #include <beast/nudb/detail/field.h>
 #include <beast/nudb/detail/stream.h>
-#include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -39,11 +38,11 @@ namespace detail {
 
 // Format of the nudb files:
 
-static std::size_t BEAST_CONSTEXPR currentVersion = 2;
+static std::size_t constexpr currentVersion = 2;
 
 struct dat_file_header
 {
-    static std::size_t BEAST_CONSTEXPR size =
+    static std::size_t constexpr size =
         8 +     // Type
         2 +     // Version
         8 +     // UID
@@ -61,7 +60,7 @@ struct dat_file_header
 
 struct key_file_header
 {
-    static std::size_t BEAST_CONSTEXPR size =
+    static std::size_t constexpr size =
         8 +     // Type
         2 +     // Version
         8 +     // UID
@@ -95,7 +94,7 @@ struct key_file_header
 
 struct log_file_header
 {
-    static std::size_t BEAST_CONSTEXPR size =
+    static std::size_t constexpr size =
         8 +     // Type
         2 +     // Version
         8 +     // UID

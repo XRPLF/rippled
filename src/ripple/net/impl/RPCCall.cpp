@@ -34,8 +34,8 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/types.h>
 #include <ripple/server/ServerHandler.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/utility/ci_char_traits.h>
+#include <ripple/beast/core/LexicalCast.h>
+#include <beast/ci_char_traits.h>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
 #include <iostream>

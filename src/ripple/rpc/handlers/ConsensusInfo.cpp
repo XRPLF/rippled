@@ -23,7 +23,7 @@
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 
@@ -32,7 +32,7 @@ Json::Value doConsensusInfo (RPC::Context& context)
     Json::Value ret (Json::objectValue);
 
     {
-        auto lock = beast::make_lock(context.app.getMasterMutex());
+        auto lock = make_lock(context.app.getMasterMutex());
         ret[jss::info] = context.netOps.getConsensusInfo ();
     }
 

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
+#include <ripple/basics/win32_workaround.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/is_call_possible.h>
-#include <beast/win32_workaround.h>
 #include <boost/thread/tss.hpp>
 #include <cassert>
 #include <cstddef>

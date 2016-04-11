@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_IOUAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_IOUAMOUNT_H_INCLUDED
 
-#include <beast/utility/Zero.h>
+#include <ripple/beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
 #include <string>
