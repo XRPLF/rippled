@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 
 namespace ripple {
 namespace detail {
@@ -499,7 +499,7 @@ LedgerCleaner::~LedgerCleaner ()
 
 std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner (Application& app,
-    beast::Stoppable& parent, beast::Journal journal)
+    Stoppable& parent, beast::Journal journal)
 {
     return std::make_unique<LedgerCleanerImp>(app, parent, journal);
 }

@@ -21,7 +21,7 @@
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/basics/Log.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <boost/format.hpp>
 #include <cassert>
 #include <cstring>

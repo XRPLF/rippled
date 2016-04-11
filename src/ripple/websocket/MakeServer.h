@@ -46,7 +46,7 @@ struct ServerDescription
     CollectorManager& collectorManager;
 };
 
-std::unique_ptr<beast::Stoppable>
+std::unique_ptr<Stoppable>
 makeServer (ServerDescription const&);
 
 } // websocket

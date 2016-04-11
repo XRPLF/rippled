@@ -21,12 +21,12 @@
 #include <beast/hash/xxhasher.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
-#include <beast/chrono/basic_seconds_clock.h>
+#include <beast/clock/basic_seconds_clock.h>
 #include <beast/http/rfc2616.h>
 #include <beast/nudb/create.h>
 #include <beast/nudb/detail/format.h>
 #include <beast/unit_test/suite.h>
-#include <beast/utility/ci_char_traits.h>
+#include <beast/ci_char_traits.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>

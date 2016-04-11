@@ -23,7 +23,7 @@
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/StringUtilities.h>
 #include <beast/unit_test/suite.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 namespace tests {

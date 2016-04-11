@@ -21,8 +21,8 @@
 #define RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
 
 #include <ripple/basics/contract.h>
-#include <beast/container/const_container.h>
-#include <beast/utility/ci_char_traits.h>
+#include <beast/unit_test/const_container.h>
+#include <beast/ci_char_traits.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <map>

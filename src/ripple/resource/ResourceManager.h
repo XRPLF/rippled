@@ -23,10 +23,10 @@
 #include <ripple/json/json_value.h>
 #include <ripple/resource/Consumer.h>
 #include <ripple/resource/Gossip.h>
-#include <beast/insight/Collector.h>
-#include <beast/net/IPEndpoint.h>
-#include <beast/utility/Journal.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/beast/insight/Collector.h>
+#include <ripple/beast/net/IPEndpoint.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/beast/utility/PropertyStream.h>
 
 namespace ripple {
 namespace Resource {

@@ -23,10 +23,10 @@
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeData.h>
 #include <ripple/core/JobCoro.h>
+#include <ripple/core/impl/Workers.h>
 #include <ripple/json/json_value.h>
-#include <beast/insight/Collector.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/module/core/thread/Workers.h>
+#include <ripple/beast/insight/Collector.h>
+#include <ripple/core/Stoppable.h>
 #include <boost/function.hpp>
 #include <condition_variable>
 #include <set>
@@ -47,8 +47,8 @@ class Logs;
     and coroutines to finish.
 */
 class JobQueue
-    : public beast::Stoppable
-    , private beast::Workers::Callback
+    : public Stoppable
+    , private Workers::Callback
 {
 public:
     using JobFunction = std::function <void(Job&)>;
@@ -128,7 +128,7 @@ private:
     // The number of suspended coroutines
     int nSuspend_ = 0;
 
-    beast::Workers m_workers;
+    Workers m_workers;
     Job::CancelCallback m_cancelCallback;
 
     // Statistics tracking

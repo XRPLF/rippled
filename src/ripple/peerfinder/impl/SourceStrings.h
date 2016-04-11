@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 
 #include <ripple/peerfinder/impl/Source.h>
-#include <beast/smart_ptr/SharedPtr.h>
+#include <ripple/beast/core/SharedPtr.h>
 
 namespace ripple {
 namespace PeerFinder {

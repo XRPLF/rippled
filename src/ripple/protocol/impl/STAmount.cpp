@@ -26,7 +26,7 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <iterator>

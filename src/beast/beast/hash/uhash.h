@@ -21,6 +21,7 @@
 #ifndef BEAST_HASH_UHASH_H_INCLUDED
 #define BEAST_HASH_UHASH_H_INCLUDED
 
+#include <beast/hash/hash_append.h>
 #include <beast/hash/spooky.h>
 
 namespace beast {

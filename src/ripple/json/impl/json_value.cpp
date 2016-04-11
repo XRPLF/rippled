@@ -22,7 +22,7 @@
 #include <ripple/json/impl/json_assert.h>
 #include <ripple/json/to_string.h>
 #include <ripple/json/json_writer.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 
 namespace Json {
 

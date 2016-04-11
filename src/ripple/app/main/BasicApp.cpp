@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/BasicApp.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {

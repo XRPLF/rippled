@@ -24,7 +24,7 @@
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/TER.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 
 namespace ripple {
 

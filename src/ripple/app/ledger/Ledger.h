@@ -30,7 +30,7 @@
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/shamap/SHAMap.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <mutex>
 

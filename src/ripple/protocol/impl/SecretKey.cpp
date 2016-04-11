@@ -25,7 +25,7 @@
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/csprng.h>
 #include <beast/crypto/secure_erase.h>
-#include <beast/rngfill.h>
+#include <ripple/beast/utility/rngfill.h>
 #include <ed25519-donna/ed25519.h>
 #include <cstring>
 

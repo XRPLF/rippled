@@ -21,9 +21,8 @@
 #ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
 #define BEAST_HASH_HASH_APPEND_H_INCLUDED
 
-#include <beast/config/CompilerConfig.h> // for constexpr
 #include <beast/hash/endian.h>
-#include <beast/utility/meta.h>
+#include <beast/hash/meta.h>
 #include <array>
 #include <chrono>
 #include <cstdint>

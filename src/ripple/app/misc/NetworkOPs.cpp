@@ -51,6 +51,7 @@
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/DeadlineTimer.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
@@ -67,11 +68,10 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/ResourceManager.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/module/core/thread/DeadlineTimer.h>
-#include <beast/module/core/system/SystemStats.h>
-#include <beast/rngfill.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/core/SystemStats.h>
+#include <ripple/beast/utility/rngfill.h>
+#include <ripple/basics/make_lock.h>
 #include <boost/optional.hpp>
 #include <condition_variable>
 #include <memory>
@@ -82,7 +82,7 @@ namespace ripple {
 
 class NetworkOPsImp final
     : public NetworkOPs
-    , public beast::DeadlineTimer::Listener
+    , public DeadlineTimer::Listener
 {
     /**
      * Transaction with input flags and results to be applied in batches.
@@ -474,7 +474,7 @@ public:
 private:
     void setHeartbeatTimer ();
     void setClusterTimer ();
-    void onDeadlineTimer (beast::DeadlineTimer& timer) override;
+    void onDeadlineTimer (DeadlineTimer& timer) override;
     void processHeartbeatTimer ();
     void processClusterTimer ();
 
@@ -518,8 +518,8 @@ private:
     std::atomic <bool> mNeedNetworkLedger;
     bool m_amendmentBlocked;
 
-    beast::DeadlineTimer m_heartbeatTimer;
-    beast::DeadlineTimer m_clusterTimer;
+    DeadlineTimer m_heartbeatTimer;
+    DeadlineTimer m_clusterTimer;
 
     std::unique_ptr<Consensus> mConsensus;
     std::shared_ptr<LedgerConsensus> mLedgerConsensus;
@@ -623,7 +623,7 @@ void NetworkOPsImp::setClusterTimer ()
     m_clusterTimer.setExpiration (10.0);
 }
 
-void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
+void NetworkOPsImp::onDeadlineTimer (DeadlineTimer& timer)
 {
     if (timer == m_heartbeatTimer)
     {
@@ -640,7 +640,7 @@ void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
 void NetworkOPsImp::processHeartbeatTimer ()
 {
     {
-        auto lock = beast::make_lock(app_.getMasterMutex());
+        auto lock = make_lock(app_.getMasterMutex());
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr (app_.getLoadManager ());
@@ -931,7 +931,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
     batchLock.unlock();
 
     {
-        auto lock = beast::make_lock(app_.getMasterMutex());
+        auto lock = make_lock(app_.getMasterMutex());
         {
             std::lock_guard <std::recursive_mutex> lock (
                 m_ledgerMaster.peekMutex());
@@ -3168,7 +3168,7 @@ std::unique_ptr<NetworkOPs>
 make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock, bool standalone,
     std::size_t network_quorum, bool startvalid,
     JobQueue& job_queue, LedgerMaster& ledgerMaster,
-    beast::Stoppable& parent, beast::Journal journal)
+    Stoppable& parent, beast::Journal journal)
 {
     return std::make_unique<NetworkOPsImp> (app, clock, standalone, network_quorum,
         startvalid, job_queue, ledgerMaster, parent, journal);

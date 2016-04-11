@@ -21,7 +21,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <beast/unit_test/suite.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/ip/address.hpp>
