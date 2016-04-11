@@ -278,7 +278,7 @@ public:
                 return;
             }
 
-            ptr = it->second;
+            ptr = std::move (it->second);
             // prevent the ConnectionImpl from being destroyed until we release
             // the lock
             mMap.erase (it);
@@ -298,7 +298,10 @@ public:
         app_.getJobQueue ().addJob (
             jtCLIENT,
             "WSClient::destroy",
-            [ptr] (Job&) { ConnectionImpl <WebSocket>::destroy(ptr); });
+            [p = std::move(ptr)] (Job&)
+            {
+                ConnectionImpl <WebSocket>::destroy(std::move (p));
+            });
     }
 
     void message_job(std::string const& name, connection_ptr const& cpClient)
