@@ -20,6 +20,7 @@
 #ifndef BEAST_HTTP_METHOD_H_INCLUDED
 #define BEAST_HTTP_METHOD_H_INCLUDED
 
+#include <cassert>
 #include <memory>
 #include <string>
 

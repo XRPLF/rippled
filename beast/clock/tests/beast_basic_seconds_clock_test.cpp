@@ -1,8 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>,
-        Vinnie Falco <vinnie.falco@gmail.com
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -18,30 +17,24 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HASH_UHASH_H_INCLUDED
-#define BEAST_HASH_UHASH_H_INCLUDED
+#include <beast/unit_test/suite.h>
 
-#include <beast/hash/hash_append.h>
-#include <beast/hash/spooky.h>
+#include <beast/clock/basic_seconds_clock.h>
 
 namespace beast {
 
-// Universal hash function
-template <class Hasher = spooky>
-struct uhash
+class basic_seconds_clock_test : public unit_test::suite
 {
-    using result_type = typename Hasher::result_type;
-
-    template <class T>
-    result_type
-    operator()(T const& t) const noexcept
+public:
+    void
+    run()
     {
-        Hasher h;
-        hash_append (h, t);
-        return static_cast<result_type>(h);
+        basic_seconds_clock <
+            std::chrono::steady_clock>::now ();
+        pass ();
     }
 };
 
-} // beast
+BEAST_DEFINE_TESTSUITE(basic_seconds_clock,chrono,beast);
 
-#endif
+}

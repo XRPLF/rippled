@@ -20,7 +20,6 @@
 #ifndef BEAST_RANDOM_XOR_SHIFT_ENGINE_H_INCLUDED
 #define BEAST_RANDOM_XOR_SHIFT_ENGINE_H_INCLUDED
 
-#include <beast/config/CompilerConfig.h>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -48,14 +47,14 @@ public:
     operator()();
 
     static
-    result_type BEAST_CONSTEXPR
+    result_type constexpr
     min()
     {
         return std::numeric_limits<result_type>::min();
     }
 
     static
-    result_type BEAST_CONSTEXPR
+    result_type constexpr
     max()
     {
         return std::numeric_limits<result_type>::max();
