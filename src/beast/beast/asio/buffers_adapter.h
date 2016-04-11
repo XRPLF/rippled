@@ -42,9 +42,6 @@ private:
         std::is_constructible<boost::asio::mutable_buffer,
             typename std::iterator_traits<iter_type>::value_type>::value;
 
-    static_assert(is_mutable,
-        "MutableBufferSequence requirements not met");
-
     Buffers bs_;
     iter_type begin_;
     iter_type out_;
