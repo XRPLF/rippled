@@ -27,9 +27,9 @@
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
 #include <beast/http/URL.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <beast/streams/debug_ostream.h>
-#include <beast/utility/ci_char_traits.h>
+#include <beast/ci_char_traits.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>

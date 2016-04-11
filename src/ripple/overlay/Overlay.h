@@ -26,8 +26,8 @@
 #include <ripple/server/Handoff.h>
 #include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/core/Stoppable.h>
+#include <ripple/beast/utility/PropertyStream.h>
 #include <memory>
 #include <type_traits>
 #include <boost/asio/buffer.hpp>
@@ -43,7 +43,7 @@ class BasicConfig;
 
 /** Manages the set of connected peers. */
 class Overlay
-    : public beast::Stoppable
+    : public Stoppable
     , public beast::PropertyStream::Source
 {
 protected:

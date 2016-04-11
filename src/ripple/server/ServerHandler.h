@@ -24,14 +24,14 @@
 #include <ripple/core/Config.h>
 #include <ripple/server/Port.h>
 #include <ripple/overlay/Overlay.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/asio/ip/address.hpp>
 #include <memory>
 #include <vector>
 
 namespace ripple {
 
-class ServerHandler : public beast::Stoppable
+class ServerHandler : public Stoppable
 {
 protected:
     ServerHandler (Stoppable& parent);

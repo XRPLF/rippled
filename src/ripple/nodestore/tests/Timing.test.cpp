@@ -23,7 +23,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/unity/rocksdb.h>
-#include <beast/module/core/diagnostic/UnitTestUtilities.h>
+#include <beast/unit_test/temp_dir.h>
 #include <beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <beast/unit_test/thread.h>
@@ -679,7 +679,7 @@ public:
             params.threads = threads;
             for (auto i = default_repeat; i--;)
             {
-                beast::UnitTestUtilities::TempDirectory tempDir;
+                beast::temp_dir tempDir;
                 Section config = parse(config_string);
                 config.set ("path", tempDir.path());
                 std::stringstream ss;

@@ -23,8 +23,8 @@
 #include <ripple/server/Writer.h>
 #include <beast/http/body.h>
 #include <beast/http/message.h>
-#include <beast/net/IPEndpoint.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/net/IPEndpoint.h>
+#include <ripple/beast/utility/Journal.h>
 #include <functional>
 #include <memory>
 #include <ostream>

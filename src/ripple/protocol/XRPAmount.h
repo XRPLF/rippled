@@ -22,7 +22,7 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/SystemParameters.h>
-#include <beast/utility/Zero.h>
+#include <ripple/beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <cstdint>

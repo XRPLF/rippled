@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_LOADEVENT_H_INCLUDED
 #define RIPPLE_CORE_LOADEVENT_H_INCLUDED
 
-#include <beast/chrono/RelativeTime.h>
+#include <ripple/beast/core/RelativeTime.h>
 #include <memory>
 
 namespace ripple {

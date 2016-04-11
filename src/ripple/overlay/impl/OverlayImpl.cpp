@@ -33,12 +33,12 @@
 #include <ripple/overlay/impl/TMHello.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <ripple/protocol/STExchange.h>
-#include <beast/ByteOrder.h>
+#include <ripple/beast/core/ByteOrder.h>
 #include <beast/crypto/base64.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <beast/http/rfc2616.h>
-#include <beast/utility/ci_char_traits.h>
-#include <beast/utility/WrappedSink.h>
+#include <beast/ci_char_traits.h>
+#include <ripple/beast/utility/WrappedSink.h>
 
 #include <boost/utility/in_place_factory.hpp>
 
@@ -1056,7 +1056,7 @@ std::unique_ptr <Overlay>
 make_Overlay (
     Application& app,
     Overlay::Setup const& setup,
-    beast::Stoppable& parent,
+    Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,

@@ -30,7 +30,7 @@
 #include <ripple/nodestore/impl/BatchWriter.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 #include <atomic>
 #include <memory>
 

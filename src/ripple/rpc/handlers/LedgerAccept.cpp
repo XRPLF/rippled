@@ -27,13 +27,13 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 
 Json::Value doLedgerAccept (RPC::Context& context)
 {
-    auto lock = beast::make_lock(context.app.getMasterMutex());
+    auto lock = make_lock(context.app.getMasterMutex());
     Json::Value jvResult;
 
     if (!context.app.config().RUN_STANDALONE)

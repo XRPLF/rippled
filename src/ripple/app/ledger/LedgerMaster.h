@@ -28,13 +28,13 @@
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/basics/ScopedLock.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
-#include <beast/insight/Collector.h>
-#include <beast/module/core/threads/ScopedLock.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/beast/insight/Collector.h>
+#include <ripple/core/Stoppable.h>
+#include <ripple/beast/utility/PropertyStream.h>
 #include <mutex>
 
 #include "ripple.pb.h"
@@ -60,7 +60,7 @@ struct LedgerReplay
 //        It sounds like this holds all the ledgers...
 //
 class LedgerMaster
-    : public beast::Stoppable
+    : public Stoppable
 {
 public:
     explicit
@@ -275,7 +275,7 @@ private:
 
 private:
     using ScopedLockType = std::lock_guard <std::recursive_mutex>;
-    using ScopedUnlockType = beast::GenericScopedUnlock <std::recursive_mutex>;
+    using ScopedUnlockType = GenericScopedUnlock <std::recursive_mutex>;
 
     Application& app_;
     beast::Journal m_journal;

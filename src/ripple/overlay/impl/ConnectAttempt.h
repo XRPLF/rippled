@@ -33,8 +33,8 @@
 #include <beast/asio/streambuf.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-#include <beast/asio/IPAddressConversion.h>
-#include <beast/utility/WrappedSink.h>
+#include <ripple/beast/net/IPAddressConversion.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/asio/ip/tcp.hpp>

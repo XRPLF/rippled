@@ -23,7 +23,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/server/ServerHandler.h>
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <boost/asio/io_service.hpp>
 #include <memory>
 
@@ -32,7 +32,7 @@ namespace ripple {
 class NetworkOPs;
 
 std::unique_ptr <ServerHandler>
-make_ServerHandler (Application& app, beast::Stoppable& parent, boost::asio::io_service&,
+make_ServerHandler (Application& app, Stoppable& parent, boost::asio::io_service&,
     JobQueue&, NetworkOPs&, Resource::Manager&,
         CollectorManager& cm);
 

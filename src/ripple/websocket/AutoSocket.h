@@ -21,7 +21,7 @@
 #define RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
 
 #include <ripple/basics/Log.h>
-#include <beast/asio/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/placeholders.h>
 #include <boost/asio.hpp>

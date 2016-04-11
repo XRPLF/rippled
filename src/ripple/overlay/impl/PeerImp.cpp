@@ -44,9 +44,9 @@
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/module/core/diagnostic/SemanticVersion.h>
+#include <ripple/beast/core/SemanticVersion.h>
 #include <beast/streams/debug_ostream.h>
-#include <beast/weak_fn.h>
+#include <ripple/beast/utility/weak_fn.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
 #include <algorithm>

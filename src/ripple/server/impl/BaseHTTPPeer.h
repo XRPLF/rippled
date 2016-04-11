@@ -25,7 +25,7 @@
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
-#include <beast/asio/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/error.h> // for is_short_read?
 #include <beast/http/message.h>

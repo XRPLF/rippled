@@ -23,9 +23,9 @@
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <beast/nudb/common.h>
-#include <beast/nudb/detail/field.h>
-#include <beast/nudb/detail/varint.h>
+#include <ripple/beast/nudb/common.h>
+#include <ripple/beast/nudb/detail/field.h>
+#include <ripple/beast/nudb/detail/varint.h>
 #include <lz4/lib/lz4.h>
 #include <snappy.h>
 #include <cstddef>
