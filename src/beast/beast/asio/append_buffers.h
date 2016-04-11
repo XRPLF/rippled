@@ -398,6 +398,8 @@ append_buffers_helper<ValueType, Bs...>::
 const_iterator::operator=(const_iterator&& other) ->
     const_iterator&
 {
+    if(&other == this)
+        return *this;
     destroy(C<0>{});
     n_ = other.n_;
     bs_ = other.bs_;
@@ -411,6 +413,8 @@ append_buffers_helper<ValueType, Bs...>::
 const_iterator::operator=(const_iterator const& other) ->
 const_iterator&
 {
+    if(&other == this)
+        return *this;
     destroy(C<0>{});
     n_ = other.n_;
     bs_ = other.bs_;
