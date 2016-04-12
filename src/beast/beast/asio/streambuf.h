@@ -543,8 +543,10 @@ basic_streambuf<Allocator>::~basic_streambuf()
 }
 
 template<class Allocator>
-basic_streambuf<Allocator>::basic_streambuf(basic_streambuf&& other)
-    : empty_base_optimization<Allocator>(other.member())
+basic_streambuf<Allocator>::
+basic_streambuf(basic_streambuf&& other)
+    : empty_base_optimization<Allocator>(
+        std::move(other.member()))
     , alloc_size_(other.alloc_size_)
     , in_size_(other.in_size_)
     , in_pos_(other.in_pos_)
