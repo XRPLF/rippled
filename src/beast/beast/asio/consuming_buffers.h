@@ -181,7 +181,8 @@ template<class Buffers, class Buffer>
 consuming_buffers<Buffers, Buffer>::
 consuming_buffers(consuming_buffers&& other)
     : consuming_buffers(std::move(other),
-        std::distance(other.bs_.begin(), other.begin_))
+        std::distance<iter_type>(
+            other.bs_.begin(), other.begin_))
 {
 }
 
@@ -189,7 +190,8 @@ template<class Buffers, class Buffer>
 consuming_buffers<Buffers, Buffer>::
 consuming_buffers(consuming_buffers const& other)
     : consuming_buffers(other,
-        std::distance(other.bs_.begin(), other.begin_))
+        std::distance<iter_type>(
+            other.bs_.begin(), other.begin_))
 {
 }
 
@@ -199,8 +201,8 @@ consuming_buffers<Buffers, Buffer>::
 operator=(consuming_buffers&& other) ->
     consuming_buffers&
 {
-    auto const nbegin =
-        std::distance(other.bs_.begin(), other.begin_);
+    auto const nbegin = std::distance<iter_type>(
+        other.bs_.begin(), other.begin_);
     bs_ = std::move(other.bs_);
     begin_ = std::next(bs_.begin(), nbegin);
     skip_ = other.skip_;
@@ -213,8 +215,8 @@ consuming_buffers<Buffers, Buffer>::
 operator=(consuming_buffers const& other) ->
     consuming_buffers&
 {
-    auto const nbegin =
-        std::distance(other.bs_.begin(), other.begin_);
+    auto const nbegin = std::distance<iter_type>(
+        other.bs_.begin(), other.begin_);
     bs_ = other.bs_;
     begin_ = std::next(bs_.begin(), nbegin);
     skip_ = other.skip_;

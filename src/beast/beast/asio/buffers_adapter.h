@@ -399,9 +399,9 @@ template<class Buffers>
 buffers_adapter<Buffers>::buffers_adapter(
         buffers_adapter&& other)
     : buffers_adapter(std::move(other),
-        std::distance(other.bs_.begin(), other.begin_),
-        std::distance(other.bs_.begin(), other.out_),
-        std::distance(other.bs_.begin(), other.end_))
+        std::distance<iter_type>(other.bs_.begin(), other.begin_),
+        std::distance<iter_type>(other.bs_.begin(), other.out_),
+        std::distance<iter_type>(other.bs_.begin(), other.end_))
 {
 }
 
@@ -409,9 +409,9 @@ template<class Buffers>
 buffers_adapter<Buffers>::buffers_adapter(
         buffers_adapter const& other)
     : buffers_adapter(other,
-        std::distance(other.bs_.begin(), other.begin_),
-        std::distance(other.bs_.begin(), other.out_),
-        std::distance(other.bs_.begin(), other.end_))
+        std::distance<iter_type>(other.bs_.begin(), other.begin_),
+        std::distance<iter_type>(other.bs_.begin(), other.out_),
+        std::distance<iter_type>(other.bs_.begin(), other.end_))
 {
 }
 
@@ -420,11 +420,11 @@ auto
 buffers_adapter<Buffers>::operator=(
     buffers_adapter&& other) -> buffers_adapter&
 {
-    auto const nbegin = std::distance(
+    auto const nbegin = std::distance<iter_type>(
         other.bs_.begin(), other.begin_);
-    auto const nout = std::distance(
+    auto const nout = std::distance<iter_type>(
         other.bs_.begin(), other.out_);
-    auto const nend = std::distance(
+    auto const nend = std::distance<iter_type>(
         other.bs_.begin(), other.end_);
     bs_ = std::move(other.bs_);
     begin_ = std::next(bs_.begin(), nbegin);
@@ -443,11 +443,11 @@ auto
 buffers_adapter<Buffers>::operator=(
     buffers_adapter const& other) -> buffers_adapter&
 {
-    auto const nbegin = std::distance(
+    auto const nbegin = std::distance<iter_type>(
         other.bs_.begin(), other.begin_);
-    auto const nout = std::distance(
+    auto const nout = std::distance<iter_type>(
         other.bs_.begin(), other.out_);
-    auto const nend = std::distance(
+    auto const nend = std::distance<iter_type>(
         other.bs_.begin(), other.end_);
     bs_ = other.bs_;
     begin_ = std::next(bs_.begin(), nbegin);

@@ -62,7 +62,8 @@ class prepared_buffers
     prepared_buffers(Deduced&& other,
             std::size_t nback, std::size_t nend)
         : bs_(std::forward<Deduced>(other.bs_))
-        , back_(std::next(bs_.begin(), nback))
+        , back_(std::next(
+            const_cast<Buffers const&>(bs_.begin()), nback))
         , end_(std::next(bs_.begin(), nend))
         , size_(other.size_)
     {
@@ -202,8 +203,8 @@ template<class Buffers>
 prepared_buffers<Buffers>::
 prepared_buffers(prepared_buffers&& other)
     : prepared_buffers(std::move(other),
-        std::distance(other.bs_.begin(), other.back_),
-        std::distance(other.bs_.begin(), other.end_))
+        std::distance<iter_type>(other.bs_.begin(), other.back_),
+        std::distance<iter_type>(other.bs_.begin(), other.end_))
 {
 }
 
@@ -211,8 +212,8 @@ template<class Buffers>
 prepared_buffers<Buffers>::
 prepared_buffers(prepared_buffers const& other)
     : prepared_buffers(other,
-        std::distance(other.bs_.begin(), other.back_),
-        std::distance(other.bs_.begin(), other.end_))
+        std::distance<iter_type>(other.bs_.begin(), other.back_),
+        std::distance<iter_type>(other.bs_.begin(), other.end_))
 {
 }
 
@@ -222,10 +223,10 @@ prepared_buffers<Buffers>::
 operator=(prepared_buffers&& other) ->
     prepared_buffers&
 {
-    auto const nbegin =
-        std::distance(other.bs_.begin(), other.back_);
-    auto const nback =
-        std::distance(other.bs_.begin(), other.end_);
+    auto const nback = std::distance<iter_type>(
+        other.bs_.begin(), other.back_);
+    auto const nend = std::distance<iter_type>(
+        other.bs_.begin(), other.end_);
     bs_ = std::move(other.bs_);
     back_ = std::next(bs_.begin(), nback);
     end_ = std::next(bs_.begin(), nend);
@@ -239,8 +240,10 @@ prepared_buffers<Buffers>::
 operator=(prepared_buffers const& other) ->
     prepared_buffers&
 {
-    auto const nbegin =
-        std::distance(other.bs_.begin(), other.back_);
+    auto const nback = std::distance<iter_type>(
+        other.bs_.begin(), other.back_);
+    auto const nend = std::distance<iter_type>(
+        other.bs_.begin(), other.end_);
     bs_ = other.bs_;
     back_ = std::next(bs_.begin(), nback);
     end_ = std::next(bs_.begin(), nend);
