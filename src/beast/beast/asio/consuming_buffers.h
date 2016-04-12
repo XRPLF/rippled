@@ -200,7 +200,7 @@ operator=(consuming_buffers&& other) ->
     consuming_buffers&
 {
     auto const nbegin =
-        std::distance(other.bs_.begin(), other.begin_)
+        std::distance(other.bs_.begin(), other.begin_);
     bs_ = std::move(other.bs_);
     begin_ = std::next(bs_.begin(), nbegin);
     skip_ = other.skip_;
@@ -214,7 +214,7 @@ operator=(consuming_buffers const& other) ->
     consuming_buffers&
 {
     auto const nbegin =
-        std::distance(other.bs_.begin(), other.begin_)
+        std::distance(other.bs_.begin(), other.begin_);
     bs_ = other.bs_;
     begin_ = std::next(bs_.begin(), nbegin);
     skip_ = other.skip_;

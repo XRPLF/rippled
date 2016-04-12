@@ -423,7 +423,7 @@ buffers_adapter<Buffers>::operator=(
     auto const nbegin = std::distance(
         other.bs_.begin(), other.begin_);
     auto const nout = std::distance(
-        other.bs_.begin(), other.out_),
+        other.bs_.begin(), other.out_);
     auto const nend = std::distance(
         other.bs_.begin(), other.end_);
     bs_ = std::move(other.bs_);
@@ -446,7 +446,7 @@ buffers_adapter<Buffers>::operator=(
     auto const nbegin = std::distance(
         other.bs_.begin(), other.begin_);
     auto const nout = std::distance(
-        other.bs_.begin(), other.out_),
+        other.bs_.begin(), other.out_);
     auto const nend = std::distance(
         other.bs_.begin(), other.end_);
     bs_ = other.bs_;

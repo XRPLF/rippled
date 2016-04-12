@@ -197,7 +197,7 @@ private:
     {
     }
 };
-    
+
 template<class Buffers>
 prepared_buffers<Buffers>::
 prepared_buffers(prepared_buffers&& other)
@@ -240,7 +240,7 @@ operator=(prepared_buffers const& other) ->
     prepared_buffers&
 {
     auto const nbegin =
-        std::distance(other.bs_.begin(), other.back_)
+        std::distance(other.bs_.begin(), other.back_);
     bs_ = other.bs_;
     back_ = std::next(bs_.begin(), nback);
     end_ = std::next(bs_.begin(), nend);
