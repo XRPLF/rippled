@@ -103,22 +103,17 @@ private:
         if(ec == boost::asio::error::operation_aborted)
             return;
         maybe_throw(ec, "accept");
-        std::thread{
-            [
-                this,
-                sock = std::move(sock_),
-                work = boost::asio::io_service::work{ios_}
-            ]() mutable
-            {
-                do_client(std::move(sock));
-            }}.detach();
+        std::thread{&sync_echo_http_server::do_client, this,
+            std::move(sock_), boost::asio::io_service::work{
+                sock_.get_io_service()}}.detach();
         acceptor_.async_accept(sock_,
             std::bind(&sync_echo_http_server::on_accept, this,
                 beast::asio::placeholders::error));
     }
 
     void
-    do_client(socket_type&& sock)
+    do_client(socket_type& sock,
+        boost::asio::io_service::work)
     {
         error_code ec;
         streambuf rb;
