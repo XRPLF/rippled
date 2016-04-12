@@ -58,16 +58,26 @@ class prepared_buffers
     iter_type end_;
     std::size_t size_;
 
+    template<class Deduced>
+    prepared_buffers(Deduced&& other,
+            std::size_t nback, std::size_t nend)
+        : bs_(std::forward<Deduced>(other.bs_))
+        , back_(std::next(bs_.begin(), nback))
+        , end_(std::next(bs_.begin(), nend))
+        , size_(other.size_)
+    {
+    }
+
 public:
     using value_type =
         typename std::iterator_traits<iter_type>::value_type;
 
     class const_iterator;
 
-    prepared_buffers(prepared_buffers&&) = default;
-    prepared_buffers(prepared_buffers const&) = default;
-    prepared_buffers& operator=(prepared_buffers&&) = default;
-    prepared_buffers& operator=(prepared_buffers const&) = default;
+    prepared_buffers(prepared_buffers&&);
+    prepared_buffers(prepared_buffers const&);
+    prepared_buffers& operator=(prepared_buffers&&);
+    prepared_buffers& operator=(prepared_buffers const&);
 
     prepared_buffers(std::size_t n, Buffers const& bs);
 
@@ -188,6 +198,56 @@ private:
     }
 };
     
+template<class Buffers>
+prepared_buffers<Buffers>::
+prepared_buffers(prepared_buffers&& other)
+    : prepared_buffers(std::move(other),
+        std::distance(other.bs_.begin(), other.back_),
+        std::distance(other.bs_.begin(), other.end_))
+{
+}
+
+template<class Buffers>
+prepared_buffers<Buffers>::
+prepared_buffers(prepared_buffers const& other)
+    : prepared_buffers(other,
+        std::distance(other.bs_.begin(), other.back_),
+        std::distance(other.bs_.begin(), other.end_))
+{
+}
+
+template<class Buffers>
+auto
+prepared_buffers<Buffers>::
+operator=(prepared_buffers&& other) ->
+    prepared_buffers&
+{
+    auto const nbegin =
+        std::distance(other.bs_.begin(), other.back_);
+    auto const nback =
+        std::distance(other.bs_.begin(), other.end_);
+    bs_ = std::move(other.bs_);
+    back_ = std::next(bs_.begin(), nback);
+    end_ = std::next(bs_.begin(), nend);
+    size_ = other.size_;
+    return *this;
+}
+
+template<class Buffers>
+auto
+prepared_buffers<Buffers>::
+operator=(prepared_buffers const& other) ->
+    prepared_buffers&
+{
+    auto const nbegin =
+        std::distance(other.bs_.begin(), other.back_)
+    bs_ = other.bs_;
+    back_ = std::next(bs_.begin(), nback);
+    end_ = std::next(bs_.begin(), nend);
+    size_ = other.size_;
+    return *this;
+}
+
 template<class Buffers>
 prepared_buffers<Buffers>::prepared_buffers(
         std::size_t n, Buffers const& bs)
