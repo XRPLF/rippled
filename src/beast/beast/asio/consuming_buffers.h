@@ -29,8 +29,8 @@
 
 namespace beast {
 
-/// Adapter for excluding bytes at the beginning of a BufferSequence.
-/**
+/** Adapter for excluding bytes at the beginning of a BufferSequence.
+
     This adapter wraps a BufferSequence so it can be consumed. Bytes
     consumed are removed from the front of the buffer. The underlying
     buffer object is not modified. Instead, the adapter presents a
@@ -52,15 +52,23 @@ class consuming_buffers
     iter_type begin_;
     std::size_t skip_ = 0;
 
+    template<class Deduced>
+    consuming_buffers(Deduced&& other, std::size_t nbegin)
+        : bs_(std::forward<Deduced>(other))
+        , begin_(std::next(bs_.begin(), nbegin))
+        , skip_(other.skip_)
+    {
+    }
+
 public:
     using value_type = Buffer;
 
     class const_iterator;
 
-    consuming_buffers(consuming_buffers&&) = default;
-    consuming_buffers(consuming_buffers const&) = default;
-    consuming_buffers& operator=(consuming_buffers&&) = default;
-    consuming_buffers& operator=(consuming_buffers const&) = default;
+    consuming_buffers(consuming_buffers&&);
+    consuming_buffers(consuming_buffers const&);
+    consuming_buffers& operator=(consuming_buffers&&);
+    consuming_buffers& operator=(consuming_buffers const&);
 
     explicit
     consuming_buffers(Buffers const& bs);
@@ -168,6 +176,50 @@ private:
     {
     }
 };
+
+template<class Buffers, class Buffer>
+consuming_buffers<Buffers, Buffer>::
+consuming_buffers(consuming_buffers&& other)
+    : consuming_buffers(std::move(other),
+        std::distance(other.bs_.begin(), other.begin_))
+{
+}
+
+template<class Buffers, class Buffer>
+consuming_buffers<Buffers, Buffer>::
+consuming_buffers(consuming_buffers const& other)
+    : consuming_buffers(other,
+        std::distance(other.bs_.begin(), other.begin_))
+{
+}
+
+template<class Buffers, class Buffer>
+auto
+consuming_buffers<Buffers, Buffer>::
+operator=(consuming_buffers&& other) ->
+    consuming_buffers&
+{
+    auto const nbegin =
+        std::distance(other.bs_.begin(), other.begin_)
+    bs_ = std::move(other.bs_);
+    begin_ = std::next(bs_.begin(), nbegin);
+    skip_ = other.skip_;
+    return *this;
+}
+
+template<class Buffers, class Buffer>
+auto
+consuming_buffers<Buffers, Buffer>::
+operator=(consuming_buffers const& other) ->
+    consuming_buffers&
+{
+    auto const nbegin =
+        std::distance(other.bs_.begin(), other.begin_)
+    bs_ = other.bs_;
+    begin_ = std::next(bs_.begin(), nbegin);
+    skip_ = other.skip_;
+    return *this;
+}
 
 template<class Buffers, class Buffer>
 consuming_buffers<Buffers, Buffer>::consuming_buffers(
