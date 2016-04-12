@@ -55,6 +55,8 @@ public:
     using lowest_layer_type =
         typename next_layer_type::lowest_layer_type;
 
+    streambuf_readstream(streambuf_readstream&&) = default;
+
     template<class... Args>
     explicit
     streambuf_readstream(Args&&... args);
