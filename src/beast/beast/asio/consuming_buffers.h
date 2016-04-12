@@ -162,7 +162,7 @@ public:
 
 private:
     const_iterator(consuming_buffers const& b,
-            typename Buffers::const_iterator it)
+            iter_type it)
         : it_(it)
         , b_(&b)
     {
