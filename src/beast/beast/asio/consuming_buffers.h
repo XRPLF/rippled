@@ -54,7 +54,7 @@ class consuming_buffers
 
     template<class Deduced>
     consuming_buffers(Deduced&& other, std::size_t nbegin)
-        : bs_(std::forward<Deduced>(other))
+        : bs_(std::forward<Deduced>(other).bs_)
         , begin_(std::next(bs_.begin(), nbegin))
         , skip_(other.skip_)
     {

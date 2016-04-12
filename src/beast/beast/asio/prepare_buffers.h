@@ -61,9 +61,8 @@ class prepared_buffers
     template<class Deduced>
     prepared_buffers(Deduced&& other,
             std::size_t nback, std::size_t nend)
-        : bs_(std::forward<Deduced>(other.bs_))
-        , back_(std::next(
-            const_cast<Buffers const&>(bs_.begin()), nback))
+        : bs_(std::forward<Deduced>(other).bs_)
+        , back_(std::next(bs_.begin(), nback))
         , end_(std::next(bs_.begin(), nend))
         , size_(other.size_)
     {

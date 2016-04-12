@@ -56,7 +56,7 @@ private:
     buffers_adapter(Deduced&& other,
         std::size_t nbegin, std::size_t nout,
             std::size_t nend)
-        : bs_(std::forward<Deduced>(other.bs_))
+        : bs_(std::forward<Deduced>(other).bs_)
         , begin_(std::next(bs_.begin(), nbegin))
         , out_(std::next(bs_.begin(), nout))
         , end_(std::next(bs_.begin(), nend))
