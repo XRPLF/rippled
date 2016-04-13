@@ -91,10 +91,7 @@ private:
     void
     setup(std::size_t n)
     {
-        end_ = bs_.begin();
-        if(n == 0)
-            return;
-        for(;end_ != bs_.end(); ++end_)
+        for(end_ = bs_.begin(); end_ != bs_.end(); ++end_)
         {
             auto const len =
                 boost::asio::buffer_size(*end_);
@@ -106,6 +103,7 @@ private:
             }
             n -= len;
         }
+        size_ = 0;
         back_ = end_;
     }
 };
