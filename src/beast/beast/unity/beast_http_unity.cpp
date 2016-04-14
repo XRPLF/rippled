@@ -18,13 +18,11 @@
 //==============================================================================
 
 #include <beast/http/src/beast_http_method.cpp>
-#include <beast/http/src/beast_http_URL.cpp>
 
 #include <beast/http/src/test/beast_http_chunked_encoder_test.cpp>
 #include <beast/http/src/test/beast_http_message_test.cpp>
 #include <beast/http/src/test/beast_http_parser_test.cpp>
 #include <beast/http/src/test/beast_http_rfc2616_test.cpp>
-#include <beast/http/src/test/beast_http_URL_test.cpp>
 #include <beast/http/src/test/beast_http_urls_large_data.cpp>
 
 // VFALCO Must come last otherwise Windows 10 SDK

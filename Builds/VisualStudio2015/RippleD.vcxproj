@@ -430,10 +430,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\beast_http_URL.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\src\nodejs_parser.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_chunked_encoder_test.cpp">
@@ -456,10 +452,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_URL_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\src\test\urls_large_data.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\streambuf_body.h">
@@ -467,8 +459,6 @@
     <ClInclude Include="..\..\src\beast\beast\http\string_body.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\type_check.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\URL.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\write.h">
     </ClInclude>
@@ -1918,6 +1908,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\URL.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\net\IPAddress.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\net\IPAddressConversion.h">
@@ -1928,10 +1922,16 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\net\IPEndpoint.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_http_URL_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\net\tests\IPEndpoint.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\net\URL.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_container_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
