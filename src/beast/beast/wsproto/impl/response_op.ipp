@@ -67,7 +67,6 @@ public:
     response_op(response_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     response_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -77,9 +76,9 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
-        (*this)(error_code{}, 0);
+        (*this)(ec, 0);
     }
 
     void operator()(error_code ec,

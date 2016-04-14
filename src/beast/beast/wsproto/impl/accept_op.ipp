@@ -69,7 +69,6 @@ public:
     accept_op(accept_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     accept_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -79,12 +78,12 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
-        (*this)(error_code{}, 0);
+        (*this)(ec, 0);
     }
 
-    void operator()(error_code ec,
+    void operator()(error_code const& ec,
         std::size_t bytes_transferred);
 
     friend
@@ -124,7 +123,7 @@ template<class Stream>
 template<class Handler>
 void 
 socket<Stream>::accept_op<Handler>::
-operator()(error_code ec, std::size_t bytes_transferred)
+operator()(error_code const& ec, std::size_t bytes_transferred)
 {
     auto& d = *d_;
     while(! ec && d.state != 999)

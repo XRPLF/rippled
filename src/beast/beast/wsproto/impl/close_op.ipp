@@ -70,7 +70,6 @@ public:
     close_op(close_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     close_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -85,7 +84,7 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
         (*this)(ec, 0);
     }

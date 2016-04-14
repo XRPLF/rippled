@@ -110,9 +110,7 @@ public:
         typename protocol_type::resolver;
 
     socket(socket&&) = default;
-    socket(socket const&) = delete;
     socket& operator=(socket&&) = default;
-    socket& operator=(socket const&) = delete;
 
     /** Construct a websocket.
 

@@ -77,7 +77,6 @@ public:
     write_op(write_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     write_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},

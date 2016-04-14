@@ -63,7 +63,6 @@ public:
     read_op(read_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     read_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -78,12 +77,12 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
         (*this)(ec, 0);
     }
 
-    void operator()(error_code ec,
+    void operator()(error_code const& ec,
         std::size_t bytes_transferred);
 
     friend
@@ -122,7 +121,7 @@ public:
 template<class Stream, class Streambuf, class Handler>
 void
 read_op<Stream, Streambuf,
-    Handler>::operator()(error_code ec,
+    Handler>::operator()(error_code const& ec,
         std::size_t bytes_transferred)
 {
     auto& d = *d_;
