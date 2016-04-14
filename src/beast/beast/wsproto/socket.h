@@ -86,9 +86,7 @@ class socket : public detail::socket_base
     friend class ws_test;
 
     Stream next_layer_;
-    streambuf_readstream<
-        std::remove_reference_t<Stream>&,
-            streambuf> stream_;
+    streambuf_readstream<Stream&, streambuf> stream_;
 
 public:
     /// The type of the next layer.
