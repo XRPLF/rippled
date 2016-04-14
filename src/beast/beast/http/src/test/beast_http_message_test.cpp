@@ -112,8 +112,7 @@ private:
     }
 
     void
-    do_client(socket_type& sock,
-        boost::asio::io_service::work)
+    do_client(socket_type sock, boost::asio::io_service::work)
     {
         error_code ec;
         streambuf rb;
