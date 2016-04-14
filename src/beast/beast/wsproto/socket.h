@@ -142,8 +142,9 @@ public:
     void
     set_option(A1&& a1, A2&& a2, An&&... an)
     {
-        set_option(a1);
-        set_option(a2, an...);
+        set_option(std::forward<A1>(a1));
+        set_option(std::forward<A2>(a2),
+            std::forward<An>(an)...);
     }
 
     void
