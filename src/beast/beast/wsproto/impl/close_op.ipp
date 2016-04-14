@@ -47,7 +47,6 @@ class socket<Stream>::close_op
         Handler h;
         fb_type fb;
         fmb_type fmb;
-        temp_buffer<Handler> tmp;
         int state = 0;
 
         template<class DeducedHandler>
@@ -56,7 +55,6 @@ class socket<Stream>::close_op
             : ws(ws_)
             , cr(cr_)
             , h(std::forward<DeducedHandler>(h_))
-            , tmp(h_)
         {
             ws.template write_close<
                 static_streambuf>(fb, cr);
@@ -70,7 +68,6 @@ public:
     close_op(close_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     close_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -85,7 +82,7 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
         (*this)(ec, 0);
     }

@@ -20,9 +20,9 @@
 #ifndef BEAST_WSPROTO_WRITE_OP_H_INCLUDED
 #define BEAST_WSPROTO_WRITE_OP_H_INCLUDED
 
+#include <beast/asio/append_buffers.h>
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/handler_alloc.h>
-#include <beast/asio/append_buffers.h>
 #include <beast/asio/static_streambuf.h>
 #include <beast/wsproto/detail/frame.h>
 #include <cassert>
@@ -52,7 +52,7 @@ class socket<Stream>::write_op
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, socket<Stream>& ws_,
-            opcode::value op_, bool fin, Buffers const& bs_)
+            opcode op_, bool fin, Buffers const& bs_)
             : ws(ws_)
             , bs(bs_)
             , h(std::forward<DeducedHandler>(h_))
@@ -77,7 +77,6 @@ public:
     write_op(write_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     write_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},

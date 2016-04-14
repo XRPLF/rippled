@@ -36,6 +36,9 @@ namespace ripple {
 class WSMsg
 {
 public:
+    WSMsg() = default;
+    WSMsg(WSMsg const&) = delete;
+    WSMsg& operator=(WSMsg const&) = delete;
     virtual ~WSMsg() = default;
 
     /** Retrieve message data.

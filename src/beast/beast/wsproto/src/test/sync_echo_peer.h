@@ -151,7 +151,7 @@ private:
         }
         for(;;)
         {
-            wsproto::opcode::value op;
+            wsproto::opcode op;
             beast::streambuf sb;
             wsproto::read(ws, op, sb, ec);
             if(ec)

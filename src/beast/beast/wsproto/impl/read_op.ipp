@@ -38,7 +38,7 @@ class read_op
     struct data
     {
         socket<Stream>& ws;
-        opcode::value& op;
+        opcode& op;
         Streambuf& sb;
         Handler h;
         msg_info mi;
@@ -46,7 +46,7 @@ class read_op
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
-            socket<Stream>& ws_, opcode::value& op_,
+            socket<Stream>& ws_, opcode& op_,
                 Streambuf& sb_)
             : ws(ws_)
             , op(op_)
@@ -63,7 +63,6 @@ public:
     read_op(read_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     read_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -78,12 +77,12 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
         (*this)(ec, 0);
     }
 
-    void operator()(error_code ec,
+    void operator()(error_code const& ec,
         std::size_t bytes_transferred);
 
     friend
@@ -122,7 +121,7 @@ public:
 template<class Stream, class Streambuf, class Handler>
 void
 read_op<Stream, Streambuf,
-    Handler>::operator()(error_code ec,
+    Handler>::operator()(error_code const& ec,
         std::size_t bytes_transferred)
 {
     auto& d = *d_;

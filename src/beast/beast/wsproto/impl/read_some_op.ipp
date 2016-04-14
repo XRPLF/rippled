@@ -74,7 +74,6 @@ public:
     read_some_op(read_some_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    explicit
     read_some_op(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
@@ -89,7 +88,7 @@ public:
         (*this)(error_code{}, 0);
     }
 
-    void operator()(error_code ec)
+    void operator()(error_code const& ec)
     {
         (*this)(ec, 0);
     }
@@ -139,7 +138,7 @@ socket<Stream>::read_some_op<
         std::size_t bytes_transferred)
 {
     auto& d = *d_;
-    close::value code;
+    close_code code;
     while(! ec && d.state != 999)
     {
         switch(d.state)
@@ -195,7 +194,7 @@ socket<Stream>::read_some_op<
                 {
                     // invalid utf8
                     d.state = 300;
-                    code = close::bad_payload;
+                    code = close_code::bad_payload;
                     break;
                 }
             }
@@ -216,7 +215,7 @@ socket<Stream>::read_some_op<
         case 70:
         {
             d.fb.commit(bytes_transferred);
-            code = close::none;
+            code = close_code::none;
             auto const n = detail::read_fh1(
                 d.ws.rd_fh_, d.fb, d.ws.role_, code);
             if(code)
@@ -240,7 +239,7 @@ socket<Stream>::read_some_op<
         // got variable header
         case 80:
             d.fb.commit(bytes_transferred);
-            code = close::none;
+            code = close_code::none;
             detail::read_fh2(d.ws.rd_fh_,
                 d.fb, d.ws.role_, code);
             if(! code)
@@ -292,7 +291,7 @@ socket<Stream>::read_some_op<
         case 100:
             if(d.ws.rd_fh_.op == opcode::ping)
             {
-                code = close::none;
+                code = close_code::none;
                 ping_payload_type data;
                 detail::read(data, d.fb.data(), code);
                 if(code)
@@ -323,7 +322,7 @@ socket<Stream>::read_some_op<
             }
             else if(d.ws.rd_fh_.op == opcode::pong)
             {
-                code = close::none;
+                code = close_code::none;
                 ping_payload_type data;
                 detail::read(data, d.fb.data(), code);
                 if(code)
@@ -349,8 +348,8 @@ socket<Stream>::read_some_op<
                 if(! d.ws.wr_close_)
                 {
                     auto cr = d.ws.cr_;
-                    if(cr.code == close::none)
-                        cr.code = close::normal;
+                    if(cr.code == close_code::none)
+                        cr.code = close_code::normal;
                     cr.reason = "";
                     d.fb.reset();
                     d.ws.template write_close<

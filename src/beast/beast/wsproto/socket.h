@@ -38,7 +38,7 @@ namespace wsproto {
 struct msg_info
 {
     /// Indicates the type of message (binary or text).
-    opcode::value op;
+    opcode op;
 
     /// `true` if all octets for the current message are received.
     bool fin;
@@ -86,9 +86,7 @@ class socket : public detail::socket_base
     friend class ws_test;
 
     Stream next_layer_;
-    streambuf_readstream<
-        std::remove_reference_t<Stream>&,
-            streambuf> stream_;
+    streambuf_readstream<Stream&, streambuf> stream_;
 
 public:
     /// The type of the next layer.
@@ -112,9 +110,7 @@ public:
         typename protocol_type::resolver;
 
     socket(socket&&) = default;
-    socket(socket const&) = delete;
     socket& operator=(socket&&) = default;
-    socket& operator=(socket const&) = delete;
 
     /** Construct a websocket.
 
@@ -146,8 +142,9 @@ public:
     void
     set_option(A1&& a1, A2&& a2, An&&... an)
     {
-        set_option(a1);
-        set_option(a2, an...);
+        set_option(std::forward<A1>(a1));
+        set_option(std::forward<A2>(a2),
+            std::forward<An>(an)...);
     }
 
     void
@@ -642,7 +639,7 @@ public:
         This function initiates the WebSocket close procedure.
 
         If the close reason specifies a close code other than
-        close::none, the close frame is sent with the close code
+        close_code::none, the close frame is sent with the close code
         and optional reason string. Otherwise, the close frame
         is sent with no payload.
 
@@ -666,7 +663,7 @@ public:
         This function initiates the WebSocket close procedure.
 
         If the close reason specifies a close code other than
-        close::none, the close frame is sent with the close code
+        close_code::none, the close frame is sent with the close code
         and optional reason string. Otherwise, the close frame
         is sent with no payload.
 
@@ -687,7 +684,7 @@ public:
         This function initiates the WebSocket close procedure.
 
         If the close reason specifies a close code other than
-        close::none, the close frame is sent with the close code
+        close_code::none, the close frame is sent with the close code
         and optional reason string. Otherwise, the close frame
         is sent with no payload.
 
@@ -841,7 +838,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(opcode::value op, bool fin,
+    write(opcode op, bool fin,
         ConstBufferSequence const& buffers, error_code& ec);
 
     /** Write an entire frame to a stream before returning.
@@ -868,7 +865,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(opcode::value op, bool fin,
+    write(opcode op, bool fin,
         ConstBufferSequence const& buffers)
     {
         error_code ec;
@@ -903,7 +900,7 @@ public:
     */
     template<class ConstBufferSequence, class WriteHandler>
     auto
-    async_write(opcode::value op, bool fin,
+    async_write(opcode op, bool fin,
         ConstBufferSequence const& buffers,
             WriteHandler&& handler);
 
@@ -934,7 +931,7 @@ private:
 
     void
     do_read_fh(detail::frame_streambuf& fb,
-        close::value& code, error_code& ec);
+        close_code& code, error_code& ec);
 };
 
 //------------------------------------------------------------------------------
@@ -960,7 +957,7 @@ private:
 */
 template<class Stream, class Streambuf>
 void
-read(socket<Stream>& ws, opcode::value& op,
+read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf)
 {
     error_code ec;
@@ -989,7 +986,7 @@ read(socket<Stream>& ws, opcode::value& op,
 */
 template<class Stream, class Streambuf>
 void
-read(socket<Stream>& ws, opcode::value& op,
+read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, error_code& ec);
 
 /** Start reading a message asynchronously.
@@ -1025,14 +1022,14 @@ read(socket<Stream>& ws, opcode::value& op,
 */
 template<class Stream, class Streambuf, class ReadHandler>
 auto
-async_read(socket<Stream>& ws, opcode::value& op,
+async_read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, ReadHandler&& handler);
 
 /** Write a complete WebSocket message.
 */
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, opcode::value op,
+write_msg(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& buffers)
 {
     error_code ec;
@@ -1045,13 +1042,13 @@ write_msg(socket<Stream>& ws, opcode::value op,
 */
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, opcode::value op,
+write_msg(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& buffers, error_code& ec);
 
 template<class Stream,
     class ConstBufferSequence, class WriteHandler>
 auto
-async_write(socket<Stream>& ws, opcode::value op,
+async_write(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& buffers, WriteHandler&& handler);
 
 } // wsproto

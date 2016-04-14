@@ -120,7 +120,7 @@ messages using the message oriented interface:
 void echo(wsproto::socket<ip::tcp::socket>& ws)
 {
     streambuf sb;
-    wsproto::opcode::value op;
+    wsproto::opcode op;
     wsproto::read(ws, op, sb);
     wsproto::write(ws, op, sb.data());
     sb.consume(sb.size());

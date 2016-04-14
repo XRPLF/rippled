@@ -52,19 +52,19 @@ namespace detail {
 
 template<class _>
 void
-socket_base::prepare_fh(close::value& code)
+socket_base::prepare_fh(close_code& code)
 {
     // continuation without an active message
     if(! rd_cont_ && rd_fh_.op == opcode::cont)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return;
     }
     // new data frame when continuation expected
     if(rd_cont_ && ! is_control(rd_fh_.op) &&
             rd_fh_.op != opcode::cont)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return;
     }
     if(rd_fh_.mask)
@@ -90,12 +90,12 @@ socket_base::write_close(
     fh.rsv1 = false;
     fh.rsv2 = false;
     fh.rsv3 = false;
-    fh.len = cr.code == close::none ?
+    fh.len = cr.code == close_code::none ?
         0 : 2 + cr.reason.size();
     if((fh.mask = (role_ == role_type::client)))
         fh.key = maskgen_();
     detail::write(sb, fh);
-    if(cr.code != close::none)
+    if(cr.code != close_code::none)
     {
         detail::prepared_key_type key;
         if(fh.mask)
@@ -127,7 +127,7 @@ socket_base::write_close(
 template<class Streambuf>
 void
 socket_base::write_ping(Streambuf& sb,
-    opcode::value op, ping_payload_type const& data)
+    opcode op, ping_payload_type const& data)
 {
     frame_header fh;
     fh.op = op;
@@ -344,7 +344,7 @@ void
 socket<Stream>::read_some(msg_info& mi,
     Streambuf& streambuf, error_code& ec)
 {
-    close::value code{};
+    close_code code{};
     for(;;)
     {
         if(rd_need_ == 0)
@@ -402,8 +402,8 @@ socket<Stream>::read_some(msg_info& mi,
                     if(! wr_close_)
                     {
                         auto cr = cr_;
-                        if(cr.code == close::none)
-                            cr.code = close::normal;
+                        if(cr.code == close_code::none)
+                            cr.code = close_code::normal;
                         cr.reason = "";
                         fb.reset();
                         wr_close_ = true;
@@ -438,7 +438,7 @@ socket<Stream>::read_some(msg_info& mi,
                 (rd_need_ == 0 && rd_fh_.fin &&
                     ! rd_utf8_check_.finish()))
             {
-                code = close::bad_payload;
+                code = close_code::bad_payload;
                 break;
             }
         }
@@ -491,7 +491,7 @@ socket<Stream>::async_read_some(msg_info& mi,
 template<class Stream>
 template<class ConstBufferSequence>
 void
-socket<Stream>::write(opcode::value op, bool fin,
+socket<Stream>::write(opcode op, bool fin,
     ConstBufferSequence const& bs, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -540,7 +540,7 @@ socket<Stream>::write(opcode::value op, bool fin,
 template<class Stream>
 template<class ConstBufferSequence, class WriteHandler>
 auto
-socket<Stream>::async_write(opcode::value op, bool fin,
+socket<Stream>::async_write(opcode op, bool fin,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -659,7 +659,7 @@ template<class Stream>
 void
 socket<Stream>::do_read_fh(
     detail::frame_streambuf& fb,
-        close::value& code, error_code& ec)
+        close_code& code, error_code& ec)
 {
     fb.commit(boost::asio::read(
         stream_, fb.prepare(2), ec));
@@ -687,7 +687,7 @@ socket<Stream>::do_read_fh(
 
 template<class Stream, class Streambuf>
 void
-read(socket<Stream>& ws, opcode::value& op,
+read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, error_code& ec)
 {
     msg_info mi;
@@ -704,7 +704,7 @@ read(socket<Stream>& ws, opcode::value& op,
 
 template<class Stream, class Streambuf, class ReadHandler>
 auto
-async_read(socket<Stream>& ws, opcode::value& op,
+async_read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, ReadHandler&& handler)
 {
     static_assert(beast::is_Streambuf<Streambuf>::value,
@@ -720,7 +720,7 @@ async_read(socket<Stream>& ws, opcode::value& op,
 
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, opcode::value op,
+write_msg(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& bs, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -732,7 +732,7 @@ write_msg(socket<Stream>& ws, opcode::value op,
 template<class Stream,
     class ConstBufferSequence, class WriteHandler>
 auto
-async_write(socket<Stream>& ws, opcode::value op,
+async_write(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<

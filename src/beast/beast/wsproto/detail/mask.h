@@ -36,8 +36,6 @@ namespace detail {
 template<class = void>
 class maskgen_t
 {
-private:
-    std::size_t n_;
     std::mt19937 g_;
 
 public:
@@ -66,20 +64,15 @@ auto
 maskgen_t<_>::operator()() noexcept ->
     result_type
 {
-    if(++n_ == 10000)
-        rekey();
     for(;;)
-    {
         if(auto key = g_())
             return key;
-    }
 }
 
 template<class _>
 void
 maskgen_t<_>::rekey()
 {
-    n_ = 0;
     std::random_device rng;
     std::array<std::uint32_t, 32> e;
     for(auto& i : e)

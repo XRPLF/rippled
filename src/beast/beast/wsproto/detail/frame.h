@@ -37,7 +37,7 @@ namespace detail {
 // Contents of a WebSocket frame header
 struct frame_header
 {
-    opcode::value op;
+    opcode op;
     bool fin;
     bool mask;
     bool rsv1;
@@ -53,11 +53,11 @@ using fh_streambuf =
 
 // holds the largest possible control frame
 using frame_streambuf =
-    static_streambuf_n<139>; // 14 + 125
+    static_streambuf_n< 2 + 8 + 4 + 125 >;
 
 inline
 bool constexpr
-is_reserved(opcode::value op)
+is_reserved(opcode op)
 {
     return
         (op >= opcode::rsv3  && op <= opcode::rsv7) ||
@@ -66,23 +66,22 @@ is_reserved(opcode::value op)
 
 inline
 bool constexpr
-is_valid(opcode::value op)
+is_valid(opcode op)
 {
-    return op >= 0 && op <= opcode::crsvf;
+    return op <= opcode::crsvf;
 }
 
 inline
 bool constexpr
-is_control(opcode::value op)
+is_control(opcode op)
 {
     return op >= opcode::close;
 }
 
 // Returns `true` if a close code is valid
-// Note this accepts 0 as a valid close code.
 inline
 bool
-is_valid(close::value code)
+is_valid(close_code code)
 {
     auto const v = static_cast<
         std::uint16_t>(code);
@@ -131,7 +130,7 @@ write(Streambuf& sb, frame_header const& fh)
     using namespace boost::endian;
     std::size_t n;
     std::uint8_t b[14];
-    b[0] = (fh.fin ? 0x80 : 0x00) | fh.op;
+    b[0] = (fh.fin ? 0x80 : 0x00) | static_cast<std::uint8_t>(fh.op);
     b[1] = fh.mask ? 0x80 : 0x00;
     if (fh.len <= 125)
     {
@@ -168,7 +167,7 @@ write(Streambuf& sb, frame_header const& fh)
 template<class Streambuf>
 std::size_t
 read_fh1(frame_header& fh, Streambuf& sb,
-    role_type role, close::value& code)
+    role_type role, close_code& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -187,7 +186,7 @@ read_fh1(frame_header& fh, Streambuf& sb,
     }
     if((fh.mask = (b[1] & 0x80)))
         need += 4;
-    fh.op   = static_cast<opcode::value>(b[0] & 0x0f);
+    fh.op   = static_cast<opcode>(b[0] & 0x0f);
     fh.fin  = b[0] & 0x80;
     fh.rsv1 = b[0] & 0x40;
     fh.rsv2 = b[0] & 0x20;
@@ -195,47 +194,47 @@ read_fh1(frame_header& fh, Streambuf& sb,
     // invalid length for control message
     if(is_control(fh.op) && fh.len > 125)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
     // reserved bits not cleared
     if(fh.rsv1 || fh.rsv2 || fh.rsv3)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
     // reserved opcode
     if(is_reserved(fh.op))
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
     // invalid opcode
     // (only in locally generated headers)
     if(! is_valid(fh.op))
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
     // fragmented control message
     if(is_control(fh.op) && ! fh.fin)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
     // unmasked frame from client
     if(role == role_type::server && ! fh.mask)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
     // masked frame from server
     if(role == role_type::client && fh.mask)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return 0;
     }
-    code = close::none;
+    code = close_code::none;
     return need;
 }
 
@@ -244,7 +243,7 @@ read_fh1(frame_header& fh, Streambuf& sb,
 template<class Streambuf>
 void
 read_fh2(frame_header& fh, Streambuf& sb,
-    role_type role, close::value& code)
+    role_type role, close_code& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -262,7 +261,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
         // length not canonical
         if(fh.len < 126)
         {
-            code = close::protocol_error;
+            code = close_code::protocol_error;
             return;
         }
         break;
@@ -277,7 +276,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
         // length not canonical
         if(fh.len < 65536)
         {
-            code = close::protocol_error;
+            code = close_code::protocol_error;
             return;
         }
         break;
@@ -291,7 +290,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
         fh.key = reinterpret_cast<
             little_uint32_buf_t const*>(&b[0])->value();
     }
-    code = close::none;
+    code = close_code::none;
 }
 
 // Read data from buffers
@@ -300,7 +299,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
 template<class Buffers>
 void
 read(ping_payload_type& data,
-    Buffers const& bs, close::value& code)
+    Buffers const& bs, close_code& code)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
@@ -317,7 +316,7 @@ read(ping_payload_type& data,
 template<class Buffers>
 void
 read(close_reason& cr,
-    Buffers const& bs, close::value& code)
+    Buffers const& bs, close_code& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -328,28 +327,26 @@ read(close_reason& cr,
     if(n == 0)
     {
         cr = close_reason{};
-        code = close::none;
+        code = close_code::none;
         return;
     }
     if(n == 1)
     {
-        code = close::protocol_error;
+        code = close_code::protocol_error;
         return;
     }
     consuming_buffers<Buffers> cb(bs);
     {
         std::uint8_t b[2];
         buffer_copy(buffer(b), cb);
-        cr.code = static_cast<close::value>(
+        cr.code = static_cast<close_code>(
             reinterpret_cast<
                 big_uint16_buf_t const*>(&b[0])->value());
         cb.consume(2);
         n -= 2;
-        // Check cr.code against 0 because
-        // is_valid considers 0 to be valid.
-        if(cr.code == 0 || ! is_valid(cr.code))
+        if(! is_valid(cr.code))
         {
-            code = close::protocol_error;
+            code = close_code::protocol_error;
             return;
         }
     }
@@ -360,7 +357,7 @@ read(close_reason& cr,
         if(! detail::check_utf8(
             cr.reason.data(), cr.reason.size()))
         {
-            code = close::protocol_error;
+            code = close_code::protocol_error;
             return;
         }
     }
@@ -368,7 +365,7 @@ read(close_reason& cr,
     {
         cr.reason = "";
     }
-    code = close::none;
+    code = close_code::none;
 }
 
 } // detail

@@ -23,6 +23,7 @@
 #include <array>
 #include <cassert>
 #include <memory>
+#include <new>
 #include <utility>
 
 namespace beast {
@@ -35,6 +36,8 @@ class invokable
 {
     struct base
     {
+        base() = default;
+        base(base &&) = default;
         virtual ~base() = default;
         virtual void move(void* p) = 0;
         virtual void operator()() = 0;
@@ -46,7 +49,6 @@ class invokable
         F f;
 
         holder(holder&&) = default;
-        holder(holder const&) = default;
 
         template<class U>
         explicit
@@ -82,16 +84,9 @@ class invokable
         sizeof(holder<exemplar>)];
 
     bool b_ = false;
-    buf_type buf_;
+    alignas(holder<exemplar>) buf_type buf_;
 
 public:
-    invokable()
-    {
-    }
-    invokable(invokable const&) = delete;
-    invokable& operator=(invokable&&) = delete;
-    invokable& operator=(invokable const&) = delete;
-
 #ifndef NDEBUG
     ~invokable()
     {
@@ -102,11 +97,35 @@ public:
     }
 #endif
 
+    invokable() = default;
+    invokable(invokable const&) = delete;
+    invokable& operator=(invokable const&) = delete;
+
     invokable(invokable&& other)
         : b_(other.b_)
     {
         if(other.b_)
+        {
             other.get().move(buf_);
+            other.b_ = false;
+        }
+    }
+
+    invokable&
+    operator=(invokable&& other)
+    {
+        // Engaged invokables must be invoked before
+        // assignment otherwise the io_service
+        // invariants are broken w.r.t completions.
+        assert(! b_);
+
+        if(other.b_)
+        {
+            b_ = true;
+            other.get().move(buf_);
+            other.b_ = false;
+        }
+        return *this;
     }
 
     template<class F>
