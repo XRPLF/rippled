@@ -57,7 +57,7 @@ public:
         boost::asio::ip::tcp::acceptor acceptor_;
         socket_type sock_;
         socket<socket_type&> ws_;
-        opcode::value op_;
+        opcode op_;
         beast::streambuf rb_;
         beast::streambuf wb_;
         yield_context* yield_;
@@ -307,7 +307,7 @@ public:
         ws.write(wsproto::opcode::text, true, buffer(s), ec);
         maybe_fail(ec, "write");
         boost::asio::streambuf sb;
-        wsproto::opcode::value op;
+        wsproto::opcode op;
         read(ws, op, sb, ec);
         maybe_fail(ec, "read");
         if(! ec)

@@ -38,7 +38,7 @@ class read_op
     struct data
     {
         socket<Stream>& ws;
-        opcode::value& op;
+        opcode& op;
         Streambuf& sb;
         Handler h;
         msg_info mi;
@@ -46,7 +46,7 @@ class read_op
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
-            socket<Stream>& ws_, opcode::value& op_,
+            socket<Stream>& ws_, opcode& op_,
                 Streambuf& sb_)
             : ws(ws_)
             , op(op_)

@@ -38,7 +38,7 @@ namespace wsproto {
 struct msg_info
 {
     /// Indicates the type of message (binary or text).
-    opcode::value op;
+    opcode op;
 
     /// `true` if all octets for the current message are received.
     bool fin;
@@ -837,7 +837,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(opcode::value op, bool fin,
+    write(opcode op, bool fin,
         ConstBufferSequence const& buffers, error_code& ec);
 
     /** Write an entire frame to a stream before returning.
@@ -864,7 +864,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(opcode::value op, bool fin,
+    write(opcode op, bool fin,
         ConstBufferSequence const& buffers)
     {
         error_code ec;
@@ -899,7 +899,7 @@ public:
     */
     template<class ConstBufferSequence, class WriteHandler>
     auto
-    async_write(opcode::value op, bool fin,
+    async_write(opcode op, bool fin,
         ConstBufferSequence const& buffers,
             WriteHandler&& handler);
 
@@ -956,7 +956,7 @@ private:
 */
 template<class Stream, class Streambuf>
 void
-read(socket<Stream>& ws, opcode::value& op,
+read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf)
 {
     error_code ec;
@@ -985,7 +985,7 @@ read(socket<Stream>& ws, opcode::value& op,
 */
 template<class Stream, class Streambuf>
 void
-read(socket<Stream>& ws, opcode::value& op,
+read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, error_code& ec);
 
 /** Start reading a message asynchronously.
@@ -1021,14 +1021,14 @@ read(socket<Stream>& ws, opcode::value& op,
 */
 template<class Stream, class Streambuf, class ReadHandler>
 auto
-async_read(socket<Stream>& ws, opcode::value& op,
+async_read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, ReadHandler&& handler);
 
 /** Write a complete WebSocket message.
 */
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, opcode::value op,
+write_msg(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& buffers)
 {
     error_code ec;
@@ -1041,13 +1041,13 @@ write_msg(socket<Stream>& ws, opcode::value op,
 */
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, opcode::value op,
+write_msg(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& buffers, error_code& ec);
 
 template<class Stream,
     class ConstBufferSequence, class WriteHandler>
 auto
-async_write(socket<Stream>& ws, opcode::value op,
+async_write(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& buffers, WriteHandler&& handler);
 
 } // wsproto

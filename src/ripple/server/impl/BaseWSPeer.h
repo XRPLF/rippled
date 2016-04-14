@@ -47,7 +47,7 @@ private:
     friend class BasePeer<Impl>;
 
     http_request_type request_;
-    beast::wsproto::opcode::value op_;
+    beast::wsproto::opcode op_;
     beast::streambuf rb_;
     beast::streambuf wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;

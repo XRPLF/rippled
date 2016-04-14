@@ -67,7 +67,7 @@ protected:
     detail::prepared_key_type rd_key_;  // prepared masking key
     detail::utf8_checker rd_utf8_check_;// for current text msg
     std::size_t rd_need_ = 0;           // bytes left in msg frame payload
-    opcode::value rd_opcode_;           // opcode of current msg
+    opcode rd_opcode_;                  // opcode of current msg
     bool rd_cont_ = false;              // expecting a continuation frame
     bool rd_close_ = false;             // got close frame
     op* rd_block_ = nullptr;            // op currently reading
@@ -103,7 +103,7 @@ protected:
 
     template<class Streambuf>
     void
-    write_ping(Streambuf& sb, opcode::value op,
+    write_ping(Streambuf& sb, opcode op,
         ping_payload_type const& data);
 };
 

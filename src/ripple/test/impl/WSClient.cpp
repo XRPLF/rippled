@@ -94,7 +94,7 @@ class WSClientImpl : public WSClient
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
     beast::wsproto::socket<boost::asio::ip::tcp::socket&> ws_;
-    beast::wsproto::opcode::value op_;
+    beast::wsproto::opcode op_;
     beast::streambuf rb_;
 
     // synchronize destructor

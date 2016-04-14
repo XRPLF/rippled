@@ -52,7 +52,7 @@ class socket<Stream>::write_op
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, socket<Stream>& ws_,
-            opcode::value op_, bool fin, Buffers const& bs_)
+            opcode op_, bool fin, Buffers const& bs_)
             : ws(ws_)
             , bs(bs_)
             , h(std::forward<DeducedHandler>(h_))

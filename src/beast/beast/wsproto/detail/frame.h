@@ -37,7 +37,7 @@ namespace detail {
 // Contents of a WebSocket frame header
 struct frame_header
 {
-    opcode::value op;
+    opcode op;
     bool fin;
     bool mask;
     bool rsv1;
@@ -53,11 +53,11 @@ using fh_streambuf =
 
 // holds the largest possible control frame
 using frame_streambuf =
-    static_streambuf_n<14+125>;
+    static_streambuf_n< 2 + 8 + 4 + 125 >;
 
 inline
 bool constexpr
-is_reserved(opcode::value op)
+is_reserved(opcode op)
 {
     return
         (op >= opcode::rsv3  && op <= opcode::rsv7) ||
@@ -66,14 +66,14 @@ is_reserved(opcode::value op)
 
 inline
 bool constexpr
-is_valid(opcode::value op)
+is_valid(opcode op)
 {
-    return op >= 0 && op <= opcode::crsvf;
+    return op <= opcode::crsvf;
 }
 
 inline
 bool constexpr
-is_control(opcode::value op)
+is_control(opcode op)
 {
     return op >= opcode::close;
 }
@@ -131,7 +131,7 @@ write(Streambuf& sb, frame_header const& fh)
     using namespace boost::endian;
     std::size_t n;
     std::uint8_t b[14];
-    b[0] = (fh.fin ? 0x80 : 0x00) | fh.op;
+    b[0] = (fh.fin ? 0x80 : 0x00) | static_cast<std::uint8_t>(fh.op);
     b[1] = fh.mask ? 0x80 : 0x00;
     if (fh.len <= 125)
     {
@@ -187,7 +187,7 @@ read_fh1(frame_header& fh, Streambuf& sb,
     }
     if((fh.mask = (b[1] & 0x80)))
         need += 4;
-    fh.op   = static_cast<opcode::value>(b[0] & 0x0f);
+    fh.op   = static_cast<opcode>(b[0] & 0x0f);
     fh.fin  = b[0] & 0x80;
     fh.rsv1 = b[0] & 0x40;
     fh.rsv2 = b[0] & 0x20;

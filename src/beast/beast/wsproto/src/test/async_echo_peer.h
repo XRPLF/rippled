@@ -53,7 +53,7 @@ private:
             unit_test::suite& suite;
             boost::optional<endpoint_type> ep;
             wsproto::socket<socket_type> ws;
-            wsproto::opcode::value op;
+            wsproto::opcode op;
             beast::streambuf sb;
             int id;
 

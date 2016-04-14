@@ -127,7 +127,7 @@ socket_base::write_close(
 template<class Streambuf>
 void
 socket_base::write_ping(Streambuf& sb,
-    opcode::value op, ping_payload_type const& data)
+    opcode op, ping_payload_type const& data)
 {
     frame_header fh;
     fh.op = op;
@@ -491,7 +491,7 @@ socket<Stream>::async_read_some(msg_info& mi,
 template<class Stream>
 template<class ConstBufferSequence>
 void
-socket<Stream>::write(opcode::value op, bool fin,
+socket<Stream>::write(opcode op, bool fin,
     ConstBufferSequence const& bs, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -540,7 +540,7 @@ socket<Stream>::write(opcode::value op, bool fin,
 template<class Stream>
 template<class ConstBufferSequence, class WriteHandler>
 auto
-socket<Stream>::async_write(opcode::value op, bool fin,
+socket<Stream>::async_write(opcode op, bool fin,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -687,7 +687,7 @@ socket<Stream>::do_read_fh(
 
 template<class Stream, class Streambuf>
 void
-read(socket<Stream>& ws, opcode::value& op,
+read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, error_code& ec)
 {
     msg_info mi;
@@ -704,7 +704,7 @@ read(socket<Stream>& ws, opcode::value& op,
 
 template<class Stream, class Streambuf, class ReadHandler>
 auto
-async_read(socket<Stream>& ws, opcode::value& op,
+async_read(socket<Stream>& ws, opcode& op,
     Streambuf& streambuf, ReadHandler&& handler)
 {
     static_assert(beast::is_Streambuf<Streambuf>::value,
@@ -720,7 +720,7 @@ async_read(socket<Stream>& ws, opcode::value& op,
 
 template<class Stream, class ConstBufferSequence>
 void
-write_msg(socket<Stream>& ws, opcode::value op,
+write_msg(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& bs, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -732,7 +732,7 @@ write_msg(socket<Stream>& ws, opcode::value op,
 template<class Stream,
     class ConstBufferSequence, class WriteHandler>
 auto
-async_write(socket<Stream>& ws, opcode::value op,
+async_write(socket<Stream>& ws, opcode op,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<
