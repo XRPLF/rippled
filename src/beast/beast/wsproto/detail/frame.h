@@ -53,7 +53,7 @@ using fh_streambuf =
 
 // holds the largest possible control frame
 using frame_streambuf =
-    static_streambuf_n<139>; // 14 + 125
+    static_streambuf_n<14+125>;
 
 inline
 bool constexpr
