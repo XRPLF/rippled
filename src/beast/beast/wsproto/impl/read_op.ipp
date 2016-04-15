@@ -29,43 +29,22 @@ namespace detail {
 
 // read an entire message
 //
-template<class Stream, class Streambuf, class Handler>
-class read_op
+template<class Stream, class Streambuf, class Handler, class Data>
+class op_imp
 {
     using alloc_type =
         handler_alloc<char, Handler>;
 
-    struct data
-    {
-        socket<Stream>& ws;
-        opcode& op;
-        Streambuf& sb;
-        Handler h;
-        msg_info mi;
-        int state = 0;
-
-        template<class DeducedHandler>
-        data(DeducedHandler&& h_,
-            socket<Stream>& ws_, opcode& op_,
-                Streambuf& sb_)
-            : ws(ws_)
-            , op(op_)
-            , sb(sb_)
-            , h(std::forward<DeducedHandler>(h_))
-        {
-        }
-    };
-
-    std::shared_ptr<data> d_;
+    std::shared_ptr<Data> d_;
 
 public:
-    read_op(read_op&&) = default;
-    read_op(read_op const&) = default;
+    op_imp(op_imp&&) = default;
+    op_imp(op_imp const&) = default;
 
     template<class DeducedHandler, class... Args>
-    read_op(DeducedHandler&& h,
+    op_imp(DeducedHandler&& h,
             socket<Stream>& ws, Args&&... args)
-        : d_(std::allocate_shared<data>(alloc_type{h},
+        : d_(std::allocate_shared<Data>(alloc_type{h},
             std::forward<DeducedHandler>(h), ws,
                 std::forward<Args>(args)...))
     {
@@ -83,11 +62,14 @@ public:
     }
 
     void operator()(error_code const& ec,
-        std::size_t bytes_transferred);
+        std::size_t bytes_transferred)
+    {
+        (*d_)(*this, ec, bytes_transferred);
+    }
 
     friend
     auto asio_handler_allocate(
-        std::size_t size, read_op* op)
+        std::size_t size, op_imp* op)
     {
         return boost_asio_handler_alloc_helpers::
             allocate(size, op->d_->h);
@@ -95,14 +77,14 @@ public:
 
     friend
     auto asio_handler_deallocate(
-        void* p, std::size_t size, read_op* op)
+        void* p, std::size_t size, op_imp* op)
     {
         return boost_asio_handler_alloc_helpers::
             deallocate(p, size, op->d_->h);
     }
 
     friend
-    auto asio_handler_is_continuation(read_op* op)
+    auto asio_handler_is_continuation(op_imp* op)
     {
         return op->d_->state >= 1 ||
             boost_asio_handler_cont_helpers::
@@ -111,7 +93,7 @@ public:
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, read_op* op)
+    auto asio_handler_invoke(Function&& f, op_imp* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -119,39 +101,62 @@ public:
 };
 
 template<class Stream, class Streambuf, class Handler>
-void
-read_op<Stream, Streambuf,
-    Handler>::operator()(error_code const& ec,
-        std::size_t bytes_transferred)
+struct read_op_data
 {
-    auto& d = *d_;
-    while(! ec && d.state != 99)
-    {
-        switch(d.state)
-        {
-        case 0:
-        case 1:
-            // read payload
-            d.state = 2;
-            d.ws.async_read_some(
-                d.mi, d.sb, std::move(*this));
-            return;
+    socket<Stream>& ws;
+    opcode& op;
+    Streambuf& sb;
+    Handler h;
+    msg_info mi;
+    int state = 0;
 
-        // got payload
-        case 2:
-            d.op = d.mi.op;
-            if(! d.mi.fin)
-            {
-                d.state = 1;
-                break;
-            }
-            // call handler
-            d.state = 99;
-            break;
-        }
+    template<class DeducedHandler>
+    read_op_data(DeducedHandler&& h_,
+         socket<Stream>& ws_, opcode& op_,
+         Streambuf& sb_)
+            : ws(ws_)
+            , op(op_)
+            , sb(sb_)
+            , h(std::forward<DeducedHandler>(h_))
+    {
     }
-    d.h(ec);
-}
+
+    template<class Op>
+    void operator()(Op&& op, error_code const& ec,
+            std::size_t bytes_transferred)
+    {
+        auto& d = *this; //TBD
+        while(! ec && d.state != 99)
+        {
+            switch(d.state)
+            {
+                case 0:
+                case 1:
+                    // read payload
+                    d.state = 2;
+                    d.ws.async_read_some(
+                        d.mi, d.sb, std::move(op));
+                    return;
+
+                    // got payload
+                case 2:
+                    d.op = d.mi.op;
+                    if(! d.mi.fin)
+                    {
+                        d.state = 1;
+                        break;
+                    }
+                    // call handler
+                    d.state = 99;
+                    break;
+            }
+        }
+        d.h(ec);
+    }
+};
+
+template<class Stream, class Streambuf, class Handler>
+using read_op = op_imp<Stream, Streambuf, Handler, read_op_data<Stream, Streambuf, Handler>>;
 
 } // detail
 } // wsproto
