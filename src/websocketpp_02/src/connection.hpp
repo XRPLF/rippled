@@ -1404,6 +1404,8 @@ public:
 
             log_close_result();
         }
+        else
+            m_state = session::state::CLOSED;
 
         // finally remove this connection from the endpoint's list. This will
         // remove the last shared pointer to the connection held by WS++. If we
