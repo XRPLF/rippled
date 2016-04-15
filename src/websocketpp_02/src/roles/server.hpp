@@ -914,7 +914,8 @@ void server<endpoint>::connection<connection_type>::handle_write_response(
         return;
     }
 
-    if (m_response.get_status_code() != http::status_code::SWITCHING_PROTOCOLS) {
+    if (m_response.get_status_code() != http::status_code::SWITCHING_PROTOCOLS ||
+        m_connection.m_state == session::state::CLOSED) {
         if (m_version == -1) {
             // if this was not a websocket connection, we have written
             // the expected response and the connection can be closed.
