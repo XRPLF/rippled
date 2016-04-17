@@ -52,7 +52,7 @@ struct Port
     std::shared_ptr<boost::asio::ssl::context> context;
 
     // How many incoming connections are allowed on this
-    // port; 0 means unlimited.
+    // port in the range [0, 65535] where 0 means unlimited.
     int limit = 0;
 
     // Returns `true` if any websocket protocols are specified

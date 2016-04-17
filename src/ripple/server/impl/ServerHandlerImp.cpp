@@ -100,9 +100,7 @@ ServerHandlerImp::onAccept (Session& session,
 {
     std::lock_guard<std::mutex> l(countlock_);
 
-    auto& c = count_[session.port()];
-
-    c++;
+    auto const c = ++count_[session.port()];
 
     if (session.port().limit && c >= session.port().limit)
     {
@@ -198,7 +196,7 @@ ServerHandlerImp::onClose (Session& session,
     boost::system::error_code const&)
 {
     std::lock_guard<std::mutex> l(countlock_);
-    count_[session.port()]--;
+    --count_[session.port()];
 }
 
 void
