@@ -74,11 +74,18 @@ adjustDescriptorLimit(int needed)
 
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
-        available = rl.rlim_cur;
+        // If the limit is infnite, then we are good.
+        if (rl.rlim_cur == RLIM_INFINITY)
+            available = needed;
+        else
+            available = rl.rlim_cur;
 
-        if (rl.rlim_cur != rl.rlim_max)
+        if (available < needed)
         {
-            rl.rlim_cur = rl.rlim_max;
+            // Ignore the rlim_max, as the process may
+            // be configured to override it anyways. We
+            // ask for the number descriptors we need.
+            rl.rlim_cur = needed;
 
             if (setrlimit(RLIMIT_NOFILE, &rl) == 0)
                 available = rl.rlim_cur;
