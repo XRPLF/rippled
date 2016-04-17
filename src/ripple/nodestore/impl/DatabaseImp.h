@@ -61,6 +61,8 @@ private:
     std::vector <std::thread> m_readThreads;
     bool                      m_readShut;
     uint64_t                  m_readGen;        // current read generation
+    int                       fdlimit_;
+
 public:
     DatabaseImp (std::string const& name,
                  Scheduler& scheduler,
@@ -83,8 +85,10 @@ public:
         , m_fetchSize (0)
     {
         for (int i = 0; i < readThreads; ++i)
-            m_readThreads.push_back (std::thread (&DatabaseImp::threadEntry,
-                    this));
+            m_readThreads.emplace_back (&DatabaseImp::threadEntry, this);
+
+        if (m_backend)
+            fdlimit_ = m_backend->fdlimit();
     }
 
     ~DatabaseImp ()
@@ -430,6 +434,11 @@ public:
     std::uint32_t getFetchSize () const override
     {
         return m_fetchSize;
+    }
+
+    int fdlimit() const override
+    {
+        return fdlimit_;
     }
 
 private:

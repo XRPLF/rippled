@@ -51,6 +51,10 @@ struct Port
     std::string ssl_chain;
     std::shared_ptr<boost::asio::ssl::context> context;
 
+    // How many incoming connections are allowed on this
+    // port in the range [0, 65535] where 0 means unlimited.
+    int limit = 0;
+
     // Returns `true` if any websocket protocols are specified
     bool websockets() const;
 
@@ -77,6 +81,7 @@ struct ParsedPort
     std::string ssl_key;
     std::string ssl_cert;
     std::string ssl_chain;
+    int limit = 0;
 
     boost::optional<boost::asio::ip::address> ip;
     boost::optional<std::uint16_t> port;

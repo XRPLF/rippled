@@ -78,7 +78,14 @@ SSLHTTPPeer::SSLHTTPPeer (Port const& port, Handler& handler,
 void
 SSLHTTPPeer::run()
 {
-    handler_.onAccept (session());
+    if (!handler_.onAccept (session(), remote_address_))
+    {
+        boost::asio::spawn (strand_,
+            std::bind (&SSLHTTPPeer::do_close,
+                shared_from_this()));
+        return;
+    }
+
     if (! stream_.lowest_layer().is_open())
         return;
 

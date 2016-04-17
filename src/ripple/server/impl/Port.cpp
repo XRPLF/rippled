@@ -19,9 +19,10 @@
 
 #include <ripple/server/Port.h>
 #include <beast/http/rfc2616.h>
+#include <beast/module/core/text/LexicalCast.h>
 
 namespace ripple {
-        
+
 bool
 Port::websockets() const
 {
@@ -159,20 +160,22 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         auto const result = section.find("port");
         if (result.second)
         {
-            auto const ul = std::stoul(result.first);
-            if (ul > std::numeric_limits<std::uint16_t>::max())
+            try
             {
-                log << "Value '" << result.first
-                    << "' for key 'port' is out of range\n";
-                Throw<std::exception> ();
+                port.port =
+                    beast::lexicalCastThrow<std::uint16_t>(result.first);
+
+                // Port 0 is not supported
+                if (*port.port == 0)
+                    Throw<std::exception> ();
             }
-            if (ul == 0)
+            catch (std::exception const& ex)
             {
                 log <<
-                    "Value '0' for key 'port' is invalid\n";
-                Throw<std::exception> ();
+                    "Invalid value '" << result.first << "' for key " <<
+                    "'port' in [" << section.name() << "]\n";
+                Throw();
             }
-            port.port = static_cast<std::uint16_t>(ul);
         }
     }
 
@@ -183,6 +186,26 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             for (auto const& s : beast::rfc2616::split_commas(
                     result.first.begin(), result.first.end()))
                 port.protocol.insert(s);
+        }
+    }
+
+    {
+        auto const lim = get (section, "limit", "unlimited");
+
+        if (!beast::ci_equal (lim, "unlimited"))
+        {
+            try
+            {
+                port.limit = static_cast<int> (
+                    beast::lexicalCastThrow<std::uint16_t>(lim));
+            }
+            catch (std::exception const& ex)
+            {
+                log <<
+                    "Invalid value '" << lim << "' for key " <<
+                    "'limit' in [" << section.name() << "]\n";
+                Throw();
+            }
         }
     }
 
