@@ -160,20 +160,22 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         auto const result = section.find("port");
         if (result.second)
         {
-            auto const ul = std::stoul(result.first);
-            if (ul > std::numeric_limits<std::uint16_t>::max())
+            try
             {
-                log << "Value '" << result.first
-                    << "' for key 'port' is out of range\n";
-                Throw<std::exception> ();
+                port.port =
+                    beast::lexicalCastThrow<std::uint16_t>(result.first);
+
+                // Port 0 is not supported
+                if (*port.port == 0)
+                    Throw<std::exception> ();
             }
-            if (ul == 0)
+            catch (std::exception const& ex)
             {
                 log <<
-                    "Value '0' for key 'port' is invalid\n";
-                Throw<std::exception> ();
+                    "Invalid value '" << result.first << "' for key " <<
+                    "'port' in [" << section.name() << "]\n";
+                Throw();
             }
-            port.port = static_cast<std::uint16_t>(ul);
         }
     }
 
