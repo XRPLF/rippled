@@ -25,7 +25,7 @@
 #include <ripple/net/InfoSub.h>
 #include <ripple/server/Role.h>
 
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 

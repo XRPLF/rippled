@@ -27,7 +27,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <memory>
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <deque>
 #include <tuple>
@@ -243,7 +243,7 @@ std::unique_ptr<NetworkOPs>
 make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock, bool standalone,
     std::size_t network_quorum, bool start_valid,
     JobQueue& job_queue, LedgerMaster& ledgerMaster,
-    beast::Stoppable& parent, beast::Journal journal);
+    Stoppable& parent, beast::Journal journal);
 
 } // ripple
 

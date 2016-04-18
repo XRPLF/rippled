@@ -24,7 +24,7 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format.hpp>
 

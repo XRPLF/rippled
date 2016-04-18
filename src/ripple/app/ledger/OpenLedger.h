@@ -27,7 +27,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/core/Config.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <cassert>
 #include <mutex>
 

@@ -21,11 +21,8 @@
 #define BEAST_UNIT_TEST_SUITE_LIST_H_INCLUDED
 
 #include <beast/unit_test/suite_info.h>
-
-#include <beast/container/const_container.h>
-
+#include <beast/unit_test/const_container.h>
 #include <cassert>
-//#include <list>
 #include <typeindex>
 #include <set>
 #include <unordered_set>

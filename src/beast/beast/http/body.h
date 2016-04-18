@@ -29,7 +29,7 @@
 #include <string>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
 
 /** Container for the HTTP content-body. */
 class body
@@ -144,7 +144,7 @@ body::data() const
     return buf_->data();
 }
 
-} // http
+} // deprecated_http
 } // beast
 
 #endif

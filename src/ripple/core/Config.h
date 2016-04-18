@@ -26,10 +26,10 @@
 #include <ripple/protocol/PublicKey.h> // NIKB Breaks levelization (TEMP)
 #include <ripple/protocol/SecretKey.h> // NIKB Breaks levelization (TEMP)
 #include <ripple/json/json_value.h>
-#include <beast/http/URL.h>
-#include <beast/net/IPEndpoint.h>
-#include <beast/utility/ci_char_traits.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/net/URL.h>
+#include <ripple/beast/net/IPEndpoint.h>
+#include <beast/ci_char_traits.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/asio/ip/tcp.hpp> // VFALCO FIX: This include should not be here
 #include <boost/filesystem.hpp> // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>

@@ -22,8 +22,8 @@
 
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/Store.h>
-#include <beast/utility/Journal.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/beast/utility/PropertyStream.h>
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>

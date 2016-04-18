@@ -22,9 +22,9 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/json/json_value.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/utility/PropertyStream.h>
-#include <beast/utility/Journal.h>
+#include <ripple/core/Stoppable.h>
+#include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/beast/utility/Journal.h>
 #include <memory>
 
 namespace ripple {
@@ -32,7 +32,7 @@ namespace detail {
 
 /** Check the ledger/transaction databases to make sure they have continuity */
 class LedgerCleaner
-    : public beast::Stoppable
+    : public Stoppable
     , public beast::PropertyStream::Source
 {
 protected:
@@ -57,7 +57,7 @@ public:
 
 std::unique_ptr<LedgerCleaner>
 make_LedgerCleaner (Application& app,
-    beast::Stoppable& parent, beast::Journal journal);
+    Stoppable& parent, beast::Journal journal);
 
 } // detail
 } // ripple

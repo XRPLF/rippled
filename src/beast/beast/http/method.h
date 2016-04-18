@@ -91,7 +91,7 @@ operator<< (Stream& s, method_t m)
 std::string
 status_text (int status);
 
-}
-}
+} // http
+} // beast
 
 #endif

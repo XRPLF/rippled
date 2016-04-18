@@ -34,7 +34,7 @@
 #include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/types.h>
 #include <ripple/protocol/impl/STVar.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <cassert>
 #include <memory>
 

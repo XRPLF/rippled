@@ -30,7 +30,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 #define SOCI_USE_BOOST
 #include <soci/soci.h>
 #include <string>

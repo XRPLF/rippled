@@ -21,7 +21,6 @@
 #define BEAST_NUDB_FIELD_H_INCLUDED
 
 #include <beast/nudb/detail/stream.h>
-#include <beast/config/CompilerConfig.h> // for BEAST_CONSTEXPR
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -45,43 +44,43 @@ struct field;
 template <>
 struct field <std::uint8_t>
 {
-    static std::size_t BEAST_CONSTEXPR size = 1;
-    static std::size_t BEAST_CONSTEXPR max = 0xff;
+    static std::size_t constexpr size = 1;
+    static std::size_t constexpr max = 0xff;
 };
 
 template <>
 struct field <std::uint16_t>
 {
-    static std::size_t BEAST_CONSTEXPR size = 2;
-    static std::size_t BEAST_CONSTEXPR max = 0xffff;
+    static std::size_t constexpr size = 2;
+    static std::size_t constexpr max = 0xffff;
 };
 
 template <>
 struct field <uint24_t>
 {
-    static std::size_t BEAST_CONSTEXPR size = 3;
-    static std::size_t BEAST_CONSTEXPR max = 0xffffff;
+    static std::size_t constexpr size = 3;
+    static std::size_t constexpr max = 0xffffff;
 };
 
 template <>
 struct field <std::uint32_t>
 {
-    static std::size_t BEAST_CONSTEXPR size = 4;
-    static std::size_t BEAST_CONSTEXPR max = 0xffffffff;
+    static std::size_t constexpr size = 4;
+    static std::size_t constexpr max = 0xffffffff;
 };
 
 template <>
 struct field <uint48_t>
 {
-    static std::size_t BEAST_CONSTEXPR size = 6;
-    static std::size_t BEAST_CONSTEXPR max = 0x0000ffffffffffff;
+    static std::size_t constexpr size = 6;
+    static std::size_t constexpr max = 0x0000ffffffffffff;
 };
 
 template <>
 struct field <std::uint64_t>
 {
-    static std::size_t BEAST_CONSTEXPR size = 8;
-    static std::size_t BEAST_CONSTEXPR max = 0xffffffffffffffff;
+    static std::size_t constexpr size = 8;
+    static std::size_t constexpr max = 0xffffffffffffffff;
 };
 
 // read field from memory

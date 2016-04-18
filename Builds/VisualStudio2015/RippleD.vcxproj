@@ -236,140 +236,105 @@
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\append_buffers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\async_completion.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_debug.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\buffers_readstream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\consuming_buffers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\error.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\impl\error.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\impl\IPAddressConversion.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
+    <ClInclude Include="..\..\src\beast\beast\asio\handler_alloc.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\IPAddressConversion.h">
+    <None Include="..\..\src\beast\beast\asio\impl\buffers_readstream.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\read_until.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\beast_asio_error.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_bind_handler_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_buffers_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_error_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\clock\abstract_clock.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\clock\basic_seconds_clock.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\clock\chrono_util.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\clock\manual_clock.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\clock\tests\beast_abstract_clock_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\error_test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\boost\ErrorCode.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\ByteOrder.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\chrono\abstract_clock.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\chrono\basic_seconds_clock.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\chrono\Chrono.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\chrono\chrono_util.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\chrono\impl\RelativeTime.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\chrono\manual_clock.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\chrono\RelativeTime.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\chrono\tests\abstract_clock.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\chrono\tests\basic_seconds_clock.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\Config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\CompilerConfig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\ConfigCheck.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\PlatformConfig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\SelectCompilerConfig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\SelectStdlibConfig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\StandardConfig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\config\Suffix.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_container.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_container_utility.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_map.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_multimap.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_multiset.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_set.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_unordered_map.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_unordered_multimap.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_unordered_multiset.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\aged_unordered_set.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\const_container.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\container\Container.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\container\detail\aged_associative_container.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\detail\aged_container_iterator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\detail\aged_ordered_container.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\container\detail\aged_unordered_container.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\container\tests\aged_associative_container.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\clock\tests\beast_basic_seconds_clock_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\ripemd_context.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha_context.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\sha.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\crypto\tests\beast_base64_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\cxx14\type_traits.h">
+    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
     </ClInclude>
@@ -390,6 +355,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\hash\impl\xxhash.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\hash\meta.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\siphash.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\spooky.h">
@@ -406,7 +373,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\hash\xxhasher.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
+    <ClInclude Include="..\..\src\beast\beast\http.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_parser.h">
     </ClInclude>
@@ -414,222 +381,89 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\chunk_encode.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\detail\error.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\detail\writes.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\empty_body.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\error.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\fields.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\headers.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\HTTP.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\basic_parser.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <None Include="..\..\src\beast\beast\http\impl\basic_parser.ipp">
+    </None>
     <ClCompile Include="..\..\src\beast\beast\http\impl\http-parser\http_parser.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\impl\http-parser\http_parser.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\joyent_parser.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\http\impl\joyent_parser.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\method.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <None Include="..\..\src\beast\beast\http\impl\message.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\http\impl\read.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\http\impl\write.ipp">
+    </None>
     <ClInclude Include="..\..\src\beast\beast\http\message.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\method.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\parser.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\read.h">
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\http\README.md">
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\http\reason.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\resume_context.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\rfc2616.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\chunked_encoder.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\http\src\beast_http_method.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\parser.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\http\src\beast_http_nodejs_parser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\rfc2616.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClInclude Include="..\..\src\beast\beast\http\src\nodejs_parser.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_chunked_encoder_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\URL.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_message_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_parser_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\http\tests\urls_large_data.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\URL.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Insight.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Base.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\BaseImpl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Collector.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Counter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\CounterImpl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Event.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\EventImpl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Gauge.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\GaugeImpl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Group.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Groups.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\Hook.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\HookImpl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\Collector.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_rfc2616_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\Group.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_urls_large_data.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\Groups.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\Hook.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\Metric.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\NullCollector.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\impl\StatsDCollector.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\insight\Insight.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\insight\Meter.h">
+    <ClInclude Include="..\..\src\beast\beast\http\src\test\urls_large_data.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\MeterImpl.h">
+    <ClInclude Include="..\..\src\beast\beast\http\streambuf_body.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\NullCollector.h">
+    <ClInclude Include="..\..\src\beast\beast\http\string_body.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\StatsDCollector.h">
+    <ClInclude Include="..\..\src\beast\beast\http\type_check.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Intrusive.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\intrusive\List.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\intrusive\LockFreeStack.h">
+    <ClInclude Include="..\..\src\beast\beast\http\write.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\is_call_possible.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Memory.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\AsyncObject.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\core.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\core.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\diagnostic\FatalError.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\diagnostic\FatalError.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\diagnostic\MeasureFunctionCallTime.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\diagnostic\SemanticVersion.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\diagnostic\SemanticVersion.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\diagnostic\UnitTestUtilities.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\diagnostic\UnitTestUtilities.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\native\BasicNativeHeaders.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\bsd_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\linux_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <None Include="..\..\src\beast\beast\module\core\native\mac_SystemStats.mm">
-    </None>
-    <ClInclude Include="..\..\src\beast\beast\module\core\native\osx_ObjCHelpers.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\StandardIncludes.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\system\SystemStats.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\SystemStats.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\text\LexicalCast.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\text\LexicalCast.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\thread\Workers.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\time\Time.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\time\Time.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\net\detail\Parse.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV4.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV6.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\IPEndpoint.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\net\IPAddress.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\net\IPAddressV4.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\net\IPAddressV6.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\net\IPEndpoint.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\net\Net.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\nudb.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\api.h">
@@ -700,14 +534,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\nudb\win32_file.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\rngfill.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedObject.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedPtr.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\abstract_ostream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\basic_abstract_ostream.h">
@@ -718,42 +544,51 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\streams\streams.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\streams\tests\beast_basic_abstract_ostream_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\streams\tests\basic_abstract_ostream.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\test\beast_empty_base_optimization_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\Threads.h">
+    <ClInclude Include="..\..\src\beast\beast\type_name.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_clock_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\Thread.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_crypto_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\threads\impl\WaitableEvent.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_hash_unity.cpp">
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\Thread.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\Threads.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\unity\hash_unity.cpp">
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_streams_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_test_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\unity\beast_wsproto_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\amount.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\unit_test\const_container.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unit_test\define_print.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -778,64 +613,67 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\suite_list.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\unit_test\temp_dir.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\ci_char_traits.h">
+    <ClInclude Include="..\..\src\beast\beast\wsproto.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Debug.h">
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\decorator.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\empty_base_optimization.h">
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\frame.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\Debug.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\hybi13.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\invokable.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\mask.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\socket_base.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\detail\utf8_checker.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\error.h">
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\wsproto\impl\accept_op.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\close_op.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\handshake_op.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\read_op.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\read_some_op.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\response_op.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\socket.ipp">
+    </None>
+    <None Include="..\..\src\beast\beast\wsproto\impl\write_op.ipp">
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\option.h">
+    </ClInclude>
+    <None Include="..\..\src\beast\beast\wsproto\README.md">
+    </None>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\rfc6455.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\socket.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\async_echo_peer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_echo_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\Journal.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\PropertyStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
+    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\sync_echo_peer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\make_lock.h">
+    <ClInclude Include="..\..\src\beast\beast\wsproto\static_string.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\meta.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\empty_base_optimization.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\tagged_integer.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\weak_fn.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\utility\type_name.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\utility\Utility.unity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\utility\WrappedSink.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Version.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\win32_workaround.h">
+    <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\xor_shift_engine.h">
     </ClInclude>
@@ -1794,6 +1632,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\make_lock.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\make_SSLContext.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\mulDiv.h">
@@ -1809,6 +1649,8 @@
     <ClInclude Include="..\..\src\ripple\basics\Resolver.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ResolverAsio.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\ScopedLock.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Slice.h">
     </ClInclude>
@@ -1864,11 +1706,301 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\UptimeTimer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\win32_workaround.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_container.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_container_utility.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_map.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_multimap.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_multiset.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_set.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_unordered_map.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_unordered_multimap.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_unordered_multiset.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\aged_unordered_set.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\detail\aged_associative_container.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\detail\aged_container_iterator.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\detail\aged_ordered_container.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\container\detail\aged_unordered_container.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\container\tests\aged_associative_container.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\BasicNativeHeaders.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\bsd_SystemStats.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\ByteOrder.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\CompilerConfig.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\Config.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\ConfigCheck.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\core.unity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\core\FatalError.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\FatalError.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\HeapBlock.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\LexicalCast.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\LexicalCast.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\linux_SystemStats.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\List.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\LockFreeStack.h">
+    </ClInclude>
+    <None Include="..\..\src\ripple\beast\core\mac_SystemStats.mm">
+    </None>
+    <ClInclude Include="..\..\src\ripple\beast\core\MeasureFunctionCallTime.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\Memory.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\osx_ObjCHelpers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\PlatformConfig.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\RelativeTime.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\RelativeTime.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\SemanticVersion.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\SemanticVersion.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\SharedObject.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\SharedPtr.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\StandardConfig.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\core\StandardIncludes.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\SystemStats.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\Thread.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\Thread.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\Time.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\Time.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\WaitableEvent.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\WaitableEvent.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\core\win32_SystemStats.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Base.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\BaseImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Collector.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Counter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\CounterImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Event.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\EventImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Gauge.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\GaugeImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Group.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Groups.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Hook.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\HookImpl.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\Collector.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\Group.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\Groups.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\Hook.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\Metric.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\NullCollector.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\insight\impl\StatsDCollector.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Insight.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\Meter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\MeterImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\NullCollector.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\insight\StatsDCollector.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\net\detail\Parse.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\IPAddressConversion.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\IPAddressV4.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\IPAddressV6.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\IPEndpoint.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\impl\URL.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\net\IPAddress.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\net\IPAddressConversion.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\net\IPAddressV4.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\net\IPAddressV6.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\net\IPEndpoint.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_http_URL_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\net\tests\IPEndpoint.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\net\URL.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\unity\beast_container_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\unity\beast_insight_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\unity\beast_net_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\unity\beast_utility_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\utility\Debug.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\Journal.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\maybe_const.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\PropertyStream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\rngfill.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\utility\src\beast_Debug.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\utility\src\beast_Journal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\utility\src\beast_PropertyStream.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\utility\tagged_integer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\utility\test\beast_Journal_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\utility\test\beast_tagged_integer_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\utility\test\beast_weak_fn_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\utility\test\beast_Zero_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\utility\weak_fn.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\WrappedSink.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\Zero.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\ConfigSections.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\DatabaseCon.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\DeadlineTimer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\Config.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -1877,6 +2009,12 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\DatabaseCon.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\DeadlineTimer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1918,6 +2056,8 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\core\impl\semaphore.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\SNTPClock.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1932,12 +2072,26 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\Stoppable.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\TimeKeeper.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\Workers.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\core\impl\Workers.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\JobCoro.h">
@@ -1960,6 +2114,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\Stoppable.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\tests\Config.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1979,6 +2135,12 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\SociDB.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\tests\Stoppable.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3333,6 +3495,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\BaseHTTPPeer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BasePeer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\BaseWSPeer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3348,6 +3514,8 @@
     <ClInclude Include="..\..\src\ripple\server\impl\JSONRPCUtil.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\PlainHTTPPeer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainWSPeer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -3370,6 +3538,8 @@
     <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\SSLHTTPPeer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
     </ClInclude>
@@ -3394,6 +3564,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\Writer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\WSSession.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\Family.h">
     </ClInclude>
@@ -3689,8 +3861,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\beast.cpp">
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\beastc.c">
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
@@ -3816,10 +3986,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\wsproto\basic_socket.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\wsproto\wsproto.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -4684,9 +4850,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\sqlite\sqlite.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\sqlite\sqlite.unity.c">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\sqlite\sqlite3.h">
     </ClInclude>
     <ClCompile Include="..\..\src\sqlite\sqlite\sqlite3.c">
@@ -4694,6 +4857,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\sqlite\sqlite\sqlite3.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\sqlite\sqlite_unity.c">
+    </ClCompile>
     <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

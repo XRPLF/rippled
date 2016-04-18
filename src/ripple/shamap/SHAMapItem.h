@@ -24,7 +24,7 @@
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/Serializer.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 #include <cstddef>
 

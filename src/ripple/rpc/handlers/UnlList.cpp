@@ -22,13 +22,13 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 
 Json::Value doUnlList (RPC::Context& context)
 {
-    auto lock = beast::make_lock(context.app.getMasterMutex());
+    auto lock = make_lock(context.app.getMasterMutex());
     Json::Value obj (Json::objectValue);
 
     context.app.validators().for_each (

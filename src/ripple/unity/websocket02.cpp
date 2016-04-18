@@ -24,7 +24,7 @@
 #endif
 #include <stdint.h>
 
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 
 // Must come first to prevent compilation errors.
 #include <websocketpp_02/src/uri.cpp>

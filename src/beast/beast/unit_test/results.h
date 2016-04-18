@@ -20,7 +20,7 @@
 #ifndef BEAST_UNIT_TEST_RESULTS_H_INCLUDED
 #define BEAST_UNIT_TEST_RESULTS_H_INCLUDED
 
-#include <beast/container/const_container.h>
+#include <beast/unit_test/const_container.h>
 
 #include <string>
 #include <vector>

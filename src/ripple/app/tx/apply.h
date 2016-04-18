@@ -24,7 +24,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <memory>
 #include <utility>
 

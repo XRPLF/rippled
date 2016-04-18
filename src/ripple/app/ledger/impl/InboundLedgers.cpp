@@ -26,8 +26,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/container/aged_map.h>
+#include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/container/aged_map.h>
 #include <memory>
 #include <mutex>
 
@@ -35,7 +35,7 @@ namespace ripple {
 
 class InboundLedgersImp
     : public InboundLedgers
-    , public beast::Stoppable
+    , public Stoppable
 {
 private:
     Application& app_;
@@ -441,7 +441,7 @@ InboundLedgers::~InboundLedgers()
 
 std::unique_ptr<InboundLedgers>
 make_InboundLedgers (Application& app,
-    InboundLedgers::clock_type& clock, beast::Stoppable& parent,
+    InboundLedgers::clock_type& clock, Stoppable& parent,
     beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<InboundLedgersImp> (app, clock, parent, collector);

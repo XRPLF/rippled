@@ -21,7 +21,7 @@
 #define RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
-#include <beast/Insight.h>
+#include <ripple/beast/insight/Insight.h>
 
 namespace ripple {
 
