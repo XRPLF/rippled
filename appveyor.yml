@@ -39,7 +39,9 @@ install:
   - python get-pip.py
 
   # Pip has some problems installing scons on windows so we use easy install.
-  - easy_install scons
+  # - easy_install scons
+  # Workaround
+  - easy_install https://pypi.python.org/packages/source/S/SCons/scons-2.5.0.tar.gz#md5=bda5530a70a41a7831d83c8b191c021e
 
   # Scons has problems with parallel builds on windows without pywin32.
   - easy_install pywin32-219.win-amd64-py2.7.exe
