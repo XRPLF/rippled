@@ -186,7 +186,8 @@ flow (
                 if (strand[i]->dry (r.second) ||
                     !strand[i]->equalIn (r.first, stepIn))
                 {
-                    // limiting step forward
+                    // The limits should already have been found, so executing a strand forward
+                    // from the limiting step should not find a new limit
                     JLOG (j.fatal()) << "Re-executed forward pass failed";
                     assert (0);
                     return {telFAILED_PROCESSING, std::move (ofrsToRm)};

@@ -553,6 +553,8 @@ BookStep<TIn, TOut>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
+    // Do not allow two books to output the same issue. This may cause offers on
+    // one step to unfund offers in another step.
     if (!ctx.seenBookOuts.insert (book_.out).second ||
         ctx.seenDirectIssues[0].count (book_.out))
     {
