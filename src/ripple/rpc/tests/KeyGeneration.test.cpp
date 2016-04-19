@@ -74,9 +74,11 @@ static key_strings const ed25519_strings =
 class WalletPropose_test : public ripple::TestSuite
 {
 public:
-    void testRandomWallet()
+    void testRandomWallet(boost::optional<std::string> const& keyType)
     {
         Json::Value params;
+        if (keyType)
+            params[jss::key_type] = *keyType;
         Json::Value result = walletPropose (params);
 
         expect (! contains_error (result));
@@ -86,6 +88,11 @@ public:
         expect (result.isMember (jss::master_seed_hex));
         expect (result.isMember (jss::public_key));
         expect (result.isMember (jss::public_key_hex));
+        expect (result.isMember (jss::key_type));
+
+        expectEquals (result[jss::key_type],
+            params.isMember (jss::key_type) ? params[jss::key_type]
+                                            : "secp256k1");
 
         std::string seed = result[jss::master_seed].asString();
 
@@ -106,55 +113,85 @@ public:
         expectEquals (result[jss::master_seed_hex], s.master_seed_hex);
         expectEquals (result[jss::public_key], s.public_key);
         expectEquals (result[jss::public_key_hex], s.public_key_hex);
+        expectEquals (result[jss::key_type],
+            params.isMember (jss::key_type) ? params[jss::key_type]
+                                            : "secp256k1");
     }
 
-    void testLegacyPassphrase (char const* value)
+    void testSeed (boost::optional<std::string> const& keyType,
+        key_strings const& strings)
     {
-        testcase (value);
+        testcase ("seed");
 
         Json::Value params;
-        params[jss::passphrase] = value;
-
-        testSecretWallet (params, secp256k1_strings);
-    }
-
-    void testLegacyPassphrase()
-    {
-        testLegacyPassphrase (common::passphrase);
-        testLegacyPassphrase (secp256k1_strings.master_key);
-        testLegacyPassphrase (secp256k1_strings.master_seed);
-        testLegacyPassphrase (secp256k1_strings.master_seed_hex);
-    }
-
-    void testKeyType (char const* keyType, key_strings const& strings)
-    {
-        testcase (keyType);
-
-        Json::Value params;
-        params[jss::key_type] = keyType;
-
-        expect (! contains_error (walletPropose (params)));
-
-        params[jss::passphrase] = common::passphrase;
+        if (keyType)
+            params[jss::key_type] = *keyType;
+        params[jss::seed] = strings.master_seed;
 
         testSecretWallet (params, strings);
+    }
 
+    void testSeedHex (boost::optional<std::string> const& keyType,
+        key_strings const& strings)
+    {
+        testcase ("seed_hex");
+
+        Json::Value params;
+        if (keyType)
+            params[jss::key_type] = *keyType;
+        params[jss::seed_hex] = strings.master_seed_hex;
+
+        testSecretWallet (params, strings);
+    }
+
+    void testLegacyPassphrase (char const* value,
+        boost::optional<std::string> const& keyType,
+        key_strings const& strings)
+    {
+        Json::Value params;
+        if (keyType)
+            params[jss::key_type] = *keyType;
+        params[jss::passphrase] = value;
+
+        testSecretWallet (params, strings);
+    }
+
+    void testLegacyPassphrase(boost::optional<std::string> const& keyType,
+        key_strings const& strings)
+    {
+        testcase ("passphrase");
+
+        testLegacyPassphrase (common::passphrase, keyType, strings);
+        testLegacyPassphrase (strings.master_key, keyType, strings);
+        testLegacyPassphrase (strings.master_seed, keyType, strings);
+        testLegacyPassphrase (strings.master_seed_hex, keyType, strings);
+    }
+
+    void testKeyType (boost::optional<std::string> const& keyType,
+        key_strings const& strings)
+    {
+        testcase (keyType ? *keyType : "no key_type");
+
+        testRandomWallet (keyType);
+        testSeed (keyType, strings);
+        testSeedHex (keyType, strings);
+        testLegacyPassphrase (keyType, strings);
+
+        Json::Value params;
+        if (keyType)
+            params[jss::key_type] = *keyType;
         params[jss::seed] = strings.master_seed;
+        params[jss::seed_hex] = strings.master_seed_hex;
 
         // Secret fields are mutually exclusive.
         expect (contains_error (walletPropose (params)));
-
-        params.removeMember (jss::passphrase);
-
-        testSecretWallet (params, strings);
     }
 
     void run()
     {
-        testRandomWallet();
-        testLegacyPassphrase();
-        testKeyType ("secp256k1", secp256k1_strings);
-        testKeyType ("ed25519",   ed25519_strings);
+        testKeyType (boost::none, secp256k1_strings);
+        testKeyType (std::string("secp256k1"), secp256k1_strings);
+        testKeyType (std::string("ed25519"), ed25519_strings);
     }
 };
 

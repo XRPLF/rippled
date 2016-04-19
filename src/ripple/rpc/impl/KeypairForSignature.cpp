@@ -30,9 +30,6 @@ namespace RPC {
 boost::optional<Seed>
 getSeedFromRPC (Json::Value const& params)
 {
-    // This function is only called when `key_type` is present.
-    assert (params.isMember (jss::key_type));
-
     bool const hasPassphrase = params.isMember (jss::passphrase);
     bool const hasSeed       = params.isMember (jss::seed);
     bool const hasHexSeed    = params.isMember (jss::seed_hex);
@@ -48,7 +45,7 @@ getSeedFromRPC (Json::Value const& params)
             return parseBase58<Seed> (params[jss::seed].asString());
 
         if (hasPassphrase)
-            return generateSeed (params[jss::passphrase].asString());
+            return parseGenericSeed (params[jss::passphrase].asString());
 
         if (hasHexSeed)
         {

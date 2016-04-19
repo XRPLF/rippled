@@ -82,30 +82,21 @@ Json::Value walletPropose (Json::Value const& params)
 
         if (keyType == KeyType::invalid)
             return rpcError(rpcINVALID_PARAMS);
-
-        if (params.isMember (jss::passphrase) ||
-            params.isMember (jss::seed) ||
-            params.isMember (jss::seed_hex))
-        {
-            seed = RPC::getSeedFromRPC (params);
-        }
-        else
-        {
-            seed = randomSeed ();
-        }
     }
-    else if (params.isMember (jss::passphrase))
+
+    if (params.isMember (jss::passphrase) ||
+        params.isMember (jss::seed) ||
+        params.isMember (jss::seed_hex))
     {
-        seed = parseGenericSeed (
-            params[jss::passphrase].asString());
+        seed = RPC::getSeedFromRPC (params);
+
+        if (!seed)
+            return rpcError(rpcBAD_SEED);
     }
     else
     {
         seed = randomSeed ();
     }
-
-    if (!seed)
-        return rpcError(rpcBAD_SEED);
 
     auto const publicKey = generateKeyPair (keyType, *seed).first;
 
