@@ -209,9 +209,9 @@ Ledger::Ledger (uint256 const& parentHash,
                 beast::Journal j)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, transHash, family, SHAMap::version{2}))
+        SHAMapType::TRANSACTION, transHash, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
-        family, SHAMap::version{2}))
+        family, SHAMap::version{1}))
 {
     info_.seq = ledgerSeq;
     info_.parentCloseTime = parentCloseTime;
@@ -288,9 +288,9 @@ Ledger::Ledger (void const* data,
         Config const& config, Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family, SHAMap::version{2}))
+          SHAMapType::TRANSACTION, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family, SHAMap::version{2}))
+          SHAMapType::STATE, family, SHAMap::version{1}))
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix, family);
@@ -302,9 +302,9 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
             Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family, SHAMap::version{2}))
+          SHAMapType::TRANSACTION, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family, SHAMap::version{2}))
+          SHAMapType::STATE, family, SHAMap::version{1}))
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
@@ -862,9 +862,9 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
     info_.closeFlags = sit.get8 ();
     updateHash ();
     txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
-        family, SHAMap::version{2});
+        family, SHAMap::version{1});
     stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
-        family, SHAMap::version{2});
+        family, SHAMap::version{1});
 }
 
 static bool saveValidatedLedger (

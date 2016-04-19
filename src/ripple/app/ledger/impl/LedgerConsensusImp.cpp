@@ -1414,7 +1414,7 @@ void LedgerConsensusImp::takeInitialPosition (
     std::shared_ptr<ReadView const> const& initialLedger)
 {
     std::shared_ptr<SHAMap> initialSet = std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, app_.family(), SHAMap::version{2});
+        SHAMapType::TRANSACTION, app_.family(), SHAMap::version{1});
     initialSet->setUnbacked ();
 
     // Build SHAMap containing all transactions in our open ledger
