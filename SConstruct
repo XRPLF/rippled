@@ -902,7 +902,6 @@ def get_classic_sources(toolchain):
             'src/soci/src/core',
             'src/sqlite']
     )
-    append_sources(result, *list_sources('src/beast/beast/asio/src', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/http/src', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/wsproto/src', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/clock', '.cpp'))
@@ -950,7 +949,6 @@ def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
-        'src/beast/beast/unity/beast_asio_unity.cpp',
         'src/beast/beast/unity/beast_http_unity.cpp',
         'src/beast/beast/unity/beast_wsproto_unity.cpp',
         'src/ripple/beast/unity/beast_clock_unity.cpp',

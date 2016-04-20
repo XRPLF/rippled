@@ -13,12 +13,6 @@
     <Filter Include="beast\asio\impl">
       <UniqueIdentifier>{FF54D3F4-A81E-22BE-41BE-3B9033F5D19F}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\asio\src">
-      <UniqueIdentifier>{D091E064-34B3-D521-C542-E4CB4E1DB6B0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\asio\src\test">
-      <UniqueIdentifier>{1C9418C5-092B-040C-16B7-1FA56E86CAF6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\cxx17">
       <UniqueIdentifier>{DED08E50-BA3F-9E32-7501-3B77F31A5C11}</UniqueIdentifier>
     </Filter>
@@ -570,9 +564,6 @@
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\buffers_adapter.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\buffers_debug.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
@@ -594,15 +585,6 @@
     <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_bind_handler_test.cpp">
-      <Filter>beast\asio\src\test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_buffers_test.cpp">
-      <Filter>beast\asio\src\test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_error_test.cpp">
-      <Filter>beast\asio\src\test</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
@@ -744,9 +726,6 @@
     <ClInclude Include="..\..\src\beast\beast\type_name.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
-      <Filter>beast\unity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
