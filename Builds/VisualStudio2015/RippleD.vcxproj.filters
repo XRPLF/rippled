@@ -52,9 +52,6 @@
     <Filter Include="beast\streams">
       <UniqueIdentifier>{7944CEAB-F8F9-1E2B-CD03-B3D9F78B20E9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\streams\tests">
-      <UniqueIdentifier>{70E19DD6-FF10-6564-8AC0-8EBA14B40DDF}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\test">
       <UniqueIdentifier>{0ED4CDBE-296D-2599-04B3-095BFD1668A4}</UniqueIdentifier>
     </Filter>
@@ -789,9 +786,6 @@
     <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\streams\tests\beast_basic_abstract_ostream_test.cpp">
-      <Filter>beast\streams\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\test\beast_empty_base_optimization_test.cpp">
       <Filter>beast\test</Filter>
     </ClCompile>
@@ -805,9 +799,6 @@
       <Filter>beast\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
-      <Filter>beast\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_streams_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_test_unity.cpp">
