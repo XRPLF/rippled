@@ -23,7 +23,7 @@
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
 #include <ripple/json/to_string.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 

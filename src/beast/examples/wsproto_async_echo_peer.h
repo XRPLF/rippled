@@ -20,9 +20,9 @@
 #ifndef BEAST_WSPROTO_ASYNC_ECHO_PEER_H_INCLUDED
 #define BEAST_WSPROTO_ASYNC_ECHO_PEER_H_INCLUDED
 
-#include <beast/asio/placeholders.h>
-#include <beast/asio/streambuf.h>
-#include <beast/wsproto.h>
+#include <beast/placeholders.hpp>
+#include <beast/streambuf.hpp>
+#include <beast/websocket.hpp>
 #include <boost/optional.hpp>
 #include <functional>
 #include <iostream>
@@ -30,7 +30,7 @@
 #include <thread>
 
 namespace beast {
-namespace wsproto {
+namespace websocket {
 
 // Asynchronous WebSocket echo client/server
 //
@@ -94,8 +94,8 @@ private:
         {
             int state = 0;
             boost::optional<endpoint_type> ep;
-            wsproto::socket<socket_type> ws;
-            wsproto::opcode op;
+            websocket::stream<socket_type> ws;
+            websocket::opcode op;
             beast::streambuf sb;
             int id;
 
@@ -197,13 +197,13 @@ private:
 
             // got message
             case 2:
-                if(ec == wsproto::error::closed)
+                if(ec == websocket::error::closed)
                     return;
                 if(ec)
                     return fail(ec, "async_read");
                 // write message
                 d.state = 1;
-                d.ws.set_option(wsproto::message_type(d.op));
+                d.ws.set_option(websocket::message_type(d.op));
                 d.ws.async_write(d.sb.data(), std::move(*this));
                 return;
 
@@ -224,7 +224,7 @@ private:
         void
         fail(error_code ec, std::string what)
         {
-            if(ec != wsproto::error::closed)
+            if(ec != websocket::error::closed)
                 std::cerr << "#" << d_->id << " " <<
                     what << ": " << ec.message() << std::endl;
         }
@@ -261,7 +261,7 @@ private:
     }
 };
 
-} // wsproto
+} // websocket
 } // beast
 
 #endif

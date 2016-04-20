@@ -23,8 +23,8 @@
 #include <ripple/beast/nudb.h>
 #include <ripple/beast/nudb/identity.h>
 #include <ripple/beast/nudb/test/fail_file.h>
-#include <beast/hash/xxhasher.h>
-#include <beast/xor_shift_engine.h>
+#include <ripple/beast/hash/xxhasher.h>
+#include <ripple/beast/xor_shift_engine.h>
 #include <cstdint>
 #include <iomanip>
 #include <memory>

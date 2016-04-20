@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <beast/unit_test/suite.h>
-#include <beast/xor_shift_engine.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/beast/xor_shift_engine.h>
 
 namespace beast {
 

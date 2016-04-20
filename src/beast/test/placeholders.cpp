@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/placeholders.h>
+#include <beast/placeholders.hpp>

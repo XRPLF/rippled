@@ -22,7 +22,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
 #include <ripple/test/jtx.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

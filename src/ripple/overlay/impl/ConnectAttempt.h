@@ -28,11 +28,11 @@
 #include <ripple/overlay/Message.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/asio/placeholders.h>
-#include <beast/asio/ssl_bundle.h>
-#include <beast/asio/streambuf.h>
-#include <beast/http/message.h>
-#include <beast/http/parser.h>
+#include <beast/placeholders.hpp>
+#include <ripple/beast/asio/ssl_bundle.h>
+#include <beast/streambuf.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/parser.hpp>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <boost/asio/basic_waitable_timer.hpp>

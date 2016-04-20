@@ -24,8 +24,8 @@
 #include <ripple/server/impl/PlainHTTPPeer.h>
 #include <ripple/server/impl/SSLHTTPPeer.h>
 #include <boost/asio/buffer.hpp>
-#include <beast/asio/placeholders.h>
-#include <beast/asio/ssl_bundle.h>
+#include <beast/placeholders.hpp>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <functional>
 
 namespace ripple {

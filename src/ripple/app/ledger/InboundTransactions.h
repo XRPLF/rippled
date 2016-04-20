@@ -22,7 +22,7 @@
 
 #include <ripple/overlay/Peer.h>
 #include <ripple/shamap/SHAMap.h>
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/core/Stoppable.h>
 #include <memory>
 

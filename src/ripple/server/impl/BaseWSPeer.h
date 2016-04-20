@@ -22,9 +22,9 @@
 
 #include <ripple/server/impl/BasePeer.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <beast/wsproto.h>
-#include <beast/asio/streambuf.h>
-#include <beast/http/message.h>
+#include <beast/websocket.hpp>
+#include <beast/streambuf.hpp>
+#include <beast/http/message.hpp>
 #include <cassert>
 
 namespace ripple {
@@ -47,7 +47,7 @@ private:
     friend class BasePeer<Impl>;
 
     http_request_type request_;
-    beast::wsproto::opcode op_;
+    beast::websocket::opcode op_;
     beast::streambuf rb_;
     beast::streambuf wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
@@ -164,7 +164,7 @@ BaseWSPeer<Impl>::run()
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::run, impl().shared_from_this()));
-    impl().ws_.set_option(beast::wsproto::decorate(identity{}));
+    impl().ws_.set_option(beast::websocket::decorate(identity{}));
     using namespace beast::asio;
     impl().ws_.async_accept(request_, strand_.wrap(std::bind(
         &BaseWSPeer::on_write_sb, impl().shared_from_this(),
@@ -275,7 +275,7 @@ template<class Impl>
 void
 BaseWSPeer<Impl>::on_read(error_code const& ec)
 {
-    if(ec == beast::wsproto::error::closed)
+    if(ec == beast::websocket::error::closed)
         return do_close();
     if(ec)
         return fail(ec, "read");

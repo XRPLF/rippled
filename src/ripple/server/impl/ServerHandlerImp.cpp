@@ -38,8 +38,8 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <beast/crypto/base64.h>
-#include <beast/http/rfc2616.h>
+#include <beast/detail/base64.hpp>
+#include <beast/http/rfc2616.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
@@ -676,7 +676,7 @@ ServerHandlerImp::authorized (Port const& port,
         return false;
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);
-    std::string strUserPass = beast::base64_decode (strUserPass64);
+    std::string strUserPass = beast::detail::base64_decode (strUserPass64);
     std::string::size_type nColon = strUserPass.find (":");
     if (nColon == std::string::npos)
         return false;

@@ -45,7 +45,6 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/SemanticVersion.h>
-#include <beast/streams/debug_ostream.h>
 #include <ripple/beast/utility/weak_fn.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
@@ -241,7 +240,7 @@ PeerImp::crawl() const
     auto const iter = headers_.find("Crawl");
     if (iter == headers_.end())
         return false;
-    return beast::ci_equal(iter->second, "public");
+    return beast::detail::ci_equal(iter->second, "public");
 }
 
 std::string

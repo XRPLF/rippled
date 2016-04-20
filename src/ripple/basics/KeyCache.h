@@ -22,7 +22,7 @@
 
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/insight/Insight.h>
 #include <mutex>
 

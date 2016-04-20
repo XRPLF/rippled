@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <vector>
 
 namespace ripple {

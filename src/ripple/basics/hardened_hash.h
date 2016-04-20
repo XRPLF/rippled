@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_HARDENED_HASH_H_INCLUDED
 #define RIPPLE_BASICS_HARDENED_HASH_H_INCLUDED
 
-#include <beast/hash/hash_append.h>
-#include <beast/hash/xxhasher.h>
+#include <ripple/beast/hash/hash_append.h>
+#include <ripple/beast/hash/xxhasher.h>
 
 #include <cstdint>
 #include <functional>

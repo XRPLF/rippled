@@ -22,7 +22,7 @@
 
 #include <ripple/server/Handoff.h>
 #include <ripple/server/WSSession.h>
-#include <beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/system/error_code.hpp>

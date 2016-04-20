@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <beast/clock/manual_clock.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/clock/manual_clock.h>
+#include <ripple/beast/unit_test.h>
 
 #include <ripple/beast/container/aged_set.h>
 #include <ripple/beast/container/aged_map.h>

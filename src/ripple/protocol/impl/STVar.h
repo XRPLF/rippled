@@ -28,10 +28,6 @@
 #include <utility>
 #include <typeinfo>
 
-#include <beast/streams/debug_ostream.h>
-#include <mutex>
-#include <unordered_map>
-
 namespace ripple {
 namespace detail {
 
@@ -48,16 +44,6 @@ class STVar
 private:
     std::aligned_storage<72>::type d_;
     STBase* p_ = nullptr;
-
-    struct Log
-    {
-        std::mutex mutex_;
-        std::unordered_map<
-            std::size_t, std::size_t> map_;
-
-        ~Log();
-        void operator() (std::size_t n);
-    };
 
 public:
     ~STVar();

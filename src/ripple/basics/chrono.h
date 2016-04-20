@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_CHRONO_H_INCLUDED
 #define RIPPLE_BASICS_CHRONO_H_INCLUDED
 
-#include <beast/clock/abstract_clock.h>
-#include <beast/clock/basic_seconds_clock.h>
-#include <beast/clock/manual_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/basic_seconds_clock.h>
+#include <ripple/beast/clock/manual_clock.h>
 #include <chrono>
 #include <cstdint>
 

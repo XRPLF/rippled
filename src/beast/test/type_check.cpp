@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/type_check.h>
+#include <beast/type_check.hpp>

@@ -23,7 +23,7 @@
 #include "file_body.h"
 #include "http_stream.h"
 
-#include <beast/asio/placeholders.h>
+#include <beast/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <cstdio>
 #include <iostream>

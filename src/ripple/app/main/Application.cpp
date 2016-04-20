@@ -72,7 +72,7 @@
 #include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>
 #include <ripple/crypto/csprng.h>
-#include <beast/asio/io_latency_probe.h>
+#include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio/signal_set.hpp>
 #include <boost/optional.hpp>

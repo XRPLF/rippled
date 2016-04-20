@@ -23,7 +23,7 @@
 #include <ripple/protocol/ErrorCodes.h>          // RPC::containsError
 #include <ripple/json/json_reader.h>             // Json::Reader
 #include <ripple/protocol/STParsedJSON.h>        // STParsedJSONObject
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 

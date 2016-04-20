@@ -20,10 +20,11 @@
 #ifndef RIPPLE_SERVER_JSONWRITER_H_INCLUDED
 #define RIPPLE_SERVER_JSONWRITER_H_INCLUDED
 
+#include <ripple/beast/deprecated_http.h>
 #include <ripple/server/Writer.h>
 #include <ripple/json/json_value.h>
-#include <beast/asio/streambuf.h>
-#include <beast/http/message.h>
+#include <beast/streambuf.hpp>
+#include <beast/http/message.hpp>
 #include <algorithm>
 #include <cstddef>
 #include <sstream>

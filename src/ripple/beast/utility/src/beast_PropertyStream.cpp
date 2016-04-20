@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/utility/PropertyStream.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <algorithm>
 #include <cassert>
 #include <limits>

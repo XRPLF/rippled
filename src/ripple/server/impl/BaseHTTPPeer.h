@@ -26,12 +26,12 @@
 #include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/asio/placeholders.h>
-#include <beast/asio/ssl_error.h> // for is_short_read?
-#include <beast/http/read.h>
-#include <beast/http/message.h>
-#include <beast/http/parser.h>
-#include <beast/http/streambuf_body.h>
+#include <beast/placeholders.hpp>
+#include <ripple/beast/asio/ssl_error.h> // for is_short_read?
+#include <beast/http/read.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/parser.hpp>
+#include <beast/http/streambuf_body.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>

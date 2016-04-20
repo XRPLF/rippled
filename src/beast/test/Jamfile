@@ -7,24 +7,27 @@
 
 import os ;
 
-path-constant test_main : ../beast/unit_test/src/main.cpp ;
-
 unit-test all :
-    append_buffers.cpp
-    asio.cpp
+    ../src/beast_http_nodejs_parser.cpp
     async_completion.cpp
+    base64.cpp
     basic_streambuf.cpp
     basic_headers.cpp
     bind_handler.cpp
+    buffer_cat.cpp
     buffers_adapter.cpp
     buffers_debug.cpp
+    chunk_encode.cpp
     consuming_buffers.cpp
+    empty_base_optimization.cpp
     handler_alloc.cpp
+    message.cpp
     placeholders.cpp
     prepare_buffers.cpp
+    rfc2616.cpp
     static_streambuf.cpp
     streambuf.cpp
     streambuf_readstream.cpp
     type_check.cpp
-    $(test_main)
+    main.cpp
     ;

@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 #define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 
-#include <beast/hash/hash_append.h>
+#include <ripple/beast/hash/hash_append.h>
 
 #include <functional>
 #include <iostream>

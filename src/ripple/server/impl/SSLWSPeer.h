@@ -22,9 +22,9 @@
 
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/WSSession.h>
-#include <beast/asio/ssl_bundle.h>
-#include <beast/asio/placeholders.h>
-#include <beast/wsproto/ssl.h>
+#include <ripple/beast/asio/ssl_bundle.h>
+#include <beast/placeholders.hpp>
+#include <beast/websocket/ssl.hpp>
 #include <memory>
 
 namespace ripple {
@@ -44,7 +44,7 @@ private:
         boost::asio::basic_waitable_timer <clock_type>;
 
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
-    beast::wsproto::socket<
+    beast::websocket::stream<
         beast::asio::ssl_bundle::stream_type&> ws_;
 
 public:

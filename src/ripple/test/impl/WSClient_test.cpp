@@ -20,10 +20,10 @@
 #include <BeastConfig.h>
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
-#include <beast/unit_test/suite.h>
-#include <beast/wsproto/detail/utf8_checker.h>
+#include <ripple/beast/unit_test.h>
+#include <beast/websocket/detail/utf8_checker.hpp>
 
-#include <beast/asio/handler_alloc.h>
+#include <beast/handler_alloc.hpp>
 
 namespace ripple {
 namespace test {
@@ -34,7 +34,7 @@ public:
     void
     test_utf8checker()
     {
-        beast::wsproto::detail::utf8_checker utf8c;
+        beast::websocket::detail::utf8_checker utf8c;
 
         std::uint8_t buffer[] = {0Xff};
         expect(! utf8c.write(buffer, 3));

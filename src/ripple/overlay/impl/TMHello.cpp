@@ -25,8 +25,8 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/overlay/impl/TMHello.h>
-#include <beast/crypto/base64.h>
-#include <beast/http/rfc2616.h>
+#include <beast/detail/base64.hpp>
+#include <beast/http/rfc2616.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <algorithm>
@@ -161,7 +161,7 @@ appendHello (beast::http::headers<std::allocator<char>>& h,
 
     h.insert ("Public-Key", hello.nodepublic());
 
-    h.insert ("Session-Signature", beast::base64_encode (
+    h.insert ("Session-Signature", beast::detail::base64_encode (
         hello.nodeproof()));
 
     if (hello.has_nettime())
@@ -171,11 +171,11 @@ appendHello (beast::http::headers<std::allocator<char>>& h,
         h.insert ("Ledger", std::to_string (hello.ledgerindex()));
 
     if (hello.has_ledgerclosed())
-        h.insert ("Closed-Ledger", beast::base64_encode (
+        h.insert ("Closed-Ledger", beast::detail::base64_encode (
             hello.ledgerclosed()));
 
     if (hello.has_ledgerprevious())
-        h.insert ("Previous-Ledger", beast::base64_encode (
+        h.insert ("Previous-Ledger", beast::detail::base64_encode (
             hello.ledgerprevious()));
 
     if (hello.has_local_ip())
@@ -262,7 +262,7 @@ parseHello (bool request, beast::http::headers<std::allocator<char>> const& h, b
         if (iter == h.end())
             return boost::none;
         // TODO Security Review
-        hello.set_nodeproof (beast::base64_decode (iter->second));
+        hello.set_nodeproof (beast::detail::base64_decode (iter->second));
     }
 
     {
@@ -297,13 +297,13 @@ parseHello (bool request, beast::http::headers<std::allocator<char>> const& h, b
     {
         auto const iter = h.find ("Closed-Ledger");
         if (iter != h.end())
-            hello.set_ledgerclosed (beast::base64_decode (iter->second));
+            hello.set_ledgerclosed (beast::detail::base64_decode (iter->second));
     }
 
     {
         auto const iter = h.find ("Previous-Ledger");
         if (iter != h.end())
-            hello.set_ledgerprevious (beast::base64_decode (iter->second));
+            hello.set_ledgerprevious (beast::detail::base64_decode (iter->second));
     }
 
     {

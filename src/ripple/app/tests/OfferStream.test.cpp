@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/tx/impl/OfferStream.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 

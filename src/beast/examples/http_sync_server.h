@@ -23,7 +23,6 @@
 #include "file_body.h"
 #include "http_stream.h"
 
-#include <beast/unit_test/suite.h>
 #include <boost/asio.hpp>
 #include <cstdint>
 #include <cstdio>

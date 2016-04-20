@@ -22,7 +22,7 @@
 
 #include <ripple/server/impl/io_list.h>
 #include <ripple/server/impl/ServerImpl.h>
-#include <beast/asio/streambuf.h>
+#include <beast/streambuf.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>

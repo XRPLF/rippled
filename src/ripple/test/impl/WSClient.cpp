@@ -24,12 +24,12 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <beast/asio/placeholders.h>
-#include <beast/asio/streambuf.h>
-#include <beast/wsproto.h>
+#include <beast/placeholders.hpp>
+#include <beast/streambuf.hpp>
+#include <beast/websocket.hpp>
 #include <condition_variable>
 
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 namespace test {
@@ -93,8 +93,8 @@ class WSClientImpl : public WSClient
     boost::asio::io_service::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
-    beast::wsproto::socket<boost::asio::ip::tcp::socket&> ws_;
-    beast::wsproto::opcode op_;
+    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
+    beast::websocket::opcode op_;
     beast::streambuf rb_;
 
     // synchronize destructor

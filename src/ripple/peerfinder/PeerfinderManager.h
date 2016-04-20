@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
 #include <ripple/peerfinder/Slot.h>
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <boost/asio/ip/tcp.hpp>

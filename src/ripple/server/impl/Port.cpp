@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/server/Port.h>
-#include <beast/http/rfc2616.h>
+#include <beast/http/rfc2616.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 
 namespace ripple {
@@ -192,7 +192,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     {
         auto const lim = get (section, "limit", "unlimited");
 
-        if (!beast::ci_equal (lim, "unlimited"))
+        if (!beast::detail::ci_equal (lim, "unlimited"))
         {
             try
             {

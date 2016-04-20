@@ -1,8 +1,22 @@
 * kick out non-beast code
-
 * redo directory structure
-
 * Change build options to C++11 only
-
 * Replace Jamroot with Jamfile
+* Switch source material to Boost license
+* Fix failing test/message.cpp
+* Complete allocator testing in basic_streambuf, basic_headers
+* Tidy up type_checks
+  - Derive from std::integral_constant
+* Check DOXYGEN, GENERATIC_DOCS directives in source
+  - See if we can include them now that xsl is fixed
+* Go over each header and split header material into detail and impl files
+* Make buffers_debug a detail
+* Ensure each public header has a unit test .cpp file
+* Roll header-only http parser
+* Define Parser concept in HTTP
+* melpon sandbox?
+* invokable unit test
+* trim public interface of rfc2616.h to essentials only
+* Use new http routines in JSONRPCClient
+* Remove or change http::headers alias
 

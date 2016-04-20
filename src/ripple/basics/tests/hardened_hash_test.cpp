@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/hardened_hash.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <boost/functional/hash.hpp>
 #include <array>
 #include <cstdint>

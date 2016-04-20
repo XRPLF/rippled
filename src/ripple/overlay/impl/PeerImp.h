@@ -36,11 +36,11 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/beast/core/ByteOrder.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/asio/placeholders.h>
-#include <beast/asio/streambuf.h>
-#include <beast/asio/ssl_bundle.h>
-#include <beast/http/message.h>
-#include <beast/http/parser.h>
+#include <beast/placeholders.hpp>
+#include <beast/streambuf.hpp>
+#include <ripple/beast/asio/ssl_bundle.h>
+#include <beast/http/message.hpp>
+#include <beast/http/parser.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <cstdint>
 #include <deque>
