@@ -19,4 +19,5 @@
 * trim public interface of rfc2616.h to essentials only
 * Use new http routines in JSONRPCClient
 * Remove or change http::headers alias
-
+* Do something about the methods.hpp and fields.hpp type headers
+* Fix index in docs
