@@ -26,7 +26,7 @@
 #include <ripple/beast/nudb/create.h>
 #include <ripple/beast/nudb/detail/format.h>
 #include <beast/unit_test/suite.h>
-#include <beast/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
@@ -257,7 +257,7 @@ public:
     }
 };
 
-std::map <std::string, std::string, beast::ci_less>
+std::map <std::string, std::string, beast::detail::ci_less>
 parse_args(std::string const& s)
 {
     // <key> '=' <value>
@@ -273,7 +273,7 @@ parse_args(std::string const& s)
         , boost::regex_constants::optimize
     );
     std::map <std::string,
-        std::string, beast::ci_less> map;
+        std::string, beast::detail::ci_less> map;
     auto const v = beast::rfc2616::split(
         s.begin(), s.end(), ',');
     for (auto const& kv : v)

@@ -22,7 +22,7 @@
 
 #include <ripple/basics/contract.h>
 #include <beast/unit_test/const_container.h>
-#include <beast/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <map>
@@ -41,7 +41,7 @@ using IniFileSections = std::map<std::string, std::vector<std::string>>;
 */
 class Section
     : public beast::const_container <
-        std::map <std::string, std::string, beast::ci_less>>
+        std::map <std::string, std::string, beast::detail::ci_less>>
 {
 private:
     std::string name_;
@@ -165,7 +165,7 @@ public:
 class BasicConfig
 {
 private:
-    std::map <std::string, Section, beast::ci_less> map_;
+    std::map <std::string, Section, beast::detail::ci_less> map_;
 
 public:
     /** Returns `true` if a section with the given name exists. */

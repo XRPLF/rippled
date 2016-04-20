@@ -624,9 +624,6 @@
     <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
       <Filter>beast\cxx17</Filter>
     </ClInclude>
@@ -910,6 +907,9 @@
       <Filter>beast\wsproto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+      <Filter>include\beast\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\ci_char_traits.hpp">
       <Filter>include\beast\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">

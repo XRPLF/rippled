@@ -183,7 +183,7 @@ is_upgrade(message<isRequest, Body, Headers> const& msg);
 
 #include <beast/http/method.h>
 #include <beast/http/headers.h>
-#include <beast/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <beast/http/detail/writes.h>
 #include <algorithm>
 #include <cctype>

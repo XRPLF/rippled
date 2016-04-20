@@ -37,7 +37,7 @@
 #include <beast/detail/base64.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/http/rfc2616.h>
-#include <beast/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
 
 #include <boost/utility/in_place_factory.hpp>
@@ -220,7 +220,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         if (std::find_if(types.begin(), types.end(),
                 [](std::string const& s)
                 {
-                    return beast::ci_equal(s, "peer");
+                    return beast::detail::ci_equal(s, "peer");
                 }) == types.end())
         {
             handoff.moved = false;

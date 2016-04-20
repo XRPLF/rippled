@@ -288,8 +288,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http.h">
@@ -501,6 +499,8 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\ci_char_traits.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
     </ClInclude>

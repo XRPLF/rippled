@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
-#define BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
+#ifndef BEAST_DETAIL_CI_CHAR_TRAITS_HPP
+#define BEAST_DETAIL_CI_CHAR_TRAITS_HPP
 
 #include <boost/utility/string_ref.hpp>
 #include <algorithm>
@@ -29,6 +29,7 @@
 #include <utility>
 
 namespace beast {
+namespace detail {
 
 /** Case-insensitive function object for performing less than comparisons. */
 struct ci_less
@@ -50,8 +51,6 @@ struct ci_less
         );
     }
 };
-
-namespace detail {
 
 inline
 bool
@@ -82,19 +81,16 @@ view(std::string const& s)
     return {s.data(), s.size()};
 }
 
-}
-
 /** Returns `true` if strings are case-insensitive equal. */
 template <class String1, class String2>
 inline
 bool
 ci_equal(String1 const& lhs, String2 const& rhs)
 {
-    using detail::view;
-    using detail::ci_equal;
     return ci_equal(view(lhs), view(rhs));
 }
 
-}
+} // detail
+} // beast
 
 #endif

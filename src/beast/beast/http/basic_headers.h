@@ -22,7 +22,7 @@
 
 #include <beast/http/detail/writes.h>
 #include <beast/asio/type_check.h>
-#include <beast/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <beast/detail/empty_base_optimization.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
@@ -92,7 +92,7 @@ protected:
         }
     };
 
-    struct less : private ci_less
+    struct less : private beast::detail::ci_less
     {
         template<class String>
         bool
@@ -111,7 +111,7 @@ protected:
         bool
         operator()(element const& lhs, element const& rhs) const
         {
-            return beast::ci_less::operator()(
+            return ci_less::operator()(
                 lhs.data.first, rhs.data.first);
         }
     };
