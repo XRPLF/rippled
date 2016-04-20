@@ -21,7 +21,7 @@
 #define RIPPLE_TX_APPLYSTEPS_H_INCLUDED
 
 #include <ripple/ledger/ApplyViewImpl.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 

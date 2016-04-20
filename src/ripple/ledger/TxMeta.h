@@ -23,7 +23,7 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/TER.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_BYTEORDER_H_INCLUDED
 #define RIPPLE_BASICS_BYTEORDER_H_INCLUDED
 
-#include <beast/Config.h>
+#include <ripple/beast/core/Config.h>
 
 // For ByteOrder
 #if BEAST_WIN32
@@ -36,7 +36,7 @@
 
 namespace ripple {
 
-// VFALCO These are all deprecated please use the ones in <beast/ByteOrder.h>
+// VFALCO These are all deprecated please use the ones in <ripple/beast/core/ByteOrder.h>
 // Routines for converting endianness
 
 // Reference: http://www.mail-archive.com/licq-commits@googlegroups.com/msg02334.html

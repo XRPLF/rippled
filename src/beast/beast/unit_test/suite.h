@@ -173,16 +173,16 @@ public:
         logged if the condition is false.
         @return `true` if the test condition indicates success.
     */
-    template <class Condition, class String>
+    template<class Condition, class String>
     bool
-    expect (Condition shouldBeTrue,
+    expect(Condition const& shouldBeTrue,
         String const& reason);
 
-    template <class Condition>
+    template<class Condition>
     bool
-    expect (Condition shouldBeTrue)
+    expect(Condition const& shouldBeTrue)
     {
-        return expect (shouldBeTrue, "");
+        return expect(shouldBeTrue, "");
     }
 
     /** Expect an exception from f() */
@@ -411,16 +411,16 @@ suite::operator()(runner& r)
 template <class Condition, class String>
 inline
 bool
-suite::expect (Condition shouldBeTrue,
+suite::expect(Condition const& shouldBeTrue,
     String const& reason)
 {
-    bool const b =
-        static_cast<bool>(shouldBeTrue);
-    if (b)
+    if(shouldBeTrue)
+    {
         pass();
-    else
-        fail (reason);
-    return b;
+        return true;
+    }
+    fail(reason);
+    return false;
 }
 
 template <class F, class String>

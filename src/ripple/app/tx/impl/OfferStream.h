@@ -26,7 +26,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 #include <boost/container/flat_set.hpp>
 

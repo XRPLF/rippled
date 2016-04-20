@@ -36,10 +36,10 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Role.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <beast/chrono/basic_seconds_clock.h>
-#include <beast/module/core/time/Time.h>
+#include <beast/clock/basic_seconds_clock.h>
+#include <ripple/beast/core/Time.h>
 #include <beast/unit_test.h>
-#include <beast/utility/Debug.h>
+#include <ripple/beast/utility/Debug.h>
 #include <beast/streams/debug_ostream.h>
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>

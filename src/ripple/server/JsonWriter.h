@@ -122,7 +122,7 @@ message_writer<Streambuf>::data(Streambuf& buf)
 
 } // detail
 
-using streambufs_writer = detail::message_writer<beast::asio::streambuf>;
+using streambufs_writer = detail::message_writer<beast::streambuf>;
 
 //------------------------------------------------------------------------------
 
@@ -144,16 +144,16 @@ write(Streambuf& buf, Json::Value const& json)
 */
 template <class = void>
 std::shared_ptr<Writer>
-make_JsonWriter (beast::http::message& m, Json::Value const& json)
+make_JsonWriter (beast::deprecated_http::message& m, Json::Value const& json)
 {
-    beast::asio::streambuf prebody;
-    beast::asio::streambuf body;
+    beast::streambuf prebody;
+    beast::streambuf body;
     write(body, json);
     // VFALCO TODO Better way to set a field
     m.headers.erase ("Content-Length");
-    m.headers.append("Content-Length", std::to_string(body.size()));
+    m.headers.insert("Content-Length", std::to_string(body.size()));
     m.headers.erase ("Content-Type");
-    m.headers.append("Content-Type", "application/json");
+    m.headers.insert("Content-Type", "application/json");
     write(prebody, m);
     return std::make_shared<streambufs_writer>(
         std::move(prebody), std::move(body));

@@ -21,8 +21,8 @@
 #define RIPPLE_SERVER_PORT_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
-#include <beast/net/IPEndpoint.h>
-#include <beast/utility/ci_char_traits.h>
+#include <ripple/beast/net/IPEndpoint.h>
+#include <beast/ci_char_traits.h>
 #include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <memory>

@@ -23,8 +23,7 @@
 #include <vector>
 #include <functional>
 
-#include <beast/boost/ErrorCode.h>
-#include <beast/net/IPEndpoint.h>
+#include <ripple/beast/net/IPEndpoint.h>
 
 namespace ripple {
 

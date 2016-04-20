@@ -148,8 +148,8 @@ chunk_encoded_buffers<Buffers>::to_hex(
 
 template <class Buffers>
 chunk_encoded_buffers<Buffers>::const_iterator::const_iterator()
-    : where_(Where::end)
-    , buffers_(nullptr)
+    : buffers_(nullptr)
+    , where_(Where::end)
 {
 }
 
@@ -193,7 +193,7 @@ chunk_encoded_buffers<Buffers>::const_iterator::operator--() ->
     const_iterator&
 {
     assert(buffers_);
-    assert(where_ != Where::begin);
+    assert(where_ != Where::head);
     if (where_ == Where::end)
         where_ = Where::input;
     else if (iter_ != buffers_->buffers_.begin())
@@ -247,37 +247,44 @@ chunk_encoded_buffers<Buffers>::const_iterator::const_iterator(
 {
 }
 
-}
+} // detail
 
 /** Returns a chunk-encoded BufferSequence.
 
     See:
         http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
 
-    @tparam Buffers A type meeting the requirements of BufferSequence.
     @param buffers The input buffer sequence.
+
     @param final_chunk `true` If this should include a final-chunk.
-    @return A chunk-encoded ConstBufferSeqeunce representing the input.
+
+    @return A chunk-encoded ConstBufferSequence representing the input.
 */
-/** @{ */
-template <class Buffers>
-detail::chunk_encoded_buffers<Buffers>
-chunk_encode (Buffers const& buffers,
+template<class ConstBufferSequence>
+#if GENERATING_DOCS
+implementation_defined
+#else
+detail::chunk_encoded_buffers<ConstBufferSequence>
+#endif
+chunk_encode(ConstBufferSequence const& buffers,
     bool final_chunk = false)
 {
     return detail::chunk_encoded_buffers<
-        Buffers>(buffers, final_chunk);
+        ConstBufferSequence>{buffers, final_chunk};
 }
 
-// Returns a chunked encoding final chunk.
+/// Returns a chunked encoding final chunk.
 inline
+#if GENERATING_DOCS
+implementation_defined
+#else
 boost::asio::const_buffers_1
+#endif
 chunk_encode_final()
 {
     return boost::asio::const_buffers_1(
         "0\r\n\r\n", 5);
 }
-/** @} */
 
 } // http
 } // beast

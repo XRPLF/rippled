@@ -25,7 +25,7 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STExchange.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <string>
 

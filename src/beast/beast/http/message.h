@@ -20,12 +20,171 @@
 #ifndef BEAST_HTTP_MESSAGE_H_INCLUDED
 #define BEAST_HTTP_MESSAGE_H_INCLUDED
 
-#include <beast/http/basic_parser.h>
+#include <beast/http/headers.h>
+#include <beast/http/method.h>
+#include <beast/asio/buffers_debug.h>
+#include <beast/asio/type_check.h>
+#include <memory>
+#include <ostream>
+#include <string>
+
+namespace beast {
+namespace http {
+
+namespace detail {
+
+struct request_fields
+{
+    http::method_t method;
+    std::string url;
+};
+
+struct response_fields
+{
+    int status;
+    std::string reason;
+};
+
+} // detail
+
+struct request_params
+{
+    http::method_t method;
+    std::string url;
+    int version;
+};
+
+struct response_params
+{
+    int status;
+    std::string reason;
+    int version;
+};
+
+/** A HTTP message.
+
+    A message can be a request or response, depending on the `isRequest`
+    template argument value. Requests and responses have different types,
+    so functions may be overloaded on them if desired.
+
+    The `Body` template argument type determines the model used
+    to read or write the content body of the message.
+
+    @tparam isRequest `true` if this is a request.
+
+    @tparam Body A type meeting the requirements of Body.
+
+    @tparam Headers A type meeting the requirements of Headers.
+*/
+template<bool isRequest, class Body, class Headers>
+struct message
+    : std::conditional_t<isRequest,
+        detail::request_fields, detail::response_fields>
+{
+    /** The trait type characterizing the body.
+
+        The body member will be of type body_type::value_type.
+    */
+    using body_type = Body;
+    using headers_type = Headers;
+
+    using is_request =
+        std::integral_constant<bool, isRequest>;
+
+    int version; // 10 or 11
+    headers_type headers;
+    typename Body::value_type body;
+
+    message();
+    message(message&&) = default;
+    message(message const&) = default;
+    message& operator=(message&&) = default;
+    message& operator=(message const&) = default;
+
+    /** Construct a HTTP request.
+    */
+    explicit
+    message(request_params params);
+
+    /** Construct a HTTP response.
+    */
+    explicit
+    message(response_params params);
+
+    /// Serialize the request or response line to a Streambuf.
+    template<class Streambuf>
+    void
+    write_firstline(Streambuf& streambuf) const
+    {
+        write_firstline(streambuf,
+            std::integral_constant<bool, isRequest>{});
+    }
+
+    /// Diagnostics only
+    template<bool, class, class>
+    friend 
+    std::ostream&
+    operator<<(std::ostream& os,
+        message const& m);
+
+private:
+    template<class Streambuf>
+    void
+    write_firstline(Streambuf& streambuf,
+        std::true_type) const;
+
+    template<class Streambuf>
+    void
+    write_firstline(Streambuf& streambuf,
+        std::false_type) const;
+};
+
+#if ! GENERATING_DOCS
+
+/// A typical HTTP request
+template<class Body,
+    class Headers = basic_headers<std::allocator<char>>>
+using request = message<true, Body, Headers>;
+
+/// A typical HTTP response
+template<class Body,
+    class Headers = basic_headers<std::allocator<char>>>
+using response = message<false, Body, Headers>;
+
+#endif
+
+// For diagnostic output only
+template<bool isRequest, class Body, class Headers>
+std::ostream&
+operator<<(std::ostream& os,
+    message<isRequest, Body, Headers> const& m);
+
+/// Write a FieldSequence to a Streambuf.
+template<class Streambuf, class FieldSequence>
+void
+write_fields(Streambuf& streambuf, FieldSequence const& fields);
+
+/// Returns `true` if a message indicates a keep alive
+template<bool isRequest, class Body, class Headers>
+bool
+is_keep_alive(message<isRequest, Body, Headers> const& msg);
+
+/// Returns `true` if a message indicates a HTTP Upgrade request or response
+template<bool isRequest, class Body, class Headers>
+bool
+is_upgrade(message<isRequest, Body, Headers> const& msg);
+
+} // http
+} // beast
+
+#include <beast/http/impl/message.ipp>
+
+//------------------------------------------------------------------------------
+
 #include <beast/http/method.h>
 #include <beast/http/headers.h>
-#include <beast/utility/ci_char_traits.h>
-#include <boost/intrusive/list.hpp>
-#include <boost/intrusive/set.hpp>
+#include <beast/ci_char_traits.h>
+#include <beast/http/detail/writes.h>
 #include <algorithm>
 #include <cctype>
 #include <ostream>
@@ -34,7 +193,7 @@
 #include <utility>
 
 namespace beast {
-namespace http {
+namespace deprecated_http {
 
 inline
 std::pair<int, int>
@@ -70,17 +229,16 @@ private:
 
 public:
     ~message() = default;
-    message (message const&) = delete;
-    message& operator= (message const&) = delete;
+    message (message const&) = default;
+    message (message&& other) = default;
+    message& operator= (message const&) = default;
+    message& operator= (message&& other) = default;
 
     template <class = void>
     message();
 
-    message (message&& other) = default;
-    message& operator= (message&& other) = default;
-
     // Memberspace
-    beast::http::headers headers;
+    beast::http::headers<std::allocator<char>> headers;
 
     bool
     request() const
@@ -221,49 +379,31 @@ write (Streambuf& stream, message const& m)
 {
     if (m.request())
     {
-        write (stream, to_string(m.method()));
-        write (stream, " ");
-        write (stream, m.url());
-        write (stream, " HTTP/");
-        write (stream, std::to_string(m.version().first));
-        write (stream, ".");
-        write (stream, std::to_string(m.version().second));
+        http::detail::write (stream, to_string(m.method()));
+        http::detail::write (stream, " ");
+        http::detail::write (stream, m.url());
+        http::detail::write (stream, " HTTP/");
+        http::detail::write (stream, std::to_string(m.version().first));
+        http::detail::write (stream, ".");
+        http::detail::write (stream, std::to_string(m.version().second));
     }
     else
     {
-        write (stream, "HTTP/");
-        write (stream, std::to_string(m.version().first));
-        write (stream, ".");
-        write (stream, std::to_string(m.version().second));
-        write (stream, " ");
-        write (stream, std::to_string(m.status()));
-        write (stream, " ");
-        write (stream, m.reason());
+        http::detail::write (stream, "HTTP/");
+        http::detail::write (stream, std::to_string(m.version().first));
+        http::detail::write (stream, ".");
+        http::detail::write (stream, std::to_string(m.version().second));
+        http::detail::write (stream, " ");
+        http::detail::write (stream, std::to_string(m.status()));
+        http::detail::write (stream, " ");
+        http::detail::write (stream, m.reason());
     }
-    write (stream, "\r\n");
-    write(stream, m.headers);
-    write (stream, "\r\n");
+    http::detail::write (stream, "\r\n");
+    write_fields(stream, m.headers);
+    http::detail::write (stream, "\r\n");
 }
 
-template <class = void>
-std::string
-to_string (message const& m)
-{
-    std::stringstream ss;
-    if (m.request())
-        ss << to_string(m.method()) << " " << m.url() << " HTTP/" <<
-            std::to_string(m.version().first) << "." <<
-                std::to_string(m.version().second) << "\r\n";
-    else
-        ss << "HTTP/" << std::to_string(m.version().first) << "." <<
-            std::to_string(m.version().second) << " " <<
-                std::to_string(m.status()) << " " << m.reason() << "\r\n";
-    ss << to_string(m.headers);
-    ss << "\r\n";
-    return ss.str();
-}
-
-} // http
+} // deprecated_http
 } // beast
 
 #endif

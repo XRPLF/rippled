@@ -24,7 +24,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 #include <iostream>
 
 namespace ripple {
@@ -40,7 +40,7 @@ Json::Value doValidationSeed (RPC::Context& context)
     // keys at runtime.
     return rpcError (rpcNOT_IMPL);
 
-    // auto lock = beast::make_lock(context.app.getMasterMutex());
+    // auto lock = make_lock(context.app.getMasterMutex());
     // Json::Value obj (Json::objectValue);
 
     // if (!context.params.isMember (jss::secret))

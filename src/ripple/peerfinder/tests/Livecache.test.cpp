@@ -21,7 +21,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/peerfinder/impl/Livecache.h>
 #include <beast/unit_test/suite.h>
-#include <beast/chrono/manual_clock.h>
+#include <beast/clock/manual_clock.h>
 
 namespace ripple {
 namespace PeerFinder {

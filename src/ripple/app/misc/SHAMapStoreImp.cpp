@@ -835,7 +835,7 @@ setup_SHAMapStore (Config const& c)
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore (Application& app,
         SHAMapStore::Setup const& s,
-        beast::Stoppable& parent,
+        Stoppable& parent,
         NodeStore::Scheduler& scheduler,
         beast::Journal journal,
         beast::Journal nodeStoreJournal,

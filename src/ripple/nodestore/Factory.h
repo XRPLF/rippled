@@ -22,7 +22,7 @@
 
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/Scheduler.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 namespace NodeStore {

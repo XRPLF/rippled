@@ -34,14 +34,14 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
-#include <beast/ByteOrder.h>
-#include <beast/asio/IPAddressConversion.h>
+#include <ripple/beast/core/ByteOrder.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/streambuf.h>
 #include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-#include <beast/utility/WrappedSink.h>
+#include <ripple/beast/utility/WrappedSink.h>
 #include <cstdint>
 #include <deque>
 #include <queue>
@@ -152,10 +152,11 @@ private:
     Resource::Consumer usage_;
     Resource::Charge fee_;
     PeerFinder::Slot::ptr slot_;
-    beast::asio::streambuf read_buffer_;
-    beast::http::message http_message_;
-    beast::http::body http_body_;
-    beast::asio::streambuf write_buffer_;
+    beast::streambuf read_buffer_;
+    http_request_type request_;
+    beast::deprecated_http::message response_;
+    beast::http::headers<std::allocator<char>> const& headers_;
+    beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -171,7 +172,7 @@ public:
 
     /** Create an active incoming peer from an established ssl connection. */
     PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
-        PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+        PeerFinder::Slot::ptr const& slot, http_request_type&& request,
             protocol::TMHello const& hello, PublicKey const& publicKey,
                 Resource::Consumer consumer,
                     std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
@@ -182,7 +183,7 @@ public:
     template <class Buffers>
     PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-            beast::http::message&& response, Resource::Consumer usage,
+            beast::deprecated_http::message&& response, Resource::Consumer usage,
                 protocol::TMHello const& hello,
                     PublicKey const& publicKey, id_t id,
                         OverlayImpl& overlay);
@@ -359,8 +360,8 @@ private:
     void
     doAccept();
 
-    beast::http::message
-    makeResponse (bool crawl, beast::http::message const& req,
+    beast::deprecated_http::message
+    makeResponse (bool crawl, http_request_type const& req,
         beast::IP::Endpoint remoteAddress,
         uint256 const& sharedValue);
 
@@ -476,7 +477,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-        beast::http::message&& response, Resource::Consumer usage,
+        beast::deprecated_http::message&& response, Resource::Consumer usage,
             protocol::TMHello const& hello,
                 PublicKey const& publicKey, id_t id,
                     OverlayImpl& overlay)
@@ -504,7 +505,8 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , usage_ (usage)
     , fee_ (Resource::feeLightPeer)
     , slot_ (std::move(slot))
-    , http_message_(std::move(response))
+    , response_(std::move(response))
+    , headers_(response_.headers)
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

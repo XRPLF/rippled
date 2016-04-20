@@ -21,8 +21,8 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <beast/container/aged_unordered_set.h>
-#include <beast/module/core/diagnostic/FatalError.h>
+#include <ripple/beast/container/aged_unordered_set.h>
+#include <ripple/beast/core/FatalError.h>
 #include <cstdint>
 #include <sstream>
 #include <stdexcept>

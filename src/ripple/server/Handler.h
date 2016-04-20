@@ -21,8 +21,8 @@
 #define RIPPLE_SERVER_HANDLER_H_INCLUDED
 
 #include <ripple/server/Handoff.h>
+#include <ripple/server/WSSession.h>
 #include <beast/asio/ssl_bundle.h>
-#include <beast/http/message.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/system/error_code.hpp>
@@ -61,18 +61,18 @@ struct Handler
     Handoff
     onHandoff (Session& session,
         std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-            beast::http::message&& request,
+            http_request_type&& request,
                 boost::asio::ip::tcp::endpoint remote_address) = 0;
 
     virtual
     Handoff
     onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-        beast::http::message&& request,
+        http_request_type&& request,
             boost::asio::ip::tcp::endpoint remote_address) = 0;
     /** @} */
 
     /** Called when we have a complete HTTP request. */
-    // VFALCO TODO Pass the beast::http::message as a parameter
+    // VFALCO TODO Pass the beast::deprecated_http::message as a parameter
     virtual void onRequest (Session& session) = 0;
 
     /** Called when the session ends.
@@ -84,6 +84,20 @@ struct Handler
 
     /** Called when the server has finished its stop. */
     virtual void onStopped (Server& server) = 0;
+
+    //
+    // WebSockets
+    //
+
+    /** Called on a WebSocket Upgrade request. */
+
+
+    /** Called for each complete WebSocket message. */
+    virtual
+    void
+    onWSMessage(std::shared_ptr<WSSession> session,
+        std::vector<boost::asio::const_buffer> const& buffers) = 0;
+
 };
 
 } // ripple

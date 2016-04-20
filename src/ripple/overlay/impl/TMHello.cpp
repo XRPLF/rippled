@@ -27,7 +27,7 @@
 #include <ripple/overlay/impl/TMHello.h>
 #include <beast/crypto/base64.h>
 #include <beast/http/rfc2616.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 
@@ -154,43 +154,41 @@ buildHello (
 }
 
 void
-appendHello (beast::http::message& m,
+appendHello (beast::http::headers<std::allocator<char>>& h,
     protocol::TMHello const& hello)
 {
-    auto& h = m.headers;
-
     //h.append ("Protocol-Versions",...
 
-    h.append ("Public-Key", hello.nodepublic());
+    h.insert ("Public-Key", hello.nodepublic());
 
-    h.append ("Session-Signature", beast::base64_encode (
+    h.insert ("Session-Signature", beast::base64_encode (
         hello.nodeproof()));
 
     if (hello.has_nettime())
-        h.append ("Network-Time", std::to_string (hello.nettime()));
+        h.insert ("Network-Time", std::to_string (hello.nettime()));
 
     if (hello.has_ledgerindex())
-        h.append ("Ledger", std::to_string (hello.ledgerindex()));
+        h.insert ("Ledger", std::to_string (hello.ledgerindex()));
 
     if (hello.has_ledgerclosed())
-        h.append ("Closed-Ledger", beast::base64_encode (
+        h.insert ("Closed-Ledger", beast::base64_encode (
             hello.ledgerclosed()));
 
     if (hello.has_ledgerprevious())
-        h.append ("Previous-Ledger", beast::base64_encode (
+        h.insert ("Previous-Ledger", beast::base64_encode (
             hello.ledgerprevious()));
 
     if (hello.has_local_ip())
-        h.append ("Local-IP", beast::IP::to_string (
+        h.insert ("Local-IP", beast::IP::to_string (
             beast::IP::AddressV4(hello.local_ip())));
 
     if (hello.has_remote_ip())
-        h.append ("Remote-IP", beast::IP::to_string (
+        h.insert ("Remote-IP", beast::IP::to_string (
             beast::IP::AddressV4(hello.remote_ip())));
 }
 
 std::vector<ProtocolVersion>
-parse_ProtocolVersions (std::string const& s)
+parse_ProtocolVersions(boost::string_ref const& value)
 {
     static boost::regex re (
         "^"                  // start of line
@@ -201,7 +199,7 @@ parse_ProtocolVersions (std::string const& s)
         "$"                  // The end of the string
         , boost::regex_constants::optimize);
 
-    auto const list = beast::rfc2616::split_commas (s);
+    auto const list = beast::rfc2616::split_commas(value);
     std::vector<ProtocolVersion> result;
     for (auto const& s : list)
     {
@@ -224,10 +222,8 @@ parse_ProtocolVersions (std::string const& s)
 }
 
 boost::optional<protocol::TMHello>
-parseHello (beast::http::message const& m, beast::Journal journal)
+parseHello (bool request, beast::http::headers<std::allocator<char>> const& h, beast::Journal journal)
 {
-    auto const& h = m.headers;
-
     // protocol version in TMHello is obsolete,
     // it is supplanted by the values in the headers.
     protocol::TMHello hello;
@@ -270,7 +266,7 @@ parseHello (beast::http::message const& m, beast::Journal journal)
     }
 
     {
-        auto const iter = h.find (m.request() ?
+        auto const iter = h.find (request ?
             "User-Agent" : "Server");
         if (iter != h.end())
             hello.set_fullversion (iter->second);

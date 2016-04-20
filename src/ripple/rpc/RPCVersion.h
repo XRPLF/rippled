@@ -20,7 +20,7 @@
 #ifndef RIPPLED_RIPPLE_RPC_VERSIONS_H
 #define RIPPLED_RIPPLE_RPC_VERSIONS_H
 
-#include <beast/module/core/diagnostic/SemanticVersion.h>
+#include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/json/Object.h>
 

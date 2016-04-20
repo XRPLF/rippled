@@ -20,9 +20,9 @@
 #ifndef RIPPLE_CORE_JOBCORO_H_INCLUDED
 #define RIPPLE_CORE_JOBCORO_H_INCLUDED
 
+#include <ripple/basics/win32_workaround.h>
 #include <ripple/core/Job.h>
 #include <ripple/basics/LocalValue.h>
-#include <beast/win32_workaround.h>
 #include <boost/coroutine/all.hpp>
 #include <condition_variable>
 #include <string>

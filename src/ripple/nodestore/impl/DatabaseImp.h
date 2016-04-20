@@ -29,7 +29,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 #include <chrono>
 #include <condition_variable>
 #include <set>

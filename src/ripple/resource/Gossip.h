@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RESOURCE_GOSSIP_H_INCLUDED
 #define RIPPLE_RESOURCE_GOSSIP_H_INCLUDED
 
-#include <beast/net/IPEndpoint.h>
+#include <ripple/beast/net/IPEndpoint.h>
 
 namespace ripple {
 namespace Resource {

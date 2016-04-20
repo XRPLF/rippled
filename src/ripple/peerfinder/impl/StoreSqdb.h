@@ -22,7 +22,7 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/core/SociDB.h>
-#include <beast/utility/Debug.h>
+#include <ripple/beast/utility/Debug.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

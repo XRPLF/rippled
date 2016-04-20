@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <beast/nudb/nudb.cpp>
-
 #include <ripple/nodestore/backend/MemoryFactory.cpp>
 #include <ripple/nodestore/backend/NuDBFactory.cpp>
 #include <ripple/nodestore/backend/NullFactory.cpp>

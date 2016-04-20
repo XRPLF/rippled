@@ -22,7 +22,7 @@
 
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/STLedgerEntry.h>
-#include <beast/container/aged_unordered_map.h>
+#include <ripple/beast/container/aged_unordered_map.h>
 #include <memory>
 #include <mutex>
 

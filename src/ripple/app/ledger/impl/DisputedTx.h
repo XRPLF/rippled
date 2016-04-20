@@ -23,7 +23,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/basics/base_uint.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <memory>
 
 namespace ripple {

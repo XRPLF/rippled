@@ -19,7 +19,7 @@
 
 #include <ripple/app/tx/impl/Taker.h>
 #include <beast/unit_test/suite.h>
-#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <type_traits>
 
 namespace ripple {
