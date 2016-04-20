@@ -17,13 +17,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_IS_CALL_POSSIBLE_H_INCLUDED
-#define BEAST_IS_CALL_POSSIBLE_H_INCLUDED
+#ifndef BEAST_DETAIL_IS_CALL_POSSIBLE_HPP
+#define BEAST_DETAIL_IS_CALL_POSSIBLE_HPP
 
 #include <type_traits>
 
 namespace beast {
-
 namespace detail {
 
 template <class R, class C, class ...A>
@@ -37,8 +36,6 @@ is_call_possible_test(C&& c, int, A&& ...a)
 template <class R, class C, class ...A>
 std::false_type
 is_call_possible_test(C&& c, long, A&& ...a);
-
-} // detail
 
 /** Metafunction returns `true` if F callable as R(A...)
     Example:
@@ -76,28 +73,30 @@ struct is_call_possible_udt3
     int operator()(int);
 };
 
-static_assert(is_call_possible<
+static_assert(detail::is_call_possible<
     is_call_possible_udt1, void(int)>::value, "");
 
-static_assert(! is_call_possible<
+static_assert(! detail::is_call_possible<
     is_call_possible_udt1, void(void)>::value, "");
 
-static_assert(is_call_possible<
+static_assert(detail::is_call_possible<
     is_call_possible_udt2, int(int)>::value, "");
 
-static_assert(! is_call_possible<
+static_assert(! detail::is_call_possible<
     is_call_possible_udt2, int(void)>::value, "");
 
-static_assert(! is_call_possible<
+static_assert(! detail::is_call_possible<
     is_call_possible_udt2, void(void)>::value, "");
 
-static_assert(is_call_possible<
+static_assert(detail::is_call_possible<
     is_call_possible_udt3, int(int)>::value, "");
 
-static_assert(! is_call_possible<
+static_assert(! detail::is_call_possible<
     is_call_possible_udt3 const, int(int)>::value, "");
-}
 
-}
+} // test
+
+} // detail
+} // beast
 
 #endif

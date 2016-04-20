@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_TYPE_CHECK_H_INCLUDED
 #define BEAST_ASIO_TYPE_CHECK_H_INCLUDED
 
-#include <beast/is_call_possible.h>
+#include <beast/detail/is_call_possible.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_service.hpp>
@@ -320,7 +320,7 @@ struct is_Streambuf<T, std::void_t<
 template<class T, class Signature>
 using is_Handler = std::integral_constant<bool,
     std::is_copy_constructible<std::decay_t<T>>::value &&
-        is_call_possible<T, Signature>::value>;
+        detail::is_call_possible<T, Signature>::value>;
 
 #endif
 

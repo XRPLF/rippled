@@ -377,8 +377,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\write.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\is_call_possible.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\abstract_ostream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\basic_abstract_ostream.h">
@@ -513,6 +511,8 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\is_call_possible.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\sha1.hpp">
     </ClInclude>
