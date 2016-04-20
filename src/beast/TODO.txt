@@ -1,0 +1,19 @@
+* kick out non-beast code
+
+* redo directory structure
+
+* Change build options to C++11 only
+
+* Replace Jamroot with Jamfile
+
+* Switch source material to Boost license
+
+* Fix failing test/message.cpp
+
+* Complete allocator testing in basic_streambuf, basic_headers
+
+* Tidy up type_checks
+  - Derive from std::integral_constant
+
+* Check DOXYGEN, GENERATIC_DOCS directives in source
+  - See if we can include them now that xsl is fixed

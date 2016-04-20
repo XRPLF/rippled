@@ -20,8 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/impl/CheckLibraryVersionsImpl.h>
-#include <beast/unit_test/suite.h>
-#include <beast/module/core/diagnostic/SemanticVersion.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/beast/core/SemanticVersion.h>
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>
 #include <sstream>

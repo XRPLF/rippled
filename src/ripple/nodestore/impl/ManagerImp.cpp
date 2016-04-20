@@ -23,7 +23,7 @@
 #include <ripple/nodestore/impl/DatabaseImp.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 #include <ripple/basics/StringUtilities.h>
-#include <beast/utility/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <memory>
 #include <stdexcept>
 
@@ -130,7 +130,7 @@ ManagerImp::find (std::string const& name)
     auto const iter = std::find_if(list_.begin(), list_.end(),
         [&name](Factory* other)
         {
-            return beast::ci_equal(name, other->getName());
+            return beast::detail::ci_equal(name, other->getName());
         } );
     if (iter == list_.end())
         return nullptr;

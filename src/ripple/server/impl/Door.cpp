@@ -25,7 +25,7 @@
 #include <ripple/server/impl/SSLHTTPPeer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
-#include <beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <functional>
 
 namespace ripple {
@@ -132,7 +132,7 @@ Door::Detector::do_detect (boost::asio::yield_context yield)
 {
     bool ssl;
     error_code ec;
-    beast::asio::streambuf buf(16);
+    beast::streambuf buf(16);
     timer_.expires_from_now(std::chrono::seconds(15));
     std::tie(ec, ssl) = detect_ssl(socket_, buf, yield);
     error_code unused;
@@ -170,13 +170,15 @@ Door::Door (Handler& handler, boost::asio::io_service& io_service,
     , handler_(handler)
     , acceptor_(io_service)
     , strand_(io_service)
-    , ssl_ (
+    , ssl_(
         port_.protocol.count("https") > 0 ||
         //port_.protocol.count("wss") > 0 ||
-        port_.protocol.count("peer") > 0)
-    , plain_ (
+        port_.protocol.count("wss2")  > 0 ||
+        port_.protocol.count("peer")  > 0)
+    , plain_(
+        port_.protocol.count("http") > 0 ||
         //port_.protocol.count("ws") > 0 ||
-        port_.protocol.count("http") > 0)
+        port_.protocol.count("ws2"))
 {
     error_code ec;
     endpoint_type const local_address =

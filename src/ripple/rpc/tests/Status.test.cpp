@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/basics/contract.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <algorithm>
 
 namespace ripple {

@@ -23,7 +23,7 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

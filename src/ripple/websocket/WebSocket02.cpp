@@ -21,7 +21,7 @@
 #include <ripple/websocket/Handler.h>
 #include <ripple/websocket/Server.h>
 #include <ripple/basics/contract.h>
-#include <beast/weak_fn.h>
+#include <ripple/beast/utility/weak_fn.h>
 
 // This file contains websocket::WebSocket02 implementations for the WebSocket
 // generic functions as well as methods on Server and ConnectionImpl.
@@ -127,7 +127,7 @@ void Server <WebSocket02>::listen()
     }
 }
 
-std::unique_ptr<beast::Stoppable> makeServer02 (ServerDescription const& desc)
+std::unique_ptr<Stoppable> makeServer02 (ServerDescription const& desc)
 {
     return std::make_unique <Server <WebSocket02>> (desc);
 }

@@ -21,7 +21,7 @@
 #include <ripple/basics/random.h>
 #include <ripple/shamap/SHAMap.h>
 #include <ripple/nodestore/Database.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 

@@ -21,8 +21,8 @@
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/utility/ci_char_traits.h>
-#include <beast/utility/Journal.h>
+#include <beast/detail/ci_char_traits.hpp>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/filesystem.hpp>
 #include <map>
 #include <memory>
@@ -148,7 +148,7 @@ private:
     std::mutex mutable mutex_;
     std::map <std::string,
         std::unique_ptr<beast::Journal::Sink>,
-            beast::ci_less> sinks_;
+            beast::detail::ci_less> sinks_;
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;

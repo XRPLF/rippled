@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE library PUBLIC "-//Boost//DTD BoostBook XML V1.0//EN" "boostbook.dtd">
+
+<!--
+  Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+  Distributed under the Boost Software License, Version 1.0. (See accompanying
+  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+-->
+
+<informaltable frame="all">
+  <tgroup cols="4">
+    <colspec colname="a"/>
+    <colspec colname="b"/>
+    <colspec colname="c"/>
+    <colspec colname="d"/>
+    <thead>
+      <row>
+        <entry valign="center" namest="a" nameend="b">
+          <bridgehead renderas="sect2">HTTP</bridgehead>
+        </entry>
+        <entry valign="center" namest="c" nameend="d">
+          <bridgehead renderas="sect2">WebSocket</bridgehead>
+        </entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Classes</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.http__basic_headers">basic_headers</link></member>
+            <member><link linkend="beast.ref.http__basic_parser">basic_parser</link></member>
+            <member><link linkend="beast.ref.http__basic_streambuf_body">basic_streambuf_body</link></member>
+            <member><link linkend="beast.ref.http__empty_body">empty_body</link></member>
+            <member><link linkend="beast.ref.http__error_code">error_code</link></member>
+            <member><link linkend="beast.ref.http__message">message</link></member>
+            <member><link linkend="beast.ref.http__resume_context">resume_context</link></member>
+            <member><link linkend="beast.ref.http__stream">stream</link></member>
+            <member><link linkend="beast.ref.http__streambuf_body">streambuf_body</link></member>
+            <member><link linkend="beast.ref.http__string_body">string_body</link></member>
+          </simplelist>
+          <bridgehead renderas="sect3">Type Traits</bridgehead>
+          <simplelist type="vert" columns="1">
+           <member><link linkend="beast.ref.http__is_Body">is_Body</link></member>
+          </simplelist>
+        </entry>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Functions</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.http__async_read">async_read</link></member>
+            <member><link linkend="beast.ref.http__async_write">async_write</link></member>
+            <member><link linkend="beast.ref.http__chunk_encode">chunk_encode</link></member>
+            <member><link linkend="beast.ref.http__chunk_encode_final">chunk_encode_final</link></member>
+            <member><link linkend="beast.ref.http__read">read</link></member>
+            <member><link linkend="beast.ref.http__write">write</link></member>
+          </simplelist>
+          <bridgehead renderas="sect3">Concepts</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.types.Body">Body</link></member>
+            <member><link linkend="beast.types.Field">Field</link></member>
+            <member><link linkend="beast.types.FieldSequence">FieldSequence</link></member>
+            <member><link linkend="beast.types.Reader">Reader</link></member>
+            <member><link linkend="beast.types.Writer">Writer</link></member>
+          </simplelist>
+        </entry>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Classes</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.wsproto__close_reason">close_reason</link></member>
+            <member><link linkend="beast.ref.wsproto__socket">socket</link></member>
+            <member><link linkend="beast.ref.wsproto__static_string">static_string</link></member>
+          </simplelist>
+          <bridgehead renderas="sect3">Options</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.wsproto__auto_fragment_size">auto_fragment_size</link></member>
+            <member><link linkend="beast.ref.wsproto__decorate">decorate</link></member>
+            <member><link linkend="beast.ref.wsproto__keep_alive">keep_alive</link></member>
+            <member><link linkend="beast.ref.wsproto__read_buffer_size">read_buffer_size</link></member>
+            <member><link linkend="beast.ref.wsproto__read_message_max">read_message_max</link></member>
+            <member><link linkend="beast.ref.wsproto__write_buffer_size">write_buffer_size</link></member>
+          </simplelist>
+        </entry>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Functions</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.wsproto__async_teardown">async_teardown</link></member>
+            <member><link linkend="beast.ref.wsproto__teardown">teardown</link></member>
+          </simplelist>
+          <bridgehead renderas="sect3">Constants</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.wsproto__close_code">close_code</link></member>
+            <member><link linkend="beast.ref.wsproto__opcode">opcode</link></member>
+          </simplelist>
+        </entry>
+      </row>
+    </tbody>
+  </tgroup>
+  <tgroup cols="4">
+    <colspec colname="a"/>
+    <colspec colname="b"/>
+    <colspec colname="c"/>
+    <colspec colname="d"/>
+    <thead>
+      <row>
+        <entry valign="center" namest="a" nameend="d">
+          <bridgehead renderas="sect2">Core</bridgehead>
+        </entry>
+      </row>
+    </thead>
+    <tbody>
+      <row>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Classes</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.async_completion">async_completion</link></member>
+            <member><link linkend="beast.ref.basic_streambuf">basic_streambuf</link></member>
+            <member><link linkend="beast.ref.buffers_adapter">buffers_adapter</link></member>
+            <member><link linkend="beast.ref.consuming_buffers">consuming_buffers</link></member>
+            <member><link linkend="beast.ref.handler_alloc">handler_alloc</link></member>
+            <member><link linkend="beast.ref.prepared_buffers">prepared_buffers</link></member>
+            <member><link linkend="beast.ref.static_streambuf">static_streambuf</link></member>
+            <member><link linkend="beast.ref.static_streambuf_n">static_streambuf_n</link></member>
+            <member><link linkend="beast.ref.streambuf">streambuf</link></member>
+            <member><link linkend="beast.ref.streambuf_readstream">streambuf_readstream</link></member>
+          </simplelist>
+        </entry>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Functions</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.append_buffers">append_buffers</link></member>
+            <member><link linkend="beast.ref.bind_handler">bind_handler</link></member>
+            <member><link linkend="beast.ref.prepare_buffer">prepare_buffer</link></member>
+            <member><link linkend="beast.ref.prepare_buffers">prepare_buffers</link></member>
+          </simplelist>
+        </entry>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Type Traits</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.is_AsyncReadStream">is_AsyncReadStream</link></member>
+            <member><link linkend="beast.ref.is_AsyncWriteStream">is_AsyncWriteStream</link></member>
+            <member><link linkend="beast.ref.is_BufferSequence">is_BufferSequence</link></member>
+            <member><link linkend="beast.ref.is_ConstBufferSequence">is_ConstBufferSequence</link></member>
+            <member><link linkend="beast.ref.is_Handler">is_Handler</link></member>
+            <member><link linkend="beast.ref.is_MutableBufferSequence">is_MutableBufferSequence</link></member>
+            <member><link linkend="beast.ref.is_Stream">is_Stream</link></member>
+            <member><link linkend="beast.ref.is_Streambuf">is_Streambuf</link></member>
+            <member><link linkend="beast.ref.is_SyncReadStream">is_SyncReadStream</link></member>
+            <member><link linkend="beast.ref.is_SyncWriteStream">is_SyncWriteStream</link></member>
+          </simplelist>
+        </entry>
+        <entry valign="top">
+          <bridgehead renderas="sect3">Concepts</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.types.BufferSequence">BufferSequence</link></member>
+            <member><link linkend="beast.types.Stream">Stream</link></member>
+            <member><link linkend="beast.types.Streambuf">Streambuf</link></member>
+          </simplelist>
+        </entry>
+      </row>
+    </tbody>
+  </tgroup>
+</informaltable>

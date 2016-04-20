@@ -28,7 +28,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/TxFlags.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple
 {

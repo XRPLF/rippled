@@ -25,7 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <utility>
 

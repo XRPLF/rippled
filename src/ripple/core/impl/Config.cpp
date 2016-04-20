@@ -26,10 +26,9 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
-#include <beast/http/URL.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/streams/debug_ostream.h>
-#include <beast/utility/ci_char_traits.h>
+#include <ripple/beast/net/URL.h>
+#include <ripple/beast/core/LexicalCast.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
@@ -328,15 +327,15 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp, j_))
     {
-        if (beast::ci_equal(strTemp, "tiny"))
+        if (beast::detail::ci_equal(strTemp, "tiny"))
             NODE_SIZE = 0;
-        else if (beast::ci_equal(strTemp, "small"))
+        else if (beast::detail::ci_equal(strTemp, "small"))
             NODE_SIZE = 1;
-        else if (beast::ci_equal(strTemp, "medium"))
+        else if (beast::detail::ci_equal(strTemp, "medium"))
             NODE_SIZE = 2;
-        else if (beast::ci_equal(strTemp, "large"))
+        else if (beast::detail::ci_equal(strTemp, "large"))
             NODE_SIZE = 3;
-        else if (beast::ci_equal(strTemp, "huge"))
+        else if (beast::detail::ci_equal(strTemp, "huge"))
             NODE_SIZE = 4;
         else
         {
@@ -398,9 +397,9 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_LEDGER_HISTORY, strTemp, j_))
     {
-        if (beast::ci_equal(strTemp, "full"))
+        if (beast::detail::ci_equal(strTemp, "full"))
             LEDGER_HISTORY = 1000000000u;
-        else if (beast::ci_equal(strTemp, "none"))
+        else if (beast::detail::ci_equal(strTemp, "none"))
             LEDGER_HISTORY = 0;
         else
             LEDGER_HISTORY = beast::lexicalCastThrow <std::uint32_t> (strTemp);
@@ -408,9 +407,9 @@ void Config::loadFromString (std::string const& fileContents)
 
     if (getSingleSection (secConfig, SECTION_FETCH_DEPTH, strTemp, j_))
     {
-        if (beast::ci_equal(strTemp, "none"))
+        if (beast::detail::ci_equal(strTemp, "none"))
             FETCH_DEPTH = 0;
-        else if (beast::ci_equal(strTemp, "full"))
+        else if (beast::detail::ci_equal(strTemp, "full"))
             FETCH_DEPTH = 1000000000u;
         else
             FETCH_DEPTH = beast::lexicalCastThrow <std::uint32_t> (strTemp);

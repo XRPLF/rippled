@@ -21,11 +21,10 @@
 #define RIPPLE_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
 
 #include <ripple/basics/Log.h>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/UintTypes.h>
-
-#include <beast/beast/utility/Journal.h>
 
 namespace ripple {
 

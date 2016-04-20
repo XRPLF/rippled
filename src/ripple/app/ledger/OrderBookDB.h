@@ -29,7 +29,7 @@
 namespace ripple {
 
 class OrderBookDB
-    : public beast::Stoppable
+    : public Stoppable
 {
 public:
     OrderBookDB (Application& app, Stoppable& parent);

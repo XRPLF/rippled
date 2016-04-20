@@ -768,6 +768,7 @@ config_base(base)
 base.Append(CPPPATH=[
     'src',
     os.path.join('src', 'beast'),
+    os.path.join('src', 'beast', 'include'),
     os.path.join(build_dir, 'proto'),
     os.path.join('src','soci','src'),
     os.path.join('src','soci','include'),
@@ -901,6 +902,13 @@ def get_classic_sources(toolchain):
             'src/soci/src/core',
             'src/sqlite']
     )
+    append_sources(result, *list_sources('src/beast/beast/http/src', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/clock', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/container', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/insight', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/net', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/nudb', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/utility', '.cpp'))
     append_sources(result, *list_sources('src/ripple/app', '.cpp'))
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
     append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
@@ -940,6 +948,13 @@ def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
+        'src/beast/beast/unity/beast_http_unity.cpp',
+        'src/ripple/beast/unity/beast_clock_unity.cpp',
+        'src/ripple/beast/unity/beast_container_unity.cpp',
+        'src/ripple/beast/unity/beast_insight_unity.cpp',
+        'src/ripple/beast/unity/beast_net_unity.cpp',
+        'src/ripple/beast/unity/beast_nudb_unity.cpp',
+        'src/ripple/beast/unity/beast_utility_unity.cpp',
         'src/ripple/unity/app_ledger.cpp',
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
@@ -1097,7 +1112,7 @@ for tu_style in ['classic', 'unity']:
                 cc_flags = {}
 
             object_builder.add_source_files(
-                'src/beast/beast/unity/hash_unity.cpp',
+                'src/ripple/beast/unity/beast_hash_unity.cpp',
                 'src/ripple/unity/beast.cpp',
                 'src/ripple/unity/lz4.c',
                 'src/ripple/unity/protobuf.cpp',
@@ -1108,7 +1123,7 @@ for tu_style in ['classic', 'unity']:
             )
 
             object_builder.add_source_files(
-                'src/ripple/unity/beastc.c',
+                'src/sqlite/sqlite_unity.c',
                 CCFLAGS = ([] if toolchain == 'msvc' else ['-Wno-array-bounds']))
 
             if 'gcc' in toolchain:
@@ -1188,7 +1203,7 @@ for key, value in aliases.iteritems():
 vcxproj = base.VSProject(
     os.path.join('Builds', 'VisualStudio2015', 'RippleD'),
     source = [],
-    VSPROJECT_ROOT_DIRS = ['src/beast', 'src', '.'],
+    VSPROJECT_ROOT_DIRS = ['src/beast', 'src/beast/include', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)
 

@@ -22,7 +22,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobTypeInfo.h>
-#include <beast/insight/Collector.h>
+#include <ripple/beast/insight/Collector.h>
 
 namespace ripple
 {

@@ -22,7 +22,7 @@
 #include <ripple/crypto/impl/ec_key.h>
 #include <ripple/crypto/impl/openssl.h>
 #include <ripple/protocol/digest.h>
-#include <beast/module/core/diagnostic/FatalError.h>
+#include <ripple/beast/core/FatalError.h>
 #include <array>
 #include <string>
 #include <openssl/pem.h>

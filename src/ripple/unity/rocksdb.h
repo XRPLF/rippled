@@ -20,7 +20,7 @@
 #ifndef RIPPLE_UNITY_ROCKSDB_H_INCLUDED
 #define RIPPLE_UNITY_ROCKSDB_H_INCLUDED
 
-#include <beast/Config.h>
+#include <ripple/beast/core/Config.h>
 
 #ifdef __clang_major__
 #if __clang_major__ >= 7

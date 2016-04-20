@@ -29,7 +29,7 @@
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/hardened_hash.h>
-#include <beast/utility/Zero.h>
+#include <ripple/beast/utility/Zero.h>
 #include <boost/functional/hash.hpp>
 #include <functional>
 #include <type_traits>

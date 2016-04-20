@@ -23,8 +23,8 @@
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/resource/impl/Key.h>
 #include <ripple/resource/impl/Tuning.h>
-#include <beast/chrono/abstract_clock.h>
-#include <beast/intrusive/List.h>
+#include <ripple/beast/clock/abstract_clock.h>
+#include <ripple/beast/core/List.h>
 #include <cassert>
 
 namespace ripple {

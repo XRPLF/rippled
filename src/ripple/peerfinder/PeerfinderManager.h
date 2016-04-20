@@ -21,9 +21,9 @@
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
 #include <ripple/peerfinder/Slot.h>
-#include <beast/chrono/abstract_clock.h>
-#include <beast/threads/Stoppable.h>
-#include <beast/utility/PropertyStream.h>
+#include <ripple/beast/clock/abstract_clock.h>
+#include <ripple/core/Stoppable.h>
+#include <ripple/beast/utility/PropertyStream.h>
 #include <boost/asio/ip/tcp.hpp>
 
 namespace ripple {
@@ -120,7 +120,7 @@ enum class Result
 
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager
-    : public beast::Stoppable
+    : public Stoppable
     , public beast::PropertyStream::Source
 {
 protected:

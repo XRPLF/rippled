@@ -32,7 +32,7 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/NodeObject.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <boost/thread/shared_mutex.hpp>

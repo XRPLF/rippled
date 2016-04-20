@@ -22,7 +22,7 @@
 #include <ripple/basics/random.h>
 #include <ripple/crypto/CBigNum.h>
 #include <ripple/protocol/STAmount.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 

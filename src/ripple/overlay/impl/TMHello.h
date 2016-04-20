@@ -25,12 +25,11 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/http/message.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <utility>
-
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
-
+#include <boost/utility/string_ref.hpp>
 #include "ripple.pb.h"
 
 namespace ripple {
@@ -59,14 +58,14 @@ buildHello (uint256 const& sharedValue,
 
 /** Insert HTTP headers based on the TMHello protocol message. */
 void
-appendHello (beast::http::message& m, protocol::TMHello const& hello);
+appendHello (beast::http::headers<std::allocator<char>>& h, protocol::TMHello const& hello);
 
 /** Parse HTTP headers into TMHello protocol message.
     @return A protocol message on success; an empty optional
             if the parsing failed.
 */
 boost::optional<protocol::TMHello>
-parseHello (beast::http::message const& m, beast::Journal journal);
+parseHello (bool request, beast::http::headers<std::allocator<char>> const& h, beast::Journal journal);
 
 /** Validate and store the public key in the TMHello.
     This includes signature verification on the shared value.
@@ -85,7 +84,7 @@ verifyHello (protocol::TMHello const& h, uint256 const& sharedValue,
     excluded from the result set.
 */
 std::vector<ProtocolVersion>
-parse_ProtocolVersions (std::string const& s);
+parse_ProtocolVersions(boost::string_ref const& s);
 
 }
 

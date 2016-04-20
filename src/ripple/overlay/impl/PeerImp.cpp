@@ -44,9 +44,8 @@
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/module/core/diagnostic/SemanticVersion.h>
-#include <beast/streams/debug_ostream.h>
-#include <beast/weak_fn.h>
+#include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/beast/utility/weak_fn.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
 #include <algorithm>
@@ -59,7 +58,7 @@ using namespace std::chrono_literals;
 namespace ripple {
 
 PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
-    PeerFinder::Slot::ptr const& slot, beast::http::message&& request,
+    PeerFinder::Slot::ptr const& slot, http_request_type&& request,
         protocol::TMHello const& hello, PublicKey const& publicKey,
             Resource::Consumer consumer,
                 std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
@@ -89,7 +88,8 @@ PeerImp::PeerImp (Application& app, id_t id, endpoint_type remote_endpoint,
     , usage_(consumer)
     , fee_ (Resource::feeLightPeer)
     , slot_ (slot)
-    , http_message_(std::move(request))
+    , request_(std::move(request))
+    , headers_(request_.headers)
 {
 }
 
@@ -237,10 +237,10 @@ PeerImp::charge (Resource::Charge const& fee)
 bool
 PeerImp::crawl() const
 {
-    auto const iter = http_message_.headers.find("Crawl");
-    if (iter == http_message_.headers.end())
+    auto const iter = headers_.find("Crawl");
+    if (iter == headers_.end())
         return false;
-    return beast::ci_equal(iter->second, "public");
+    return beast::detail::ci_equal(iter->second, "public");
 }
 
 std::string
@@ -586,7 +586,7 @@ PeerImp::onShutdown(error_code ec)
 void PeerImp::doAccept()
 {
     assert(read_buffer_.size() == 0);
-    assert(http_message_.upgrade());
+//     assert(request_.upgrade);
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
@@ -601,8 +601,8 @@ void PeerImp::doAccept()
 
     auto resp = makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
-            http_message_, remote_address_, *sharedValue);
-    beast::http::write (write_buffer_, resp);
+            request_, remote_address_, *sharedValue);
+    beast::deprecated_http::write (write_buffer_, resp);
 
     auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol);
@@ -641,25 +641,25 @@ void PeerImp::doAccept()
     onWriteResponse(error_code(), 0);
 }
 
-beast::http::message
+beast::deprecated_http::message
 PeerImp::makeResponse (bool crawl,
-    beast::http::message const& req,
+    http_request_type const& req,
     beast::IP::Endpoint remote,
     uint256 const& sharedValue)
 {
-    beast::http::message resp;
+    beast::deprecated_http::message resp;
     resp.request(false);
     resp.status(101);
     resp.reason("Switching Protocols");
-    resp.version(req.version());
-    resp.headers.append("Connection", "Upgrade");
-    resp.headers.append("Upgrade", "RTXP/1.2");
-    resp.headers.append("Connect-AS", "Peer");
-    resp.headers.append("Server", BuildInfo::getFullVersionString());
-    resp.headers.append ("Crawl", crawl ? "public" : "private");
+    resp.version(std::make_pair(req.version / 10, req.version % 10));
+    resp.headers.insert("Connection", "Upgrade");
+    resp.headers.insert("Upgrade", "RTXP/1.2");
+    resp.headers.insert("Connect-AS", "Peer");
+    resp.headers.insert("Server", BuildInfo::getFullVersionString());
+    resp.headers.insert("Crawl", crawl ? "public" : "private");
     protocol::TMHello hello = buildHello(sharedValue,
         overlay_.setup().public_ip, remote, app_);
-    appendHello(resp, hello);
+    appendHello(resp.headers, hello);
     return resp;
 }
 

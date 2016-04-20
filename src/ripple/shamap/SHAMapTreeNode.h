@@ -23,7 +23,7 @@
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/basics/TaggedCache.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 
 #include <cstdint>
 #include <memory>

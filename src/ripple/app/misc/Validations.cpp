@@ -26,11 +26,11 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/ScopedLock.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/TimeKeeper.h>
-#include <beast/module/core/threads/ScopedLock.h>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -42,7 +42,7 @@ class ValidationsImp : public Validations
 private:
     using LockType = std::mutex;
     using ScopedLockType = std::lock_guard <LockType>;
-    using ScopedUnlockType = beast::GenericScopedUnlock <LockType>;
+    using ScopedUnlockType = GenericScopedUnlock <LockType>;
 
     Application& app_;
     std::mutex mutable mLock;

@@ -20,8 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/TaggedCache.h>
-#include <beast/unit_test/suite.h>
-#include <beast/chrono/manual_clock.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/beast/clock/manual_clock.h>
 
 namespace ripple {
 

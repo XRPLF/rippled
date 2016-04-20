@@ -18,15 +18,15 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/hash/xxhasher.h>
+#include <ripple/beast/hash/xxhasher.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
-#include <beast/chrono/basic_seconds_clock.h>
+#include <ripple/beast/clock/basic_seconds_clock.h>
 #include <beast/http/rfc2616.h>
-#include <beast/nudb/create.h>
-#include <beast/nudb/detail/format.h>
-#include <beast/unit_test/suite.h>
-#include <beast/utility/ci_char_traits.h>
+#include <ripple/beast/nudb/create.h>
+#include <ripple/beast/nudb/detail/format.h>
+#include <ripple/beast/unit_test.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
@@ -257,7 +257,7 @@ public:
     }
 };
 
-std::map <std::string, std::string, beast::ci_less>
+std::map <std::string, std::string, beast::detail::ci_less>
 parse_args(std::string const& s)
 {
     // <key> '=' <value>
@@ -273,7 +273,7 @@ parse_args(std::string const& s)
         , boost::regex_constants::optimize
     );
     std::map <std::string,
-        std::string, beast::ci_less> map;
+        std::string, beast::detail::ci_less> map;
     auto const v = beast::rfc2616::split(
         s.begin(), s.end(), ',');
     for (auto const& kv : v)

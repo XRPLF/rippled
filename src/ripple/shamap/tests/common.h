@@ -30,8 +30,8 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/utility/Journal.h>
-#include <beast/chrono/manual_clock.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/beast/clock/manual_clock.h>
 
 namespace ripple {
 namespace tests {

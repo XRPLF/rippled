@@ -26,7 +26,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/basics/make_lock.h>
 
 namespace ripple {
 
@@ -35,7 +35,7 @@ namespace ripple {
 // }
 Json::Value doUnlDelete (RPC::Context& context)
 {
-    auto lock = beast::make_lock(context.app.getMasterMutex());
+    auto lock = make_lock(context.app.getMasterMutex());
 
     if (!context.params.isMember (jss::node))
         return rpcError (rpcINVALID_PARAMS);

@@ -24,7 +24,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/PublicKey.h>
-#include <beast/net/IPEndpoint.h>
+#include <ripple/beast/net/IPEndpoint.h>
 
 namespace ripple {
 

@@ -21,9 +21,9 @@
 #define RIPPLE_TEST_BASICNETWORK_H_INCLUDED
 
 #include <ripple/basics/qalloc.h>
-#include <beast/chrono/manual_clock.h>
-#include <beast/hash/hash_append.h>
-#include <beast/hash/uhash.h>
+#include <ripple/beast/clock/manual_clock.h>
+#include <ripple/beast/hash/hash_append.h>
+#include <ripple/beast/hash/uhash.h>
 #include <boost/container/flat_map.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/beast/deprecated_http.h>
 #include <ripple/test/JSONRPCClient.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
@@ -71,7 +72,7 @@ class JSONRPCClient : public AbstractClient
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
     boost::asio::streambuf bin_;
-    beast::asio::streambuf bout_;
+    beast::streambuf bout_;
 
 public:
     explicit
@@ -121,9 +122,9 @@ public:
         write(stream_, buffer(r));
 
         read_until(stream_, bin_, "\r\n\r\n");
-        beast::asio::streambuf body;
-        beast::http::message m;
-        beast::http::parser p(
+        beast::streambuf body;
+        beast::deprecated_http::message m;
+        beast::deprecated_http::parser p(
             [&](void const* data, std::size_t size)
             {
                 body.commit(buffer_copy(
@@ -132,11 +133,12 @@ public:
 
         for(;;)
         {
-            auto const result = p.write(bin_.data());
-            if (result.first)
-                Throw<boost::system::system_error>(result.first);
-
-            bin_.consume(result.second);
+            boost::system::error_code ec;
+            auto used = p.write(bin_.data(), ec);
+            if(ec)
+                Throw<boost::system::system_error>(ec);
+            bin_.consume(used);
+            // VFALCO What do we do if bin_ still has data?
             if(p.complete())
                 break;
             bin_.commit(stream_.read_some(

@@ -47,8 +47,8 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
-#include <beast/module/core/text/LexicalCast.h>
-#include <beast/utility/make_lock.h>
+#include <ripple/beast/core/LexicalCast.h>
+#include <ripple/basics/make_lock.h>
 #include <type_traits>
 
 namespace ripple {
@@ -1136,9 +1136,9 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         }
 
         // Build new open ledger
-        auto lock = beast::make_lock(
+        auto lock = make_lock(
             app_.getMasterMutex(), std::defer_lock);
-        auto sl = beast::make_lock(
+        auto sl = make_lock(
             ledgerMaster_.peekMutex (), std::defer_lock);
         std::lock(lock, sl);
 

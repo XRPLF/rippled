@@ -26,7 +26,7 @@
 #include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <memory>
 
 namespace ripple {

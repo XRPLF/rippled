@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {

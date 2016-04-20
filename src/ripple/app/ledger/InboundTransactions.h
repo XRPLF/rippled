@@ -22,8 +22,8 @@
 
 #include <ripple/overlay/Peer.h>
 #include <ripple/shamap/SHAMap.h>
-#include <beast/chrono/abstract_clock.h>
-#include <beast/threads/Stoppable.h>
+#include <ripple/beast/clock/abstract_clock.h>
+#include <ripple/core/Stoppable.h>
 #include <memory>
 
 namespace ripple {
@@ -75,7 +75,7 @@ std::unique_ptr <InboundTransactions>
 make_InboundTransactions (
     Application& app,
     InboundTransactions::clock_type& clock,
-    beast::Stoppable& parent,
+    Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function
         <void (uint256 const&,

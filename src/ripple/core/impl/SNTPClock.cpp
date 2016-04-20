@@ -23,7 +23,7 @@
 #include <ripple/basics/random.h>
 #include <ripple/core/impl/SNTPClock.h>
 #include <beast/asio/placeholders.h>
-#include <beast/threads/Thread.h>
+#include <ripple/beast/core/Thread.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <cmath>

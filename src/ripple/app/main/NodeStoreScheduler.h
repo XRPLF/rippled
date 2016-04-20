@@ -22,7 +22,7 @@
 
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/core/JobQueue.h>
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <atomic>
 
 namespace ripple {
@@ -30,7 +30,7 @@ namespace ripple {
 /** A NodeStore::Scheduler which uses the JobQueue and implements the Stoppable API. */
 class NodeStoreScheduler
     : public NodeStore::Scheduler
-    , public beast::Stoppable
+    , public Stoppable
 {
 public:
     NodeStoreScheduler (Stoppable& parent);

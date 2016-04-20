@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <string>
 
 namespace ripple {

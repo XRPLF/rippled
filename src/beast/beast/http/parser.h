@@ -20,172 +20,146 @@
 #ifndef BEAST_HTTP_PARSER_H_INCLUDED
 #define BEAST_HTTP_PARSER_H_INCLUDED
 
+#include <beast/http/basic_parser.h>
+#include <beast/http/error.h>
 #include <beast/http/message.h>
-#include <beast/http/body.h>
+#include <boost/optional.hpp>
 #include <functional>
-#include <string>
+#include <type_traits>
 #include <utility>
 
 namespace beast {
 namespace http {
 
-/** Parser for HTTP messages.
-    The result is stored in a message object.
+/** A HTTP parser.
+
+    The parser may only be used once.
 */
-class parser : public beast::http::basic_parser
+template<bool isRequest, class Body, class Headers>
+class parser
+    : public basic_parser<parser<isRequest, Body, Headers>>
 {
-private:
-    std::reference_wrapper <message> message_;
-    std::function<void(void const*, std::size_t)> write_body_;
+    using message_type =
+        message<isRequest, Body, Headers>;
+
+    message_type m_;
+    typename message_type::body_type::reader r_;
+    bool started_ = false;
 
 public:
-    /** Construct a parser for HTTP request or response.
-        The headers plus request or status line are stored in message.
-        The content-body, if any, is passed as a series of calls to
-        the write_body function. Transfer encodings are applied before
-        any data is passed to the write_body function.
-    */
-    parser (std::function<void(void const*, std::size_t)> write_body,
-            message& m, bool request)
-        : beast::http::basic_parser (request)
-        , message_(m)
-        , write_body_(std::move(write_body))
+    parser(parser&&) = default;
+
+    parser()
+        : http::basic_parser<parser>(isRequest)
+        , r_(m_)
     {
-        message_.get().request(request);
     }
 
-    parser (message& m, body& b, bool request)
-        : beast::http::basic_parser (request)
-        , message_(m)
+    /// Returns `true` if at least one byte has been processed
+    bool
+    started()
     {
-        write_body_ = [&b](void const* data, std::size_t size)
-            {
-                b.write(data, size);
-            };
-
-        message_.get().request(request);
+        return started_;
     }
 
-    parser& operator= (parser&& other) = default;
+    message_type
+    release()
+    {
+        return std::move(m_);
+    }
 
 private:
-    template <class = void>
-    void
-    do_start ();
-
-    template <class = void>
-    bool
-    do_request (method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade);
-
-    template <class = void>
-    bool
-    do_response (int status, std::string const& text,
-        int major, int minor, bool keep_alive, bool upgrade);
-
-    template <class = void>
-    void
-    do_field (std::string const& field, std::string const& value);
-
-    template <class = void>
-    void
-    do_body (void const* data, std::size_t bytes);
-
-    template <class = void>
-    void
-    do_complete();
+    friend class http::basic_parser<parser>;
 
     void
-    on_start () override
+    on_start()
     {
-        do_start();
+        started_ = true;
+    }
+
+    void
+    on_field(std::string const& field, std::string const& value)
+    {
+        m_.headers.insert(field, value);
+    }
+
+    void
+    on_headers_complete(error_code&)
+    {
+        // vFALCO TODO Decode the Content-Length and
+        // Transfer-Encoding, see if we can reserve the buffer.
+        //
+        // r_.reserve(content_length)
     }
 
     bool
-    on_request (method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade) override
+    on_request(http::method_t method, std::string const& url,
+        int major, int minor, bool keep_alive, bool upgrade,
+            std::true_type)
     {
-        return do_request (method, url, major, minor, keep_alive, upgrade);
+        m_.method = method;
+        m_.url = url;
+        m_.version = major * 10 + minor;
+        return true;
     }
 
     bool
-    on_response (int status, std::string const& text,
-        int major, int minor, bool keep_alive, bool upgrade) override
+    on_request(http::method_t, std::string const&,
+        int, int, bool, bool,
+            std::false_type)
     {
-        return do_response (status, text, major, minor, keep_alive, upgrade);
+        return true;
+    }
+
+    bool
+    on_request(http::method_t method, std::string const& url,
+        int major, int minor, bool keep_alive, bool upgrade)
+    {
+        return on_request(method, url,
+            major, minor, keep_alive, upgrade,
+                typename message_type::is_request{});
+    }
+
+    bool
+    on_response(int status, std::string const& reason,
+        int major, int minor, bool keep_alive, bool upgrade,
+            std::true_type)
+    {
+        m_.status = status;
+        m_.reason = reason;
+        m_.version = major * 10 + minor;
+        // VFALCO TODO return expect_body_
+        return true;
+    }
+    
+    bool
+    on_response(int, std::string const&, int, int, bool, bool,
+        std::false_type)
+    {
+        return true;
+    }
+
+    bool
+    on_response(int status, std::string const& reason,
+        int major, int minor, bool keep_alive, bool upgrade)
+    {
+        return on_response(
+            status, reason, major, minor, keep_alive, upgrade,
+                std::integral_constant<bool, ! message_type::is_request::value>{});
     }
 
     void
-    on_field (std::string const& field, std::string const& value) override
+    on_body(void const* data,
+        std::size_t size, error_code& ec)
     {
-        do_field (field, value);
+        r_.write(data, size, ec);
     }
 
     void
-    on_body (void const* data, std::size_t bytes) override
+    on_complete()
     {
-        do_body (data, bytes);
-    }
-
-    void
-    on_complete() override
-    {
-        do_complete();
     }
 };
-
-//------------------------------------------------------------------------------
-template <class>
-void
-parser::do_start()
-{
-}
-
-template <class>
-bool
-parser::do_request (method_t method, std::string const& url,
-    int major, int minor, bool keep_alive, bool upgrade)
-{
-    message_.get().method (method);
-    message_.get().url (url);
-    message_.get().version (major, minor);
-    message_.get().keep_alive (keep_alive);
-    message_.get().upgrade (upgrade);
-    return true;
-}
-
-template <class>
-bool
-parser::do_response (int status, std::string const& text,
-    int major, int minor, bool keep_alive, bool upgrade)
-{
-    message_.get().status (status);
-    message_.get().reason (text);
-    message_.get().version (major, minor);
-    message_.get().keep_alive (keep_alive);
-    message_.get().upgrade (upgrade);
-    return true;
-}
-
-template <class>
-void
-parser::do_field (std::string const& field, std::string const& value)
-{
-    message_.get().headers.append (field, value);
-}
-
-template <class>
-void
-parser::do_body (void const* data, std::size_t bytes)
-{
-    write_body_(data, bytes);
-}
-
-template <class>
-void
-parser::do_complete()
-{
-}
 
 } // http
 } // beast

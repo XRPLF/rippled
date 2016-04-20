@@ -25,7 +25,7 @@
 namespace ripple {
 namespace websocket {
 
-std::unique_ptr<beast::Stoppable> makeServer (ServerDescription const& desc)
+std::unique_ptr<Stoppable> makeServer (ServerDescription const& desc)
 {
     return makeServer02 (desc);
 }

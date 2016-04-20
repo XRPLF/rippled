@@ -19,9 +19,9 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <beast/unit_test/suite.h>
-#include <beast/module/core/diagnostic/FatalError.h>
-#include <beast/module/core/diagnostic/SemanticVersion.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/beast/core/FatalError.h>
+#include <ripple/beast/core/SemanticVersion.h>
 
 namespace ripple {
 

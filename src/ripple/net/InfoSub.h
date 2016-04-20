@@ -25,7 +25,7 @@
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/resource/Consumer.h>
 #include <ripple/protocol/Book.h>
-#include <beast/threads/Stoppable.h>
+#include <ripple/core/Stoppable.h>
 #include <mutex>
 
 namespace ripple {
@@ -55,10 +55,10 @@ public:
 public:
     /** Abstracts the source of subscription data.
     */
-    class Source : public beast::Stoppable
+    class Source : public Stoppable
     {
     protected:
-        Source (char const* name, beast::Stoppable& parent);
+        Source (char const* name, Stoppable& parent);
 
     public:
 

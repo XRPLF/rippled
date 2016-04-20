@@ -20,10 +20,9 @@
 #include <BeastConfig.h>
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Log.h>
-#include <beast/asio/IPAddressConversion.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/module/asio/AsyncObject.h>
-#include <beast/threads/WaitableEvent.h>
+#include <ripple/beast/core/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>
@@ -33,9 +32,75 @@
 
 namespace ripple {
 
+/** Mix-in to track when all pending I/O is complete.
+    Derived classes must be callable with this signature:
+        void asyncHandlersComplete()
+*/
+template <class Derived>
+class AsyncObject
+{
+protected:
+    AsyncObject ()
+        : m_pending (0)
+    { }
+
+public:
+    ~AsyncObject ()
+    {
+        // Destroying the object with I/O pending? Not a clean exit!
+        assert (m_pending.load () == 0);
+    }
+
+    /** RAII container that maintains the count of pending I/O.
+        Bind this into the argument list of every handler passed
+        to an initiating function.
+    */
+    class CompletionCounter
+    {
+    public:
+        explicit CompletionCounter (Derived* owner)
+            : m_owner (owner)
+        {
+            ++m_owner->m_pending;
+        }
+
+        CompletionCounter (CompletionCounter const& other)
+            : m_owner (other.m_owner)
+        {
+            ++m_owner->m_pending;
+        }
+
+        ~CompletionCounter ()
+        {
+            if (--m_owner->m_pending == 0)
+                m_owner->asyncHandlersComplete ();
+        }
+
+        CompletionCounter& operator= (CompletionCounter const&) = delete;
+
+    private:
+        Derived* m_owner;
+    };
+
+    void addReference ()
+    {
+        ++m_pending;
+    }
+
+    void removeReference ()
+    {
+        if (--m_pending == 0)
+            (static_cast<Derived*>(this))->asyncHandlersComplete();
+    }
+
+private:
+    // The number of handlers pending.
+    std::atomic <int> m_pending;
+};
+
 class ResolverAsioImpl
     : public ResolverAsio
-    , public beast::asio::AsyncObject <ResolverAsioImpl>
+    , public AsyncObject <ResolverAsioImpl>
 {
 public:
     using HostAndPort = std::pair <std::string, std::string>;

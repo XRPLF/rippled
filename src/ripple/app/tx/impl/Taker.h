@@ -26,7 +26,7 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/utility/Journal.h>
 #include <functional>
 
 namespace ripple {

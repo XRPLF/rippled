@@ -1,0 +1,89 @@
+#
+# Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+import os ;
+import feature ;
+import boost ;
+
+boost.use-project ;
+
+if [ os.name ] = SOLARIS
+{
+  lib socket ;
+  lib nsl ;
+}
+else if [ os.name ] = NT
+{
+  lib ws2_32 ;
+  lib mswsock ;
+}
+else if [ os.name ] = HPUX
+{
+  lib ipv6 ;
+}
+else if [ os.name ] = QNXNTO
+{
+  lib socket ;
+}
+else if [ os.name ] = HAIKU
+{
+  lib network ;
+}
+
+if [ os.name ] = NT
+{
+  lib ssl : : <name>ssleay32 ;
+  lib crypto : : <name>libeay32  ;
+}
+else
+{
+  lib ssl ;
+  lib crypto ;
+}
+
+project beast
+    : requirements
+      <include>.
+      <include>./include
+      #<use>/boost//headers
+      <library>/boost/system//boost_system
+      <library>/boost/filesystem//boost_filesystem
+      <library>/boost/program_options//boost_program_options
+#      <library>ssl
+#      <library>crypto
+      <define>BOOST_ALL_NO_LIB=1
+      <threading>multi
+      <link>static
+      <runtime-link>static
+      <toolset>gcc:<cxxflags>-std=c++14
+      <toolset>clang:<cxxflags>-std=c++14
+      <os>LINUX:<define>_XOPEN_SOURCE=600
+      <os>LINUX:<define>_GNU_SOURCE=1
+      <os>SOLARIS:<define>_XOPEN_SOURCE=500
+      <os>SOLARIS:<define>__EXTENSIONS__
+      <os>SOLARIS:<library>socket
+      <os>SOLARIS:<library>nsl
+      <os>NT:<define>_WIN32_WINNT=0x0501
+      <os>NT,<toolset>cw:<library>ws2_32
+      <os>NT,<toolset>cw:<library>mswsock
+      <os>NT,<toolset>gcc:<library>ws2_32
+      <os>NT,<toolset>gcc:<library>mswsock
+      <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
+      <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
+      <os>HPUX:<library>ipv6
+      <os>QNXNTO:<library>socket
+      <os>HAIKU:<library>network
+      <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
+      <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
+    : usage-requirements
+        <include>.
+    :
+      build-dir bin
+    ;
+
+build-project test ;
+build-project examples ;

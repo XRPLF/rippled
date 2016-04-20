@@ -24,8 +24,8 @@
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/impl/iosformat.h>
 #include <ripple/peerfinder/impl/Tuning.h>
-#include <beast/container/aged_map.h>
-#include <beast/utility/maybe_const.h>
+#include <ripple/beast/container/aged_map.h>
+#include <ripple/beast/utility/maybe_const.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 

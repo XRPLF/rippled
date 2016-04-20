@@ -23,8 +23,8 @@
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/chrono/abstract_clock.h>
-#include <beast/Insight.h>
+#include <ripple/beast/clock/abstract_clock.h>
+#include <ripple/beast/insight/Insight.h>
 #include <functional>
 #include <mutex>
 #include <vector>

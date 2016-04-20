@@ -23,7 +23,7 @@
 #include <ripple/server/make_Server.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -107,7 +107,7 @@ public:
         Handoff
         onHandoff (Session& session,
             std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                beast::http::message&& request,
+                http_request_type&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -115,7 +115,7 @@ public:
 
         Handoff
         onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-            beast::http::message&& request,
+            http_request_type&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override
         {
             return Handoff{};
@@ -125,10 +125,16 @@ public:
         onRequest (Session& session) override
         {
             session.write (std::string ("Hello, world!\n"));
-            if (session.request().keep_alive())
+            if (is_keep_alive(session.request()))
                 session.complete();
             else
                 session.close (true);
+        }
+
+        void
+        onWSMessage(std::shared_ptr<WSSession> session,
+            std::vector<boost::asio::const_buffer> const&) override
+        {
         }
 
         void
@@ -309,7 +315,7 @@ public:
             Handoff
             onHandoff (Session& session,
                 std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
-                    beast::http::message&& request,
+                    http_request_type&& request,
                         boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
@@ -317,7 +323,7 @@ public:
 
             Handoff
             onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
-                beast::http::message&& request,
+                http_request_type&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
             {
                 return Handoff{};
@@ -325,6 +331,12 @@ public:
 
             void
             onRequest (Session& session) override
+            {
+            }
+
+            void
+            onWSMessage(std::shared_ptr<WSSession> session,
+                std::vector<boost::asio::const_buffer> const& buffers) override
             {
             }
 

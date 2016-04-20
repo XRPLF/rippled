@@ -19,30 +19,9 @@
 
 #if ! BEAST_COMPILE_OBJECTIVE_CPP
 
-/*  This file includes all of the beast sources needed to link.
-    By including them here, we avoid having to muck with the SConstruct
-    Makefile, Project file, or whatever.
-*/
-
 // MUST come first!
 #include <BeastConfig.h>
-
-// Include this to get all the basic includes included, to prevent errors
-#include <beast/module/core/core.unity.cpp>
-
-#include <beast/asio/Asio.unity.cpp>
-#include <beast/boost/Boost.unity.cpp>
-#include <beast/chrono/Chrono.unity.cpp>
-#include <beast/container/Container.unity.cpp>
-#include <beast/crypto/Crypto.unity.cpp>
-#include <beast/http/HTTP.unity.cpp>
-#include <beast/insight/Insight.unity.cpp>
-#include <beast/net/Net.unity.cpp>
-//#include <beast/nudb/nudb.cpp>
-#include <beast/streams/streams.unity.cpp>
-#include <beast/threads/Threads.unity.cpp>
-#include <beast/utility/Utility.unity.cpp>
-
-#include <beast/unit_test/define_print.cpp>
+#include <ripple/beast/core/core.unity.cpp>
+#include <beast/detail/unit_test/define_print.cpp>
 
 #endif

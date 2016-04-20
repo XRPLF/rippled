@@ -28,8 +28,8 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/XRPAmount.h>
-#include <beast/hash/uhash.h>
-#include <beast/utility/Journal.h>
+#include <ripple/beast/hash/uhash.h>
+#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <cstdint>
