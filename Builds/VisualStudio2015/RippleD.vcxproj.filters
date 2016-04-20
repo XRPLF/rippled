@@ -597,9 +597,6 @@
     <ClInclude Include="..\..\src\beast\beast\http\basic_parser.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\body.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\chunk_encode.h">
       <Filter>beast\http</Filter>
     </ClInclude>
@@ -798,9 +795,18 @@
     <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_std_ostream.hpp">
       <Filter>include\beast\detail\stream</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\debug_ostream.hpp">
+      <Filter>include\beast\detail\stream</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\temp_dir.hpp">
+      <Filter>include\beast\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\amount.hpp">
       <Filter>include\beast\detail\unit_test</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\include\beast\detail\unit_test\define_print.cpp">
+      <Filter>include\beast\detail\unit_test</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\global_suites.hpp">
       <Filter>include\beast\detail\unit_test</Filter>
     </ClInclude>
@@ -829,6 +835,9 @@
       <Filter>include\beast\detail\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite_list.hpp">
+      <Filter>include\beast\detail\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\thread.hpp">
       <Filter>include\beast\detail\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
@@ -2132,6 +2141,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
       <Filter>ripple\beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\deprecated_http.h">
+      <Filter>ripple\beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
       <Filter>ripple\beast\hash</Filter>

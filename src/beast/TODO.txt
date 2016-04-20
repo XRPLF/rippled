@@ -9,3 +9,5 @@
 * Switch source material to Boost license
 
 * Fix failing test/message.cpp
+
+* Complete allocator testing in basic_streambuf, basic_headers

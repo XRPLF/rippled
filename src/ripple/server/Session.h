@@ -22,7 +22,7 @@
 
 #include <ripple/server/Writer.h>
 #include <ripple/server/WSSession.h>
-#include <beast/http/body.h>
+#include <ripple/beast/deprecated_http.h>
 #include <beast/http/message.h>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
