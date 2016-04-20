@@ -24,7 +24,7 @@
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/server/Handoff.h>
-#include <beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/utility/PropertyStream.h>

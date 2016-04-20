@@ -22,7 +22,7 @@
 
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/impl/SSLWSPeer.h>
-#include <beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <memory>
 
 namespace ripple {

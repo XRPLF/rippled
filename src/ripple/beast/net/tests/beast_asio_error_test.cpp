@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/asio/ssl_error.h>
+#include <beast/asio/ssl_error.h>
 #include <beast/unit_test/suite.h>
 #include <string>
 

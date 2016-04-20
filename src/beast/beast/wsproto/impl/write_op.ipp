@@ -23,7 +23,6 @@
 #include <beast/asio/consuming_buffers.h>
 #include <beast/asio/prepare_buffers.h>
 #include <beast/asio/handler_alloc.h>
-#include <beast/asio/temp_buffer.h>
 #include <beast/wsproto/detail/frame.h>
 #include <algorithm>
 #include <cassert>

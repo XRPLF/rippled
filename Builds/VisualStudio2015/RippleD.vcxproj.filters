@@ -166,6 +166,9 @@
     <Filter Include="ripple\beast">
       <UniqueIdentifier>{B75D9C70-388A-3FA5-53E7-8F37FDF4704B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\beast\asio">
+      <UniqueIdentifier>{18E2EE25-691B-C8C6-CE50-559012D120C5}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\beast\clock">
       <UniqueIdentifier>{B19A7492-A21F-6398-8E2C-CB226DAB2AB5}</UniqueIdentifier>
     </Filter>
@@ -585,9 +588,6 @@
     <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
       <Filter>beast\asio\impl</Filter>
     </None>
-    <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
@@ -603,12 +603,6 @@
     <ClCompile Include="..\..\src\beast\beast\asio\src\test\beast_asio_error_test.cpp">
       <Filter>beast\asio\src\test</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\ssl_error.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
@@ -616,9 +610,6 @@
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\temp_buffer.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
@@ -2022,6 +2013,15 @@
     <ClInclude Include="..\..\src\ripple\basics\win32_workaround.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\asio\io_latency_probe.h">
+      <Filter>ripple\beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\asio\ssl_bundle.h">
+      <Filter>ripple\beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\asio\ssl_error.h">
+      <Filter>ripple\beast\asio</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\clock\abstract_clock.h">
       <Filter>ripple\beast\clock</Filter>
     </ClInclude>
@@ -2370,6 +2370,9 @@
     <ClInclude Include="..\..\src\ripple\beast\net\IPEndpoint.h">
       <Filter>ripple\beast\net</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_asio_error_test.cpp">
+      <Filter>ripple\beast\net\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_http_URL_test.cpp">
       <Filter>ripple\beast\net\tests</Filter>
     </ClCompile>

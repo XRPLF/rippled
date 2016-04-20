@@ -29,7 +29,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/UintTypes.h>
 #include <beast/asio/placeholders.h>
-#include <beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <beast/asio/streambuf.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>

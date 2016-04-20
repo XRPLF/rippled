@@ -256,8 +256,6 @@
     </None>
     <None Include="..\..\src\beast\beast\asio\impl\streambuf_readstream.ipp">
     </None>
-    <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\prepare_buffers.h">
@@ -274,17 +272,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\ssl_error.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\static_streambuf.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\streambuf_readstream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\temp_buffer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
     </ClInclude>
@@ -1539,6 +1531,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\win32_workaround.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\asio\io_latency_probe.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\asio\ssl_bundle.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\asio\ssl_error.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\clock\abstract_clock.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\clock\basic_seconds_clock.h">
@@ -1818,6 +1816,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\net\IPEndpoint.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_asio_error_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\net\tests\beast_http_URL_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>

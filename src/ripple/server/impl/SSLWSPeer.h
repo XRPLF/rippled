@@ -22,7 +22,7 @@
 
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/WSSession.h>
-#include <beast/asio/ssl_bundle.h>
+#include <ripple/beast/asio/ssl_bundle.h>
 #include <beast/asio/placeholders.h>
 #include <beast/wsproto/ssl.h>
 #include <memory>
