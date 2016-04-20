@@ -24,7 +24,7 @@
 #include <ripple/protocol/Seed.h>
 #include <beast/unit_test/suite.h>
 #include <ripple/beast/utility/rngfill.h>
-#include <beast/xor_shift_engine.h>
+#include <ripple/beast/xor_shift_engine.h>
 #include <algorithm>
 
 

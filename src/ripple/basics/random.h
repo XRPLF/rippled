@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
 #include <ripple/basics/win32_workaround.h>
-#include <beast/xor_shift_engine.h>
+#include <ripple/beast/xor_shift_engine.h>
 #include <beast/is_call_possible.h>
 #include <boost/thread/tss.hpp>
 #include <cassert>
