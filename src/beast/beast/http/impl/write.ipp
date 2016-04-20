@@ -35,7 +35,7 @@
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
 #include <mutex>
-#include <beast/cxx17/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace beast {
 namespace http {

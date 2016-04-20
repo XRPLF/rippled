@@ -33,7 +33,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include <beast/cxx17/type_traits.h> // <type_traits>
+#include <ripple/beast/cxx17/type_traits.h> // <type_traits>
 #include <utility>
 
 namespace beast {

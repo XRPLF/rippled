@@ -13,9 +13,6 @@
     <Filter Include="beast\asio\impl">
       <UniqueIdentifier>{FF54D3F4-A81E-22BE-41BE-3B9033F5D19F}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\cxx17">
-      <UniqueIdentifier>{DED08E50-BA3F-9E32-7501-3B77F31A5C11}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\http">
       <UniqueIdentifier>{7138D215-DA65-98D5-EF7D-C9896685201E}</UniqueIdentifier>
     </Filter>
@@ -177,6 +174,9 @@
     </Filter>
     <Filter Include="ripple\beast\crypto\detail">
       <UniqueIdentifier>{D2FEF8DB-10F1-40FD-149C-2929726AB662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\beast\cxx17">
+      <UniqueIdentifier>{462217CD-F700-FBAF-6337-9B66824D1964}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\beast\hash">
       <UniqueIdentifier>{EFCF517A-692C-C748-5A6B-E7A80A245AE8}</UniqueIdentifier>
@@ -587,9 +587,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
       <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
-      <Filter>beast\cxx17</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_headers.h">
       <Filter>beast\http</Filter>
@@ -2141,6 +2138,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
       <Filter>ripple\beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\cxx17\type_traits.h">
+      <Filter>ripple\beast\cxx17</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\deprecated_http.h">
       <Filter>ripple\beast</Filter>

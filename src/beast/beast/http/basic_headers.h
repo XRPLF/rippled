@@ -32,7 +32,7 @@
 #include <cctype>
 #include <memory>
 #include <string>
-#include <beast/cxx17/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <utility>
 
 namespace beast {

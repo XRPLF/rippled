@@ -25,7 +25,7 @@
 #include <beast/http/message.h>
 #include <boost/optional.hpp>
 #include <functional>
-#include <beast/cxx17/type_traits.h> // <type_traits>
+#include <type_traits>
 #include <utility>
 
 namespace beast {

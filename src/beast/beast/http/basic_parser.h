@@ -27,7 +27,7 @@
 #include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <string>
-#include <beast/cxx17/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace beast {
 namespace http {
@@ -265,7 +265,7 @@ private:
     };
     template<class C>
     using has_on_start =
-        std::bool_constant<has_on_start_t<C>::value>;
+        std::integral_constant<bool, has_on_start_t<C>::value>;
 
     void
     call_on_start(std::true_type)
@@ -295,7 +295,7 @@ private:
     };
     template<class C>
     using has_on_field =
-        std::bool_constant<has_on_field_t<C>::value>;
+        std::integral_constant<bool, has_on_field_t<C>::value>;
 
     void
     call_on_field(std::string const& field,
@@ -325,7 +325,7 @@ private:
     };
     template<class C>
     using has_on_headers_complete =
-        std::bool_constant<has_on_headers_complete_t<C>::value>;
+        std::integral_constant<bool, has_on_headers_complete_t<C>::value>;
 
     void
     call_on_headers_complete(error_code& ec, std::true_type)
@@ -356,7 +356,7 @@ private:
     };
     template<class C>
     using has_on_request =
-        std::bool_constant<has_on_request_t<C>::value>;
+        std::integral_constant<bool, has_on_request_t<C>::value>;
 
     void
     call_on_request(method_t method, std::string url,
@@ -396,7 +396,7 @@ private:
     };
     template<class C>
     using has_on_response =
-        std::bool_constant<has_on_response_t<C>::value>;
+        std::integral_constant<bool, has_on_response_t<C>::value>;
 
     bool
     call_on_response(int status, std::string text,
@@ -431,7 +431,7 @@ private:
     };
     template<class C>
     using has_on_body =
-        std::bool_constant<has_on_body_t<C>::value>;
+        std::integral_constant<bool, has_on_body_t<C>::value>;
 
     void
     call_on_body(void const* data, std::size_t bytes,
@@ -460,7 +460,7 @@ private:
     };
     template<class C>
     using has_on_complete =
-        std::bool_constant<has_on_complete_t<C>::value>;
+        std::integral_constant<bool, has_on_complete_t<C>::value>;
 
     void
     call_on_complete(std::true_type)

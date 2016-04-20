@@ -266,8 +266,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\type_check.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_headers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_parser.h">
@@ -1622,6 +1620,8 @@
     <ClInclude Include="..\..\src\ripple\beast\crypto\secure_erase.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\deprecated_http.h">
     </ClInclude>

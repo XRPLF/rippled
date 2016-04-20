@@ -28,7 +28,7 @@
 #include <boost/logic/tribool.hpp>
 #include <boost/system/error_code.hpp>
 #include <functional>
-#include <beast/cxx17/type_traits.h> // <type_traits>
+#include <type_traits>
 
 namespace beast {
 namespace http {
