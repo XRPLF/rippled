@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRYPTO_BASE64_H_INCLUDED
-#define BEAST_CRYPTO_BASE64_H_INCLUDED
+#ifndef BEAST_DETAIL_BASE64_HPP
+#define BEAST_DETAIL_BASE64_HPP
 
 #include <cctype>
 #include <string>
 
 namespace beast {
+namespace detail {
 
 /*
    Portions from http://www.adp-gmbh.ch/cpp/common/base64.html
@@ -127,13 +128,13 @@ template <class = void>
 std::string
 base64_encode (std::string const& s)
 {
-    return base64_encode (reinterpret_cast <
+    return detail::base64_encode (reinterpret_cast <
         std::uint8_t const*> (s.data()), s.size());
 }
 
 template <class = void>
 std::string
-base64_decode(std::string const& data)
+detail::base64_decode(std::string const& data)
 {
     int in_len = data.size();
     unsigned char c3[3], c4[4];
@@ -181,6 +182,7 @@ base64_decode(std::string const& data)
     return ret;
 }
 
-}
+} // detail
+} // beast
 
 #endif

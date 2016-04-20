@@ -34,7 +34,7 @@
 #include <ripple/peerfinder/make_Manager.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/beast/core/ByteOrder.h>
-#include <beast/crypto/base64.h>
+#include <beast/detail/base64.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/http/rfc2616.h>
 #include <beast/ci_char_traits.h>
@@ -461,7 +461,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         std::string s;
         for (auto const& line : validation_manifest.lines())
             s += beast::rfc2616::trim(line);
-        s = beast::base64_decode(s);
+        s = beast::detail::base64_decode(s);
         if (auto mo = make_Manifest (std::move (s)))
         {
             manifestCache_.configManifest (
@@ -803,7 +803,7 @@ OverlayImpl::crawl()
     for_each ([&](std::shared_ptr<PeerImp>&& sp)
     {
         auto& pv = av.append(Json::Value(Json::objectValue));
-        pv[jss::public_key] = beast::base64_encode(
+        pv[jss::public_key] = beast::detail::base64_encode(
             sp->getNodePublic().data(),
                 sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ?

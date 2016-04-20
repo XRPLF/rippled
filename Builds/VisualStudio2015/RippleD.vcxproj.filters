@@ -624,9 +624,6 @@
     <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
       <Filter>beast\crypto\detail</Filter>
     </ClInclude>

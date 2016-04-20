@@ -20,7 +20,7 @@
 #ifndef BEAST_WSPROTO_HYBI13_H_INCLUDED
 #define BEAST_WSPROTO_HYBI13_H_INCLUDED
 
-#include <beast/crypto/base64.h>
+#include <beast/detail/base64.hpp>
 #include <beast/crypto/sha.h>
 #include <boost/utility/string_ref.hpp>
 #include <cstdint>
@@ -43,7 +43,7 @@ make_sec_ws_key(Gen& g)
     U u;
     for(int i = 0; i < 4; ++i)
         u.a4[i] = g();
-    return base64_encode(u.a16.data(), u.a16.size());
+    return beast::detail::base64_encode(u.a16.data(), u.a16.size());
 }
 
 template<class = void>
@@ -56,7 +56,7 @@ make_sec_ws_accept(boost::string_ref const& key)
     h(s.data(), s.size());
     auto const digest = static_cast<
         beast::sha_hasher::result_type>(h);
-    return base64_encode(digest.data(), digest.size());
+    return beast::detail::base64_encode(digest.data(), digest.size());
 }
 
 } // detail
