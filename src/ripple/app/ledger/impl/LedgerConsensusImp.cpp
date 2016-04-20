@@ -1021,7 +1021,12 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         // to the ledger.
 
         buildLCL->updateSkipList ();
-        buildLCL->unshare();
+
+        if (buildLCL->info().seq > v2_ledger_seq_switch &&
+            !buildLCL->stateMap().is_v2())
+        {
+            buildLCL->unshare();
+        }
 
         {
             int asf = buildLCL->stateMap().flushDirty (
