@@ -361,8 +361,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\type_name.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
@@ -1883,6 +1881,8 @@
     <ClInclude Include="..\..\src\ripple\beast\nudb\visit.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\nudb\win32_file.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\type_name.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_clock_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>

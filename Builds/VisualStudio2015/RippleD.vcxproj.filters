@@ -723,9 +723,6 @@
     <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\type_name.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
@@ -2453,6 +2450,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\nudb\win32_file.h">
       <Filter>ripple\beast\nudb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\type_name.h">
+      <Filter>ripple\beast</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_clock_unity.cpp">
       <Filter>ripple\beast\unity</Filter>
