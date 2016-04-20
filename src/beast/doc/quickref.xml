@@ -36,7 +36,6 @@
             <member><link linkend="beast.ref.http__error_code">error_code</link></member>
             <member><link linkend="beast.ref.http__message">message</link></member>
             <member><link linkend="beast.ref.http__resume_context">resume_context</link></member>
-            <member><link linkend="beast.ref.http__stream">stream</link></member>
             <member><link linkend="beast.ref.http__streambuf_body">streambuf_body</link></member>
             <member><link linkend="beast.ref.http__string_body">string_body</link></member>
           </simplelist>
@@ -67,30 +66,30 @@
         <entry valign="top">
           <bridgehead renderas="sect3">Classes</bridgehead>
           <simplelist type="vert" columns="1">
-            <member><link linkend="beast.ref.wsproto__close_reason">close_reason</link></member>
-            <member><link linkend="beast.ref.wsproto__socket">socket</link></member>
-            <member><link linkend="beast.ref.wsproto__static_string">static_string</link></member>
+            <member><link linkend="beast.ref.websocket__close_reason">close_reason</link></member>
+            <member><link linkend="beast.ref.websocket__static_string">static_string</link></member>
+            <member><link linkend="beast.ref.websocket__stream">stream</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Options</bridgehead>
           <simplelist type="vert" columns="1">
-            <member><link linkend="beast.ref.wsproto__auto_fragment_size">auto_fragment_size</link></member>
-            <member><link linkend="beast.ref.wsproto__decorate">decorate</link></member>
-            <member><link linkend="beast.ref.wsproto__keep_alive">keep_alive</link></member>
-            <member><link linkend="beast.ref.wsproto__read_buffer_size">read_buffer_size</link></member>
-            <member><link linkend="beast.ref.wsproto__read_message_max">read_message_max</link></member>
-            <member><link linkend="beast.ref.wsproto__write_buffer_size">write_buffer_size</link></member>
+            <member><link linkend="beast.ref.websocket__auto_fragment_size">auto_fragment_size</link></member>
+            <member><link linkend="beast.ref.websocket__decorate">decorate</link></member>
+            <member><link linkend="beast.ref.websocket__keep_alive">keep_alive</link></member>
+            <member><link linkend="beast.ref.websocket__read_buffer_size">read_buffer_size</link></member>
+            <member><link linkend="beast.ref.websocket__read_message_max">read_message_max</link></member>
+            <member><link linkend="beast.ref.websocket__write_buffer_size">write_buffer_size</link></member>
           </simplelist>
         </entry>
         <entry valign="top">
           <bridgehead renderas="sect3">Functions</bridgehead>
           <simplelist type="vert" columns="1">
-            <member><link linkend="beast.ref.wsproto__async_teardown">async_teardown</link></member>
-            <member><link linkend="beast.ref.wsproto__teardown">teardown</link></member>
+            <member><link linkend="beast.ref.websocket__async_teardown">async_teardown</link></member>
+            <member><link linkend="beast.ref.websocket__teardown">teardown</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Constants</bridgehead>
           <simplelist type="vert" columns="1">
-            <member><link linkend="beast.ref.wsproto__close_code">close_code</link></member>
-            <member><link linkend="beast.ref.wsproto__opcode">opcode</link></member>
+            <member><link linkend="beast.ref.websocket__close_code">close_code</link></member>
+            <member><link linkend="beast.ref.websocket__opcode">opcode</link></member>
           </simplelist>
         </entry>
       </row>
@@ -128,8 +127,8 @@
         <entry valign="top">
           <bridgehead renderas="sect3">Functions</bridgehead>
           <simplelist type="vert" columns="1">
-            <member><link linkend="beast.ref.append_buffers">append_buffers</link></member>
             <member><link linkend="beast.ref.bind_handler">bind_handler</link></member>
+            <member><link linkend="beast.ref.buffer_cat">buffer_cat</link></member>
             <member><link linkend="beast.ref.prepare_buffer">prepare_buffer</link></member>
             <member><link linkend="beast.ref.prepare_buffers">prepare_buffers</link></member>
           </simplelist>

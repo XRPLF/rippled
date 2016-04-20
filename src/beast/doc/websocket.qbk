@@ -5,7 +5,7 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:wsproto WSProto]
+[section:websocket WebSocket]
 
 The WebSocket Protocol enables two-way communication between a client
 running untrusted code in a controlled environment to a remote host that has
@@ -15,7 +15,7 @@ this technology is to provide a mechanism for browser-based applications that
 need two-way communication with servers that does not rely on opening multiple
 HTTP connections.
 
-Beast.WSProto provides developers with a robust WebSocket implementation
+Beast.WebSocket provides developers with a robust WebSocket implementation
 built on Boost.Asio with a consistent asynchronous model using a modern
 C++ approach.
 
@@ -33,17 +33,17 @@ good implementations in C++ are scarce. A survey of existing C++ WebSocket
 solutions reveals interfaces which lack symmetry, impose performance penalties,
 and needlessly restrict implementation strategies.
 
-Beast.WSProto is built on Boost.Asio, a robust cross platform networking
+Beast.WebSocket is built on Boost.Asio, a robust cross platform networking
 framework that is part of Boost and also offered as a standalone library.
 A proposal to add networking functionality to the C++ standard library,
 based on Boost.Asio, is under consideration by the standards committee.
 Since the final approved networking interface for the C++ standard library
 will likely closely resemble the current interface of Boost.Asio, it is
-logical for Beast.WSProto to use Boost.Asio as its network transport.
+logical for Beast.WebSocket to use Boost.Asio as its network transport.
 
-Beast.WSProto takes advantage of Boost.Asio's extensible asynchronous
+Beast.WebSocket takes advantage of Boost.Asio's extensible asynchronous
 model, handler allocation, and handler invocation hooks. Calls to
-Beast.WSProto asynchronous initiation functions allow callers the choice
+Beast.WebSocket asynchronous initiation functions allow callers the choice
 of using a completion handler, stackful or stackless coroutines, futures,
 or user defined customizations (for example, Boost.Fiber). The
 implementation uses handler invocation hooks (`asio_handler_invoke`),
@@ -52,7 +52,7 @@ identical to Boost.Asio. The implementation also uses handler allocation
 hooks (`asio_handler_allocate`) when allocating memory internally for
 composed operations.
 
-There is no need for inheritance or virtual members in `wsproto::socket`.
+There is no need for inheritance or virtual members in `websocket::stream`.
 All operations are templated and transparent to the compiler, allowing for
 maximum inlining and optimization.
 
@@ -67,25 +67,27 @@ both Boost.Asio and the WebSocket protocol specification described in
 [section:creating Creating the socket]
 
 The interface to Beast's WebSocket implementation is a single template
-class which wraps an object meeting the requirements of `SyncStream` if
-synchronous operations are performed, `AsyncStream` if asynchronous
-operations are performed, or both. Arguments supplied during construction
-are passed to the `Stream` constructor. Here we declare two websockets
-which contain the underlying stream:
+class [link beast.ref.websocket__stream `websocket::stream`] which wraps a
+"next layer" object. The next layer object must meet the requirements of
+`SyncReadStream` and `SyncWriteStream` if synchronous operations are performed,
+`AsyncReadStream` and `AsyncWriteStream` is asynchronous operations are
+performed, or both. Arguments supplied during construction are passed to
+next layer's constructor. Here we declare two websockets which have ownership
+of the next layer:
 ```
 io_service ios;
-wsproto::socket<tcp::socket> ws(ios);
+websocket::stream<ip::tcp::socket> ws(ios);
 
 ssl::context ctx(ssl::context::sslv23);
-wsproto::socket<ssl::stream<tcp::socket>> wss(ios, ctx);
+websocket::stream<ssl::stream<ip::tcp::socket>> wss(ios, ctx);
 ```
 
 For servers that can handshake in multiple protocols, it may be desired
-to wrap a socket that already exists. The socket can be moved in:
+to wrap an object that already exists. This socket can be moved in:
 ```
     tcp::socket&& sock;
     ...
-    wsproto::socket<tcp::socket> ws(std::move(sock));
+    websocket::stream<ip::tcp::socket> ws(std::move(sock));
 ```
 
 Or, the wrapper can be constructed with a non-owning reference. In
@@ -94,14 +96,14 @@ underlying socket being wrapped:
 ```
     tcp::socket sock;
     ...
-    wsproto::socket<tcp::socket&> ws(sock);
+    websocket::stream<ip::tcp::socket&> ws(sock);
 ```
 
-The stream being wrapped can be accessed through the websocket's "next layer",
+The layer being wrapped can be accessed through the websocket's "next layer",
 permitting callers to interact directly with its interface.
 ```
     ssl::context ctx(ssl::context::sslv23);
-    wsproto::socket<ssl::stream<tcp::socket>> ws(ios, ctx);
+    websocket::stream<ssl::stream<ip::tcp::socket>> ws(ios, ctx);
     ...
     ws.next_layer().shutdown(); // ssl::stream shutdown
 ```
@@ -116,13 +118,13 @@ result in undefined behavior. ]
 
 [section:connecting Making connections]
 
-Connections are established by using the interfaces which already exist for
-the wrapped stream. For example, making an outgoing connection:
+Connections are established by using the interfaces which already exist
+for the next layer. For example, making an outgoing connection:
 ```
     std::string const host = "mywebapp.com";
     io_service ios;
     tcp::resolver r(ios);
-    wsproto::socket<tcp::socket> ws(ios);
+    websocket::stream<ip::tcp::socket> ws(ios);
     connect(ws.next_layer(), r.resolve(tcp::resolver::query{host, "ws"}));
 ```
 
@@ -130,7 +132,7 @@ Accepting an incoming connection:
 ```
 void do_accept(tcp::acceptor& acceptor)
 {
-    wsproto::socket<tcp::socket> ws(acceptor.get_io_service());
+    websocket::stream<ip::tcp::socket> ws(acceptor.get_io_service());
     acceptor.accept(ws.next_layer());
 }
 ```
@@ -147,16 +149,16 @@ A WebSocket session begins when one side sends the HTTP Upgrade request
 for websocket, and the other side sends an appropriate HTTP response
 indicating that the request was accepted and that the connection has
 been upgraded. The HTTP Upgrade request must include the Host HTTP field,
-and the URI of the resource to request. `wsproto::socket::hanshake` is
-used to send the request with the required host and resource strings.
+and the URI of the resource to request. `hanshake` is used to send the
+request with the required host and resource strings.
 ```
-    wsproto::socket<tcp::socket> ws(ios);
+    websocket::stream<ip::tcp::socket> ws(ios);
     ...
-    ws.set_option(wsproto::keep_alive(true));
+    ws.set_option(websocket::keep_alive(true));
     ws.handshake("ws.mywebapp.com:80", "/cgi-bin/bitcoin-prices");
 ```
 
-The `wsproto::socket` automatically handles receiving and processing
+The `websocket::stream` automatically handles receiving and processing
 the HTTP response to the handshake request. The call to handshake is
 successful if a HTTP response is received with the 101 "Switching Protocols"
 status code. On failure, an error is returned or an exception is thrown.
@@ -166,7 +168,7 @@ subsequent handshake attempt
 Performing a handshake for an incoming websocket upgrade request operates
 similarly. If the handshake fails, an error is returned or exception thrown:
 ```
-    wsproto::socket<tcp::socket> ws(ios);
+    websocket::stream<ip::tcp::socket> ws(ios);
     ...
     ws.accept();
 ```
@@ -181,7 +183,7 @@ void do_accept(tcp::socket& sock)
     boost::asio::streambuf sb;
     read_until(sock, sb, "\r\n\r\n");
     ...
-    wsproto::socket<tcp::socket&> ws(sock);
+    websocket::stream<ip::tcp::socket&> ws(sock);
     ws.accept(sb.data());
     ...
 }
@@ -193,12 +195,14 @@ obtained elsewhere:
 void do_accept(tcp::socket& sock)
 {
     boost::asio::streambuf sb;
-    http::parsed_request<http::empty_body> request;
+    http::request<http::empty_body> request;
     http::read(sock, request);
-    ...
-    wsproto::socket<tcp::socket&> ws(sock);
-    ws.accept(request);
-    ...
+    if(http::is_upgrade(request))
+    {
+        websocket::stream<ip::tcp::socket&> ws(sock);
+        ws.accept(request);
+        ...
+    }
 }
 ```
 
@@ -214,20 +218,20 @@ After the WebSocket handshake is accomplished, callers may send and receive
 messages using the message oriented interface. This interface requires that
 all of the buffers representing the message are known ahead of time:
 ```
-void echo(wsproto::socket<ip::tcp::socket>& ws)
+void echo(websocket::stream<ip::tcp::socket>& ws)
 {
     streambuf sb;
-    wsproto::opcode::value op;
+    websocket::opcode::value op;
     ws.read(sb);
 
-    ws.set_option(wsproto::message_type(op));
-    wsproto::write(ws, sb.data());
+    ws.set_option(websocket::message_type(op));
+    websocket::write(ws, sb.data());
     sb.consume(sb.size());
 }
 ```
 
-[important Calls to `wsproto::socket::set_option` must be made from the same
-implicit or explicit strand as that used to perform other operations. ]
+[important Calls to `set_option` must be made from the same implicit
+or explicit strand as that used to perform other operations. ]
 
 [endsect]
 
@@ -245,18 +249,18 @@ message ahead of time:
 For these cases, the frame oriented interface may be used. This
 example reads and echoes a complete message using this interface:
 ```
-void echo(wsproto::socket<ip::tcp::socket>& ws)
+void echo(websocket::stream<ip::tcp::socket>& ws)
 {
-    beast::streambuf sb;
-    wsproto::frame_info fi;
+    streambuf sb;
+    websocket::frame_info fi;
     for(;;)
     {
         ws.read_frame(fi, sb);
         if(fi.fin)
             break;
     }
-    ws.set_option(wsproto::message_type(fi.op));
-    beast::consuming_buffers<streambuf::const_buffers_type> cb(sb.data());
+    ws.set_option(websocket::message_type(fi.op));
+    consuming_buffers<streambuf::const_buffers_type> cb(sb.data());
     for(;;)
     {
         using boost::asio::buffer_size;
@@ -285,7 +289,7 @@ During read operations, the implementation automatically reads and processes
 WebSocket control frames such as ping, pong, and close. Pings are replied
 to as soon as possible, pongs are noted. The receipt of a close frame
 initiates the WebSocket close procedure, eventually resulting in the
-error code `wsproto::error::closed` being delivered to the caller in
+error code `websocket::error::closed` being delivered to the caller in
 a subsequent read operation, assuming no other error takes place.
 
 To ensure timely delivery of control frames, large messages are broken up
@@ -294,18 +298,18 @@ of the frames making up the message. The automatic fragment size option
 gives callers control over the size of these frames:
 ```
     ...
-    ws.set_option(wsproto::auto_fragment_size(8192));
+    ws.set_option(websocket::auto_fragment_size(8192));
 ```
 
 The WebSocket protocol defines a procedure and control message for initiating
 a close of the session. Handling of close initiated by the remote end of the
 connection is performed automatically. To manually initiate a close, use
-`wsproto::socket::close`:
+`websocket::stream::close`:
 ```
     ws.close();
 ```
 
-[note To receive the `wsproto::error::closed` error, a read operation
+[note To receive the `websocket::error::closed` error, a read operation
 is required. ]
 
 [endsect]
@@ -331,7 +335,7 @@ of the underlying TCP/IP connection.
 
 Asynchronous versions are available for all functions:
 ```
-wsproto::opcode op;
+websocket::opcode op;
 ws.async_read(op, sb,
     [](boost::system::error_code const& ec)
     {
@@ -343,11 +347,11 @@ Calls to asynchronous initiation functions support the extensible asynchronous
 model developed by the Boost.Asio author, allowing for traditional completion
 handlers, stackful or stackless coroutines, and even futures:
 ```
-void echo(wsproto::socket<ip::tcp::socket>& ws,
+void echo(websocket::stream<ip::tcp::socket>& ws,
     boost::asio::yield_context yield)
 {
     ws.async_read(sb, yield);
-    std::future<wsproto::error_code> fut =
+    std::future<websocket::error_code> fut =
         ws.async_write, sb.data(), boost::use_future);
     ...
 }
@@ -370,7 +374,7 @@ threads are unavailable. Beast.WSProto itself does not use or require threads.
 
 [section:safety Thread Safety]
 
-Like a regular asio socket, a `wsproto::socket` is not thread safe. Callers
+Like a regular asio socket, a `websocket::stream` is not thread safe. Callers
 are responsible for synchronizing operations on the socket using an implicit
 or explicit strand, as per the Asio documentation. The asynchronous interface
 supports one active read and one active write simultaneously. Undefined
