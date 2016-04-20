@@ -24,7 +24,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Peer.h>
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/asio/deadline_timer.hpp>
 #include <mutex>

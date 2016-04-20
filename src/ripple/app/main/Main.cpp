@@ -36,7 +36,7 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Role.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <beast/clock/basic_seconds_clock.h>
+#include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/Time.h>
 #include <beast/unit_test.h>
 #include <ripple/beast/utility/Debug.h>

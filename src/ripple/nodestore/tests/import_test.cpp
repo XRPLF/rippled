@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <beast/hash/xxhasher.h>
+#include <ripple/beast/hash/xxhasher.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
-#include <beast/clock/basic_seconds_clock.h>
+#include <ripple/beast/clock/basic_seconds_clock.h>
 #include <beast/http/rfc2616.h>
 #include <ripple/beast/nudb/create.h>
 #include <ripple/beast/nudb/detail/format.h>

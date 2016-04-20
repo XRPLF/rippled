@@ -1,7 +1,8 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Vinnie Falco <vinnie.falco@gmail.com>
+    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>,
+        Vinnie Falco <vinnie.falco@gmail.com
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,72 +18,44 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HASH_XXHASHER_H_INCLUDED
-#define BEAST_HASH_XXHASHER_H_INCLUDED
+#ifndef BEAST_HASH_SPOOKY_H_INCLUDED
+#define BEAST_HASH_SPOOKY_H_INCLUDED
 
-#ifndef BEAST_NO_XXHASH
-#define BEAST_NO_XXHASH 0
-#endif
-
-#if ! BEAST_NO_XXHASH
-
-#include <beast/hash/endian.h>
-#include <beast/hash/impl/xxhash.h>
-#include <type_traits>
-#include <cstddef>
+#include <ripple/beast/hash/endian.h>
+#include <ripple/beast/hash/impl/spookyv2.h>
 
 namespace beast {
 
-class xxhasher
+// See http://burtleburtle.net/bob/hash/spooky.html
+class spooky
 {
 private:
-    // requires 64-bit std::size_t
-    static_assert(sizeof(std::size_t)==8, "");
-
-    detail::XXH64_state_t state_;
+    SpookyHash state_;
 
 public:
     using result_type = std::size_t;
-
     static beast::endian const endian = beast::endian::native;
 
-    xxhasher() noexcept
+    spooky (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
     {
-        detail::XXH64_reset (&state_, 1);
-    }
-
-    template <class Seed,
-        std::enable_if_t<
-            std::is_unsigned<Seed>::value>* = nullptr>
-    explicit
-    xxhasher (Seed seed)
-    {
-        detail::XXH64_reset (&state_, seed);
-    }
-
-    template <class Seed,
-        std::enable_if_t<
-            std::is_unsigned<Seed>::value>* = nullptr>
-    xxhasher (Seed seed, Seed)
-    {
-        detail::XXH64_reset (&state_, seed);
+        state_.Init (seed1, seed2);
     }
 
     void
-    operator()(void const* key, std::size_t len) noexcept
+    operator() (void const* key, std::size_t len) noexcept
     {
-        detail::XXH64_update (&state_, key, len);
+        state_.Update (key, len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
-        return detail::XXH64_digest(&state_);
+        std::uint64_t h1, h2;
+        state_.Final (&h1, &h2);
+        return static_cast <std::size_t> (h1);
     }
 };
 
 } // beast
-
-#endif
 
 #endif

@@ -21,9 +21,9 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/hash/endian.h>
-#include <beast/hash/tests/hash_metrics.h>
-#include <beast/hash/hash_append.h>
+#include <ripple/beast/hash/endian.h>
+#include <ripple/beast/hash/tests/hash_metrics.h>
+#include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <beast/type_name.h>

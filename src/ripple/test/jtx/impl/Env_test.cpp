@@ -23,7 +23,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
-#include <beast/hash/uhash.h>
+#include <ripple/beast/hash/uhash.h>
 #include <beast/unit_test/suite.h>
 #include <boost/lexical_cast.hpp>
 #include <utility>

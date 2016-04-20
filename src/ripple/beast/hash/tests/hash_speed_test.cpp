@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <beast/hash/fnv1a.h>
-#include <beast/hash/siphash.h>
-#include <beast/hash/xxhasher.h>
+#include <ripple/beast/hash/fnv1a.h>
+#include <ripple/beast/hash/siphash.h>
+#include <ripple/beast/hash/xxhasher.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <beast/unit_test/suite.h>
 #include <array>

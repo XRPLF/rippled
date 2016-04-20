@@ -19,7 +19,7 @@
 
 #include <ripple/beast/insight/Group.h>
 #include <ripple/beast/insight/Groups.h>
-#include <beast/hash/uhash.h>
+#include <ripple/beast/hash/uhash.h>
 #include <unordered_map>
 #include <memory>
 

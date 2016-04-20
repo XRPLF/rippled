@@ -28,7 +28,7 @@
 #include <ripple/beast/nudb.h>
 #include <ripple/beast/nudb/detail/varint.h>
 #include <ripple/beast/nudb/visit.h>
-#include <beast/hash/xxhasher.h>
+#include <ripple/beast/hash/xxhasher.h>
 #include <boost/filesystem.hpp>
 #include <cassert>
 #include <chrono>

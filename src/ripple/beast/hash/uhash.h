@@ -18,41 +18,27 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HASH_SPOOKY_H_INCLUDED
-#define BEAST_HASH_SPOOKY_H_INCLUDED
+#ifndef BEAST_HASH_UHASH_H_INCLUDED
+#define BEAST_HASH_UHASH_H_INCLUDED
 
-#include <beast/hash/endian.h>
-#include <beast/hash/impl/spookyv2.h>
+#include <ripple/beast/hash/hash_append.h>
+#include <ripple/beast/hash/spooky.h>
 
 namespace beast {
 
-// See http://burtleburtle.net/bob/hash/spooky.html
-class spooky
+// Universal hash function
+template <class Hasher = spooky>
+struct uhash
 {
-private:
-    SpookyHash state_;
+    using result_type = typename Hasher::result_type;
 
-public:
-    using result_type = std::size_t;
-    static beast::endian const endian = beast::endian::native;
-
-    spooky (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
+    template <class T>
+    result_type
+    operator()(T const& t) const noexcept
     {
-        state_.Init (seed1, seed2);
-    }
-
-    void
-    operator() (void const* key, std::size_t len) noexcept
-    {
-        state_.Update (key, len);
-    }
-
-    explicit
-    operator std::size_t() noexcept
-    {
-        std::uint64_t h1, h2;
-        state_.Final (&h1, &h2);
-        return static_cast <std::size_t> (h1);
+        Hasher h;
+        hash_append (h, t);
+        return static_cast<result_type>(h);
     }
 };
 

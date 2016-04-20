@@ -290,22 +290,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\clock\abstract_clock.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\clock\basic_seconds_clock.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\clock\chrono_util.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\clock\manual_clock.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\clock\tests\beast_abstract_clock_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\clock\tests\beast_basic_seconds_clock_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
@@ -331,43 +315,6 @@
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\endian.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\fnv1a.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\hash_append.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\hash\impl\siphash.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\hash\impl\spookyv2.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\hash\impl\spookyv2.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\hash\impl\xxhash.c">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\hash\impl\xxhash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\meta.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\siphash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\spooky.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_append_test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\hash\tests\hash_metrics.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\hash\tests\hash_speed_test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\hash\uhash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\hash\xxhasher.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http.h">
     </ClInclude>
@@ -478,15 +425,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_clock_unity.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_crypto_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_hash_unity.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
@@ -604,8 +545,6 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\static_string.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\xor_shift_engine.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
@@ -1638,6 +1577,22 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\win32_workaround.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\clock\abstract_clock.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\clock\basic_seconds_clock.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\clock\chrono_util.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\clock\manual_clock.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\clock\tests\beast_abstract_clock_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\clock\tests\beast_basic_seconds_clock_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\container\aged_container.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\container\aged_container_utility.h">
@@ -1756,6 +1711,43 @@
     <ClCompile Include="..\..\src\ripple\beast\core\win32_SystemStats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\hash\fnv1a.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\hash\hash_append.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\hash\impl\siphash.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\hash\impl\spookyv2.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\hash\impl\spookyv2.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\hash\impl\xxhash.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\hash\impl\xxhash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\hash\meta.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\hash\siphash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\hash\spooky.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\hash\tests\hash_append_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\hash\tests\hash_metrics.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\hash\tests\hash_speed_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\hash\uhash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\hash\xxhasher.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\insight\Base.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\insight\BaseImpl.h">
@@ -1934,9 +1926,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\nudb\win32_file.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\unity\beast_clock_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_container_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\unity\beast_hash_unity.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_insight_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
@@ -1999,6 +1997,8 @@
     <ClInclude Include="..\..\src\ripple\beast\utility\WrappedSink.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\utility\Zero.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\xor_shift_engine.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
     </ClInclude>

@@ -24,7 +24,7 @@
 //
 //------------------------------------------------------------------------------
 
-#include <beast/hash/siphash.h>
+#include <ripple/beast/hash/siphash.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

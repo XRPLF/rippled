@@ -21,8 +21,8 @@
 #ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
 #define BEAST_HASH_HASH_APPEND_H_INCLUDED
 
-#include <beast/hash/endian.h>
-#include <beast/hash/meta.h>
+#include <ripple/beast/hash/endian.h>
+#include <ripple/beast/hash/meta.h>
 #include <array>
 #include <chrono>
 #include <cstdint>

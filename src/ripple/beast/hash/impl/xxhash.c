@@ -31,7 +31,7 @@ You can contact the author at :
 - public discussion board : https://groups.google.com/forum/#!forum/lz4c
 */
 
-#include <beast/hash/impl/xxhash.h>
+#include <ripple/beast/hash/impl/xxhash.h>
 
 //**************************************
 // Tuning parameters

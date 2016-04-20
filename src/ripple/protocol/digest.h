@@ -23,7 +23,7 @@
 #include <ripple/basics/base_uint.h>
 #include <beast/crypto/ripemd.h>
 #include <beast/crypto/sha2.h>
-#include <beast/hash/endian.h>
+#include <ripple/beast/hash/endian.h>
 #include <algorithm>
 #include <array>
 

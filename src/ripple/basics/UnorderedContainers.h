@@ -21,9 +21,9 @@
 #define RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
 
 #include <ripple/basics/hardened_hash.h>
-#include <beast/hash/hash_append.h>
-#include <beast/hash/uhash.h>
-#include <beast/hash/xxhasher.h>
+#include <ripple/beast/hash/hash_append.h>
+#include <ripple/beast/hash/uhash.h>
+#include <ripple/beast/hash/xxhasher.h>
 #include <unordered_map>
 #include <unordered_set>
 

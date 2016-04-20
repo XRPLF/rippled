@@ -19,8 +19,8 @@
 
 // MODULES: ../impl/chrono_io.cpp
 
-#include <beast/clock/abstract_clock.h>
-#include <beast/clock/manual_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/manual_clock.h>
 #include <beast/unit_test/suite.h>
 #include <sstream>
 #include <string>

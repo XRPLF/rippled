@@ -17,24 +17,5 @@
 */
 //==============================================================================
 
-#include <beast/unit_test/suite.h>
-
-#include <beast/clock/basic_seconds_clock.h>
-
-namespace beast {
-
-class basic_seconds_clock_test : public unit_test::suite
-{
-public:
-    void
-    run()
-    {
-        basic_seconds_clock <
-            std::chrono::steady_clock>::now ();
-        pass ();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(basic_seconds_clock,chrono,beast);
-
-}
+#include <ripple/beast/clock/tests/beast_abstract_clock_test.cpp>
+#include <ripple/beast/clock/tests/beast_basic_seconds_clock_test.cpp>
