@@ -20,12 +20,12 @@
 #ifndef BEAST_HTTP_STREAM_IPP_INCLUDED
 #define BEAST_HTTP_STREAM_IPP_INCLUDED
 
-#include <beast/asio/async_completion.h>
-#include <beast/asio/bind_handler.h>
-#include <beast/asio/handler_alloc.h>
-#include <beast/http/read.h>
-#include <beast/http/type_check.h>
-#include <beast/http/write.h>
+#include <beast/async_completion.hpp>
+#include <beast/bind_handler.hpp>
+#include <beast/handler_alloc.hpp>
+#include <beast/http/read.hpp>
+#include <beast/http/type_check.hpp>
+#include <beast/http/write.hpp>
 #include <cassert>
 
 namespace beast {

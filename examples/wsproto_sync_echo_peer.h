@@ -20,8 +20,8 @@
 #ifndef BEAST_WSPROTO_SYNC_ECHO_PEER_H_INCLUDED
 #define BEAST_WSPROTO_SYNC_ECHO_PEER_H_INCLUDED
 
-#include <beast/asio/streambuf.h>
-#include <beast/wsproto.h>
+#include <beast/streambuf.hpp>
+#include <beast/websocket.hpp>
 #include <boost/optional.hpp>
 #include <functional>
 #include <iostream>
@@ -29,7 +29,7 @@
 #include <thread>
 
 namespace beast {
-namespace wsproto {
+namespace websocket {
 
 // Synchronous WebSocket echo client/server
 //
@@ -144,7 +144,7 @@ private:
     void
     do_peer(int id, socket_type&& sock)
     {
-        wsproto::socket<socket_type> ws(std::move(sock));
+        websocket::stream<socket_type> ws(std::move(sock));
         ws.set_option(decorate(identity{}));
         ws.set_option(read_message_max(64 * 1024 * 1024));
         error_code ec;
@@ -156,24 +156,24 @@ private:
         }
         for(;;)
         {
-            wsproto::opcode op;
+            websocket::opcode op;
             beast::streambuf sb;
             ws.read(op, sb, ec);
             if(ec)
                 break;
-            ws.set_option(wsproto::message_type(op));
+            ws.set_option(websocket::message_type(op));
             ws.write(sb.data(), ec);
             if(ec)
                 break;
         }
-        if(ec && ec != wsproto::error::closed)
+        if(ec && ec != websocket::error::closed)
         {
             fail(id, ec, "read");
         }
     }
 };
 
-} // wsproto
+} // websocket
 } // beast
 
 #endif

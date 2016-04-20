@@ -6,18 +6,17 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/prepare_buffers.h>
+#include <beast/prepare_buffers.hpp>
 
-#include <beast/asio/consuming_buffers.h>
-#include <beast/unit_test/suite.h>
+#include <beast/consuming_buffers.hpp>
+#include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
 
 namespace beast {
-namespace asio {
 namespace test {
 
-class prepare_buffers_test : public unit_test::suite
+class prepare_buffers_test : public beast::detail::unit_test::suite
 {
 public:
     template<class ConstBufferSequence>
@@ -83,7 +82,7 @@ public:
         cb.consume(1);
         expect(buffer_size(cb) == 0);
         expect(buffer_copy(cb, pb1) == 0);
-        
+
         auto pbc = prepare_buffers(2, cb);
         expect(buffer_size(pbc) == 0);
         expect(buffer_copy(pbc, cb) == 0);
@@ -99,5 +98,4 @@ public:
 BEAST_DEFINE_TESTSUITE(prepare_buffers,asio,beast);
 
 } // test
-} // asio
 } // beast

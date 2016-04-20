@@ -23,8 +23,4 @@ contents.xcworkspacedata
 .DS_Store
 .svn
 profile
-Builds/VisualStudio2012/Debug
-Builds/VisualStudio2012/Release
-project.xcworkspace
-modules/beast_cryptopp
 bin/

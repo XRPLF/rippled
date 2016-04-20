@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/buffers_debug.h>
+#include <beast/buffers_debug.hpp>

@@ -19,35 +19,18 @@
 
 #include "wsproto_async_echo_peer.h"
 #include "wsproto_sync_echo_peer.h"
-#include <boost/asio.hpp>
-#include <condition_variable>
-#include <mutex>
+#include "sig_wait.h"
 
 int main()
 {
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
 
-    beast::wsproto::async_echo_peer s1(true, endpoint_type{
+    beast::websocket::async_echo_peer s1(true, endpoint_type{
         address_type::from_string("127.0.0.1"), 6000 }, 4);
 
-    beast::wsproto::sync_echo_peer s2(true, endpoint_type{
+    beast::websocket::sync_echo_peer s2(true, endpoint_type{
         address_type::from_string("127.0.0.1"), 6001 });
 
-    boost::asio::io_service ios;
-    boost::asio::signal_set signals(
-        ios, SIGINT, SIGTERM);
-    std::mutex m;
-    bool stop = false;
-    std::condition_variable cv;
-    signals.async_wait(
-        [&](boost::system::error_code const& ec,
-            int signal_number)
-        {
-            std::lock_guard<std::mutex> lock(m);
-            stop = true;
-            cv.notify_one();
-        });
-    std::unique_lock<std::mutex> lock(m);
-    cv.wait(lock, [&]{ return stop; });
+    sig_wait();
 }
