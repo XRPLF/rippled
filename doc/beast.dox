@@ -103,43 +103,51 @@ WARN_LOGFILE           =
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT = \
-        ../beast/asio/append_buffers.h \
-        ../beast/asio/async_completion.h \
-        ../beast/asio/basic_streambuf.h \
-        ../beast/asio/bind_handler.h \
-        ../beast/asio/buffers_adapter.h \
-        ../beast/asio/consuming_buffers.h \
-        ../beast/asio/handler_alloc.h \
-        ../beast/asio/prepare_buffers.h \
-        ../beast/asio/static_streambuf.h \
-        ../beast/asio/streambuf.h \
-        ../beast/asio/streambuf_readstream.h \
-        ../beast/asio/type_check.h \
-        ../beast/http/basic_headers.h \
-        ../beast/http/basic_parser.h \
-        ../beast/http/chunk_encode.h \
-        ../beast/http/empty_body.h \
-        ../beast/http/error.h \
-        ../beast/http/message.h \
-        ../beast/http/parser.h \
-        ../beast/http/read.h \
-        ../beast/http/resume_context.h \
-        ../beast/http/stream.h \
-        ../beast/http/streambuf_body.h \
-        ../beast/http/string_body.h \
-        ../beast/http/type_check.h \
-        ../beast/http/write.h \
-        ../beast/wsproto/error.h \
-        ../beast/wsproto/option.h \
-        ../beast/wsproto/rfc6455.h \
-        ../beast/wsproto/socket.h \
-        ../beast/wsproto/static_string.h \
-        ../beast/wsproto/teardown.h \
+        ../include/beast/async_completion.hpp \
+        ../include/beast/basic_streambuf.hpp \
+        ../include/beast/bind_handler.hpp \
+        ../include/beast/buffer_cat.hpp \
+        ../include/beast/buffers_adapter.hpp \
+        ../include/beast/buffers_debug.hpp \
+        ../include/beast/consuming_buffers.hpp \
+        ../include/beast/handler_alloc.hpp \
+        ../include/beast/http.hpp \
+        ../include/beast/placeholders.hpp \
+        ../include/beast/prepare_buffers.hpp \
+        ../include/beast/static_streambuf.hpp \
+        ../include/beast/streambuf.hpp \
+        ../include/beast/streambuf_readstream.hpp \
+        ../include/beast/type_check.hpp \
+        ../include/beast/websocket.hpp \
+        ../include/beast/http/basic_headers.hpp \
+        ../include/beast/http/basic_parser.hpp \
+        ../include/beast/http/chunk_encode.hpp \
+        ../include/beast/http/empty_body.hpp \
+        ../include/beast/http/error.hpp \
+        ../include/beast/http/fields.hpp \
+        ../include/beast/http/headers.hpp \
+        ../include/beast/http/message.hpp \
+        ../include/beast/http/method.hpp \
+        ../include/beast/http/parser.hpp \
+        ../include/beast/http/read.hpp \
+        ../include/beast/http/resume_context.hpp \
+        ../include/beast/http/rfc2616.hpp \
+        ../include/beast/http/streambuf_body.hpp \
+        ../include/beast/http/string_body.hpp \
+        ../include/beast/http/type_check.hpp \
+        ../include/beast/http/write.hpp \
+        ../include/beast/websocket/error.hpp \
+        ../include/beast/websocket/option.hpp \
+        ../include/beast/websocket/rfc6455.hpp \
+        ../include/beast/websocket/ssl.hpp \
+        ../include/beast/websocket/static_string.hpp \
+        ../include/beast/websocket/stream.hpp \
+        ../include/beast/websocket/teardown.hpp \
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
 RECURSIVE              = NO
-EXCLUDE                = ../beast/http/URL.h
+EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =

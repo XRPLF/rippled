@@ -42,7 +42,7 @@
 
 Beast is a cross-platform C++ library built on Boost, containing two modules
 implementing widely used network protocols. Beast.HTTP offers a universal
-model for describing, sending, and receiving HTTP messages while Beast.WSProto
+model for describing, sending, and receiving HTTP messages while Beast.WebSocket
 provides a complete implementation of the WebSocket protocol. Their design
 achieves these goals:
 
@@ -96,30 +96,29 @@ flavor of the library.
 [note
     All examples and identifiers mentioned in this document are written as
     if the following statements are in effect:
-    ```
-    #include <beast/http.h>
-    #include <beast/wsproto.h>
+```
+    #include <boost/asio.hpp>
+    #include <beast/http.hpp>
+    #include <beast/websocket.hpp>
     using namespace beast;
-    using namespace beast::http;
     using namespace boost::asio;
-    using namespace boost::asio::ip;
-    ```
+```
 ]
 
 Use HTTP to request the root page from a website and receive the response:
 ```
     std::string const host = "boost.org";
     io_service ios;
-    tcp::resolver r(ios);
-    tcp::socket sock(ios);
-    connect(sock, r.resolve(tcp::resolver::query{host, "http"}));
+    ip::tcp::resolver r(ios);
+    ip::tcp::socket sock(ios);
+    connect(sock, r.resolve(ip::tcp::resolver::query{host, "http"}));
 
-    request<empty_body> req(method_t::http_get, "/", 11);
+    http::request<http::empty_body> req(http::method_t::http_get, "/", 11);
     req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
     req.headers.replace("User-Agent", "Beast");
-    write(sock, prepare(req, connection(close)));
+    write(sock, req);
 
-    parsed_response<streambuf_body> resp;
+    http::response<http::streambuf_body> resp;
     read(sock, resp);
     ...
 ```
@@ -132,12 +131,12 @@ Establish a WebSocket connection, send a message and receive the reply:
     tcp::socket sock(ios);
     connect(sock, r.resolve(tcp::resolver::query{host, "ws"}));
 
-    wsproto::socket<tcp::socket&> ws(sock);
+    websocket::stream<ip::tcp::socket&> ws(sock);
     ws.handshake();
     ws.write(ws, buffer("Hello, world!"));
 
     streambuf sb;
-    wsproto::opcode op;
+    websocket::opcode op;
     ws.read(ws, op, sb);
 
     ws.close(); // WebSocket protocol close
@@ -165,7 +164,7 @@ documentation is based.
 
 
 [include http.qbk]
-[include wsproto.qbk]
+[include websocket.qbk]
 [include types.qbk]
 [include design.qbk]
 [section:quickref Quick Reference]

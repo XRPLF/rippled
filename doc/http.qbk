@@ -46,48 +46,45 @@ both Boost.Asio and the HTTP protocol specification described in
 All examples and identifiers mentioned in this document are written as
 if the following declarations are in effect:
 ```
-#include <beast/http.h>
-using namespace beast::http;
+#include <boost/asio.hpp>
+#include <beast/http.hpp>
+using namespace beast;
 using namespace boost::asio;
 ```
 
 Create a HTTP request:
 ```
-request<string_body> req({method_t::http_get, "/", 11});
+http::request<http::empty_body> req({http::method_t::http_get, "/", 11});
 req.headers.insert("Host", "127.0.0.1:80");
 req.headers.insert("User-Agent", "Beast.HTTP");
 
 ```
 
-To send a message it must first be prepared through a call to `prepare`. This
-customization point transforms the `message` into a `prepared_message`,
-filling in some standard HTTP behavior and allowing the Body associated with
-the message to perform preparatory steps. For example, a string body may set
-the Content-Length and Content-Type appropriately.
+When sending a message, the Content-Length and Transfer-Encoding are set
+automatically based on the properties of the body. Depending on the HTTP
+version of the message and properties of the message body, the implementation
+will automaticaly chunk-encode the data sent on the wire:
 ```
-void send_request(ip::tcp::socket& sock,
-    request<string_body>&& req)
-{
-    // Send the request on the socket
-    write(sock, prepare(req, connection(keep_alive));
+    ip::tcp::socket sock(ios);
+    ...
+    http::response<http::string_body> resp({200, "OK", 11});
+    resp.headers.insert("Server", "Beast.HTTP");
+    resp.body = "The command was successful";
+
+    write(sock, resp);
 }
 ```
 
-Messages can be read from the network and parsed into a `parsed_message` object,
-which extends the `message` by adding parse-specific metadata such as the
-keep-alive which is context sensitive (depending on the HTTP version for
-example). When preparing a response for sending, `prepare` must be called with
-an additional parameter, the corresponding parsed request. The implementation
-inspects the contents of the request to set dependent fields of the response.
+Receiving a message is simple, declare a value of type message and call `read`.
 This example reads a message, builds a response, and sends it.
 ```
 void handle_connection(ip::tcp::socket& sock)
 {
-    parsed_request<string_body> req;
+    request<string_body> req;
     read(sock, req);
     response<string_body> resp;
     ...
-    write(sock, prepare(resp, req));
+    write(sock, resp);
 }
 ```
 
