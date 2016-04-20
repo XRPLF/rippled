@@ -296,20 +296,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha_context.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\sha.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\beast_base64_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
@@ -416,10 +408,6 @@
     <ClInclude Include="..\..\src\beast\beast\type_name.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_crypto_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -535,6 +523,10 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\static_string.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\sha1.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>

@@ -903,7 +903,6 @@ def get_classic_sources(toolchain):
             'src/sqlite']
     )
     append_sources(result, *list_sources('src/beast/beast/asio/src', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/crypto', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/http/src', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/test', '.cpp'))
     append_sources(result, *list_sources('src/beast/beast/wsproto/src', '.cpp'))
@@ -953,7 +952,6 @@ def get_unity_sources(toolchain):
     append_sources(
         result,
         'src/beast/beast/unity/beast_asio_unity.cpp',
-        'src/beast/beast/unity/beast_crypto_unity.cpp',
         'src/beast/beast/unity/beast_http_unity.cpp',
         'src/beast/beast/unity/beast_test_unity.cpp',
         'src/beast/beast/unity/beast_wsproto_unity.cpp',
@@ -1211,7 +1209,7 @@ for key, value in aliases.iteritems():
 vcxproj = base.VSProject(
     os.path.join('Builds', 'VisualStudio2015', 'RippleD'),
     source = [],
-    VSPROJECT_ROOT_DIRS = ['src/beast', 'src', '.'],
+    VSPROJECT_ROOT_DIRS = ['src/beast', 'src/beast/include', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)
 

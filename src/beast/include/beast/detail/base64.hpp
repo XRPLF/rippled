@@ -151,7 +151,8 @@ detail::base64_decode(std::string const& data)
         c4[i++] = data[in_]; in_++;
         if(i == 4) {
             for(i = 0; i < 4; i++)
-                c4[i] = base64_alphabet().find(c4[i]);
+                c4[i] = static_cast<unsigned char>(
+                    base64_alphabet().find(c4[i]));
 
             c3[0] = (c4[0] << 2) + ((c4[1] & 0x30) >> 4);
             c3[1] = ((c4[1] & 0xf) << 4) + ((c4[2] & 0x3c) >> 2);
@@ -169,7 +170,8 @@ detail::base64_decode(std::string const& data)
             c4[j] = 0;
 
         for(j = 0; j < 4; j++)
-            c4[j] = base64_alphabet().find(c4[j]);
+            c4[j] = static_cast<unsigned char>(
+                base64_alphabet().find(c4[j]));
 
         c3[0] = (c4[0] << 2) + ((c4[1] & 0x30) >> 4);
         c3[1] = ((c4[1] & 0xf) << 4) + ((c4[2] & 0x3c) >> 2);

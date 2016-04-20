@@ -25,9 +25,6 @@
     <Filter Include="beast\crypto\detail">
       <UniqueIdentifier>{80B5AA79-B513-6410-D468-472E3E393BAA}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\crypto\tests">
-      <UniqueIdentifier>{FF9CBE50-56A0-7B59-C99F-C873605C844B}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\cxx17">
       <UniqueIdentifier>{DED08E50-BA3F-9E32-7501-3B77F31A5C11}</UniqueIdentifier>
     </Filter>
@@ -84,6 +81,15 @@
     </Filter>
     <Filter Include="ed25519-donna">
       <UniqueIdentifier>{9DEED977-2072-A182-5BD9-CEBF206E8C91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{BFB5FB0D-E563-77CD-68EA-A6E186D6240D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\beast">
+      <UniqueIdentifier>{0959FCA5-589F-980F-57AF-AB859F5A61AA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\beast\detail">
+      <UniqueIdentifier>{42B1E98B-3FD0-CA4B-41E1-1BF2B5548847}</UniqueIdentifier>
     </Filter>
     <Filter Include="lz4">
       <UniqueIdentifier>{B211F8F1-22D2-47BA-C39E-F9846A844D11}</UniqueIdentifier>
@@ -633,24 +639,15 @@
     <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
       <Filter>beast\crypto\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha_context.h">
-      <Filter>beast\crypto\detail</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\sha.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\beast_base64_test.cpp">
-      <Filter>beast\crypto\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
       <Filter>beast\cxx17</Filter>
     </ClInclude>
@@ -790,9 +787,6 @@
       <Filter>beast</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
-      <Filter>beast\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_crypto_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
@@ -947,6 +941,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
       <Filter>beast\wsproto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+      <Filter>include\beast\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\sha1.hpp">
+      <Filter>include\beast\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>

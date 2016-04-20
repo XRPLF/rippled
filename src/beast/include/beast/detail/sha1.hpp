@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRYPTO_SHA_CONTEXT_H_INCLUDED
-#define BEAST_CRYPTO_SHA_CONTEXT_H_INCLUDED
+#ifndef BEAST_DETAIL_SHA1_HPP
+#define BEAST_DETAIL_SHA1_HPP
 
 #include <algorithm>
 #include <cstdint>
@@ -228,7 +228,7 @@ transform(
 
 } // sha1
 
-struct sha_context
+struct sha1_context
 {
     static unsigned int const block_size = sha1::BLOCK_BYTES;
     static unsigned int const digest_size = 20;
@@ -241,7 +241,7 @@ struct sha_context
 
 template<class = void>
 void
-init(sha_context& ctx) noexcept
+init(sha1_context& ctx) noexcept
 {
     ctx.buflen = 0;
     ctx.digest[0] = 0x67452301;
@@ -254,7 +254,7 @@ init(sha_context& ctx) noexcept
 
 template<class = void>
 void
-update(sha_context& ctx,
+update(sha1_context& ctx,
     void const* message, std::size_t size) noexcept
 {
     auto p = reinterpret_cast<
@@ -279,7 +279,7 @@ update(sha_context& ctx,
 
 template<class = void>
 void
-finish(sha_context& ctx, void* digest) noexcept
+finish(sha1_context& ctx, void* digest) noexcept
 {
     using sha1::BLOCK_INTS;
     using sha1::BLOCK_BYTES;

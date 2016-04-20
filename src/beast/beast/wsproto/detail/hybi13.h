@@ -21,7 +21,7 @@
 #define BEAST_WSPROTO_HYBI13_H_INCLUDED
 
 #include <beast/detail/base64.hpp>
-#include <beast/crypto/sha.h>
+#include <beast/detail/sha1.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cstdint>
 #include <string>
@@ -52,11 +52,14 @@ make_sec_ws_accept(boost::string_ref const& key)
 {
     std::string s(key.data(), key.size());
     s += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    beast::sha_hasher h;
-    h(s.data(), s.size());
-    auto const digest = static_cast<
-        beast::sha_hasher::result_type>(h);
-    return beast::detail::base64_encode(digest.data(), digest.size());
+    beast::detail::sha1_context ctx;
+    beast::detail::init(ctx);
+    beast::detail::update(ctx, s.data(), s.size());
+    std::array<std::uint8_t,
+        beast::detail::sha1_context::digest_size> digest;
+    beast::detail::finish(ctx, digest.data());
+    return beast::detail::base64_encode(
+        digest.data(), digest.size());
 }
 
 } // detail
