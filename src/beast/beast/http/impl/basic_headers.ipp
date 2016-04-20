@@ -138,7 +138,7 @@ basic_headers<Allocator>::
 template<class Allocator>
 basic_headers<Allocator>::
 basic_headers(Allocator const& alloc)
-    : empty_base_optimization<
+    : beast::detail::empty_base_optimization<
         alloc_type>(alloc)
 {
 }
@@ -146,7 +146,7 @@ basic_headers(Allocator const& alloc)
 template<class Allocator>
 basic_headers<Allocator>::
 basic_headers(basic_headers&& other)
-    : empty_base_optimization<alloc_type>(
+    : beast::detail::empty_base_optimization<alloc_type>(
         std::move(other.member()))
     , detail::basic_headers_base(
         std::move(other.set_), std::move(other.list_))

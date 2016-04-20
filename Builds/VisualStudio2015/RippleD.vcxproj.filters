@@ -43,9 +43,6 @@
     <Filter Include="beast\streams">
       <UniqueIdentifier>{7944CEAB-F8F9-1E2B-CD03-B3D9F78B20E9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\test">
-      <UniqueIdentifier>{0ED4CDBE-296D-2599-04B3-095BFD1668A4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\unity">
       <UniqueIdentifier>{40FDA51E-20C4-4A72-83C3-A4B08C596A82}</UniqueIdentifier>
     </Filter>
@@ -633,9 +630,6 @@
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
       <Filter>beast\cxx17</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -759,9 +753,6 @@
     <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\test\beast_empty_base_optimization_test.cpp">
-      <Filter>beast\test</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\type_name.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -769,9 +760,6 @@
       <Filter>beast\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
-      <Filter>beast\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_test_unity.cpp">
       <Filter>beast\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_wsproto_unity.cpp">
@@ -922,6 +910,9 @@
       <Filter>beast\wsproto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+      <Filter>include\beast\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
       <Filter>include\beast\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\is_call_possible.hpp">

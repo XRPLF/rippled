@@ -358,7 +358,7 @@ basic_streambuf<Allocator>::~basic_streambuf()
 template<class Allocator>
 basic_streambuf<Allocator>::
 basic_streambuf(basic_streambuf&& other)
-    : empty_base_optimization<allocator_type>(
+    : detail::empty_base_optimization<allocator_type>(
         std::move(other.member()))
     , alloc_size_(other.alloc_size_)
     , in_size_(other.in_size_)
@@ -476,7 +476,7 @@ basic_streambuf<Allocator>::operator=(
 template<class Allocator>
 basic_streambuf<Allocator>::basic_streambuf(
         std::size_t alloc_size, Allocator const& alloc)
-    : empty_base_optimization<allocator_type>(alloc)
+    : detail::empty_base_optimization<allocator_type>(alloc)
     , out_(list_.end())
     , alloc_size_(alloc_size)
 {

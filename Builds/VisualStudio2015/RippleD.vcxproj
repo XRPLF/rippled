@@ -292,8 +292,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_headers.h">
@@ -387,10 +385,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\test\beast_empty_base_optimization_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\type_name.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_asio_unity.cpp">
@@ -398,10 +392,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_test_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -511,6 +501,8 @@
     <ClInclude Include="..\..\src\beast\beast\wsproto\teardown.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\is_call_possible.hpp">
     </ClInclude>

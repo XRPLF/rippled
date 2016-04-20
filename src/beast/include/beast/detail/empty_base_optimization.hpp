@@ -18,14 +18,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
-#define BEAST_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
+#ifndef BEAST_DETAIL_EMPTY_BASE_OPTIMIZATION_HPP
+#define BEAST_DETAIL_EMPTY_BASE_OPTIMIZATION_HPP
 
 #include <type_traits>
 #include <utility>
 
 namespace beast {
-
 namespace detail {
 
 template <class T>
@@ -38,10 +37,6 @@ struct empty_base_optimization_decide
     >
 {
 };
-
-}
-
-//------------------------------------------------------------------------------
 
 template <
     class T,
@@ -106,6 +101,7 @@ private:
     T m_t;
 };
 
-}
+} // detail
+} // beast
 
 #endif

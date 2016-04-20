@@ -23,7 +23,7 @@
 #include <beast/http/detail/writes.h>
 #include <beast/asio/type_check.h>
 #include <beast/ci_char_traits.h>
-#include <beast/empty_base_optimization.h>
+#include <beast/detail/empty_base_optimization.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/lexical_cast.hpp>
@@ -257,7 +257,7 @@ public:
 template<class Allocator>
 class basic_headers
 #if ! GENERATING_DOCS
-    : private empty_base_optimization<
+    : private beast::detail::empty_base_optimization<
         typename std::allocator_traits<Allocator>::
             template rebind_alloc<
                 detail::basic_headers_base::element>>

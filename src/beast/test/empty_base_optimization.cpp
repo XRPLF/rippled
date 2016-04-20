@@ -21,7 +21,7 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/empty_base_optimization.h>
+#include <beast/detail/empty_base_optimization.hpp>
 
 #include <beast/unit_test/suite.h>
 
@@ -33,9 +33,9 @@ class empty_base_optimization_test
 public:
     template <class T>
     class test1
-        : private empty_base_optimization<T>
+        : private detail::empty_base_optimization<T>
     {
-        using Base = empty_base_optimization<T>;
+        using Base = detail::empty_base_optimization<T>;
         void* m_p;
     public:
         explicit test1 (T const& t)

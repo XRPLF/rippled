@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_BASIC_STREAMBUF_H_INCLUDED
 #define BEAST_ASIO_BASIC_STREAMBUF_H_INCLUDED
 
-#include <beast/empty_base_optimization.h>
+#include <beast/detail/empty_base_optimization.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/intrusive/list.hpp>
 #include <iterator>
@@ -42,7 +42,7 @@ namespace beast {
 template<class Allocator>
 class basic_streambuf
 #if ! GENERATING_DOCS
-    : private empty_base_optimization<
+    : private detail::empty_base_optimization<
         typename std::allocator_traits<Allocator>::
             template rebind_alloc<std::uint8_t>>
 #endif
