@@ -21,7 +21,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/ci_char_traits.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -40,7 +40,7 @@ class MemoryFactory : public Factory
 {
 private:
     std::mutex mutex_;
-    std::map <std::string, MemoryDB, beast::ci_less> map_;
+    std::map <std::string, MemoryDB, beast::detail::ci_less> map_;
 
 public:
     MemoryFactory();

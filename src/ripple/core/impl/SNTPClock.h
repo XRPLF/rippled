@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NET_SNTPCLOCK_H_INCLUDED
 #define RIPPLE_NET_SNTPCLOCK_H_INCLUDED
 
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/Journal.h>
 #include <chrono>
 #include <memory>

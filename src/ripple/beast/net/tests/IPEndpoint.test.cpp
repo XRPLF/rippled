@@ -26,7 +26,7 @@
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/net/detail/Parse.h>
 
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 #include <typeinfo>
 

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/nudb/detail/varint.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <array>
 #include <vector>
 

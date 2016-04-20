@@ -22,7 +22,7 @@
 #include <ripple/shamap/tests/common.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/StringUtilities.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
 
 namespace ripple {

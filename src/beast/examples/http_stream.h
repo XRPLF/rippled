@@ -20,8 +20,8 @@
 #ifndef BEAST_HTTP_STREAM_H_INCLUDED
 #define BEAST_HTTP_STREAM_H_INCLUDED
 
-#include <beast/http.h>
-#include <beast/asio/basic_streambuf.h>
+#include <beast/http.hpp>
+#include <beast/basic_streambuf.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/intrusive/list.hpp>
 #include <memory>

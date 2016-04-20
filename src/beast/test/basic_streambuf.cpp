@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/basic_streambuf.h>
+#include <beast/basic_streambuf.hpp>

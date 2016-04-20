@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/handler_alloc.h>
+#include <beast/handler_alloc.hpp>

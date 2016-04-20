@@ -23,7 +23,7 @@
 #include <ripple/beast/insight/Base.h>
 #include <ripple/beast/insight/EventImpl.h>
 
-#include <beast/clock/chrono_util.h>
+#include <ripple/beast/clock/chrono_util.h>
 
 #include <chrono>
 #include <memory>

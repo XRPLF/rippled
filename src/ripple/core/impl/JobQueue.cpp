@@ -22,7 +22,7 @@
 #include <ripple/core/JobTypes.h>
 #include <ripple/core/JobTypeInfo.h>
 #include <ripple/core/JobTypeData.h>
-#include <beast/clock/chrono_util.h>
+#include <ripple/beast/clock/chrono_util.h>
 #include <chrono>
 #include <memory>
 #include <mutex>

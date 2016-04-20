@@ -21,8 +21,8 @@
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
 #include <ripple/basics/win32_workaround.h>
-#include <beast/xor_shift_engine.h>
-#include <beast/is_call_possible.h>
+#include <ripple/beast/xor_shift_engine.h>
+#include <beast/detail/is_call_possible.hpp>
 #include <boost/thread/tss.hpp>
 #include <cassert>
 #include <cstddef>
@@ -50,7 +50,7 @@ namespace detail {
 // Determines if a type can be called like an Engine
 template <class Engine, class Result = typename Engine::result_type>
 using is_engine =
-    beast::is_call_possible<Engine, Result()>;
+    beast::detail::is_call_possible<Engine, Result()>;
 }
 
 /** Return the default random engine.

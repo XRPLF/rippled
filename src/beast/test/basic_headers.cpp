@@ -6,15 +6,15 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/http/basic_headers.h>
+#include <beast/http/basic_headers.hpp>
 
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 
 namespace beast {
 namespace http {
 namespace test {
 
-class basic_headers_test : public unit_test::suite
+class basic_headers_test : public beast::detail::unit_test::suite
 {
 public:
     template<class Allocator>

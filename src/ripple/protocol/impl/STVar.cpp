@@ -39,24 +39,6 @@ nonPresentObject_t nonPresentObject;
 
 //------------------------------------------------------------------------------
 
-STVar::Log::~Log()
-{
-    beast::debug_ostream os;
-    for(auto const& e : map_)
-        os << e.first << "," << e.second;
-}
-
-void
-STVar::Log::operator() (std::size_t n)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto const result = map_.emplace(n, 1);
-    if (! result.second)
-        ++result.first->second;
-}
-
-//------------------------------------------------------------------------------
-
 STVar::~STVar()
 {
     destroy();

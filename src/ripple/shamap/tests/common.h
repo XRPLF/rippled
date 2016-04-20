@@ -31,7 +31,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/Journal.h>
-#include <beast/clock/manual_clock.h>
+#include <ripple/beast/clock/manual_clock.h>
 
 namespace ripple {
 namespace tests {

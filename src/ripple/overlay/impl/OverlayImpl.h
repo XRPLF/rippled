@@ -25,6 +25,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/overlay/impl/TrafficCount.h>
+#include <ripple/beast/deprecated_http.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>

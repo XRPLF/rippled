@@ -42,8 +42,8 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <beast/is_call_possible.h>
-#include <beast/unit_test/suite.h>
+#include <beast/detail/is_call_possible.hpp>
+#include <ripple/beast/unit_test.h>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -587,7 +587,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(stx, f,
-            beast::is_call_possible<F,
+            beast::detail::is_call_possible<F,
                 void(Env&, STTx const&)>());
         invoke(stx, fN...);
     }
@@ -621,7 +621,7 @@ protected:
         FN const&... fN)
     {
         maybe_invoke(jt, f,
-            beast::is_call_possible<F,
+            beast::detail::is_call_possible<F,
                 void(Env&, JTx&)>());
         invoke(jt, fN...);
     }

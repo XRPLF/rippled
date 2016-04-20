@@ -21,8 +21,8 @@
 #define BEAST_NET_IPENDPOINT_H_INCLUDED
 
 #include <ripple/beast/net/IPAddress.h>
-#include <beast/hash/hash_append.h>
-#include <beast/hash/uhash.h>
+#include <ripple/beast/hash/hash_append.h>
+#include <ripple/beast/hash/uhash.h>
 #include <cstdint>
 #include <ios>
 #include <string>

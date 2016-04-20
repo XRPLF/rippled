@@ -6,18 +6,17 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/asio/buffers_adapter.h>
+#include <beast/buffers_adapter.hpp>
 
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <iterator>
 
 namespace beast {
-namespace asio {
 namespace test {
 
-class buffers_adapter_test : public unit_test::suite
+class buffers_adapter_test : public detail::unit_test::suite
 {
 public:
     template<class ConstBufferSequence>
@@ -120,5 +119,4 @@ public:
 BEAST_DEFINE_TESTSUITE(buffers_adapter,asio,beast);
 
 } // test
-} // asio
 } // beast

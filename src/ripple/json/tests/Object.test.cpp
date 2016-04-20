@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/json/Object.h>
 #include <ripple/rpc/tests/TestOutputSuite.test.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace Json {
 

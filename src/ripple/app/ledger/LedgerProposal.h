@@ -26,7 +26,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include <beast/hash/hash_append.h>
+#include <ripple/beast/hash/hash_append.h>
 #include <chrono>
 #include <cstdint>
 #include <string>

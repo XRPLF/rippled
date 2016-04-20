@@ -121,7 +121,7 @@ import textwrap
 import time
 import SCons.Action
 
-sys.path.append(os.path.join('src', 'beast', 'site_scons'))
+sys.path.append(os.path.join('src', 'ripple', 'beast', 'site_scons'))
 sys.path.append(os.path.join('src', 'ripple', 'site_scons'))
 
 import Beast
@@ -759,7 +759,7 @@ root_dir = Dir('#').srcnode().get_abspath() # Path to this SConstruct file
 build_dir = os.path.join('build')
 
 base = Environment(
-    toolpath=[os.path.join ('src', 'beast', 'site_scons', 'site_tools')],
+    toolpath=[os.path.join ('src', 'ripple', 'beast', 'site_scons', 'site_tools')],
     tools=['default', 'Protoc', 'VSProject'],
     ENV=os.environ,
     TARGET_ARCH='x86_64')
@@ -768,6 +768,7 @@ config_base(base)
 base.Append(CPPPATH=[
     'src',
     os.path.join('src', 'beast'),
+    os.path.join('src', 'beast', 'include'),
     os.path.join(build_dir, 'proto'),
     os.path.join('src','soci','src'),
     os.path.join('src','soci','include'),
@@ -901,13 +902,7 @@ def get_classic_sources(toolchain):
             'src/soci/src/core',
             'src/sqlite']
     )
-    append_sources(result, *list_sources('src/beast/beast/asio/src', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/clock', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/crypto', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/http/src', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/streams', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/test', '.cpp'))
-    append_sources(result, *list_sources('src/beast/beast/wsproto/src', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/beast/clock', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/container', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/insight', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/net', '.cpp'))
@@ -952,13 +947,7 @@ def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
-        'src/beast/beast/unity/beast_asio_unity.cpp',
-        'src/beast/beast/unity/beast_clock_unity.cpp',
-        'src/beast/beast/unity/beast_crypto_unity.cpp',
-        'src/beast/beast/unity/beast_http_unity.cpp',
-        'src/beast/beast/unity/beast_streams_unity.cpp',
-        'src/beast/beast/unity/beast_test_unity.cpp',
-        'src/beast/beast/unity/beast_wsproto_unity.cpp',
+        'src/ripple/beast/unity/beast_clock_unity.cpp',
         'src/ripple/beast/unity/beast_container_unity.cpp',
         'src/ripple/beast/unity/beast_insight_unity.cpp',
         'src/ripple/beast/unity/beast_net_unity.cpp',
@@ -1121,7 +1110,8 @@ for tu_style in ['classic', 'unity']:
                 cc_flags = {}
 
             object_builder.add_source_files(
-                'src/beast/beast/unity/beast_hash_unity.cpp',
+                'src/beast/src/beast_http_nodejs_parser.cpp',
+                'src/ripple/beast/unity/beast_hash_unity.cpp',
                 'src/ripple/unity/beast.cpp',
                 'src/ripple/unity/lz4.c',
                 'src/ripple/unity/protobuf.cpp',
@@ -1212,7 +1202,7 @@ for key, value in aliases.iteritems():
 vcxproj = base.VSProject(
     os.path.join('Builds', 'VisualStudio2015', 'RippleD'),
     source = [],
-    VSPROJECT_ROOT_DIRS = ['src/beast', 'src', '.'],
+    VSPROJECT_ROOT_DIRS = ['src/beast', 'src/beast/include', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)
 

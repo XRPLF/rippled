@@ -8,17 +8,17 @@
 import os ;
 
 exe http_crawl :
-    ../beast/http/src/beast_http_nodejs_parser.cpp
+    ../src/beast_http_nodejs_parser.cpp
     http_crawl.cpp
     urls_large_data.cpp
     ;
 
 exe http_server :
-    ../beast/http/src/beast_http_nodejs_parser.cpp
+    ../src/beast_http_nodejs_parser.cpp
     http_server.cpp
     ;
 
 exe wsproto_echo :
-    ../beast/http/src/beast_http_nodejs_parser.cpp
+    ../src/beast_http_nodejs_parser.cpp
     wsproto_echo.cpp
     ;

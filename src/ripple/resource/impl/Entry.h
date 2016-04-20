@@ -23,7 +23,7 @@
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/resource/impl/Key.h>
 #include <ripple/resource/impl/Tuning.h>
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/core/List.h>
 #include <cassert>
 

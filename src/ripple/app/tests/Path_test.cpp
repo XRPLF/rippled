@@ -32,7 +32,7 @@
 #include <ripple/rpc/RipplePathFind.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/test/jtx.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>

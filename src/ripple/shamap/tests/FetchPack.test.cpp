@@ -25,8 +25,8 @@
 #include <ripple/basics/random.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <beast/xor_shift_engine.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/xor_shift_engine.h>
+#include <ripple/beast/unit_test.h>
 #include <functional>
 #include <stdexcept>
 

@@ -22,7 +22,7 @@
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>
-#include <beast/asio/placeholders.h>
+#include <beast/placeholders.hpp>
 
 namespace ripple {
 

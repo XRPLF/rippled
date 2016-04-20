@@ -21,7 +21,7 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/protocol/Issue.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <map>
 #include <set>
 #include <typeinfo>

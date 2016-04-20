@@ -26,7 +26,7 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/PublicKey.h>
-#include <beast/hash/uhash.h>
+#include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/utility/Journal.h>
 #include <functional>
 #include <memory>

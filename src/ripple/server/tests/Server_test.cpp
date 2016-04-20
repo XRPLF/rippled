@@ -23,7 +23,7 @@
 #include <ripple/server/make_Server.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>

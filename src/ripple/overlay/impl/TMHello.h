@@ -24,7 +24,8 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/http/message.h>
+#include <beast/http/headers.hpp>
+#include <beast/http/message.hpp>
 #include <ripple/beast/utility/Journal.h>
 #include <utility>
 #include <boost/asio/ssl.hpp>

@@ -39,7 +39,7 @@ private:
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
     using socket_type = boost::asio::ip::tcp::socket;
 
-    beast::wsproto::socket<socket_type> ws_;
+    beast::websocket::stream<socket_type> ws_;
 
 public:
     template<class Body, class Headers>

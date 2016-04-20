@@ -18,12 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/beast/deprecated_http.h>
 #include <ripple/test/JSONRPCClient.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/server/Port.h>
-#include <beast/asio/streambuf.h>
-#include <beast/http/parser.h>
+#include <beast/streambuf.hpp>
+#include <beast/http/parser.hpp>
 #include <boost/asio.hpp>
 #include <string>
 

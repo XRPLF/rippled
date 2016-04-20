@@ -19,8 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <beast/asio/placeholders.h>
-#include <beast/unit_test/suite.h>
+#include <beast/placeholders.hpp>
+#include <ripple/beast/unit_test.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>

@@ -28,7 +28,7 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
-#include <beast/clock/abstract_clock.h>
+#include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/insight/Insight.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <cassert>

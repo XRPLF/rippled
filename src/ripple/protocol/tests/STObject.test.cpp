@@ -23,7 +23,7 @@
 #include <ripple/protocol/st.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <memory>
 #include <type_traits>
 

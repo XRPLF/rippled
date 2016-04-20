@@ -48,6 +48,7 @@ else
 project beast
     : requirements
       <include>.
+      <include>./include
       #<use>/boost//headers
       <library>/boost/system//boost_system
       <library>/boost/filesystem//boost_filesystem

@@ -21,8 +21,8 @@
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
 #include <ripple/server/Writer.h>
-#include <beast/http/message.h>
-#include <beast/http/streambuf_body.h>
+#include <beast/http/message.hpp>
+#include <beast/http/streambuf_body.hpp>
 #include <memory>
 
 namespace ripple {
