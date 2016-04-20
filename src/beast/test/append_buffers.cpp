@@ -8,7 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/asio/append_buffers.h>
 
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <iterator>
@@ -16,10 +16,9 @@
 #include <vector>
 
 namespace beast {
-namespace asio {
 namespace test {
 
-class append_buffers_test : public unit_test::suite
+class append_buffers_test : public detail::unit_test::suite
 {
 public:
 
@@ -72,5 +71,4 @@ public:
 BEAST_DEFINE_TESTSUITE(append_buffers,asio,beast);
 
 } // test
-} // asio
 } // beast

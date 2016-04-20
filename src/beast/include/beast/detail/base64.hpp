@@ -128,13 +128,13 @@ template <class = void>
 std::string
 base64_encode (std::string const& s)
 {
-    return detail::base64_encode (reinterpret_cast <
+    return base64_encode (reinterpret_cast <
         std::uint8_t const*> (s.data()), s.size());
 }
 
 template <class = void>
 std::string
-detail::base64_decode(std::string const& data)
+base64_decode(std::string const& data)
 {
     int in_len = data.size();
     unsigned char c3[3], c4[4];

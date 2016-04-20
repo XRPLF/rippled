@@ -20,16 +20,22 @@
 #ifndef BEAST_UNIT_TEST_H_INCLUDED
 #define BEAST_UNIT_TEST_H_INCLUDED
 
-#include <beast/unit_test/amount.h>
-#include <beast/unit_test/print.h>
-#include <beast/unit_test/global_suites.h>
-#include <beast/unit_test/match.h>
-#include <beast/unit_test/recorder.h>
-#include <beast/unit_test/reporter.h>
-#include <beast/unit_test/results.h>
-#include <beast/unit_test/runner.h>
-#include <ripple/beast/unit_test.h>
-#include <beast/unit_test/suite_info.h>
-#include <beast/unit_test/suite_list.h>
+#include <beast/detail/unit_test/amount.hpp>
+#include <beast/detail/unit_test/print.hpp>
+#include <beast/detail/unit_test/global_suites.hpp>
+#include <beast/detail/unit_test/match.hpp>
+#include <beast/detail/unit_test/recorder.hpp>
+#include <beast/detail/unit_test/reporter.hpp>
+#include <beast/detail/unit_test/results.hpp>
+#include <beast/detail/unit_test/runner.hpp>
+#include <beast/detail/unit_test/suite.hpp>
+#include <beast/detail/unit_test/suite_info.hpp>
+#include <beast/detail/unit_test/suite_list.hpp>
+
+namespace beast {
+namespace unit_test {
+using namespace beast::detail::unit_test;
+} // unit_test
+} // beast
 
 #endif

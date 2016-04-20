@@ -445,13 +445,13 @@ public:
 
     // A set iterator (IsMap==false) is always const
     // because the elements of a set are immutable.
-    using iterator = detail::aged_container_iterator<
+    using iterator = beast::detail::aged_container_iterator<
         ! IsMap, typename cont_type::iterator>;
-    using const_iterator = detail::aged_container_iterator<
+    using const_iterator = beast::detail::aged_container_iterator<
         true, typename cont_type::iterator>;
-    using reverse_iterator = detail::aged_container_iterator<
+    using reverse_iterator = beast::detail::aged_container_iterator<
         ! IsMap, typename cont_type::reverse_iterator>;
-    using const_reverse_iterator = detail::aged_container_iterator<
+    using const_reverse_iterator = beast::detail::aged_container_iterator<
         true, typename cont_type::reverse_iterator>;
 
     //--------------------------------------------------------------------------
@@ -468,13 +468,13 @@ public:
     public:
         // A set iterator (IsMap==false) is always const
         // because the elements of a set are immutable.
-        using iterator = detail::aged_container_iterator<
+        using iterator = beast::detail::aged_container_iterator<
             ! IsMap, typename list_type::iterator>;
-        using const_iterator = detail::aged_container_iterator<
+        using const_iterator = beast::detail::aged_container_iterator<
             true, typename list_type::iterator>;
-        using reverse_iterator = detail::aged_container_iterator<
+        using reverse_iterator = beast::detail::aged_container_iterator<
             ! IsMap, typename list_type::reverse_iterator>;
-        using const_reverse_iterator = detail::aged_container_iterator<
+        using const_reverse_iterator = beast::detail::aged_container_iterator<
             true, typename list_type::reverse_iterator>;
 
         iterator begin ()
@@ -966,16 +966,16 @@ public:
     // enable_if prevents erase (reverse_iterator pos) from compiling
     template <bool is_const, class Iterator, class Base,
          class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
-    detail::aged_container_iterator <false, Iterator, Base>
-    erase (detail::aged_container_iterator <is_const, Iterator, Base> pos);
+    beast::detail::aged_container_iterator <false, Iterator, Base>
+    erase (beast::detail::aged_container_iterator <is_const, Iterator, Base> pos);
 
     // enable_if prevents erase (reverse_iterator first, reverse_iterator last)
     // from compiling
     template <bool is_const, class Iterator, class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
-    detail::aged_container_iterator <false, Iterator, Base>
-    erase (detail::aged_container_iterator <is_const, Iterator, Base> first,
-           detail::aged_container_iterator <is_const, Iterator, Base> last);
+    beast::detail::aged_container_iterator <false, Iterator, Base>
+    erase (beast::detail::aged_container_iterator <is_const, Iterator, Base> first,
+           beast::detail::aged_container_iterator <is_const, Iterator, Base> last);
 
     template <class K>
     auto
@@ -991,7 +991,7 @@ public:
     template <bool is_const, class Iterator, class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
-    touch (detail::aged_container_iterator <is_const, Iterator, Base> pos)
+    touch (beast::detail::aged_container_iterator <is_const, Iterator, Base> pos)
     {
         touch (pos, clock().now());
     }
@@ -1220,7 +1220,7 @@ private:
     template <bool is_const, class Iterator, class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
-    touch (detail::aged_container_iterator <
+    touch (beast::detail::aged_container_iterator <
         is_const, Iterator, Base> pos,
             typename clock_type::time_point const& now);
 
@@ -1768,27 +1768,27 @@ emplace_hint (const_iterator hint, Args&&... args) ->
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Compare, class Allocator>
 template <bool is_const, class Iterator, class Base, class>
-detail::aged_container_iterator <false, Iterator, Base>
+beast::detail::aged_container_iterator <false, Iterator, Base>
 aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-erase (detail::aged_container_iterator <is_const, Iterator, Base> pos)
+erase (beast::detail::aged_container_iterator <is_const, Iterator, Base> pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return detail::aged_container_iterator <
+    return beast::detail::aged_container_iterator <
         false, Iterator, Base> (pos.iterator());
 }
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Compare, class Allocator>
 template <bool is_const, class Iterator, class Base, class>
-detail::aged_container_iterator <false, Iterator, Base>
+beast::detail::aged_container_iterator <false, Iterator, Base>
 aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-erase (detail::aged_container_iterator <is_const, Iterator, Base> first,
-       detail::aged_container_iterator <is_const, Iterator, Base> last)
+erase (beast::detail::aged_container_iterator <is_const, Iterator, Base> first,
+       beast::detail::aged_container_iterator <is_const, Iterator, Base> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return detail::aged_container_iterator <
+    return beast::detail::aged_container_iterator <
         false, Iterator, Base> (first.iterator());
 }
 
@@ -1884,7 +1884,7 @@ template <bool IsMulti, bool IsMap, class Key, class T,
 template <bool is_const, class Iterator, class Base, class>
 void
 aged_ordered_container <IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-touch (detail::aged_container_iterator <
+touch (beast::detail::aged_container_iterator <
     is_const, Iterator, Base> pos,
         typename clock_type::time_point const& now)
 {
@@ -1923,7 +1923,7 @@ swap_data (aged_ordered_container& other) noexcept
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Compare, class Allocator>
-struct is_aged_container <detail::aged_ordered_container <
+struct is_aged_container <beast::detail::aged_ordered_container <
         IsMulti, IsMap, Key, T, Clock, Compare, Allocator>>
     : std::true_type
 {
@@ -1934,9 +1934,9 @@ struct is_aged_container <detail::aged_ordered_container <
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Compare, class Allocator>
 void swap (
-    detail::aged_ordered_container <IsMulti, IsMap,
+    beast::detail::aged_ordered_container <IsMulti, IsMap,
         Key, T, Clock, Compare, Allocator>& lhs,
-    detail::aged_ordered_container <IsMulti, IsMap,
+    beast::detail::aged_ordered_container <IsMulti, IsMap,
         Key, T, Clock, Compare, Allocator>& rhs) noexcept
 {
     lhs.swap (rhs);

@@ -8,15 +8,14 @@
 // Test that header file is self-contained.
 #include <beast/asio/consuming_buffers.h>
 
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
 
 namespace beast {
-namespace asio {
 namespace test {
 
-class consuming_buffers_test : public unit_test::suite
+class consuming_buffers_test : public beast::detail::unit_test::suite
 {
 public:
     template<class ConstBufferSequence>
@@ -93,5 +92,4 @@ public:
 BEAST_DEFINE_TESTSUITE(consuming_buffers,asio,beast);
 
 } // test
-} // asio
 } // beast

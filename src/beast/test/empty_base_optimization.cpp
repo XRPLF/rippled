@@ -23,12 +23,13 @@
 
 #include <beast/detail/empty_base_optimization.hpp>
 
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 
 namespace beast {
+namespace test {
 
 class empty_base_optimization_test
-    : public unit_test::suite
+    : public beast::detail::unit_test::suite
 {
 public:
     template <class T>
@@ -104,4 +105,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(empty_base_optimization,utility,beast);
 
+} // test
 } // beast

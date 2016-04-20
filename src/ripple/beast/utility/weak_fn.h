@@ -101,7 +101,7 @@ public:
 
     weak_binder (member_type member,
             Policy policy, pointer_type object)
-        : detail::empty_base_optimization<Policy>(std::move(policy))
+        : beast::detail::empty_base_optimization<Policy>(std::move(policy))
         , member_(member)
         , object_(object)
         { }

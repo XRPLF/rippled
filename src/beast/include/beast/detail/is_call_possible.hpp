@@ -50,7 +50,7 @@ struct is_call_possible
 
 template <class C, class R, class ...A>
 struct is_call_possible<C, R(A...)>
-    : decltype(detail::is_call_possible_test<R>(
+    : decltype(is_call_possible_test<R>(
         std::declval<C>(), 1, std::declval<A>()...))
 {
 };
@@ -73,25 +73,25 @@ struct is_call_possible_udt3
     int operator()(int);
 };
 
-static_assert(detail::is_call_possible<
+static_assert(is_call_possible<
     is_call_possible_udt1, void(int)>::value, "");
 
-static_assert(! detail::is_call_possible<
+static_assert(! is_call_possible<
     is_call_possible_udt1, void(void)>::value, "");
 
-static_assert(detail::is_call_possible<
+static_assert(is_call_possible<
     is_call_possible_udt2, int(int)>::value, "");
 
-static_assert(! detail::is_call_possible<
+static_assert(! is_call_possible<
     is_call_possible_udt2, int(void)>::value, "");
 
-static_assert(! detail::is_call_possible<
+static_assert(! is_call_possible<
     is_call_possible_udt2, void(void)>::value, "");
 
-static_assert(detail::is_call_possible<
+static_assert(is_call_possible<
     is_call_possible_udt3, int(int)>::value, "");
 
-static_assert(! detail::is_call_possible<
+static_assert(! is_call_possible<
     is_call_possible_udt3 const, int(int)>::value, "");
 
 } // test

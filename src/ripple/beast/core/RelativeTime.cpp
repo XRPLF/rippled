@@ -257,7 +257,7 @@ static double getStartupTime()
     {
         StaticInitializer ()
         {
-            when = detail::monotonicCurrentTimeInSeconds();
+            when = beast::detail::monotonicCurrentTimeInSeconds();
         }
 
         double when;

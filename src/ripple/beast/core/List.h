@@ -73,7 +73,7 @@ class ListIterator : public std::iterator <
     std::bidirectional_iterator_tag, std::size_t>
 {
 public:
-    using value_type = typename detail::CopyConst <
+    using value_type = typename beast::detail::CopyConst <
         N, typename N::value_type>::type;
     using pointer = value_type*;
     using reference = value_type&;

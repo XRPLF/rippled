@@ -18,11 +18,12 @@
 //==============================================================================
 
 #include <beast/detail/base64.hpp>
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 
 namespace beast {
+namespace test {
 
-class base64_test : public unit_test::suite
+class base64_test : public detail::unit_test::suite
 {
 public:
     void
@@ -48,4 +49,6 @@ public:
 
 BEAST_DEFINE_TESTSUITE(base64,crypto,beast);
 
-}
+} // test
+} // beast
+

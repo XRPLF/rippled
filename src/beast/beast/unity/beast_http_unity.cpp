@@ -17,11 +17,6 @@
 */
 //==============================================================================
 
-#include <beast/http/src/test/beast_http_chunked_encoder_test.cpp>
-#include <beast/http/src/test/beast_http_message_test.cpp>
-#include <beast/http/src/test/beast_http_parser_test.cpp>
-#include <beast/http/src/test/beast_http_rfc2616_test.cpp>
-
 // VFALCO Must come last otherwise Windows 10 SDK
 //        gets a compile error in winnt.h
 #include <beast/http/src/beast_http_nodejs_parser.cpp>

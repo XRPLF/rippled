@@ -42,7 +42,7 @@ template <
     class T,
     int UniqueID = 0,
     bool ShouldDeriveFrom =
-        detail::empty_base_optimization_decide <T>::value
+        empty_base_optimization_decide<T>::value
 >
 class empty_base_optimization : private T
 {

@@ -268,8 +268,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_headers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_parser.h">
@@ -287,8 +285,6 @@
     <ClInclude Include="..\..\src\beast\beast\http\empty_body.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\error.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\fields.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\headers.h">
     </ClInclude>
@@ -327,22 +323,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\src\nodejs_parser.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_chunked_encoder_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_message_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_parser_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\src\test\beast_http_rfc2616_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\streambuf_body.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\string_body.h">
@@ -351,57 +331,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\write.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\streams\abstract_ostream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\streams\basic_abstract_ostream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\streams\basic_scoped_ostream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\streams\basic_std_ostream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\streams\debug_ostream.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\unity\beast_http_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\unity\beast_wsproto_unity.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\unit_test.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\amount.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\const_container.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\unit_test\define_print.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\global_suites.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\match.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\print.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\recorder.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\reporter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\results.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\runner.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\suite.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\suite_info.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\suite_list.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\temp_dir.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\unit_test\thread.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\detail\decorator.h">
@@ -452,18 +385,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\socket.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\async_echo_peer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_echo_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\wsproto\src\test\beast_wsproto_ws_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\wsproto\src\test\sync_echo_peer.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\ssl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\wsproto\static_string.h">
@@ -474,11 +395,43 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\ci_char_traits.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\const_container.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\is_call_possible.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\sha1.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\abstract_ostream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_abstract_ostream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_scoped_ostream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_std_ostream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\amount.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\global_suites.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\match.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\print.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\recorder.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\reporter.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\results.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\runner.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite_info.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite_list.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
@@ -1910,6 +1863,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\unit_test.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\utility\Debug.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\utility\Journal.h">

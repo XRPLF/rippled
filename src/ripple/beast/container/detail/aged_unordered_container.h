@@ -618,14 +618,14 @@ public:
 
     // A set iterator (IsMap==false) is always const
     // because the elements of a set are immutable.
-    using iterator= detail::aged_container_iterator <!IsMap,
+    using iterator= beast::detail::aged_container_iterator <!IsMap,
         typename cont_type::iterator>;
-    using const_iterator = detail::aged_container_iterator <true,
+    using const_iterator = beast::detail::aged_container_iterator <true,
         typename cont_type::iterator>;
 
-    using local_iterator = detail::aged_container_iterator <!IsMap,
+    using local_iterator = beast::detail::aged_container_iterator <!IsMap,
         typename cont_type::local_iterator>;
-    using const_local_iterator = detail::aged_container_iterator <true,
+    using const_local_iterator = beast::detail::aged_container_iterator <true,
         typename cont_type::local_iterator>;
 
     //--------------------------------------------------------------------------
@@ -642,13 +642,13 @@ public:
     public:
         // A set iterator (IsMap==false) is always const
         // because the elements of a set are immutable.
-        using iterator = detail::aged_container_iterator <
+        using iterator = beast::detail::aged_container_iterator <
             ! IsMap, typename list_type::iterator>;
-        using const_iterator = detail::aged_container_iterator <
+        using const_iterator = beast::detail::aged_container_iterator <
             true, typename list_type::iterator>;
-        using reverse_iterator = detail::aged_container_iterator <
+        using reverse_iterator = beast::detail::aged_container_iterator <
             ! IsMap, typename list_type::reverse_iterator>;
-        using const_reverse_iterator = detail::aged_container_iterator <
+        using const_reverse_iterator = beast::detail::aged_container_iterator <
             true, typename list_type::reverse_iterator>;
 
         iterator begin ()
@@ -1143,15 +1143,15 @@ public:
     }
 
     template <bool is_const, class Iterator, class Base>
-    detail::aged_container_iterator <false, Iterator, Base>
-    erase (detail::aged_container_iterator <
+    beast::detail::aged_container_iterator <false, Iterator, Base>
+    erase (beast::detail::aged_container_iterator <
         is_const, Iterator, Base> pos);
 
     template <bool is_const, class Iterator, class Base>
-    detail::aged_container_iterator <false, Iterator, Base>
-    erase (detail::aged_container_iterator <
+    beast::detail::aged_container_iterator <false, Iterator, Base>
+    erase (beast::detail::aged_container_iterator <
         is_const, Iterator, Base> first,
-            detail::aged_container_iterator <
+            beast::detail::aged_container_iterator <
                 is_const, Iterator, Base> last);
 
     template <class K>
@@ -1164,7 +1164,7 @@ public:
 
     template <bool is_const, class Iterator, class Base>
     void
-    touch (detail::aged_container_iterator <
+    touch (beast::detail::aged_container_iterator <
         is_const, Iterator, Base> pos)
     {
         touch (pos, clock().now());
@@ -1459,7 +1459,7 @@ private:
 
     template <bool is_const, class Iterator, class Base>
     void
-    touch (detail::aged_container_iterator <
+    touch (beast::detail::aged_container_iterator <
         is_const, Iterator, Base> pos,
             typename clock_type::time_point const& now)
     {
@@ -2297,32 +2297,32 @@ emplace_hint (const_iterator /*hint*/, Args&&... args) ->
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Hash, class KeyEqual, class Allocator>
 template <bool is_const, class Iterator, class Base>
-detail::aged_container_iterator <false, Iterator, Base>
+beast::detail::aged_container_iterator <false, Iterator, Base>
 aged_unordered_container <IsMulti, IsMap, Key, T, Clock,
     Hash, KeyEqual, Allocator>::
-erase (detail::aged_container_iterator <
+erase (beast::detail::aged_container_iterator <
     is_const, Iterator, Base> pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return detail::aged_container_iterator <
+    return beast::detail::aged_container_iterator <
         false, Iterator, Base> (pos.iterator());
 }
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Hash, class KeyEqual, class Allocator>
 template <bool is_const, class Iterator, class Base>
-detail::aged_container_iterator <false, Iterator, Base>
+beast::detail::aged_container_iterator <false, Iterator, Base>
 aged_unordered_container <IsMulti, IsMap, Key, T, Clock,
     Hash, KeyEqual, Allocator>::
-erase (detail::aged_container_iterator <
+erase (beast::detail::aged_container_iterator <
     is_const, Iterator, Base> first,
-        detail::aged_container_iterator <
+        beast::detail::aged_container_iterator <
             is_const, Iterator, Base> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return detail::aged_container_iterator <
+    return beast::detail::aged_container_iterator <
         false, Iterator, Base> (first.iterator());
 }
 
@@ -2510,7 +2510,7 @@ insert_unchecked (value_type const& value) ->
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Hash, class KeyEqual, class Allocator>
-struct is_aged_container <detail::aged_unordered_container <
+struct is_aged_container <beast::detail::aged_unordered_container <
         IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>>
     : std::true_type
 {
@@ -2521,9 +2521,9 @@ struct is_aged_container <detail::aged_unordered_container <
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock,
     class Hash, class KeyEqual, class Allocator>
 void swap (
-    detail::aged_unordered_container <IsMulti, IsMap,
+    beast::detail::aged_unordered_container <IsMulti, IsMap,
         Key, T, Clock, Hash, KeyEqual, Allocator>& lhs,
-    detail::aged_unordered_container <IsMulti, IsMap,
+    beast::detail::aged_unordered_container <IsMulti, IsMap,
         Key, T, Clock, Hash, KeyEqual, Allocator>& rhs) noexcept
 {
     lhs.swap (rhs);
@@ -2533,7 +2533,7 @@ void swap (
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Clock, class Hash, class KeyEqual, class Allocator,
         class Rep, class Period>
-std::size_t expire (detail::aged_unordered_container <
+std::size_t expire (beast::detail::aged_unordered_container <
     IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>& c,
         std::chrono::duration <Rep, Period> const& age) noexcept
 {

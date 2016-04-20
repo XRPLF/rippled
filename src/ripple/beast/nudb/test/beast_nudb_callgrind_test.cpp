@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/nudb/test/common.h>
-#include <beast/unit_test/temp_dir.h>
+#include <beast/detail/temp_dir.hpp>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
 #include <cmath>
@@ -98,7 +98,7 @@ public:
 
         testcase (abort_on_fail);
 
-        beast::temp_dir tempDir;
+        beast::detail::temp_dir tempDir;
         do_test (N, tempDir.path());
     }
 };

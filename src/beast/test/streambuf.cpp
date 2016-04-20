@@ -8,14 +8,13 @@
 // Test that header file is self-contained.
 #include <beast/asio/streambuf.h>
 
-#include <beast/unit_test/suite.h>
+#include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <atomic>
 #include <memory>
 #include <string>
 
 namespace beast {
-namespace asio {
 namespace test {
 
 struct test_allocator_info
@@ -135,7 +134,7 @@ public:
     }
 };
 
-class streambuf_test : public unit_test::suite
+class streambuf_test : public beast::detail::unit_test::suite
 {
 public:
     template<class ConstBufferSequence>
@@ -287,5 +286,4 @@ public:
 BEAST_DEFINE_TESTSUITE(streambuf,asio,beast);
 
 } // test
-} // asio
 } // beast

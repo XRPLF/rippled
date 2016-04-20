@@ -7,3 +7,5 @@
 * Replace Jamroot with Jamfile
 
 * Switch source material to Boost license
+
+* Fix failing test/message.cpp

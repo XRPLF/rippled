@@ -192,7 +192,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     {
         auto const lim = get (section, "limit", "unlimited");
 
-        if (!beast::ci_equal (lim, "unlimited"))
+        if (!beast::detail::ci_equal (lim, "unlimited"))
         {
             try
             {

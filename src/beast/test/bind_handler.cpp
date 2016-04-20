@@ -8,4 +8,30 @@
 // Test that header file is self-contained.
 #include <beast/asio/bind_handler.h>
 
-#include <beast/asio/src/test/beast_asio_bind_handler_test.cpp>
+#include <beast/detail/unit_test/suite.hpp>
+#include <functional>
+
+namespace beast {
+namespace test {
+
+class bind_handler_test : public detail::unit_test::suite
+{
+public:
+    static void foo (int)
+    {
+    }
+
+    void run()
+    {
+        auto f (bind_handler (
+            std::bind (&foo, std::placeholders::_1),
+            42));
+        f();
+        pass();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
+
+} // test
+} // beast
