@@ -27,7 +27,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
-#include <beast/crypto/secure_erase.h>
+#include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <algorithm>
 #include <cstring>

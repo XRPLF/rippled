@@ -17,20 +17,27 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRYPTO_RIPEMD_H_INCLUDED
-#define BEAST_CRYPTO_RIPEMD_H_INCLUDED
+#ifndef BEAST_CRYPTO_SHA2_H_INCLUDED
+#define BEAST_CRYPTO_SHA2_H_INCLUDED
 
-#include <beast/crypto/detail/mac_facade.h>
-#include <beast/crypto/detail/ripemd_context.h>
+#include <ripple/beast/crypto/detail/mac_facade.h>
+#include <ripple/beast/crypto/detail/sha2_context.h>
 
 namespace beast {
 
-using ripemd160_hasher = detail::mac_facade<
-    detail::ripemd160_context, false>;
+using sha256_hasher = detail::mac_facade<
+    detail::sha256_context, false>;
 
 // secure version
-using ripemd160_hasher_s = detail::mac_facade<
-    detail::ripemd160_context, true>;
+using sha256_hasher_s = detail::mac_facade<
+    detail::sha256_context, true>;
+
+using sha512_hasher = detail::mac_facade<
+    detail::sha512_context, false>;
+
+// secure version
+using sha512_hasher_s = detail::mac_facade<
+    detail::sha512_context, true>;
 
 }
 

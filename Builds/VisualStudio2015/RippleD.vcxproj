@@ -290,18 +290,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\ripemd_context.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\empty_base_optimization.h">
@@ -1693,6 +1681,18 @@
     <ClCompile Include="..\..\src\ripple\beast\core\win32_SystemStats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\detail\mac_facade.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\detail\ripemd_context.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\detail\sha2_context.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\ripemd.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\secure_erase.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\fnv1a.h">

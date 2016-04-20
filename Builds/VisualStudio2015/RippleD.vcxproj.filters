@@ -19,12 +19,6 @@
     <Filter Include="beast\asio\src\test">
       <UniqueIdentifier>{1C9418C5-092B-040C-16B7-1FA56E86CAF6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\crypto">
-      <UniqueIdentifier>{ED78E906-CE72-CDEF-3018-99E02603C37E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\crypto\detail">
-      <UniqueIdentifier>{80B5AA79-B513-6410-D468-472E3E393BAA}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\cxx17">
       <UniqueIdentifier>{DED08E50-BA3F-9E32-7501-3B77F31A5C11}</UniqueIdentifier>
     </Filter>
@@ -192,6 +186,12 @@
     </Filter>
     <Filter Include="ripple\beast\core">
       <UniqueIdentifier>{2878154F-A12B-FAF9-2731-F1E554045252}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\beast\crypto">
+      <UniqueIdentifier>{FD4D1806-56C7-EFD3-8177-B77ECCB62673}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\beast\crypto\detail">
+      <UniqueIdentifier>{D2FEF8DB-10F1-40FD-149C-2929726AB662}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\beast\hash">
       <UniqueIdentifier>{EFCF517A-692C-C748-5A6B-E7A80A245AE8}</UniqueIdentifier>
@@ -629,24 +629,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\ci_char_traits.h">
       <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\mac_facade.h">
-      <Filter>beast\crypto\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\ripemd_context.h">
-      <Filter>beast\crypto\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\detail\sha2_context.h">
-      <Filter>beast\crypto\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\ripemd.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\secure_erase.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\sha2.h">
-      <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx17\type_traits.h">
       <Filter>beast\cxx17</Filter>
@@ -2223,6 +2205,24 @@
     <ClCompile Include="..\..\src\ripple\beast\core\win32_SystemStats.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\detail\mac_facade.h">
+      <Filter>ripple\beast\crypto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\detail\ripemd_context.h">
+      <Filter>ripple\beast\crypto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\detail\sha2_context.h">
+      <Filter>ripple\beast\crypto\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\ripemd.h">
+      <Filter>ripple\beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\secure_erase.h">
+      <Filter>ripple\beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
+      <Filter>ripple\beast\crypto</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
       <Filter>ripple\beast\hash</Filter>
     </ClInclude>
