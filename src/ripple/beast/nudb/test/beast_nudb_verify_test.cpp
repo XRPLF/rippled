@@ -19,7 +19,7 @@
 
 #include <ripple/beast/nudb/verify.h>
 #include <ripple/beast/nudb/test/common.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <chrono>
 #include <iomanip>

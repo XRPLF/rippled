@@ -21,7 +21,7 @@
 
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/clock/manual_clock.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <sstream>
 #include <string>
 #include <thread>

@@ -22,7 +22,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Seed.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <algorithm>
 #include <string>

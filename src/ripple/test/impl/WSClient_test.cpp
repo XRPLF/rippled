@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <beast/wsproto/detail/utf8_checker.h>
 
 #include <beast/asio/handler_alloc.h>

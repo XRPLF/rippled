@@ -25,7 +25,7 @@
 #include <ripple/beast/hash/tests/hash_metrics.h>
 #include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/type_name.h>
 #include <array>
 #include <algorithm>

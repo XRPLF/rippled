@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/utility/Debug.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/core/SystemStats.h>
 
 namespace beast {

@@ -20,7 +20,7 @@
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/protocol/types.h>
 #include <ripple/test/jtx.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <cstdlib>
 #include <memory>
 #include <vector>

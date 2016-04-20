@@ -19,7 +19,7 @@
 
 #include <ripple/beast/nudb/test/common.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <beast/unit_test/temp_dir.h>
 #include <cmath>
 #include <cstring>

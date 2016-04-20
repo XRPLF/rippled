@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/core/LexicalCast.h>
 
 #include <algorithm>

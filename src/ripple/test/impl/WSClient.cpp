@@ -29,7 +29,7 @@
 #include <beast/wsproto.h>
 #include <condition_variable>
 
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

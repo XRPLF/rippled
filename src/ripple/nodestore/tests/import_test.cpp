@@ -25,7 +25,7 @@
 #include <beast/http/rfc2616.h>
 #include <ripple/beast/nudb/create.h>
 #include <ripple/beast/nudb/detail/format.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <beast/detail/ci_char_traits.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>

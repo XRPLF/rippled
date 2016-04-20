@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/utility/weak_fn.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace beast {
 

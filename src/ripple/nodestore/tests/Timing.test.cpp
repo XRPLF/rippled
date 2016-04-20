@@ -25,7 +25,7 @@
 #include <ripple/unity/rocksdb.h>
 #include <beast/unit_test/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <beast/unit_test/thread.h>
 #include <boost/algorithm/string.hpp>
 #include <atomic>

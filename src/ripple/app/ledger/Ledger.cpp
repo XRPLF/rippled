@@ -49,7 +49,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/types.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <utility>

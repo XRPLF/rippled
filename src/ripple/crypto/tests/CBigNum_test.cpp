@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/crypto/CBigNum.h>
 #include <ripple/basics/base_uint.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace ripple {
 

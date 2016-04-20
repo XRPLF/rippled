@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/net/URL.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 
 namespace beast {
 

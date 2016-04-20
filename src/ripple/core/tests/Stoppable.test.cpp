@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/core/Stoppable.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/unit_test.h>
 #include <thread>
 
 namespace ripple {

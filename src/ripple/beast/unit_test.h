@@ -17,24 +17,19 @@
 */
 //==============================================================================
 
+#ifndef BEAST_UNIT_TEST_H_INCLUDED
+#define BEAST_UNIT_TEST_H_INCLUDED
+
+#include <beast/unit_test/amount.h>
+#include <beast/unit_test/print.h>
+#include <beast/unit_test/global_suites.h>
+#include <beast/unit_test/match.h>
+#include <beast/unit_test/recorder.h>
+#include <beast/unit_test/reporter.h>
+#include <beast/unit_test/results.h>
+#include <beast/unit_test/runner.h>
 #include <ripple/beast/unit_test.h>
+#include <beast/unit_test/suite_info.h>
+#include <beast/unit_test/suite_list.h>
 
-#include <ripple/beast/clock/basic_seconds_clock.h>
-
-namespace beast {
-
-class basic_seconds_clock_test : public unit_test::suite
-{
-public:
-    void
-    run()
-    {
-        basic_seconds_clock <
-            std::chrono::steady_clock>::now ();
-        pass ();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(basic_seconds_clock,chrono,beast);
-
-}
+#endif
