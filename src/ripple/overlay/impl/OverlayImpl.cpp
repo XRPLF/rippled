@@ -26,6 +26,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/JsonWriter.h>
+#include <ripple/server/SimpleWriter.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -231,16 +232,30 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         }
     }
 
-    handoff.moved = true;
-
     auto hello = parseHello (true, request.headers, journal);
     if(! hello)
+    {
+        m_peerFinder->on_closed(slot);
+        handoff.moved = false;
+        handoff.response = makeErrorResponse (slot, request,
+            remote_endpoint.address(),
+            "Unable to parse HELLO message");
+        handoff.keep_alive = false;
         return handoff;
+    }
 
     auto sharedValue = makeSharedValue(
         ssl_bundle->stream.native_handle(), journal);
     if(! sharedValue)
+    {
+        m_peerFinder->on_closed(slot);
+        handoff.moved = false;
+        handoff.response = makeErrorResponse (slot, request,
+            remote_endpoint.address(),
+            "Incorrect security cookie (possible MITM detected)");
+        handoff.keep_alive = false;
         return handoff;
+    }
 
     auto publicKey = verifyHello (*hello,
         *sharedValue,
@@ -248,7 +263,15 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         beast::IPAddressConversion::from_asio(
             remote_endpoint), journal, app_);
     if(! publicKey)
+    {
+        m_peerFinder->on_closed(slot);
+        handoff.moved = false;
+        handoff.response = makeErrorResponse (slot, request,
+            remote_endpoint.address(),
+            "Unable to verify HELLO message");
+        handoff.keep_alive = false;
         return handoff;
+    }
 
     auto const result = m_peerFinder->activate (slot, *publicKey,
         static_cast<bool>(app_.cluster().member(*publicKey)));
@@ -345,6 +368,27 @@ OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
         //?
     }
     auto const response = make_JsonWriter (m, json);
+    return response;
+}
+
+std::shared_ptr<Writer>
+OverlayImpl::makeErrorResponse (PeerFinder::Slot::ptr const& slot,
+    http_request_type const& request,
+    address_type remote_address,
+    std::string msg)
+{
+    beast::deprecated_http::message m;
+    m.version(std::make_pair(request.version / 10, request.version % 10));
+    m.request(false);
+    m.status(400);
+    m.reason("Bad Request");
+    m.headers.insert("Remote-Address", remote_address.to_string());
+
+    auto response = std::make_shared<SimpleWriter> (std::move(m));
+
+    if (!msg.empty())
+        response->body (msg);
+
     return response;
 }
 

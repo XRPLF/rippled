@@ -21,30 +21,29 @@
 #define RIPPLE_SERVER_SIMPLEWRITER_H_INCLUDED
 
 #include <ripple/server/Writer.h>
-#include <beast/asio/streambuf.h>
-#include <beast/http/message.h>
+#include <ripple/beast/deprecated_http.h>
+#include <beast/streambuf.hpp>
 #include <utility>
 
 namespace ripple {
-namespace HTTP {
 
 /** Writer that sends a simple HTTP response with a message body. */
 class SimpleWriter : public Writer
 {
 private:
-    beast::http::message message_;
-    beast::asio::streambuf streambuf_;
+    beast::deprecated_http::message message_;
+    beast::streambuf streambuf_;
     std::string body_;
     bool prepared_ = false;
 
 public:
     explicit
-    SimpleWriter(beast::http::message&& message)
-        : message_(std::forward<beast::http::message>(message))
+    SimpleWriter(beast::deprecated_http::message&& message)
+        : message_(std::forward<beast::deprecated_http::message>(message))
     {
     }
 
-    beast::http::message&
+    beast::deprecated_http::message&
     message()
     {
         return message_;
@@ -95,14 +94,13 @@ private:
     {
         prepared_ = true;
         message_.headers.erase("Content-Length");
-        message_.headers.append("Content-Length",
+        message_.headers.insert("Content-Length",
             std::to_string(body_.size()));
         write(streambuf_, message_);
-        write(streambuf_, body_;
+        beast::http::detail::write(streambuf_, body_);
     }
 };
 
-}
 }
 
 #endif

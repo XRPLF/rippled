@@ -3471,6 +3471,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Session.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\SimpleWriter.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\server\tests\Server_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
