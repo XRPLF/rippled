@@ -51,6 +51,7 @@ flow (PaymentSandbox& view,
     STPathSet const& paths,
     bool defaultPaths,
     bool partialPayment,
+    bool ownerPaysTransferFee,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMax,
     beast::Journal j);

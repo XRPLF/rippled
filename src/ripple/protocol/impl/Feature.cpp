@@ -51,5 +51,6 @@ uint256 const featureSusPay = feature("SusPay");
 uint256 const featureTrustSetAuth = feature("TrustSetAuth");
 uint256 const featureFeeEscalation = feature("FeeEscalation");
 uint256 const featureFlowV2 = feature("FlowV2");
+uint256 const featureOwnerPaysFee = feature("OwnerPaysFee");
 
 } // ripple

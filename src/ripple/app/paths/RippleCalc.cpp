@@ -133,9 +133,11 @@ RippleCalc::Output RippleCalc::rippleCalculate (
 
         try
         {
+            bool const ownerPaysTransferFee =
+                    view.rules ().enabled (featureOwnerPaysFee, config.features);
             flowV2Out = flow (flowV2SB, saDstAmountReq, uSrcAccountID,
                 uDstAccountID, spsPaths, defaultPaths, partialPayment,
-                limitQuality, sendMax, j);
+                ownerPaysTransferFee, limitQuality, sendMax, j);
         }
         catch (std::exception& e)
         {
@@ -144,25 +146,28 @@ RippleCalc::Output RippleCalc::rippleCalculate (
                 Throw();
         }
 
-        if (callFlowV2 && callFlowV1 &&
-            (flowV2Out.result () != flowV1Out.result () ||
-                (flowV2Out.result () == tesSUCCESS &&
-                    (flowV2Out.actualAmountIn != flowV1Out.actualAmountIn ||
-                        flowV2Out.actualAmountOut != flowV1Out.actualAmountOut))))
+        if (j.debug())
         {
-            JLOG (j.trace()) <<
-                    "Mismatch: New Flow and RippleCalc" <<
-                    " Old actualIn: " << flowV1Out.actualAmountIn <<
-                    " New actualIn: " << flowV2Out.actualAmountIn <<
-                    " Old actualOut: " << flowV1Out.actualAmountOut <<
-                    " New actualOut: " << flowV2Out.actualAmountOut <<
-                    " Old result: " << flowV1Out.result () <<
-                    " New result: " << flowV2Out.result();
+            auto logResult = [&] (std::string const& algoName, Output const& result)
+            {
+                j.debug() << "RippleCalc Result> " <<
+                " actualIn: " << result.actualAmountIn <<
+                ", actualOut: " << result.actualAmountOut <<
+                ", result: " << result.result () <<
+                ", dstAmtReq: " << saDstAmountReq <<
+                ", sendMax: " << saMaxAmountReq <<
+                ", algo: " << algoName;
+            };
+            if (callFlowV1)
+            {
+                logResult ("V1", flowV1Out);
+            }
+            if (callFlowV2)
+            {
+                logResult ("V2", flowV2Out);
+            }
         }
-        else
-        {
-            JLOG (j.trace()) << "Match: New Flow and RippleCalc";
-        }
+
         JLOG (j.trace()) << "Using old flow: " << useFlowV1Output;
     }
 

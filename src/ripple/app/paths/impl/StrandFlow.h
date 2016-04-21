@@ -138,7 +138,7 @@ flow (
                     limitStepOut = r.second;
 
                     if (strand[i]->dry (r.second) ||
-                        get<TInAmt> (r.first) != get<TInAmt> (*maxIn))
+                        get<TInAmt> (r.first) != *maxIn)
                     {
                         // Something is very wrong
                         // throwing out the sandbox can only increase liquidity

@@ -182,7 +182,7 @@ struct Flow_test : public beast::unit_test::suite
             TER expTer, auto&&... expSteps)
         {
             auto r = toStrand (*env.current (), alice, bob,
-                deliver, sendMaxIssue, path, env.app ().logs ().journal ("Flow"));
+                deliver, sendMaxIssue, path, true, env.app ().logs ().journal ("Flow"));
             expect (r.first == expTer);
             if (sizeof...(expSteps))
                 expect (equal (
@@ -190,7 +190,7 @@ struct Flow_test : public beast::unit_test::suite
         };
 
         {
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
             env.fund (XRP (10000), alice, bob, carol, gw);
 
             test (env, USD, boost::none, STPath(), terNO_LINE);
@@ -236,20 +236,20 @@ struct Flow_test : public beast::unit_test::suite
                 {
                     // The root account can't be the dst
                     auto r = toStrand (*env.current (), alice,
-                        xrpAccount (), XRP, USD.issue (), STPath (), flowJournal);
+                        xrpAccount (), XRP, USD.issue (), STPath (), true, flowJournal);
                     expect (r.first == temBAD_PATH);
                 }
                 {
                     // The root account can't be the src
                     auto r =
                         toStrand (*env.current (), xrpAccount (),
-                            alice, XRP, boost::none, STPath (), flowJournal);
+                            alice, XRP, boost::none, STPath (), true, flowJournal);
                     expect (r.first == temBAD_PATH);
                 }
                 {
                     // The root account can't be the src
                     auto r = toStrand (*env.current (),
-                        noAccount (), bob, USD, boost::none, STPath (), flowJournal);
+                        noAccount (), bob, USD, boost::none, STPath (), true, flowJournal);
                     expect (r.first == terNO_ACCOUNT);
                 }
             }
@@ -279,7 +279,7 @@ struct Flow_test : public beast::unit_test::suite
             // cannot have more than one offer with the same output issue
 
             using namespace jtx;
-            Env env (*this, features (featureFlowV2));
+            Env env (*this, features (featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (10000), alice, bob, carol);
@@ -299,7 +299,7 @@ struct Flow_test : public beast::unit_test::suite
         }
 
         {
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
             env.fund (XRP (10000), alice, bob, noripple (gw));
             env.trust (USD (1000), alice, bob);
             env (pay (gw, alice, USD (100)));
@@ -308,7 +308,7 @@ struct Flow_test : public beast::unit_test::suite
 
         {
             // check global freeze
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
             env.fund (XRP (10000), alice, bob, gw);
             env.trust (USD (1000), alice, bob);
             env (pay (gw, alice, USD (100)));
@@ -333,7 +333,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Freeze between gw and alice
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
             env.fund (XRP (10000), alice, bob, gw);
             env.trust (USD (1000), alice, bob);
             env (pay (gw, alice, USD (100)));
@@ -346,7 +346,7 @@ struct Flow_test : public beast::unit_test::suite
             // check no auth
             // An account may require authorization to receive IOUs from an
             // issuer
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
             env.fund (XRP (10000), alice, bob, gw);
             env (fset (gw, asfRequireAuth));
             env.trust (USD (1000), alice, bob);
@@ -359,7 +359,7 @@ struct Flow_test : public beast::unit_test::suite
 
             // Check pure issue redeem still works
             auto r = toStrand (*env.current (), alice, gw, USD,
-                boost::none, STPath (), env.app ().logs ().journal ("Flow"));
+                boost::none, STPath (), true, env.app ().logs ().journal ("Flow"));
             expect (r.first == tesSUCCESS);
             expect (equal (r.second, D{alice, gw, usdC}));
         }
@@ -382,7 +382,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         {
             // Pay USD, trivial path
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, gw);
             env.trust (USD (1000), alice, bob);
@@ -392,7 +392,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // XRP transfer
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob);
             env (pay (alice, bob, XRP (100)));
@@ -401,7 +401,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Partial payments
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, gw);
             env.trust (USD (1000), alice, bob);
@@ -415,7 +415,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Pay by rippling through accounts, use path finder
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, dan);
             env.trust (USDA (10), bob);
@@ -430,32 +430,52 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Pay by rippling through accounts, specify path
             // and charge a transfer fee
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, dan);
             env.trust (USDA (10), bob);
-            env.trust (USDB (10), carol);
+            env.trust (USDB (10), alice, carol);
+            env.trust (USDC (10), dan);
+            env (rate (bob, 1.1));
+
+            // alice will redeem to bob; a transfer fee will be charged
+            env (pay (bob, alice, USDB(6))); 
+            env (pay (alice, dan, USDC (5)), path (bob, carol),
+                sendmax (USDA (6)), txflags (tfNoRippleDirect));
+            env.require (balance (dan, USDC (5)));
+            env.require (balance (alice, USDB (0.5)));
+        }
+        {
+            // Pay by rippling through accounts, specify path and transfer fee
+            // Test that the transfer fee is not charged when alice issues
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
+
+            env.fund (XRP (10000), alice, bob, carol, dan);
+            env.trust (USDA (10), bob);
+            env.trust (USDB (10), alice, carol);
             env.trust (USDC (10), dan);
             env (rate (bob, 1.1));
 
             env (pay (alice, dan, USDC (5)), path (bob, carol),
-                sendmax (USDA (6)), txflags (tfNoRippleDirect));
+                 sendmax (USDA (6)), txflags (tfNoRippleDirect));
             env.require (balance (dan, USDC (5)));
-            env.require (balance (bob, USDA (5.5)));
+            env.require (balance (bob, USDA (5)));
         }
         {
             // test best quality path is taken
             // Paths: A->B->D->E ; A->C->D->E
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, dan, erin);
             env.trust (USDA (10), bob, carol);
             env.trust (USDB (10), dan);
-            env.trust (USDC (10), dan);
+            env.trust (USDC (10), alice, dan);
             env.trust (USDD (20), erin);
             env (rate (bob, 1));
             env (rate (carol, 1.1));
 
+            // Pay alice so she redeems to carol and a transfer fee is charged
+            env (pay (carol, alice, USDC(10)));
             env (pay (alice, erin, USDD (5)), path (carol, dan),
                 path (bob, dan), txflags (tfNoRippleDirect));
 
@@ -465,7 +485,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // Limit quality
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol);
             env.trust (USDA (10), bob);
@@ -497,7 +517,7 @@ struct Flow_test : public beast::unit_test::suite
 
         {
             // simple IOU/IOU offer
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -518,7 +538,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // simple IOU/XRP XRP/IOU offer
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -542,7 +562,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // simple XRP -> USD through offer and sendmax
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -563,7 +583,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // simple USD -> XRP through offer and sendmax
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -584,7 +604,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // test unfunded offers are removed when payment succeeds
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -630,7 +650,7 @@ struct Flow_test : public beast::unit_test::suite
             // offer. When the payment fails `flow` should return the unfunded
             // offer. This test is intentionally similar to the one that removes
             // unfunded offers when the payment succeeds.
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env.trust (USD (1000), alice, bob, carol);
@@ -666,7 +686,7 @@ struct Flow_test : public beast::unit_test::suite
                     paths.push_back (p2);
                 }
 
-                return flow (sb, deliver, alice, carol, paths, false, false,
+                return flow (sb, deliver, alice, carol, paths, false, false, true,
                     boost::none, smax, flowJournal);
             }();
 
@@ -689,6 +709,38 @@ struct Flow_test : public beast::unit_test::suite
             // found unfunded
             expect (!isOffer (env, bob, BTC (60), EUR (50)));
         }
+        {
+            // Do not produce more in the forward pass than the reverse pass
+            // This test uses a path that whose reverse pass will compute a
+            // 0.5 USD input required for a 1 EUR output. It sets a sendmax of
+            // 0.4 USD, so the payment engine will need to do a forward pass.
+            // Without limits, the 0.4 USD would produce 1000 EUR in the forward
+            // pass. This test checks that the payment produces 1 EUR, as expected.
+
+            Env env (*this, features (featureFlowV2),
+                features (featureOwnerPaysFee));
+
+            auto const closeTime = STAmountSO::soTime2 +
+                100 * env.closed ()->info ().closeTimeResolution;
+            env.close (closeTime);
+
+            env.fund (XRP (10000), alice, bob, carol, gw);
+            env.trust (USD (1000), alice, bob, carol);
+            env.trust (EUR (1000), alice, bob, carol);
+
+            env (pay (gw, alice, USD (1000)));
+            env (pay (gw, bob, EUR (1000)));
+
+            env (offer (bob, USD (1), drops (2)), txflags (tfPassive));
+            env (offer (bob, drops (1), EUR (1000)), txflags (tfPassive));
+
+            env (pay (alice, carol, EUR (1)), path (~XRP, ~EUR),
+                sendmax (USD (0.4)), txflags (tfNoRippleDirect|tfPartialPayment));
+
+            env.require (balance (carol, EUR (1)));
+            env.require (balance (bob, USD (0.4)));
+            env.require (balance (bob, EUR (999)));
+        }
     }
 
     void testTransferRate ()
@@ -709,7 +761,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             // Simple payment through a gateway with a
             // transfer rate
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -721,7 +773,7 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // transfer rate is not charged when issuer is src or dst
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -733,25 +785,25 @@ struct Flow_test : public beast::unit_test::suite
         }
         {
             // transfer fee on an offer
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
             env.trust (USD (1000), alice, bob, carol);
-            env (pay (gw, bob, USD (50)));
+            env (pay (gw, bob, USD (65)));
 
             env (offer (bob, XRP (50), USD (50)));
 
-            env (pay (alice, carol, USD (40)), path (~USD), sendmax (XRP (50)));
+            env (pay (alice, carol, USD (50)), path (~USD), sendmax (XRP (50)));
             env.require (
                 balance (alice, xrpMinusFee (env, 10000 - 50)),
-                balance (bob, USD (0)),
-                balance (carol, USD (40)));
+                balance (bob, USD (2.5)), // owner pays transfer fee
+                balance (carol, USD (50)));
         }
 
         {
             // Transfer fee two consecutive offers
-            Env env (*this, features(featureFlowV2));
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
 
             env.fund (XRP (10000), alice, bob, carol, gw);
             env(rate(gw, 1.25));
@@ -763,12 +815,89 @@ struct Flow_test : public beast::unit_test::suite
             env (offer (bob, XRP (50), USD (50)));
             env (offer (bob, USD (50), EUR (50)));
 
-            env (pay (alice, carol, EUR (32)), path (~USD, ~EUR), sendmax (XRP (50)));
+            env (pay (alice, carol, EUR (40)), path (~USD, ~EUR), sendmax (XRP (40)));
             env.require (
-                balance (alice,  xrpMinusFee (env, 10000 - 50)),
+                balance (alice,  xrpMinusFee (env, 10000 - 40)),
                 balance (bob, USD (40)),
-                balance (bob, EUR (50 - 40)),
-                balance (carol, EUR (32)));
+                balance (bob, EUR (0)),
+                balance (carol, EUR (40)));
+        }
+
+        {
+            // First pass through a strand redeems, second pass issues, no offers
+            // limiting step is not an endpoint
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
+            auto const USDA = alice["USD"];
+            auto const USDB = bob["USD"];
+
+            env.fund (XRP (10000), alice, bob, carol, gw);
+            env(rate(gw, 1.25));
+            env.trust (USD (1000), alice, bob, carol);
+            env.trust (USDA (1000), bob);
+            env.trust (USDB (1000), gw);
+            env (pay (gw, bob, USD (50)));
+            // alice -> bob -> gw -> carol. $50 should have transfer fee; $10, no fee
+            env (pay (alice, carol, USD(50)), path (bob), sendmax (USDA(60)));
+            env.require (
+                balance (bob, USD (-10)),
+                balance (bob, USDA (60)),
+                balance (carol, USD (50)));
+        }
+        {
+            // First pass through a strand redeems, second pass issues, through an offer
+            // limiting step is not an endpoint
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
+            auto const USDA = alice["USD"];
+            auto const USDB = bob["USD"];
+            Account const dan ("dan");
+
+            env.fund (XRP (10000), alice, bob, carol, dan, gw);
+            env(rate(gw, 1.25));
+            env.trust (USD (1000), alice, bob, carol, dan);
+            env.trust (EUR (1000), carol, dan);
+            env.trust (USDA (1000), bob);
+            env.trust (USDB (1000), gw);
+            env (pay (gw, bob, USD (50)));
+            env (pay (gw, dan, EUR (100)));
+            env (offer (dan, USD (100), EUR (100)));
+            // alice -> bob -> gw -> carol. $50 should have transfer fee; $10, no fee
+            env (pay (alice, carol, EUR (50)), path (bob, gw, ~EUR),
+                sendmax (USDA (60)), txflags (tfNoRippleDirect));
+            env.require (
+                balance (bob, USD (-10)),
+                balance (bob, USDA (60)),
+                balance (dan, USD (50)),
+                balance (dan, EUR (37.5)),
+                balance (carol, EUR (50)));
+        }
+
+        {
+            // Offer where the owner is also the issuer, owner pays fee
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
+
+            env.fund (XRP (10000), alice, bob, gw);
+            env(rate(gw, 1.25));
+            env.trust (USD (1000), alice, bob);
+            env (offer (gw, XRP (100), USD (100)));
+            env (pay (alice, bob, USD (100)), 
+                 sendmax (XRP (100)));
+            env.require (
+                balance (alice, xrpMinusFee(env, 10000-100)),
+                balance (bob, USD (100)));
+        }
+        {
+            // Offer where the owner is also the issuer, sender pays fee
+            Env env (*this, features(featureFlowV2));
+
+            env.fund (XRP (10000), alice, bob, gw);
+            env(rate(gw, 1.25));
+            env.trust (USD (1000), alice, bob);
+            env (offer (gw, XRP (125), USD (125)));
+            env (pay (alice, bob, USD (100)),
+                 sendmax (XRP (200)));
+            env.require (
+                balance (alice, xrpMinusFee(env, 10000-125)),
+                balance (bob, USD (100)));
         }
     }
 

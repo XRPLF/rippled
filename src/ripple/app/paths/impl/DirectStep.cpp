@@ -39,9 +39,10 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
     AccountID src_;
     AccountID dst_;
     Currency currency_;
-    // Transfer fees are never charged when sending directly to or from an
-    // issuing account
-    bool noTransferFee_;
+
+    // Charge transfer fees when the prev step redeems
+    Step const* const prevStep_ = nullptr;
+
     beast::Journal j_;
 
     struct Cache
@@ -49,15 +50,17 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
         IOUAmount in;
         IOUAmount srcToDst;
         IOUAmount out;
+        bool srcRedeems;
 
-        Cache () = default;
         Cache (
             IOUAmount const& in_,
             IOUAmount const& srcToDst_,
-            IOUAmount const& out_)
+            IOUAmount const& out_,
+            bool srcRedeems_)
             : in(in_)
             , srcToDst(srcToDst_)
             , out(out_)
+            , srcRedeems(srcRedeems_)
         {}
     };
 
@@ -67,18 +70,19 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
     std::pair <std::uint32_t, std::uint32_t>
     qualities (
         PaymentSandbox& sb,
-        bool srcRedeems) const;
+        bool srcRedeems,
+        bool fwd) const;
   public:
     DirectStepI (
         AccountID const& src,
         AccountID const& dst,
         Currency const& c,
-        bool noTransferFee,
+        Step const* prevStep,
         beast::Journal j)
             :src_(src)
             , dst_(dst)
             , currency_ (c)
-            , noTransferFee_ (noTransferFee)
+            , prevStep_ (prevStep)
             , j_ (j) {}
 
     AccountID const& src () const
@@ -115,6 +119,9 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
         return src_;
     }
 
+    bool
+    redeems (ReadView const& sb, bool fwd) const override;
+
     std::pair<IOUAmount, IOUAmount>
     revImp (
         PaymentSandbox& sb,
@@ -142,14 +149,14 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
     void setCacheLimiting (
         IOUAmount const& fwdIn,
         IOUAmount const& fwdSrcToDst,
-        IOUAmount const& fwdOut);
+        IOUAmount const& fwdOut,
+        bool srcRedeems);
 
     friend bool operator==(DirectStepI const& lhs, DirectStepI const& rhs)
     {
         return lhs.src_ == rhs.src_ &&
             lhs.dst_ == rhs.dst_ &&
-            lhs.currency_ == rhs.currency_ &&
-            lhs.noTransferFee_ == rhs.noTransferFee_;
+            lhs.currency_ == rhs.currency_;
     }
 
     friend bool operator!=(DirectStepI const& lhs, DirectStepI const& rhs)
@@ -199,6 +206,25 @@ maxFlow (
     return {creditLimit2 (sb, dst, src, cur) + srcOwed, false};
 }
 
+bool
+DirectStepI::redeems (ReadView const& sb, bool fwd) const
+{
+    if (!fwd)
+    {
+        auto const srcOwed = creditBalance2 (sb, dst_, src_, currency_);
+        return srcOwed.signum () > 0;
+    }
+    else
+    {
+        if (!cache_)
+        {
+            assert (0);
+            return false;
+        }
+        return cache_->srcRedeems;
+    }
+}
+
 std::pair<IOUAmount, IOUAmount>
 DirectStepI::revImp (
     PaymentSandbox& sb,
@@ -214,7 +240,7 @@ DirectStepI::revImp (
         maxFlow (sb, src_, dst_, currency_);
 
     std::uint32_t srcQOut, dstQIn;
-    std::tie (srcQOut, dstQIn) = qualities (sb, srcRedeems);
+    std::tie (srcQOut, dstQIn) = qualities (sb, srcRedeems, false);
 
     Issue const srcToDstIss (currency_, srcRedeems ? dst_ : src_);
 
@@ -232,7 +258,8 @@ DirectStepI::revImp (
         cache_.emplace (
             IOUAmount (beast::zero),
             IOUAmount (beast::zero),
-            IOUAmount (beast::zero));
+            IOUAmount (beast::zero),
+            srcRedeems);
         return {beast::zero, beast::zero};
     }
 
@@ -244,7 +271,7 @@ DirectStepI::revImp (
 
         IOUAmount const in = mulRatio (
             srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
-        cache_.emplace (in, srcToDst, out);
+        cache_.emplace (in, srcToDst, out, srcRedeems);
         rippleCredit (sb,
                       src_, dst_, toSTAmount (srcToDst, srcToDstIss),
                       /*checkIssuer*/ true, j_);
@@ -262,7 +289,7 @@ DirectStepI::revImp (
         maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
     IOUAmount const actualOut = mulRatio (
         maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
-    cache_.emplace (in, maxSrcToDst, actualOut);
+    cache_.emplace (in, maxSrcToDst, actualOut, srcRedeems);
     rippleCredit (sb,
                   src_, dst_, toSTAmount (maxSrcToDst, srcToDstIss),
                   /*checkIssuer*/ true, j_);
@@ -276,14 +303,15 @@ DirectStepI::revImp (
 }
 
 // The forward pass should never have more liquidity than the reverse
-// pass. But sometime rounding differences cause the forward pass to
+// pass. But sometimes rounding differences cause the forward pass to
 // deliver more liquidity. Use the cached values from the reverse pass
 // to prevent this.
 void
 DirectStepI::setCacheLimiting (
     IOUAmount const& fwdIn,
     IOUAmount const& fwdSrcToDst,
-    IOUAmount const& fwdOut)
+    IOUAmount const& fwdOut,
+    bool srcRedeems)
 {
     if (cache_->in < fwdIn)
     {
@@ -305,7 +333,7 @@ DirectStepI::setCacheLimiting (
                     << " cacheSrcToDst: " << to_string (cache_->srcToDst)
                     << " fwdOut: " << to_string (fwdOut)
                     << " cacheOut: " << to_string (cache_->out);
-                cache_.emplace (fwdIn, fwdSrcToDst, fwdOut);
+                cache_.emplace (fwdIn, fwdSrcToDst, fwdOut, srcRedeems);
                 return;
             }
         }
@@ -315,6 +343,7 @@ DirectStepI::setCacheLimiting (
         cache_->srcToDst = fwdSrcToDst;
     if (fwdOut < cache_->out)
         cache_->out = fwdOut;
+    cache_->srcRedeems = srcRedeems;
 };
 
 std::pair<IOUAmount, IOUAmount>
@@ -332,7 +361,7 @@ DirectStepI::fwdImp (
         maxFlow (sb, src_, dst_, currency_);
 
     std::uint32_t srcQOut, dstQIn;
-    std::tie (srcQOut, dstQIn) = qualities (sb, srcRedeems);
+    std::tie (srcQOut, dstQIn) = qualities (sb, srcRedeems, true);
 
     Issue const srcToDstIss (currency_, srcRedeems ? dst_ : src_);
 
@@ -350,7 +379,8 @@ DirectStepI::fwdImp (
         cache_.emplace (
             IOUAmount (beast::zero),
             IOUAmount (beast::zero),
-            IOUAmount (beast::zero));
+            IOUAmount (beast::zero),
+            srcRedeems);
         return {beast::zero, beast::zero};
     }
 
@@ -361,7 +391,7 @@ DirectStepI::fwdImp (
     {
         IOUAmount const out = mulRatio (
             srcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
-        setCacheLimiting (in, srcToDst, out);
+        setCacheLimiting (in, srcToDst, out, srcRedeems);
         rippleCredit (sb,
             src_, dst_, toSTAmount (cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true, j_);
@@ -379,7 +409,7 @@ DirectStepI::fwdImp (
             maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
         IOUAmount const out = mulRatio (
             maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
-        setCacheLimiting (actualIn, maxSrcToDst, out);
+        setCacheLimiting (actualIn, maxSrcToDst, out, srcRedeems);
         rippleCredit (sb,
             src_, dst_, toSTAmount (cache_->srcToDst, srcToDstIss),
             /*checkIssuer*/ true, j_);
@@ -499,7 +529,8 @@ quality (
 std::pair<std::uint32_t, std::uint32_t>
 DirectStepI::qualities (
     PaymentSandbox& sb,
-    bool srcRedeems) const
+    bool srcRedeems,
+    bool fwd) const
 {
     if (srcRedeems)
     {
@@ -511,9 +542,10 @@ DirectStepI::qualities (
     }
     else
     {
-        // Charge a transfer rate when issuing, unless this is the first step.
+        // Charge a transfer rate when issuing and previous step redeems
+        auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, fwd);
         std::uint32_t const srcQOut =
-            noTransferFee_ ? QUALITY_ONE : rippleTransferRate (sb, src_);
+            prevStepRedeems ? rippleTransferRate (sb, src_) : QUALITY_ONE;
         return std::make_pair(
             srcQOut,
             quality ( // dst quality in
@@ -655,8 +687,9 @@ make_DirectStepI (
     AccountID const& dst,
     Currency const& c)
 {
+    // Only charge a transfer fee if the previous step redeems
     auto r = std::make_unique<DirectStepI> (
-        src, dst, c, /* noTransferFee */ ctx.isFirst, ctx.j);
+        src, dst, c, ctx.prevStep, ctx.j);
     auto ter = r->check (ctx);
     if (ter != tesSUCCESS)
         return {ter, nullptr};
