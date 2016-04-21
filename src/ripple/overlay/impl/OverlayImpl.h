@@ -276,6 +276,11 @@ private:
     makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
         http_request_type const& request, address_type remote_address);
 
+    std::shared_ptr<Writer>
+    makeErrorResponse (PeerFinder::Slot::ptr const& slot,
+        http_request_type const& request, address_type remote_address,
+        std::string msg);
+
     bool
     processRequest (http_request_type const& req,
         Handoff& handoff);
