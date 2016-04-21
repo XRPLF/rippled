@@ -2958,12 +2958,18 @@
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Database.test.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\dump_test.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\tests\import_test.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Timing.test.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\tests\util.h">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>

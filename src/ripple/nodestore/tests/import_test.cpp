@@ -21,8 +21,8 @@
 #include <ripple/beast/hash/xxhasher.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
+#include <ripple/nodestore/tests/util.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
-#include <beast/http/rfc2616.hpp>
 #include <ripple/beast/nudb/create.h>
 #include <ripple/beast/nudb/detail/format.h>
 #include <ripple/beast/unit_test.h>
@@ -256,40 +256,6 @@ public:
                 clock_type::now() - start_);
     }
 };
-
-std::map <std::string, std::string, beast::detail::ci_less>
-parse_args(std::string const& s)
-{
-    // <key> '=' <value>
-    static boost::regex const re1 (
-        "^"                         // start of line
-        "(?:\\s*)"                  // whitespace (optonal)
-        "([a-zA-Z][_a-zA-Z0-9]*)"   // <key>
-        "(?:\\s*)"                  // whitespace (optional)
-        "(?:=)"                     // '='
-        "(?:\\s*)"                  // whitespace (optional)
-        "(.*\\S+)"                  // <value>
-        "(?:\\s*)"                  // whitespace (optional)
-        , boost::regex_constants::optimize
-    );
-    std::map <std::string,
-        std::string, beast::detail::ci_less> map;
-    auto const v = beast::rfc2616::split(
-        s.begin(), s.end(), ',');
-    for (auto const& kv : v)
-    {
-        boost::smatch m;
-        if (! boost::regex_match (kv, m, re1))
-            Throw<std::runtime_error> (
-                "invalid parameter " + kv);
-        auto const result =
-            map.emplace(m[1], m[2]);
-        if (! result.second)
-            Throw<std::runtime_error> (
-                "duplicate parameter " + m[1]);
-    }
-    return map;
-}
 
 //------------------------------------------------------------------------------
 
