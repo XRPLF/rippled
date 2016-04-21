@@ -8,33 +8,10 @@
 #ifndef BEAST_HTTP_TYPE_CHECK_HPP
 #define BEAST_HTTP_TYPE_CHECK_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
-#include <beast/type_check.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/logic/tribool.hpp>
-#include <boost/system/error_code.hpp>
-#include <functional>
 #include <type_traits>
 
 namespace beast {
 namespace http {
-
-#if GENERATING_DOCS
-namespace detail {
-#else
-namespace concept {
-#endif
-
-struct Reader
-{
-    template<bool isRequest, class Body, class Headers>
-    Reader(message<isRequest, Body, Headers>&) noexcept;
-    void write(void const*, std::size_t, error_code&) noexcept;
-};
-
-} // concept
 
 /// Evaluates to std::true_type if `T` models Body
 template<class T>
