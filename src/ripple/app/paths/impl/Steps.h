@@ -121,6 +121,18 @@ public:
     }
 
     /**
+       If this step is a DirectStepI and the src redeems to the dst, return true,
+       otherwise return false.
+       If this step is a BookStep, return false if the owner pays the transfer fee,
+       otherwise return true.
+    */
+    virtual bool
+    redeems (ReadView const& sb, bool fwd) const
+    {
+        return false;
+    }
+
+    /**
        If this step is a BookStep, return the book.
     */
     virtual boost::optional<Book>
@@ -226,6 +238,7 @@ toStrand (
     Issue const& deliver,
     boost::optional<Issue> const& sendMaxIssue,
     STPath const& path,
+    bool ownerPaysTransferFee,
     beast::Journal j);
 
 /**
@@ -253,6 +266,7 @@ toStrands (ReadView const& sb,
     boost::optional<Issue> const& sendMax,
     STPathSet const& paths,
     bool addDefaultPath,
+    bool ownerPaysTransferFee,
     beast::Journal j);
 
 template <class TIn, class TOut, class TDerived>
@@ -338,6 +352,7 @@ struct StrandContext
     AccountID const strandDst;
     bool const isFirst;
     bool const isLast = false;
+    bool ownerPaysTransferFee;
     size_t const strandSize;
     // The previous step in the strand. Needed to check the no ripple constraint
     Step const* const prevStep = nullptr;
@@ -357,6 +372,7 @@ struct StrandContext
         AccountID strandSrc_,
         AccountID strandDst_,
         bool isLast_,
+        bool ownerPaysTransferFee_,
         std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
         boost::container::flat_set<Issue>& seenBookOuts_,
         beast::Journal j);

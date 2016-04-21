@@ -139,6 +139,7 @@ toStrand (
     Issue const& deliver,
     boost::optional<Issue> const& sendMaxIssue,
     STPath const& path,
+    bool ownerPaysTransferFee,
     beast::Journal j)
 {
     if (isXRP (src))
@@ -233,7 +234,7 @@ toStrand (
     auto ctx = [&](bool isLast = false)
     {
         return StrandContext{view, result, strandSrc, strandDst, isLast,
-            seenDirectIssues, seenBookOuts, j};
+            ownerPaysTransferFee, seenDirectIssues, seenBookOuts, j};
     };
 
     for (int i = 0; i < pes.size () - 1; ++i)
@@ -359,7 +360,7 @@ toStrand (
             result.emplace_back (std::move (s.second));
         else
         {
-            JLOG (j.warn()) << "toStep failed";
+            JLOG (j.debug()) << "toStep failed: " << s.first;
             return {s.first, Strand{}};
         }
     }
@@ -376,6 +377,7 @@ toStrands (
     boost::optional<Issue> const& sendMax,
     STPathSet const& paths,
     bool addDefaultPath,
+    bool ownerPaysTransferFee,
     beast::Journal j)
 {
     std::vector<Strand> result;
@@ -391,7 +393,8 @@ toStrands (
 
     if (addDefaultPath)
     {
-        auto sp = toStrand (view, src, dst, deliver, sendMax, STPath(), j);
+        auto sp = toStrand (
+            view, src, dst, deliver, sendMax, STPath (), ownerPaysTransferFee, j);
         auto const ter = sp.first;
         auto& strand = sp.second;
 
@@ -407,7 +410,10 @@ toStrands (
             JLOG (j.trace()) << "toStrand failed";
             Throw<FlowException> (tefEXCEPTION, "toStrand returned tes & empty strand");
         }
-        insert(std::move(strand));
+        else
+        {
+            insert(std::move(strand));
+        }
     }
     else if (paths.empty ())
     {
@@ -419,7 +425,8 @@ toStrands (
     TER lastFailTer = tesSUCCESS;
     for (auto const& p : paths)
     {
-        auto sp = toStrand (view, src, dst, deliver, sendMax, p, j);
+        auto sp = toStrand (
+            view, src, dst, deliver, sendMax, p, ownerPaysTransferFee, j);
         auto ter = sp.first;
         auto& strand = sp.second;
 
@@ -436,9 +443,10 @@ toStrands (
             JLOG (j.trace()) << "toStrand failed";
             Throw<FlowException> (tefEXCEPTION, "toStrand returned tes & empty strand");
         }
-
-        if (ter == tesSUCCESS)
+        else
+        {
             insert(std::move(strand));
+        }
     }
 
     if (result.empty ())
@@ -455,6 +463,7 @@ StrandContext::StrandContext (
     AccountID strandSrc_,
     AccountID strandDst_,
     bool isLast_,
+    bool ownerPaysTransferFee_,
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
     boost::container::flat_set<Issue>& seenBookOuts_,
     beast::Journal j_)
@@ -463,6 +472,7 @@ StrandContext::StrandContext (
         , strandDst (strandDst_)
         , isFirst (strand_.empty ())
         , isLast (isLast_)
+        , ownerPaysTransferFee (ownerPaysTransferFee_)
         , strandSize (strand_.size ())
         , prevStep (!strand_.empty () ? strand_.back ().get ()
                      : nullptr)

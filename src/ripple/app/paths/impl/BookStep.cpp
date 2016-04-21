@@ -52,6 +52,9 @@ private:
     Book book_;
     AccountID strandSrc_;
     AccountID strandDst_;
+    // Charge transfer fees whan the prev step redeems
+    Step const* const prevStep_ = nullptr;
+    bool const ownerPaysTransferFee_;
     beast::Journal j_;
 
     struct Cache
@@ -59,7 +62,6 @@ private:
         TIn in;
         TOut out;
 
-        Cache () = default;
         Cache (TIn const& in_, TOut const& out_)
             : in (in_), out (out_)
         {
@@ -73,10 +75,14 @@ public:
         Issue const& out,
         AccountID const& strandSrc,
         AccountID const& strandDst,
+        Step const* prevStep,
+        bool ownerPaysTransferFee,
         beast::Journal j)
         : book_ (in, out)
         , strandSrc_ (strandSrc)
         , strandDst_ (strandDst)
+        , prevStep_ (prevStep)
+        , ownerPaysTransferFee_ (ownerPaysTransferFee)
         , j_ (j)
     {
     }
@@ -100,6 +106,12 @@ public:
         if (!cache_)
             return boost::none;
         return EitherAmount (cache_->out);
+    }
+
+    bool
+    redeems (ReadView const& sb, bool fwd) const override
+    {
+        return !ownerPaysTransferFee_;
     }
 
     boost::optional<Book>
@@ -147,7 +159,8 @@ private:
     void consumeOffer (PaymentSandbox& sb,
         TOffer<TIn, TOut>& offer,
         TAmounts<TIn, TOut> const& ofrAmt,
-        TAmounts<TIn, TOut> const& stepAmt) const;
+        TAmounts<TIn, TOut> const& stepAmt,
+        TOut const& ownerGives) const;
 
     std::string logString () const override
     {
@@ -178,7 +191,9 @@ static
 void limitStepIn (Quality const& ofrQ,
     TAmounts<TIn, TOut>& ofrAmt,
     TAmounts<TIn, TOut>& stpAmt,
+    TOut& ownerGives,
     std::uint32_t transferRateIn,
+    std::uint32_t transferRateOut,
     TIn const& limit)
 {
     if (limit < stpAmt.in)
@@ -188,6 +203,8 @@ void limitStepIn (Quality const& ofrQ,
             stpAmt.in, QUALITY_ONE, transferRateIn, /*roundUp*/ false);
         ofrAmt = ofrQ.ceil_in (ofrAmt, inLmt);
         stpAmt.out = ofrAmt.out;
+        ownerGives = mulRatio (
+            ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
     }
 }
 
@@ -197,13 +214,17 @@ static
 void limitStepOut (Quality const& ofrQ,
     TAmounts<TIn, TOut>& ofrAmt,
     TAmounts<TIn, TOut>& stpAmt,
+    TOut& ownerGives,
     std::uint32_t transferRateIn,
+    std::uint32_t transferRateOut,
     TOut const& limit)
 {
     if (limit < stpAmt.out)
     {
         stpAmt.out = limit;
-        ofrAmt = ofrQ.ceil_out (ofrAmt, limit);
+        ownerGives = mulRatio (
+            stpAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
+        ofrAmt = ofrQ.ceil_out (ofrAmt, stpAmt.out);
         stpAmt.in = mulRatio (
             ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
     }
@@ -225,18 +246,28 @@ forEachOffer (
     Book const& book,
     AccountID const& src,
     AccountID const& dst,
+    bool prevStepRedeems,
+    bool ownerPaysTransferFee,
     Callback& callback,
     std::uint32_t limit,
     beast::Journal j)
 {
+    // Charge the offer owner, not the sender
+    // Charge a fee even if the owner is the same as the issuer
+    // (the old code does not charge a fee)
+    // Calculate amount that goes to the taker and the amount charged the offer owner
     auto transferRate = [&](AccountID const& id)->std::uint32_t
     {
-        if (isXRP (id) || id == src || id == dst)
+        if (isXRP (id) || id == dst)
             return QUALITY_ONE;
         return rippleTransferRate (sb, id);
     };
 
-    std::uint32_t const trIn = transferRate (book.in.account);
+    std::uint32_t const trIn =
+            prevStepRedeems ? transferRate (book.in.account) : QUALITY_ONE;
+    // Always charge the transfer fee, even if the owner is the issuer
+    std::uint32_t const trOut =
+        ownerPaysTransferFee ? transferRate (book.out.account) : QUALITY_ONE;
 
     typename FlowOfferStream<TAmtIn, TAmtOut>::StepCounter counter (limit, j);
     FlowOfferStream<TAmtIn, TAmtOut> offers (
@@ -251,16 +282,31 @@ forEachOffer (
         else if (*ofrQ != offer.quality ())
             break;
 
-        auto const funds = offers.ownerFunds ();
         auto ofrAmt = offer.amount ();
         auto stpAmt = make_Amounts (
             mulRatio (ofrAmt.in, trIn, QUALITY_ONE, /*roundUp*/ true),
             ofrAmt.out);
+        // owner pays the transfer fee
+        auto ownerGives =
+            mulRatio (ofrAmt.out, trOut, QUALITY_ONE, /*roundUp*/ false);
 
-        if (funds < stpAmt.out)
-            limitStepOut (*ofrQ, ofrAmt, stpAmt, trIn, funds);
+        auto const funds =
+            (offer.owner () == offer.issueOut ().account)
+            ? ownerGives // Offer owner is issuer; they have unlimited funds
+            : offers.ownerFunds ();
 
-        if (!callback (offer, ofrAmt, stpAmt, trIn))
+        if (funds < ownerGives)
+        {
+            // We already know offer.owner()!=offer.issueOut().account
+            ownerGives = funds;
+            stpAmt.out = mulRatio (
+                ownerGives, QUALITY_ONE, trOut, /*roundUp*/ false);
+            ofrAmt = ofrQ->ceil_out (ofrAmt, stpAmt.out);
+            stpAmt.in = mulRatio (
+                ofrAmt.in, trIn, QUALITY_ONE, /*roundUp*/ true);
+        }
+
+        if (!callback (offer, ofrAmt, stpAmt, ownerGives, trIn, trOut))
             break;
     }
 
@@ -272,7 +318,8 @@ void BookStep<TIn, TOut>::consumeOffer (
     PaymentSandbox& sb,
     TOffer<TIn, TOut>& offer,
     TAmounts<TIn, TOut> const& ofrAmt,
-    TAmounts<TIn, TOut> const& stepAmt) const
+    TAmounts<TIn, TOut> const& stepAmt,
+    TOut const& ownerGives) const
 {
     // The offer owner gets the ofrAmt. The difference between ofrAmt and stepAmt
     // is a transfer fee that goes to book_.in.account
@@ -283,9 +330,11 @@ void BookStep<TIn, TOut>::consumeOffer (
             Throw<FlowException> (dr);
     }
 
+    // The offer owner pays `ownerGives`. The difference between ownerGives and
+    // stepAmt is a transfer fee that goes to book_.out.account
     {
         auto const cr = accountSend (sb, offer.owner (), book_.out.account,
-            toSTAmount (stepAmt.out, book_.out), j_);
+            toSTAmount (ownerGives, book_.out), j_);
         if (cr != tesSUCCESS)
             Throw<FlowException> (cr);
     }
@@ -330,7 +379,9 @@ BookStep<TIn, TOut>::revImp (
         [&](TOffer<TIn, TOut>& offer,
             TAmounts<TIn, TOut> const& ofrAmt,
             TAmounts<TIn, TOut> const& stpAmt,
-            std::uint32_t transferRateIn) mutable -> bool
+            TOut const& ownerGives,
+            std::uint32_t transferRateIn,
+            std::uint32_t transferRateOut) mutable -> bool
     {
         if (remainingOut <= beast::zero)
             return false;
@@ -341,7 +392,7 @@ BookStep<TIn, TOut>::revImp (
             savedOuts.insert(stpAmt.out);
             result = TAmounts<TIn, TOut>(sum (savedIns), sum(savedOuts));
             remainingOut = out - result.out;
-            this->consumeOffer (sb, offer, ofrAmt, stpAmt);
+            this->consumeOffer (sb, offer, ofrAmt, stpAmt, ownerGives);
             // return true b/c even if the payment is satisfied,
             // we need to consume the offer
             return true;
@@ -350,22 +401,24 @@ BookStep<TIn, TOut>::revImp (
         {
             auto ofrAdjAmt = ofrAmt;
             auto stpAdjAmt = stpAmt;
-            limitStepOut (
-                offer.quality (), ofrAdjAmt, stpAdjAmt, transferRateIn, remainingOut);
+            auto ownerGivesAdj = ownerGives;
+            limitStepOut (offer.quality (), ofrAdjAmt, stpAdjAmt, ownerGivesAdj,
+                transferRateIn, transferRateOut, remainingOut);
             remainingOut = beast::zero;
             savedIns.insert (stpAdjAmt.in);
             savedOuts.insert (remainingOut);
             result.in = sum(savedIns);
             result.out = out;
-            this->consumeOffer (sb, offer, ofrAdjAmt, stpAdjAmt);
+            this->consumeOffer (sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
             return false;
         }
     };
 
     {
-        auto const r = forEachOffer<TIn, TOut> (
-            sb, afView, book_,
-            strandSrc_, strandDst_, eachOffer, maxOffersToConsume_, j_);
+        auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, false);
+        auto const r = forEachOffer<TIn, TOut> (sb, afView, book_, strandSrc_,
+            strandDst_, prevStepRedeems, ownerPaysTransferFee_, eachOffer,
+            maxOffersToConsume_, j_);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         ofrsToRm.insert (boost::container::ordered_unique_range_t{},
@@ -427,42 +480,93 @@ BookStep<TIn, TOut>::fwdImp (
         [&](TOffer<TIn, TOut>& offer,
             TAmounts<TIn, TOut> const& ofrAmt,
             TAmounts<TIn, TOut> const& stpAmt,
-            std::uint32_t transferRateIn) mutable -> bool
+            TOut const& ownerGives,
+            std::uint32_t transferRateIn,
+            std::uint32_t transferRateOut) mutable -> bool
     {
+        assert(cache_);
+
         if (remainingIn <= beast::zero)
             return false;
 
+        bool processMore = true;
+        auto ofrAdjAmt = ofrAmt;
+        auto stpAdjAmt = stpAmt;
+        auto ownerGivesAdj = ownerGives;
+
+        typename boost::container::flat_multiset<TOut>::const_iterator lastOut;
         if (stpAmt.in <= remainingIn)
         {
             savedIns.insert(stpAmt.in);
-            savedOuts.insert(stpAmt.out);
+            lastOut = savedOuts.insert(stpAmt.out);
             result = TAmounts<TIn, TOut>(sum (savedIns), sum(savedOuts));
-            remainingIn = in - result.in;
-            this->consumeOffer (sb, offer, ofrAmt, stpAmt);
-            // return true b/c even if the payment is satisfied,
-            // we need to consume the offer
-            return true;
+            // consume the offer even if stepAmt.in == remainingIn
+            processMore = true;
         }
         else
         {
-            auto ofrAdjAmt = ofrAmt;
-            auto stpAdjAmt = stpAmt;
-            limitStepIn (
-                offer.quality (), ofrAdjAmt, stpAdjAmt, transferRateIn, remainingIn);
+            limitStepIn (offer.quality (), ofrAdjAmt, stpAdjAmt, ownerGivesAdj,
+                transferRateIn, transferRateOut, remainingIn);
             savedIns.insert (remainingIn);
-            savedOuts.insert (stpAdjAmt.out);
-            remainingIn = beast::zero;
+            lastOut = savedOuts.insert (stpAdjAmt.out);
             result.out = sum (savedOuts);
             result.in = in;
-            this->consumeOffer (sb, offer, ofrAdjAmt, stpAdjAmt);
-            return false;
+
+            processMore = false;
         }
+
+        if (result.out > cache_->out && result.in <= cache_->in)
+        {
+            // The step produced more output in the forward pass than the
+            // reverse pass while consuming the same input (or less). If we
+            // compute the input required to produce the cached output
+            // (produced in the reverse step) and the input is equal to
+            // the input consumed in the forward step, then consume the
+            // input provided in the forward step and produce the output
+            // requested from the reverse step.
+            auto const lastOutAmt = *lastOut;
+            savedOuts.erase(lastOut);
+            auto const remainingOut = cache_->out - sum (savedOuts);
+            auto ofrAdjAmtRev = ofrAmt;
+            auto stpAdjAmtRev = stpAmt;
+            auto ownerGivesAdjRev = ownerGives;
+            limitStepOut (offer.quality (), ofrAdjAmtRev, stpAdjAmtRev,
+                ownerGivesAdjRev, transferRateIn, transferRateOut,
+                remainingOut);
+
+            if (stpAdjAmtRev.in == remainingIn)
+            {
+                result.in = in;
+                result.out = cache_->out;
+
+                savedIns.clear();
+                savedIns.insert(result.in);
+                savedOuts.clear();
+                savedOuts.insert(result.out);
+
+                ofrAdjAmt = ofrAdjAmtRev;
+                stpAdjAmt.in = remainingIn;
+                stpAdjAmt.out = remainingOut;
+                ownerGivesAdj = ownerGivesAdjRev;
+            }
+            else
+            {
+                // This is (likely) a problem case, and wil be caught
+                // with later checks
+                savedOuts.insert (lastOutAmt);
+            }
+        }
+
+        remainingIn = in - result.in;
+        this->consumeOffer (sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
+        return processMore;
     };
 
     {
-        auto const r = forEachOffer<TIn, TOut> (
-            sb, afView, book_,
-            strandSrc_, strandDst_, eachOffer, maxOffersToConsume_, j_);
+        auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, true);
+        auto const r = forEachOffer<TIn, TOut> (sb, afView, book_, strandSrc_,
+            strandDst_, prevStepRedeems, ownerPaysTransferFee_, eachOffer,
+            maxOffersToConsume_, j_);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         ofrsToRm.insert (boost::container::ordered_unique_range_t{},
@@ -607,7 +711,8 @@ make_BookStepHelper (
     Issue const& out)
 {
     auto r = std::make_unique<BookStep<TIn, TOut>> (
-        in, out, ctx.strandSrc, ctx.strandDst, ctx.j);
+        in, out, ctx.strandSrc, ctx.strandDst, ctx.prevStep,
+        ctx.ownerPaysTransferFee, ctx.j);
     auto ter = r->check (ctx);
     if (ter != tesSUCCESS)
         return {ter, nullptr};

@@ -40,6 +40,7 @@ extern uint256 const featureSusPay;
 extern uint256 const featureTrustSetAuth;
 extern uint256 const featureFeeEscalation;
 extern uint256 const featureFlowV2;
+extern uint256 const featureOwnerPaysFee;
 
 } // ripple
 
