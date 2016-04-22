@@ -1,4 +1,4 @@
-# Beast
+# Beast [![Build Status](https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast)
 
 Beast provides implementations of the HTTP and WebSocket protocols
 built on top of Boost.Asio and other parts of boost.
