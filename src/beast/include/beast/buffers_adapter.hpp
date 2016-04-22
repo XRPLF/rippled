@@ -36,7 +36,7 @@ template<class Buffers>
 class buffers_adapter
 {
 private:
-    using buffers_type = std::decay_t<Buffers>;
+    using buffers_type = typename std::decay<Buffers>::type;
     using iter_type = typename buffers_type::const_iterator;
 
     static auto constexpr is_mutable =

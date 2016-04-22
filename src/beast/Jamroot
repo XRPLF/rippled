@@ -53,14 +53,15 @@ project beast
       <library>/boost/system//boost_system
       <library>/boost/filesystem//boost_filesystem
       <library>/boost/program_options//boost_program_options
-#      <library>ssl
-#      <library>crypto
+#     <library>ssl
+#     <library>crypto
       <define>BOOST_ALL_NO_LIB=1
+      <define>BOOST_SYSTEM_NO_DEPRECATED=1
       <threading>multi
       <link>static
-      <runtime-link>static
-      <toolset>gcc:<cxxflags>-std=c++14
-      <toolset>clang:<cxxflags>-std=c++14
+      <runtime-link>shared
+      <toolset>gcc:<cxxflags>-std=c++11
+      <toolset>clang:<cxxflags>-std=c++11
       <os>LINUX:<define>_XOPEN_SOURCE=600
       <os>LINUX:<define>_GNU_SOURCE=1
       <os>SOLARIS:<define>_XOPEN_SOURCE=500

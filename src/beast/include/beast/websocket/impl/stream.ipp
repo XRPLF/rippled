@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_WEBSOCKET_IMPL_SOCKET_IPP
-#define BEAST_WEBSOCKET_IMPL_SOCKET_IPP
+#ifndef BEAST_WEBSOCKET_IMPL_STREAM_IPP
+#define BEAST_WEBSOCKET_IMPL_STREAM_IPP
 
 #include <beast/websocket/teardown.hpp>
 #include <beast/websocket/detail/hybi13.hpp>
@@ -19,7 +19,6 @@
 #include <beast/websocket/impl/write_op.ipp>
 #include <beast/websocket/impl/write_frame_op.ipp>
 #include <beast/buffer_cat.hpp>
-#include <beast/async_completion.hpp>
 #include <beast/consuming_buffers.hpp>
 #include <beast/prepare_buffers.hpp>
 #include <beast/static_streambuf.hpp>
@@ -167,7 +166,8 @@ stream_base::write_ping(Streambuf& sb,
 
 template<class NextLayer>
 template<class... Args>
-stream<NextLayer>::stream(Args&&... args)
+stream<NextLayer>::
+stream(Args&&... args)
     : next_layer_(std::forward<Args>(args)...)
     , stream_(next_layer_)
 {
@@ -177,15 +177,18 @@ stream<NextLayer>::stream(Args&&... args)
 
 template<class NextLayer>
 void
-stream<NextLayer>::accept(error_code& ec)
+stream<NextLayer>::
+accept(error_code& ec)
 {
     accept(boost::asio::null_buffers{}, ec);
 }
 
 template<class NextLayer>
 template<class AcceptHandler>
-auto
-stream<NextLayer>::async_accept(AcceptHandler&& handler)
+typename async_completion<
+    AcceptHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_accept(AcceptHandler&& handler)
 {
     return async_accept(boost::asio::null_buffers{},
         std::forward<AcceptHandler>(handler));
@@ -194,8 +197,8 @@ stream<NextLayer>::async_accept(AcceptHandler&& handler)
 template<class NextLayer>
 template<class ConstBufferSequence>
 void
-stream<NextLayer>::accept(
-    ConstBufferSequence const& buffers)
+stream<NextLayer>::
+accept(ConstBufferSequence const& buffers)
 {
     static_assert(is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -208,8 +211,8 @@ stream<NextLayer>::accept(
 template<class NextLayer>
 template<class ConstBufferSequence>
 void
-stream<NextLayer>::accept(
-    ConstBufferSequence const& buffers, error_code& ec)
+stream<NextLayer>::
+accept(ConstBufferSequence const& buffers, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -228,9 +231,10 @@ stream<NextLayer>::accept(
 
 template<class NextLayer>
 template<class ConstBufferSequence, class AcceptHandler>
-auto
-stream<NextLayer>::async_accept(
-    ConstBufferSequence const& bs, AcceptHandler&& handler)
+typename async_completion<
+    AcceptHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_accept(ConstBufferSequence const& bs, AcceptHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -246,8 +250,8 @@ stream<NextLayer>::async_accept(
 template<class NextLayer>
 template<class Body, class Headers>
 void
-stream<NextLayer>::accept(
-    http::message<true, Body, Headers> const& request)
+stream<NextLayer>::
+accept(http::message<true, Body, Headers> const& request)
 {
     error_code ec;
     accept(request, ec);
@@ -257,9 +261,9 @@ stream<NextLayer>::accept(
 template<class NextLayer>
 template<class Body, class Headers>
 void
-stream<NextLayer>::accept(
-    http::message<true, Body, Headers> const& req,
-        error_code& ec)
+stream<NextLayer>::
+accept(http::message<true, Body, Headers> const& req,
+    error_code& ec)
 {
     auto resp = build_response(req);
     http::write(stream_, resp, ec);
@@ -275,10 +279,11 @@ stream<NextLayer>::accept(
 
 template<class NextLayer>
 template<class Body, class Headers, class AcceptHandler>
-auto
-stream<NextLayer>::async_accept(
-    http::message<true, Body, Headers> const& req,
-        AcceptHandler&& handler)
+typename async_completion<
+    AcceptHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_accept(http::message<true, Body, Headers> const& req,
+    AcceptHandler&& handler)
 {
     beast::async_completion<
         AcceptHandler, void(error_code)
@@ -292,7 +297,8 @@ stream<NextLayer>::async_accept(
 
 template<class NextLayer>
 void
-stream<NextLayer>::handshake(boost::string_ref const& host,
+stream<NextLayer>::
+handshake(boost::string_ref const& host,
     boost::string_ref const& resource, error_code& ec)
 {
     std::string key;
@@ -309,8 +315,10 @@ stream<NextLayer>::handshake(boost::string_ref const& host,
 
 template<class NextLayer>
 template<class HandshakeHandler>
-auto
-stream<NextLayer>::async_handshake(boost::string_ref const& host,
+typename async_completion<
+    HandshakeHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_handshake(boost::string_ref const& host,
     boost::string_ref const& resource, HandshakeHandler&& handler)
 {
     beast::async_completion<
@@ -323,8 +331,8 @@ stream<NextLayer>::async_handshake(boost::string_ref const& host,
 
 template<class NextLayer>
 void
-stream<NextLayer>::close(
-    close_reason const& cr, error_code& ec)
+stream<NextLayer>::
+close(close_reason const& cr, error_code& ec)
 {
     assert(! wr_close_);
     wr_close_ = true;
@@ -336,9 +344,10 @@ stream<NextLayer>::close(
 
 template<class NextLayer>
 template<class CloseHandler>
-auto
-stream<NextLayer>::async_close(
-    close_reason const& cr, CloseHandler&& handler)
+typename async_completion<
+    CloseHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_close(close_reason const& cr, CloseHandler&& handler)
 {
     beast::async_completion<
         CloseHandler, void(error_code)
@@ -368,7 +377,8 @@ read(opcode& op, Streambuf& streambuf, error_code& ec)
 
 template<class NextLayer>
 template<class Streambuf, class ReadHandler>
-auto
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
 stream<NextLayer>::
 async_read(opcode& op,
     Streambuf& streambuf, ReadHandler&& handler)
@@ -386,8 +396,8 @@ async_read(opcode& op,
 template<class NextLayer>
 template<class Streambuf>
 void
-stream<NextLayer>::read_frame(frame_info& fi,
-    Streambuf& streambuf, error_code& ec)
+stream<NextLayer>::
+read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
 {
     close_code code{};
     for(;;)
@@ -521,8 +531,10 @@ stream<NextLayer>::read_frame(frame_info& fi,
 
 template<class NextLayer>
 template<class Streambuf, class ReadHandler>
-auto
-stream<NextLayer>::async_read_frame(frame_info& fi,
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_read_frame(frame_info& fi,
     Streambuf& streambuf, ReadHandler&& handler)
 {
     static_assert(beast::is_Streambuf<Streambuf>::value,
@@ -537,8 +549,8 @@ stream<NextLayer>::async_read_frame(frame_info& fi,
 template<class NextLayer>
 template<class ConstBufferSequence>
 void
-stream<NextLayer>::write(
-    ConstBufferSequence const& bs, error_code& ec)
+stream<NextLayer>::
+write(ConstBufferSequence const& bs, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -563,9 +575,10 @@ stream<NextLayer>::write(
 
 template<class NextLayer>
 template<class ConstBufferSequence, class WriteHandler>
-auto
-stream<NextLayer>::async_write(
-    ConstBufferSequence const& bs, WriteHandler&& handler)
+typename async_completion<
+    WriteHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_write(ConstBufferSequence const& bs, WriteHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -580,8 +593,8 @@ stream<NextLayer>::async_write(
 template<class NextLayer>
 template<class ConstBufferSequence>
 void
-stream<NextLayer>::write_frame(bool fin,
-    ConstBufferSequence const& bs, error_code& ec)
+stream<NextLayer>::
+write_frame(bool fin, ConstBufferSequence const& bs, error_code& ec)
 {
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -656,8 +669,10 @@ stream<NextLayer>::write_frame(bool fin,
 
 template<class NextLayer>
 template<class ConstBufferSequence, class WriteHandler>
-auto
-stream<NextLayer>::async_write_frame(bool fin,
+typename async_completion<
+    WriteHandler, void(error_code)>::result_type
+stream<NextLayer>::
+async_write_frame(bool fin,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
     static_assert(beast::is_ConstBufferSequence<
@@ -676,7 +691,8 @@ stream<NextLayer>::async_write_frame(bool fin,
 
 template<class NextLayer>
 http::request<http::empty_body>
-stream<NextLayer>::build_request(boost::string_ref const& host,
+stream<NextLayer>::
+build_request(boost::string_ref const& host,
     boost::string_ref const& resource, std::string& key)
 {
     http::request<http::empty_body> req;
@@ -696,11 +712,11 @@ stream<NextLayer>::build_request(boost::string_ref const& host,
 template<class NextLayer>
 template<class Body, class Headers>
 http::response<http::string_body>
-stream<NextLayer>::build_response(
-    http::message<true, Body, Headers> const& req)
+stream<NextLayer>::
+build_response(http::message<true, Body, Headers> const& req)
 {
     auto err =
-        [&](auto const& text)
+        [&](std::string const& text)
         {
             http::response<http::string_body> resp(
                 {400, http::reason_string(400), req.version});
@@ -748,9 +764,9 @@ stream<NextLayer>::build_response(
 template<class NextLayer>
 template<class Body, class Headers>
 void
-stream<NextLayer>::do_response(
-    http::message<false, Body, Headers> const& resp,
-        boost::string_ref const& key, error_code& ec)
+stream<NextLayer>::
+do_response(http::message<false, Body, Headers> const& resp,
+    boost::string_ref const& key, error_code& ec)
 {
     // VFALCO Review these error codes
     auto fail = [&]{ ec = error::response_failed; };
@@ -771,9 +787,9 @@ stream<NextLayer>::do_response(
 
 template<class NextLayer>
 void
-stream<NextLayer>::do_read_fh(
-    detail::frame_streambuf& fb,
-        close_code& code, error_code& ec)
+stream<NextLayer>::
+do_read_fh(detail::frame_streambuf& fb,
+    close_code& code, error_code& ec)
 {
     fb.commit(boost::asio::read(
         stream_, fb.prepare(2), ec));

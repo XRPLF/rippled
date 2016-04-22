@@ -85,7 +85,7 @@ public:
         std::size_t bytes_transferred, bool again = true);
 
     friend
-    auto asio_handler_allocate(
+    void* asio_handler_allocate(
         std::size_t size, close_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -93,7 +93,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(
+    void asio_handler_deallocate(
         void* p, std::size_t size, close_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -101,14 +101,14 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(close_op* op)
+    bool asio_handler_is_continuation(close_op* op)
     {
         return op->d_->cont;
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, close_op* op)
+    void asio_handler_invoke(Function&& f, close_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);

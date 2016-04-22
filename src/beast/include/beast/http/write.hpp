@@ -10,6 +10,7 @@
 
 #include <beast/http/error.hpp>
 #include <beast/http/message.hpp>
+#include <beast/async_completion.hpp>
 #include <boost/system/error_code.hpp>
 #include <type_traits>
 
@@ -73,15 +74,16 @@ write(SyncWriteStream& stream,
 */
 template<class AsyncWriteStream,
     bool isRequest, class Body, class Headers,
-        class CompletionToken>
+        class WriteHandler>
 #if GENERATING_DOCS
 void_or_deduced
 #else
-auto
+typename async_completion<
+    WriteHandler, void(error_code)>::result_type
 #endif
 async_write(AsyncWriteStream& stream,
     message<isRequest, Body, Headers> const& msg,
-        CompletionToken&& token);
+        WriteHandler&& handler);
 
 } // http
 } // beast

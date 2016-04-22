@@ -91,55 +91,81 @@ in C. To link an application that uses Beast, it is necessary to add a single
 [section:example Examples]
 
 These usage examples are intended to quickly impress upon readers the
-flavor of the library.
+flavor of the library. They are complete programs which may be built
+and run. Source code and build scripts for these programs may be found
+in the examples directory.
 
 [note
-    All examples and identifiers mentioned in this document are written as
-    if the following statements are in effect:
-```
-    #include <boost/asio.hpp>
-    #include <beast/http.hpp>
-    #include <beast/websocket.hpp>
-    using namespace beast;
-    using namespace boost::asio;
-```
+    To link these programs, please add the file
+    `src/beast_http_nodejs_parser.cpp` to your build script or Makefile
 ]
 
-Use HTTP to request the root page from a website and receive the response:
+Use HTTP to request the root page from a website and print the response:
 ```
-    std::string const host = "boost.org";
-    io_service ios;
-    ip::tcp::resolver r(ios);
-    ip::tcp::socket sock(ios);
-    connect(sock, r.resolve(ip::tcp::resolver::query{host, "http"}));
+#include <beast/http.hpp>
+#include <boost/asio.hpp>
+#include <iostream>
+#include <string>
 
-    http::request<http::empty_body> req(http::method_t::http_get, "/", 11);
+int main()
+{
+    // Normal boost::asio setup
+    std::string const host = "boost.org";
+    boost::asio::io_service ios;
+    boost::asio::ip::tcp::resolver r(ios);
+    boost::asio::ip::tcp::socket sock(ios);
+    boost::asio::connect(sock,
+        r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
+
+    using namespace beast::http;
+
+    // Send HTTP request using beast
+    request<empty_body> req({method_t::http_get, "/", 11});
     req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
     req.headers.replace("User-Agent", "Beast");
     write(sock, req);
 
-    http::response<http::streambuf_body> resp;
-    read(sock, resp);
-    ...
+    // Receive and print HTTP response using beast
+    beast::streambuf sb;
+    response<streambuf_body> resp;
+    read(sock, sb, resp);
+    std::cout << resp;
+}
 ```
 
 Establish a WebSocket connection, send a message and receive the reply:
 ```
-    std::string const host = "boost.org";
-    io_service ios;
-    tcp::resolver r(ios);
-    tcp::socket sock(ios);
-    connect(sock, r.resolve(tcp::resolver::query{host, "ws"}));
+#include <beast/websocket.hpp>
+#include <beast/buffers_debug.hpp>
+#include <boost/asio.hpp>
+#include <iostream>
+#include <string>
 
-    websocket::stream<ip::tcp::socket&> ws(sock);
-    ws.handshake();
-    ws.write(ws, buffer("Hello, world!"));
+int main()
+{
+    // Normal boost::asio setup
+    std::string const host = "echo.websocket.org";
+    boost::asio::io_service ios;
+    boost::asio::ip::tcp::resolver r(ios);
+    boost::asio::ip::tcp::socket sock(ios);
+    boost::asio::connect(sock,
+        r.resolve(boost::asio::ip::tcp::resolver::query{host, "80"}));
 
-    streambuf sb;
-    websocket::opcode op;
-    ws.read(ws, op, sb);
+    using namespace beast::websocket;
 
-    ws.close(); // WebSocket protocol close
+    // WebSocket connect and send message using beast
+    stream<boost::asio::ip::tcp::socket&> ws(sock);
+    ws.handshake(host, "/");
+    ws.write(boost::asio::buffer("Hello, world!"));
+
+    // Receive WebSocket message, print and close using beast
+    beast::streambuf sb;
+    opcode op;
+    ws.read(op, sb);
+    ws.close(close_code::normal);
+    std::cout <<
+        beast::debug::buffers_to_string(sb.data()) << "\n";
+}
 ```
 
 [endsect]

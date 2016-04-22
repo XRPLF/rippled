@@ -12,8 +12,10 @@
 #include <beast/http/type_check.hpp>
 #include <beast/http/detail/writes.hpp>
 #include <beast/http/detail/write_preparation.hpp>
+#include <beast/http/resume_context.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/logic/tribool.hpp>
 #include <condition_variable>
 #include <mutex>
 
@@ -125,6 +127,31 @@ buffers_to_string(ConstBufferSequence const& buffers)
     return s;
 }
 
+class writef_ostream
+{
+    std::ostream& os_;
+    bool chunked_;
+
+public:
+    writef_ostream(std::ostream& os, bool chunked)
+        : os_(os)
+        , chunked_(chunked)
+    {
+    }
+
+    template<class ConstBufferSequence>
+    void
+    operator()(ConstBufferSequence const& buffers)
+    {
+        if(chunked_)
+            os_ << buffers_to_string(
+                chunk_encode(buffers));
+        else
+            os_ << buffers_to_string(
+                buffers);
+    }
+};
+
 } // detail
 
 // Diagnostic output only
@@ -153,16 +180,7 @@ operator<<(std::ostream& os,
     auto copy = resume;
     os << detail::buffers_to_string(wp.sb.data());
     wp.sb.consume(wp.sb.size());
-    auto writef =
-        [&os, &wp](auto const& buffers)
-        {
-            if(wp.chunked)
-                os << detail::buffers_to_string(
-                    chunk_encode(buffers));
-            else
-                os << detail::buffers_to_string(
-                    buffers);
-        };
+    detail::writef_ostream writef(os, wp.chunked);
     for(;;)
     {
         {

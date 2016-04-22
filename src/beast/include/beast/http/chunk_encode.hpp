@@ -61,7 +61,8 @@ private:
     // Unchecked conversion of unsigned to hex string
     template<class OutIter, class Unsigned>
     static
-    std::enable_if_t<std::is_unsigned<Unsigned>::value, OutIter>
+    typename std::enable_if<
+        std::is_unsigned<Unsigned>::value, OutIter>::type
     to_hex(OutIter const first, OutIter const last, Unsigned n);
 };
 
@@ -114,7 +115,8 @@ chunk_encoded_buffers<Buffers>::chunk_encoded_buffers (
 
 template <class Buffers>
 template <class OutIter, class Unsigned>
-std::enable_if_t<std::is_unsigned<Unsigned>::value, OutIter>
+typename std::enable_if<
+    std::is_unsigned<Unsigned>::value, OutIter>::type
 chunk_encoded_buffers<Buffers>::to_hex(
     OutIter const first, OutIter const last, Unsigned n)
 {

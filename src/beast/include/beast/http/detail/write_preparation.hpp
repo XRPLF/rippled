@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_DETAIL_WRITE_PREPARATION_HPP
 #define BEAST_HTTP_DETAIL_WRITE_PREPARATION_HPP
 
+#include <beast/http/error.hpp>
 #include <beast/streambuf.hpp>
 
 namespace beast {

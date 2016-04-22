@@ -564,6 +564,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
       <Filter>include\beast\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\integer_sequence.hpp">
+      <Filter>include\beast\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\is_call_possible.hpp">
       <Filter>include\beast\detail</Filter>
     </ClInclude>
@@ -783,10 +786,10 @@
     <None Include="..\..\src\beast\include\beast\websocket\impl\response_op.ipp">
       <Filter>include\beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\socket.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\ssl.ipp">
       <Filter>include\beast\websocket\impl</Filter>
     </None>
-    <None Include="..\..\src\beast\include\beast\websocket\impl\ssl.ipp">
+    <None Include="..\..\src\beast\include\beast\websocket\impl\stream.ipp">
       <Filter>include\beast\websocket\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\teardown.ipp">

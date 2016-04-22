@@ -8,6 +8,7 @@
 #ifndef BEAST_STREAMBUF_READSTREAM_HPP
 #define BEAST_STREAMBUF_READSTREAM_HPP
 
+#include <beast/async_completion.hpp>
 #include <beast/streambuf.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
@@ -101,7 +102,7 @@ public:
 
     /// The type of the next layer.
     using next_layer_type =
-        std::remove_reference_t<Stream>;
+        typename std::remove_reference<Stream>::type;
 
     /// The type of the lowest layer.
     using lowest_layer_type =
@@ -215,7 +216,8 @@ public:
     /// Start an asynchronous write. The data being written must be valid for the
     /// lifetime of the asynchronous operation.
     template<class ConstBufferSequence, class WriteHandler>
-    auto
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
     async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -235,7 +237,8 @@ public:
     /// Start an asynchronous read. The buffer into which the data will be read
     /// must be valid for the lifetime of the asynchronous operation.
     template<class MutableBufferSequence, class ReadHandler>
-    auto
+    typename async_completion<
+        ReadHandler, void(error_code)>::result_type
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler);
 };

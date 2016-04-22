@@ -11,6 +11,7 @@
 #include <beast/websocket/option.hpp>
 #include <beast/websocket/detail/stream_base.hpp>
 #include <beast/streambuf_readstream.hpp>
+#include <beast/async_completion.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/string_body.hpp>
 #include <boost/asio.hpp>
@@ -85,7 +86,7 @@ class stream : public detail::stream_base
 public:
     /// The type of the next layer.
     using next_layer_type =
-        std::remove_reference_t<NextLayer>;
+        typename std::remove_reference<NextLayer>::type;
 
     /// The type of the lowest layer.
     using lowest_layer_type =
@@ -365,7 +366,8 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class AcceptHandler>
-    auto
+    typename async_completion<
+        AcceptHandler, void(error_code)>::result_type
     async_accept(AcceptHandler&& handler);
 
     /** Read and respond to a WebSocket HTTP Upgrade request.
@@ -465,7 +467,8 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class ConstBufferSequence, class AcceptHandler>
-    auto
+    typename async_completion<
+        AcceptHandler, void(error_code)>::result_type
     async_accept(ConstBufferSequence const& buffers,
         AcceptHandler&& handler);
 
@@ -560,7 +563,8 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class Body, class Headers, class AcceptHandler>
-    auto
+    typename async_completion<
+        AcceptHandler, void(error_code)>::result_type
     async_accept(http::message<true,
         Body, Headers> const& request, AcceptHandler&& handler);
 
@@ -666,7 +670,8 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class HandshakeHandler>
-    auto
+    typename async_completion<
+        HandshakeHandler, void(error_code)>::result_type
     async_handshake(boost::string_ref const& host,
         boost::string_ref const& resource, HandshakeHandler&& h);
 
@@ -745,7 +750,8 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class CloseHandler>
-    auto
+    typename async_completion<
+        CloseHandler, void(error_code)>::result_type
     async_close(close_reason const& cr, CloseHandler&& handler);
 
     /** Read a message.
@@ -829,7 +835,8 @@ public:
     #if GENERATING_DOCS
     void_or_deduced
     #else
-    auto
+    typename async_completion<
+        ReadHandler, void(error_code)>::result_type
     #endif
     async_read(opcode& op,
         Streambuf& streambuf, ReadHandler&& handler);
@@ -938,7 +945,8 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class Streambuf, class ReadHandler>
-    auto
+    typename async_completion<
+        ReadHandler, void(error_code)>::result_type
     async_read_frame(frame_info& fi,
         Streambuf& streambuf, ReadHandler&& handler);
 
@@ -1041,7 +1049,8 @@ public:
     #if GENERATING_DOCS
     void_or_deduced
     #else
-    auto
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
     #endif
     async_write(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
@@ -1140,7 +1149,8 @@ public:
         ); @endcode
     */
     template<class ConstBufferSequence, class WriteHandler>
-    auto
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
     async_write_frame(bool fin,
         ConstBufferSequence const& buffers, WriteHandler&& handler);
 
@@ -1176,6 +1186,6 @@ private:
 } // websocket
 } // beast
 
-#include <beast/websocket/impl/socket.ipp>
+#include <beast/websocket/impl/stream.ipp>
 
 #endif

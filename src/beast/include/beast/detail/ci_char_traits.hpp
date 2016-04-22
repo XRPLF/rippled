@@ -45,8 +45,10 @@ bool
 ci_equal(std::pair<const char*, std::size_t> lhs,
          std::pair<const char*, std::size_t> rhs)
 {
+    if(lhs.second != rhs.second)
+        return false;
     return std::equal (lhs.first, lhs.first + lhs.second,
-                       rhs.first, rhs.first + rhs.second,
+                       rhs.first,
         [] (char lhs, char rhs)
         {
             return std::tolower(lhs) == std::tolower(rhs);

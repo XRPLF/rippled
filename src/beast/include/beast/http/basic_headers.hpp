@@ -393,8 +393,8 @@ public:
         extended as per RFC2616 Section 4.2.
     */
     template<class T,
-        class = std::enable_if_t<
-            ! std::is_constructible<boost::string_ref, T>::value>>
+        class = typename std::enable_if<
+            ! std::is_constructible<boost::string_ref, T>::value>::type>
     void
     insert(boost::string_ref name, T const& value)
     {
@@ -417,8 +417,8 @@ public:
         specified value is inserted as if by insert(field, value).
     */
     template<class T,
-        class = std::enable_if_t<
-            ! std::is_constructible<boost::string_ref, T>::value>>
+        class = typename std::enable_if<
+            ! std::is_constructible<boost::string_ref, T>::value>::type>
     void
     replace(boost::string_ref const& name, T const& value)
     {

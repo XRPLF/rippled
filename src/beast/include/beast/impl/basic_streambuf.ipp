@@ -19,65 +19,65 @@ namespace beast {
 
 /*  These diagrams illustrate the layout and state variables.
 
-    Input and output contained entirely in one element:
+1   Input and output contained entirely in one element:
 
     0                            out_
     |<-------------+------------------------------------------->|
-    in_pos_       out_pos_                                     out_end_
+    in_pos_     out_pos_                                     out_end_
 
 
-    Output contained in first and second elements:
+2   Output contained in first and second elements:
 
                     out_
     |<------+----------+------->|   |<----------+-------------->|
-            in_pos_   out_pos_                 out_end_
+          in_pos_   out_pos_                 out_end_
 
 
-    Output contained in the second element:
+3   Output contained in the second element:
 
                                                     out_
     |<------------+------------>|   |<----+-------------------->|
                 in_pos_                out_pos_              out_end_
 
 
-    Output contained in second and third elements:
+4   Output contained in second and third elements:
 
                                     out_
     |<-----+-------->|   |<-------+------>|   |<--------------->|
-            in_pos_               out_pos_                      out_end_
+         in_pos_               out_pos_                      out_end_
 
 
-    Input sequence is empty:
+5   Input sequence is empty:
 
                     out_
     |<------+------------------>|   |<-----------+------------->|
-            out_pos_                             out_end_
-            in_pos_
+         out_pos_                             out_end_
+          in_pos_
 
 
-    Output sequence is empty:
+6   Output sequence is empty:
 
                                                     out_
     |<------+------------------>|   |<------+------------------>|
-            in_pos_                        out_pos_
-                                            out_end_
+          in_pos_                        out_pos_
+                                         out_end_
 
 
-    The end of output can point to the end of an element.
+7   The end of output can point to the end of an element.
     But out_pos_ should never point to the end:
 
                                                     out_
     |<------+------------------>|   |<------+------------------>|
-            in_pos_                        out_pos_            out_end_
+          in_pos_                        out_pos_            out_end_
 
 
-    When the input sequence entirely fills the last element and
+8   When the input sequence entirely fills the last element and
     the output sequence is empty, out_ will point to the end of
     the list of buffers, and out_pos_ and out_end_ will be 0:
 
 
     |<------+------------------>|   out_     == list_.end()
-            in_pos_                   out_pos_ == 0
+          in_pos_                   out_pos_ == 0
                                     out_end_ == 0
 */
 
@@ -478,74 +478,77 @@ auto
 basic_streambuf<Allocator>::prepare(size_type n) ->
     mutable_buffers_type
 {
-    iterator pos = out_;
-    if(pos != list_.end())
+    list_type reuse;
+    if(out_ != list_.end())
     {
-        auto const avail = pos->size() - out_pos_;
+        if(out_ != list_.iterator_to(list_.back()))
+        {
+            out_end_ = out_->size();
+            reuse.splice(reuse.end(), list_,
+                std::next(out_), list_.end());
+            debug_check();
+        }
+        auto const avail = out_->size() - out_pos_;
         if(n > avail)
         {
+            out_end_ = out_->size();
             n -= avail;
-            out_end_ = pos->size();
-            while(++pos != list_.end())
-            {
-                if(n < pos->size())
-                {
-                    out_end_ = n;
-                    n = 0;
-                    ++pos;
-                    break;
-                }
-                n -= pos->size();
-            }
         }
         else
         {
-            ++pos;
             out_end_ = out_pos_ + n;
             n = 0;
         }
+        debug_check();
     }
-
-    if(n > 0)
+    while(n > 0 && ! reuse.empty())
     {
-        assert(pos == list_.end());
-        for(;;)
+        auto& e = reuse.front();
+        reuse.erase(reuse.iterator_to(e));
+        list_.push_back(e);
+        if(n > e.size())
         {
-            auto const size = std::max(alloc_size_, n);
-            auto& e = *reinterpret_cast<element*>(
-                alloc_traits::allocate(this->member(),
-                    size + sizeof(element)));
-            alloc_traits::construct(this->member(), &e, size);
-            list_.push_back(e);
-            if(out_ == list_.end())
-            {
-                out_ = list_.iterator_to(e);
-                debug_check();
-            }
-            if(n <= size)
-            {
-                out_end_ = n;
-                debug_check();
-                break;
-            }
-            n -= size;
-            debug_check();
+            out_end_ = e.size();
+            n -= e.size();
         }
-    }
-    else
-    {
-        while(pos != list_.end())
+        else
         {
-            auto& e = *pos++;
-            list_.erase(list_.iterator_to(e));
-            auto const len = e.size() + sizeof(e);
-            alloc_traits::destroy(this->member(), &e);
-            alloc_traits::deallocate(this->member(),
-                reinterpret_cast<std::uint8_t*>(&e), len);
+            out_end_ = n;
+            n = 0;
         }
         debug_check();
     }
-
+    while(n > 0)
+    {
+        auto const size = std::max(alloc_size_, n);
+        auto& e = *reinterpret_cast<element*>(
+            alloc_traits::allocate(this->member(),
+                sizeof(element) + size));
+        alloc_traits::construct(this->member(), &e, size);
+        list_.push_back(e);
+        if(out_ == list_.end())
+            out_ = list_.iterator_to(e);
+        if(n > e.size())
+        {
+            out_end_ = e.size();
+            n -= e.size();
+        }
+        else
+        {
+            out_end_ = n;
+            n = 0;
+        }
+        debug_check();
+    }
+    for(auto it = reuse.begin(); it != reuse.end();)
+    {
+        auto& e = *it++;
+        reuse.erase(list_.iterator_to(e));
+        auto const len = e.size() + sizeof(e);
+        alloc_traits::destroy(this->member(), &e);
+        alloc_traits::deallocate(this->member(),
+            reinterpret_cast<std::uint8_t*>(&e), len);
+    }
     return mutable_buffers_type(*this);
 }
 
@@ -557,8 +560,9 @@ basic_streambuf<Allocator>::commit(size_type n)
         return;
     if(out_ == list_.end())
         return;
-    auto const last = std::prev(list_.end());
-    while(out_ != last)
+    auto const back =
+        list_.iterator_to(list_.back());
+    while(out_ != back)
     {
         auto const avail =
             out_->size() - out_pos_;
@@ -603,12 +607,11 @@ basic_streambuf<Allocator>::consume(size_type n)
     if(list_.empty())
         return;
 
-    auto pos = list_.begin();
     for(;;)
     {
-        if(pos != out_)
+        if(list_.begin() != out_)
         {
-            auto const avail = pos->size() - in_pos_;
+            auto const avail = list_.front().size() - in_pos_;
             if(n < avail)
             {
                 in_size_ -= n;
@@ -619,14 +622,13 @@ basic_streambuf<Allocator>::consume(size_type n)
             n -= avail;
             in_size_ -= avail;
             in_pos_ = 0;
-            debug_check();
-
-            element& e = *pos++;
+            auto& e = list_.front();
             list_.erase(list_.iterator_to(e));
             auto const len = e.size() + sizeof(e);
             alloc_traits::destroy(this->member(), &e);
             alloc_traits::deallocate(this->member(),
                 reinterpret_cast<std::uint8_t*>(&e), len);
+            debug_check();
         }
         else
         {
@@ -638,15 +640,15 @@ basic_streambuf<Allocator>::consume(size_type n)
             }
             else
             {
-                in_size_ -= avail;
-                if(out_pos_ != out_end_||
-                    out_ != list_.iterator_to(list_.back()))
+                in_size_ = 0;
+                if(out_ != list_.iterator_to(list_.back()) ||
+                    out_pos_ != out_end_)
                 {
                     in_pos_ = out_pos_;
                 }
                 else
                 {
-                    // Use the whole buffer now.
+                    // Input and output sequences are empty, reuse buffer.
                     // Alternatively we could deallocate it.
                     in_pos_ = 0;
                     out_pos_ = 0;
@@ -759,6 +761,8 @@ void
 basic_streambuf<Allocator>::debug_check() const
 {
 #ifndef NDEBUG
+    using boost::asio::buffer_size;
+    assert(buffer_size(data()) == in_size_);
     if(list_.empty())
     {
         assert(in_pos_ == 0);

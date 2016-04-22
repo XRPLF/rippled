@@ -134,7 +134,7 @@ private:
     base&
     get()
     {
-        return *reinterpret_cast<base*>(buf_);
+        return *reinterpret_cast<base*>(&buf_[0]);
     }
 };
 

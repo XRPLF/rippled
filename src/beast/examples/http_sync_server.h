@@ -94,6 +94,28 @@ public:
         }
     }
 
+    struct lambda
+    {
+        int id;
+        http_sync_server& self;
+        socket_type sock;
+        boost::asio::io_service::work work;
+
+        lambda(int id_, http_sync_server& self_,
+                socket_type&& sock_)
+            : id(id_)
+            , self(self_)
+            , sock(std::move(sock_))
+            , work(sock.get_io_service())
+        {
+        }
+
+        void operator()()
+        {
+            self.do_peer(id, std::move(sock));
+        }
+    };
+
     void
     on_accept(error_code ec)
     {
@@ -101,16 +123,7 @@ public:
             return;
         maybe_throw(ec, "accept");
         static int id_ = 0;
-        std::thread{
-            [
-                id = ++id_,
-                this,
-                sock = std::move(sock_),
-                work = boost::asio::io_service::work{ios_}
-            ]() mutable
-            {
-                do_peer(id, std::move(sock));
-            }}.detach();
+        std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
         acceptor_.async_accept(sock_,
             std::bind(&http_sync_server::on_accept, this,
                 asio::placeholders::error));

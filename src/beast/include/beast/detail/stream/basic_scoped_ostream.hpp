@@ -78,7 +78,7 @@ public:
     explicit basic_scoped_ostream (Handler&& handler)
         : m_handler (std::forward <Handler> (handler))
     #if BEAST_NO_STDLIB_STREAM_MOVE
-        , m_ss (std::make_unique <stream_type>())
+        , m_ss (new stream_type())
     #endif
     {
     }
@@ -87,7 +87,7 @@ public:
     basic_scoped_ostream (T const& t, Handler&& handler)
         : m_handler (std::forward <Handler> (handler))
     #if BEAST_NO_STDLIB_STREAM_MOVE
-        , m_ss (std::make_unique <stream_type>())
+        , m_ss (new stream_type())
     #endif
     {
         stream() << t;

@@ -99,12 +99,12 @@ using decorate = implementation_defined;
 #else
 template<class Decorator>
 inline
-auto
+detail::decorator_type
 decorate(Decorator&& d)
 {
-    return std::make_unique<detail::decorator<
-        std::decay_t<Decorator>>>(
-            std::forward<Decorator>(d));
+    return detail::decorator_type{new
+        detail::decorator<typename std::decay<Decorator>::type>{
+            std::forward<Decorator>(d)}};
 }
 #endif
 

@@ -8,7 +8,6 @@
 #ifndef BEAST_IMPL_STREAMBUF_READSTREAM_IPP
 #define BEAST_IMPL_STREAMBUF_READSTREAM_IPP
 
-#include <beast/async_completion.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <beast/type_check.hpp>
@@ -61,7 +60,7 @@ public:
         std::size_t bytes_transferred);
 
     friend
-    auto asio_handler_allocate(
+    void* asio_handler_allocate(
         std::size_t size, read_some_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -69,7 +68,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(
+    void asio_handler_deallocate(
         void* p, std::size_t size, read_some_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -77,7 +76,7 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(read_some_op* op)
+    bool asio_handler_is_continuation(read_some_op* op)
     {
         return boost_asio_handler_cont_helpers::
             is_continuation(op->d_->h);
@@ -85,7 +84,7 @@ public:
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, read_some_op* op)
+    void asio_handler_invoke(Function&& f, read_some_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -170,7 +169,9 @@ template<class ConstBufferSequence, class WriteHandler>
 auto
 streambuf_readstream<Stream, Streambuf>::
 async_write_some(ConstBufferSequence const& buffers,
-    WriteHandler&& handler)
+    WriteHandler&& handler) ->
+        typename async_completion<
+            WriteHandler, void(error_code)>::result_type
 {
     static_assert(is_ConstBufferSequence<
         ConstBufferSequence>::value,
@@ -234,7 +235,9 @@ auto
 streambuf_readstream<Stream, Streambuf>::
 async_read_some(
     MutableBufferSequence const& buffers,
-        ReadHandler&& handler)
+        ReadHandler&& handler) ->
+            typename async_completion<
+                ReadHandler, void(error_code)>::result_type
 {
     static_assert(is_MutableBufferSequence<
         MutableBufferSequence>::value,

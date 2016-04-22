@@ -79,8 +79,8 @@ class buffer_cat_helper<
     using C = std::integral_constant<std::size_t, I>;
 
     template<std::size_t I>
-    using iter_t = typename std::tuple_element_t<
-        I, std::tuple<Bs...>>::const_iterator;
+    using iter_t = typename std::tuple_element<
+        I, std::tuple<Bs...>>::type::const_iterator;
 
     template<std::size_t I>
     iter_t<I>&
@@ -491,7 +491,8 @@ implementation_defined
 buffer_cat(BufferSequence const&... buffers)
 #else
 template<class B1, class B2, class... Bn>
-auto
+detail::buffer_cat_helper<
+    boost::asio::const_buffer, B1, B2, Bn...>
 buffer_cat(B1 const& b1, B2 const& b2, Bn const&... bn)
 #endif
 {

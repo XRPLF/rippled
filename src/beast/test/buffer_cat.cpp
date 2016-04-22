@@ -21,6 +21,13 @@ namespace test {
 class buffer_cat_test : public detail::unit_test::suite
 {
 public:
+    template< class Iterator >
+    static
+    std::reverse_iterator<Iterator>
+    make_reverse_iterator( Iterator i )
+    {
+        return std::reverse_iterator<Iterator>(i);
+    }
 
     void testBufferCat()
     {
@@ -43,8 +50,8 @@ public:
             b1, b2, b3, b4, b5, b6);
         expect(buffer_size(bs) == 10);
         std::vector<const_buffer> v;
-        for(auto iter = std::make_reverse_iterator(bs.end());
-                iter != std::make_reverse_iterator(bs.begin()); ++iter)
+        for(auto iter = make_reverse_iterator(bs.end());
+                iter != make_reverse_iterator(bs.begin()); ++iter)
             v.emplace_back(*iter);
         expect(buffer_size(bs) == 10);
         decltype(bs) bs2(bs);
