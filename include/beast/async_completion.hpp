@@ -32,12 +32,12 @@ namespace beast {
 
     Usage:
     @code
+    ...
     template<class CompletionToken>
-    auto
+    typename async_completion<CompletionToken, Signature>::result_type
     async_initfn(..., CompletionToken&& token)
     {
-        async_completion<CompletionToken,
-            void(error_code, std::size_t)> completion(token);
+        async_completion<CompletionToken, Signature> completion(token);
         ...
         return completion.result.get();
     }
@@ -46,7 +46,6 @@ namespace beast {
     See <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3896.pdf">
         Library Foundations For Asynchronous Operations</a>
 */
-
 template <class CompletionToken, class Signature>
 struct async_completion
 {
@@ -59,12 +58,15 @@ struct async_completion
         typename boost::asio::handler_type<
             CompletionToken, Signature>::type;
 
+    using result_type = typename
+        boost::asio::async_result<handler_type>::type;
+
     /** Construct the completion helper.
 
         @param token The completion token. Copies will be made as
         required. If `CompletionToken` is movable, it may also be moved.
     */
-    async_completion(std::remove_reference_t<CompletionToken>& token)
+    async_completion(typename std::remove_reference<CompletionToken>::type& token)
         : handler(std::forward<CompletionToken>(token))
         , result(handler)
     {

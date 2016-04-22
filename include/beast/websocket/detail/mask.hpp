@@ -106,28 +106,28 @@ prepare_key(std::uint64_t& prepared, std::uint32_t key)
 
 template<class T>
 inline
-std::enable_if_t<std::is_integral<T>::value, T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
 rol(T t, unsigned n = 1)
 {
     auto constexpr bits =
         static_cast<unsigned>(
             sizeof(T) * CHAR_BIT);
     n &= bits-1;
-    return static_cast<T>((t << n) |
-        (static_cast<std::make_unsigned_t<T>>(t) >> (bits - n)));
+    return static_cast<T>((t << n) | (
+        static_cast<typename std::make_unsigned<T>::type>(t) >> (bits - n)));
 }
 
 template <class T>
 inline
-std::enable_if_t<std::is_integral<T>::value, T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
 ror(T t, unsigned n = 1)
 {
     auto constexpr bits =
         static_cast<unsigned>(
             sizeof(T) * CHAR_BIT);
     n &= bits-1;
-    return static_cast<T>((t << (bits - n)) |
-        (static_cast<std::make_unsigned_t<T>>(t) >> n));
+    return static_cast<T>((t << (bits - n)) | (
+        static_cast<typename std::make_unsigned<T>::type>(t) >> n));
 }
 
 // 32-bit Uuoptimized

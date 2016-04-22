@@ -21,6 +21,7 @@
 #define BEAST_HTTP_STREAM_H_INCLUDED
 
 #include <beast/http.hpp>
+#include <beast/async_completion.hpp>
 #include <beast/basic_streambuf.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/intrusive/list.hpp>
@@ -94,7 +95,7 @@ class stream : public detail::stream_base
 public:
     /// The type of the next layer.
     using next_layer_type =
-        std::remove_reference_t<NextLayer>;
+        typename std::remove_reference<NextLayer>::type;
 
     /// The type of the lowest layer.
     using lowest_layer_type =
@@ -335,7 +336,8 @@ public:
     #if GENERATING_DOCS
     void_or_deduced
     #else
-    auto
+    typename async_completion<
+        ReadHandler, void(error_code)>::result_type
     #endif
     async_read(message<isRequest, Body, Headers>& msg,
         ReadHandler&& handler);
@@ -429,7 +431,8 @@ public:
     #if GENERATING_DOCS
     void_or_deduced
     #else
-    auto
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
     #endif
     async_write(message<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler);
@@ -467,7 +470,8 @@ public:
     #if GENERATING_DOCS
     void_or_deduced
     #else
-    auto
+    typename async_completion<
+        WriteHandler, void(error_code)>::result_type
     #endif
     async_write(message<isRequest, Body, Headers>&& msg,
         WriteHandler&& handler);

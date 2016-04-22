@@ -20,7 +20,8 @@ namespace http {
 namespace detail {
 
 template<class Streambuf, class T,
-    class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
+    class = typename std::enable_if<
+        is_Streambuf<Streambuf>::value>::type>
 void
 write(Streambuf& streambuf, T&& t)
 {
@@ -34,8 +35,8 @@ write(Streambuf& streambuf, T&& t)
 }
 
 template<class Streambuf, std::size_t N,
-    class = std::enable_if_t< (N>0) &&
-        is_Streambuf<Streambuf>::value>>
+    class = typename std::enable_if< (N>0) &&
+        is_Streambuf<Streambuf>::value>::type>
 void
 write(Streambuf& streambuf, char const(&s)[N])
 {
@@ -46,7 +47,8 @@ write(Streambuf& streambuf, char const(&s)[N])
 }
 
 template<class Streambuf,
-    class = std::enable_if_t<is_Streambuf<Streambuf>::value>>
+    class = typename std::enable_if<
+        is_Streambuf<Streambuf>::value>::type>
 void
 write(Streambuf& streambuf, boost::string_ref const& s)
 {

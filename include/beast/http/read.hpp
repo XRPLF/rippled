@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_READ_HPP
 #define BEAST_HTTP_READ_HPP
 
+#include <beast/async_completion.hpp>
 #include <beast/http/error.hpp>
 #include <beast/http/parser.hpp>
 #include <beast/http/type_check.hpp>
@@ -76,7 +77,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     @param msg An object used to store the read message. Any
     contents will be overwritten.
 
-    @param token The handler to be called when the request completes.
+    @param handler The handler to be called when the request completes.
     Copies will be made of the handler as required. The equivalent
     function signature of the handler must be:
     @code void handler(
@@ -89,15 +90,16 @@ read(SyncReadStream& stream, Streambuf& streambuf,
 */
 template<class AsyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers,
-        class CompletionToken>
+        class ReadHandler>
 #if GENERATING_DOCS
 void_or_deduced
 #else
-auto
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
 #endif
 async_read(AsyncReadStream& stream, Streambuf& streambuf,
     message<isRequest, Body, Headers>& msg,
-        CompletionToken&& token);
+        ReadHandler&& handler);
 
 } // http
 } // beast

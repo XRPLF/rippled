@@ -20,7 +20,6 @@
 #ifndef BEAST_HTTP_STREAM_IPP_INCLUDED
 #define BEAST_HTTP_STREAM_IPP_INCLUDED
 
-#include <beast/async_completion.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <beast/http/read.hpp>
@@ -78,7 +77,7 @@ public:
     void operator()(error_code const& ec, bool again = true);
 
     friend
-    auto asio_handler_allocate(
+    void* asio_handler_allocate(
         std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -86,7 +85,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(
+    void asio_handler_deallocate(
         void* p, std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -94,14 +93,14 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(read_op* op)
+    bool asio_handler_is_continuation(read_op* op)
     {
         return op->d_->cont;
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, read_op* op)
+    void asio_handler_invoke(Function&& f, read_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -198,7 +197,7 @@ public:
     void operator()(error_code const& ec, bool again = true);
 
     friend
-    auto asio_handler_allocate(
+    void* asio_handler_allocate(
         std::size_t size, write_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -206,7 +205,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(
+    void asio_handler_deallocate(
         void* p, std::size_t size, write_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -214,14 +213,14 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(write_op* op)
+    bool asio_handler_is_continuation(write_op* op)
     {
         return op->d_->cont;
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, write_op* op)
+    void asio_handler_invoke(Function&& f, write_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -319,7 +318,9 @@ template<bool isRequest, class Body, class Headers,
 auto
 stream<NextLayer, Allocator>::
 async_read(message<isRequest, Body, Headers>& msg,
-    ReadHandler&& handler)
+    ReadHandler&& handler) ->
+        typename async_completion<
+            ReadHandler, void(error_code)>::result_type
 {
     async_completion<
         ReadHandler, void(error_code)
@@ -346,7 +347,9 @@ template<bool isRequest, class Body, class Headers,
 auto
 stream<NextLayer, Allocator>::
 async_write(message<isRequest, Body, Headers> const& msg,
-    WriteHandler&& handler)
+    WriteHandler&& handler) ->
+        typename async_completion<
+            WriteHandler, void(error_code)>::result_type
 {
     async_completion<
         WriteHandler, void(error_code)> completion(handler);
@@ -375,7 +378,9 @@ template<bool isRequest, class Body, class Headers,
 auto
 stream<NextLayer, Allocator>::
 async_write(message<isRequest, Body, Headers>&& msg,
-    WriteHandler&& handler)
+    WriteHandler&& handler) ->
+        typename async_completion<
+            WriteHandler, void(error_code)>::result_type
 {
     async_completion<
         WriteHandler, void(error_code)> completion(handler);

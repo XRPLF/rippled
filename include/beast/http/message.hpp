@@ -66,8 +66,8 @@ struct response_params
 */
 template<bool isRequest, class Body, class Headers>
 struct message
-    : std::conditional_t<isRequest,
-        detail::request_fields, detail::response_fields>
+    : std::conditional<isRequest,
+        detail::request_fields, detail::response_fields>::type
 {
     /** The trait type characterizing the body.
 

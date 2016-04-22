@@ -429,13 +429,12 @@ ci_equal(boost::string_ref s1, boost::string_ref s2)
 
 /** Returns a range representing the list. */
 inline
-auto
+boost::iterator_range<list_iterator>
 make_list(boost::string_ref const& field)
 {
     return boost::iterator_range<list_iterator>{
         list_iterator{field.begin(), field.end()},
             list_iterator{field.end(), field.end()}};
-
 }
 
 /** Returns true if the specified token exists in the list.

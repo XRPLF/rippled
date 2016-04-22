@@ -15,7 +15,6 @@ unit-test http_tests :
     http/chunk_encode.cpp
     http/empty_body.cpp
     http/error.cpp
-    http/fields.cpp
     http/headers.cpp
     http/message.cpp
     http/method.cpp

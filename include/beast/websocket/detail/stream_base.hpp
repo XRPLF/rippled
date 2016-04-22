@@ -97,8 +97,7 @@ protected:
     close_reason cr_;                   // set from received close frame
 
     stream_base()
-        : d_(std::make_unique<
-            decorator<default_decorator>>())
+        : d_(new decorator<default_decorator>{})
     {
     }
 

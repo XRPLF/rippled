@@ -69,7 +69,7 @@ struct file_body
                 size_ = boost::filesystem::file_size(path_);
         }
 
-        auto
+        std::size_t
         content_length() const
         {
             return size_;

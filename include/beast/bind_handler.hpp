@@ -8,6 +8,7 @@
 #ifndef BEAST_BIND_HANDLER_HPP
 #define BEAST_BIND_HANDLER_HPP
 
+#include <beast/detail/integer_sequence.hpp>
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
@@ -28,14 +29,14 @@ template<class Handler, class... Args>
 class bound_handler
 {
 private:
-    using args_type = std::tuple<std::decay_t<Args>...>;
+    using args_type = std::tuple<typename std::decay<Args>::type...>;
 
     Handler h_;
     args_type args_;
 
     template<class Tuple, std::size_t... S>
     static void invoke(Handler& h, Tuple& args,
-        std::index_sequence <S...>)
+        index_sequence<S...>)
     {
         h(std::get<S>(args)...);
     }
@@ -55,14 +56,14 @@ public:
     operator()()
     {
         invoke(h_, args_,
-            std::index_sequence_for<Args...> ());
+            index_sequence_for<Args...> ());
     }
 
     void
     operator()() const
     {
         invoke(h_, args_,
-            std::index_sequence_for<Args...> ());
+            index_sequence_for<Args...> ());
     }
 
     friend
@@ -133,19 +134,19 @@ public:
     @param handler The handler to wrap.
 
     @param args A list of arguments to bind to the handler. The
-    arguments are forwarded into the returned
-
+    arguments are forwarded into the returned object.
 */
 template<class CompletionHandler, class... Args>
 #if GENERATING_DOCS
 implementation_defined
 #else
-detail::bound_handler<std::decay_t<CompletionHandler>, Args...>
+detail::bound_handler<
+    typename std::decay<CompletionHandler>::type, Args...>
 #endif
 bind_handler(CompletionHandler&& handler, Args&&... args)
 {
-    return detail::bound_handler<std::decay_t<
-        CompletionHandler>, Args...>(std::forward<
+    return detail::bound_handler<typename std::decay<
+        CompletionHandler>::type, Args...>(std::forward<
             CompletionHandler>(handler),
                 std::forward<Args>(args)...);
 }

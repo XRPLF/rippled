@@ -96,15 +96,12 @@ private:
 
         explicit
         peer(socket_type&& sock, std::string const& root)
-            : id_([]
-                {
-                    static int n = 0;
-                    return ++n;
-                }())
-            , stream_(std::move(sock))
+            : stream_(std::move(sock))
             , strand_(stream_.get_io_service())
             , root_(root)
         {
+            static int n = 0;
+            id_ = ++n;
         }
 
         void run()

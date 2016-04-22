@@ -61,7 +61,7 @@ public:
         error_code ec, std::size_t, bool again = true);
 
     friend
-    auto asio_handler_allocate(std::size_t size,
+    void* asio_handler_allocate(std::size_t size,
         teardown_tcp_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -69,7 +69,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(void* p,
+    void asio_handler_deallocate(void* p,
         std::size_t size, teardown_tcp_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -77,14 +77,14 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(teardown_tcp_op* op)
+    bool asio_handler_is_continuation(teardown_tcp_op* op)
     {
         return op->d_->cont;
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f,
+    void asio_handler_invoke(Function&& f,
         teardown_tcp_op* op)
     {
         return boost_asio_handler_invoke_helpers::
@@ -160,8 +160,8 @@ async_teardown(
     static_assert(beast::is_Handler<
         TeardownHandler, void(error_code)>::value,
             "TeardownHandler requirements not met");
-    detail::teardown_tcp_op<std::decay_t<
-        TeardownHandler>>{std::forward<
+    detail::teardown_tcp_op<typename std::decay<
+        TeardownHandler>::type>{std::forward<
             TeardownHandler>(handler), socket};
 }
 
