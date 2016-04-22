@@ -44,7 +44,7 @@ if [ ${ubuntu_release} == "14.04" ] || [ ${ubuntu_release} == "15.04" ]; then
     exit 0
 fi
 
-if [ ${ubuntu_release} == "15.10" ]; then
+if [ ${ubuntu_release} == "16.04" ] || [ ${ubuntu_release} == "15.10" ]; then
     apt-get update
     apt-get -y upgrade
     apt-get -y install python-software-properties curl git scons ctags pkg-config protobuf-compiler libprotobuf-dev libssl-dev python-software-properties libboost-all-dev nodejs 
