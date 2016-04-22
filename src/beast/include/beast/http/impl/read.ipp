@@ -9,7 +9,6 @@
 #define BEAST_HTTP_IMPL_READ_IPP_HPP
 
 #include <beast/http/type_check.hpp>
-#include <beast/async_completion.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <cassert>
@@ -76,7 +75,7 @@ public:
         std::size_t bytes_transferred, bool again = true);
 
     friend
-    auto asio_handler_allocate(
+    void* asio_handler_allocate(
         std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -84,7 +83,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(
+    void asio_handler_deallocate(
         void* p, std::size_t size, read_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -92,14 +91,14 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(read_op* op)
+    bool asio_handler_is_continuation(read_op* op)
     {
         return op->d_->cont;
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, read_op* op)
+    void asio_handler_invoke(Function&& f, read_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -258,11 +257,12 @@ read(SyncReadStream& stream, Streambuf& streambuf,
 
 template<class AsyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers,
-        class CompletionToken>
-auto
+        class ReadHandler>
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
 async_read(AsyncReadStream& stream, Streambuf& streambuf,
     message<isRequest, Body, Headers>& m,
-        CompletionToken&& token)
+        ReadHandler&& handler)
 {
     static_assert(is_AsyncReadStream<AsyncReadStream>::value,
         "AsyncReadStream requirements not met");
@@ -270,8 +270,8 @@ async_read(AsyncReadStream& stream, Streambuf& streambuf,
         "Streambuf requirements not met");
     static_assert(is_ReadableBody<Body>::value,
         "ReadableBody requirements not met");
-    beast::async_completion<CompletionToken,
-        void(error_code)> completion(token);
+    beast::async_completion<ReadHandler,
+        void(error_code)> completion(handler);
     detail::read_op<AsyncReadStream, Streambuf,
         isRequest, Body, Headers, decltype(
             completion.handler)>{completion.handler,

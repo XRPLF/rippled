@@ -57,7 +57,7 @@ public:
 };
 
 template<class = void>
-auto
+boost::system::error_code
 make_error(int http_errno)
 {
     static message_category const mc{};

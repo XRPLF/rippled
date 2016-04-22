@@ -80,12 +80,6 @@ struct basic_streambuf_body
             write(body_.data());
             return true;
         }
-
-        auto
-        data() const noexcept
-        {
-            return body_.data();
-        }
     };
 };
 

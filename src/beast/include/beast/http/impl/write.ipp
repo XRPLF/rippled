@@ -14,7 +14,6 @@
 #include <beast/http/detail/writes.hpp>
 #include <beast/http/detail/write_preparation.hpp>
 #include <beast/buffer_cat.hpp>
-#include <beast/async_completion.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <beast/streambuf.hpp>
@@ -61,6 +60,60 @@ class write_op
         }
     };
 
+    class writef0
+    {
+        write_op& self_;
+
+    public:
+        explicit
+        writef0(write_op& self)
+            : self_(self)
+        {
+        }
+
+        template<class ConstBufferSequence>
+        void operator()(ConstBufferSequence const& buffers)
+        {
+            auto& d = *self_.d_;
+            // write headers and body
+            if(d.wp.chunked)
+                boost::asio::async_write(d.s,
+                    buffer_cat(d.wp.sb.data(),
+                        chunk_encode(buffers)),
+                            std::move(self_));
+            else
+                boost::asio::async_write(d.s,
+                    buffer_cat(d.wp.sb.data(),
+                        buffers), std::move(self_));
+        }
+    };
+
+    class writef
+    {
+        write_op& self_;
+
+    public:
+        explicit
+        writef(write_op& self)
+            : self_(self)
+        {
+        }
+
+        template<class ConstBufferSequence>
+        void operator()(ConstBufferSequence const& buffers)
+        {
+            auto& d = *self_.d_;
+            // write body
+            if(d.wp.chunked)
+                boost::asio::async_write(d.s,
+                    chunk_encode(buffers),
+                        std::move(self_));
+            else
+                boost::asio::async_write(d.s,
+                    buffers, std::move(self_));
+        }
+    };
+
     std::shared_ptr<data> d_;
 
 public:
@@ -74,9 +127,11 @@ public:
                 std::forward<Args>(args)...))
     {
         auto& d = *d_;
+        auto sp = d_;
         d.resume = {
-            [self = *this]() mutable
+            [sp]() mutable
             {
+                write_op self(std::move(sp));
                 self.d_->cont = false;
                 auto& ios = self.d_->s.get_io_service();
                 ios.dispatch(bind_handler(std::move(self),
@@ -97,7 +152,7 @@ public:
         std::size_t bytes_transferred, bool again = true);
 
     friend
-    auto asio_handler_allocate(
+    void* asio_handler_allocate(
         std::size_t size, write_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -105,7 +160,7 @@ public:
     }
 
     friend
-    auto asio_handler_deallocate(
+    void asio_handler_deallocate(
         void* p, std::size_t size, write_op* op)
     {
         return boost_asio_handler_alloc_helpers::
@@ -113,14 +168,14 @@ public:
     }
 
     friend
-    auto asio_handler_is_continuation(write_op* op)
+    bool asio_handler_is_continuation(write_op* op)
     {
         return op->d_->cont;
     }
 
     template <class Function>
     friend
-    auto asio_handler_invoke(Function&& f, write_op* op)
+    void asio_handler_invoke(Function&& f, write_op* op)
     {
         return boost_asio_handler_invoke_helpers::
             invoke(f, op->d_->h);
@@ -156,20 +211,8 @@ operator()(error_code ec, std::size_t, bool again)
 
         case 1:
         {
-            auto const result = d.wp.w(std::move(d.copy), ec,
-                [&](auto const& buffers)
-                {
-                    // write headers and body
-                    if(d.wp.chunked)
-                        boost::asio::async_write(d.s,
-                            buffer_cat(d.wp.sb.data(),
-                                chunk_encode(buffers)),
-                                    std::move(*this));
-                    else
-                        boost::asio::async_write(d.s,
-                            buffer_cat(d.wp.sb.data(),
-                                buffers), std::move(*this));
-                });
+            auto const result = d.wp.w(
+                std::move(d.copy), ec, writef0{*this});
             if(ec)
             {
                 // call handler
@@ -199,18 +242,8 @@ operator()(error_code ec, std::size_t, bool again)
 
         case 3:
         {
-            auto const result = d.wp.w(std::move(d.copy), ec,
-                [&](auto const& buffers)
-                {
-                    // write body
-                    if(d.wp.chunked)
-                        boost::asio::async_write(d.s,
-                            chunk_encode(buffers),
-                                std::move(*this));
-                    else
-                        boost::asio::async_write(d.s,
-                            buffers, std::move(*this));
-                });
+            auto const result = d.wp.w(
+                std::move(d.copy), ec, writef{*this});
             if(ec)
             {
                 // call handler
@@ -256,6 +289,65 @@ operator()(error_code ec, std::size_t, bool again)
     d.copy = {};
 }
 
+template<class SyncWriteStream, class Streambuf>
+class writef0_write
+{
+    Streambuf const& sb_;
+    SyncWriteStream& stream_;
+    bool chunked_;
+    error_code& ec_;
+
+public:
+    writef0_write(SyncWriteStream& stream,
+            Streambuf const& sb, bool chunked, error_code& ec)
+        : sb_(sb)
+        , stream_(stream)
+        , chunked_(chunked)
+        , ec_(ec)
+    {
+    }
+
+    template<class ConstBufferSequence>
+    void operator()(ConstBufferSequence const& buffers)
+    {
+        // write headers and body
+        if(chunked_)
+            boost::asio::write(stream_, buffer_cat(
+                sb_.data(), chunk_encode(buffers)), ec_);
+        else
+            boost::asio::write(stream_, buffer_cat(
+                sb_.data(), buffers), ec_);
+    }
+};
+
+template<class SyncWriteStream>
+class writef_write
+{
+    SyncWriteStream& stream_;
+    bool chunked_;
+    error_code& ec_;
+
+public:
+    writef_write(SyncWriteStream& stream,
+            bool chunked, error_code& ec)
+        : stream_(stream)
+        , chunked_(chunked)
+        , ec_(ec)
+    {
+    }
+
+    template<class ConstBufferSequence>
+    void operator()(ConstBufferSequence const& buffers)
+    {
+        // write body
+        if(chunked_)
+            boost::asio::write(stream_,
+                chunk_encode(buffers), ec_);
+        else
+            boost::asio::write(stream_, buffers, ec_);
+    }
+};
+
 } // detail
 
 //------------------------------------------------------------------------------
@@ -288,16 +380,8 @@ write(SyncWriteStream& stream,
     {
         {
             auto result = wp.w(std::move(copy), ec,
-                [&](auto const& buffers)
-                {
-                    // write headers and body
-                    if(wp.chunked)
-                        boost::asio::write(stream, buffer_cat(
-                            wp.sb.data(), chunk_encode(buffers)), ec);
-                    else
-                        boost::asio::write(stream, buffer_cat(
-                            wp.sb.data(), buffers), ec);
-                });
+                detail::writef0_write<SyncWriteStream, decltype(wp.sb)>{
+                    stream, wp.sb, wp.chunked, ec});
             if(ec)
                 return;
             if(result)
@@ -318,15 +402,8 @@ write(SyncWriteStream& stream,
         for(;;)
         {
             auto result = wp.w(std::move(copy), ec,
-                [&](auto const& buffers)
-                {
-                    // write body
-                    if(wp.chunked)
-                        boost::asio::write(stream,
-                            chunk_encode(buffers), ec);
-                    else
-                        boost::asio::write(stream, buffers, ec);
-                });
+                detail::writef_write<SyncWriteStream>{
+                    stream, wp.chunked, ec});
             if(ec)
                 return;
             if(result)
@@ -360,19 +437,20 @@ write(SyncWriteStream& stream,
 
 template<class AsyncWriteStream,
     bool isRequest, class Body, class Headers,
-        class CompletionToken>
-auto
+        class WriteHandler>
+typename async_completion<
+    WriteHandler, void(error_code)>::result_type
 async_write(AsyncWriteStream& stream,
     message<isRequest, Body, Headers> const& msg,
-        CompletionToken&& token)
+        WriteHandler&& handler)
 {
     static_assert(
         is_AsyncWriteStream<AsyncWriteStream>::value,
             "AsyncWriteStream requirements not met");
     static_assert(is_WritableBody<Body>::value,
         "WritableBody requirements not met");
-    beast::async_completion<CompletionToken,
-        void(error_code)> completion(token);
+    beast::async_completion<WriteHandler,
+        void(error_code)> completion(handler);
     detail::write_op<AsyncWriteStream, decltype(completion.handler),
         isRequest, Body, Headers>{completion.handler, stream, msg};
     return completion.result.get();

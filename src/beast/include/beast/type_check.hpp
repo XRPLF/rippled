@@ -338,7 +338,7 @@ public:
 /// Determine if `T` meets the requirements of `CompletionHandler`.
 template<class T, class Signature>
 using is_Handler = std::integral_constant<bool,
-    std::is_copy_constructible<std::decay_t<T>>::value &&
+    std::is_copy_constructible<typename std::decay<T>::type>::value &&
         detail::is_call_possible<T, Signature>::value>;
 
 #endif
