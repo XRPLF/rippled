@@ -12,8 +12,10 @@
 #include <beast/http/type_check.hpp>
 #include <beast/http/detail/writes.hpp>
 #include <beast/http/detail/write_preparation.hpp>
+#include <beast/http/resume_context.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/logic/tribool.hpp>
 #include <condition_variable>
 #include <mutex>
 

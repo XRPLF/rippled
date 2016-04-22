@@ -41,6 +41,9 @@ public:
             template rebind_alloc<std::uint8_t>;
 
 private:
+    // Storage for the list of buffers representing the input
+    // and output sequences. The allocation for each element
+    // contains `element` followed by raw storage bytes.
     class element;
 
     using alloc_traits = std::allocator_traits<allocator_type>;
