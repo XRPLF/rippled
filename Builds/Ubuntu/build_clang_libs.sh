@@ -20,6 +20,9 @@ fi
 
 if ! hash clang 2>/dev/null; then
     clang_version=3.7
+    if [ ${ubuntu_release} == "16.04" ]; then
+        clang_version=3.8
+    fi
     sudo apt-get -y install clang-${clang_version}
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${clang_version} 99 clang++
     hash -r
@@ -29,7 +32,7 @@ if ! hash clang 2>/dev/null; then
     fi
 fi
 
-if [ ${ubuntu_release} != "15.10" ]; then
+if [ ${ubuntu_release} != "16.04" ] && [ ${ubuntu_release} != "15.10" ]; then
     echo "clang specific boost and protobuf not needed"
     exit 0
 fi
