@@ -7,6 +7,26 @@
 
 import os ;
 
+unit-test core_tests :
+    main.cpp
+    async_completion.cpp
+    basic_streambuf.cpp
+    bind_handler.cpp
+    buffer_cat.cpp
+    buffers_adapter.cpp
+    buffers_debug.cpp
+    consuming_buffers.cpp
+    handler_alloc.cpp
+    placeholders.cpp
+    prepare_buffers.cpp
+    static_streambuf.cpp
+    streambuf.cpp
+    streambuf_readstream.cpp
+    type_check.cpp
+    detail/base64.cpp
+    detail/empty_base_optimization.cpp
+    ;
+
 unit-test http_tests :
     main.cpp
     ../src/beast_http_nodejs_parser.cpp
@@ -29,22 +49,12 @@ unit-test http_tests :
     http/write.cpp
     ;
 
-unit-test core_tests :
+unit-test websocket_tests :
     main.cpp
-    async_completion.cpp
-    basic_streambuf.cpp
-    bind_handler.cpp
-    buffer_cat.cpp
-    buffers_adapter.cpp
-    buffers_debug.cpp
-    consuming_buffers.cpp
-    handler_alloc.cpp
-    placeholders.cpp
-    prepare_buffers.cpp
-    static_streambuf.cpp
-    streambuf.cpp
-    streambuf_readstream.cpp
-    type_check.cpp
-    detail/base64.cpp
-    detail/empty_base_optimization.cpp
+    ../src/beast_http_nodejs_parser.cpp
+    websocket/error.cpp
+    websocket/option.cpp
+    websocket/rfc6455.cpp
+    websocket/static_string.cpp
+    websocket/teardown.cpp
     ;
