@@ -58,7 +58,7 @@ project beast
       <define>BOOST_ALL_NO_LIB=1
       <threading>multi
       <link>static
-      <runtime-link>static
+      <runtime-link>shared
       <toolset>gcc:<cxxflags>-std=c++14
       <toolset>clang:<cxxflags>-std=c++14
       <os>LINUX:<define>_XOPEN_SOURCE=600
