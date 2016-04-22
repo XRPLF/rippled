@@ -8,7 +8,6 @@
 #ifndef BEAST_HTTP_IMPL_READ_IPP_HPP
 #define BEAST_HTTP_IMPL_READ_IPP_HPP
 
-#include <beast/http/type_check.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <cassert>
@@ -219,8 +218,6 @@ read(SyncReadStream& stream, Streambuf& streambuf,
         "SyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
-    static_assert(is_ReadableBody<Body>::value,
-        "ReadableBody requirements not met");
     parser<isRequest, Body, Headers> p;
     for(;;)
     {
@@ -268,8 +265,6 @@ async_read(AsyncReadStream& stream, Streambuf& streambuf,
         "AsyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
-    static_assert(is_ReadableBody<Body>::value,
-        "ReadableBody requirements not met");
     beast::async_completion<ReadHandler,
         void(error_code)> completion(handler);
     detail::read_op<AsyncReadStream, Streambuf,

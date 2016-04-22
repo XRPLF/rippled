@@ -23,7 +23,12 @@ namespace http {
 */
 struct string_body
 {
+    /// The type of the `message::body` member
     using value_type = std::string;
+
+#if GENERATING_DOCS
+private:
+#endif
 
     class reader
     {

@@ -35,6 +35,8 @@ struct response_fields
 
 } // detail
 
+#if ! GENERATING_DOCS
+
 struct request_params
 {
     http::method_t method;
@@ -48,6 +50,8 @@ struct response_params
     std::string reason;
     int version;
 };
+
+#endif
 
 /** A HTTP message.
 
@@ -110,7 +114,7 @@ struct message
 
     /// Diagnostics only
     template<bool, class, class>
-    friend 
+    friend
     std::ostream&
     operator<<(std::ostream& os,
         message const& m);

@@ -11,7 +11,6 @@
 #include <beast/async_completion.hpp>
 #include <beast/http/error.hpp>
 #include <beast/http/parser.hpp>
-#include <beast/http/type_check.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
 

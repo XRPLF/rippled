@@ -45,7 +45,6 @@ unit-test http_tests :
     http/rfc2616.cpp
     http/streambuf_body.cpp
     http/string_body.cpp
-    http/type_check.cpp
     http/write.cpp
     ;
 

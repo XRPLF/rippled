@@ -17,3 +17,8 @@
 * Remove or change http::headers alias
 * Do something about the methods.hpp and fields.hpp type headers
 * Fix index in docs
+* Fix integer warning in file_body.hpp
+* Use make_error_code in websocket to set the category right
+* Figure out why namespace rfc2616 is included in docs
+  (currently disabled via GENERATING_DOCS macro)
+* Include Example program listings in the docs

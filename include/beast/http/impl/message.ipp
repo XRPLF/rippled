@@ -9,7 +9,6 @@
 #define BEAST_HTTP_IMPL_MESSAGE_IPP
 
 #include <beast/http/chunk_encode.hpp>
-#include <beast/http/type_check.hpp>
 #include <beast/http/detail/writes.hpp>
 #include <beast/http/detail/write_preparation.hpp>
 #include <beast/http/resume_context.hpp>
@@ -26,16 +25,12 @@ template<bool isRequest, class Body, class Headers>
 message<isRequest, Body, Headers>::
 message()
 {
-    static_assert(is_Body<Body>::value,
-        "Body requirements not met");
 }
 
 template<bool isRequest, class Body, class Headers>
 message<isRequest, Body, Headers>::
 message(request_params params)
 {
-    static_assert(is_Body<Body>::value,
-        "Body requirements not met");
     static_assert(isRequest, "message is not a request");
     this->method = params.method;
     this->url = std::move(params.url);
@@ -46,8 +41,6 @@ template<bool isRequest, class Body, class Headers>
 message<isRequest, Body, Headers>::
 message(response_params params)
 {
-    static_assert(is_Body<Body>::value,
-        "Body requirements not met");
     static_assert(! isRequest, "message is not a response");
     this->status = params.status;
     this->reason = std::move(params.reason);
@@ -160,8 +153,6 @@ std::ostream&
 operator<<(std::ostream& os,
     message<isRequest, Body, Headers> const& msg)
 {
-    static_assert(is_WritableBody<Body>::value,
-        "WritableBody requirements not met");
     error_code ec;
     detail::write_preparation<isRequest, Body, Headers> wp(msg);
     wp.init(ec);

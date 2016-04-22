@@ -41,30 +41,21 @@
     <xsl:sort select="name"/>
     <xsl:choose>
       <xsl:when test="@kind='class' or @kind='struct'">
-        <xsl:call-template name="class"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:call-template name="namespace-memberdef"/>
-      </xsl:otherwise>
-      <!--
-      <xsl:when test="@kind='class' or @kind='struct'">
         <xsl:if test="
             contains(compoundname, 'beast::') and
-            not(contains(compoundname, '::detail'))">
+            not(contains(compoundname, '::detail')) and
+            not(contains(compoundname, 'rfc2616')) and
+            not(contains(@prot, 'private'))">
           <xsl:call-template name="class"/>
         </xsl:if>
       </xsl:when>
       <xsl:otherwise>
         <xsl:if test="
             not(contains(ancestor::*/compoundname, '::detail')) and
-            not(contains(ancestor::*/compoundname, '::service::key')) and
-            not(contains(ancestor::*/compoundname, '_helper')) and
-            not(contains(name, '_helper')) and
-            not(contains(name, 'io_service_impl'))">
+            not(contains(compoundname, 'rfc2616'))">
           <xsl:call-template name="namespace-memberdef"/>
         </xsl:if>
       </xsl:otherwise>
-    -->
     </xsl:choose>
   </xsl:for-each>
   <xsl:text>&#xd;[endsect]</xsl:text>
@@ -286,6 +277,14 @@
     <xsl:value-of select="."/>
     <xsl:text>]</xsl:text>
   </xsl:if>
+</xsl:template>
+
+<xsl:template match="ulink" mode="markup">
+  <xsl:text>[@</xsl:text>
+  <xsl:value-of select="@url"/>
+  <xsl:text> </xsl:text>
+  <xsl:value-of select="."/>
+  <xsl:text>]</xsl:text>
 </xsl:template>
 
 <xsl:template match="programlisting" mode="markup">
@@ -673,18 +672,16 @@
   <xsl:value-of select="$newline"/>
   <xsl:text>[heading Requirements]&#xd;</xsl:text>
   <xsl:text>['Header: ][^</xsl:text>
-  <xsl:value-of select="substring-after($file, 'beast/')"/>
+  <xsl:value-of select="substring-after($file, 'include/')"/>
   <xsl:text>] &#xd;&#xd;</xsl:text>
-  <xsl:text>['Convenience header: ]</xsl:text>
   <xsl:choose>
-    <xsl:when test="contains($file, 'beast/asio')">
-      <xsl:text>[^beast/asio.h]</xsl:text>
-    </xsl:when>
     <xsl:when test="contains($file, 'beast/http')">
-      <xsl:text>[^beast/http.h]</xsl:text>
+      <xsl:text>['Convenience header: ][^beast/http.hpp]</xsl:text>
     </xsl:when>
-    <xsl:when test="contains($file, 'beast/wsproto')">
-      <xsl:text>[^beast/wsproto.h]</xsl:text>
+    <xsl:when test="contains($file, 'beast/websocket')">
+      <xsl:text>['Convenience header: ][^beast/websocket.hpp]</xsl:text>
+    </xsl:when>
+    <xsl:when test="contains($file, 'beast/')">
     </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="$file"/>
@@ -911,7 +908,7 @@
     </xsl:for-each>
     <xsl:text>]&#xd;</xsl:text>
   </xsl:if>
-  <xsl:if test="count(sectiondef[@kind='private-func' or @kind='protected-private-func']) > 0">
+  <xsl:if test="count(sectiondef[@kind='private-func' or @kind='protected-private-func']) &lt; 0">
     <xsl:text>[heading Private Member Functions]&#xd;</xsl:text>
     <xsl:text>[table&#xd;  [[Name][Description]]&#xd;</xsl:text>
     <xsl:for-each select="sectiondef[@kind='private-func']/memberdef" mode="class-table">
@@ -988,7 +985,7 @@
     </xsl:for-each>
     <xsl:text>]&#xd;</xsl:text>
   </xsl:if>
-  <xsl:if test="count(sectiondef[@kind='private-attrib' or @kind='private-static-attrib']) > 0">
+  <xsl:if test="count(sectiondef[@kind='private-attrib' or @kind='private-static-attrib']) &lt; 0">
     <xsl:text>[heading Private Data Members]&#xd;</xsl:text>
     <xsl:text>[table&#xd;  [[Name][Description]]&#xd;</xsl:text>
     <xsl:for-each select="sectiondef[@kind='private-attrib' or @kind='private-static-attrib']/memberdef" mode="class-table">
@@ -1274,7 +1271,7 @@
       <xsl:text>```&#xd;</xsl:text>
     </xsl:when>
   </xsl:choose>
-  <xsl:apply-templates select="detaileddescription"/>
+  <xsl:apply-templates select="detaileddescription" mode="markup"/>
   <xsl:if test="@kind='typedef' or @kind='friend'">
     <xsl:call-template name="header-requirements">
       <xsl:with-param name="file" select="$class-file"/>
@@ -1423,91 +1420,12 @@
 
 <xsl:template match="param" mode="class-detail-template">
   <xsl:text>    </xsl:text>
-  <xsl:value-of select="type"/>
   <xsl:choose>
-    <xsl:when test="declname = 'Allocator'">
-      <xsl:value-of select="declname"/>
+    <xsl:when test="type = 'class Body'">
+      <xsl:text>class ``[link beast.types.Body [*Body]]``</xsl:text>
     </xsl:when>
-    <xsl:when test="declname = 'Arg'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'BufferSequence'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'ByteType'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Clock'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'CompletionCondition'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'ConnectCondition'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Context_Service'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'DatagramSocketService1'">
-      <xsl:value-of select="concat('``[link beast.ref.DatagramSocketService ', declname, ']``')"/>
-    </xsl:when>
-    <xsl:when test="declname = 'EndpointIterator'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Elem'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'ErrorEnum'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Function'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Iterator'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'MatchCondition'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'N'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'OtherAllocator'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'PasswordCallback'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'PodType'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'PointerToPodType'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Protocol1'">
-      <xsl:value-of select="concat('``[link beast.ref.Protocol ', declname, ']``')"/>
-    </xsl:when>
-    <xsl:when test="declname = 'RawSocketService1'">
-      <xsl:value-of select="concat('``[link beast.ref.RawSocketService ', declname, ']``')"/>
-    </xsl:when>
-    <xsl:when test="declname = 'SeqPacketSocketService1'">
-      <xsl:value-of select="concat('``[link beast.ref.SeqPacketSocketService ', declname, ']``')"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Signature'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'SocketAcceptorService1' or declname = 'SocketAcceptorService2'">
-      <xsl:value-of select="concat('``[link beast.ref.SocketAcceptorService ', declname, ']``')"/>
-    </xsl:when>
-    <xsl:when test="declname = 'SocketService1' or declname = 'SocketService2'">
-      <xsl:value-of select="concat('``[link beast.ref.SocketService ', declname, ']``')"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Stream'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'StreamSocketService1'">
-      <xsl:value-of select="concat('``[link beast.ref.StreamSocketService ', declname, ']``')"/>
+    <xsl:when test="type = 'class Streambuf'">
+      <xsl:text>class ``[link beast.types.Streambuf [*Streambuf]]``</xsl:text>
     </xsl:when>
     <xsl:when test="declname = 'T'">
       <xsl:value-of select="declname"/>
@@ -1518,22 +1436,14 @@
     <xsl:when test="declname = 'TN'">
       <xsl:value-of select="declname"/>
     </xsl:when>
-    <xsl:when test="declname = 'Time'">
+    <xsl:when test="count(declname) > 0">
+      <xsl:value-of select="type"/>
+      <xsl:text> </xsl:text>
       <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'TimeType'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'Traits'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="declname = 'VerifyCallback'">
-      <xsl:value-of select="declname"/>
-    </xsl:when>
-    <xsl:when test="count(declname) = 0">
     </xsl:when>
     <xsl:otherwise>
-      <xsl:value-of select="concat(' ``[link beast.ref.', declname, ' ', declname, ']``')"/>
+      <xsl:value-of select="type"/>
+      <!--<xsl:value-of select="concat(' ``[link beast.ref.', declname, ' ', declname, ']``')"/>-->
     </xsl:otherwise>
   </xsl:choose>
   <xsl:if test="count(defval) > 0">
@@ -1557,6 +1467,10 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:choose>
+        <xsl:when test="' &amp;&amp;' = substring(type, string-length(type) - 2)">
+          <xsl:value-of select="substring(type, 1, string-length(type) - 3)"/>
+          <xsl:text>&amp;&amp;</xsl:text>
+        </xsl:when>
         <xsl:when test="' &amp;' = substring(type, string-length(type) - 1)">
           <xsl:value-of select="substring(type, 1, string-length(type) - 2)"/>
           <xsl:text>&amp;</xsl:text>
