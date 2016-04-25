@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "wsproto_async_echo_peer.h"
-#include "wsproto_sync_echo_peer.h"
+#include "websocket_async_echo_peer.h"
+#include "websocket_sync_echo_peer.h"
 #include "sig_wait.h"
 
 int main()

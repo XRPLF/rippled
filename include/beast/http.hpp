@@ -15,6 +15,7 @@
 #include <beast/http/error.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/message.hpp>
+#include <beast/http/parse_error.hpp>
 #include <beast/http/parser.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/reason.hpp>

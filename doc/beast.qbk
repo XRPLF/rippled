@@ -80,9 +80,9 @@ Beast requires:
 
 [note Tested compilers: msvc-14+, gcc 5+, clang 3.6+]
 
-Most of the library is header-only; however, the HTTP parser used is written
-in C. To link an application that uses Beast, it is necessary to add a single
-.cpp file from beast into your project's build script.
+The library is [*header-only]. It is not necessary to add any .cpp files,
+or to edit your existing build script or project file except to provide
+that the include/ directory for beast is searched for include files.
 
 [endsect]
 
@@ -94,11 +94,6 @@ These usage examples are intended to quickly impress upon readers the
 flavor of the library. They are complete programs which may be built
 and run. Source code and build scripts for these programs may be found
 in the examples directory.
-
-[note
-    To link these programs, please add the file
-    `src/beast_http_nodejs_parser.cpp` to your build script or Makefile
-]
 
 Use HTTP to request the root page from a website and print the response:
 ```
