@@ -60,8 +60,11 @@ project beast
       <threading>multi
       <link>static
       <runtime-link>shared
+      <debug-symbols>on
       <toolset>gcc:<cxxflags>-std=c++11
       <toolset>clang:<cxxflags>-std=c++11
+      <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
+      <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
       <os>LINUX:<define>_XOPEN_SOURCE=600
       <os>LINUX:<define>_GNU_SOURCE=1
       <os>SOLARIS:<define>_XOPEN_SOURCE=500
@@ -78,8 +81,6 @@ project beast
       <os>HPUX:<library>ipv6
       <os>QNXNTO:<library>socket
       <os>HAIKU:<library>network
-      <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
-      <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
     : usage-requirements
         <include>.
     :

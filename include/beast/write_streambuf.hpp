@@ -21,11 +21,15 @@ namespace beast {
     argument into the stream buffer. It is capable of converting the
     following types of arguments:
 
-    * `boost::asio::const_buffer`
-    * `boost::asio::mutable_buffer`
-    * A type for which the call to `boost::asio::buffer()` is defined
-    * A type meeting the requirements of `ConstBufferSequence`
-    * A type meeting the requirements of `MutableBufferSequence`
+    @li  `boost::asio::const_buffer`
+
+    @li `boost::asio::mutable_buffer`
+
+    @li A type for which the call to `boost::asio::buffer()` is defined
+
+    @li A type meeting the requirements of `ConstBufferSequence`
+
+    @li A type meeting the requirements of `MutableBufferSequence`
 
     For all types not listed above, the function will invoke
     `boost::lexical_cast` on the argument in an attempt to convert to
@@ -38,7 +42,7 @@ namespace beast {
 
     @param args A list of one or more arguments to write.
 
-    @throws Any exceptions thrown by `boost::lexical_cast`.
+    @throws unspecified Any exceptions thrown by `boost::lexical_cast`.
 
     @note This function participates in overload resolution only if
     the `streambuf` parameter meets the requirements of Streambuf.

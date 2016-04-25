@@ -33,9 +33,16 @@ interface for the C++ standard library will likely closely resemble the current
 interface of Boost.Asio, it is logical for Beast.HTTP to use Boost.Asio as its
 network transport.
 
+[heading Scope]
+
+The scope of this library is meant to include only the functionality of
+modeling the HTTP message, serializing and deserializing the message, and
+sending and receiving messages on sockets or streams. It is designed to
+be a building block for creating higher level abstractions.
+
 [note The documentation which follows assumes familiarity with
 both Boost.Asio and the HTTP protocol specification described in
-[@https://tools.ietf.org/html/rfc2616 rfc2616] ]
+[@https://tools.ietf.org/html/rfc7230 rfc7230] ]
 
 [endsect]
 

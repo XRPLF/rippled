@@ -38,6 +38,7 @@ class read_op
         message_type& m;
         parser_type p;
         Handler h;
+        bool started = false;
         bool cont;
         int state = 0;
 
@@ -129,6 +130,8 @@ operator()(error_code ec, std::size_t bytes_transferred, bool again)
                     bind_handler(std::move(*this), ec, 0));
                 return;
             }
+            if(used > 0)
+                d.started = true;
             d.sb.consume(used);
             if(d.p.complete())
             {
@@ -156,7 +159,7 @@ operator()(error_code ec, std::size_t bytes_transferred, bool again)
         {
             if(ec == boost::asio::error::eof)
             {
-                if(! d.p.started())
+                if(! d.started)
                 {
                     // call handler
                     d.state = 99;
@@ -219,6 +222,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
     parser<isRequest, Body, Headers> p;
+    bool started = false;
     for(;;)
     {
         auto used =
@@ -226,6 +230,8 @@ read(SyncReadStream& stream, Streambuf& streambuf,
         if(ec)
             return;
         streambuf.consume(used);
+        if(used > 0)
+            started = true;
         if(p.complete())
         {
             m = p.release();
@@ -238,7 +244,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
             return;
         if(ec == boost::asio::error::eof)
         {
-            if(! p.started())
+            if(! started)
                 return;
             // Caller will see eof on next read.
             ec = {};

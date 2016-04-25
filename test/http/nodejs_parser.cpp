@@ -10,7 +10,7 @@
 # pragma warning (disable: 4127) // conditional expression is constant
 # pragma warning (disable: 4244) // integer conversion, possible loss of data
 #endif
-#include "http-parser/http_parser.c"
+#include "nodejs-parser/http_parser.c"
 #ifdef _MSC_VER
 # pragma warning (pop)
 #endif

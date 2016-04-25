@@ -7,7 +7,7 @@
 
 import os ;
 
-unit-test core_tests :
+unit-test core-tests :
     main.cpp
     async_completion.cpp
     basic_streambuf.cpp
@@ -27,9 +27,8 @@ unit-test core_tests :
     detail/empty_base_optimization.cpp
     ;
 
-unit-test http_tests :
+unit-test http-tests :
     main.cpp
-    ../src/beast_http_nodejs_parser.cpp
     http/basic_headers.cpp
     http/basic_parser.cpp
     http/chunk_encode.cpp
@@ -38,21 +37,29 @@ unit-test http_tests :
     http/headers.cpp
     http/message.cpp
     http/method.cpp
+    http/parse_error.cpp
     http/parser.cpp
     http/read.cpp
     http/reason.cpp
     http/resume_context.cpp
     http/rfc2616.cpp
+    http/rfc7230.cpp
     http/streambuf_body.cpp
     http/string_body.cpp
     http/write.cpp
     ;
 
-unit-test websocket_tests :
+unit-test websocket-tests :
     main.cpp
     websocket/error.cpp
     websocket/option.cpp
     websocket/rfc6455.cpp
     websocket/static_string.cpp
     websocket/teardown.cpp
+    ;
+
+exe parser-bench :
+    main.cpp
+    http/nodejs_parser.cpp
+    http/parser_bench.cpp
     ;
