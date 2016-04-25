@@ -640,19 +640,19 @@ Json::Value checkFee (
     int div = Tuning::defaultAutoFillFeeDivisor;
     if (request.isMember (jss::fee_mult_max))
     {
-        if (request[jss::fee_mult_max].isNumeric ())
+        if (request[jss::fee_mult_max].isInt())
         {
             mult = request[jss::fee_mult_max].asInt();
         }
         else
         {
             return RPC::make_error (rpcHIGH_FEE,
-                RPC::expected_field_message (jss::fee_mult_max, "a number"));
+                RPC::expected_field_message (jss::fee_mult_max, "an integer"));
         }
     }
     if (request.isMember(jss::fee_div_max))
     {
-        if (request[jss::fee_div_max].isNumeric())
+        if (request[jss::fee_div_max].isInt())
         {
             div = request[jss::fee_div_max].asInt();
             if (div == 0)
@@ -662,7 +662,7 @@ Json::Value checkFee (
         else
         {
             return RPC::make_error(rpcHIGH_FEE,
-                RPC::expected_field_message(jss::fee_div_max, "a number"));
+                RPC::expected_field_message(jss::fee_div_max, "an integer"));
         }
     }
 
