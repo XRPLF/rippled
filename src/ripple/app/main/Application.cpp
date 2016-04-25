@@ -74,6 +74,7 @@
 #include <ripple/crypto/csprng.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <beast/detail/ci_char_traits.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/optional.hpp>
 #include <fstream>
@@ -931,8 +932,14 @@ private:
     std::shared_ptr<Ledger>
     getLastFullLedger();
 
+    std::shared_ptr<Ledger>
+    loadLedgerFromFile (
+        std::string const& ledgerID);
+
     bool loadOldLedger (
-        std::string const& ledgerID, bool replay, bool isFilename);
+        std::string const& ledgerID,
+        bool replay,
+        bool isFilename);
 };
 
 //------------------------------------------------------------------------------
@@ -1027,12 +1034,15 @@ void ApplicationImp::setup()
                 startUp == Config::LOAD_FILE ||
                 startUp == Config::REPLAY)
     {
-        JLOG(m_journal.info()) << "Loading specified Ledger";
+        JLOG(m_journal.info()) <<
+            "Loading specified Ledger";
 
         if (!loadOldLedger (config_->START_LEDGER,
                             startUp == Config::REPLAY,
                             startUp == Config::LOAD_FILE))
         {
+            JLOG(m_journal.error()) <<
+                "The specified ledger could not be loaded.";
             exitWithCode(-1);
         }
     }
@@ -1289,6 +1299,152 @@ ApplicationImp::getLastFullLedger()
     }
 }
 
+std::shared_ptr<Ledger>
+ApplicationImp::loadLedgerFromFile (
+    std::string const& name)
+{
+    try
+    {
+        std::ifstream ledgerFile (name, std::ios::in);
+
+        if (!ledgerFile)
+        {
+            JLOG(m_journal.fatal()) <<
+                "Unable to open file '" << name << "'";
+            return nullptr;
+        }
+
+        Json::Reader reader;
+        Json::Value jLedger;
+
+        if (!reader.parse (ledgerFile, jLedger))
+        {
+            JLOG(m_journal.fatal()) <<
+                "Unable to parse ledger JSON";
+            return nullptr;
+        }
+
+        std::reference_wrapper<Json::Value> ledger (jLedger);
+
+         // accept a wrapped ledger
+         if (ledger.get().isMember  ("result"))
+            ledger = ledger.get()["result"];
+
+         if (ledger.get().isMember ("ledger"))
+            ledger = ledger.get()["ledger"];
+
+        std::uint32_t seq = 1;
+        auto closeTime = timeKeeper().closeTime();
+        using namespace std::chrono_literals;
+        auto closeTimeResolution = 30s;
+        bool closeTimeEstimated = false;
+        std::uint64_t totalDrops = 0;
+
+        if (ledger.get().isMember ("accountState"))
+        {
+            if (ledger.get().isMember (jss::ledger_index))
+            {
+                seq = ledger.get()[jss::ledger_index].asUInt();
+            }
+
+            if (ledger.get().isMember ("close_time"))
+            {
+                using tp = NetClock::time_point;
+                using d = tp::duration;
+                closeTime = tp{d{ledger.get()["close_time"].asUInt()}};
+            }
+            if (ledger.get().isMember ("close_time_resolution"))
+            {
+                closeTimeResolution = std::chrono::seconds{
+                    ledger.get()["close_time_resolution"].asUInt()};
+            }
+            if (ledger.get().isMember ("close_time_estimated"))
+            {
+                closeTimeEstimated =
+                    ledger.get()["close_time_estimated"].asBool();
+            }
+            if (ledger.get().isMember ("total_coins"))
+            {
+                totalDrops =
+                    beast::lexicalCastThrow<std::uint64_t>
+                        (ledger.get()["total_coins"].asString());
+            }
+
+            ledger = ledger.get()["accountState"];
+        }
+
+        if (!ledger.get().isArray ())
+        {
+            JLOG(m_journal.fatal())
+               << "State nodes must be an array";
+            return nullptr;
+        }
+
+        auto loadLedger = std::make_shared<Ledger> (
+            seq, closeTime, *config_, family());
+        loadLedger->setTotalDrops(totalDrops);
+
+        for (Json::UInt index = 0; index < ledger.get().size(); ++index)
+        {
+            Json::Value& entry = ledger.get()[index];
+
+            if (!entry.isObject())
+            {
+                JLOG(m_journal.fatal())
+                    << "Invalid entry in ledger";
+                return nullptr;
+            }
+
+            uint256 uIndex;
+
+            if (!uIndex.SetHex (entry[jss::index].asString()))
+            {
+                JLOG(m_journal.fatal())
+                    << "Invalid entry in ledger";
+                return nullptr;
+            }
+
+            entry.removeMember (jss::index);
+
+            STParsedJSONObject stp ("sle", ledger.get()[index]);
+
+            if (!stp.object || uIndex.isZero ())
+            {
+                JLOG(m_journal.fatal())
+                   << "Invalid entry in ledger";
+                return nullptr;
+            }
+
+            // VFALCO TODO This is the only place that
+            //             constructor is used, try to remove it
+            STLedgerEntry sle (*stp.object, uIndex);
+
+            if (! loadLedger->addSLE (sle))
+            {
+                JLOG(m_journal.fatal())
+                   << "Couldn't add serialized ledger: "
+                   << uIndex;
+                return nullptr;
+            }
+        }
+
+        loadLedger->stateMap().flushDirty (
+            hotACCOUNT_NODE, loadLedger->info().seq);
+
+        loadLedger->setAccepted (closeTime,
+            closeTimeResolution, ! closeTimeEstimated,
+               *config_);
+
+        return loadLedger;
+    }
+    catch (std::exception const& x)
+    {
+        JLOG (m_journal.fatal()) <<
+            "Ledger contains invalid data: " << x.what();
+        return nullptr;
+    }
+}
+
 bool ApplicationImp::loadOldLedger (
     std::string const& ledgerID, bool replay, bool isFileName)
 {
@@ -1298,147 +1454,43 @@ bool ApplicationImp::loadOldLedger (
 
         if (isFileName)
         {
-            std::ifstream ledgerFile (ledgerID.c_str (), std::ios::in);
-            if (!ledgerFile)
-            {
-                JLOG(m_journal.fatal()) << "Unable to open file";
-            }
-            else
-            {
-                 Json::Reader reader;
-                 Json::Value jLedger;
-                 if (!reader.parse (ledgerFile, jLedger))
-                 {
-                     JLOG(m_journal.fatal()) << "Unable to parse ledger JSON";
-                 }
-                 else
-                 {
-                     std::reference_wrapper<Json::Value> ledger (jLedger);
-
-                     // accept a wrapped ledger
-                     if (ledger.get().isMember  ("result"))
-                         ledger = ledger.get()["result"];
-                     if (ledger.get().isMember ("ledger"))
-                         ledger = ledger.get()["ledger"];
-
-
-                     std::uint32_t seq = 1;
-                     auto closeTime = timeKeeper().closeTime();
-                     using namespace std::chrono_literals;
-                     auto closeTimeResolution = 30s;
-                     bool closeTimeEstimated = false;
-                     std::uint64_t totalDrops = 0;
-
-                     if (ledger.get().isMember ("accountState"))
-                     {
-                          if (ledger.get().isMember (jss::ledger_index))
-                          {
-                              seq = ledger.get()[jss::ledger_index].asUInt();
-                          }
-                          if (ledger.get().isMember ("close_time"))
-                          {
-                              using tp = NetClock::time_point;
-                              using d = tp::duration;
-                              closeTime = tp{d{ledger.get()["close_time"].asUInt()}};
-                          }
-                          if (ledger.get().isMember ("close_time_resolution"))
-                          {
-                              closeTimeResolution = std::chrono::seconds{
-                                  ledger.get()["close_time_resolution"].asUInt()};
-                          }
-                          if (ledger.get().isMember ("close_time_estimated"))
-                          {
-                              closeTimeEstimated =
-                                  ledger.get()["close_time_estimated"].asBool();
-                          }
-                          if (ledger.get().isMember ("total_coins"))
-                          {
-                              totalDrops =
-                                beast::lexicalCastThrow<std::uint64_t>
-                                    (ledger.get()["total_coins"].asString());
-                          }
-                         ledger = ledger.get()["accountState"];
-                     }
-                     if (!ledger.get().isArray ())
-                     {
-                         JLOG(m_journal.fatal())
-                            << "State nodes must be an array";
-                     }
-                     else
-                     {
-                         loadLedger = std::make_shared<Ledger> (seq, closeTime, *config_, family());
-                         loadLedger->setTotalDrops(totalDrops);
-
-                         for (Json::UInt index = 0; index < ledger.get().size(); ++index)
-                         {
-                             Json::Value& entry = ledger.get()[index];
-
-                             uint256 uIndex;
-                             uIndex.SetHex (entry[jss::index].asString());
-                             entry.removeMember (jss::index);
-
-                             STParsedJSONObject stp ("sle", ledger.get()[index]);
-
-                             if (stp.object && (uIndex.isNonZero()))
-                             {
-                                 // VFALCO TODO This is the only place that
-                                 //             constructor is used, try to remove it
-                                 STLedgerEntry sle (*stp.object, uIndex);
-                                 bool ok = loadLedger->addSLE (sle);
-                                 if (!ok)
-                                 {
-                                     JLOG(m_journal.warn())
-                                        << "Couldn't add serialized ledger: "
-                                        << uIndex;
-                                 }
-                             }
-                             else
-                             {
-                                 JLOG(m_journal.warn())
-                                    << "Invalid entry in ledger";
-                             }
-                         }
-
-                         loadLedger->stateMap().flushDirty
-                             (hotACCOUNT_NODE, loadLedger->info().seq);
-                         loadLedger->setAccepted (closeTime,
-                             closeTimeResolution, ! closeTimeEstimated,
-                                *config_);
-                     }
-                 }
-            }
-        }
-        else if (ledgerID.empty () || (ledgerID == "latest"))
-        {
-            loadLedger = getLastFullLedger ();
+            if (!ledgerID.empty())
+                loadLedger = loadLedgerFromFile (ledgerID);
         }
         else if (ledgerID.length () == 64)
         {
-            // by hash
             uint256 hash;
-            hash.SetHex (ledgerID);
-            loadLedger = loadByHash (hash, *this);
 
-            if (!loadLedger)
+            if (hash.SetHex (ledgerID))
             {
-                // Try to build the ledger from the back end
-                auto il = std::make_shared <InboundLedger> (
-                    *this, hash, 0, InboundLedger::fcGENERIC, stopwatch());
-                if (il->checkLocal ())
-                    loadLedger = il->getLedger ();
-            }
+                loadLedger = loadByHash (hash, *this);
 
+                if (!loadLedger)
+                {
+                    // Try to build the ledger from the back end
+                    auto il = std::make_shared <InboundLedger> (
+                        *this, hash, 0, InboundLedger::fcGENERIC,
+                        stopwatch());
+                    if (il->checkLocal ())
+                        loadLedger = il->getLedger ();
+                }
+            }
         }
-        else // assume by sequence
-            loadLedger = loadByIndex (
-                beast::lexicalCastThrow <std::uint32_t> (ledgerID), *this);
+        else if (ledgerID.empty () || beast::detail::ci_equal(ledgerID, "latest"))
+        {
+            loadLedger = getLastFullLedger ();
+        }
+        else
+        {
+            // assume by sequence
+            std::uint32_t index;
+
+            if (beast::lexicalCastChecked (index, ledgerID))
+                loadLedger = loadByIndex (index, *this);
+        }
 
         if (!loadLedger)
-        {
-            JLOG(m_journal.fatal()) << "No Ledger found from ledgerID="
-                                  << ledgerID << std::endl;
             return false;
-        }
 
         if (replay)
         {
@@ -1456,8 +1508,9 @@ bool ApplicationImp::loadOldLedger (
 
                 // Try to build the ledger from the back end
                 auto il = std::make_shared <InboundLedger> (
-                    *this, replayLedger->info().parentHash, 0, InboundLedger::fcGENERIC,
-                    stopwatch());
+                    *this, replayLedger->info().parentHash,
+                    0, InboundLedger::fcGENERIC, stopwatch());
+
                 if (il->checkLocal ())
                     loadLedger = il->getLedger ();
 
@@ -1544,7 +1597,8 @@ bool ApplicationImp::loadOldLedger (
     }
     catch (SHAMapMissingNode&)
     {
-        JLOG(m_journal.fatal()) << "Data is missing for selected ledger";
+        JLOG(m_journal.fatal()) <<
+            "Data is missing for selected ledger";
         return false;
     }
     catch (boost::bad_lexical_cast&)
