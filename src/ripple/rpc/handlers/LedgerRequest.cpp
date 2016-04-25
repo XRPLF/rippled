@@ -57,7 +57,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
     else
     {
         auto const& jsonIndex = context.params[jss::ledger_index];
-        if (!jsonIndex.isNumeric ())
+        if (!jsonIndex.isInt())
             return RPC::invalid_field_error (jss::ledger_index);
 
         // We need a validated ledger to get the hash from the sequence

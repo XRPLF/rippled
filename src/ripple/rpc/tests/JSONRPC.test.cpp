@@ -222,8 +222,8 @@ R"({
     }
 })",
 {
-"Invalid field 'fee_mult_max', not a number.",
-"Invalid field 'fee_mult_max', not a number.",
+"Invalid field 'fee_mult_max', not an integer.",
+"Invalid field 'fee_mult_max', not an integer.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
@@ -243,8 +243,8 @@ R"({
     }
 })",
 {
-"Invalid field 'fee_div_max', not a number.",
-"Invalid field 'fee_div_max', not a number.",
+"Invalid field 'fee_div_max', not an integer.",
+"Invalid field 'fee_div_max', not an integer.",
 "Missing field 'tx_json.Fee'.",
 "Missing field 'tx_json.SigningPubKey'."}},
 
