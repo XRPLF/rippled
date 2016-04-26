@@ -1627,10 +1627,8 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         jvObj [jss::flags]                 = val->getFlags();
         jvObj [jss::signing_time]          = *(*val)[~sfSigningTime];
 
-        auto const seq = *(*val)[~sfLedgerSequence];
-
-        if (seq != 0)
-            jvObj [jss::ledger_index]      = to_string (seq);
+        if (auto const seq = (*val)[~sfLedgerSequence])
+            jvObj [jss::ledger_index] = to_string (*seq);
 
         if (val->isFieldPresent (sfAmendments))
         {
