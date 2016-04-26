@@ -26,6 +26,8 @@
 
 namespace ripple {
 
+using namespace std::chrono_literals;
+
 class InboundLedger;
 
 // VFALCO NOTE The txnData constructor parameter is a code smell.
@@ -35,7 +37,8 @@ class InboundLedger;
 //             derived class. Why not just make the timer callback
 //             function pure virtual?
 //
-PeerSet::PeerSet (Application& app, uint256 const& hash, int interval, bool txnData,
+PeerSet::PeerSet (Application& app, uint256 const& hash,
+    std::chrono::milliseconds interval, bool txnData,
     clock_type& clock, beast::Journal journal)
     : app_ (app)
     , m_journal (journal)
@@ -50,7 +53,7 @@ PeerSet::PeerSet (Application& app, uint256 const& hash, int interval, bool txnD
     , mTimer (app_.getIOService ())
 {
     mLastAction = m_clock.now();
-    assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
+    assert ((mTimerInterval > 10ms) && (mTimerInterval < 30s));
 }
 
 PeerSet::~PeerSet ()
@@ -70,7 +73,7 @@ bool PeerSet::insert (Peer::ptr const& ptr)
 
 void PeerSet::setTimer ()
 {
-    mTimer.expires_from_now (boost::posix_time::milliseconds (mTimerInterval));
+    mTimer.expires_from_now(mTimerInterval);
     mTimer.async_wait (std::bind (&PeerSet::timerEntry, pmDowncast (),
                                   beast::asio::placeholders::error, m_journal));
 }

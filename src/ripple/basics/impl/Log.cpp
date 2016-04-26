@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <boost/algorithm/string.hpp>
-// VFALCO TODO Use std::chrono
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <cassert>
+#include <iostream>
 #include <fstream>
 
 namespace ripple {
@@ -311,8 +311,7 @@ Logs::format (std::string& output, std::string const& message,
 {
     output.reserve (message.size() + partition.size() + 100);
 
-    output = boost::posix_time::to_simple_string (
-        boost::posix_time::second_clock::universal_time ());
+    output = to_string(std::chrono::system_clock::now());
 
     output += " ";
     if (! partition.empty ())

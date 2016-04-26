@@ -21,12 +21,10 @@
 #define RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/Time.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/json/Object.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace ripple {
 

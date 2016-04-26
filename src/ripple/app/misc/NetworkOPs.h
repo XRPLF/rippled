@@ -28,7 +28,6 @@
 #include <ripple/net/InfoSub.h>
 #include <memory>
 #include <ripple/core/Stoppable.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <deque>
 #include <tuple>
 

@@ -1467,8 +1467,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\Time.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ToString.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\UnorderedContainers.h">

@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 #define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/config.hpp>
 #include <chrono>
@@ -43,7 +43,7 @@ private:
     std::size_t m_count;
     duration const m_period;
     boost::asio::io_service& m_ios;
-    boost::asio::deadline_timer m_timer;
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     bool m_cancel;
 
 public:
@@ -219,11 +219,7 @@ private:
                 }
                 else
                 {
-                    boost::posix_time::microseconds mms (
-                        std::chrono::duration_cast <
-                            std::chrono::microseconds> (
-                                when - now).count ());
-                    m_probe->m_timer.expires_from_now (mms);
+                    m_probe->m_timer.expires_from_now(when - now);
                     m_probe->m_timer.async_wait (sample_op <Handler> (
                         m_handler, now, m_repeat, m_probe));
                 }

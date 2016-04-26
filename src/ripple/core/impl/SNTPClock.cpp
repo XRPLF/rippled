@@ -40,20 +40,21 @@ namespace ripple {
 static uint8_t SNTPQueryData[48] =
 { 0x1B, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+using namespace std::chrono_literals;
 // NTP query frequency - 4 minutes
-#define NTP_QUERY_FREQUENCY     (4 * 60)
+auto constexpr NTP_QUERY_FREQUENCY = 4min;
 
 // NTP minimum interval to query same servers - 3 minutes
-#define NTP_MIN_QUERY           (3 * 60)
+auto constexpr  NTP_MIN_QUERY = 3min;
 
 // NTP sample window (should be odd)
 #define NTP_SAMPLE_WINDOW       9
 
 // NTP timestamp constant
-#define NTP_UNIX_OFFSET         0x83AA7E80
+auto constexpr NTP_UNIX_OFFSET = 0x83AA7E80s;
 
 // NTP timestamp validity
-#define NTP_TIMESTAMP_VALID     ((NTP_QUERY_FREQUENCY + NTP_MIN_QUERY) * 2)
+auto constexpr NTP_TIMESTAMP_VALID = (NTP_QUERY_FREQUENCY + NTP_MIN_QUERY) * 2;
 
 // SNTP packet offsets
 #define NTP_OFF_INFO            0
@@ -73,13 +74,18 @@ class SNTPClientImp
     : public SNTPClock
 {
 private:
+    template <class Duration>
+        using sys_time = std::chrono::time_point<clock_type, Duration>;
+
+    using sys_seconds = sys_time<std::chrono::seconds>;
+
     struct Query
     {
         bool replied;
-        time_t sent; // VFALCO time_t, really?
+        sys_seconds sent;
         std::uint32_t nonce;
 
-        Query (time_t j = time_t(-1))
+        Query (sys_seconds j = sys_seconds::max())
             : replied (false)
             , sent (j)
         {
@@ -95,12 +101,12 @@ private:
 
     std::map <boost::asio::ip::udp::endpoint, Query> queries_;
     boost::asio::ip::udp::socket socket_;
-    boost::asio::deadline_timer timer_;
+    boost::asio::basic_waitable_timer<std::chrono::system_clock> timer_;
     boost::asio::ip::udp::resolver resolver_;
-    std::vector<std::pair<std::string, time_t>> servers_;
-    int offset_;
-    time_t lastUpdate_;
-    std::deque<int> offsets_;
+    std::vector<std::pair<std::string, sys_seconds>> servers_;
+    std::chrono::seconds offset_;
+    sys_seconds lastUpdate_;
+    std::deque<std::chrono::seconds> offsets_;
     std::vector<uint8_t> buf_;
     boost::asio::ip::udp::endpoint ep_;
 
@@ -115,7 +121,7 @@ public:
         , timer_ (io_service_)
         , resolver_ (io_service_)
         , offset_ (0)
-        , lastUpdate_ (time_t(-1))
+        , lastUpdate_ (sys_seconds::max())
         , buf_ (256)
     {
     }
@@ -150,7 +156,7 @@ public:
             std::lock_guard<std::mutex> lock (mutex_);
             for (auto const& item : servers)
                 servers_.emplace_back(
-                    item, time_t(-1));
+                    item, sys_seconds::max());
         }
         queryAll();
 
@@ -161,8 +167,7 @@ public:
                 &SNTPClientImp::onRead, this,
                     beast::asio::placeholders::error,
                         beast::asio::placeholders::bytes_transferred));
-        timer_.expires_from_now(
-            boost::posix_time::seconds(NTP_QUERY_FREQUENCY));
+        timer_.expires_from_now(NTP_QUERY_FREQUENCY);
         timer_.async_wait(std::bind(
             &SNTPClientImp::onTimer, this,
                 beast::asio::placeholders::error));
@@ -177,18 +182,20 @@ public:
     now() const override
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        auto const when = clock_type::now();
-        if ((lastUpdate_ == (time_t)-1) ||
-                ((lastUpdate_ + NTP_TIMESTAMP_VALID) < time(nullptr)))
+        using namespace std::chrono;
+        auto const when = time_point_cast<seconds>(clock_type::now());
+        if ((lastUpdate_ == sys_seconds::max()) ||
+                ((lastUpdate_ + NTP_TIMESTAMP_VALID) <
+                  time_point_cast<seconds>(clock_type::now())))
             return when;
-        return when + std::chrono::seconds(offset_);
+        return when + offset_;
     }
 
     duration
     offset() const override
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        return std::chrono::seconds(offset_);
+        return offset_;
     }
 
     //--------------------------------------------------------------------------
@@ -213,8 +220,7 @@ public:
         }
 
         doQuery ();
-        timer_.expires_from_now(
-            boost::posix_time::seconds (NTP_QUERY_FREQUENCY));
+        timer_.expires_from_now(NTP_QUERY_FREQUENCY);
         timer_.async_wait(std::bind(
             &SNTPClientImp::onTimer, this,
                 beast::asio::placeholders::error));
@@ -224,6 +230,7 @@ public:
     onRead (error_code const& ec, std::size_t bytes_xferd)
     {
         using namespace boost::asio;
+        using namespace std::chrono;
         if (ec == error::operation_aborted)
             return;
 
@@ -253,7 +260,7 @@ public:
             {
                 query->second.replied = true;
 
-                if (time (nullptr) > (query->second.sent + 1))
+                if (time_point_cast<seconds>(clock_type::now()) > (query->second.sent + 1s))
                 {
                     JLOG(j_.warn()) <<
                         "SNTP: Late response from " << ep_;
@@ -289,7 +296,7 @@ public:
     void addServer (std::string const& server)
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        servers_.push_back (std::make_pair (server, time_t(-1)));
+        servers_.push_back (std::make_pair (server, sys_seconds::max()));
     }
 
     void queryAll ()
@@ -302,11 +309,12 @@ public:
     bool doQuery ()
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        std::vector< std::pair<std::string, time_t> >::iterator best = servers_.end ();
+        auto best = servers_.end ();
 
         for (auto iter = servers_.begin (), end = best;
                 iter != end; ++iter)
-            if ((best == end) || (iter->second == time_t(-1)) || (iter->second < best->second))
+            if ((best == end) || (iter->second == sys_seconds::max()) ||
+                                 (iter->second < best->second))
                 best = iter;
 
         if (best == servers_.end ())
@@ -316,9 +324,10 @@ public:
             return false;
         }
 
-        time_t now = time (nullptr);
+        using namespace std::chrono;
+        auto now = time_point_cast<seconds>(clock_type::now());
 
-        if ((best->second != time_t(-1)) && ((best->second + NTP_MIN_QUERY) >= now))
+        if ((best->second != sys_seconds::max()) && ((best->second + NTP_MIN_QUERY) >= now))
         {
             JLOG(j_.trace()) <<
                 "SNTP: All servers recently queried";
@@ -366,9 +375,10 @@ public:
         {
             std::lock_guard<std::mutex> lock (mutex_);
             Query& query = queries_[*sel];
-            time_t now = time (nullptr);
+            using namespace std::chrono;
+            auto now = time_point_cast<seconds>(clock_type::now());
 
-            if ((query.sent == now) || ((query.sent + 1) == now))
+            if ((query.sent == now) || ((query.sent + 1s) == now))
             {
                 // This can happen if the same IP address is reached through multiple names
                 JLOG(j_.trace()) <<
@@ -379,7 +389,11 @@ public:
             query.replied = false;
             query.sent = now;
             query.nonce = rand_int<std::uint32_t>();
-            reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
+            // The following line of code will overflow at 2036-02-07 06:28:16 UTC
+            //   due to the 32 bit cast.
+            reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] =
+                static_cast<std::uint32_t>((time_point_cast<seconds>(clock_type::now()) +
+                                            NTP_UNIX_OFFSET).time_since_epoch().count());
             reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.nonce;
             socket_.async_send_to(buffer(SNTPQueryData, 48),
                 *sel, std::bind (&SNTPClientImp::onSend, this,
@@ -403,11 +417,12 @@ public:
 
     void processReply ()
     {
+        using namespace std::chrono;
         assert (buf_.size () >= 48);
         std::uint32_t* recvBuffer = reinterpret_cast<std::uint32_t*> (&buf_.front ());
 
         unsigned info = ntohl (recvBuffer[NTP_OFF_INFO]);
-        int64_t timev = ntohl (recvBuffer[NTP_OFF_RECVTS_INT]);
+        auto timev = seconds{ntohl(recvBuffer[NTP_OFF_RECVTS_INT])};
         unsigned stratum = (info >> 16) & 0xff;
 
         if ((info >> 30) == 3)
@@ -424,8 +439,9 @@ public:
             return;
         }
 
-        std::int64_t now = static_cast<int> (time (nullptr));
-        timev -= now;
+        using namespace std::chrono;
+        auto now = time_point_cast<seconds>(clock_type::now());
+        timev -= now.time_since_epoch();
         timev -= NTP_UNIX_OFFSET;
 
         // add offset to list, replacing oldest one if appropriate
@@ -448,13 +464,13 @@ public:
 
         // debounce: small corrections likely
         //           do more harm than good
-        if ((offset_ == -1) || (offset_ == 1))
-            offset_ = 0;
+        if ((offset_ == -1s) || (offset_ == 1s))
+            offset_ = 0s;
 
-        if (timev || offset_)
+        if (timev != 0s || offset_ != 0s)
         {
-            JLOG(j_.trace()) << "SNTP: Offset is " << timev <<
-                ", new system offset is " << offset_;
+            JLOG(j_.trace()) << "SNTP: Offset is " << timev.count() <<
+                ", new system offset is " << offset_.count();
         }
     }
 };

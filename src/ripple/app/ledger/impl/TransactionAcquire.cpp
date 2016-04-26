@@ -30,11 +30,13 @@
 
 namespace ripple {
 
+using namespace std::chrono_literals;
+
+// Timeout interval in milliseconds
+auto constexpr TX_ACQUIRE_TIMEOUT = 250ms;
+
 enum
 {
-    // Timeout interval in milliseconds
-    TX_ACQUIRE_TIMEOUT = 250,
-
     NORM_TIMEOUTS = 4,
     MAX_TIMEOUTS = 20,
 };

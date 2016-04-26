@@ -113,7 +113,7 @@ private:
     std::deque <std::string> m_receiveQueue;
     NetworkOPs& m_netOPs;
     boost::asio::io_service& m_io_service;
-    boost::asio::deadline_timer m_pingTimer;
+    boost::asio::basic_waitable_timer<std::chrono::system_clock> m_pingTimer;
 
     bool m_sentPing = false;
     bool m_receiveQueueRunning = false;
@@ -122,7 +122,7 @@ private:
     handler_type& m_handler;
     weak_connection_ptr m_connection;
 
-    int pingFreq_;
+    std::chrono::seconds pingFreq_;
     beast::Journal j_;
 };
 
@@ -155,7 +155,7 @@ ConnectionImpl <WebSocket>::ConnectionImpl (
         , j_ (app.journal ("ConnectionImpl"))
 {
     // VFALCO Disabled since it might cause hangs
-    pingFreq_ = 0;
+    pingFreq_ = std::chrono::seconds{0};
 
     if (! m_forwardedFor.empty() || ! m_user.empty())
     {

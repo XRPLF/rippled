@@ -74,8 +74,7 @@ void fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 
     if (info.closeTime != NetClock::time_point{})
     {
-        json[jss::close_time_human] = boost::posix_time::to_simple_string (
-            ptFromSeconds (info.closeTime.time_since_epoch().count()));
+        json[jss::close_time_human] = to_string(info.closeTime);
         if (! getCloseAgree(info))
             json[jss::close_time_estimated] = true;
     }

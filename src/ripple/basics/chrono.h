@@ -25,6 +25,7 @@
 #include <ripple/beast/clock/manual_clock.h>
 #include <chrono>
 #include <cstdint>
+#include <string>
 
 namespace ripple {
 
@@ -54,6 +55,9 @@ public:
 
     static bool const is_steady = false;
 };
+
+std::string to_string(NetClock::time_point tp);
+std::string to_string(std::chrono::system_clock::time_point tp);
 
 /** A clock for measuring elapsed time.
 
