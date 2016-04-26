@@ -1624,10 +1624,8 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
 
-        auto const seq = *(*val)[~sfLedgerSequence];
-
-        if (seq != 0)
-            jvObj [jss::ledger_index]      = to_string (seq);
+        if (auto const seq = (*val)[~sfLedgerSequence])
+            jvObj [jss::ledger_index] = to_string (*seq);
 
         for (auto i = mSubValidations.begin (); i != mSubValidations.end (); )
         {
