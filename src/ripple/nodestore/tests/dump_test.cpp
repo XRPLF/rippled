@@ -28,6 +28,7 @@
 #include <ripple/beast/unit_test.h>
 #include <beast/http/rfc2616.hpp>
 #include <beast/detail/ci_char_traits.hpp>
+#include <boost/endian/buffers.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <array>
@@ -119,22 +120,16 @@ public:
             log <<
                 "Usage:\n" <<
                 "--unittest-arg=path=<path>[,every=<number>]\n" <<
-                "path:   NuDB path to database (without the .dat)\n" <<
-                "every:  Intermediate report every # items (0 to disable)\n";
+                "path:   NuDB path to database (without the .dat)\n";
             return;
         }
 
         auto const path = args.at("path");
 
-        std::size_t const every =
-            args.find("every") != args.end() ?
-                std::stoull(args.at("every")) :
-                    1'000'000;
-
         auto const dp = path + ".dat";
         auto const kp = path + ".key";
 
-        log << "path: " << path << ", every=" << every;
+        log << "path: " << path;
 
         std::size_t n = 0;
         buckets bs;
@@ -175,6 +170,20 @@ public:
                     }
                     ++b->count;
                     b->bytes += data_size;
+                    if(p[8] == hotLEDGER)
+                    {
+                        // LWR
+                        if(data_size >= 9+4+4 &&
+                            p[9] == 'L' &&
+                            p[10] == 'W' &&
+                            p[11] == 'R' &&
+                            p[12] == 0)
+                        {
+                            auto const ledgerIndex = reinterpret_cast<
+                                boost::endian::big_uint32_buf_t const*>(&p[13])->value();
+                            log << ledgerIndex;
+                        }
+                    }
                 }
                 if(data_size >= 11)
                 {
@@ -185,11 +194,6 @@ public:
                     b.bytes += data_size;
                 }
                 ++n;
-                if(n > every)
-                {
-                    report();
-                    n = 0;
-                }
                 return true;
             });
         report();
@@ -200,3 +204,4 @@ BEAST_DEFINE_TESTSUITE(dump,NodeStore,ripple);
 
 } // NodeStore
 } // rippled
+//--unittest=dump --unittest-arg=path=E:\\ripple\config\nudb\nudb
