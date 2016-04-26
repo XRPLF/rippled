@@ -50,7 +50,6 @@ unit-test http_tests :
 
 unit-test websocket_tests :
     main.cpp
-    ../src/beast_http_nodejs_parser.cpp
     websocket/error.cpp
     websocket/option.cpp
     websocket/rfc6455.cpp

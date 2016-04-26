@@ -10,7 +10,6 @@
 
 #include <beast/http/chunk_encode.hpp>
 #include <beast/http/resume_context.hpp>
-#include <beast/http/detail/writes.hpp>
 #include <beast/http/detail/write_preparation.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/bind_handler.hpp>

@@ -9,10 +9,11 @@
 #define BEAST_HTTP_IMPL_MESSAGE_IPP
 
 #include <beast/http/chunk_encode.hpp>
-#include <beast/http/detail/writes.hpp>
-#include <beast/http/detail/write_preparation.hpp>
 #include <beast/http/resume_context.hpp>
 #include <beast/http/rfc2616.hpp>
+#include <beast/write_streambuf.hpp>
+#include <beast/type_check.hpp>
+#include <beast/http/detail/write_preparation.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
@@ -54,23 +55,23 @@ message<isRequest, Body, Headers>::
 write_firstline(Streambuf& streambuf,
     std::true_type) const
 {
-    detail::write(streambuf, to_string(this->method));
-    detail::write(streambuf, " ");
-    detail::write(streambuf, this->url);
+    write(streambuf, to_string(this->method));
+    write(streambuf, " ");
+    write(streambuf, this->url);
     switch(version)
     {
     case 10:
-        detail::write(streambuf, " HTTP/1.0\r\n");
+        write(streambuf, " HTTP/1.0\r\n");
         break;
     case 11:
-        detail::write(streambuf, " HTTP/1.1\r\n");
+        write(streambuf, " HTTP/1.1\r\n");
         break;
     default:
-        detail::write(streambuf, " HTTP/");
-        detail::write(streambuf, version / 10);
-        detail::write(streambuf, ".");
-        detail::write(streambuf, version % 10);
-        detail::write(streambuf, "\r\n");
+        write(streambuf, " HTTP/");
+        write(streambuf, version / 10);
+        write(streambuf, ".");
+        write(streambuf, version % 10);
+        write(streambuf, "\r\n");
         break;
     }
 }
@@ -85,23 +86,23 @@ write_firstline(Streambuf& streambuf,
     switch(version)
     {
     case 10:
-        detail::write(streambuf, "HTTP/1.0 ");
+        write(streambuf, "HTTP/1.0 ");
         break;
     case 11:
-        detail::write(streambuf, "HTTP/1.1 ");
+        write(streambuf, "HTTP/1.1 ");
         break;
     default:
-        detail::write(streambuf, " HTTP/");
-        detail::write(streambuf, version / 10);
-        detail::write(streambuf, ".");
-        detail::write(streambuf, version % 10);
-        detail::write(streambuf, " ");
+        write(streambuf, " HTTP/");
+        write(streambuf, version / 10);
+        write(streambuf, ".");
+        write(streambuf, version % 10);
+        write(streambuf, " ");
         break;
     }
-    detail::write(streambuf, this->status);
-    detail::write(streambuf, " ");
-    detail::write(streambuf, this->reason);
-    detail::write(streambuf, "\r\n");
+    write(streambuf, this->status);
+    write(streambuf, " ");
+    write(streambuf, this->reason);
+    write(streambuf, "\r\n");
 }
 
 namespace detail {
@@ -273,10 +274,10 @@ write_fields(Streambuf& streambuf, FieldSequence const& fields)
     //    "FieldSequence requirements not met");
     for(auto const& field : fields)
     {
-        detail::write(streambuf, field.name());
-        detail::write(streambuf, ": ");
-        detail::write(streambuf, field.value());
-        detail::write(streambuf, "\r\n");
+        write(streambuf, field.name());
+        write(streambuf, ": ");
+        write(streambuf, field.value());
+        write(streambuf, "\r\n");
     }
 }
 
