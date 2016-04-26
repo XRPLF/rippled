@@ -1307,7 +1307,8 @@ void fromNetwork (
     // Send request
 
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
-    const int RPC_NOTIFY_SECONDS (600);
+    using namespace std::chrono_literals;
+    auto constexpr RPC_NOTIFY = 10min;
 
     auto j = logs.journal ("HTTPClient");
 
@@ -1323,7 +1324,7 @@ void fromNetwork (
             mapRequestHeaders,
             strPath, std::placeholders::_1, std::placeholders::_2, j),
         RPC_REPLY_MAX_BYTES,
-        boost::posix_time::seconds (RPC_NOTIFY_SECONDS),
+        RPC_NOTIFY,
         std::bind (&RPCCallImp::onResponse, callbackFuncP,
                    std::placeholders::_1, std::placeholders::_2,
                    std::placeholders::_3, j),

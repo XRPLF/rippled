@@ -23,7 +23,7 @@
 #include <ripple/core/Config.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <chrono>
 
 namespace ripple {
 
@@ -46,7 +46,7 @@ public:
         const unsigned short port,
         std::string const& strPath,
         std::size_t responseMax,
-        boost::posix_time::time_duration timeout,
+        std::chrono::seconds timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
         Logs& l);
 
@@ -57,7 +57,7 @@ public:
         const unsigned short port,
         std::string const& strPath,
         std::size_t responseMax,
-        boost::posix_time::time_duration timeout,
+        std::chrono::seconds timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
         Logs& l);
 
@@ -68,7 +68,7 @@ public:
         const unsigned short port,
         std::function <void (boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,
-        boost::posix_time::time_duration timeout,
+        std::chrono::seconds timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
         Logs& l);
 };

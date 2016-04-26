@@ -26,7 +26,7 @@
 #include <ripple/overlay/Peer.h>
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/Journal.h>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
 #include <mutex>
 
 namespace ripple {
@@ -119,8 +119,8 @@ private:
 protected:
     using ScopedLockType = std::unique_lock <std::recursive_mutex>;
 
-    PeerSet (Application& app, uint256 const& hash, int interval, bool txnData,
-        clock_type& clock, beast::Journal journal);
+    PeerSet (Application& app, uint256 const& hash, std::chrono::milliseconds interval,
+        bool txnData, clock_type& clock, beast::Journal journal);
 
     virtual ~PeerSet() = 0;
 
@@ -162,7 +162,7 @@ protected:
     std::recursive_mutex mLock;
 
     uint256 mHash;
-    int mTimerInterval;
+    std::chrono::milliseconds mTimerInterval;
     int mTimeouts;
     bool mComplete;
     bool mFailed;
@@ -171,7 +171,7 @@ protected:
     bool mProgress;
 
     // VFALCO TODO move the responsibility for the timer to a higher level
-    boost::asio::deadline_timer mTimer;
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
     using PeerIdentifier = Peer::id_t;

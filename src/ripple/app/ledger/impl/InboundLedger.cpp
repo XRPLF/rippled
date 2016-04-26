@@ -37,6 +37,8 @@
 
 namespace ripple {
 
+using namespace std::chrono_literals;
+
 enum
 {
     // Number of peers to start with
@@ -44,9 +46,6 @@ enum
 
     // Number of peers to add on a timeout
     ,peerCountAdd = 2
-
-    // millisecond for each ledger timeout
-    ,ledgerAcquireTimeoutMillis = 2500
 
     // how many timeouts before we giveup
     ,ledgerTimeoutRetriesMax = 10
@@ -64,9 +63,12 @@ enum
     ,reqNodes = 8
 };
 
+// millisecond for each ledger timeout
+auto constexpr ledgerAcquireTimeout = 2500ms;
+
 InboundLedger::InboundLedger (
     Application& app, uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
-    : PeerSet (app, hash, ledgerAcquireTimeoutMillis, false, clock,
+    : PeerSet (app, hash, ledgerAcquireTimeout, false, clock,
         app.journal("InboundLedger"))
     , mHaveHeader (false)
     , mHaveState (false)

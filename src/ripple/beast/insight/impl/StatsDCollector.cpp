@@ -204,7 +204,7 @@ private:
     boost::asio::io_service m_io_service;
     boost::optional <boost::asio::io_service::work> m_work;
     boost::asio::io_service::strand m_strand;
-    boost::asio::deadline_timer m_timer;
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     boost::asio::ip::udp::socket m_socket;
     std::deque <std::string> m_data;
     std::recursive_mutex metricsLock_;
@@ -407,7 +407,8 @@ public:
 
     void set_timer ()
     {
-        m_timer.expires_from_now (boost::posix_time::seconds (1));
+        using namespace std::chrono_literals;
+        m_timer.expires_from_now(1s);
         m_timer.async_wait (std::bind (
             &StatsDCollectorImp::on_timer, this,
                 beast::asio::placeholders::error));

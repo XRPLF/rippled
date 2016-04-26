@@ -1935,9 +1935,6 @@
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\Time.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ToString.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>

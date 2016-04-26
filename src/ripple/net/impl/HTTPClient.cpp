@@ -138,7 +138,7 @@ public:
         bool bSSL,
         std::deque<std::string> deqSites,
         std::function<void (boost::asio::streambuf& sb, std::string const& strHost)> build,
-        boost::posix_time::time_duration timeout,
+        std::chrono::seconds timeout,
         std::function<bool (const boost::system::error_code& ecResult,
             int iStatus, std::string const& strData)> complete)
     {
@@ -157,7 +157,7 @@ public:
         bool bSSL,
         std::deque<std::string> deqSites,
         std::string const& strPath,
-        boost::posix_time::time_duration timeout,
+        std::chrono::seconds timeout,
         std::function<bool (const boost::system::error_code& ecResult, int iStatus,
             std::string const& strData)> complete)
     {
@@ -518,13 +518,13 @@ private:
     std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>         mBuild;
     std::function<bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> mComplete;
 
-    boost::asio::deadline_timer                                 mDeadline;
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> mDeadline;
 
     // If not success, we are shutting down.
     boost::system::error_code                                   mShutdown;
 
     std::deque<std::string>                                     mDeqSites;
-    boost::posix_time::time_duration                            mTimeout;
+    std::chrono::seconds                                        mTimeout;
     beast::Journal                                              j_;
 };
 
@@ -537,7 +537,7 @@ void HTTPClient::get (
     const unsigned short port,
     std::string const& strPath,
     std::size_t responseMax,
-    boost::posix_time::time_duration timeout,
+    std::chrono::seconds timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete,
     Logs& l)
@@ -554,7 +554,7 @@ void HTTPClient::get (
     const unsigned short port,
     std::string const& strPath,
     std::size_t responseMax,
-    boost::posix_time::time_duration timeout,
+    std::chrono::seconds timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete,
     Logs& l)
@@ -573,7 +573,7 @@ void HTTPClient::request (
     const unsigned short port,
     std::function<void (boost::asio::streambuf& sb, std::string const& strHost)> setRequest,
     std::size_t responseMax,
-    boost::posix_time::time_duration timeout,
+    std::chrono::seconds timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete,
     Logs& l)

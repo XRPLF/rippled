@@ -351,7 +351,7 @@ void Config::loadFromString (std::string const& fileContents)
         ELB_SUPPORT         = beast::lexicalCastThrow <bool> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp, j_))
-        WEBSOCKET_PING_FREQ = beast::lexicalCastThrow <int> (strTemp);
+        WEBSOCKET_PING_FREQ = std::chrono::seconds{beast::lexicalCastThrow <int>(strTemp)};
 
     getSingleSection (secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE, j_);
     getSingleSection (secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR, j_);

@@ -20,6 +20,8 @@
 #ifndef BEAST_CHRONO_CHRONO_UTIL_H_INCLUDED
 #define BEAST_CHRONO_CHRONO_UTIL_H_INCLUDED
 
+#include <chrono>
+
 // From Howard Hinnant
 // http://home.roadrunner.com/~hinnant/duration_io/chrono_util.html
 
