@@ -29,3 +29,4 @@
 * Fix method, use string instead of enum
 * More fine grained parser errors
 * Fix all the warnings in all projects/build configs
+* Fix bidirectional buffers iterators operator->()
