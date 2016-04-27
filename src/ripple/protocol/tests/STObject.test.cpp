@@ -108,6 +108,7 @@ public:
         SField const& sfTestVL = SField::getField (STI_VL, 255);
         SField const& sfTestH256 = SField::getField (STI_HASH256, 255);
         SField const& sfTestU32 = SField::getField (STI_UINT32, 255);
+        SField const& sfTestV256 = SField::getField(STI_VECTOR256, 255);
         SField const& sfTestObject = SField::getField (STI_OBJECT, 255);
 
         SOTemplate elements;
@@ -115,6 +116,7 @@ public:
         elements.push_back (SOElement (sfTestVL, SOE_REQUIRED));
         elements.push_back (SOElement (sfTestH256, SOE_OPTIONAL));
         elements.push_back (SOElement (sfTestU32, SOE_REQUIRED));
+        elements.push_back (SOElement (sfTestV256, SOE_OPTIONAL));
 
         STObject object1 (elements, sfTestObject);
         STObject object2 (object1);
@@ -181,6 +183,27 @@ public:
             unexpected (object1.getFieldVL (sfTestVL) != j, "STObject error");
 
             unexpected (object3.getFieldVL (sfTestVL) != j, "STObject error");
+        }
+
+        {
+            std::vector<uint256> uints;
+            uints.reserve(5);
+            for (int i = 0; i < uints.capacity(); ++i)
+            {
+                uints.emplace_back(i);
+            }
+            object1.setFieldV256(sfTestV256, STVector256(uints));
+
+            Serializer s;
+            object1.add(s);
+            SerialIter it(s.slice());
+
+            STObject object3(elements, it, sfTestObject);
+
+            auto const& uints1 = object1.getFieldV256(sfTestV256);
+            auto const& uints3 = object3.getFieldV256(sfTestV256);
+
+            expect(uints1 == uints3);
         }
     }
 
@@ -428,11 +451,14 @@ public:
             STObject st(sfGeneric);
             std::vector<uint256> v;
             v.emplace_back(1);
+            v.emplace_back(2);
             st[sf] = v;
             st[sf] = std::move(v);
             auto const& cst = st;
-            expect(cst[sf].size() == 1);
-            expect(cst[~sf]->size() == 1);
+            expect(cst[sf].size() == 2);
+            expect(cst[~sf]->size() == 2);
+            expect(cst[sf][0] == 1);
+            expect(cst[sf][1] == 2);
             static_assert(std::is_same<decltype(cst[sfIndexes]),
                 std::vector<uint256> const&>::value, "");
         }
