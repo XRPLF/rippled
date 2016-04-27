@@ -28,13 +28,14 @@
 #include <ripple/overlay/Message.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/UintTypes.h>
-#include <beast/placeholders.hpp>
 #include <ripple/beast/asio/ssl_bundle.h>
-#include <beast/streambuf.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/parser.hpp>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <beast/placeholders.hpp>
+#include <beast/streambuf.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/empty_body.hpp>
+#include <beast/http/parser.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -51,7 +52,11 @@ class ConnectAttempt
 {
 private:
     using error_code = boost::system::error_code;
+
     using endpoint_type = boost::asio::ip::tcp::endpoint;
+
+    using request_type =
+        beast::http::request<beast::http::empty_body>;
 
     Application& app_;
     std::uint32_t const id_;
@@ -70,6 +75,7 @@ private:
     beast::streambuf body_;
     beast::deprecated_http::parser parser_;
     PeerFinder::Slot::ptr slot_;
+    request_type req_;
 
 public:
     ConnectAttempt (Application& app, boost::asio::io_service& io_service,
@@ -87,6 +93,7 @@ public:
     run();
 
 private:
+
     void close();
     void fail (std::string const& reason);
     void fail (std::string const& name, error_code ec);
@@ -95,12 +102,12 @@ private:
     void onTimer (error_code ec);
     void onConnect (error_code ec);
     void onHandshake (error_code ec);
-    void onWrite (error_code ec, std::size_t bytes_transferred);
+    void onWrite (error_code ec);
     void onRead (error_code ec, std::size_t bytes_transferred);
     void onShutdown (error_code ec);
 
     static
-    beast::deprecated_http::message
+    request_type
     makeRequest (bool crawl,
         boost::asio::ip::address const& remote_address);
 

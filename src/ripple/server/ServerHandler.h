@@ -85,11 +85,6 @@ public:
     virtual
     Setup const&
     setup() const = 0;
-
-    /** Fills in boilerplate HTTP header field values. */
-    static
-    void
-    appendStandardFields (beast::deprecated_http::message& message);
 };
 
 //------------------------------------------------------------------------------

@@ -23,8 +23,11 @@
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/server/Port.h>
-#include <beast/streambuf.hpp>
-#include <beast/http/parser.hpp>
+#include <beast/http/message.hpp>
+#include <beast/http/streambuf_body.hpp>
+#include <beast/http/string_body.hpp>
+#include <beast/http/read.hpp>
+#include <beast/http/write.hpp>
 #include <boost/asio.hpp>
 #include <string>
 
@@ -69,17 +72,19 @@ class JSONRPCClient : public AbstractClient
         return s;
     }
 
+    boost::asio::ip::tcp::endpoint ep_;
     boost::asio::io_service ios_;
     boost::asio::ip::tcp::socket stream_;
-    boost::asio::streambuf bin_;
+    beast::streambuf bin_;
     beast::streambuf bout_;
 
 public:
     explicit
     JSONRPCClient(Config const& cfg)
-        : stream_(ios_)
-    {
-        stream_.connect(getEndpoint(cfg));
+        : ep_(getEndpoint(cfg))
+        , stream_(ios_)
+    {   
+        stream_.connect(ep_);
     }
 
     ~JSONRPCClient() override
@@ -98,7 +103,17 @@ public:
     invoke(std::string const& cmd,
         Json::Value const& params) override
     {
-        std::string s;
+        using namespace beast::http;
+        using namespace boost::asio;
+        using namespace std::string_literals;
+
+        request<string_body> req;
+        req.method = method_t::http_post;
+        req.url = "/";
+        req.version = 11;
+        req.headers.insert("Content-Type", "application/json; charset=UTF-8");
+        req.headers.insert("Host",
+            ep_.address().to_string() + ":" + std::to_string(ep_.port()));
         {
             Json::Value jr;
             jr["method"] = cmd;
@@ -107,47 +122,16 @@ public:
                 Json::Value& ja = jr["params"] = Json::arrayValue;
                 ja.append(params);
             }
-            s = to_string(jr);
+            req.body = to_string(jr);
         }
+        write(stream_, req);
 
-        using namespace boost::asio;
-        using namespace std::string_literals;
-        auto const r =
-            "POST / HTTP/1.1\r\n"
-            "Host: me\r\n"
-            "Connection: Keep-Alive\r\n"s +
-            "Content-Type: application/json; charset=UTF-8\r\n"s +
-            "Content-Length: " + std::to_string(s.size()) + "\r\n"
-            "\r\n" + s;
-        write(stream_, buffer(r));
-
-        read_until(stream_, bin_, "\r\n\r\n");
-        beast::streambuf body;
-        beast::deprecated_http::message m;
-        beast::deprecated_http::parser p(
-            [&](void const* data, std::size_t size)
-            {
-                body.commit(buffer_copy(
-                    body.prepare(size), const_buffer(data, size)));
-            }, m, false);
-
-        for(;;)
-        {
-            boost::system::error_code ec;
-            auto used = p.write(bin_.data(), ec);
-            if(ec)
-                Throw<boost::system::system_error>(ec);
-            bin_.consume(used);
-            // VFALCO What do we do if bin_ still has data?
-            if(p.complete())
-                break;
-            bin_.commit(stream_.read_some(
-                bin_.prepare(1024)));
-        }
+        response<streambuf_body> res;
+        read(stream_, bin_, res);
 
         Json::Reader jr;
         Json::Value jv;
-        jr.parse(buffer_string(body.data()), jv);
+        jr.parse(buffer_string(res.body.data()), jv);
         if(jv["result"].isMember("error"))
             jv["error"] = jv["result"]["error"];
         if(jv["result"].isMember("status"))

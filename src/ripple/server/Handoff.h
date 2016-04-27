@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
 #include <ripple/server/Writer.h>
+#include <ripple/beast/deprecated_http.h>
 #include <beast/http/message.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <memory>
@@ -29,6 +30,9 @@ namespace ripple {
 
 using http_request_type =
     beast::http::request<beast::http::streambuf_body>;
+
+using http_response_type =
+    beast::deprecated_http::message;
 
 /** Used to indicate the result of a server connection handoff. */
 struct Handoff

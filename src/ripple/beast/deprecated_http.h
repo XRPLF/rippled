@@ -23,7 +23,9 @@
 #include <beast/http/method.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/basic_parser.hpp>
-#include <beast/http/detail/writes.hpp>
+#include <beast/http/rfc2616.hpp>
+#include <beast/write_streambuf.hpp>
+#include <beast/test/http/nodejs_parser.hpp>
 #include <beast/detail/ci_char_traits.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -340,39 +342,39 @@ write (Streambuf& stream, message const& m)
 {
     if (m.request())
     {
-        http::detail::write (stream, to_string(m.method()));
-        http::detail::write (stream, " ");
-        http::detail::write (stream, m.url());
-        http::detail::write (stream, " HTTP/");
-        http::detail::write (stream, std::to_string(m.version().first));
-        http::detail::write (stream, ".");
-        http::detail::write (stream, std::to_string(m.version().second));
+        beast::write (stream, to_string(m.method()));
+        beast::write (stream, " ");
+        beast::write (stream, m.url());
+        beast::write (stream, " HTTP/");
+        beast::write (stream, std::to_string(m.version().first));
+        beast::write (stream, ".");
+        beast::write (stream, std::to_string(m.version().second));
     }
     else
     {
-        http::detail::write (stream, "HTTP/");
-        http::detail::write (stream, std::to_string(m.version().first));
-        http::detail::write (stream, ".");
-        http::detail::write (stream, std::to_string(m.version().second));
-        http::detail::write (stream, " ");
-        http::detail::write (stream, std::to_string(m.status()));
-        http::detail::write (stream, " ");
-        http::detail::write (stream, m.reason());
+        beast::write (stream, "HTTP/");
+        beast::write (stream, std::to_string(m.version().first));
+        beast::write (stream, ".");
+        beast::write (stream, std::to_string(m.version().second));
+        beast::write (stream, " ");
+        beast::write (stream, std::to_string(m.status()));
+        beast::write (stream, " ");
+        beast::write (stream, m.reason());
     }
-    http::detail::write (stream, "\r\n");
+    beast::write (stream, "\r\n");
     write_fields(stream, m.headers);
-    http::detail::write (stream, "\r\n");
+    beast::write (stream, "\r\n");
 }
 
 //------------------------------------------------------------------------------
 
 class parser
-    : public beast::http::basic_parser<parser>
+    : public beast::http::nodejs_basic_parser<parser>
 {
-//    friend class basic_parser<parser>;
-
     message& m_;
     std::function<void(void const*, std::size_t)> write_body_;
+    std::string field_;
+    std::string value_;
 
 public:
     parser(parser&&) = default;
@@ -388,7 +390,7 @@ public:
     */
     parser(std::function<void(void const*, std::size_t)> write_body,
             message& m, bool request)
-        : basic_parser(request)
+        : nodejs_basic_parser(request)
         , m_(m)
         , write_body_(std::move(write_body))
     {
@@ -396,7 +398,7 @@ public:
     }
 
     parser(message& m, body& b, bool request)
-        : basic_parser(request)
+        : nodejs_basic_parser(request)
         , m_(m)
     {
         write_body_ = [&b](void const* data, std::size_t size)
@@ -407,6 +409,19 @@ public:
     }
 
 //private:
+
+    void flush()
+    {
+        if(! value_.empty())
+        {
+            rfc2616::trim_right_in_place(value_);
+            // VFALCO could std::move
+            m_.headers.insert(field_, value_);
+            field_.clear();
+            value_.clear();
+        }
+    }
+
     void
     on_start()
     {

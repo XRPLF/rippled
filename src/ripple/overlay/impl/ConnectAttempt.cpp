@@ -23,6 +23,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/json/json_reader.h>
+#include <beast/http/write.hpp>
 
 namespace ripple {
 
@@ -218,48 +219,32 @@ ConnectAttempt::onHandshake (error_code ec)
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
-    beast::deprecated_http::message req = makeRequest(
-        ! overlay_.peerFinder().config().peerPrivate,
-            remote_endpoint_.address());
+    req_ = makeRequest(! overlay_.peerFinder().config().peerPrivate,
+        remote_endpoint_.address());
     auto const hello = buildHello (
         *sharedValue,
         overlay_.setup().public_ip,
         beast::IPAddressConversion::from_asio(remote_endpoint_),
         app_);
-    appendHello (req.headers, hello);
-
-    beast::deprecated_http::write (write_buf_, req);
+    appendHello (req_.headers, hello);
 
     setTimer();
-    stream_.async_write_some (write_buf_.data(),
+    beast::http::async_write(stream_, req_,
         strand_.wrap (std::bind (&ConnectAttempt::onWrite,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+            shared_from_this(), beast::asio::placeholders::error)));
 }
 
 void
-ConnectAttempt::onWrite (error_code ec, std::size_t bytes_transferred)
+ConnectAttempt::onWrite (error_code ec)
 {
     cancelTimer();
-
     if(! stream_.next_layer().is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
     if(ec)
         return fail("onWrite", ec);
-    JLOG(journal_.trace()) <<
-        "onWrite: " << bytes_transferred << " bytes";
-
-    write_buf_.consume (bytes_transferred);
-    if (write_buf_.size() == 0)
-        return onRead (error_code(), 0);
-
-    setTimer();
-    stream_.async_write_some (write_buf_.data(),
-        strand_.wrap (std::bind (&ConnectAttempt::onWrite,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+    onRead(error_code(), 0);
 }
 
 void
@@ -330,14 +315,15 @@ ConnectAttempt::onShutdown (error_code ec)
 
 //--------------------------------------------------------------------------
 
-beast::deprecated_http::message
+auto
 ConnectAttempt::makeRequest (bool crawl,
-    boost::asio::ip::address const& remote_address)
+    boost::asio::ip::address const& remote_address) ->
+        request_type
 {
-    beast::deprecated_http::message m;
-    m.method (beast::http::method_t::http_get);
-    m.url ("/");
-    m.version (1, 1);
+    request_type m;
+    m.method = beast::http::method_t::http_get;
+    m.url = "/";
+    m.version = 11;
     m.headers.insert ("User-Agent", BuildInfo::getFullVersionString());
     m.headers.insert ("Upgrade", "RTXP/1.2");
         //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));

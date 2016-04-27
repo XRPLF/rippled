@@ -688,13 +688,6 @@ ServerHandlerImp::authorized (Port const& port,
 //------------------------------------------------------------------------------
 
 void
-ServerHandler::appendStandardFields (beast::deprecated_http::message& message)
-{
-}
-
-//------------------------------------------------------------------------------
-
-void
 ServerHandler::Setup::makeContexts()
 {
     for(auto& p : ports)
