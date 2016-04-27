@@ -32,18 +32,11 @@ sig_wait()
     boost::asio::io_service ios;
     boost::asio::signal_set signals(
         ios, SIGINT, SIGTERM);
-    std::mutex m;
-    bool stop = false;
-    std::condition_variable cv;
     signals.async_wait(
         [&](boost::system::error_code const&, int)
         {
-            std::lock_guard<std::mutex> lock(m);
-            stop = true;
-            cv.notify_one();
         });
-    std::unique_lock<std::mutex> lock(m);
-    cv.wait(lock, [&]{ return stop; });
+    ios.run();
 }
 
 #endif

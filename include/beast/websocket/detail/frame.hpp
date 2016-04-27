@@ -10,6 +10,7 @@
 
 #include <beast/websocket/rfc6455.hpp>
 #include <beast/websocket/static_string.hpp>
+#include <beast/websocket/detail/endian.hpp>
 #include <beast/websocket/detail/utf8_checker.hpp>
 #include <beast/consuming_buffers.hpp>
 #include <beast/static_streambuf.hpp>
@@ -244,8 +245,13 @@ read_fh2(frame_header& fh, Streambuf& sb,
         std::uint8_t b[2];
         assert(buffer_size(sb.data()) >= sizeof(b));
         sb.consume(buffer_copy(buffer(b), sb.data()));
+    #if 0
+        // Causes strict-aliasing warning in gcc
         fh.len = reinterpret_cast<
             big_uint16_buf_t const*>(&b[0])->value();
+    #else
+        fh.len = big_uint16_to_native(&b[0]);
+    #endif
         // length not canonical
         if(fh.len < 126)
         {
@@ -259,8 +265,13 @@ read_fh2(frame_header& fh, Streambuf& sb,
         std::uint8_t b[8];
         assert(buffer_size(sb.data()) >= sizeof(b));
         sb.consume(buffer_copy(buffer(b), sb.data()));
+    #if 0
+        // Causes strict-aliasing warning in gcc
         fh.len = reinterpret_cast<
             big_uint64_buf_t const*>(&b[0])->value();
+    #else
+        fh.len = big_uint64_to_native(&b[0]);
+    #endif
         // length not canonical
         if(fh.len < 65536)
         {
@@ -275,8 +286,13 @@ read_fh2(frame_header& fh, Streambuf& sb,
         std::uint8_t b[4];
         assert(buffer_size(sb.data()) >= sizeof(b));
         sb.consume(buffer_copy(buffer(b), sb.data()));
+    #if 0
+        // Causes strict-aliasing warning in gcc
         fh.key = reinterpret_cast<
             little_uint32_buf_t const*>(&b[0])->value();
+    #else
+        fh.key = little_uint32_to_native(&b[0]);
+    #endif
     }
     code = close_code::none;
 }
@@ -327,9 +343,15 @@ read(close_reason& cr,
     {
         std::uint8_t b[2];
         buffer_copy(buffer(b), cb);
+    #if 0
+        // Causes strict-aliasing warning in gcc
         cr.code = static_cast<close_code>(
             reinterpret_cast<
                 big_uint16_buf_t const*>(&b[0])->value());
+    #else
+        cr.code = static_cast<close_code>(
+            big_uint16_to_native(&b[0]));
+    #endif
         cb.consume(2);
         n -= 2;
         if(! is_valid(cr.code))

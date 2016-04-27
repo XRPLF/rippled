@@ -36,30 +36,28 @@ public:
     }
 
     corpus
-    build_corpus(std::size_t N, std::true_type)
+    build_corpus(std::size_t n, std::true_type)
     {
         corpus v;
         v.resize(N);
         message_fuzz mg;
-        for(std::size_t i = 0; i < N; ++i)
+        for(std::size_t i = 0; i < n; ++i)
         {
             mg.request(v[i]);
-//log << debug::buffers_to_string(v[i].data()) << "\r";
             size_ += v[i].size();
         }
         return v;
     }
 
     corpus
-    build_corpus(std::size_t N, std::false_type)
+    build_corpus(std::size_t n, std::false_type)
     {
         corpus v;
         v.resize(N);
         message_fuzz mg;
-        for(std::size_t i = 0; i < N; ++i)
+        for(std::size_t i = 0; i < n; ++i)
         {
             mg.response(v[i]);
-//log << debug::buffers_to_string(v[i].data()) << "\r";
             size_ += v[i].size();
         }
         return v;

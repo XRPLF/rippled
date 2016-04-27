@@ -118,7 +118,7 @@ private:
                 }
                 return false;
             };
-        while(false)
+        do
         {
             if(m("DELETE",     method_t::http_delete))
                 break;
@@ -187,6 +187,7 @@ private:
             if(m("UNLINK",     method_t::http_unlink))
                 break;
         }
+        while(false);
 
         m_.url = std::move(this->uri_);
 

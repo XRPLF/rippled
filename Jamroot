@@ -62,6 +62,7 @@ project beast
       <runtime-link>shared
       <debug-symbols>on
       <toolset>gcc:<cxxflags>-std=c++11
+      <toolset>gcc:<cxxflags>-Wno-unused-variable
       <toolset>clang:<cxxflags>-std=c++11
       <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
       <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1

@@ -68,10 +68,9 @@ class invokable
         void operator()(){}
     };
 
-    using buf_type = std::uint8_t[
-        sizeof(holder<exemplar>)];
+    using buf_type = char[sizeof(holder<exemplar>)];
 
-    bool b_ = false;
+    base* base_ = nullptr;
     alignas(holder<exemplar>) buf_type buf_;
 
 public:
@@ -81,7 +80,7 @@ public:
         // Engaged invokables must be invoked before
         // destruction otherwise the io_service
         // invariants are broken w.r.t completions.
-        assert(! b_);
+        assert(! base_);
     }
 #endif
 
@@ -90,12 +89,12 @@ public:
     invokable& operator=(invokable const&) = delete;
 
     invokable(invokable&& other)
-        : b_(other.b_)
     {
-        if(other.b_)
+        if(other.base_)
         {
-            other.get().move(buf_);
-            other.b_ = false;
+            base_ = reinterpret_cast<base*>(&buf_[0]);
+            other.base_->move(buf_);
+            other.base_ = nullptr;
         }
     }
 
@@ -105,13 +104,13 @@ public:
         // Engaged invokables must be invoked before
         // assignment otherwise the io_service
         // invariants are broken w.r.t completions.
-        assert(! b_);
+        assert(! base_);
 
-        if(other.b_)
+        if(other.base_)
         {
-            b_ = true;
-            other.get().move(buf_);
-            other.b_ = false;
+            base_ = reinterpret_cast<base*>(&buf_[0]);
+            other.base_->move(buf_);
+            other.base_ = nullptr;
         }
         return *this;
     }
@@ -123,18 +122,12 @@ public:
     void
     maybe_invoke()
     {
-        if(b_)
+        if(base_)
         {
-            b_ = false;
-            get()();
+            auto const basep = base_;
+            base_ = nullptr;
+            (*basep)();
         }
-    }
-
-private:
-    base&
-    get()
-    {
-        return *reinterpret_cast<base*>(&buf_[0]);
     }
 };
 
@@ -144,9 +137,9 @@ invokable::emplace(F&& f)
 {
     static_assert(sizeof(buf_type) >= sizeof(holder<F>),
         "buffer too small");
-    assert(! b_);
+    assert(! base_);
     ::new(buf_) holder<F>(std::forward<F>(f));
-    b_ = true;
+    base_ = reinterpret_cast<base*>(&buf_[0]);
 }
 
 } // detail
