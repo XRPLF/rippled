@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WSPROTO_ASYNC_ECHO_PEER_H_INCLUDED
-#define BEAST_WSPROTO_ASYNC_ECHO_PEER_H_INCLUDED
+#ifndef BEAST_WEBSOCKET_ASYNC_ECHO_PEER_H_INCLUDED
+#define BEAST_WEBSOCKET_ASYNC_ECHO_PEER_H_INCLUDED
 
 #include <beast/placeholders.hpp>
 #include <beast/streambuf.hpp>

@@ -10,6 +10,7 @@
 
 #include <beast/http/error.hpp>
 #include <beast/streambuf.hpp>
+#include <beast/write_streambuf.hpp>
 
 namespace beast {
 namespace http {
@@ -84,7 +85,7 @@ struct write_preparation
 
         msg.write_firstline(sb);
         write_fields(sb, h);
-        detail::write(sb, "\r\n");
+        beast::write(sb, "\r\n");
     }
 
 private:

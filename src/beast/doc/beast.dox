@@ -51,13 +51,13 @@ LOOKUP_CACHE_SIZE      = 0
 #---------------------------------------------------------------------------
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = YES
-EXTRACT_PACKAGE        = YES
-EXTRACT_STATIC         = YES
+EXTRACT_PACKAGE        = NO
+EXTRACT_STATIC         = NO
 EXTRACT_LOCAL_CLASSES  = NO
 EXTRACT_LOCAL_METHODS  = NO
 EXTRACT_ANON_NSPACES   = NO
 HIDE_UNDOC_MEMBERS     = NO
-HIDE_UNDOC_CLASSES     = YES
+HIDE_UNDOC_CLASSES     = NO
 HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = NO
 INTERNAL_DOCS          = NO
@@ -119,6 +119,7 @@ INPUT = \
         ../include/beast/streambuf_readstream.hpp \
         ../include/beast/type_check.hpp \
         ../include/beast/websocket.hpp \
+        ../include/beast/write_streambuf.hpp \
         ../include/beast/http/basic_headers.hpp \
         ../include/beast/http/basic_parser.hpp \
         ../include/beast/http/chunk_encode.hpp \
@@ -128,6 +129,7 @@ INPUT = \
         ../include/beast/http/headers.hpp \
         ../include/beast/http/message.hpp \
         ../include/beast/http/method.hpp \
+        ../include/beast/http/parse_error.hpp \
         ../include/beast/http/parser.hpp \
         ../include/beast/http/read.hpp \
         ../include/beast/http/resume_context.hpp \

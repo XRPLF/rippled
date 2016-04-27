@@ -13,41 +13,49 @@
 #include <beast/http/message.hpp>
 #include <boost/optional.hpp>
 #include <functional>
+#include <string>
 #include <type_traits>
 #include <utility>
 
 namespace beast {
 namespace http {
 
-/** A HTTP parser.
+namespace detail {
 
-    The parser may only be used once.
-*/
+struct parser_request
+{
+    std::string method_;
+    std::string uri_;
+};
+
+struct parser_response
+{
+    std::string reason_;
+};
+
+} // detail
+
 template<bool isRequest, class Body, class Headers>
 class parser
-    : public basic_parser<parser<isRequest, Body, Headers>>
+    : public basic_parser<isRequest,
+        parser<isRequest, Body, Headers>>
+    , private std::conditional<isRequest,
+        detail::parser_request, detail::parser_response>::type
 {
     using message_type =
         message<isRequest, Body, Headers>;
 
+    std::string field_;
+    std::string value_;
     message_type m_;
     typename message_type::body_type::reader r_;
-    bool started_ = false;
 
 public:
     parser(parser&&) = default;
 
     parser()
-        : http::basic_parser<parser>(isRequest)
-        , r_(m_)
+        : r_(m_)
     {
-    }
-
-    /// Returns `true` if at least one byte has been processed
-    bool
-    started()
-    {
-        return started_;
     }
 
     message_type
@@ -57,94 +65,165 @@ public:
     }
 
 private:
-    friend class http::basic_parser<parser>;
+    friend class basic_parser<isRequest, parser>;
 
-    void
-    on_start()
+    void flush()
     {
-        started_ = true;
+        if(! value_.empty())
+        {
+            rfc2616::trim_right_in_place(value_);
+            // VFALCO could std::move
+            m_.headers.insert(field_, value_);
+            field_.clear();
+            value_.clear();
+        }
     }
 
-    void
-    on_field(std::string const& field, std::string const& value)
+    void on_method(boost::string_ref const& s, error_code&)
     {
-        m_.headers.insert(field, value);
+        this->method_.append(s.data(), s.size());
     }
 
-    void
-    on_headers_complete(error_code&)
+    void on_uri(boost::string_ref const& s, error_code&)
     {
-        // vFALCO TODO Decode the Content-Length and
-        // Transfer-Encoding, see if we can reserve the buffer.
-        //
-        // r_.reserve(content_length)
+        this->uri_.append(s.data(), s.size());
     }
 
-    bool
-    on_request(http::method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade,
-            std::true_type)
+    void on_reason(boost::string_ref const& s, error_code&)
     {
-        m_.method = method;
-        m_.url = url;
-        m_.version = major * 10 + minor;
-        return true;
+        this->reason_.append(s.data(), s.size());
     }
 
-    bool
-    on_request(http::method_t, std::string const&,
-        int, int, bool, bool,
-            std::false_type)
+    void on_field(boost::string_ref const& s, error_code&)
     {
-        return true;
+        flush();
+        field_.append(s.data(), s.size());
     }
 
-    bool
-    on_request(http::method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade)
+    void on_value(boost::string_ref const& s, error_code&)
     {
-        return on_request(method, url,
-            major, minor, keep_alive, upgrade,
-                typename message_type::is_request{});
+        value_.append(s.data(), s.size());
     }
 
-    bool
-    on_response(int status, std::string const& reason,
-        int major, int minor, bool keep_alive, bool upgrade,
-            std::true_type)
+    void set(std::true_type)
     {
-        m_.status = status;
-        m_.reason = reason;
-        m_.version = major * 10 + minor;
-        // VFALCO TODO return expect_body_
-        return true;
-    }
-    
-    bool
-    on_response(int, std::string const&, int, int, bool, bool,
-        std::false_type)
-    {
-        return true;
+        // VFALCO This is terrible for setting method
+        auto m =
+            [&](char const* s, method_t m)
+            {
+                if(this->method_ == s)
+                {
+                    m_.method = m;
+                    return true;
+                }
+                return false;
+            };
+        do
+        {
+            if(m("DELETE",     method_t::http_delete))
+                break;
+            if(m("GET",        method_t::http_get))
+                break;
+            if(m("HEAD",       method_t::http_head))
+                break;
+            if(m("POST",       method_t::http_post))
+                break;
+            if(m("PUT",        method_t::http_put))
+                break;
+            if(m("CONNECT",    method_t::http_connect))
+                break;
+            if(m("OPTIONS",    method_t::http_options))
+                break;
+            if(m("TRACE",      method_t::http_trace))
+                break;
+            if(m("COPY",       method_t::http_copy))
+                break;
+            if(m("LOCK",       method_t::http_lock))
+                break;
+            if(m("MKCOL",      method_t::http_mkcol))
+                break;
+            if(m("MOVE",       method_t::http_move))
+                break;
+            if(m("PROPFIND",   method_t::http_propfind))
+                break;
+            if(m("PROPPATCH",  method_t::http_proppatch))
+                break;
+            if(m("SEARCH",     method_t::http_search))
+                break;
+            if(m("UNLOCK",     method_t::http_unlock))
+                break;
+            if(m("BIND",       method_t::http_bind))
+                break;
+            if(m("REBID",      method_t::http_rebind))
+                break;
+            if(m("UNBIND",     method_t::http_unbind))
+                break;
+            if(m("ACL",        method_t::http_acl))
+                break;
+            if(m("REPORT",     method_t::http_report))
+                break;
+            if(m("MKACTIVITY", method_t::http_mkactivity))
+                break;
+            if(m("CHECKOUT",   method_t::http_checkout))
+                break;
+            if(m("MERGE",      method_t::http_merge))
+                break;
+            if(m("MSEARCH",    method_t::http_msearch))
+                break;
+            if(m("NOTIFY",     method_t::http_notify))
+                break;
+            if(m("SUBSCRIBE",  method_t::http_subscribe))
+                break;
+            if(m("UNSUBSCRIBE",method_t::http_unsubscribe))
+                break;
+            if(m("PATCH",      method_t::http_patch))
+                break;
+            if(m("PURGE",      method_t::http_purge))
+                break;
+            if(m("MKCALENDAR", method_t::http_mkcalendar))
+                break;
+            if(m("LINK",       method_t::http_link))
+                break;
+            if(m("UNLINK",     method_t::http_unlink))
+                break;
+        }
+        while(false);
+
+        m_.url = std::move(this->uri_);
+
     }
 
-    bool
-    on_response(int status, std::string const& reason,
-        int major, int minor, bool keep_alive, bool upgrade)
+    void set(std::false_type)
     {
-        return on_response(
-            status, reason, major, minor, keep_alive, upgrade,
-                std::integral_constant<bool, ! message_type::is_request::value>{});
+        m_.status = this->status_code();
+        m_.reason = this->reason_;
     }
 
-    void
-    on_body(void const* data,
-        std::size_t size, error_code& ec)
+    int on_headers(error_code&)
     {
-        r_.write(data, size, ec);
+        flush();
+        m_.version = 10 * this->http_major() + this->http_minor();
+        return 0;
     }
 
-    void
-    on_complete()
+    void on_request(error_code& ec)
+    {
+        set(std::integral_constant<
+            bool, isRequest>{});
+    }
+
+    void on_response(error_code& ec)
+    {
+        set(std::integral_constant<
+            bool, isRequest>{});
+    }
+
+    void on_body(boost::string_ref const& s, error_code& ec)
+    {
+        r_.write(s.data(), s.size(), ec);
+    }
+
+    void on_complete(error_code&)
     {
     }
 };

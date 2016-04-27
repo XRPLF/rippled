@@ -131,6 +131,7 @@
             <member><link linkend="beast.ref.buffer_cat">buffer_cat</link></member>
             <member><link linkend="beast.ref.prepare_buffer">prepare_buffer</link></member>
             <member><link linkend="beast.ref.prepare_buffers">prepare_buffers</link></member>
+            <member><link linkend="beast.ref.write">write</link></member>
           </simplelist>
         </entry>
         <entry valign="top">

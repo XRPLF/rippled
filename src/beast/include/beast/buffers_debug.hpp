@@ -14,6 +14,11 @@
 namespace beast {
 namespace debug {
 
+/** Diagnostic utility to convert a `ConstBufferSequence` to a string.
+
+    @note Carriage returns and linefeeds will have additional escape
+    representations printed for visibility.
+*/
 template<class Buffers>
 std::string
 buffers_to_string(Buffers const& bs)

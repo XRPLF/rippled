@@ -13,6 +13,7 @@
 namespace beast {
 namespace websocket {
 
+/// The type of error used by functions and completion handlers.
 using error_code = boost::system::error_code;
 
 /// Error values

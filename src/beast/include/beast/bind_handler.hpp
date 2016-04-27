@@ -121,7 +121,7 @@ public:
 
     Example:
     @code
-    template<class AsyncReadStream, ReadHandler>
+    template<class AsyncReadStream, class ReadHandler>
     void
     do_cancel(AsyncReadStream& stream, ReadHandler&& handler)
     {

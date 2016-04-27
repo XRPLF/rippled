@@ -8,7 +8,6 @@
 #ifndef BEAST_HTTP_BASIC_HEADERS_HPP
 #define BEAST_HTTP_BASIC_HEADERS_HPP
 
-#include <beast/http/detail/writes.hpp>
 #include <beast/type_check.hpp>
 #include <beast/detail/ci_char_traits.hpp>
 #include <beast/detail/empty_base_optimization.hpp>

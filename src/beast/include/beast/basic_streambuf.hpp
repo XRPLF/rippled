@@ -36,6 +36,7 @@ class basic_streambuf
 #endif
 {
 public:
+    /// The type of allocator used.
     using allocator_type = typename
         std::allocator_traits<Allocator>::
             template rebind_alloc<std::uint8_t>;
@@ -73,9 +74,19 @@ private:
     size_type out_end_ = 0; // output end offset in list_.back()
 
 public:
+#if GENERATING_DOCS
+    /// The type used to represent the input sequence as a list of buffers.
+    using const_buffers_type = implementation_defined;
+
+    /// The type used to represent the output sequence as a list of buffers.
+    using mutable_buffers_type = implementation_defined;
+
+#else
     class const_buffers_type;
 
     class mutable_buffers_type;
+
+#endif
 
     /// Destructor.
     ~basic_streambuf();
@@ -175,7 +186,7 @@ public:
     template<class OtherAlloc>
     basic_streambuf& operator=(basic_streambuf<OtherAlloc> const& other);
 
-    /** Construct a stream buffer.
+    /** Default constructor.
 
         @param alloc_size The size of buffer to allocate. This is a soft
         limit, calls to prepare for buffers exceeding this size will allocate
@@ -258,60 +269,6 @@ private:
     debug_check() const;
 };
 
-/// The type used to represent the input sequence as a list of buffers.
-template<class Allocator>
-class basic_streambuf<Allocator>::const_buffers_type
-{
-    basic_streambuf const* sb_ = nullptr;
-
-    friend class basic_streambuf;
-
-    explicit
-    const_buffers_type(basic_streambuf const& sb);
-
-public:
-    using value_type = boost::asio::const_buffer;
-
-    class const_iterator;
-
-    const_buffers_type() = default;
-    const_buffers_type(const_buffers_type const&) = default;
-    const_buffers_type& operator=(const_buffers_type const&) = default;
-
-    const_iterator
-    begin() const;
-
-    const_iterator
-    end() const;
-};
-
-/// The type used to represent the output sequence as a list of buffers.
-template<class Allocator>
-class basic_streambuf<Allocator>::mutable_buffers_type
-{
-    basic_streambuf const* sb_;
-
-    friend class basic_streambuf;
-
-    explicit
-    mutable_buffers_type(basic_streambuf const& sb);
-
-public:
-    using value_type = mutable_buffer;
-
-    class const_iterator;
-
-    mutable_buffers_type() = default;
-    mutable_buffers_type(mutable_buffers_type const&) = default;
-    mutable_buffers_type& operator=(mutable_buffers_type const&) = default;
-
-    const_iterator
-    begin() const;
-
-    const_iterator
-    end() const;
-};
-
 /** Format output to a stream buffer.
 
     @param streambuf The streambuf to write to.
@@ -322,7 +279,7 @@ public:
 */
 template<class Alloc, class T>
 basic_streambuf<Alloc>&
-operator<<(basic_streambuf<Alloc>& buf, T const& t);
+operator<<(basic_streambuf<Alloc>& streambuf, T const& t);
 
 /** Convert the entire basic_streambuf to a string.
 
