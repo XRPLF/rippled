@@ -49,7 +49,7 @@ unit-test http-tests :
     http/write.cpp
     ;
 
-unit-test parser-bench :
+unit-test bench-tests :
     main.cpp
     http/nodejs_parser.cpp
     http/parser_bench.cpp

@@ -55,7 +55,7 @@ if (NOT WIN32)
     target_link_libraries(http-tests ${Boost_LIBRARIES})
 endif()
 
-add_executable (parser-bench
+add_executable (bench-tests
     ${BEAST_INCLUDES}
     main.cpp
     http/nodejs_parser.cpp

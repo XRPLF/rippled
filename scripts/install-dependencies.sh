@@ -14,7 +14,8 @@ do
     test -x $( type -p ${c}-$CLANG_VER )
     ln -sv $(type -p ${c}-$CLANG_VER) $HOME/bin/${c}
 done
-export PATH=$PWD/bin:$PATH
+# NOTE, changed from PWD -> HOME
+export PATH=$HOME/bin:$PATH
 
 # What versions are we ACTUALLY running?
 if [ -x $HOME/bin/g++ ]; then
@@ -29,6 +30,17 @@ ls -lah ~/.npm || mkdir ~/.npm
 # Make sure we own it
 chown -Rc $USER ~/.npm
 # We use this so we can filter the subtrees from our coverage report
-#pip install --user https://github.com/vinniefalco/codecov-python/zipball/source-match
+pip install --user https://github.com/codecov/codecov-python/archive/master.zip
+pip install --user autobahntestsuite
 
 bash scripts/install-boost.sh
+bash scripts/install-valgrind.sh
+
+# Install lcov
+# Download the archive
+wget http://downloads.sourceforge.net/ltp/lcov-1.12.tar.gz
+# Extract to ~/lcov-1.12
+tar xfvz lcov-1.12.tar.gz -C $HOME
+# Set install path
+mkdir -p $LCOV_ROOT
+cd $HOME/lcov-1.12 && make install PREFIX=$LCOV_ROOT
