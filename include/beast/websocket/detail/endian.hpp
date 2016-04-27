@@ -20,11 +20,11 @@ big_uint16_to_native(void const* buf)
 {
     auto const p = reinterpret_cast<
         std::uint8_t const*>(buf);
-    return p[0]*256 + p[1];
+    return p[0]<<8 + p[1];
 }
 
 inline
-std::uint16_t
+std::uint64_t
 big_uint64_to_native(void const* buf)
 {
     auto const p = reinterpret_cast<
