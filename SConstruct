@@ -1110,7 +1110,7 @@ for tu_style in ['classic', 'unity']:
                 cc_flags = {}
 
             object_builder.add_source_files(
-                'src/beast/src/beast_http_nodejs_parser.cpp',
+                'src/beast/test/http/nodejs_parser.cpp',
                 'src/ripple/beast/unity/beast_hash_unity.cpp',
                 'src/ripple/unity/beast.cpp',
                 'src/ripple/unity/lz4.c',

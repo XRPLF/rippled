@@ -155,7 +155,7 @@ make_JsonWriter (beast::deprecated_http::message& m, Json::Value const& json)
     m.headers.insert("Content-Length", std::to_string(body.size()));
     m.headers.erase ("Content-Type");
     m.headers.insert("Content-Type", "application/json");
-    write(prebody, m);
+    beast::deprecated_http::write(prebody, m);
     return std::make_shared<streambufs_writer>(
         std::move(prebody), std::move(body));
 }

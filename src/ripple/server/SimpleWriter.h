@@ -23,6 +23,7 @@
 #include <ripple/server/Writer.h>
 #include <ripple/beast/deprecated_http.h>
 #include <beast/streambuf.hpp>
+#include <beast/write_streambuf.hpp>
 #include <utility>
 
 namespace ripple {
@@ -96,8 +97,8 @@ private:
         message_.headers.erase("Content-Length");
         message_.headers.insert("Content-Length",
             std::to_string(body_.size()));
-        write(streambuf_, message_);
-        beast::http::detail::write(streambuf_, body_);
+        beast::deprecated_http::write(streambuf_, message_);
+        beast::write(streambuf_, body_);
     }
 };
 

@@ -301,6 +301,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\thread.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\write_streambuf.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\handler_alloc.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_headers.hpp">
@@ -309,9 +311,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\chunk_encode.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\error.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\writes.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\write_preparation.hpp">
     </ClInclude>
@@ -325,8 +325,6 @@
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\basic_parser.ipp">
     </None>
-    <ClInclude Include="..\..\src\beast\include\beast\http\impl\http_parser.h">
-    </ClInclude>
     <None Include="..\..\src\beast\include\beast\http\impl\message.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\read.ipp">
@@ -339,6 +337,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\parser.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\parse_error.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\read.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\reason.hpp">
@@ -347,15 +347,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\rfc2616.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\rfc7230.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\streambuf_body.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\string_body.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\type_check.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
     </ClInclude>
     <None Include="..\..\src\beast\include\beast\impl\basic_streambuf.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\impl\consuming_buffers.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\impl\prepare_buffers.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\impl\static_streambuf.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\impl\streambuf_readstream.ipp">
     </None>
@@ -374,6 +380,8 @@
     <ClInclude Include="..\..\src\beast\include\beast\websocket.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\decorator.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\endian.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\error.hpp">
     </ClInclude>
@@ -427,11 +435,17 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\teardown.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\src\beast_http_nodejs_parser.cpp">
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\src\http-parser\http_parser.c">
+    <ClInclude Include="..\..\src\beast\include\beast\write_streambuf.hpp">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\test\http\nodejs-parser\http_parser.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\test\http\nodejs-parser\http_parser.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\test\http\nodejs_parser.cpp">
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\test\http\nodejs_parser.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-64bit.h">
