@@ -468,7 +468,8 @@ private:
 
     void call_on_request(error_code& ec)
     {
-        call_on_request(ec, detail::has_on_request<Derived>{});
+        call_on_request(ec, std::integral_constant<bool,
+            isRequest && detail::has_on_request<Derived>::value>{});
     }
 
     void call_on_response(error_code& ec, std::true_type)
@@ -482,7 +483,8 @@ private:
 
     void call_on_response(error_code& ec)
     {
-        call_on_response(ec, detail::has_on_response<Derived>{});
+        call_on_response(ec, std::integral_constant<bool,
+            ! isRequest && detail::has_on_response<Derived>::value>{});
     }
 
     void call_on_field(error_code& ec,
