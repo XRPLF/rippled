@@ -23,7 +23,6 @@
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <beast/http/read.hpp>
-#include <beast/http/type_check.hpp>
 #include <beast/http/write.hpp>
 #include <cassert>
 

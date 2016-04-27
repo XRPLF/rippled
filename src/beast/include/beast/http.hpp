@@ -15,6 +15,7 @@
 #include <beast/http/error.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/message.hpp>
+#include <beast/http/parse_error.hpp>
 #include <beast/http/parser.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/reason.hpp>
@@ -22,7 +23,6 @@
 #include <beast/http/rfc2616.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/http/type_check.hpp>
 #include <beast/http/write.hpp>
 
 #endif

@@ -116,7 +116,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(buffers_adapter,asio,beast);
+BEAST_DEFINE_TESTSUITE(buffers_adapter,core,beast);
 
 } // test
 } // beast

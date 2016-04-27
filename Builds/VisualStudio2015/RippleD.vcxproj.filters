@@ -478,11 +478,14 @@
     <Filter Include="sqlite\sqlite">
       <UniqueIdentifier>{D2A046B6-8986-92AC-082F-15B3A01B8E40}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src">
-      <UniqueIdentifier>{04C492A5-B8E8-3B1F-4337-A067B40F268A}</UniqueIdentifier>
+    <Filter Include="test">
+      <UniqueIdentifier>{D5859751-012E-81F5-D121-159FE9A25436}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\http-parser">
-      <UniqueIdentifier>{1E761797-5D00-57DD-FEBA-D17E07E1788D}</UniqueIdentifier>
+    <Filter Include="test\http">
+      <UniqueIdentifier>{F9ABC269-E86E-1034-C5DE-E9E5B48772DB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\http\nodejs-parser">
+      <UniqueIdentifier>{617863D3-DC6A-1DDA-ACA5-7DC92DCEAFB3}</UniqueIdentifier>
     </Filter>
     <Filter Include="websocketpp_02">
       <UniqueIdentifier>{96CE200F-2670-323E-3B37-B90DBC0EDA11}</UniqueIdentifier>
@@ -630,6 +633,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\thread.hpp">
       <Filter>include\beast\detail\unit_test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\write_streambuf.hpp">
+      <Filter>include\beast\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\handler_alloc.hpp">
       <Filter>include\beast</Filter>
     </ClInclude>
@@ -642,10 +648,7 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\chunk_encode.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\error.hpp">
-      <Filter>include\beast\http\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\writes.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser.hpp">
       <Filter>include\beast\http\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\write_preparation.hpp">
@@ -666,9 +669,6 @@
     <None Include="..\..\src\beast\include\beast\http\impl\basic_parser.ipp">
       <Filter>include\beast\http\impl</Filter>
     </None>
-    <ClInclude Include="..\..\src\beast\include\beast\http\impl\http_parser.h">
-      <Filter>include\beast\http\impl</Filter>
-    </ClInclude>
     <None Include="..\..\src\beast\include\beast\http\impl\message.ipp">
       <Filter>include\beast\http\impl</Filter>
     </None>
@@ -687,6 +687,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\parser.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\parse_error.hpp">
+      <Filter>include\beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\read.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
@@ -699,19 +702,28 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\rfc2616.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\rfc7230.hpp">
+      <Filter>include\beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\streambuf_body.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\string_body.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\type_check.hpp">
-      <Filter>include\beast\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
     <None Include="..\..\src\beast\include\beast\impl\basic_streambuf.ipp">
+      <Filter>include\beast\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\impl\consuming_buffers.ipp">
+      <Filter>include\beast\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\impl\prepare_buffers.ipp">
+      <Filter>include\beast\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\impl\static_streambuf.ipp">
       <Filter>include\beast\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\impl\streambuf_readstream.ipp">
@@ -739,6 +751,9 @@
       <Filter>include\beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\decorator.hpp">
+      <Filter>include\beast\websocket\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\endian.hpp">
       <Filter>include\beast\websocket\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\detail\error.hpp">
@@ -819,12 +834,21 @@
     <ClInclude Include="..\..\src\beast\include\beast\websocket\teardown.hpp">
       <Filter>include\beast\websocket</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\src\beast_http_nodejs_parser.cpp">
-      <Filter>src</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\write_streambuf.hpp">
+      <Filter>include\beast</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\test\http\nodejs-parser\http_parser.c">
+      <Filter>test\http\nodejs-parser</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\src\http-parser\http_parser.c">
-      <Filter>src\http-parser</Filter>
+    <ClInclude Include="..\..\src\beast\test\http\nodejs-parser\http_parser.h">
+      <Filter>test\http\nodejs-parser</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\test\http\nodejs_parser.cpp">
+      <Filter>test\http</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\test\http\nodejs_parser.hpp">
+      <Filter>test\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>
     </ClInclude>

@@ -22,12 +22,21 @@ namespace beast {
 /** An allocator that uses handler customizations.
 
     This allocator uses the handler customizations `asio_handler_allocate`
-    and `asio_handler_deallocate` to manage memory.
+    and `asio_handler_deallocate` to manage memory. It meets the requirements
+    of `Allocator` and can be used anywhere a `std::allocator` is
+    accepted.
 
-    @tparam T The type of object
+    @tparam T The type of objects allocated by the allocator.
 
     @tparam Handler The type of handler.
+
+    @note Allocated memory is only valid until the handler is called. The
+    caller is still responsible for freeing memory.
 */
+#if GENERATING_DOCS
+template <class T, class Handler>
+class handler_alloc;
+#else
 template <class T, class Handler>
 class handler_alloc
 {
@@ -132,6 +141,7 @@ public:
         return !(lhs == rhs);
     }
 };
+#endif
 
 } // beast
 

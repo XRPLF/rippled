@@ -47,7 +47,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(base64,crypto,beast);
+BEAST_DEFINE_TESTSUITE(base64,detail,beast);
 
 } // test
 } // beast
