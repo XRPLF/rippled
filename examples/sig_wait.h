@@ -33,7 +33,7 @@ sig_wait()
     boost::asio::signal_set signals(
         ios, SIGINT, SIGTERM);
     signals.async_wait(
-        [&](boost::system::error_code const&, int sig)
+        [&](boost::system::error_code const&, int)
         {
         });
     ios.run();
