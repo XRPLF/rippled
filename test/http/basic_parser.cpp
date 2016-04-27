@@ -33,6 +33,80 @@ class basic_parser_test : public beast::detail::unit_test::suite
     std::mt19937 rng_;
 
 public:
+    struct cb_req_checker
+    {
+        bool method = false;
+        bool uri = false;
+        bool request = false;
+    };
+
+    struct cb_res_checker
+    {
+        bool reason = false;
+        bool response = false;
+    };
+
+    template<bool isRequest>
+    struct cb_checker
+        : public basic_parser<isRequest, cb_checker<isRequest>>
+        , std::conditional<isRequest,
+                cb_req_checker, cb_res_checker>::type
+
+    {
+        bool field = false;
+        bool value = false;
+        bool headers = false;
+        bool body = false;
+        bool complete = false;
+
+    private:
+        friend class basic_parser<isRequest, cb_checker<isRequest>>;
+
+        void on_method(boost::string_ref const&, error_code&)
+        {
+            this->method = true;
+        }
+        void on_uri(boost::string_ref const&, error_code&)
+        {
+            this->uri = true;
+        }
+        void on_reason(boost::string_ref const&, error_code&)
+        {
+            this->reason = true;
+        }
+        void on_request(error_code&)
+        {
+            this->request = true;
+        }
+        void on_response(error_code&)
+        {
+            this->response = true;
+        }
+        void on_field(boost::string_ref const&, error_code&)
+        {
+            field = true;
+        }
+        void on_value(boost::string_ref const&, error_code&)
+        {
+            value = true;
+        }
+        int on_headers(error_code&)
+        {
+            headers = true;
+            return 0;
+        }
+        void on_body(boost::string_ref const&, error_code&)
+        {
+            body = true;
+        }
+        void on_complete(error_code&)
+        {
+            complete = true;
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
     static
     std::string
     escaped_string(boost::string_ref const& s)
@@ -106,75 +180,6 @@ public:
         }
     };
 
-    struct cb_req_checker
-    {
-        bool method = false;
-        bool uri = false;
-        bool request = false;
-    };
-
-    struct cb_res_checker
-    {
-        bool reason = false;
-        bool response = false;
-    };
-
-    template<bool isRequest>
-    struct cb_checker
-        : public basic_parser<isRequest, cb_checker<isRequest>>
-        , std::conditional<isRequest,
-                cb_req_checker, cb_res_checker>::type
-
-    {
-        bool field = false;
-        bool value = false;
-        bool headers = false;
-        bool body = false;
-        bool complete = false;
-
-        void on_method(boost::string_ref const&, error_code&)
-        {
-            this->method = true;
-        }
-        void on_uri(boost::string_ref const&, error_code&)
-        {
-            this->uri = true;
-        }
-        void on_reason(boost::string_ref const&, error_code&)
-        {
-            this->reason = true;
-        }
-        void on_request(error_code&)
-        {
-            this->request = true;
-        }
-        void on_response(error_code&)
-        {
-            this->response = true;
-        }
-        void on_field(boost::string_ref const&, error_code&)
-        {
-            field = true;
-        }
-        void on_value(boost::string_ref const&, error_code&)
-        {
-            value = true;
-        }
-        int on_headers(error_code&)
-        {
-            headers = true;
-            return 0;
-        }
-        void on_body(boost::string_ref const&, error_code&)
-        {
-            body = true;
-        }
-        void on_complete(error_code&)
-        {
-            complete = true;
-        }
-    };
-
     void
     testCallbacks()
     {
@@ -188,7 +193,7 @@ public:
                 "\r\n"
                 "*";
             p.write(s.data(), s.size(), ec);
-             if( expect(! ec))
+            if( expect(! ec))
             {
                 expect(p.method);
                 expect(p.uri);

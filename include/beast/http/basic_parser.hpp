@@ -405,6 +405,191 @@ private:
     bool
     needs_eof(std::false_type) const;
 
+    template<class C>
+    class has_on_method_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_method(
+                std::declval<boost::string_ref const&>(),
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_method =
+        std::integral_constant<bool, has_on_method_t<C>::value>;
+
+    template<class C>
+    class has_on_uri_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_uri(
+                std::declval<boost::string_ref const&>(),
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_uri =
+        std::integral_constant<bool, has_on_uri_t<C>::value>;
+
+    template<class C>
+    class has_on_reason_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_reason(
+                std::declval<boost::string_ref const&>(),
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_reason =
+        std::integral_constant<bool, has_on_reason_t<C>::value>;
+
+    template<class C>
+    class has_on_request_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_request(
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_request =
+        std::integral_constant<bool, has_on_request_t<C>::value>;
+
+    template<class C>
+    class has_on_response_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_response(
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_response =
+        std::integral_constant<bool, has_on_response_t<C>::value>;
+
+    template<class C>
+    class has_on_field_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_uri(
+                std::declval<boost::string_ref const&>(),
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_field =
+        std::integral_constant<bool, has_on_field_t<C>::value>;
+
+    template<class C>
+    class has_on_value_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_uri(
+                std::declval<boost::string_ref const&>(),
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_value =
+        std::integral_constant<bool, has_on_value_t<C>::value>;
+
+    template<class C>
+    class has_on_headers_t
+    {
+        template<class T, class R = std::is_same<int,
+            decltype(std::declval<T>().on_headers(
+                std::declval<error_code&>()))>>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_headers =
+        std::integral_constant<bool, has_on_headers_t<C>::value>;
+
+    template<class C>
+    class has_on_body_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_body(
+                std::declval<boost::string_ref const&>(),
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_body =
+        std::integral_constant<bool, has_on_body_t<C>::value>;
+
+    template<class C>
+    class has_on_complete_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_complete(
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_complete =
+        std::integral_constant<bool, has_on_complete_t<C>::value>;
+
     void call_on_method(error_code& ec,
         boost::string_ref const& s, std::true_type)
     {
@@ -420,7 +605,7 @@ private:
         boost::string_ref const& s)
     {
         call_on_method(ec, s, std::integral_constant<bool,
-            isRequest && detail::has_on_method<Derived>::value>{});
+            isRequest && has_on_method<Derived>::value>{});
     }
 
     void call_on_uri(error_code& ec,
@@ -437,7 +622,7 @@ private:
     void call_on_uri(error_code& ec, boost::string_ref const& s)
     {
         call_on_uri(ec, s, std::integral_constant<bool,
-            isRequest && detail::has_on_uri<Derived>::value>{});
+            isRequest && has_on_uri<Derived>::value>{});
     }
 
     void call_on_reason(error_code& ec,
@@ -454,7 +639,7 @@ private:
     void call_on_reason(error_code& ec, boost::string_ref const& s)
     {
         call_on_reason(ec, s, std::integral_constant<bool,
-            ! isRequest && detail::has_on_reason<Derived>::value>{});
+            ! isRequest && has_on_reason<Derived>::value>{});
     }
 
     void call_on_request(error_code& ec, std::true_type)
@@ -469,7 +654,7 @@ private:
     void call_on_request(error_code& ec)
     {
         call_on_request(ec, std::integral_constant<bool,
-            isRequest && detail::has_on_request<Derived>::value>{});
+            isRequest && has_on_request<Derived>::value>{});
     }
 
     void call_on_response(error_code& ec, std::true_type)
@@ -484,7 +669,7 @@ private:
     void call_on_response(error_code& ec)
     {
         call_on_response(ec, std::integral_constant<bool,
-            ! isRequest && detail::has_on_response<Derived>::value>{});
+            ! isRequest && has_on_response<Derived>::value>{});
     }
 
     void call_on_field(error_code& ec,
@@ -500,7 +685,7 @@ private:
 
     void call_on_field(error_code& ec, boost::string_ref const& s)
     {
-        call_on_field(ec, s, detail::has_on_field<Derived>{});
+        call_on_field(ec, s, has_on_field<Derived>{});
     }
 
     void call_on_value(error_code& ec,
@@ -516,7 +701,7 @@ private:
 
     void call_on_value(error_code& ec, boost::string_ref const& s)
     {
-        call_on_value(ec, s, detail::has_on_value<Derived>{});
+        call_on_value(ec, s, has_on_value<Derived>{});
     }
 
     int call_on_headers(error_code& ec, std::true_type)
@@ -531,7 +716,7 @@ private:
 
     int call_on_headers(error_code& ec)
     {
-        return call_on_headers(ec, detail::has_on_headers<Derived>{});
+        return call_on_headers(ec, has_on_headers<Derived>{});
     }
 
     void call_on_body(error_code& ec,
@@ -547,7 +732,7 @@ private:
 
     void call_on_body(error_code& ec, boost::string_ref const& s)
     {
-        call_on_body(ec, s, detail::has_on_body<Derived>{});
+        call_on_body(ec, s, has_on_body<Derived>{});
     }
 
     void call_on_complete(error_code& ec, std::true_type)
@@ -561,7 +746,7 @@ private:
 
     void call_on_complete(error_code& ec)
     {
-        call_on_complete(ec, detail::has_on_complete<Derived>{});
+        call_on_complete(ec, has_on_complete<Derived>{});
     }
 };
 

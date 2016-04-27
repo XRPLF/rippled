@@ -338,6 +338,7 @@ write(void const* data, std::size_t size, error_code& ec)
             if(cb(&self::call_on_reason))
                 return used();
             pos_ = 0;
+            s_ = s_res_status;
             break;
 
         case s_res_status:
