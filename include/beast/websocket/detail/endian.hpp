@@ -1,0 +1,60 @@
+//
+// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
+#ifndef BEAST_WEBSOCKET_DETAIL_ENDIAN_HPP
+#define BEAST_WEBSOCKET_DETAIL_ENDIAN_HPP
+
+#include <cstdint>
+
+namespace beast {
+namespace websocket {
+namespace detail {
+
+inline
+std::uint16_t
+big_uint16_to_native(void const* buf)
+{
+    auto const p = reinterpret_cast<
+        std::uint8_t const*>(buf);
+    return p[0]*256 + p[1];
+}
+
+inline
+std::uint16_t
+big_uint64_to_native(void const* buf)
+{
+    auto const p = reinterpret_cast<
+        std::uint8_t const*>(buf);
+    return
+        (static_cast<std::uint64_t>(p[0])<<56) +
+        (static_cast<std::uint64_t>(p[1])<<48) +
+        (static_cast<std::uint64_t>(p[2])<<40) +
+        (static_cast<std::uint64_t>(p[3])<<32) +
+        (static_cast<std::uint64_t>(p[4])<<24) +
+        (static_cast<std::uint64_t>(p[5])<<16) +
+        (static_cast<std::uint64_t>(p[6])<< 8) +
+                                    p[7];
+}
+
+inline
+std::uint32_t
+little_uint32_to_native(void const* buf)
+{
+    auto const p = reinterpret_cast<
+        std::uint8_t const*>(buf);
+    return
+                                    p[0] +
+        (static_cast<std::uint64_t>(p[1])<< 8) +
+        (static_cast<std::uint64_t>(p[2])<<16) +
+        (static_cast<std::uint64_t>(p[3])<<24);
+}
+
+} // detail
+} // websocket
+} // beast
+
+#endif

@@ -80,7 +80,8 @@ struct file_body
         operator()(resume_context&&, error_code&, Write&& write)
         {
             buf_len_ = std::min(size_ - offset_, sizeof(buf_));
-            fread(buf_, 1, sizeof(buf_), file_);
+            auto const nread = fread(buf_, 1, sizeof(buf_), file_);
+            (void)nread;
             offset_ += buf_len_;
             write(boost::asio::buffer(buf_, buf_len_));
             return offset_ >= size_;

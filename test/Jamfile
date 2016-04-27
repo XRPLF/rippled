@@ -58,7 +58,7 @@ unit-test websocket-tests :
     websocket/teardown.cpp
     ;
 
-exe parser-bench :
+unit-test parser-bench :
     main.cpp
     http/nodejs_parser.cpp
     http/parser_bench.cpp
