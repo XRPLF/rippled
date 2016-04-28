@@ -20,20 +20,20 @@ rm -f build/rippled
 
 # See what we've actually built
 ldd $RIPPLED_PATH
+
+# Execute unit tests under gdb, printing a call stack
+# if we get a crash.
+gdb -return-child-result -quiet -batch \
+    -ex "set env MALLOC_CHECK_=3" \
+    -ex "set print thread-events off" \
+    -ex run \
+    -ex "thread apply all backtrace full" \
+    -ex "quit" \
+    --args $RIPPLED_PATH --unittest
+
 if [[ $TARGET == "coverage" ]]; then
-  $RIPPLED_PATH --unittest
   # We pass along -p to keep path segments so as to avoid collisions
   codecov --gcov-args=-p --gcov-source-match='^src/(ripple|beast)'
-else
-  if [[ $CC == "clang" ]]; then
-    # gdb segfaults with a clang build
-    $RIPPLED_PATH --unittest
-  else
-    # Run unittests (under gdb)
-    cat $__dirname/unittests.gdb | gdb \
-        --return-child-result \
-        --args $RIPPLED_PATH --unittest
-  fi
 fi
 
 # Run NPM tests
