@@ -1203,8 +1203,11 @@ Ledger::getNeededAccountStateHashes (
 void
 Ledger::make_v2()
 {
+    assert (! mImmutable);
     stateMap_ = stateMap_->make_v2();
     txMap_ = txMap_->make_v2();
+    info_.validated = false;
+    updateHash();
 }
 
 void
