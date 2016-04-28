@@ -249,10 +249,42 @@ public:
         expect(jv[jss::status] == "success");
     }
 
+    static
+    std::unique_ptr<Config>
+    makeValidatorConfig(
+        std::string const& valPrivateKey, std::string const& valPublicKey)
+    {
+        auto p = std::make_unique<Config>();
+        setupConfigForUnitTests(*p);
+
+        // If the config has valid validation keys then we run as a validator.
+        auto const sk = parseBase58<SecretKey>(
+            TOKEN_NODE_PRIVATE,
+            valPrivateKey);
+        if (!sk)
+            Throw<std::runtime_error> ("Invalid validation private key");
+        p->VALIDATION_PRIV = *sk;
+
+        auto const pk = parseBase58<PublicKey>(
+            TOKEN_NODE_PUBLIC,
+            valPublicKey);
+        if (!pk)
+            Throw<std::runtime_error> ("Invalid validation public key");
+        p->VALIDATION_PUB = *pk;
+
+        return p;
+    }
+
     void testValidations()
     {
         using namespace jtx;
-        Env env(*this);
+
+        // Public key must be derived from the private key
+        const std::string valPrivateKey =
+            "paEdUCVVCNnv4aYBepid9Xh3NaAr9xWRw2vh351piFJrxQwvExd";
+        const std::string valPublicKey =
+            "n9MvFGjgv1kYkm7bLbb2QUwSqgzrQkYMYHXtrzN8W28Jfp2mVihq";
+        Env env(*this, makeValidatorConfig(valPrivateKey, valPublicKey));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -262,6 +294,29 @@ public:
             stream[jss::streams].append("validations");
             auto jv = wsc->invoke("subscribe", stream);
             expect(jv[jss::status] == "success");
+        }
+
+        {
+            // Accept a ledger
+            env.close();
+
+            // Check stream update
+            expect(wsc->findMsg(5s,
+                [&](auto const& jv)
+                {
+                    return jv[jss::type] == "validationReceived" &&
+                        jv[jss::validation_public_key] == valPublicKey &&
+                        jv[jss::ledger_hash] ==
+                            to_string(env.closed()->info().hash) &&
+                        jv[jss::ledger_index] ==
+                            to_string(env.closed()->info().seq) &&
+                        jv[jss::flags] ==
+                            (vfFullyCanonicalSig | STValidation::kFullFlag) &&
+                        jv[jss::full] == true &&
+                        jv[jss::load_fee] == 256000 &&
+                        jv[jss::signature] &&
+                        jv[jss::signing_time];
+                }));
         }
 
         // RPC unsubscribe

@@ -167,7 +167,8 @@ JSS ( fee_ref );                    // out: NetworkOPs
 JSS ( fetch_pack );                 // out: NetworkOPs
 JSS ( first );                      // out: rpc/Version
 JSS ( fix_txns );                   // in: LedgerCleaner
-JSS ( flags );                      // out: paths/Node, AccountOffers
+JSS ( flags );                      // out: paths/Node, AccountOffers,
+                                    //      NetworkOPs
 JSS ( forward );                    // in: AccountTx
 JSS ( freeze );                     // out: AccountLines
 JSS ( freeze_peer );                // out: AccountLines
@@ -237,7 +238,7 @@ JSS ( load_factor_fee_queue );      // out: NetworkOPs
 JSS ( load_factor_fee_reference );  // out: NetworkOPs
 JSS ( load_factor_local );          // out: NetworkOPs
 JSS ( load_factor_net );            // out: NetworkOPs
-JSS ( load_fee );                   // out: LoadFeeTrackImp
+JSS ( load_fee );                   // out: LoadFeeTrackImp, NetworkOPs
 JSS ( local );                      // out: resource/Logic.h
 JSS ( local_txs );                  // out: GetCounts
 JSS ( majority );                   // out: RPC feature
@@ -347,6 +348,7 @@ JSS ( server_status );              // out: NetworkOPs
 JSS ( severity );                   // in: LogLevel
 JSS ( signature );                  // out: NetworkOPs
 JSS ( signing_key );                // out: NetworkOPs
+JSS ( signing_time );               // out: NetworkOPs
 JSS ( signer_list );                // in: AccountObjects
 JSS ( signer_lists );               // in/out: AccountInfo
 JSS ( snapshot );                   // in: Subscribe
