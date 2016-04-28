@@ -963,6 +963,11 @@ OverlayImpl::send (protocol::TMValidation& m)
         if (! m.has_hops() || p->hopsAware())
             p->send(sm);
     });
+
+    SerialIter sit (m.validation().data(), m.validation().size());
+    auto val = std::make_shared <
+        STValidation> (std::ref (sit), false);
+    app_.getOPs().pubValidation (val);
 }
 
 void

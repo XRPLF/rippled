@@ -406,6 +406,8 @@ public:
     void pubProposedTransaction (
         std::shared_ptr<ReadView const> const& lpCurrent,
         std::shared_ptr<STTx const> const& stTxn, TER terResult) override;
+    void pubValidation (
+        STValidation::ref val) override;
 
     //--------------------------------------------------------------------------
     //
@@ -492,7 +494,6 @@ private:
         bool isAccepted);
 
     void pubServer ();
-    void pubValidation (STValidation::ref val);
 
     std::string getHostId (bool forAdmin);
 
@@ -1623,6 +1624,8 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         jvObj [jss::ledger_hash]           = to_string (val->getLedgerHash ());
         jvObj [jss::signature]             = strHex (val->getSignature ());
         jvObj [jss::full]                  = val->isFull();
+        jvObj [jss::flags]                 = val->getFlags();
+        jvObj [jss::signing_time]          = *(*val)[~sfSigningTime];
 
         auto const seq = *(*val)[~sfLedgerSequence];
 
@@ -1635,6 +1638,21 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
             for (auto const& amendment : val->getFieldV256(sfAmendments))
                 jvObj [jss::amendments].append (to_string (amendment));
         }
+
+        if (auto const closeTime = (*val)[~sfCloseTime])
+            jvObj [jss::close_time] = *closeTime;
+
+        if (auto const loadFee = (*val)[~sfLoadFee])
+            jvObj [jss::load_fee] = *loadFee;
+
+        if (auto const baseFee = (*val)[~sfBaseFee])
+            jvObj [jss::base_fee] = static_cast<double> (*baseFee);
+
+        if (auto const reserveBase = (*val)[~sfReserveBase])
+            jvObj [jss::reserve_base] = *reserveBase;
+
+        if (auto const reserveInc = (*val)[~sfReserveIncrement])
+            jvObj [jss::reserve_inc] = *reserveInc;
 
         for (auto i = mSubValidations.begin (); i != mSubValidations.end (); )
         {
