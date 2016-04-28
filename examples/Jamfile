@@ -16,12 +16,12 @@ exe http_server :
     http_server.cpp
     ;
 
-exe websocket_echo :
-    websocket_echo.cpp
-    ;
-
 exe http_example :
     http_example.cpp
+    ;
+
+exe websocket_echo :
+    websocket_echo.cpp
     ;
 
 exe websocket_example :
