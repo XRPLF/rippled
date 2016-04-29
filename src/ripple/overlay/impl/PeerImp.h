@@ -40,7 +40,7 @@
 #include <beast/streambuf.hpp>
 #include <ripple/beast/asio/ssl_bundle.h>
 #include <beast/http/message.hpp>
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <cstdint>
 #include <deque>
@@ -154,8 +154,8 @@ private:
     PeerFinder::Slot::ptr slot_;
     beast::streambuf read_buffer_;
     http_request_type request_;
-    beast::deprecated_http::message response_;
-    beast::http::headers<std::allocator<char>> const& headers_;
+    http_response_type response_;
+    beast::http::headers const& headers_;
     beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;
@@ -183,7 +183,7 @@ public:
     template <class Buffers>
     PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-            beast::deprecated_http::message&& response, Resource::Consumer usage,
+            http_response_type&& response, Resource::Consumer usage,
                 protocol::TMHello const& hello,
                     PublicKey const& publicKey, id_t id,
                         OverlayImpl& overlay);
@@ -360,7 +360,7 @@ private:
     void
     doAccept();
 
-    beast::deprecated_http::message
+    http_response_type
     makeResponse (bool crawl, http_request_type const& req,
         beast::IP::Endpoint remoteAddress,
         uint256 const& sharedValue);
@@ -477,7 +477,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-        beast::deprecated_http::message&& response, Resource::Consumer usage,
+        http_response_type&& response, Resource::Consumer usage,
             protocol::TMHello const& hello,
                 PublicKey const& publicKey, id_t id,
                     OverlayImpl& overlay)

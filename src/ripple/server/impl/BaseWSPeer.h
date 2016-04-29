@@ -24,7 +24,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <beast/websocket.hpp>
 #include <beast/streambuf.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/message_v1.hpp>
 #include <cassert>
 
 namespace ripple {
@@ -59,7 +59,7 @@ public:
         Port const& port,
         Handler& handler,
         endpoint_type remote_address,
-        beast::http::message<true, Body, Headers>&& request,
+        beast::http::request_v1<Body, Headers>&& request,
         boost::asio::io_service& io_service,
         beast::Journal journal);
 
@@ -148,7 +148,7 @@ BaseWSPeer<Impl>::BaseWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_address,
-    beast::http::message<true, Body, Headers>&& request,
+    beast::http::request_v1<Body, Headers>&& request,
     boost::asio::io_service& io_service,
     beast::Journal journal)
     : BasePeer<Impl>(port, handler, remote_address,

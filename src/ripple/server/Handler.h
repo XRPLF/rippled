@@ -72,7 +72,7 @@ struct Handler
     /** @} */
 
     /** Called when we have a complete HTTP request. */
-    // VFALCO TODO Pass the beast::deprecated_http::message as a parameter
+    // VFALCO TODO Pass the message as a template arg
     virtual void onRequest (Session& session) = 0;
 
     /** Called when the session ends.

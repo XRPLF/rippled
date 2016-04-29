@@ -25,7 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/server/JsonWriter.h>
+#include <ripple/server/json_body.h>
 #include <ripple/server/SimpleWriter.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
@@ -37,6 +37,7 @@
 #include <ripple/beast/core/ByteOrder.h>
 #include <beast/detail/base64.hpp>
 #include <ripple/beast/core/LexicalCast.h>
+#include <beast/http.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <beast/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
@@ -324,15 +325,15 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
 }
 
 bool
-OverlayImpl::isPeerUpgrade(beast::deprecated_http::message const& request)
+OverlayImpl::isPeerUpgrade(http_response_type const& response)
 {
-    if (! request.upgrade())
+    if (! is_upgrade(response))
+        return false;
+    if(response.status != 101)
         return false;
     auto const versions = parse_ProtocolVersions(
-        request.headers["Upgrade"]);
+        response.headers["Upgrade"]);
     if (versions.size() == 0)
-        return false;
-    if(! request.request() && request.status() != 101)
         return false;
     return true;
 }
@@ -349,47 +350,39 @@ std::shared_ptr<Writer>
 OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
     http_request_type const& request, address_type remote_address)
 {
-    Json::Value json(Json::objectValue);
+    beast::http::response_v1<json_body> msg;
+    msg.version = request.version;
+    msg.status = 503;
+    msg.reason = "Service Unavailable";
+    msg.headers.insert("Server", BuildInfo::getFullVersionString());
+    msg.headers.insert("Remote-Address", remote_address.to_string());
+    msg.headers.insert("Content-Type", "application/json");
+    msg.body = Json::objectValue;
     {
         auto const result = m_peerFinder->redirect(slot);
-        Json::Value& ips = (json["peer-ips"] = Json::arrayValue);
+        Json::Value& ips = (msg.body["peer-ips"] = Json::arrayValue);
         for (auto const& _ : m_peerFinder->redirect(slot))
             ips.append(_.address.to_string());
     }
-
-    beast::deprecated_http::message m;
-    m.request(false);
-    m.status(503);
-    m.reason("Service Unavailable");
-    m.headers.insert("Remote-Address", remote_address.to_string());
-    m.version(std::make_pair(request.version / 10, request.version % 10));
-    if (request.version == 10)
-    {
-        //?
-    }
-    auto const response = make_JsonWriter (m, json);
-    return response;
+    prepare(msg, beast::http::connection::close);
+    return std::make_shared<SimpleWriter>(msg);
 }
 
 std::shared_ptr<Writer>
 OverlayImpl::makeErrorResponse (PeerFinder::Slot::ptr const& slot,
     http_request_type const& request,
     address_type remote_address,
-    std::string msg)
+    std::string text)
 {
-    beast::deprecated_http::message m;
-    m.version(std::make_pair(request.version / 10, request.version % 10));
-    m.request(false);
-    m.status(400);
-    m.reason("Bad Request");
-    m.headers.insert("Remote-Address", remote_address.to_string());
-
-    auto response = std::make_shared<SimpleWriter> (std::move(m));
-
-    if (!msg.empty())
-        response->body (msg);
-
-    return response;
+    beast::http::response_v1<beast::http::string_body> msg;
+    msg.version = request.version;
+    msg.status = 400;
+    msg.reason = "Bad Request";
+    msg.headers.insert("Server", BuildInfo::getFullVersionString());
+    msg.headers.insert("Remote-Address", remote_address.to_string());
+    msg.body = text;
+    prepare(msg, beast::http::connection::close);
+    return std::make_shared<SimpleWriter>(msg);
 }
 
 //------------------------------------------------------------------------------
@@ -891,14 +884,15 @@ OverlayImpl::processRequest (http_request_type const& req,
     if (req.url != "/crawl")
         return false;
 
-    beast::deprecated_http::message resp;
-    resp.request(false);
-    resp.status(200);
-    resp.reason("OK");
-    resp.version(std::make_pair(req.version / 10, req.version % 10));
-    Json::Value v;
-    v["overlay"] = crawl();
-    handoff.response = make_JsonWriter(resp, v);
+    beast::http::response_v1<json_body> msg;
+    msg.version = req.version;
+    msg.status = 200;
+    msg.reason = "OK";
+    msg.headers.insert("Server", BuildInfo::getFullVersionString());
+    msg.headers.insert("Content-Type", "application/json");
+    msg.body["overlay"] = crawl();
+    prepare(msg, beast::http::connection::close);
+    handoff.response = std::make_shared<SimpleWriter>(msg);
     return true;
 }
 

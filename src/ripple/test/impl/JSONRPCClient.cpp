@@ -18,12 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/beast/deprecated_http.h>
 #include <ripple/test/JSONRPCClient.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/server/Port.h>
-#include <beast/http/message.hpp>
+#include <beast/http/message_v1.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/http/read.hpp>
@@ -107,8 +106,8 @@ public:
         using namespace boost::asio;
         using namespace std::string_literals;
 
-        request<string_body> req;
-        req.method = method_t::http_post;
+        request_v1<string_body> req;
+        req.method = "POST";
         req.url = "/";
         req.version = 11;
         req.headers.insert("Content-Type", "application/json; charset=UTF-8");
@@ -124,9 +123,10 @@ public:
             }
             req.body = to_string(jr);
         }
+        prepare(req);
         write(stream_, req);
 
-        response<streambuf_body> res;
+        response_v1<streambuf_body> res;
         read(stream_, bin_, res);
 
         Json::Reader jr;

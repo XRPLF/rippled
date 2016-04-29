@@ -242,19 +242,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\bind_handler.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\buffers_debug.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\buffer_cat.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\buffer_concepts.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\consuming_buffers.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\bind_handler.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\buffer_cat.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\buffer_concepts.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\ci_char_traits.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\const_container.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\get_lowest_layer.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\integer_sequence.hpp">
     </ClInclude>
@@ -271,6 +279,8 @@
     <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_std_ostream.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\stream\debug_ostream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\stream_concepts.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\temp_dir.hpp">
     </ClInclude>
@@ -305,15 +315,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\handler_alloc.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\handler_concepts.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_headers.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser_v1.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\chunk_encode.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\body_type.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser_v1.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\detail\write_preparation.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\chunk_encode.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\has_content_length.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\empty_body.hpp">
     </ClInclude>
@@ -323,9 +339,9 @@
     </ClInclude>
     <None Include="..\..\src\beast\include\beast\http\impl\basic_headers.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\http\impl\basic_parser.ipp">
+    <None Include="..\..\src\beast\include\beast\http\impl\basic_parser_v1.ipp">
     </None>
-    <None Include="..\..\src\beast\include\beast\http\impl\message.ipp">
+    <None Include="..\..\src\beast\include\beast\http\impl\message_v1.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\read.ipp">
     </None>
@@ -333,9 +349,9 @@
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\http\message.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\method.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\message_v1.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\parser.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\parser_v1.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\parse_error.hpp">
     </ClInclude>
@@ -371,11 +387,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\static_streambuf.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\static_string.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\streambuf.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\streambuf_readstream.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\type_check.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\stream_concepts.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\to_string.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket.hpp">
     </ClInclude>
@@ -429,22 +449,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\ssl.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\static_string.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\stream.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\teardown.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\write_streambuf.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\test\http\nodejs-parser\http_parser.c">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\test\http\nodejs-parser\http_parser.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\test\http\nodejs_parser.cpp">
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\test\http\nodejs_parser.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
@@ -1628,8 +1637,6 @@
     <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\cxx17\type_traits.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\deprecated_http.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
     </ClInclude>
@@ -3465,7 +3472,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
+    <ClInclude Include="..\..\src\ripple\server\json_body.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\make_Server.h">
     </ClInclude>

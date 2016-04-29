@@ -22,7 +22,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/server/JsonWriter.h>
+#include <ripple/server/json_body.h>
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/server/impl/ServerHandlerImp.h>
@@ -39,6 +39,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <beast/detail/base64.hpp>
+#include <beast/http/headers.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
@@ -203,10 +204,9 @@ Json::Output makeOutput (Session& session)
 }
 
 // HACK!
-template<class Allocator>
 static
 std::map<std::string, std::string>
-build_map(beast::http::headers<Allocator> const& h)
+build_map(beast::http::headers const& h)
 {
     std::map <std::string, std::string> c;
     for (auto const& e : h)

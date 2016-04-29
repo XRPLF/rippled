@@ -24,7 +24,6 @@
 #include <ripple/core/Config.h>
 #include <ripple/server/Port.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/beast/deprecated_http.h>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/asio/ip/address.hpp>
 #include <memory>
