@@ -147,7 +147,7 @@ class SHAMapInnerNodeV2;
 class SHAMapInnerNode
     : public SHAMapAbstractNode
 {
-    SHAMapHash                      mHashes[16];
+    std::array<SHAMapHash, 16>          mHashes;
     std::shared_ptr<SHAMapAbstractNode> mChildren[16];
     int                             mIsBranch = 0;
     std::uint32_t                   mFullBelowGen = 0;

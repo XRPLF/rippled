@@ -107,6 +107,8 @@ public:
 
     int addVL (Blob const& vector);
     int addVL (Slice const& slice);
+    template<class Iter>
+    int addVL (Iter begin, Iter end, int len);
     int addVL (const void* ptr, int len);
 
     // disassemble functions
@@ -279,6 +281,21 @@ private:
     static int encodeLengthLength (int length); // length to encode length
     int addEncoded (int length);
 };
+
+template<class Iter>
+int Serializer::addVL(Iter begin, Iter end, int len)
+{
+    int ret = addEncoded(len);
+    for (; begin != end; ++begin)
+    {
+        addRaw(begin->data(), begin->size());
+#ifndef NDEBUG
+        len -= begin->size();
+#endif
+    }
+    assert(len == 0);
+    return ret;
+}
 
 //------------------------------------------------------------------------------
 

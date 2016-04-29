@@ -147,7 +147,7 @@ calcAccountID (PublicKey const& pk)
     auto const d = static_cast<
         ripesha_hasher::result_type>(rsh);
     AccountID id;
-    static_assert(sizeof(d) == sizeof(id), "");
+    static_assert(sizeof(d) == id.size(), "");
     std::memcpy(id.data(), d.data(), d.size());
     return id;
 }

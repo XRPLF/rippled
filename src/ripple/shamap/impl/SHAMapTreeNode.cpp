@@ -43,7 +43,7 @@ SHAMapInnerNode::clone(std::uint32_t seq) const
     p->mHash = mHash;
     p->mIsBranch = mIsBranch;
     p->mFullBelowGen = mFullBelowGen;
-    std::memcpy(p->mHashes, mHashes, sizeof(mHashes));
+    p->mHashes = mHashes;
     std::unique_lock <std::mutex> lock(childLock);
     for (int i = 0; i < 16; ++i)
     {
@@ -60,7 +60,7 @@ SHAMapInnerNodeV2::clone(std::uint32_t seq) const
     p->mHash = mHash;
     p->mIsBranch = mIsBranch;
     p->mFullBelowGen = mFullBelowGen;
-    std::memcpy(p->mHashes, mHashes, sizeof(mHashes));
+    p->mHashes = mHashes;
     p->common_ = common_;
     p->depth_ = depth_;
     std::unique_lock <std::mutex> lock(childLock);
@@ -365,10 +365,13 @@ SHAMapInnerNode::updateHash()
     uint256 nh;
     if (mIsBranch != 0)
     {
-        // VFALCO This code assumes the layout of a base_uint
-        nh = sha512Half(HashPrefix::innerNode,
-            Slice(reinterpret_cast<unsigned char const*>(mHashes),
-                sizeof (mHashes)));
+        sha512_half_hasher h;
+        using beast::hash_append;
+        hash_append(h, HashPrefix::innerNode);
+        for(auto const& hh : mHashes)
+            hash_append(h, hh);
+        nh = static_cast<typename
+            sha512_half_hasher::result_type>(h);
     }
     if (nh == mHash.as_uint256())
         return false;
@@ -438,15 +441,15 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32 (HashPrefix::innerNode);
 
-            for (int i = 0; i < 16; ++i)
-                s.add256 (mHashes[i].as_uint256());
+            for (auto const& hh : mHashes)
+                s.add256 (hh.as_uint256());
         }
         else  // format == snfWIRE
         {
             if (getBranchCount () < 12)
             {
                 // compressed node
-                for (int i = 0; i < 16; ++i)
+                for (int i = 0; i < mHashes.size(); ++i)
                     if (!isEmptyBranch (i))
                     {
                         s.add256 (mHashes[i].as_uint256());
@@ -457,8 +460,8 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             }
             else
             {
-                for (int i = 0; i < 16; ++i)
-                    s.add256 (mHashes[i].as_uint256());
+                for (auto const& hh : mHashes)
+                    s.add256 (hh.as_uint256());
 
                 s.add8 (2);
             }
@@ -606,7 +609,7 @@ std::string
 SHAMapInnerNode::getString(const SHAMapNodeID & id) const
 {
     std::string ret = SHAMapAbstractNode::getString(id);
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < mHashes.size(); ++i)
     {
         if (!isEmptyBranch (i))
         {

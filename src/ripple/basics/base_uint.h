@@ -54,10 +54,10 @@ protected:
     enum { WIDTH = Bits / 32 };
 
     // This is really big-endian in byte order.
-    // We sometimes use unsigned int for speed.
+    // We sometimes use std::uint32_t for speed.
 
     // NIKB TODO: migrate to std::array
-    unsigned int pn[WIDTH];
+    std::uint32_t pn[WIDTH];
 
 public:
     //--------------------------------------------------------------------------
@@ -268,7 +268,7 @@ public:
     {
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            std::uint32_t prev = pn[i];
+            auto prev = pn[i];
             pn[i] = hostToBigend (bigendToHost (pn[i]) - 1);
 
             if (prev != 0)
@@ -320,6 +320,7 @@ public:
     {
         unsigned char* pOut  = begin ();
 
+        assert(sizeof(pn) == bytes);
         for (int i = 0; i < sizeof (pn); ++i)
         {
             auto hi = charUnHex(*psz++);
@@ -406,9 +407,9 @@ public:
         return SetHexExact (str.c_str ());
     }
 
-    unsigned int size () const
+    constexpr static std::size_t size ()
     {
-        return sizeof (pn);
+        return bytes;
     }
 
     base_uint<Bits, Tag>& operator=(Zero)
