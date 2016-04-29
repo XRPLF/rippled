@@ -50,6 +50,9 @@ class base_uint
     static_assert (Bits >= 64,
         "The length of a base_uint in bits must be at least 64.");
 
+    static_assert(sizeof(unsigned int) == 32 / CHAR_BIT,
+        "Expecting 32-bit unsigned ints");
+
 protected:
     enum { WIDTH = Bits / 32 };
 
@@ -320,6 +323,7 @@ public:
     {
         unsigned char* pOut  = begin ();
 
+        assert(sizeof(pn) == bytes);
         for (int i = 0; i < sizeof (pn); ++i)
         {
             auto hi = charUnHex(*psz++);
@@ -406,9 +410,9 @@ public:
         return SetHexExact (str.c_str ());
     }
 
-    unsigned int size () const
+    constexpr static std::size_t size ()
     {
-        return sizeof (pn);
+        return bytes;
     }
 
     base_uint<Bits, Tag>& operator=(Zero)

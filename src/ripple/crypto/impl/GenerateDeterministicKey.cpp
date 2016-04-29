@@ -95,7 +95,7 @@ static bignum generateRootDeterministicKey (uint128 const& seed)
         copy_uint32 (buf.begin() + 16, seq++);
         auto root = sha512Half(buf);
         std::fill (buf.begin(), buf.end(), 0); // security erase
-        privKey.assign ((unsigned char const*) &root, sizeof (root));
+        privKey.assign ((unsigned char const*)root.data(), root.size());
         root.zero(); // security erase
     }
     while (privKey.is_zero() || privKey >= secp256k1curve.order);
@@ -154,7 +154,7 @@ static bignum makeHash (Blob const& pubGen, int seq, bignum const& order)
         copy_uint32 (buf.begin() + 37, subSeq++);
         auto root = sha512Half_s(buf);
         std::fill(buf.begin(), buf.end(), 0); // security erase
-        result.assign ((unsigned char const*) &root, sizeof (root));
+        result.assign ((unsigned char const*)root.data(), root.size());
     }
     while (result.is_zero()  ||  result >= order);
 

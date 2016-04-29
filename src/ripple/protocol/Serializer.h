@@ -107,6 +107,8 @@ public:
 
     int addVL (Blob const& vector);
     int addVL (Slice const& slice);
+    template<class FwdIt>
+    int addVL (FwdIt begin, FwdIt end, int len);
     int addVL (const void* ptr, int len);
 
     // disassemble functions
@@ -279,6 +281,20 @@ private:
     static int encodeLengthLength (int length); // length to encode length
     int addEncoded (int length);
 };
+
+template<class FwdIt>
+int Serializer::addVL(FwdIt begin, FwdIt end, int len)
+{
+    int ret = addEncoded(len);
+    if (len)
+        for (; begin != end; ++begin)
+        {
+            addRaw(begin->data(), begin->size());
+            len -= begin->size();
+        }
+    assert(len == 0);
+    return ret;
+}
 
 //------------------------------------------------------------------------------
 

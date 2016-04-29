@@ -203,7 +203,7 @@ public:
             auto const& uints1 = object1.getFieldV256(sfTestV256);
             auto const& uints3 = object3.getFieldV256(sfTestV256);
 
-            expect(uints1 == uints3);
+            expect(uints1 == uints3, "STObject vector mismatch");
         }
     }
 

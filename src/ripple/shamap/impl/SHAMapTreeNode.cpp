@@ -43,7 +43,8 @@ SHAMapInnerNode::clone(std::uint32_t seq) const
     p->mHash = mHash;
     p->mIsBranch = mIsBranch;
     p->mFullBelowGen = mFullBelowGen;
-    std::memcpy(p->mHashes, mHashes, sizeof(mHashes));
+    for (int i = 0; i < sizeof(mHashes) / sizeof(mHashes[0]); ++i)
+        p->mHashes[i] = mHashes[i];
     std::unique_lock <std::mutex> lock(childLock);
     for (int i = 0; i < 16; ++i)
     {
@@ -365,10 +366,13 @@ SHAMapInnerNode::updateHash()
     uint256 nh;
     if (mIsBranch != 0)
     {
-        // VFALCO This code assumes the layout of a base_uint
-        nh = sha512Half(HashPrefix::innerNode,
-            Slice(reinterpret_cast<unsigned char const*>(mHashes),
-                sizeof (mHashes)));
+        sha512_half_hasher h;
+        using beast::hash_append;
+        hash_append(h, HashPrefix::innerNode);
+        for (int i = 0; i < sizeof(mHashes) / sizeof(mHashes[0]); ++i)
+            hash_append(h, mHashes[i]);
+        nh = static_cast<typename
+            sha512_half_hasher::result_type>(h);
     }
     if (nh == mHash.as_uint256())
         return false;
