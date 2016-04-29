@@ -22,7 +22,6 @@
 
 #include <beast/detail/unit_test/suite.hpp>
 #include <beast/detail/unit_test/thread.hpp>
-#include <beast/buffers_debug.hpp>
 #include <beast/placeholders.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/http.hpp>
@@ -151,8 +150,7 @@ public:
 
         streambuf rb;
         {
-            request<string_body> req(
-                {beast::http::method_t::http_get, "/", 11});
+            request<string_body> req({"GET", "/", 11});
             req.body = "Beast.HTTP";
             req.headers.replace("Host",
                 ep.address().to_string() + ":" +
@@ -176,7 +174,7 @@ public:
 
     void run() override
     {
-        //testAsio();
+        testAsio();
         pass();
     }
 };

@@ -23,9 +23,10 @@ int main()
     using namespace beast::http;
 
     // Send HTTP request using beast
-    request<empty_body> req({method_t::http_get, "/", 11});
+    request<empty_body> req({"GET", "/", 11});
     req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
     req.headers.replace("User-Agent", "Beast");
+    prepare(req);
     write(sock, req);
 
     // Receive and print HTTP response using beast

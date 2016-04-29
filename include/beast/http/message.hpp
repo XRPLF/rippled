@@ -9,11 +9,8 @@
 #define BEAST_HTTP_MESSAGE_HPP
 
 #include <beast/http/basic_headers.hpp>
-#include <beast/http/method.hpp>
-#include <beast/buffers_debug.hpp>
 #include <beast/type_check.hpp>
 #include <memory>
-#include <ostream>
 #include <string>
 
 namespace beast {
@@ -23,7 +20,7 @@ namespace detail {
 
 struct request_fields
 {
-    http::method_t method;
+    std::string method;
     std::string url;
 };
 
@@ -39,7 +36,7 @@ struct response_fields
 
 struct request_params
 {
-    http::method_t method;
+    std::string method;
     std::string url;
     int version;
 };
@@ -145,12 +142,6 @@ using response = message<false, Body, Headers>;
 
 #endif
 
-// For diagnostic output only
-template<bool isRequest, class Body, class Headers>
-std::ostream&
-operator<<(std::ostream& os,
-    message<isRequest, Body, Headers> const& m);
-
 /// Write a FieldSequence to a Streambuf.
 template<class Streambuf, class FieldSequence>
 void
@@ -165,6 +156,35 @@ is_keep_alive(message<isRequest, Body, Headers> const& msg);
 template<bool isRequest, class Body, class Headers>
 bool
 is_upgrade(message<isRequest, Body, Headers> const& msg);
+
+/** Connection prepare options.
+
+    These values are used with prepare().
+*/
+enum class connection
+{
+    /// Indicates the message should specify Connection: close semantics
+    close,
+
+    /// Indicates the message should specify Connection: keep-alive semantics if possible
+    keep_alive,
+
+    /// Indicates the message should specify a Connection: upgrade
+    upgrade
+};
+
+/** Prepare a message.
+
+    This function will adjust the Content-Length, Transfer-Encoding,
+    and Connection headers of the message based on the properties of
+    the body and the options passed in.
+*/
+template<
+    bool isRequest, class Body, class Headers,
+    class... Options>
+void
+prepare(message<isRequest, Body, Headers>& msg,
+    Options&&... options);
 
 } // http
 } // beast

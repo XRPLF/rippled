@@ -141,9 +141,7 @@ write(Streambuf& sb, frame_header const& fh)
     }
     if(fh.mask)
     {
-        little_uint32_buf_t key(fh.key);
-        std::copy(key.data(),
-            key.data() + 4, &b[n]);
+        native_to_little_uint32(fh.key, &b[n]);
         n += 4;
     }
     sb.commit(buffer_copy(

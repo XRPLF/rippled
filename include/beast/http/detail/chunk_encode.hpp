@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_CHUNK_ENCODE_HPP
-#define BEAST_HTTP_CHUNK_ENCODE_HPP
+#ifndef BEAST_HTTP_DETAIL_CHUNK_ENCODE_HPP
+#define BEAST_HTTP_DETAIL_CHUNK_ENCODE_HPP
 
 #include <boost/asio/buffer.hpp>
 #include <algorithm>
@@ -18,7 +18,6 @@
 
 namespace beast {
 namespace http {
-
 namespace detail {
 
 template <class Buffers>
@@ -237,9 +236,7 @@ chunk_encoded_buffers<Buffers>::const_iterator::const_iterator(
 {
 }
 
-} // detail
-
-/** Returns a chunk-encoded BufferSequence.
+/*  Returns a chunk-encoded BufferSequence.
 
     See:
         http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
@@ -276,6 +273,7 @@ chunk_encode_final()
         "0\r\n\r\n", 5);
 }
 
+} // detail
 } // http
 } // beast
 

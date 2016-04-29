@@ -32,9 +32,27 @@ keep_alive() const
 // Implementation inspired by nodejs/http-parser
 
 template<bool isRequest, class Derived>
+template<class ConstBufferSequence, class>
 std::size_t
 basic_parser<isRequest, Derived>::
-write(void const* data, std::size_t size, error_code& ec)
+write(ConstBufferSequence const& buffers, error_code& ec)
+{
+    static_assert(is_ConstBufferSequence<ConstBufferSequence>::value,
+        "ConstBufferSequence requirements not met");
+    std::size_t used = 0;
+    for(auto const& buffer : buffers)
+    {
+        used += write(buffer, ec);
+        if(ec)
+            break;
+    }
+    return used;
+}
+
+template<bool isRequest, class Derived>
+std::size_t
+basic_parser<isRequest, Derived>::
+write(boost::asio::const_buffer const& buffer, error_code& ec)
 {
     using beast::http::detail::is_digit;
     using beast::http::detail::is_token;
@@ -42,7 +60,12 @@ write(void const* data, std::size_t size, error_code& ec)
     using beast::http::detail::to_field_char;
     using beast::http::detail::to_value_char;
     using beast::http::detail::unhex;
+    using boost::asio::buffer_cast;
+    using boost::asio::buffer_size;
  
+    auto const data = buffer_cast<void const*>(buffer);
+    auto const size = buffer_size(buffer);
+
     if(size == 0 && s_ != s_closed)
         return 0;
 
@@ -995,27 +1018,6 @@ write(void const* data, std::size_t size, error_code& ec)
             return used();
     }
     return used();
-}
-
-template<bool isRequest, class Derived>
-template<class ConstBufferSequence>
-std::size_t
-basic_parser<isRequest, Derived>::
-write(ConstBufferSequence const& buffers, error_code& ec)
-{
-    static_assert(is_ConstBufferSequence<ConstBufferSequence>::value,
-        "ConstBufferSequence requirements not met");
-    std::size_t used = 0;
-    for(auto const& buffer : buffers)
-    {
-        using boost::asio::buffer_cast;
-        using boost::asio::buffer_size;
-        used += write(buffer_cast<void const*>(buffer),
-            buffer_size(buffer), ec);
-        if(ec)
-            break;
-    }
-    return used;
 }
 
 template<bool isRequest, class Derived>

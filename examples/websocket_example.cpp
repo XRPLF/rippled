@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <beast/to_string.hpp>
 #include <beast/websocket.hpp>
-#include <beast/buffers_debug.hpp>
 #include <boost/asio.hpp>
 #include <iostream>
 #include <string>
@@ -33,6 +33,5 @@ int main()
     opcode op;
     ws.read(op, sb);
     ws.close(close_code::normal);
-    std::cout <<
-        beast::debug::buffers_to_string(sb.data()) << "\n";
+    std::cout << to_string(sb.data()) << "\n";
 }

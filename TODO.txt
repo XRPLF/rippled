@@ -1,24 +1,15 @@
-* Change build options to C++11 only
 * Replace Jamroot with Jamfile
-* Fix failing test/message.cpp
 * Complete allocator testing in basic_streambuf, basic_headers
 * Tidy up type_checks
   - Derive from std::integral_constant
 * Check DOXYGEN, GENERATIC_DOCS directives in source
   - See if we can include them now that xsl is fixed
-* Go over each header and split header material into detail and impl files
 * Make buffers_debug a detail
-* Roll header-only http parser
 * Define Parser concept in HTTP
 * melpon sandbox?
 * invokable unit test
 * trim public interface of rfc2616.h to essentials only
-* Use new http routines in JSONRPCClient
-* Remove or change http::headers alias
-* Do something about the methods.hpp and fields.hpp type headers
 * Fix index in docs
-* Fix integer warning in file_body.hpp
-* Use make_error_code in websocket to set the category right
 * Figure out why namespace rfc2616 is included in docs
   (currently disabled via GENERATING_DOCS macro)
 * Include Example program listings in the docs
@@ -26,7 +17,12 @@
 * HTTP parser size limit with test (configurable?)
 * HTTP parser trailers with test
 * URL parser, strong URL checking in HTTP parser
-* Fix method, use string instead of enum
 * More fine grained parser errors
-* Fix all the warnings in all projects/build configs
 * Fix bidirectional buffers iterators operator->()
+* http type_check, e.g. is_WritableBody
+* add bool should_close(message_v1 const&) to replace the use
+  of eof return value from write and async_write
+
+Boost.Http
+* Use enum instead of bool in isRequest
+* move version to a subclass of message

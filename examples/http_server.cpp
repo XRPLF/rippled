@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "http_async_server.h"
-#include "http_sync_server.h"
-#include "sig_wait.h"
+#include "http_async_server.hpp"
+#include "http_sync_server.hpp"
+#include "sig_wait.hpp"
 
 #include <boost/program_options.hpp>
 
