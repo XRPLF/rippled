@@ -430,15 +430,10 @@ buffers_to_string(ConstBufferSequence const& bs)
     for(auto const& b : bs)
         s.append(buffer_cast<char const*>(b),
             buffer_size(b));
-    for(auto i = s.size(); i-- > 0;)
-        if(s[i] == '\r')
-            s.replace(i, 1, "\\r");
-        else if(s[i] == '\n')
-            s.replace(i, 1, "\\n\n");
     return s;
 }
 
-// Run as a couroutine.
+// Run as a coroutine.
 void
 ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
     std::shared_ptr<JobCoro> jobCoro)
