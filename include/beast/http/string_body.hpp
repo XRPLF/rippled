@@ -70,7 +70,7 @@ private:
         {
         }
 
-        std::size_t
+        std::uint64_t
         content_length() const
         {
             return body_.size();

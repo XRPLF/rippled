@@ -9,6 +9,7 @@
 #define BEAST_HTTP_DETAIL_WRITE_PREPARATION_HPP
 
 #include <beast/http/error.hpp>
+#include <beast/http/rfc2616.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/write_streambuf.hpp>
 
@@ -54,6 +55,12 @@ struct write_preparation
             message<isRequest, Body, Headers> const& msg_)
         : msg(msg_)
         , w(msg)
+        , chunked(rfc2616::token_in_list(
+            msg.headers["Transfer-Encoding"], "chunked"))
+        , close(rfc2616::token_in_list(
+            msg.headers["Connection"], "close") ||
+                (msg.version < 11 && ! msg.headers.exists(
+                    "Content-Length")))
     {
     }
 
@@ -63,56 +70,9 @@ struct write_preparation
         w.init(ec);
         if(ec)
             return;
-        // VFALCO TODO This implementation requires making a
-        //             copy of the headers, we can do better.
-        // VFALCO Should we be using handler_alloc?
-        headers_type h(msg.headers.begin(), msg.headers.end());
-        set_content_length(h, has_content_length<
-            typename Body::writer>{});
-
-        // VFALCO TODO Keep-Alive
-
-        if(close)
-        {
-            if(msg.version >= 11)
-                h.insert("Connection", "close");
-        }
-        else
-        {
-            if(msg.version < 11)
-                h.insert("Connection", "keep-alive");
-        }
-
         msg.write_firstline(sb);
-        write_fields(sb, h);
+        write_fields(sb, msg.headers);
         beast::write(sb, "\r\n");
-    }
-
-private:
-    void
-    set_content_length(headers_type& h,
-        std::true_type)
-    {
-        close = false;
-        chunked = false;
-        h.insert("Content-Length", w.content_length());
-    }
-
-    void
-    set_content_length(headers_type& h,
-        std::false_type)
-    {
-        if(msg.version >= 11)
-        {
-            close = false;
-            chunked = true;
-            h.insert("Transfer-Encoding", "chunked");
-        }
-        else
-        {
-            close = true;
-            chunked = false;
-        }
     }
 };
 

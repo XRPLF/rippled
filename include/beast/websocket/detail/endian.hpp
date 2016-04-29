@@ -53,6 +53,17 @@ little_uint32_to_native(void const* buf)
         (static_cast<std::uint64_t>(p[3])<<24);
 }
 
+inline
+void
+native_to_little_uint32(std::uint32_t v, void* buf)
+{
+    auto p = reinterpret_cast<std::uint8_t*>(buf);
+    p[0] =  v        & 0xff;
+    p[1] = (v >>  8) & 0xff;
+    p[2] = (v >> 16) & 0xff;
+    p[3] = (v >> 24) & 0xff;
+}
+
 } // detail
 } // websocket
 } // beast

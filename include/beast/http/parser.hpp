@@ -107,96 +107,14 @@ private:
 
     void set(std::true_type)
     {
-        // VFALCO This is terrible for setting method
-        auto m =
-            [&](char const* s, method_t m)
-            {
-                if(this->method_ == s)
-                {
-                    m_.method = m;
-                    return true;
-                }
-                return false;
-            };
-        do
-        {
-            if(m("DELETE",     method_t::http_delete))
-                break;
-            if(m("GET",        method_t::http_get))
-                break;
-            if(m("HEAD",       method_t::http_head))
-                break;
-            if(m("POST",       method_t::http_post))
-                break;
-            if(m("PUT",        method_t::http_put))
-                break;
-            if(m("CONNECT",    method_t::http_connect))
-                break;
-            if(m("OPTIONS",    method_t::http_options))
-                break;
-            if(m("TRACE",      method_t::http_trace))
-                break;
-            if(m("COPY",       method_t::http_copy))
-                break;
-            if(m("LOCK",       method_t::http_lock))
-                break;
-            if(m("MKCOL",      method_t::http_mkcol))
-                break;
-            if(m("MOVE",       method_t::http_move))
-                break;
-            if(m("PROPFIND",   method_t::http_propfind))
-                break;
-            if(m("PROPPATCH",  method_t::http_proppatch))
-                break;
-            if(m("SEARCH",     method_t::http_search))
-                break;
-            if(m("UNLOCK",     method_t::http_unlock))
-                break;
-            if(m("BIND",       method_t::http_bind))
-                break;
-            if(m("REBID",      method_t::http_rebind))
-                break;
-            if(m("UNBIND",     method_t::http_unbind))
-                break;
-            if(m("ACL",        method_t::http_acl))
-                break;
-            if(m("REPORT",     method_t::http_report))
-                break;
-            if(m("MKACTIVITY", method_t::http_mkactivity))
-                break;
-            if(m("CHECKOUT",   method_t::http_checkout))
-                break;
-            if(m("MERGE",      method_t::http_merge))
-                break;
-            if(m("MSEARCH",    method_t::http_msearch))
-                break;
-            if(m("NOTIFY",     method_t::http_notify))
-                break;
-            if(m("SUBSCRIBE",  method_t::http_subscribe))
-                break;
-            if(m("UNSUBSCRIBE",method_t::http_unsubscribe))
-                break;
-            if(m("PATCH",      method_t::http_patch))
-                break;
-            if(m("PURGE",      method_t::http_purge))
-                break;
-            if(m("MKCALENDAR", method_t::http_mkcalendar))
-                break;
-            if(m("LINK",       method_t::http_link))
-                break;
-            if(m("UNLINK",     method_t::http_unlink))
-                break;
-        }
-        while(false);
-
+        m_.method = std::move(this->method_);
         m_.url = std::move(this->uri_);
-
     }
 
     void set(std::false_type)
     {
         m_.status = this->status_code();
-        m_.reason = this->reason_;
+        m_.reason = std::move(this->reason_);
     }
 
     int on_headers(error_code&)

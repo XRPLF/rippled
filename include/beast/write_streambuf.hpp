@@ -53,9 +53,9 @@ void
 #else
 typename std::enable_if<is_Streambuf<Streambuf>::value>::type
 #endif
-write(Streambuf& streambuf, Args&&... args)
+write(Streambuf& streambuf, Args const&... args)
 {
-    detail::write_streambuf(streambuf, std::forward<Args>(args)...);
+    detail::write_streambuf(streambuf, args...);
 }
 
 } // beast

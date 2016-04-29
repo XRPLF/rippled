@@ -99,7 +99,8 @@ stream_base::write_close(
     fh.rsv3 = false;
     fh.len = cr.code == close_code::none ?
         0 : 2 + cr.reason.size();
-    if((fh.mask = (role_ == role_type::client)))
+    fh.mask = role_ == role_type::client;
+    if(fh.mask)
         fh.key = maskgen_();
     detail::write(sb, fh);
     if(cr.code != close_code::none)
@@ -143,7 +144,8 @@ stream_base::write_ping(Streambuf& sb,
     fh.rsv2 = false;
     fh.rsv3 = false;
     fh.len = data.size();
-    if((fh.mask = (role_ == role_type::client)))
+    fh.mask = role_ == role_type::client;
+    if(fh.mask)
         fh.key = maskgen_();
     detail::write(sb, fh);
     if(data.empty())
@@ -610,7 +612,8 @@ write_frame(bool fin, ConstBufferSequence const& bs, error_code& ec)
     fh.rsv2 = false;
     fh.rsv3 = false;
     fh.len = buffer_size(bs);
-    if((fh.mask = (role_ == role_type::client)))
+    fh.mask = role_ == role_type::client;
+    if(fh.mask)
         fh.key = maskgen_();
     detail::fh_streambuf fh_buf;
     detail::write<static_streambuf>(fh_buf, fh);
@@ -698,14 +701,14 @@ build_request(boost::string_ref const& host,
     http::request<http::empty_body> req;
     req.url = "/";
     req.version = 11;
-    req.method = http::method_t::http_get;
+    req.method = "GET";
     req.headers.insert("Host", host);
-    req.headers.insert("Connection", "upgrade");
     req.headers.insert("Upgrade", "websocket");
     key = detail::make_sec_ws_key(maskgen_);
     req.headers.insert("Sec-WebSocket-Key", key);
     req.headers.insert("Sec-WebSocket-Version", "13");
     (*d_)(req);
+    http::prepare(req, http::connection::upgrade);
     return req;
 }
 
@@ -726,7 +729,7 @@ build_response(http::message<true, Body, Headers> const& req)
         };
     if(req.version < 11)
         return err("HTTP version 1.1 required");
-    if(req.method != http::method_t::http_get)
+    if(req.method != "GET")
         return err("Wrong method");
     if(! is_upgrade(req))
         return err("Expected Upgrade request");
@@ -748,7 +751,6 @@ build_response(http::message<true, Body, Headers> const& req)
     http::response<http::string_body> resp(
         {101, http::reason_string(101), req.version});
     resp.headers.insert("Upgrade", "websocket");
-    resp.headers.insert("Connection", "upgrade");
     {
         auto const key =
             req.headers["Sec-WebSocket-Key"];
@@ -758,6 +760,7 @@ build_response(http::message<true, Body, Headers> const& req)
     }
     resp.headers.replace("Server", "Beast.WSProto");
     (*d_)(resp);
+    http::prepare(resp, http::connection::upgrade);
     return resp;
 }
 

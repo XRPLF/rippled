@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "websocket_async_echo_peer.h"
-#include "websocket_sync_echo_peer.h"
-#include "sig_wait.h"
+#include "websocket_async_echo_peer.hpp"
+#include "websocket_sync_echo_peer.hpp"
+#include "sig_wait.hpp"
 
 int main()
 {
