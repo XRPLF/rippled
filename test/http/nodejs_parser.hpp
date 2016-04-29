@@ -10,7 +10,6 @@
 
 #include "nodejs-parser/http_parser.h"
 
-#include <beast/http/method.hpp>
 #include <beast/http/basic_parser.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <beast/type_check.hpp>
@@ -75,62 +74,62 @@ make_nodejs_error(int http_errno)
 }
 
 inline
-beast::http::method_t
-convert_http_method(http_method m)
+char const*
+method_to_string(unsigned method)
 {
     using namespace beast;
-    switch (m)
+    switch(static_cast<http_method>(method))
     {
-    case HTTP_DELETE:      return http::method_t::http_delete;
-    case HTTP_GET:         return http::method_t::http_get;
-    case HTTP_HEAD:        return http::method_t::http_head;
-    case HTTP_POST:        return http::method_t::http_post;
-    case HTTP_PUT:         return http::method_t::http_put;
+    case HTTP_DELETE:      return "DELETE";
+    case HTTP_GET:         return "GET";
+    case HTTP_HEAD:        return "HEAD";
+    case HTTP_POST:        return "POST";
+    case HTTP_PUT:         return "PUT";
 
     // pathological
-    case HTTP_CONNECT:     return http::method_t::http_connect;
-    case HTTP_OPTIONS:     return http::method_t::http_options;
-    case HTTP_TRACE:       return http::method_t::http_trace;
+    case HTTP_CONNECT:     return "CONNECT";
+    case HTTP_OPTIONS:     return "OPTIONS";
+    case HTTP_TRACE:       return "TRACE";
 
     // webdav
-    case HTTP_COPY:        return http::method_t::http_copy;
-    case HTTP_LOCK:        return http::method_t::http_lock;
-    case HTTP_MKCOL:       return http::method_t::http_mkcol;
-    case HTTP_MOVE:        return http::method_t::http_move;
-    case HTTP_PROPFIND:    return http::method_t::http_propfind;
-    case HTTP_PROPPATCH:   return http::method_t::http_proppatch;
-    case HTTP_SEARCH:      return http::method_t::http_search;
-    case HTTP_UNLOCK:      return http::method_t::http_unlock;
-    case HTTP_BIND:        return http::method_t::http_bind;
-    case HTTP_REBIND:      return http::method_t::http_rebind;
-    case HTTP_UNBIND:      return http::method_t::http_unbind;
-    case HTTP_ACL:         return http::method_t::http_acl;
+    case HTTP_COPY:        return "COPY";
+    case HTTP_LOCK:        return "LOCK";
+    case HTTP_MKCOL:       return "MKCOL";
+    case HTTP_MOVE:        return "MOVE";
+    case HTTP_PROPFIND:    return "PROPFIND";
+    case HTTP_PROPPATCH:   return "PROPPATCH";
+    case HTTP_SEARCH:      return "SEARCH";
+    case HTTP_UNLOCK:      return "UNLOCK";
+    case HTTP_BIND:        return "BIND";
+    case HTTP_REBIND:      return "REBIND";
+    case HTTP_UNBIND:      return "UNBIND";
+    case HTTP_ACL:         return "ACL";
 
     // subversion
-    case HTTP_REPORT:      return http::method_t::http_report;
-    case HTTP_MKACTIVITY:  return http::method_t::http_mkactivity;
-    case HTTP_CHECKOUT:    return http::method_t::http_checkout;
-    case HTTP_MERGE:       return http::method_t::http_merge;
+    case HTTP_REPORT:      return "REPORT";
+    case HTTP_MKACTIVITY:  return "MKACTIVITY";
+    case HTTP_CHECKOUT:    return "CHECKOUT";
+    case HTTP_MERGE:       return "MERGE";
 
     // upnp
-    case HTTP_MSEARCH:     return http::method_t::http_msearch;
-    case HTTP_NOTIFY:      return http::method_t::http_notify;
-    case HTTP_SUBSCRIBE:   return http::method_t::http_subscribe;
-    case HTTP_UNSUBSCRIBE: return http::method_t::http_unsubscribe;
+    case HTTP_MSEARCH:     return "MSEARCH";
+    case HTTP_NOTIFY:      return "NOTIFY";
+    case HTTP_SUBSCRIBE:   return "SUBSCRIBE";
+    case HTTP_UNSUBSCRIBE: return "UNSUBSCRIBE";
 
     // RFC-5789
-    case HTTP_PATCH:       return http::method_t::http_patch;
-    case HTTP_PURGE:       return http::method_t::http_purge;
+    case HTTP_PATCH:       return "PATCH";
+    case HTTP_PURGE:       return "PURGE";
 
     // CalDav
-    case HTTP_MKCALENDAR:  return http::method_t::http_mkcalendar;
+    case HTTP_MKCALENDAR:  return "MKCALENDAR";
 
     // RFC-2068, section 19.6.1.2
-    case HTTP_LINK:        return http::method_t::http_link;
-    case HTTP_UNLINK:      return http::method_t::http_unlink;
+    case HTTP_LINK:        return "LINK";
+    case HTTP_UNLINK:      return "UNLINK";
     };
 
-    return http::method_t::http_get;
+    return "<unknown>";
 }
 
 } // detail
@@ -308,7 +307,7 @@ private:
     {
         template<class T, class R =
             decltype(std::declval<T>().on_request(
-                std::declval<method_t>(), std::declval<std::string>(),
+                std::declval<unsigned>(), std::declval<std::string>(),
                     std::declval<int>(), std::declval<int>(),
                         std::declval<bool>(), std::declval<bool>()),
                             std::true_type{})>
@@ -324,7 +323,7 @@ private:
         std::integral_constant<bool, has_on_request_t<C>::value>;
 
     void
-    call_on_request(method_t method, std::string url,
+    call_on_request(unsigned method, std::string url,
         int major, int minor, bool keep_alive, bool upgrade,
             std::true_type)
     {
@@ -333,7 +332,7 @@ private:
     }
 
     void
-    call_on_request(method_t, std::string, int, int, bool, bool,
+    call_on_request(unsigned, std::string, int, int, bool, bool,
         std::false_type)
     {
     }
@@ -687,10 +686,9 @@ nodejs_basic_parser<Derived>::cb_headers_complete(http_parser* p)
         http_should_keep_alive(p) != 0;
     if(p->type == http_parser_type::HTTP_REQUEST)
     {
-        t.call_on_request(detail::convert_http_method(
-            http_method(p->method)), t.url_,
-                p->http_major, p->http_minor, keep_alive,
-                    p->upgrade, has_on_request<Derived>{});
+        t.call_on_request(p->method, t.url_,
+            p->http_major, p->http_minor, keep_alive,
+                p->upgrade, has_on_request<Derived>{});
         return 0;
     }
     return t.call_on_response(p->status_code, t.status_,
@@ -807,18 +805,18 @@ private:
     }
 
     bool
-    on_request(http::method_t method, std::string const& url,
+    on_request(unsigned method, std::string const& url,
         int major, int minor, bool keep_alive, bool upgrade,
             std::true_type)
     {
-        m_.method = method;
+        m_.method = detail::method_to_string(method);
         m_.url = url;
         m_.version = major * 10 + minor;
         return true;
     }
 
     bool
-    on_request(http::method_t, std::string const&,
+    on_request(unsigned, std::string const&,
         int, int, bool, bool,
             std::false_type)
     {
@@ -826,7 +824,7 @@ private:
     }
 
     bool
-    on_request(http::method_t method, std::string const& url,
+    on_request(unsigned method, std::string const& url,
         int major, int minor, bool keep_alive, bool upgrade)
     {
         return on_request(method, url,

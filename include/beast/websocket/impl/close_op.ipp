@@ -34,7 +34,6 @@ class stream<NextLayer>::close_op
         close_reason cr;
         Handler h;
         fb_type fb;
-        fmb_type fmb;
         bool cont;
         int state = 0;
 

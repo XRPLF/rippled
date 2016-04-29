@@ -11,7 +11,9 @@
 #include <beast/http/error.hpp>
 #include <beast/http/message.hpp>
 #include <beast/async_completion.hpp>
+#include <beast/type_check.hpp>
 #include <boost/system/error_code.hpp>
+#include <ostream>
 #include <type_traits>
 
 namespace beast {
@@ -84,6 +86,20 @@ typename async_completion<
 async_write(AsyncWriteStream& stream,
     message<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler);
+
+/** Serialize a message to an ostream.
+
+    The function converts the message to its HTTP/1.* serialized
+    representation and stores the result in the output stream.
+
+    @param os The ostream to write to.
+
+    @param msg The message to write.
+*/
+template<bool isRequest, class Body, class Headers>
+std::ostream&
+operator<<(std::ostream& os,
+    message<isRequest, Body, Headers> const& msg);
 
 } // http
 } // beast

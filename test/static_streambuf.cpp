@@ -52,40 +52,81 @@ public:
         {
             std::memset(buf, 0, sizeof(buf));
             static_streambuf_n<sizeof(buf)> ba;
-            decltype(ba)::mutable_buffers_type d;
-            d = ba.prepare(z); expect(buffer_size(d) == z);
-            d = ba.prepare(0); expect(buffer_size(d) == 0);
-            d = ba.prepare(y); expect(buffer_size(d) == y);
-            d = ba.prepare(x); expect(buffer_size(d) == x);
-            ba.commit(buffer_copy(d, buffer(s.data(), x)));
+            {
+                auto d = ba.prepare(z);
+                expect(buffer_size(d) == z);
+            }
+            {
+                auto d = ba.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
+            {
+                auto d = ba.prepare(y);
+                expect(buffer_size(d) == y);
+            }
+            {
+                auto d = ba.prepare(x);
+                expect(buffer_size(d) == x);
+                ba.commit(buffer_copy(d, buffer(s.data(), x)));
+            }
             expect(ba.size() == x);
             expect(buffer_size(ba.data()) == ba.size());
-            d = ba.prepare(x); expect(buffer_size(d) == x);
-            d = ba.prepare(0); expect(buffer_size(d) == 0);
-            d = ba.prepare(z); expect(buffer_size(d) == z);
-            d = ba.prepare(y); expect(buffer_size(d) == y);
-            ba.commit(buffer_copy(d, buffer(s.data()+x, y)));
+            {
+                auto d = ba.prepare(x);
+                expect(buffer_size(d) == x);
+            }
+            {
+                auto d = ba.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
+            {
+                auto d = ba.prepare(z);
+                expect(buffer_size(d) == z);
+            }
+            {
+                auto d = ba.prepare(y);
+                expect(buffer_size(d) == y);
+                ba.commit(buffer_copy(d, buffer(s.data()+x, y)));
+            }
             ba.commit(1);
             expect(ba.size() == x + y);
             expect(buffer_size(ba.data()) == ba.size());
-            d = ba.prepare(x); expect(buffer_size(d) == x);
-            d = ba.prepare(y); expect(buffer_size(d) == y);
-            d = ba.prepare(0); expect(buffer_size(d) == 0);
-            d = ba.prepare(z); expect(buffer_size(d) == z);
-            ba.commit(buffer_copy(d, buffer(s.data()+x+y, z)));
+            {
+                auto d = ba.prepare(x);
+                expect(buffer_size(d) == x);
+            }
+            {
+                auto d = ba.prepare(y);
+                expect(buffer_size(d) == y);
+            }
+            {
+                auto d = ba.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
+            {
+                auto d = ba.prepare(z);
+                expect(buffer_size(d) == z);
+                ba.commit(buffer_copy(d, buffer(s.data()+x+y, z)));
+            }
             ba.commit(2);
             expect(ba.size() == x + y + z);
             expect(buffer_size(ba.data()) == ba.size());
             expect(to_string(ba.data()) == s);
             ba.consume(t);
-            d = ba.prepare(0); expect(buffer_size(d) == 0);
+            {
+                auto d = ba.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
             expect(to_string(ba.data()) == s.substr(t, std::string::npos));
             ba.consume(u);
             expect(to_string(ba.data()) == s.substr(t + u, std::string::npos));
             ba.consume(v);
             expect(to_string(ba.data()) == "");
             ba.consume(1);
-            d = ba.prepare(0); expect(buffer_size(d) == 0);
+            {
+                auto d = ba.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
             try
             {
                 ba.prepare(1);

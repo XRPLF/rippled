@@ -13,7 +13,7 @@
 #include <beast/http/rfc7230.hpp>
 #include <beast/http/detail/basic_parser.hpp>
 #include <beast/type_check.hpp>
-#include <beast/detail/ci_char_traits.hpp>
+#include <boost/asio/buffer.hpp>
 #include <array>
 #include <cassert>
 #include <climits>
@@ -345,7 +345,7 @@ public:
         return s_ == s_restart;
     }
 
-    /** Write data to the parser.
+    /** Write a sequence of buffers to the parser.
 
         @param buffers An object meeting the requirements of
         ConstBufferSequence that represents the input sequence.
@@ -354,20 +354,23 @@ public:
 
         @return The number of bytes consumed in the input sequence.
     */
-    template<class ConstBufferSequence>
+    template<class ConstBufferSequence,
+        class = typename std::enable_if<
+            ! std::is_convertible<ConstBufferSequence,
+                boost::asio::const_buffer>::value>::type
+    >
     std::size_t
     write(ConstBufferSequence const& buffers, error_code& ec);
 
-    /** Write data to the parser.
+    /** Write a single buffer of data to the parser.
 
-        @param data A pointer to a buffer representing the input sequence.
-        @param size The number of bytes in the buffer pointed to by data.
+        @param buffer The buffer to write.
         @param ec Set to the error, if any error occurred.
 
-        @return The number of bytes consumed in the input sequence.
+        @return The number of bytes consumed in the buffer.
     */
     std::size_t
-    write(void const* data, std::size_t size, error_code& ec);
+    write(boost::asio::const_buffer const& buffer, error_code& ec);
 
     /** Called to indicate the end of file.
 

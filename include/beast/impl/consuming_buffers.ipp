@@ -27,7 +27,7 @@ class consuming_buffers<Buffers, ValueType>::const_iterator
         typename Buffers::const_iterator;
 
     iter_type it_;
-    consuming_buffers const* b_;
+    consuming_buffers const* b_ = nullptr;
 
 public:
     using value_type =
@@ -59,9 +59,8 @@ public:
     reference
     operator*() const
     {
-        if(it_ == b_->begin_)
-            return *it_ + b_->skip_;
-        return *it_;
+        return it_ == b_->begin_ ?
+            *it_ + b_->skip_ : *it_;
     }
 
     pointer

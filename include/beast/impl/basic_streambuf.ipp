@@ -118,7 +118,7 @@ public:
 template<class Allocator>
 class basic_streambuf<Allocator>::const_buffers_type
 {
-    basic_streambuf const* sb_ = nullptr;
+    basic_streambuf const* sb_;
 
     friend class basic_streambuf;
 
@@ -126,12 +126,12 @@ class basic_streambuf<Allocator>::const_buffers_type
     const_buffers_type(basic_streambuf const& sb);
 
 public:
-    /// Why?
+    // Why?
     using value_type = boost::asio::const_buffer;
 
     class const_iterator;
 
-    const_buffers_type() = default;
+    const_buffers_type() = delete;
     const_buffers_type(const_buffers_type const&) = default;
     const_buffers_type& operator=(const_buffers_type const&) = default;
 
@@ -157,7 +157,7 @@ public:
 
     class const_iterator;
 
-    mutable_buffers_type() = default;
+    mutable_buffers_type() = delete;
     mutable_buffers_type(mutable_buffers_type const&) = default;
     mutable_buffers_type& operator=(mutable_buffers_type const&) = default;
 

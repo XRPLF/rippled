@@ -34,6 +34,7 @@
             <member><link linkend="beast.ref.http__basic_streambuf_body">basic_streambuf_body</link></member>
             <member><link linkend="beast.ref.http__empty_body">empty_body</link></member>
             <member><link linkend="beast.ref.http__error_code">error_code</link></member>
+            <member><link linkend="beast.ref.http__headers">headers</link></member>
             <member><link linkend="beast.ref.http__message">message</link></member>
             <member><link linkend="beast.ref.http__resume_context">resume_context</link></member>
             <member><link linkend="beast.ref.http__streambuf_body">streambuf_body</link></member>
@@ -49,8 +50,6 @@
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.http__async_read">async_read</link></member>
             <member><link linkend="beast.ref.http__async_write">async_write</link></member>
-            <member><link linkend="beast.ref.http__chunk_encode">chunk_encode</link></member>
-            <member><link linkend="beast.ref.http__chunk_encode_final">chunk_encode_final</link></member>
             <member><link linkend="beast.ref.http__read">read</link></member>
             <member><link linkend="beast.ref.http__write">write</link></member>
           </simplelist>

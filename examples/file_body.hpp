@@ -36,8 +36,8 @@ struct file_body
 
     class writer
     {
-        std::size_t size_;
-        std::size_t offset_ = 0;
+        std::uint64_t size_;
+        std::uint64_t offset_ = 0;
         std::string const& path_;
         FILE* file_ = nullptr;
         char buf_[4096];
@@ -69,7 +69,7 @@ struct file_body
                 size_ = boost::filesystem::file_size(path_);
         }
 
-        std::size_t
+        std::uint64_t
         content_length() const
         {
             return size_;
@@ -79,7 +79,11 @@ struct file_body
         boost::tribool
         operator()(resume_context&&, error_code&, Write&& write)
         {
-            buf_len_ = std::min(size_ - offset_, sizeof(buf_));
+            if(size_ - offset_ < sizeof(buf_))
+                buf_len_ = static_cast<std::size_t>(
+                    size_ - offset_);
+            else
+                buf_len_ = sizeof(buf_);
             auto const nread = fread(buf_, 1, sizeof(buf_), file_);
             (void)nread;
             offset_ += buf_len_;

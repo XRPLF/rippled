@@ -110,10 +110,24 @@ public:
     consume(std::size_t n);
 };
 
-/// Returns a consumed buffer
-template<class Buffers>
-consuming_buffers<Buffers, typename Buffers::value_type>
-consumed_buffers(Buffers const& bs, std::size_t n);
+/** Returns a new, consumed buffer sequence.
+
+    This function returns a new buffer sequence which when iterated,
+    efficiently represents the portion of the original buffer sequence
+    with `n` bytes removed from the beginning.
+
+    Copies will be made of the buffer sequence passed, but ownership
+    of the underlying memory is not transferred.
+
+    @param buffers The buffer sequence to consume.
+
+    @param n The number of bytes to remove from the front. If this is
+    larger than the size of the buffer sequence, an empty buffer sequence
+    is returned.
+*/
+template<class BufferSequence>
+consuming_buffers<BufferSequence, typename BufferSequence::value_type>
+consumed_buffers(BufferSequence const& buffers, std::size_t n);
 
 } // beast
 

@@ -252,7 +252,7 @@ In this table:
 ]
 [
     [`a.content_length()`]
-    [`std::size_t`]
+    [`std::uint64_t`]
     [
         If this member is present, it is called after initialization
         and before calls to provide buffers. The serialized message will

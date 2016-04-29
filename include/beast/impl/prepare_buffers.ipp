@@ -46,7 +46,7 @@ class prepared_buffers<BufferSequence>::const_iterator
     using iter_type =
         typename BufferSequence::const_iterator;
 
-    prepared_buffers const* b_;
+    prepared_buffers const* b_ = nullptr;
     typename BufferSequence::const_iterator it_;
 
 public:
