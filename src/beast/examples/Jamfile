@@ -8,28 +8,23 @@
 import os ;
 
 exe http_crawl :
-    ../src/beast_http_nodejs_parser.cpp
     http_crawl.cpp
     urls_large_data.cpp
     ;
 
 exe http_server :
-    ../src/beast_http_nodejs_parser.cpp
     http_server.cpp
     ;
 
-exe wsproto_echo :
-    ../src/beast_http_nodejs_parser.cpp
-    wsproto_echo.cpp
-    ;
-
 exe http_example :
-    ../src/beast_http_nodejs_parser.cpp
     http_example.cpp
     ;
 
+exe websocket_echo :
+    websocket_echo.cpp
+    ;
+
 exe websocket_example :
-    ../src/beast_http_nodejs_parser.cpp
     websocket_example.cpp
     ;
 

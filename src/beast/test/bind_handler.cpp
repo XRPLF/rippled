@@ -31,7 +31,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(bind_handler,asio,beast);
+BEAST_DEFINE_TESTSUITE(bind_handler,core,beast);
 
 } // test
 } // beast

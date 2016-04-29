@@ -295,7 +295,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(basic_streambuf,asio,beast);
+BEAST_DEFINE_TESTSUITE(basic_streambuf,core,beast);
 
 } // test
 } // beast

@@ -21,6 +21,8 @@
 
 namespace beast {
 
+#if ! GENERATING_DOCS
+
 /** Routines for performing RFC2616 compliance.
     RFC2616:
         Hypertext Transfer Protocol -- HTTP/1.1
@@ -453,6 +455,8 @@ token_in_list(boost::string_ref const& value,
 }
 
 } // rfc2616
+
+#endif
 
 } // beast
 

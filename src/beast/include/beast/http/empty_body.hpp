@@ -22,9 +22,16 @@ namespace http {
 */
 struct empty_body
 {
-    struct value_type
-    {
-    };
+#if GENERATING_DOCS
+    /// The type of the `message::body` member
+    using value_type = void;
+#else
+    struct value_type {};
+#endif
+
+#if GENERATING_DOCS
+private:
+#endif
 
     struct reader
     {

@@ -115,6 +115,59 @@ public:
     }
 };
 
+template<class Allocator>
+class basic_streambuf<Allocator>::const_buffers_type
+{
+    basic_streambuf const* sb_ = nullptr;
+
+    friend class basic_streambuf;
+
+    explicit
+    const_buffers_type(basic_streambuf const& sb);
+
+public:
+    /// Why?
+    using value_type = boost::asio::const_buffer;
+
+    class const_iterator;
+
+    const_buffers_type() = default;
+    const_buffers_type(const_buffers_type const&) = default;
+    const_buffers_type& operator=(const_buffers_type const&) = default;
+
+    const_iterator
+    begin() const;
+
+    const_iterator
+    end() const;
+};
+
+template<class Allocator>
+class basic_streambuf<Allocator>::mutable_buffers_type
+{
+    basic_streambuf const* sb_;
+
+    friend class basic_streambuf;
+
+    explicit
+    mutable_buffers_type(basic_streambuf const& sb);
+
+public:
+    using value_type = mutable_buffer;
+
+    class const_iterator;
+
+    mutable_buffers_type() = default;
+    mutable_buffers_type(mutable_buffers_type const&) = default;
+    mutable_buffers_type& operator=(mutable_buffers_type const&) = default;
+
+    const_iterator
+    begin() const;
+
+    const_iterator
+    end() const;
+};
+
 //------------------------------------------------------------------------------
 
 template<class Allocator>
@@ -798,16 +851,16 @@ basic_streambuf<Allocator>::debug_check() const
 
 template<class Alloc, class T>
 basic_streambuf<Alloc>&
-operator<<(basic_streambuf<Alloc>& buf, T const& t)
+operator<<(basic_streambuf<Alloc>& streambuf, T const& t)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
     std::stringstream ss;
     ss << t;
     auto const& s = ss.str();
-    buf.commit(buffer_copy(buf.prepare(s.size()),
-        boost::asio::buffer(s)));
-    return buf;
+    streambuf.commit(buffer_copy(
+        streambuf.prepare(s.size()), buffer(s)));
+    return streambuf;
 }
 
 //------------------------------------------------------------------------------

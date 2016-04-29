@@ -23,7 +23,12 @@ namespace http {
 template<class Streambuf>
 struct basic_streambuf_body
 {
+    /// The type of the `message::body` member
     using value_type = Streambuf;
+
+#if GENERATING_DOCS
+private:
+#endif
 
     class reader
     {

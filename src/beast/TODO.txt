@@ -1,8 +1,5 @@
-* kick out non-beast code
-* redo directory structure
 * Change build options to C++11 only
 * Replace Jamroot with Jamfile
-* Switch source material to Boost license
 * Fix failing test/message.cpp
 * Complete allocator testing in basic_streambuf, basic_headers
 * Tidy up type_checks
@@ -11,7 +8,6 @@
   - See if we can include them now that xsl is fixed
 * Go over each header and split header material into detail and impl files
 * Make buffers_debug a detail
-* Ensure each public header has a unit test .cpp file
 * Roll header-only http parser
 * Define Parser concept in HTTP
 * melpon sandbox?
@@ -21,3 +17,16 @@
 * Remove or change http::headers alias
 * Do something about the methods.hpp and fields.hpp type headers
 * Fix index in docs
+* Fix integer warning in file_body.hpp
+* Use make_error_code in websocket to set the category right
+* Figure out why namespace rfc2616 is included in docs
+  (currently disabled via GENERATING_DOCS macro)
+* Include Example program listings in the docs
+* Update for rfc7230
+* HTTP parser size limit with test (configurable?)
+* HTTP parser trailers with test
+* URL parser, strong URL checking in HTTP parser
+* Fix method, use string instead of enum
+* More fine grained parser errors
+* Fix all the warnings in all projects/build configs
+* Fix bidirectional buffers iterators operator->()

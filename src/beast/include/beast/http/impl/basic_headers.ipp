@@ -8,7 +8,6 @@
 #ifndef BEAST_HTTP_IMPL_BASIC_HEADERS_IPP
 #define BEAST_HTTP_IMPL_BASIC_HEADERS_IPP
 
-#include <beast/http/detail/writes.hpp>
 #include <beast/type_check.hpp>
 
 namespace beast {

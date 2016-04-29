@@ -10,8 +10,6 @@
 
 #include <beast/http/chunk_encode.hpp>
 #include <beast/http/resume_context.hpp>
-#include <beast/http/type_check.hpp>
-#include <beast/http/detail/writes.hpp>
 #include <beast/http/detail/write_preparation.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/bind_handler.hpp>
@@ -265,9 +263,9 @@ operator()(error_code ec, std::size_t, bool again)
 
         case 4:
             // VFALCO Unfortunately the current interface to the
-            //        Writer concept prevents us from using coalescing the
+            //        Writer concept prevents us from coalescing the
             //        final body chunk with the final chunk delimiter.
-            //       
+            //
             // write final chunk
             d.state = 5;
             boost::asio::async_write(d.s,
@@ -359,8 +357,6 @@ write(SyncWriteStream& stream,
     message<isRequest, Body, Headers> const& msg,
         boost::system::error_code& ec)
 {
-    static_assert(is_WritableBody<Body>::value,
-        "WritableBody requirements not met");
     detail::write_preparation<isRequest, Body, Headers> wp(msg);
     wp.init(ec);
     if(ec)
@@ -447,8 +443,6 @@ async_write(AsyncWriteStream& stream,
     static_assert(
         is_AsyncWriteStream<AsyncWriteStream>::value,
             "AsyncWriteStream requirements not met");
-    static_assert(is_WritableBody<Body>::value,
-        "WritableBody requirements not met");
     beast::async_completion<WriteHandler,
         void(error_code)> completion(handler);
     detail::write_op<AsyncWriteStream, decltype(completion.handler),
