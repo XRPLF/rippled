@@ -108,7 +108,7 @@ public:
         using namespace std::string_literals;
 
         request<string_body> req;
-        req.method = method_t::http_post;
+        req.method = "POST";
         req.url = "/";
         req.version = 11;
         req.headers.insert("Content-Type", "application/json; charset=UTF-8");
@@ -124,6 +124,7 @@ public:
             }
             req.body = to_string(jr);
         }
+        prepare(req);
         write(stream_, req);
 
         response<streambuf_body> res;

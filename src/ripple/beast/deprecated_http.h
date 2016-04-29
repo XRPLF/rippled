@@ -20,7 +20,6 @@
 #ifndef BEAST_DEPRECATED_HTTP_H
 #define BEAST_DEPRECATED_HTTP_H
 
-#include <beast/http/method.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/basic_parser.hpp>
 #include <beast/http/rfc2616.hpp>
@@ -178,7 +177,7 @@ private:
     bool request_;
 
     // request
-    beast::http::method_t method_;
+    std::string method_;
     std::string url_;
 
     // response
@@ -201,7 +200,7 @@ public:
     message();
 
     // Memberspace
-    beast::http::headers<std::allocator<char>> headers;
+    beast::http::headers headers;
 
     bool
     request() const
@@ -218,12 +217,12 @@ public:
     // Request
 
     void
-    method (beast::http::method_t http_method)
+    method (std::string s)
     {
-        method_ = http_method;
+        method_ = s;
     }
 
-    beast::http::method_t
+    std::string
     method() const
     {
         return method_;
@@ -325,7 +324,7 @@ public:
 template <class>
 message::message()
     : request_ (true)
-    , method_ (beast::http::method_t::http_get)
+    , method_ ("GET")
     , url_ ("/")
     , status_ (200)
     , version_ (1, 1)
@@ -342,7 +341,7 @@ write (Streambuf& stream, message const& m)
 {
     if (m.request())
     {
-        beast::write (stream, to_string(m.method()));
+        beast::write (stream, m.method());
         beast::write (stream, " ");
         beast::write (stream, m.url());
         beast::write (stream, " HTTP/");
@@ -433,10 +432,10 @@ public:
     }
 
     bool
-    on_request(http::method_t method, std::string const& url,
+    on_request(unsigned method, std::string const& url,
         int major, int minor, bool keep_alive, bool upgrade)
     {
-        m_.method(method);
+        m_.method(beast::http::detail::method_to_string(method));
         m_.url(url);
         m_.version(major, minor);
         m_.keep_alive(keep_alive);

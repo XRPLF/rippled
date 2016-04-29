@@ -242,8 +242,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\bind_handler.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\buffers_debug.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\buffer_cat.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\consuming_buffers.hpp">
@@ -255,6 +253,8 @@
     <ClInclude Include="..\..\src\beast\include\beast\detail\const_container.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\detail\get_lowest_layer.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\detail\integer_sequence.hpp">
     </ClInclude>
@@ -309,9 +309,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\chunk_encode.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\chunk_encode.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\write_preparation.hpp">
     </ClInclude>
@@ -333,8 +333,6 @@
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\http\message.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\method.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\parser.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\parse_error.hpp">
@@ -353,6 +351,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\string_body.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\type_check.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
     </ClInclude>
     <None Include="..\..\src\beast\include\beast\impl\basic_streambuf.ipp">
@@ -370,6 +370,8 @@
     <ClInclude Include="..\..\src\beast\include\beast\prepare_buffers.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\static_streambuf.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\static_string.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\streambuf.hpp">
     </ClInclude>
@@ -428,8 +430,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\websocket\rfc6455.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\ssl.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\websocket\static_string.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\stream.hpp">
     </ClInclude>

@@ -321,7 +321,7 @@ ConnectAttempt::makeRequest (bool crawl,
         request_type
 {
     request_type m;
-    m.method = beast::http::method_t::http_get;
+    m.method = "GET";
     m.url = "/";
     m.version = 11;
     m.headers.insert ("User-Agent", BuildInfo::getFullVersionString());
