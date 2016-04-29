@@ -40,7 +40,7 @@
 #include <beast/streambuf.hpp>
 #include <ripple/beast/asio/ssl_bundle.h>
 #include <beast/http/message.hpp>
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <cstdint>
 #include <deque>
@@ -155,7 +155,7 @@ private:
     beast::streambuf read_buffer_;
     http_request_type request_;
     beast::deprecated_http::message response_;
-    beast::http::headers<std::allocator<char>> const& headers_;
+    beast::http::headers const& headers_;
     beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
     bool gracefulClose_ = false;

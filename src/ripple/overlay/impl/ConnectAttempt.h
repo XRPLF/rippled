@@ -33,9 +33,9 @@
 #include <ripple/beast/utility/WrappedSink.h>
 #include <beast/placeholders.hpp>
 #include <beast/streambuf.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/message_v1.hpp>
 #include <beast/http/empty_body.hpp>
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -56,7 +56,7 @@ private:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     using request_type =
-        beast::http::request<beast::http::empty_body>;
+        beast::http::request_v1<beast::http::empty_body>;
 
     Application& app_;
     std::uint32_t const id_;

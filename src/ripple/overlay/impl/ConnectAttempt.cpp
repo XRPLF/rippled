@@ -24,6 +24,7 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/json/json_reader.h>
 #include <beast/http/write.hpp>
+#include <beast/to_string.hpp>
 
 namespace ripple {
 
@@ -321,7 +322,7 @@ ConnectAttempt::makeRequest (bool crawl,
         request_type
 {
     request_type m;
-    m.method = beast::http::method_t::http_get;
+    m.method = "GET";
     m.url = "/";
     m.version = 11;
     m.headers.insert ("User-Agent", BuildInfo::getFullVersionString());
@@ -342,7 +343,7 @@ ConnectAttempt::processResponse (beast::deprecated_http::message const& m,
     {
         Json::Value json;
         Json::Reader r;
-        auto const success = r.parse(to_string(body), json);
+        auto const success = r.parse(beast::to_string(body.data()), json);
         if (success)
         {
             if (json.isObject() && json.isMember("peer-ips"))

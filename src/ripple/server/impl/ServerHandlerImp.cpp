@@ -203,10 +203,9 @@ Json::Output makeOutput (Session& session)
 }
 
 // HACK!
-template<class Allocator>
 static
 std::map<std::string, std::string>
-build_map(beast::http::headers<Allocator> const& h)
+build_map(beast::http::headers const& h)
 {
     std::map <std::string, std::string> c;
     for (auto const& e : h)
