@@ -53,30 +53,22 @@ pays for transaction fees that protect the network against spam.
 ![XRP as a bridge currency](/images/vehicle_currency.png)
 
 2. Pathfinding discovers cheap and efficient payment paths through multiple
-[order books](https://www.ripplecharts.com) allowing anyone to [trade](https://www.rippletrade.com) anything. When two accounts aren’t linked by relationships of trust, the Ripple pathfinding engine considers intermediate links and order books to produce a set of possible paths the transaction can take. When the payment is processed, the liquidity along these paths is iteratively consumed in best-first order.
+[order books](https://www.ripplecharts.com) allowing anyone to trade anything.
+When two accounts aren’t linked by relationships of trust, the Ripple pathfinding
+engine considers intermediate links and order books to produce a set of possible
+paths the transaction can take. When the payment is processed, the liquidity
+along these paths is iteratively consumed in best-first order.
 ![Pathfinding from Dollars to Euro](/images/pathfinding.png)
 
 3. [Consensus](https://www.youtube.com/watch?v=pj1QVb1vlC0) confirms
 transactions in an atomic fashion, without mining, ensuring efficient use of
 resources.
 
-[transact]: https://ripple.com/files/ripple-FIs.pdf
-[build]:    https://ripple.com/build/
-
-[transact.png]:   /images/transact.png
-[build.png]:      /images/build.png
-[contribute.png]: /images/contribute.png
-
-###Join The Ripple Community
-|![Transact][transact.png]|![Build][build.png]|![Contribute][contribute.png]|
-|:-----------------------:|:-----------------:|:---------------------------:|
-|[Transact on the fastest payment infrastructure][transact]|[Build Imaginative Apps][build]|Contribute to the Ripple Protocol Implementation|
-
 #rippled - Ripple P2P server
 
 ##[![Build Status](https://travis-ci.org/ripple/rippled.png?branch=develop)](https://travis-ci.org/ripple/rippled)
 
-This is the repository for Ripple's `rippled`, reference P2P server.
+This is the repository for `rippled`, the reference implementation of the Ripple P2P server.
 
 ###Build instructions:
 * https://ripple.com/wiki/Rippled_build_instructions
@@ -85,7 +77,7 @@ This is the repository for Ripple's `rippled`, reference P2P server.
 * https://ripple.com/wiki/Rippled_setup_instructions
 
 ###Issues
-* https://ripplelabs.atlassian.net/browse/RIPD
+* https://github.com/ripple/rippled/issues
 
 ### Repository Contents
 
@@ -110,15 +102,14 @@ README for more details.
 Javascript / Mocha tests.
 
 ## License
-Ripple is open source and permissively licensed under the ISC license. See the
+`rippled` is open source and permissively licensed under the ISC license. See the
 LICENSE file for more details.
 
 ###For more information:
-* Ripple Wiki - https://ripple.com/wiki/
-* Ripple Primer - https://ripple.com/ripple_primer.pdf
-* Ripple Primer (Market Making) - https://ripple.com/ripple-mm.pdf
-* Ripple Gateway Primer - https://ripple.com/ripple-gateways.pdf
-* Consensus - https://wiki.ripple.com/Consensus
+* [Ripple Knowledge Center](https://ripple.com/learn/)
+* [Ripple Developer Center](https://ripple.com/build/)
+* [Ripple Solutions](https://ripple.com/files/ripple_solutions_guide.pdf)
+* [Ripple Executive Summary for Financial Institutions](https://ripple.com/solutions/executive-summary-for-financial-institutions/)
 
 - - -
 
