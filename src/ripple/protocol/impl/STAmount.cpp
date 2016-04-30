@@ -22,13 +22,13 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/crypto/CBigNum.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <iterator>
 #include <memory>
 #include <iostream>
@@ -980,6 +980,58 @@ operator- (STAmount const& value)
 // Arithmetic
 //
 //------------------------------------------------------------------------------
+
+// Calculate (a * b) / c when all three values are 64-bit
+// without loss of precision:
+static
+std::uint64_t
+muldiv(
+    std::uint64_t multiplier,
+    std::uint64_t multiplicand,
+    std::uint64_t divisor)
+{
+    boost::multiprecision::uint128_t ret;
+
+    boost::multiprecision::multiply(ret, multiplier, multiplicand);
+    ret /= divisor;
+
+    if (ret > std::numeric_limits<std::uint64_t>::max())
+    {
+        Throw<std::overflow_error> ("overflow: (" +
+            std::to_string (multiplier) + " * " +
+            std::to_string (multiplicand) + ") / " +
+            std::to_string (divisor));
+    }
+
+    return static_cast<uint64_t>(ret);
+}
+
+static
+std::uint64_t
+muldiv_round(
+    std::uint64_t multiplier,
+    std::uint64_t multiplicand,
+    std::uint64_t divisor,
+    std::uint64_t rounding)
+{
+    boost::multiprecision::uint128_t ret;
+
+    boost::multiprecision::multiply(ret, multiplier, multiplicand);
+    ret += rounding;
+    ret /= divisor;
+
+    if (ret > std::numeric_limits<std::uint64_t>::max())
+    {
+        Throw<std::overflow_error> ("overflow: ((" +
+            std::to_string (multiplier) + " * " +
+            std::to_string (multiplicand) + ") + " +
+            std::to_string (rounding) + ") / " +
+            std::to_string (divisor));
+    }
+
+    return static_cast<uint64_t>(ret);
+}
+
 STAmount
 divide (STAmount const& num, STAmount const& den, Issue const& issue)
 {
@@ -1013,23 +1065,15 @@ divide (STAmount const& num, STAmount const& den, Issue const& issue)
         }
     }
 
-    // Compute (numerator * 10^17) / denominator
-    CBigNum v;
-
-    if ((BN_add_word64 (&v, numVal) != 1) ||
-            (BN_mul_word64 (&v, tenTo17) != 1) ||
-            (BN_div_word64 (&v, denVal) != 1))
-    {
-        Throw<std::runtime_error> ("internal bn error");
-    }
-
-    // 10^16 <= quotient <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
-
-    // TODO(tom): where do 5 and 17 come from?
-    return STAmount (issue, v.getuint64 () + 5,
-                     numOffset - denOffset - 17,
-                     num.negative() != den.negative());
+    // We divide the two mantissas (each is between 10^15
+    // and 10^16). To maintain precision, we multiply the
+    // numerator by 10^17 (the product is in the range of
+    // 10^32 to 10^33) followed by a division, so the result
+    // is in the range of 10^16 to 10^15.
+    return STAmount (issue,
+        muldiv(numVal, tenTo17, denVal) + 5,
+        numOffset - denOffset - 17,
+        num.negative() != den.negative());
 }
 
 STAmount
@@ -1077,32 +1121,20 @@ multiply (STAmount const& v1, STAmount const& v2, Issue const& issue)
         }
     }
 
-    // Compute (numerator * denominator) / 10^14 with rounding
-    // 10^16 <= result <= 10^18
-    CBigNum v;
-
-    if ((BN_add_word64 (&v, value1) != 1) ||
-            (BN_mul_word64 (&v, value2) != 1) ||
-            (BN_div_word64 (&v, tenTo14) != 1))
-    {
-        Throw<std::runtime_error> ("internal bn error");
-    }
-
-    // 10^16 <= product <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
-
-    // TODO(tom): where do 7 and 14 come from?
-    return STAmount (issue, v.getuint64 () + 7,
-        offset1 + offset2 + 14, v1.negative() != v2.negative());
+    // We multiply the two mantissas (each is between 10^15
+    // and 10^16), so their product is in the 10^30 to 10^32
+    // range. Dividing their product by 10^14 maintains the
+    // precision, by scaling the result to 10^16 to 10^18.
+    return STAmount (issue,
+        muldiv(value1, value2, tenTo14) + 7,
+        offset1 + offset2 + 14,
+        v1.negative() != v2.negative());
 }
 
 static
 void
-canonicalizeRound (bool native, std::uint64_t& value, int& offset, bool roundUp)
+canonicalizeRound (bool native, std::uint64_t& value, int& offset)
 {
-    if (!roundUp) // canonicalize already rounds down
-        return;
-
     if (native)
     {
         if (offset < 0)
@@ -1142,7 +1174,9 @@ mulRound (STAmount const& v1, STAmount const& v2, Issue const& issue,
     if (v1 == zero || v2 == zero)
         return {issue};
 
-    if (v1.native() && v2.native() && isXRP (issue))
+    bool const xrp = isXRP (issue);
+
+    if (v1.native() && v2.native() && xrp)
     {
         std::uint64_t minV = (getSNValue (v1) < getSNValue (v2)) ?
                 getSNValue (v1) : getSNValue (v2);
@@ -1179,32 +1213,29 @@ mulRound (STAmount const& v1, STAmount const& v2, Issue const& issue,
         }
     }
 
-    bool resultNegative = v1.negative() != v2.negative();
-    // Compute (numerator * denominator) / 10^14 with rounding
-    // 10^16 <= result <= 10^18
-    CBigNum v;
+    bool const resultNegative = v1.negative() != v2.negative();
 
-    if ((BN_add_word64 (&v, value1) != 1) || (BN_mul_word64 (&v, value2) != 1))
-        Throw<std::runtime_error> ("internal bn error");
+    // We multiply the two mantissas (each is between 10^15
+    // and 10^16), so their product is in the 10^30 to 10^32
+    // range. Dividing their product by 10^14 maintains the
+    // precision, by scaling the result to 10^16 to 10^18.
+    //
+    // If the we're rounding up, we want to round up away
+    // from zero, and if we're rounding down, truncation
+    // is implicit.
+    std::uint64_t amount = muldiv_round (
+        value1, value2, tenTo14,
+        (resultNegative != roundUp) ? tenTo14m1 : 0);
 
-    if (resultNegative != roundUp) // rounding down is automatic when we divide
-        BN_add_word64 (&v, tenTo14m1);
-
-    if  (BN_div_word64 (&v, tenTo14) != 1)
-        Throw<std::runtime_error> ("internal bn error");
-
-    // 10^16 <= product <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
-
-    std::uint64_t amount = v.getuint64 ();
     int offset = offset1 + offset2 + 14;
-    canonicalizeRound (
-        isXRP (issue), amount, offset, resultNegative != roundUp);
+    if (resultNegative != roundUp)
+        canonicalizeRound (xrp, amount, offset);
     STAmount result (issue, amount, offset, resultNegative);
+
     // Control when bugfixes that require switchover dates are enabled
     if (roundUp && !resultNegative && !result && *stAmountCalcSwitchover)
     {
-        if (isXRP(issue) && *stAmountCalcSwitchover2)
+        if (xrp && *stAmountCalcSwitchover2)
         {
             // return the smallest value above zero
             amount = 1;
@@ -1235,40 +1266,43 @@ divRound (STAmount const& num, STAmount const& den,
     int numOffset = num.exponent(), denOffset = den.exponent();
 
     if (num.native())
+    {
         while (numVal < STAmount::cMinValue)
         {
-            // Need to bring into range
             numVal *= 10;
             --numOffset;
         }
+    }
 
     if (den.native())
+    {
         while (denVal < STAmount::cMinValue)
         {
             denVal *= 10;
             --denOffset;
         }
+    }
 
-    bool resultNegative = num.negative() != den.negative();
-    // Compute (numerator * 10^17) / denominator
-    CBigNum v;
+    bool const resultNegative =
+        (num.negative() != den.negative());
 
-    if ((BN_add_word64 (&v, numVal) != 1) || (BN_mul_word64 (&v, tenTo17) != 1))
-        Throw<std::runtime_error> ("internal bn error");
+    // We divide the two mantissas (each is between 10^15
+    // and 10^16). To maintain precision, we multiply the
+    // numerator by 10^17 (the product is in the range of
+    // 10^32 to 10^33) followed by a division, so the result
+    // is in the range of 10^16 to 10^15.
+    //
+    // We round away from zero if we're rounding up or
+    // truncate if we're rounding down.
+    std::uint64_t amount = muldiv_round (
+        numVal, tenTo17, denVal,
+        (resultNegative != roundUp) ? denVal - 1 : 0);
 
-    if (resultNegative != roundUp) // Rounding down is automatic when we divide
-        BN_add_word64 (&v, denVal - 1);
-
-    if (BN_div_word64 (&v, denVal) != 1)
-        Throw<std::runtime_error> ("internal bn error");
-
-    // 10^16 <= quotient <= 10^18
-    assert (BN_num_bytes (&v) <= 64);
-
-    std::uint64_t amount = v.getuint64 ();
     int offset = numOffset - denOffset - 17;
-    canonicalizeRound (
-        isXRP (issue), amount, offset, resultNegative != roundUp);
+
+    if (resultNegative != roundUp)
+        canonicalizeRound (isXRP (issue), amount, offset);
+
     STAmount result (issue, amount, offset, resultNegative);
     // Control when bugfixes that require switchover dates are enabled
     if (roundUp && !resultNegative && !result && *stAmountCalcSwitchover)
