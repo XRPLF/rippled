@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/random.h>
-#include <ripple/crypto/CBigNum.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/beast/unit_test.h>
 
@@ -403,24 +402,6 @@ public:
     void testArithmetic ()
     {
         testcase ("arithmetic");
-
-        CBigNum b;
-
-        for (int i = 0; i < 16; ++i)
-        {
-            std::uint64_t r = rand_int<std::uint64_t>();
-            b.setuint64 (r);
-
-            if (b.getuint64 () != r)
-            {
-                log << r << " != " << b.getuint64 () << " " << b.ToString (16);
-                fail ("setull64/getull64 failure");
-            }
-            else
-            {
-                pass ();
-            }
-        }
 
         // Test currency multiplication and division operations such as
         // convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded

@@ -171,8 +171,6 @@ public:
     STAmount
     zeroed() const
     {
-        // TODO(tom): what does this next comment mean here?
-        // See https://ripplelabs.atlassian.net/browse/WC-1847?jql=
         return STAmount (mIssue);
     }
 
