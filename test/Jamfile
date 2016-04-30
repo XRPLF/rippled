@@ -19,6 +19,7 @@ unit-test core-tests :
     placeholders.cpp
     prepare_buffers.cpp
     static_streambuf.cpp
+    static_string.cpp
     streambuf.cpp
     streambuf_readstream.cpp
     to_string.cpp
@@ -48,18 +49,23 @@ unit-test http-tests :
     http/write.cpp
     ;
 
-unit-test websocket-tests :
-    main.cpp
-    websocket/error.cpp
-    websocket/option.cpp
-    websocket/rfc6455.cpp
-    websocket/static_string.cpp
-    websocket/teardown.cpp
-    websocket/utf8_checker.cpp
-    ;
-
 unit-test parser-bench :
     main.cpp
     http/nodejs_parser.cpp
     http/parser_bench.cpp
     ;
+
+unit-test websocket-tests :
+    main.cpp
+    websocket/error.cpp
+    websocket/option.cpp
+    websocket/rfc6455.cpp
+    websocket/stream.cpp
+    websocket/teardown.cpp
+    websocket/utf8_checker.cpp
+    ;
+
+exe websocket-echo :
+    websocket/websocket_echo.cpp
+    ;
+

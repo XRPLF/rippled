@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WSPROTO_SYNC_ECHO_PEER_H_INCLUDED
-#define BEAST_WSPROTO_SYNC_ECHO_PEER_H_INCLUDED
+#ifndef BEAST_WEBSOCKET_SYNC_ECHO_PEER_H_INCLUDED
+#define BEAST_WEBSOCKET_SYNC_ECHO_PEER_H_INCLUDED
 
 #include <beast/streambuf.hpp>
 #include <beast/websocket.hpp>
@@ -55,6 +55,8 @@ public:
         error_code ec;
         acceptor_.open(ep.protocol(), ec);
         maybe_throw(ec, "open");
+        acceptor_.set_option(
+            boost::asio::socket_base::reuse_address{true});
         acceptor_.bind(ep, ec);
         maybe_throw(ec, "bind");
         acceptor_.listen(
@@ -72,6 +74,12 @@ public:
         ios_.dispatch(
             [&]{ acceptor_.close(ec); });
         thread_.join();
+    }
+
+    endpoint_type
+    local_endpoint() const
+    {
+        return acceptor_.local_endpoint();
     }
 
 private:

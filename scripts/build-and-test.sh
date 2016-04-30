@@ -7,5 +7,3 @@ echo "using toolset: $CC"
 echo "using variant: $VARIANT"
 
 $BOOST_ROOT/bjam toolset=$CC variant=$VARIANT
-`find . -name "core_tests"`
-`find . -name "http_tests"`

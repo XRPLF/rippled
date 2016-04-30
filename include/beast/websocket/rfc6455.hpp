@@ -8,7 +8,7 @@
 #ifndef BEAST_WEBSOCKET_RFC6455_HPP
 #define BEAST_WEBSOCKET_RFC6455_HPP
 
-#include <beast/websocket/static_string.hpp>
+#include <beast/static_string.hpp>
 #include <boost/optional.hpp>
 #include <array>
 #include <cstdint>
@@ -44,7 +44,9 @@ enum class opcode : std::uint8_t
     @see RFC 6455 7.4.1 Defined Status Codes
     https://tools.ietf.org/html/rfc6455#section-7.4.1
 */
-enum class close_code : std::uint16_t
+namespace close_code {
+using value = std::uint16_t;
+enum
 {
     // used internally to mean "no error"
     none            = 0,
@@ -69,6 +71,7 @@ enum class close_code : std::uint16_t
 
     last = 5000 // satisfy warnings
 };
+} // close_code
 
 #if ! GENERATING_DOCS
 
@@ -89,7 +92,7 @@ using ping_payload_type =
 struct close_reason
 {
     /// The close code.
-    close_code code = close_code::none;
+    close_code::value code = close_code::none;
 
     /// The optional utf8-encoded reason string.
     reason_string_type reason;
@@ -102,7 +105,7 @@ struct close_reason
     close_reason() = default;
 
     /// Construct from a code.
-    close_reason(close_code code_)
+    close_reason(close_code::value code_)
         : code(code_)
     {
     }
@@ -117,7 +120,7 @@ struct close_reason
 
     /// Construct from a code and reason.
     template<class CharT>
-    close_reason(close_code code_,
+    close_reason(close_code::value code_,
             CharT const* reason_)
         : code(code_)
         , reason(reason_)

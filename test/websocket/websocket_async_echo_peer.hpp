@@ -59,6 +59,8 @@ public:
             error_code ec;
             acceptor_.open(ep.protocol(), ec);
             maybe_throw(ec, "open");
+            acceptor_.set_option(
+                boost::asio::socket_base::reuse_address{true});
             acceptor_.bind(ep, ec);
             maybe_throw(ec, "bind");
             acceptor_.listen(
@@ -85,6 +87,12 @@ public:
             [&]{ acceptor_.close(ec); });
         for(auto& t : thread_)
             t.join();
+    }
+
+    endpoint_type
+    local_endpoint() const
+    {
+        return acceptor_.local_endpoint();
     }
 
 private:
