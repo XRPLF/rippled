@@ -37,11 +37,22 @@ enum values
 };
 } // parse_flag
 
-/** Parser for producing HTTP requests and responses.
+/** A parser for decoding HTTP/1 wire format messages.
 
-    During parsing, callbacks will be made to the derived class
-    if those members are present (detected through SFINAE). The
-    signatures which can be present in the derived class are:<br>
+    This parser is designed to efficiently parse messages in the
+    HTTP/1 wire format. It allocates no memory and uses minimal
+    state. It will handle chunked encoding and it understands the
+    semantics of the Connection and Content-Length header fields.
+
+    The interface uses CRTP (Curiously Recurring Template Pattern).
+    To use this class, derive from basic_parser. When bytes are
+    presented, the implementation will make a series of zero or
+    more calls to derived class members functions (referred to as
+    "callbacks" from here on) matching a specific signature.
+
+    Callbacks are detected through SFINAE. The derived class may
+    implement as few or as many of the members as needed.
+    These are the signatures of the callbacks:<br>
 
     @li `void on_method(boost::string_ref const&, error_code& ec)`
 
@@ -107,6 +118,9 @@ enum values
 
     If a callback sets an error, parsing stops at the current octet
     and the error is returned to the caller.
+
+    @tparam isRequest A `bool` indicating whether the parser will be
+    presented with request or response message.
 */
 template<bool isRequest, class Derived>
 class basic_parser

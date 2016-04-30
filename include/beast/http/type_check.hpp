@@ -21,8 +21,8 @@ template<class T>
 class is_Parser
 {
     template<class U, class R =
-        std::is_convertible<
-            std::declval<U>().complete(),
+        std::is_convertible<decltype(
+            std::declval<U>().complete()),
             bool>>
     static R check1(int);
     template<class>
@@ -30,21 +30,19 @@ class is_Parser
     using type1 = decltype(check1<T>(0));
 
     template<class U, class R =
-        std::is_convertible<
+        std::is_convertible<decltype(
             std::declval<U>().write(
                 std::declval<boost::asio::const_buffer const&>(),
-                std::declval<error_code&>()),
+                std::declval<error_code&>())),
             std::size_t>>
     static R check2(int);
     template<class>
     static std::false_type check2(...);
     using type2 = decltype(check2<T>(0));
 
-    template<class U, class R =
-        std::is_convertible<
-            std::declval<U>().write_eof(
-                std::declval<error_code&>()),
-            std::size_t>>
+    template<class U, class R = decltype(
+        std::declval<U>().write_eof(std::declval<error_code&>()),
+            std::true_type{})>
     static R check3(int);
     template<class>
     static std::false_type check3(...);

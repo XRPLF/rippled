@@ -37,3 +37,4 @@ HTTP:
 * HTTP parser trailers with test
 * URL parser, strong URL checking in HTTP parser
 * Update for rfc7230
+* Fix prepare() calling content_length() without init()

@@ -12,7 +12,7 @@ their associated operations including synchronous and asynchronous reading and
 writing using Boost.Asio.
 
 The HTTP protocol is described fully in
-[@https://tools.ietf.org/html/rfc2616 rfc2616]
+[@https://tools.ietf.org/html/rfc7230 rfc7230]
 
 
 
@@ -25,6 +25,13 @@ compliant with the Hypertext Transfer Protocol and the supplements that
 follow. Unfortunately reliable implementations or industry standards do not
 exist in C++.
 
+[heading Scope]
+
+The scope of this library is meant to include only the functionality of
+modeling the HTTP message, serializing and deserializing the message, and
+sending and receiving messages on sockets or streams. It is designed to
+be a building block for creating higher level abstractions.
+
 Beast.HTTP is built on Boost.Asio and uses HTTP parser from NodeJS, which is
 extensively field tested and exceptionally robust. A proposal to add networking
 functionality to the C++ standard library, based on Boost.Asio, is under
@@ -32,13 +39,6 @@ consideration by the standards committee. Since the final approved networking
 interface for the C++ standard library will likely closely resemble the current
 interface of Boost.Asio, it is logical for Beast.HTTP to use Boost.Asio as its
 network transport.
-
-[heading Scope]
-
-The scope of this library is meant to include only the functionality of
-modeling the HTTP message, serializing and deserializing the message, and
-sending and receiving messages on sockets or streams. It is designed to
-be a building block for creating higher level abstractions.
 
 [note The documentation which follows assumes familiarity with
 both Boost.Asio and the HTTP protocol specification described in

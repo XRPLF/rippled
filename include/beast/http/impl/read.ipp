@@ -10,6 +10,7 @@
 
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
+#include <beast/http/type_check.hpp>
 #include <cassert>
 
 namespace beast {
@@ -210,6 +211,49 @@ operator()(error_code ec, std::size_t bytes_transferred, bool again)
 
 //------------------------------------------------------------------------------
 
+template<class SyncReadStream, class Streambuf, class Parser>
+void
+parse_v1(SyncReadStream& stream, Streambuf& streambuf,
+    Parser& parser, error_code& ec)
+{
+    static_assert(is_SyncReadStream<SyncReadStream>::value,
+        "SyncReadStream requirements not met");
+    static_assert(is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
+    static_assert(is_Parser<Parser>::value,
+        "Parser requirements not met");
+    bool started = false;
+    for(;;)
+    {
+        auto used =
+            parser.write(streambuf.data(), ec);
+        if(ec)
+            return;
+        streambuf.consume(used);
+        if(used > 0)
+            started = true;
+        if(parser.complete())
+            break;
+        streambuf.commit(stream.read_some(
+            streambuf.prepare(read_size_helper(
+                streambuf, 65536)), ec));
+        if(ec && ec != boost::asio::error::eof)
+            return;
+        if(ec == boost::asio::error::eof)
+        {
+            if(! started)
+                return;
+            // Caller will see eof on next read.
+            ec = {};
+            parser.write_eof(ec);
+            if(ec)
+                return;
+            assert(parser.complete());
+            break;
+        }
+    }
+}
+
 template<class SyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers>
 void
@@ -222,40 +266,11 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
     parser<isRequest, Body, Headers> p;
-    bool started = false;
-    for(;;)
-    {
-        auto used =
-            p.write(streambuf.data(), ec);
-        if(ec)
-            return;
-        streambuf.consume(used);
-        if(used > 0)
-            started = true;
-        if(p.complete())
-        {
-            m = p.release();
-            break;
-        }
-        streambuf.commit(stream.read_some(
-            streambuf.prepare(read_size_helper(
-                streambuf, 65536)), ec));
-        if(ec && ec != boost::asio::error::eof)
-            return;
-        if(ec == boost::asio::error::eof)
-        {
-            if(! started)
-                return;
-            // Caller will see eof on next read.
-            ec = {};
-            p.write_eof(ec);
-            if(ec)
-                return;
-            assert(p.complete());
-            m = p.release();
-            break;
-        }
-    }
+    parse_v1(stream, streambuf, p, ec);
+    if(ec && ec != boost::asio::error::eof)
+        return;
+    assert(p.complete());
+    m = p.release();
 }
 
 template<class AsyncReadStream, class Streambuf,

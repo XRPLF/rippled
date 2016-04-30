@@ -24,6 +24,7 @@
 #include <beast/static_streambuf.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/type_check.hpp>
+#include <beast/http/headers.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
 #include <beast/http/reason.hpp>
@@ -241,10 +242,18 @@ accept(ConstBufferSequence const& buffers, error_code& ec)
     stream_.buffer().commit(buffer_copy(
         stream_.buffer().prepare(
             buffer_size(buffers)), buffers));
+#if 0
     http::request<http::empty_body> m;
     http::read(next_layer(), stream_.buffer(), m, ec);
     if(ec)
         return;
+#else
+    http::parser<true, http::empty_body, http::headers> p;
+    http::parse_v1(next_layer(), stream_.buffer(), p, ec);
+    if(ec)
+        return;
+    auto const m = p.release();
+#endif
     accept(m, ec);
 }
 
