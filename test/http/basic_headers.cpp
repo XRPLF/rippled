@@ -30,6 +30,14 @@ public:
             h.insert(std::to_string(i), i);
     }
 
+    template<class U, class V>
+    static
+    void
+    self_assign(U& u, V&& v)
+    {
+        u = std::forward<V>(v);
+    }
+
     void testHeaders()
     {
         bh h1;
@@ -47,12 +55,23 @@ public:
         bh h3(std::move(h1));
         expect(h3.size() == 2);
         expect(h1.size() == 0);
-        h2 = std::move(h2);
+        self_assign(h3, std::move(h3));
+        expect(h3.size() == 2);
+        expect(h2.erase("Not-Present") == 0);
+    }
+
+    void testRFC2616()
+    {
+        bh h;
+        h.insert("a", "x");
+        h.insert("a", "y");
+        expect(h["a"] == "x,y");
     }
 
     void run() override
     {
         testHeaders();
+        testRFC2616();
     }
 };
 

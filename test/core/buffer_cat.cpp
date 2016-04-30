@@ -116,7 +116,8 @@ public:
 
         try
         {
-            expect((buffer_size(*bs.end()) == 0, false));
+            buffer_size(*bs.end());
+            fail();
         }
         catch(std::exception const&)
         {

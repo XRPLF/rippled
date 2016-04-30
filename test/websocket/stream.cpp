@@ -477,6 +477,88 @@ public:
         }
     }
 
+    struct con
+    {
+        stream<socket_type> ws;
+
+        explicit
+        con(endpoint_type const& ep, boost::asio::io_service& ios)
+            : ws(ios)
+        {
+            ws.next_layer().connect(ep);
+            ws.handshake("localhost", "/");
+        }
+    };
+
+    template<std::size_t N>
+    class cbuf_helper
+    {
+        std::array<std::uint8_t, N> v_;
+        boost::asio::const_buffer cb_;
+
+    public:
+        using value_type = decltype(cb_);
+        using const_iterator = value_type const*;
+
+        template<class... Vn>
+        explicit
+        cbuf_helper(Vn... vn)
+            : v_({{ static_cast<std::uint8_t>(vn)... }})
+            , cb_(v_.data(), v_.size())
+        {
+        }
+
+        const_iterator
+        begin() const
+        {
+            return &cb_;
+        }
+
+        const_iterator
+        end() const
+        {
+            return begin()+1;
+        }
+    };
+
+    template<class... Vn>
+    cbuf_helper<sizeof...(Vn)>
+    cbuf(Vn... vn)
+    {
+        return cbuf_helper<sizeof...(Vn)>(vn...);
+    }
+
+    void testClose(endpoint_type const& ep, yield_context do_yield)
+    {
+        using boost::asio::buffer;
+        {
+            // payload length 1
+            con c(ep, ios_);
+            boost::asio::write(c.ws.next_layer(),
+                cbuf(0x88, 0x81, 0xff, 0xff, 0xff, 0xff, 0x00));
+        }
+        {
+            // invalid close code 1005
+            con c(ep, ios_);
+            boost::asio::write(c.ws.next_layer(),
+                cbuf(0x88, 0x82, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x12));
+        }
+        {
+            // invalid utf8
+            con c(ep, ios_);
+            boost::asio::write(c.ws.next_layer(),
+                cbuf(0x88, 0x86, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x15,
+                    0x0f, 0xd7, 0x73, 0x43));
+        }
+        {
+            // good utf8
+            con c(ep, ios_);
+            boost::asio::write(c.ws.next_layer(),
+                cbuf(0x88, 0x86, 0xff, 0xff, 0xff, 0xff, 0xfc, 0x15,
+                    'u', 't', 'f', '8'));
+        }
+    }
+
     void testWriteFrame(endpoint_type const& ep)
     {
         for(;;)
@@ -528,6 +610,9 @@ public:
             yield_to(std::bind(&stream_test::testMask,
                 this, ep, std::placeholders::_1));
 
+            yield_to(std::bind(&stream_test::testClose,
+                this, ep, std::placeholders::_1));
+
             testWriteFrame(ep);
         }
         {
@@ -541,6 +626,9 @@ public:
                 this, ep, std::placeholders::_1));
 
             yield_to(std::bind(&stream_test::testMask,
+                this, ep, std::placeholders::_1));
+
+            yield_to(std::bind(&stream_test::testClose,
                 this, ep, std::placeholders::_1));
         }
 

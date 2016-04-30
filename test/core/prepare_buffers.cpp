@@ -33,20 +33,20 @@ public:
         return s;
     }
 
-    void testBuffers()
+    template<class BufferType>
+    void testMatrix()
     {
         using boost::asio::buffer_size;
-        using boost::asio::const_buffer;
-        std::string const s = "Hello, world";
+        std::string s = "Hello, world";
         expect(s.size() == 12);
         for(std::size_t x = 1; x < 4; ++x) {
         for(std::size_t y = 1; y < 4; ++y) {
         std::size_t z = s.size() - (x + y);
         {
-            std::array<const_buffer, 3> bs{{
-                const_buffer{&s[0], x},
-                const_buffer{&s[x], y},
-                const_buffer{&s[x+y], z}}};
+            std::array<BufferType, 3> bs{{
+                BufferType{&s[0], x},
+                BufferType{&s[x], y},
+                BufferType{&s[x+y], z}}};
             for(std::size_t i = 0; i <= s.size() + 1; ++i)
             {
                 auto pb = prepare_buffers(i, bs);
@@ -104,7 +104,8 @@ public:
 
     void run() override
     {
-        testBuffers();
+        testMatrix<boost::asio::const_buffer>();
+        testMatrix<boost::asio::mutable_buffer>();
         testNullBuffers();
         testIterator();
     }

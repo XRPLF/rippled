@@ -8,6 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/core/basic_streambuf.hpp>
 
+#include "buffer_test.hpp"
 #include <beast/core/streambuf.hpp>
 #include <beast/core/to_string.hpp>
 #include <beast/unit_test/suite.hpp>
@@ -148,6 +149,24 @@ public:
         return to_string(sb1.data()) == to_string(sb2.data());
     }
 
+    template<class ConstBufferSequence>
+    void
+    expect_size(std::size_t n, ConstBufferSequence const& buffers)
+    {
+        expect(test::size_pre(buffers) == n);
+        expect(test::size_post(buffers) == n);
+        expect(test::size_rev_pre(buffers) == n);
+        expect(test::size_rev_post(buffers) == n);
+    }
+
+    template<class U, class V>
+    static
+    void
+    self_assign(U& u, V&& v)
+    {
+        u = std::forward<V>(v);
+    }
+
     void testSpecialMembers()
     {
         using boost::asio::buffer;
@@ -177,19 +196,31 @@ public:
             {
                 streambuf sb2(std::move(sb));
                 expect(to_string(sb2.data()) == s);
-                expect(buffer_size(sb.data()) == 0);
+                expect_size(0, sb.data());
                 sb = std::move(sb2);
                 expect(to_string(sb.data()) == s);
-                expect(buffer_size(sb2.data()) == 0);
+                expect_size(0, sb2.data());
             }
-            sb = sb;
-            sb = std::move(sb);
+            self_assign(sb, sb);
+            expect(to_string(sb.data()) == s);
+            self_assign(sb, std::move(sb));
+            expect(to_string(sb.data()) == s);
         }
         }}}
+        try
+        {
+            streambuf sb0(0);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+            pass();
+        }
     }
 
     void testAllocator()
     {
+        // VFALCO This needs work
         {
             using alloc_type =
                 test_allocator<char, false, false, false, false>;
@@ -206,7 +237,6 @@ public:
             sb_type sb2(sb);
             expect(sb2.get_allocator().id() == 2);
             sb_type sb3(sb, alloc_type{});
-            //expect(sb3.get_allocator().id() == 3);
         }
     }
 
@@ -223,21 +253,9 @@ public:
         {
             streambuf sb(2);
             sb.prepare(2);
-            {
-                auto const bs = sb.prepare(5);
-                expect(std::distance(
-                    bs.begin(), bs.end()) == 2);
-            }
-            {
-                auto const bs = sb.prepare(8);
-                expect(std::distance(
-                    bs.begin(), bs.end()) == 3);
-            }
-            {
-                auto const bs = sb.prepare(4);
-                expect(std::distance(
-                    bs.begin(), bs.end()) == 2);
-            }
+            expect(test::buffer_count(sb.prepare(5)) == 2);
+            expect(test::buffer_count(sb.prepare(8)) == 3);
+            expect(test::buffer_count(sb.prepare(4)) == 2);
         }
     }
 
@@ -248,10 +266,21 @@ public:
         sb.prepare(2);
         sb.prepare(5);
         sb.commit(1);
-        expect(buffer_size(sb.data()) == 1);
+        expect_size(1, sb.data());
     }
 
-    void testStreambuf()
+    void testConsume()
+    {
+        using boost::asio::buffer_size;
+        streambuf sb(1);
+        expect_size(5, sb.prepare(5));
+        sb.commit(3);
+        expect_size(3, sb.data());
+        sb.consume(1);
+        expect_size(2, sb.data());
+    }
+
+    void testMatrix()
     {
         using boost::asio::buffer;
         using boost::asio::buffer_cast;
@@ -354,41 +383,11 @@ public:
         sb.commit(1);
         sb.prepare(2);
         sb.commit(2);
-        expect(buffer_size(sb.data()) == 3);
+        expect_size(3, sb.data());
         sb.prepare(1);
-        expect(buffer_size(sb.prepare(3)) == 3);
-        expect(read_size_helper(sb, 3) == 3);
+        expect_size(3, sb.prepare(3));
         sb.commit(2);
-        try
-        {
-            streambuf sb0(0);
-            fail();
-        }
-        catch(std::exception const&)
-        {
-            pass();
-        }
-        std::size_t n;
-        n = 0;
-        for(auto it = sb.data().begin();
-                it != sb.data().end(); it++)
-            ++n;
-        expect(n == 4);
-        n = 0;
-        for(auto it = sb.data().begin();
-                it != sb.data().end(); ++it)
-            ++n;
-        expect(n == 4);
-        n = 0;
-        for(auto it = sb.data().end();
-                it != sb.data().begin(); it--)
-            ++n;
-        expect(n == 4);
-        n = 0;
-        for(auto it = sb.data().end();
-                it != sb.data().begin(); --it)
-            ++n;
-        expect(n == 4);
+        expect(test::buffer_count(sb.data()) == 4);
     }
 
     void testOutputStream()
@@ -398,15 +397,63 @@ public:
         expect(to_string(sb.data()) == "x");
     }
 
+    void testReadSizeHelper()
+    {
+        using boost::asio::buffer_size;
+        {
+            streambuf sb(10);
+            expect(read_size_helper(sb, 0) == 0);
+            expect(read_size_helper(sb, 1) == 1);
+            expect(read_size_helper(sb, 10) == 10);
+            expect(read_size_helper(sb, 20) == 20);
+            expect(read_size_helper(sb, 1000) == 512);
+            sb.prepare(3);
+            sb.commit(3);
+            expect(read_size_helper(sb, 10) == 7);
+            expect(read_size_helper(sb, 1000) == 7);
+        }
+        {
+            streambuf sb(1000);
+            expect(read_size_helper(sb, 0) == 0);
+            expect(read_size_helper(sb, 1) == 1);
+            expect(read_size_helper(sb, 1000) == 1000);
+            expect(read_size_helper(sb, 2000) == 1000);
+            sb.prepare(3);
+            expect(read_size_helper(sb, 0) == 0);
+            expect(read_size_helper(sb, 1) == 1);
+            expect(read_size_helper(sb, 1000) == 1000);
+            expect(read_size_helper(sb, 2000) == 1000);
+            sb.commit(3);
+            expect(read_size_helper(sb, 0) == 0);
+            expect(read_size_helper(sb, 1) == 1);
+            expect(read_size_helper(sb, 1000) == 997);
+            expect(read_size_helper(sb, 2000) == 997);
+            sb.consume(2);
+            expect(read_size_helper(sb, 0) == 0);
+            expect(read_size_helper(sb, 1) == 1);
+            expect(read_size_helper(sb, 1000) == 997);
+            expect(read_size_helper(sb, 2000) == 997);
+        }
+        {
+            streambuf sb(2);
+            expect(test::buffer_count(sb.prepare(2)) == 1);
+            expect(test::buffer_count(sb.prepare(3)) == 2);
+            expect(buffer_size(sb.prepare(5)) == 5);
+            expect(read_size_helper(sb, 10) == 6);
+        }
+    }
+
     void run() override
     {
         testSpecialMembers();
         testAllocator();
         testPrepare();
         testCommit();
-        testStreambuf();
+        testConsume();
+        testMatrix();
         testIterators();
         testOutputStream();
+        testReadSizeHelper();
     }
 };
 

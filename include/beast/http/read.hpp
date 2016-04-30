@@ -17,6 +17,127 @@
 namespace beast {
 namespace http {
 
+/** Parse a HTTP/1 message from a stream.
+
+    This function synchronously reads from a stream and passes
+    data to the specified parser. The call will block until one
+    of the following conditions are met:
+
+    @li A complete message is read in.
+
+    @li An error occurs in the stream or parser.
+
+    This function is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being parsed. This additional data is stored in the stream
+    buffer, which may be used in subsequent calls.
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b `SyncReadStream` concept.
+
+    @param streambuf A `Streambuf` holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
+
+    @param parser An object meeting the requirements of Parser
+    which will receive the data.
+
+    @throws boost::system::system_error on failure.
+*/
+template<class SyncReadStream, class Streambuf, class Parser>
+void
+parse(SyncReadStream& stream,
+    Streambuf& streambuf, Parser& parser);
+
+/** Parse a HTTP/1 message from a stream.
+
+    This function synchronously reads from a stream and passes
+    data to the specified parser. The call will block until one
+    of the following conditions are met:
+
+    @li A complete message is read in.
+
+    @li An error occurs in the stream or parser.
+
+    This function is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being parsed. This additional data is stored in the stream
+    buffer, which may be used in subsequent calls.
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b `SyncReadStream` concept.
+
+    @param streambuf A `Streambuf` holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
+
+    @param parser An object meeting the requirements of `Parser`
+    which will receive the data.
+
+    @param ec Set to the error, if any occurred.
+*/
+template<class SyncReadStream, class Streambuf, class Parser>
+void
+parse(SyncReadStream& stream,
+    Streambuf& streambuf, Parser& parser, error_code& ec);
+
+/** Start an asynchronous operation to parse a HTTP/1 message from a stream.
+
+    This function is used to asynchronously read from a stream and
+    pass the data to the specified parser. The function call always
+    returns immediately. The asynchronous operation will continue
+    until one of the following conditions is true:
+
+    @li A complete message is read in.
+
+    @li An error occurs in the stream or parser.
+
+    This operation is implemented in terms of one or more calls to
+    the next layer's `async_read_some` function, and is known as a
+    <em>composed operation</em>. The program must ensure that the
+    stream performs no other operations until this operation completes.
+
+    @param stream The stream from which the data is to be read.
+    The type must support the @b `AsyncReadStream` concept.
+
+    @param streambuf A `Streambuf` holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
+
+    @param parser An object meeting the requirements of `Parser`
+    which will receive the data. This object must remain valid
+    until the completion handler is invoked.
+
+    @param handler The handler to be called when the request completes.
+    Copies will be made of the handler as required. The equivalent
+    function signature of the handler must be:
+    @code void handler(
+        error_code const& error // result of operation
+    ); @endcode
+    Regardless of whether the asynchronous operation completes
+    immediately or not, the handler will not be invoked from within
+    this function. Invocation of the handler will be performed in a
+    manner equivalent to using `boost::asio::io_service::post`.
+*/
+template<class AsyncReadStream,
+    class Streambuf, class Parser, class ReadHandler>
+#if GENERATING_DOCS
+void_or_deduced
+#else
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
+#endif
+async_parse(AsyncReadStream& stream, Streambuf& streambuf,
+    Parser& parser, ReadHandler&& handler);
+
 /** Read a HTTP/1 message from a stream.
 
     This function is used to synchronously read a message from
@@ -25,18 +146,22 @@ namespace http {
 
     @li A complete message is read in.
 
-    @li An error occurs on the stream.
+    @li An error occurs in the stream or parser.
 
-    This function is implemented in terms of one or more calls to the
-    stream's `read_some` function.
+    This function is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being parsed. This additional data is stored in the stream
+    buffer, which may be used in subsequent calls.
 
-    @param stream The stream to which the data is to be written.
+    @param stream The stream from which the data is to be read.
     The type must support the @b `SyncReadStream` concept.
 
-    @param streambuf An object meeting the @b `Streambuf` type requirements
-    used to hold unread bytes. The implementation may read past the end of
-    the message. The extra bytes are stored here, to be presented in a
-    subsequent call to @ref read.
+    @param streambuf A `Streambuf` holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
 
     @param msg An object used to store the message. Any
     contents will be overwritten.
@@ -57,21 +182,25 @@ read(SyncReadStream& stream, Streambuf& streambuf,
 
     @li A complete message is read in.
 
-    @li An error occurs on the stream.
+    @li An error occurs in the stream or parser.
 
-    This function is implemented in terms of one or more calls to the
-    stream's `read_some` function.
+    This function is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being parsed. This additional data is stored in the stream
+    buffer, which may be used in subsequent calls.
 
-    @param stream The stream to which the data is to be written.
+    @param stream The stream from which the data is to be read.
     The type must support the @b `SyncReadStream` concept.
 
-    @param streambuf An object meeting the @b `Streambuf` type requirements
-    used to hold unread bytes. The implementation may read past the end of
-    the message. The extra bytes are stored here, to be presented in a
-    subsequent call to @ref read.
+    @param streambuf A `Streambuf` holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
 
-    @param msg An object used to store the message. Any contents
-    will be overwritten.
+    @param msg An object used to store the message. Any
+    contents will be overwritten.
 
     @param ec Set to the error, if any occurred.
 */
@@ -90,7 +219,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
 
     @li A complete message is read in.
 
-    @li An error occurs on the stream.
+    @li An error occurs in the stream or parser.
 
     This operation is implemented in terms of one or more calls to the
     next layer's `async_read_some` function, and is known as a
@@ -100,10 +229,11 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     @param stream The stream to read the message from.
     The type must support the @b `AsyncReadStream` concept.
 
-    @param streambuf A Streambuf used to hold unread bytes. The
-    implementation may read past the end of the message. The extra
-    bytes are stored here, to be presented in a subsequent call to
-    @ref async_read.
+    @param streambuf A `Streambuf` holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
 
     @param msg An object used to store the message. Any contents
     will be overwritten.

@@ -23,7 +23,7 @@ namespace unit_test {
 /** @{ */
 template <class = void>
 void
-print (results const& r, beast::detail::abstract_ostream& stream)
+print (results const& r, abstract_ostream& stream)
 {
     for (auto const& s : r)
     {

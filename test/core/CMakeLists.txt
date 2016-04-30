@@ -7,6 +7,7 @@ GroupSources(test/core "/")
 add_executable (core-tests
     ${BEAST_INCLUDES}
     ../../extras/beast/unit_test/main.cpp
+    buffer_test.hpp
     async_completion.cpp
     basic_streambuf.cpp
     bind_handler.cpp

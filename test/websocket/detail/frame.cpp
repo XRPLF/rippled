@@ -32,7 +32,7 @@ operator==(frame_header const& lhs, frame_header const& rhs)
 class frame_test : public beast::unit_test::suite
 {
 public:
-    void testValidOpcode()
+    void testCloseCodes()
     {
         expect(! is_valid(0));
         expect(! is_valid(1));
@@ -43,6 +43,8 @@ public:
         expect(! is_valid(1016));
         expect(! is_valid(2000));
         expect(! is_valid(2999));
+        expect(is_valid(1000));
+        expect(is_valid(1002));
         expect(is_valid(3000));
         expect(is_valid(4000));
         expect(is_valid(5000));
@@ -220,7 +222,7 @@ public:
 
     void run() override
     {
-        testValidOpcode();
+        testCloseCodes();
         testFrameHeader();
         testBadFrameHeaders();
         pass();

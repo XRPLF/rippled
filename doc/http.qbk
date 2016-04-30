@@ -12,7 +12,7 @@ their associated operations including synchronous and asynchronous reading and
 writing of messages in the HTTP/1 wire format using Boost.Asio.
 
 The HTTP protocol is described fully in
-[@https://tools.ietf.org/html/rfc2616 rfc2616]
+[@https://tools.ietf.org/html/rfc7230 rfc7230]
 
 
 

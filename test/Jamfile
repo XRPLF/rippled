@@ -75,9 +75,9 @@ unit-test websocket-tests :
     websocket/rfc6455.cpp
     websocket/stream.cpp
     websocket/teardown.cpp
-    websocket/utf8_checker.cpp
     websocket/detail/frame.cpp
     websocket/detail/mask.cpp
+    websocket/detail/utf8_checker.cpp
     ;
 
 exe websocket-echo :

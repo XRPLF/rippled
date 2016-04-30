@@ -11,7 +11,6 @@
 #include <beast/http/basic_parser_v1.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/core/error.hpp>
-#include <boost/optional.hpp>
 #include <functional>
 #include <string>
 #include <type_traits>
@@ -39,6 +38,8 @@ struct parser_response
 
     This class uses the basic HTTP/1 wire format parser to convert
     a series of octets into a `message_v1`.
+
+    @note A new instance of the parser is required for each message.
 */
 template<bool isRequest, class Body, class Headers>
 class parser_v1
@@ -47,9 +48,12 @@ class parser_v1
     , private std::conditional<isRequest,
         detail::parser_request, detail::parser_response>::type
 {
+public:
+    /// The type of message this parser produces.
     using message_type =
         message_v1<isRequest, Body, Headers>;
 
+private:
     std::string field_;
     std::string value_;
     message_type m_;
@@ -57,15 +61,55 @@ class parser_v1
 
 public:
     parser_v1(parser_v1&&) = default;
+    parser_v1(parser_v1 const&) = delete;
+    parser_v1& operator=(parser_v1&&) = delete;
+    parser_v1& operator=(parser_v1 const&) = delete;
 
-    parser_v1()
-        : r_(m_)
+    /** Construct the parser.
+
+        @param args A list of arguments forwarded to the message constructor.
+    */
+    template<class... Args>
+    explicit
+    parser_v1(Args&&... args)
+        : m_(std::forward<Args>(args)...)
+        , r_(m_)
     {
     }
 
+    /** Returns the parsed message.
+
+        Only valid if `complete()` would return `true`.
+    */
+    message_type const&
+    get() const
+    {
+        return m_;
+    }
+
+    /** Returns the parsed message.
+
+        Only valid if `complete()` would return `true`.
+    */
+    message_type&
+    get()
+    {
+        return m_;
+    }
+
+    /** Returns the parsed message.
+
+        Ownership is transferred to the caller.
+        Only valid if `complete()` would return `true`.
+
+        Requires:
+            `message<isRequest, Body, Headers>` is MoveConstructible
+    */
     message_type
     release()
     {
+        static_assert(std::is_move_constructible<decltype(m_)>::value,
+            "MoveConstructible requirements not met");
         return std::move(m_);
     }
 
@@ -82,6 +126,10 @@ private:
             field_.clear();
             value_.clear();
         }
+    }
+
+    void on_start(error_code&)
+    {
     }
 
     void on_method(boost::string_ref const& s, error_code&)

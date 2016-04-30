@@ -14,9 +14,9 @@ add_executable (websocket-tests
     rfc6455.cpp
     stream.cpp
     teardown.cpp
-    utf8_checker.cpp
     detail/frame.cpp
     detail/mask.cpp
+    detail/utf8_checker.cpp
 )
 
 if (NOT WIN32)

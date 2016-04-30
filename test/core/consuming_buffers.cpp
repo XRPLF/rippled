@@ -8,6 +8,8 @@
 // Test that header file is self-contained.
 #include <beast/core/consuming_buffers.hpp>
 
+#include "buffer_test.hpp"
+#include <beast/core/to_string.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
@@ -17,22 +19,25 @@ namespace beast {
 class consuming_buffers_test : public beast::unit_test::suite
 {
 public:
-    template<class ConstBufferSequence>
+    template<class Buffers1, class Buffers2>
     static
-    std::string
-    to_string(ConstBufferSequence const& bs)
+    bool
+    eq(Buffers1 const& lhs, Buffers2 const& rhs)
     {
-        using boost::asio::buffer_cast;
-        using boost::asio::buffer_size;
-        std::string s;
-        s.reserve(buffer_size(bs));
-        for(auto const& b : bs)
-            s.append(buffer_cast<char const*>(b),
-                buffer_size(b));
-        return s;
+        return to_string(lhs) == to_string(rhs);
     }
 
-    void testBuffers()
+    template<class ConstBufferSequence>
+    void
+    expect_size(std::size_t n, ConstBufferSequence const& buffers)
+    {
+        expect(test::size_pre(buffers) == n);
+        expect(test::size_post(buffers) == n);
+        expect(test::size_rev_pre(buffers) == n);
+        expect(test::size_rev_post(buffers) == n);
+    }
+
+    void testMatrix()
     {
         using boost::asio::buffer;
         using boost::asio::const_buffer;
@@ -54,16 +59,23 @@ public:
                 const_buffer{&buf[i+j], k}}};
             consuming_buffers<decltype(bs)> cb(bs);
             expect(to_string(cb) == s);
+            expect_size(s.size(), cb);
             cb.consume(0);
+            expect(eq(cb, consumed_buffers(bs, 0)));
             expect(to_string(cb) == s);
+            expect_size(s.size(), cb);
             cb.consume(x);
             expect(to_string(cb) == s.substr(x));
+            expect(eq(cb, consumed_buffers(bs, x)));
             cb.consume(y);
             expect(to_string(cb) == s.substr(x+y));
+            expect(eq(cb, consumed_buffers(bs, x+y)));
             cb.consume(z);
             expect(to_string(cb) == "");
+            expect(eq(cb, consumed_buffers(bs, x+y+z)));
             cb.consume(1);
             expect(to_string(cb) == "");
+            expect(eq(cb, consumed_buffers(bs, x+y+z)));
         }
         }}}}
     }
@@ -94,7 +106,7 @@ public:
 
     void run() override
     {
-        testBuffers();
+        testMatrix();
         testNullBuffers();
         testIterator();
     }

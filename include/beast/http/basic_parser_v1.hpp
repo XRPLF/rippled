@@ -36,11 +36,26 @@ enum values
 };
 } // parse_flag
 
-/** Base class for parsing HTTP/1 requests and responses.
+/** A parser for decoding HTTP/1 wire format messages.
 
-    During parsing, callbacks will be made to the derived class
-    if those members are present (detected through SFINAE). The
-    signatures which can be present in the derived class are:<br>
+    This parser is designed to efficiently parse messages in the
+    HTTP/1 wire format. It allocates no memory and uses minimal
+    state. It will handle chunked encoding and it understands the
+    semantics of the Connection and Content-Length header fields.
+
+    The interface uses CRTP (Curiously Recurring Template Pattern).
+    To use this class, derive from basic_parser. When bytes are
+    presented, the implementation will make a series of zero or
+    more calls to derived class members functions (referred to as
+    "callbacks" from here on) matching a specific signature.
+
+    Callbacks are detected through SFINAE. The derived class may
+    implement as few or as many of the members as needed.
+    These are the signatures of the callbacks:<br>
+
+    @li `void on_start(error_code&)`
+
+        Called when the first valid octet of a new message is received
 
     @li `void on_method(boost::string_ref const&, error_code&)`
 
@@ -106,6 +121,9 @@ enum values
 
     If a callback sets an error, parsing stops at the current octet
     and the error is returned to the caller.
+
+    @tparam isRequest A `bool` indicating whether the parser will be
+    presented with request or response message.
 */
 template<bool isRequest, class Derived>
 class basic_parser_v1
@@ -188,7 +206,8 @@ private:
         s_chunk_data_done,
 
         s_complete,
-        s_restart
+        s_restart,
+        s_closed_complete
     };
 
     enum field_state : std::uint8_t
@@ -341,7 +360,7 @@ public:
     bool
     complete() const
     {
-        return s_ == s_restart;
+        return s_ == s_restart || s_ == s_closed_complete;
     }
 
     /** Write a sequence of buffers to the parser.
@@ -410,6 +429,24 @@ private:
 
     bool
     needs_eof(std::false_type) const;
+
+    template<class C>
+    class has_on_start_t
+    {
+        template<class T, class R =
+            decltype(std::declval<T>().on_start(
+                std::declval<error_code&>()),
+                    std::true_type{})>
+        static R check(int);
+        template <class>
+        static std::false_type check(...);
+        using type = decltype(check<C>(0));
+    public:
+        static bool const value = type::value;
+    };
+    template<class C>
+    using has_on_start =
+        std::integral_constant<bool, has_on_start_t<C>::value>;
 
     template<class C>
     class has_on_method_t
@@ -595,6 +632,20 @@ private:
     template<class C>
     using has_on_complete =
         std::integral_constant<bool, has_on_complete_t<C>::value>;
+
+    void call_on_start(error_code& ec, std::true_type)
+    {
+        impl().on_start(ec);
+    }
+
+    void call_on_start(error_code& ec, std::false_type)
+    {
+    }
+
+    void call_on_start(error_code& ec)
+    {
+        call_on_start(ec, has_on_start<Derived>{});
+    }
 
     void call_on_method(error_code& ec,
         boost::string_ref const& s, std::true_type)
