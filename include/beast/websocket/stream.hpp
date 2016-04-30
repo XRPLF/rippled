@@ -12,6 +12,7 @@
 #include <beast/websocket/detail/stream_base.hpp>
 #include <beast/streambuf_readstream.hpp>
 #include <beast/async_completion.hpp>
+#include <beast/detail/get_lowest_layer.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/string_body.hpp>
 #include <boost/asio.hpp>
@@ -80,8 +81,7 @@ class stream : public detail::stream_base
 {
     friend class ws_test;
 
-    NextLayer next_layer_;
-    streambuf_readstream<NextLayer&, streambuf> stream_;
+    streambuf_readstream<NextLayer, streambuf> stream_;
 
 public:
     /// The type of the next layer.
@@ -90,26 +90,26 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
-        typename next_layer_type::lowest_layer_type;
+        typename beast::detail::get_lowest_layer<
+            next_layer_type>::type;
 
-    /// The type of endpoint of the lowest layer.
-    using endpoint_type =
-        typename lowest_layer_type::endpoint_type;
+    /** Move-construct a stream.
 
-    /// The protocol of the next layer.
-    using protocol_type =
-        typename lowest_layer_type::protocol_type;
+        If @c NextLayer is move constructible, this function
+        will move-construct a new stream from the existing stream.
 
-    /// The type of resolver of the next layer.
-    using resolver_type =
-        typename protocol_type::resolver;
-
-    /// Move constructor.
+        @note The behavior of move assignment on or from streams
+        with active or pending operations is undefined.
+    */
     stream(stream&&) = default;
 
     /** Move assignment.
 
-        Undefined behavior if operations are active or pending.
+        If @c NextLayer is move constructible, this function
+        will move-construct a new stream from the existing stream.
+
+        @note The behavior of move assignment on or from streams
+        with active or pending operations is undefined.
     */
     stream& operator=(stream&&) = default;
 
@@ -217,7 +217,7 @@ public:
     boost::asio::io_service&
     get_io_service()
     {
-        return next_layer_.lowest_layer().get_io_service();
+        return stream_.get_io_service();
     }
 
     /** Get a reference to the next layer.
@@ -231,7 +231,7 @@ public:
     next_layer_type&
     next_layer()
     {
-        return next_layer_;
+        return stream_.next_layer();
     }
 
     /** Get a reference to the next layer.
@@ -245,7 +245,7 @@ public:
     next_layer_type const&
     next_layer() const
     {
-        return next_layer_;
+        return stream_.next_layer();
     }
 
     /** Get a reference to the lowest layer.
@@ -259,7 +259,7 @@ public:
     lowest_layer_type&
     lowest_layer()
     {
-        return next_layer_.lowest_layer();
+        return stream_.lowest_layer();
     }
 
     /** Get a reference to the lowest layer.
@@ -273,7 +273,7 @@ public:
     lowest_layer_type const&
     lowest_layer() const
     {
-        return next_layer_.lowest_layer();
+        return stream_.lowest_layer();
     }
 
     /** Returns the close reason received from the peer.
@@ -309,12 +309,7 @@ public:
         @throws boost::system::system_error Thrown on failure.
     */
     void
-    accept()
-    {
-        error_code ec;
-        accept(boost::asio::null_buffers{}, ec);
-        detail::maybe_throw(ec, "accept");
-    }
+    accept();
 
     /** Read and respond to a WebSocket HTTP Upgrade request.
 
@@ -603,12 +598,7 @@ public:
     */
     void
     handshake(boost::string_ref const& host,
-        boost::string_ref const& resource)
-    {
-        error_code ec;
-        handshake(host, resource, ec);
-        detail::maybe_throw(ec, "upgrade");
-    }
+        boost::string_ref const& resource);
 
     /** Send a WebSocket Upgrade request.
 
@@ -692,12 +682,7 @@ public:
         @param cr The reason for the close.
     */
     void
-    close(close_reason const& cr)
-    {
-        error_code ec;
-        close(cr, ec);
-        detail::maybe_throw(ec, "close");
-    }
+    close(close_reason const& cr);
 
     /** Perform a WebSocket close.
 
@@ -773,12 +758,7 @@ public:
     */
     template<class Streambuf>
     void
-    read(opcode& op, Streambuf& streambuf)
-    {
-        error_code ec;
-        read(op, streambuf, ec);
-        detail::maybe_throw(ec, "read");
-    }
+    read(opcode& op, Streambuf& streambuf);
 
     /** Read a message.
 
@@ -868,12 +848,7 @@ public:
     */
     template<class Streambuf>
     void
-    read_frame(frame_info& fi, Streambuf& streambuf)
-    {
-        error_code ec;
-        read_frame(fi, streambuf, ec);
-        detail::maybe_throw(ec, "read_some");
-    }
+    read_frame(frame_info& fi, Streambuf& streambuf);
 
     /** Read a message frame.
 
@@ -978,12 +953,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write(ConstBufferSequence const& buffers)
-    {
-        error_code ec;
-        write(buffers, ec);
-        detail::maybe_throw(ec, "write");
-    }
+    write(ConstBufferSequence const& buffers);
 
     /** Send a message.
 
@@ -1081,12 +1051,7 @@ public:
     */
     template<class ConstBufferSequence>
     void
-    write_frame(bool fin, ConstBufferSequence const& buffers)
-    {
-        error_code ec;
-        write_frame(fin, buffers, ec);
-        detail::maybe_throw(ec, "write");
-    }
+    write_frame(bool fin, ConstBufferSequence const& buffers);
 
     /** Send a frame.
 
@@ -1180,7 +1145,7 @@ private:
 
     void
     do_read_fh(detail::frame_streambuf& fb,
-        close_code& code, error_code& ec);
+        close_code::value& code, error_code& ec);
 };
 
 } // websocket

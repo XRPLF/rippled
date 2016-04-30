@@ -1,28 +1,39 @@
-* Replace Jamroot with Jamfile
-* Complete allocator testing in basic_streambuf, basic_headers
-* Tidy up type_checks
-  - Derive from std::integral_constant
-* Check DOXYGEN, GENERATIC_DOCS directives in source
-  - See if we can include them now that xsl is fixed
-* Make buffers_debug a detail
-* Define Parser concept in HTTP
-* melpon sandbox?
-* invokable unit test
-* trim public interface of rfc2616.h to essentials only
-* Fix index in docs
-* Figure out why namespace rfc2616 is included in docs
-  (currently disabled via GENERATING_DOCS macro)
-* Include Example program listings in the docs
-* Update for rfc7230
-* HTTP parser size limit with test (configurable?)
-* HTTP parser trailers with test
-* URL parser, strong URL checking in HTTP parser
-* More fine grained parser errors
-* Fix bidirectional buffers iterators operator->()
-* http type_check, e.g. is_WritableBody
-* add bool should_close(message_v1 const&) to replace the use
-  of eof return value from write and async_write
+General:
+* Use SFINAE on return values (search for "class =")
 
 Boost.Http
 * Use enum instead of bool in isRequest
 * move version to a subclass of message
+
+Docs:
+* Include Example program listings in the docs
+* Fix index in docs
+* Figure out why namespace rfc2616 is included in docs
+  (currently disabled via GENERATING_DOCS macro)
+* melpon sandbox?
+* Check DOXYGEN, GENERATIC_DOCS directives in source
+  - See if we can include them now that xsl is fixed
+
+Core:
+* Replace Jamroot with Jamfile
+* Fix bidirectional buffers iterators operator->()
+* Tidy up type_checks
+  - Derive from std::integral_constant
+* Complete allocator testing in basic_streambuf, basic_headers
+
+WebSocket:
+* optimized versions of key/masking, choose prepared_key size
+* invokable unit test
+* Finish up all of static_string including tests
+
+HTTP:
+* Define Parser concept in HTTP
+* trim public interface of rfc2616.h to essentials only
+* add bool should_close(message_v1 const&) to replace the use
+  of eof return value from write and async_write
+* http type_check, e.g. is_WritableBody
+* More fine grained parser errors
+* HTTP parser size limit with test (configurable?)
+* HTTP parser trailers with test
+* URL parser, strong URL checking in HTTP parser
+* Update for rfc7230

@@ -10,6 +10,8 @@
 
 #include <beast/async_completion.hpp>
 #include <beast/streambuf.hpp>
+#include <beast/type_check.hpp>
+#include <beast/detail/get_lowest_layer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/system/error_code.hpp>
@@ -83,8 +85,7 @@ namespace beast {
 
     @tparam Streambuf The type of stream buffer to use.
 */
-template<class Stream,
-    class Streambuf = streambuf>
+template<class Stream, class Streambuf>
 class streambuf_readstream
 {
     using error_code = boost::system::error_code;
@@ -106,10 +107,22 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
-        typename next_layer_type::lowest_layer_type;
+        typename detail::get_lowest_layer<
+            next_layer_type>::type;
 
-    /// Move constructor.
+    /** Move constructor.
+
+        @note The behavior of move assignment on or from streams
+        with active or pending operations is undefined.
+    */
     streambuf_readstream(streambuf_readstream&&) = default;
+
+    /** Move assignment.
+
+        @note The behavior of move assignment on or from streams
+        with active or pending operations is undefined.
+    */
+    streambuf_readstream& operator=(streambuf_readstream&&) = default;
 
     /** Construct the wrapping stream.
 
@@ -200,6 +213,8 @@ public:
     std::size_t
     write_some(ConstBufferSequence const& buffers)
     {
+        static_assert(is_SyncWriteStream<next_layer_type>::value,
+            "SyncWriteStream requirements not met");
         return next_layer_.write_some(buffers);
     }
 
@@ -210,6 +225,8 @@ public:
     write_some(ConstBufferSequence const& buffers,
         error_code& ec)
     {
+        static_assert(is_SyncWriteStream<next_layer_type>::value,
+            "SyncWriteStream requirements not met");
         return next_layer_.write_some(buffers, ec);
     }
 

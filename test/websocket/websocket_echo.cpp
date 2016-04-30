@@ -19,7 +19,7 @@
 
 #include "websocket_async_echo_peer.hpp"
 #include "websocket_sync_echo_peer.hpp"
-#include "sig_wait.hpp"
+#include "../sig_wait.hpp"
 
 int main()
 {

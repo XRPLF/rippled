@@ -124,7 +124,7 @@ operator()(error_code const& ec,
         case 0:
             // read message
             d.state = 1;
-            http::async_read(d.ws.next_layer_,
+            http::async_read(d.ws.next_layer(),
                 d.ws.stream_.buffer(), d.req,
                     std::move(*this));
             return;

@@ -9,11 +9,11 @@
 #define BEAST_WEBSOCKET_DETAIL_FRAME_HPP
 
 #include <beast/websocket/rfc6455.hpp>
-#include <beast/websocket/static_string.hpp>
 #include <beast/websocket/detail/endian.hpp>
 #include <beast/websocket/detail/utf8_checker.hpp>
 #include <beast/consuming_buffers.hpp>
 #include <beast/static_streambuf.hpp>
+#include <beast/static_string.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/endian/buffers.hpp>
 #include <cassert>
@@ -70,10 +70,9 @@ is_control(opcode op)
 // Returns `true` if a close code is valid
 inline
 bool
-is_valid(close_code code)
+is_valid(close_code::value code)
 {
-    auto const v = static_cast<
-        std::uint16_t>(code);
+    auto const v = code;
     switch(v)
     {
     case 1000:
@@ -154,7 +153,7 @@ write(Streambuf& sb, frame_header const& fh)
 template<class Streambuf>
 std::size_t
 read_fh1(frame_header& fh, Streambuf& sb,
-    role_type role, close_code& code)
+    role_type role, close_code::value& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -171,7 +170,8 @@ read_fh1(frame_header& fh, Streambuf& sb,
         default:
             need = 0;
     }
-    if((fh.mask = (b[1] & 0x80) != 0))
+    fh.mask = (b[1] & 0x80) != 0;
+    if(fh.mask)
         need += 4;
     fh.op   = static_cast<opcode>(b[0] & 0x0f);
     fh.fin  = (b[0] & 0x80) != 0;
@@ -230,7 +230,7 @@ read_fh1(frame_header& fh, Streambuf& sb,
 template<class Streambuf>
 void
 read_fh2(frame_header& fh, Streambuf& sb,
-    role_type role, close_code& code)
+    role_type role, close_code::value& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -301,7 +301,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
 template<class Buffers>
 void
 read(ping_payload_type& data,
-    Buffers const& bs, close_code& code)
+    Buffers const& bs, close_code::value& code)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
@@ -318,7 +318,7 @@ read(ping_payload_type& data,
 template<class Buffers>
 void
 read(close_reason& cr,
-    Buffers const& bs, close_code& code)
+    Buffers const& bs, close_code::value& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -341,15 +341,7 @@ read(close_reason& cr,
     {
         std::uint8_t b[2];
         buffer_copy(buffer(b), cb);
-    #if 0
-        // Causes strict-aliasing warning in gcc
-        cr.code = static_cast<close_code>(
-            reinterpret_cast<
-                big_uint16_buf_t const*>(&b[0])->value());
-    #else
-        cr.code = static_cast<close_code>(
-            big_uint16_to_native(&b[0]));
-    #endif
+        cr.code = big_uint16_to_native(&b[0]);
         cb.consume(2);
         n -= 2;
         if(! is_valid(cr.code))
