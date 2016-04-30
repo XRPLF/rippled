@@ -272,16 +272,24 @@ public:
 };
 static_assert(! is_SyncWriteStream<int>::value, "");
 
-/// Determine if `T` meets the requirements of `Stream`.
+/// Determine if `T` meets the requirements of `SyncStream`.
 template<class T>
-struct is_Stream
+struct is_SyncStream
 {
-/// `true` if `T` meets the requirements.
+    /// `true` if `T` meets the requirements.
     static bool const value =
-        is_AsyncReadStream<T>::value &&
-        is_AsyncWriteStream<T>::value &&
         is_SyncReadStream<T>::value &&
         is_SyncWriteStream<T>::value;
+};
+
+/// Determine if `T` meets the requirements of `SyncStream`.
+template<class T>
+struct is_AsyncStream
+{
+    /// `true` if `T` meets the requirements.
+    static bool const value =
+        is_AsyncReadStream<T>::value &&
+        is_AsyncWriteStream<T>::value;
 };
 
 /// Determine if `T` meets the requirements of `Streambuf`.

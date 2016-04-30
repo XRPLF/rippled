@@ -2,6 +2,7 @@
 
 GroupSources(include/beast)
 GroupSources(examples)
+GroupSources(test)
 
 add_executable (http-crawl
     ${BEAST_INCLUDES}
@@ -21,7 +22,7 @@ add_executable (http-server
     http_stream.hpp
     http_stream.ipp
     http_sync_server.hpp
-    sig_wait.hpp
+    ../test/sig_wait.hpp
     http_server.cpp
 )
 
@@ -36,18 +37,6 @@ add_executable (http-example
 
 if (NOT WIN32)
     target_link_libraries(http-example ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-endif()
-
-add_executable (websocket-echo
-    ${BEAST_INCLUDES}
-    sig_wait.hpp
-    websocket_async_echo_peer.hpp
-    websocket_sync_echo_peer.hpp
-    websocket_echo.cpp
-)
-
-if (NOT WIN32)
-    target_link_libraries(websocket-echo ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 add_executable (websocket-example

@@ -134,7 +134,7 @@ stream<NextLayer>::handshake_op<
         case 1:
             // read http response
             d.state = 2;
-            http::async_read(d.ws.next_layer_,
+            http::async_read(d.ws.next_layer(),
                 d.ws.stream_.buffer(), d.resp,
                     std::move(*this));
             return;

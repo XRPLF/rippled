@@ -16,6 +16,7 @@ add_executable (core-tests
     placeholders.cpp
     prepare_buffers.cpp
     static_streambuf.cpp
+    static_string.cpp
     streambuf.cpp
     streambuf_readstream.cpp
     to_string.cpp
@@ -54,21 +55,6 @@ if (NOT WIN32)
     target_link_libraries(http-tests ${Boost_LIBRARIES})
 endif()
 
-add_executable (websocket-tests
-    ${BEAST_INCLUDES}
-    main.cpp
-    websocket/error.cpp
-    websocket/option.cpp
-    websocket/rfc6455.cpp
-    websocket/static_string.cpp
-    websocket/teardown.cpp
-    websocket/utf8_checker.cpp
-)
-
-if (NOT WIN32)
-    target_link_libraries(websocket-tests ${Boost_LIBRARIES})
-endif()
-
 add_executable (parser-bench
     ${BEAST_INCLUDES}
     main.cpp
@@ -80,3 +66,31 @@ if (NOT WIN32)
     target_link_libraries(parser-bench ${Boost_LIBRARIES})
 endif()
 
+add_executable (websocket-tests
+    ${BEAST_INCLUDES}
+    websocket/websocket_async_echo_peer.hpp
+    websocket/websocket_sync_echo_peer.hpp
+    main.cpp
+    websocket/error.cpp
+    websocket/option.cpp
+    websocket/rfc6455.cpp
+    websocket/stream.cpp
+    websocket/teardown.cpp
+    websocket/utf8_checker.cpp
+)
+
+if (NOT WIN32)
+    target_link_libraries(websocket-tests ${Boost_LIBRARIES})
+endif()
+
+add_executable (websocket-echo
+    ${BEAST_INCLUDES}
+    sig_wait.hpp
+    websocket/websocket_async_echo_peer.hpp
+    websocket/websocket_sync_echo_peer.hpp
+    websocket/websocket_echo.cpp
+)
+
+if (NOT WIN32)
+    target_link_libraries(websocket-echo ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+endif()

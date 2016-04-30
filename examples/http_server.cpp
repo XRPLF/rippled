@@ -19,7 +19,7 @@
 
 #include "http_async_server.hpp"
 #include "http_sync_server.hpp"
-#include "sig_wait.hpp"
+#include "../test/sig_wait.hpp"
 
 #include <boost/program_options.hpp>
 
@@ -69,13 +69,8 @@ int main(int ac, char const* av[])
     endpoint_type ep{address_type::from_string(ip), port};
 
     if(sync)
-    {
         http_sync_server server(ep, root);
-        sig_wait();
-    }
     else
-    {
         http_async_server server(ep, threads, root);
-        sig_wait();
-    }
+    sig_wait();
 }

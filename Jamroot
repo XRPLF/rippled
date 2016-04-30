@@ -51,6 +51,7 @@ project beast
       <include>./include
       #<use>/boost//headers
       <library>/boost/system//boost_system
+      <library>/boost/coroutine//boost_coroutine
       <library>/boost/filesystem//boost_filesystem
       <library>/boost/program_options//boost_program_options
 #     <library>ssl

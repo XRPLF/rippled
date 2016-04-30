@@ -138,13 +138,14 @@
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.is_AsyncReadStream">is_AsyncReadStream</link></member>
             <member><link linkend="beast.ref.is_AsyncWriteStream">is_AsyncWriteStream</link></member>
+            <member><link linkend="beast.ref.is_AsyncStream">is_AsyncStream</link></member>
             <member><link linkend="beast.ref.is_BufferSequence">is_BufferSequence</link></member>
             <member><link linkend="beast.ref.is_ConstBufferSequence">is_ConstBufferSequence</link></member>
             <member><link linkend="beast.ref.is_Handler">is_Handler</link></member>
             <member><link linkend="beast.ref.is_MutableBufferSequence">is_MutableBufferSequence</link></member>
-            <member><link linkend="beast.ref.is_Stream">is_Stream</link></member>
             <member><link linkend="beast.ref.is_Streambuf">is_Streambuf</link></member>
             <member><link linkend="beast.ref.is_SyncReadStream">is_SyncReadStream</link></member>
+            <member><link linkend="beast.ref.is_SyncStream">is_SyncStream</link></member>
             <member><link linkend="beast.ref.is_SyncWriteStream">is_SyncWriteStream</link></member>
           </simplelist>
         </entry>

@@ -61,7 +61,8 @@ class stream<NextLayer>::write_frame_op
             fh.rsv2 = 0;
             fh.rsv3 = 0;
             fh.len = boost::asio::buffer_size(cb);
-            if((fh.mask = (ws.role_ == role_type::client)))
+            fh.mask = ws.role_ == role_type::client;
+            if(fh.mask)
             {
                 fh.key = ws.maskgen_();
                 detail::prepare_key(key, fh.key);

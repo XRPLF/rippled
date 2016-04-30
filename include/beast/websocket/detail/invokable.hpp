@@ -85,8 +85,6 @@ public:
 #endif
 
     invokable() = default;
-    invokable(invokable const&) = delete;
-    invokable& operator=(invokable const&) = delete;
 
     invokable(invokable&& other)
     {
