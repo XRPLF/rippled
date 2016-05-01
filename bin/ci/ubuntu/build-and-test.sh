@@ -21,9 +21,23 @@ rm -f build/rippled
 # See what we've actually built
 ldd $RIPPLED_PATH
 if [[ $TARGET == "coverage" ]]; then
+  export PATH=$PATH:$LCOV_ROOT/usr/bin
+  # 1. create baseline coverage data file
+  lcov --no-external -c -i -d . -o baseline.info
+
+  #2. perform test
   $RIPPLED_PATH --unittest
-  # We pass along -p to keep path segments so as to avoid collisions
-  codecov --gcov-args=-p --gcov-source-match='^src/(ripple|beast)'
+
+  # 3. create test coverage data file
+  lcov --no-external -c -d . -o tests.info
+
+  # 4. combine baseline and test coverage data
+  lcov -a baseline.info -a tests.info -o lcov-all.info
+  # 5. only report on src/ripple files
+  lcov -e "lcov-all.info" "*/src/ripple/*" -o lcov.info
+
+  # 6. Push the results (lcov.info) to codecov
+  codecov -X gcov # don't even try and look for .gcov files ;)
 else
   if [[ $CC == "clang" ]]; then
     # gdb segfaults with a clang build
