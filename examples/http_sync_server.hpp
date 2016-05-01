@@ -43,8 +43,8 @@ class http_sync_server
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
-    using req_type = request<string_body>;
-    using resp_type = response<file_body>;
+    using req_type = request_v1<string_body>;
+    using resp_type = response_v1<file_body>;
 
     boost::asio::io_service ios_;
     socket_type sock_;
@@ -155,7 +155,7 @@ public:
             path = root_ + path;
             if(! boost::filesystem::exists(path))
             {
-                response<string_body> resp(
+                response_v1<string_body> resp(
                     {404, "Not Found", req.version});
                 resp.headers.replace("Server", "http_sync_server");
                 resp.body = "The file '" + path + "' was not found";
@@ -164,7 +164,7 @@ public:
                 if(ec)
                     break;
             }
-            response<file_body> resp(
+            resp_type resp(
                 {200, "OK", req.version});
             resp.headers.replace("Server", "http_sync_server");
             resp.headers.replace("Content-Type", "text/html");

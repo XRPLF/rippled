@@ -8,9 +8,7 @@
 #ifndef BEAST_HTTP_STRING_BODY_HPP
 #define BEAST_HTTP_STRING_BODY_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
+#include <beast/http/body_writer.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/streambuf.hpp>
 #include <memory>
@@ -58,9 +56,13 @@ private:
         value_type const& body_;
 
     public:
-        template<bool isRequest, class Allocator>
+        writer(writer const&) = delete;
+        writer& operator=(writer const&) = delete;
+
+        template<bool isRequest, class Headers>
         explicit
-        writer(message<isRequest, string_body, Allocator> const& msg)
+        writer(message<
+                isRequest, string_body, Headers> const& msg)
             : body_(msg.body)
         {
         }

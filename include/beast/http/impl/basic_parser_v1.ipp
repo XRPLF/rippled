@@ -5,15 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_IMPL_BASIC_PARSER_IPP
-#define BEAST_HTTP_IMPL_BASIC_PARSER_IPP
+#ifndef BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
+#define BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 
 namespace beast {
 namespace http {
 
 template<bool isRequest, class Derived>
 bool
-basic_parser<isRequest, Derived>::
+basic_parser_v1<isRequest, Derived>::
 keep_alive() const
 {
     if(http_major_ > 0 && http_minor_ > 0)
@@ -34,7 +34,7 @@ keep_alive() const
 template<bool isRequest, class Derived>
 template<class ConstBufferSequence, class>
 std::size_t
-basic_parser<isRequest, Derived>::
+basic_parser_v1<isRequest, Derived>::
 write(ConstBufferSequence const& buffers, error_code& ec)
 {
     static_assert(is_ConstBufferSequence<ConstBufferSequence>::value,
@@ -51,7 +51,7 @@ write(ConstBufferSequence const& buffers, error_code& ec)
 
 template<bool isRequest, class Derived>
 std::size_t
-basic_parser<isRequest, Derived>::
+basic_parser_v1<isRequest, Derived>::
 write(boost::asio::const_buffer const& buffer, error_code& ec)
 {
     using beast::http::detail::is_digit;
@@ -1022,7 +1022,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
 
 template<bool isRequest, class Derived>
 void
-basic_parser<isRequest, Derived>::
+basic_parser_v1<isRequest, Derived>::
 write_eof(error_code& ec)
 {
     switch(s_)
@@ -1042,7 +1042,7 @@ write_eof(error_code& ec)
 
 template<bool isRequest, class Derived>
 bool
-basic_parser<isRequest, Derived>::
+basic_parser_v1<isRequest, Derived>::
 needs_eof(std::true_type) const
 {
     return false;
@@ -1050,7 +1050,7 @@ needs_eof(std::true_type) const
 
 template<bool isRequest, class Derived>
 bool
-basic_parser<isRequest, Derived>::
+basic_parser_v1<isRequest, Derived>::
 needs_eof(std::false_type) const
 {
     // See RFC 2616 section 4.4

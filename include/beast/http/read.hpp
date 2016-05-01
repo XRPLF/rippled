@@ -8,16 +8,16 @@
 #ifndef BEAST_HTTP_READ_HPP
 #define BEAST_HTTP_READ_HPP
 
-#include <beast/async_completion.hpp>
 #include <beast/http/error.hpp>
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
+#include <beast/async_completion.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
 
 namespace beast {
 namespace http {
 
-/** Read a HTTP message from a stream.
+/** Read a HTTP/1 message from a stream.
 
     @param stream The stream to read the message from.
 
@@ -35,7 +35,7 @@ template<class SyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers>
 void
 read(SyncReadStream& stream, Streambuf& streambuf,
-    message<isRequest, Body, Headers>& msg)
+    message_v1<isRequest, Body, Headers>& msg)
 {
     error_code ec;
     read(stream, streambuf, msg, ec);
@@ -61,7 +61,7 @@ template<class SyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers>
 void
 read(SyncReadStream& stream, Streambuf& streambuf,
-    message<isRequest, Body, Headers>& msg,
+    message_v1<isRequest, Body, Headers>& msg,
         error_code& ec);
 
 /** Start reading a HTTP message from a stream asynchronously.
@@ -97,7 +97,7 @@ typename async_completion<
     ReadHandler, void(error_code)>::result_type
 #endif
 async_read(AsyncReadStream& stream, Streambuf& streambuf,
-    message<isRequest, Body, Headers>& msg,
+    message_v1<isRequest, Body, Headers>& msg,
         ReadHandler&& handler);
 
 } // http

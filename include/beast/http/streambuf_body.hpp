@@ -8,8 +8,7 @@
 #ifndef BEAST_HTTP_STREAMBUF_BODY_HPP
 #define BEAST_HTTP_STREAMBUF_BODY_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/body_writer.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/streambuf.hpp>
 #include <memory>
@@ -59,10 +58,13 @@ private:
         Streambuf const& body_;
 
     public:
-        template<bool isRequest, class Allocator>
+        writer(writer const&) = delete;
+        writer& operator=(writer const&) = delete;
+
+        template<bool isRequest, class Headers>
         explicit
-        writer(message<isRequest, basic_streambuf_body,
-                Allocator> const& m)
+        writer(message<
+                isRequest, basic_streambuf_body, Headers> const& m)
             : body_(m.body)
         {
         }
