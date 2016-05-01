@@ -16,7 +16,6 @@
 #include <vector>
 
 namespace beast {
-namespace test {
 
 class buffer_cat_test : public detail::unit_test::suite
 {
@@ -77,5 +76,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(buffer_cat,core,beast);
 
-} // test
 } // beast

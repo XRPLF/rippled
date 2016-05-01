@@ -41,19 +41,24 @@ enum class opcode : std::uint8_t
 
     These codes accompany close frames.
 
-    @see RFC 6455 7.4.1 Defined Status Codes
-    https://tools.ietf.org/html/rfc6455#section-7.4.1
+    @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455 7.4.1 Defined Status Codes</a>
+
 */
+#if GENERATING_DOCS
+enum close_code
+#else
 namespace close_code {
 using value = std::uint16_t;
 enum
+#endif
 {
-    // used internally to mean "no error"
+    /// used internally to mean "no error"
     none            = 0,
 
     normal          = 1000,
     going_away      = 1001,
     protocol_error  = 1002,
+
     unknown_data    = 1003,
     bad_payload     = 1007,
     policy_error    = 1008,
@@ -71,17 +76,15 @@ enum
 
     last = 5000 // satisfy warnings
 };
+#if ! GENERATING_DOCS
 } // close_code
+#endif
 
 #if ! GENERATING_DOCS
-
 using reason_string_type =
     static_string<123, char>;
-
-/// Payload type for pings and pongs
 using ping_payload_type =
     static_string<125, char>;
-
 #endif
 
 /** Description of the close reason.

@@ -9,8 +9,9 @@
 #define BEAST_STREAMBUF_READSTREAM_HPP
 
 #include <beast/async_completion.hpp>
+#include <beast/buffer_concepts.hpp>
+#include <beast/stream_concepts.hpp>
 #include <beast/streambuf.hpp>
-#include <beast/type_check.hpp>
 #include <beast/detail/get_lowest_layer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
@@ -20,11 +21,11 @@
 
 namespace beast {
 
-/** A `Stream` with attached `Streambuf` to buffer reads.
+/** A @b `Stream` with attached @b `Streambuf` to buffer reads.
 
-    This wraps a `Stream` implementation so that calls to write are
+    This wraps a @b `Stream` implementation so that calls to write are
     passed through to the underlying stream, while calls to read will
-    first consume the input sequence stored in a `Streambuf` which
+    first consume the input sequence stored in a @b `Streambuf` which
     is part of the object.
 
     The use-case for this class is different than that of the
@@ -37,10 +38,10 @@ namespace beast {
 
     Uses:
 
-    * Transparently leave untouched input acquired in calls
+    @li Transparently leave untouched input acquired in calls
       to `boost::asio::read_until` behind for subsequent callers.
 
-    * "Preload" a stream with handshake input data acquired
+    @li "Preload" a stream with handshake input data acquired
       from other sources.
 
     Example:
@@ -88,6 +89,9 @@ namespace beast {
 template<class Stream, class Streambuf>
 class streambuf_readstream
 {
+    static_assert(is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
+
     using error_code = boost::system::error_code;
 
     template<class Buffers, class Handler>
@@ -107,8 +111,12 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
+#if GENERATING_DOCS
+        implementation_defined;
+#else
         typename detail::get_lowest_layer<
             next_layer_type>::type;
+#endif
 
     /** Move constructor.
 
@@ -233,8 +241,11 @@ public:
     /// Start an asynchronous write. The data being written must be valid for the
     /// lifetime of the asynchronous operation.
     template<class ConstBufferSequence, class WriteHandler>
-    typename async_completion<
-        WriteHandler, void(error_code)>::result_type
+#if GENERATING_DOCS
+    void_or_deduced
+#else
+    typename async_completion<WriteHandler, void(error_code)>::result_type
+#endif
     async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -254,8 +265,11 @@ public:
     /// Start an asynchronous read. The buffer into which the data will be read
     /// must be valid for the lifetime of the asynchronous operation.
     template<class MutableBufferSequence, class ReadHandler>
-    typename async_completion<
-        ReadHandler, void(error_code)>::result_type
+#if GENERATING_DOCS
+    void_or_deduced
+#else
+    typename async_completion<ReadHandler, void(error_code)>::result_type
+#endif
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler);
 };

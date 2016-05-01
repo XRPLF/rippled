@@ -18,6 +18,8 @@ namespace beast {
 namespace http {
 
 /** A Body represented by a std::string.
+
+    Meets the requirements of @b `Body`.
 */
 struct string_body
 {

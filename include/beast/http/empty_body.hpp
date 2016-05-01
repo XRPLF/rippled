@@ -18,6 +18,8 @@ namespace beast {
 namespace http {
 
 /** An empty content-body.
+
+    Meets the requirements of @b `Body`.
 */
 struct empty_body
 {

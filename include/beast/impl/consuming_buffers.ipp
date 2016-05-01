@@ -8,7 +8,7 @@
 #ifndef BEAST_IMPL_CONSUMING_BUFFERS_IPP
 #define BEAST_IMPL_CONSUMING_BUFFERS_IPP
 
-#include <beast/type_check.hpp>
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <algorithm>
 #include <cstdint>
@@ -18,13 +18,13 @@
 
 namespace beast {
 
-template<class Buffers, class ValueType>
-class consuming_buffers<Buffers, ValueType>::const_iterator
+template<class BufferSequence, class ValueType>
+class consuming_buffers<BufferSequence, ValueType>::const_iterator
 {
-    friend class consuming_buffers<Buffers, ValueType>;
+    friend class consuming_buffers<BufferSequence, ValueType>;
 
     using iter_type =
-        typename Buffers::const_iterator;
+        typename BufferSequence::const_iterator;
 
     iter_type it_;
     consuming_buffers const* b_;
@@ -106,8 +106,8 @@ private:
     }
 };
 
-template<class Buffers, class ValueType>
-consuming_buffers<Buffers, ValueType>::
+template<class BufferSequence, class ValueType>
+consuming_buffers<BufferSequence, ValueType>::
 consuming_buffers(consuming_buffers&& other)
     : consuming_buffers(std::move(other),
         std::distance<iter_type>(
@@ -115,8 +115,8 @@ consuming_buffers(consuming_buffers&& other)
 {
 }
 
-template<class Buffers, class ValueType>
-consuming_buffers<Buffers, ValueType>::
+template<class BufferSequence, class ValueType>
+consuming_buffers<BufferSequence, ValueType>::
 consuming_buffers(consuming_buffers const& other)
     : consuming_buffers(other,
         std::distance<iter_type>(
@@ -124,9 +124,9 @@ consuming_buffers(consuming_buffers const& other)
 {
 }
 
-template<class Buffers, class ValueType>
+template<class BufferSequence, class ValueType>
 auto
-consuming_buffers<Buffers, ValueType>::
+consuming_buffers<BufferSequence, ValueType>::
 operator=(consuming_buffers&& other) ->
     consuming_buffers&
 {
@@ -138,9 +138,9 @@ operator=(consuming_buffers&& other) ->
     return *this;
 }
 
-template<class Buffers, class ValueType>
+template<class BufferSequence, class ValueType>
 auto
-consuming_buffers<Buffers, ValueType>::
+consuming_buffers<BufferSequence, ValueType>::
 operator=(consuming_buffers const& other) ->
     consuming_buffers&
 {
@@ -152,35 +152,35 @@ operator=(consuming_buffers const& other) ->
     return *this;
 }
 
-template<class Buffers, class ValueType>
-consuming_buffers<Buffers, ValueType>::
-consuming_buffers(Buffers const& bs)
+template<class BufferSequence, class ValueType>
+consuming_buffers<BufferSequence, ValueType>::
+consuming_buffers(BufferSequence const& bs)
     : bs_(bs)
     , begin_(bs_.begin())
 {
-    static_assert(is_BufferSequence<Buffers, ValueType>::value,
+    static_assert(is_BufferSequence<BufferSequence, ValueType>::value,
         "BufferSequence requirements not met");
 }
 
-template<class Buffers, class ValueType>
+template<class BufferSequence, class ValueType>
 auto
-consuming_buffers<Buffers, ValueType>::begin() const ->
+consuming_buffers<BufferSequence, ValueType>::begin() const ->
     const_iterator
 {
     return const_iterator{*this, begin_};
 }
 
-template<class Buffers, class ValueType>
+template<class BufferSequence, class ValueType>
 auto
-consuming_buffers<Buffers, ValueType>::end() const ->
+consuming_buffers<BufferSequence, ValueType>::end() const ->
     const_iterator
 {
     return const_iterator{*this, bs_.end()};
 }
 
-template<class Buffers, class ValueType>
+template<class BufferSequence, class ValueType>
 void
-consuming_buffers<Buffers, ValueType>::consume(std::size_t n)
+consuming_buffers<BufferSequence, ValueType>::consume(std::size_t n)
 {
     using boost::asio::buffer_size;
     for(;n > 0 && begin_ != bs_.end(); ++begin_)
@@ -197,11 +197,11 @@ consuming_buffers<Buffers, ValueType>::consume(std::size_t n)
     }
 }
 
-template<class Buffers>
-consuming_buffers<Buffers, typename Buffers::value_type>
-consumed_buffers(Buffers const& bs, std::size_t n)
+template<class BufferSequence>
+consuming_buffers<BufferSequence, typename BufferSequence::value_type>
+consumed_buffers(BufferSequence const& bs, std::size_t n)
 {
-    consuming_buffers<Buffers> cb(bs);
+    consuming_buffers<BufferSequence> cb(bs);
     cb.consume(n);
     return cb;
 }

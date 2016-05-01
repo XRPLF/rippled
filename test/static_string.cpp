@@ -11,7 +11,6 @@
 #include <beast/detail/unit_test/suite.hpp>
 
 namespace beast {
-namespace websocket {
 
 class static_string_test : public beast::detail::unit_test::suite
 {
@@ -185,7 +184,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(static_string,websocket,beast);
+BEAST_DEFINE_TESTSUITE(static_string,core,beast);
 
-} // websocket
 } // beast

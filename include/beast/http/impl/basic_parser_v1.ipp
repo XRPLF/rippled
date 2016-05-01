@@ -8,6 +8,8 @@
 #ifndef BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 #define BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 
+#include <beast/buffer_concepts.hpp>
+
 namespace beast {
 namespace http {
 
@@ -32,8 +34,11 @@ keep_alive() const
 // Implementation inspired by nodejs/http-parser
 
 template<bool isRequest, class Derived>
-template<class ConstBufferSequence, class>
-std::size_t
+template<class ConstBufferSequence>
+typename std::enable_if<
+    ! std::is_convertible<ConstBufferSequence,
+        boost::asio::const_buffer>::value,
+            std::size_t>::type
 basic_parser_v1<isRequest, Derived>::
 write(ConstBufferSequence const& buffers, error_code& ec)
 {

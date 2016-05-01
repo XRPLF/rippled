@@ -8,7 +8,7 @@
 #ifndef BEAST_WRITE_STREAMBUF_HPP
 #define BEAST_WRITE_STREAMBUF_HPP
 
-#include <beast/type_check.hpp>
+#include <beast/buffer_concepts.hpp>
 #include <beast/detail/write_streambuf.hpp>
 #include <type_traits>
 #include <utility>
@@ -21,15 +21,15 @@ namespace beast {
     argument into the stream buffer. It is capable of converting the
     following types of arguments:
 
-    @li  `boost::asio::const_buffer`
+    @li `boost::asio::const_buffer`
 
     @li `boost::asio::mutable_buffer`
 
-    @li A type for which the call to `boost::asio::buffer()` is defined
+    @li A type meeting the requirements of @b `ConvertibleToConstBuffer`
 
-    @li A type meeting the requirements of `ConstBufferSequence`
+    @li A type meeting the requirements of @b `ConstBufferSequence`
 
-    @li A type meeting the requirements of `MutableBufferSequence`
+    @li A type meeting the requirements of @b `MutableBufferSequence`
 
     For all types not listed above, the function will invoke
     `boost::lexical_cast` on the argument in an attempt to convert to
@@ -45,7 +45,7 @@ namespace beast {
     @throws unspecified Any exceptions thrown by `boost::lexical_cast`.
 
     @note This function participates in overload resolution only if
-    the `streambuf` parameter meets the requirements of Streambuf.
+    the `streambuf` parameter meets the requirements of @b `Streambuf`.
 */
 template<class Streambuf, class... Args>
 #if GENERATING_DOCS

@@ -17,7 +17,9 @@
 namespace beast {
 namespace http {
 
-/** A Body represented by a Streambuf
+/** A message body represented by a Streambuf
+
+    Meets the requirements of @b `Body`.
 */
 template<class Streambuf>
 struct basic_streambuf_body

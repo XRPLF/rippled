@@ -13,9 +13,10 @@
 #include <beast/http/detail/has_content_length.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/bind_handler.hpp>
+#include <beast/buffer_concepts.hpp>
 #include <beast/handler_alloc.hpp>
+#include <beast/stream_concepts.hpp>
 #include <beast/streambuf.hpp>
-#include <beast/type_check.hpp>
 #include <beast/write_streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>

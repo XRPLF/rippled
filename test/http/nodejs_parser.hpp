@@ -13,7 +13,7 @@
 #include <beast/http/error.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/rfc2616.hpp>
-#include <beast/type_check.hpp>
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
 #include <cstdint>

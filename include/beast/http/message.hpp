@@ -9,7 +9,6 @@
 #define BEAST_HTTP_MESSAGE_HPP
 
 #include <beast/http/basic_headers.hpp>
-#include <beast/type_check.hpp>
 #include <memory>
 #include <string>
 

@@ -15,7 +15,7 @@
 namespace beast {
 namespace http {
 
-class parser_test : public beast::detail::unit_test::suite
+class parser_v1_test : public beast::detail::unit_test::suite
 {
 public:
     void run() override
@@ -64,7 +64,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(parser,http,beast);
+BEAST_DEFINE_TESTSUITE(parser_v1,http,beast);
 
 } // http
 } // beast

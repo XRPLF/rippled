@@ -396,7 +396,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         // teardown
         case 11:
             d.state = 12;
-            wsproto_helpers::call_async_teardown(
+            websocket_helpers::call_async_teardown(
                 d.ws.next_layer(), std::move(*this));
             return;
 
@@ -482,7 +482,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         // teardown
         case 19:
             d.state = 20;
-            wsproto_helpers::call_async_teardown(
+            websocket_helpers::call_async_teardown(
                 d.ws.next_layer(), std::move(*this));
             return;
 

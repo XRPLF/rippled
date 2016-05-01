@@ -15,15 +15,15 @@
 
 namespace beast {
 
-/** A `Streambuf` with a fixed size internal buffer.
+/** A @b `Streambuf` with a fixed size internal buffer.
 
     Ownership of the underlying storage belongs to the derived class.
 
     @note Variables are usually declared using the template class
-    `static_streambuf_n`; however, to reduce the number of instantiations
+    @ref static_streambuf_n; however, to reduce the number of instantiations
     of template functions receiving static stream buffer arguments in a
     deduced context, the signature of the receiving function should use
-    `static_streambuf`.
+    @ref static_streambuf.
 */
 class static_streambuf
 {
@@ -75,18 +75,28 @@ public:
 
         @throws std::length_error if the size would exceed the limit
         imposed by the underlying mutable buffer sequence.
+
+        @note Buffers representing the input sequence acquired prior to
+        this call remain valid.
     */
     mutable_buffers_type
     prepare(std::size_t n);
 
-    /// Move bytes from the output sequence to the input sequence.
+    /** Move bytes from the output sequence to the input sequence.
+
+        @note Buffers representing the input sequence acquired prior to
+        this call remain valid.
+    */
     void
     commit(std::size_t n)
     {
         out_ += std::min<std::size_t>(n, last_ - out_);
     }
 
-    /// Get a list of buffers that represents the input sequence.
+    /** Get a list of buffers that represents the input sequence.
+
+        @note These buffers remain valid across subsequent calls to `prepare`.
+    */
     const_buffers_type
     data() const;
 
@@ -129,9 +139,11 @@ protected:
 */
 template<std::size_t N>
 class static_streambuf_n
-    : private boost::base_from_member<
+    : public static_streambuf
+#if ! GENERATING_DOCS
+    , private boost::base_from_member<
         std::array<std::uint8_t, N>>
-    , public static_streambuf
+#endif
 {
     using member_type = boost::base_from_member<
         std::array<std::uint8_t, N>>;

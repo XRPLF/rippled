@@ -28,13 +28,11 @@
 #include <string>
 
 namespace beast {
-namespace websocket {
 
 /** A string with a fixed-size storage area.
 
-    `static_string` objects behave like `std::string` except that
-    the storage is not dynamically allocated but rather fixed in
-    size.
+    These objects behave like `std::string` except that the storage
+    is not dynamically allocated but rather fixed in size.
 
     These strings offer performance advantages when a protocol
     imposes a natural small upper limit on the size of a value.
@@ -281,7 +279,7 @@ public:
     {
         return N;
     }
-    
+
     /// Reduces memory usage by freeing unused memory.
     void
     shrink_to_fit()
@@ -690,7 +688,6 @@ bool operator>=(
 
 #endif
 
-} // websocket
 } // beast
 
 #endif

@@ -11,6 +11,7 @@
 #include <beast/http/parser_v1.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
+#include <beast/stream_concepts.hpp>
 #include <cassert>
 
 namespace beast {

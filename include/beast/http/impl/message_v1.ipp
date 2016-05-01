@@ -10,7 +10,6 @@
 
 #include <beast/http/rfc2616.hpp>
 #include <beast/http/detail/has_content_length.hpp>
-#include <beast/type_check.hpp>
 #include <boost/optional.hpp>
 #include <stdexcept>
 

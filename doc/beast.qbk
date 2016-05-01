@@ -186,7 +186,12 @@ documentation is based.
 
 [include http.qbk]
 [include websocket.qbk]
-[include types.qbk]
+
+[section:types Type Requirements]
+[include core_types.qbk]
+[include http_types.qbk]
+[endsect]
+
 [include design.qbk]
 [section:quickref Quick Reference]
 [xinclude quickref.xml]

@@ -103,7 +103,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(empty_base_optimization,detail,beast);
+BEAST_DEFINE_TESTSUITE(empty_base_optimization,core,beast);
 
 } // test
 } // beast

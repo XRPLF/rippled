@@ -12,7 +12,6 @@
 #include <beast/http/parse_error.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/http/detail/basic_parser_v1.hpp>
-#include <beast/type_check.hpp>
 #include <boost/asio/buffer.hpp>
 #include <array>
 #include <cassert>
@@ -43,49 +42,49 @@ enum values
     if those members are present (detected through SFINAE). The
     signatures which can be present in the derived class are:<br>
 
-    @li `void on_method(boost::string_ref const&, error_code& ec)`
+    @li `void on_method(boost::string_ref const&, error_code&)`
 
         Called for each piece of the Request-Method
 
-    @li `void on_uri(boost::string_ref const&, error_code& ec)`
+    @li `void on_uri(boost::string_ref const&, error_code&)`
 
         Called for each piece of the Request-URI
 
-    @li `void on_reason(boost::string_ref const&, error_code& ec)`
+    @li `void on_reason(boost::string_ref const&, error_code&)`
 
         Called for each piece of the reason-phrase
 
-    @li `void on_request(error_code& ec)`
+    @li `void on_request(error_code&)`
 
         Called after the entire Request-Line has been parsed successfully.
 
-    @li `void on_response(error_code& ec)`
+    @li `void on_response(error_code&)`
 
         Called after the entire Response-Line has been parsed successfully.
 
-    @li `void on_field(boost::string_ref const&, error_code& ec)`
+    @li `void on_field(boost::string_ref const&, error_code&)`
 
         Called for each piece of the current header field.
 
-    @li `void on_value(boost::string_ref const&, error_code& ec)`
+    @li `void on_value(boost::string_ref const&, error_code&)`
 
         Called for each piece of the current header value.
 
-    @li `int on_headers(error_code& ec)`
+    @li `int on_headers(error_code&)`
 
         Called when all the headers have been parsed successfully.
 
-    @li `void on_body(boost::string_ref const&, error_code& ec)`
+    @li `void on_body(boost::string_ref const&, error_code&)`
 
         Called for each piece of the body. If the headers indicated
         chunked encoding, the chunk encoding is removed from the
         buffer before being passed to the callback.
 
-    @li `void on_complete(error_code& ec)`
+    @li `void on_complete(error_code&)`
 
         Called when the entire message has been parsed successfully.
-        At this point, basic_parser_v1::complete() returns `true`, and
-        the parser is ready to parse another message if keep_alive()
+        At this point, @ref basic_parser_v1::complete returns `true`, and
+        the parser is ready to parse another message if keep_alive
         would return `true`.
 
     The return value of `on_headers` is special, it controls whether
@@ -101,7 +100,7 @@ enum values
 
     The parser uses traits to determine if the callback is possible.
     If the Derived type omits one or more callbacks, they are simply
-    skipped with no compilation error. The default behavior of on_body
+    skipped with no compilation error. The default behavior of `on_body`
     when the derived class does not provide the member, is to specify that
     the body should not be skipped.
 
@@ -354,12 +353,15 @@ public:
 
         @return The number of bytes consumed in the input sequence.
     */
-    template<class ConstBufferSequence,
-        class = typename std::enable_if<
-            ! std::is_convertible<ConstBufferSequence,
-                boost::asio::const_buffer>::value>::type
-    >
+    template<class ConstBufferSequence>
+    #if GENERATING_DOCS
     std::size_t
+    #else
+    typename std::enable_if<
+        ! std::is_convertible<ConstBufferSequence,
+            boost::asio::const_buffer>::value,
+                std::size_t>::type
+    #endif
     write(ConstBufferSequence const& buffers, error_code& ec);
 
     /** Write a single buffer of data to the parser.
@@ -380,8 +382,6 @@ public:
         Callbacks and errors will still be processed as usual.
 
         @note This is typically called when a socket read returns eof.
-
-        @throws boost::system::system_error Thrown on failure.
     */
     void
     write_eof(error_code& ec);

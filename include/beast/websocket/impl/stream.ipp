@@ -18,16 +18,17 @@
 #include <beast/websocket/impl/response_op.ipp>
 #include <beast/websocket/impl/write_op.ipp>
 #include <beast/websocket/impl/write_frame_op.ipp>
-#include <beast/buffer_cat.hpp>
-#include <beast/consuming_buffers.hpp>
-#include <beast/prepare_buffers.hpp>
-#include <beast/static_streambuf.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/type_check.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
 #include <beast/http/reason.hpp>
 #include <beast/http/rfc2616.hpp>
+#include <beast/buffer_cat.hpp>
+#include <beast/buffer_concepts.hpp>
+#include <beast/consuming_buffers.hpp>
+#include <beast/prepare_buffers.hpp>
+#include <beast/static_streambuf.hpp>
+#include <beast/stream_concepts.hpp>
+#include <beast/streambuf.hpp>
 #include <boost/endian/buffers.hpp>
 #include <algorithm>
 #include <cassert>
@@ -613,7 +614,7 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
             if(error_)
                 return;
         }
-        wsproto_helpers::call_teardown(next_layer(), ec);
+        websocket_helpers::call_teardown(next_layer(), ec);
         error_ = ec != 0;
         if(error_)
             return;
@@ -622,7 +623,7 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
         return;
     }
     if(! ec)
-        wsproto_helpers::call_teardown(next_layer(), ec);
+        websocket_helpers::call_teardown(next_layer(), ec);
     if(! ec)
         ec = error::closed;
     error_ = ec != 0;

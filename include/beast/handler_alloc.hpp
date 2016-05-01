@@ -28,28 +28,28 @@ namespace beast {
 
     @tparam T The type of objects allocated by the allocator.
 
-    @tparam Handler The type of handler.
+    @tparam CompletionHandler The type of handler.
 
     @note Allocated memory is only valid until the handler is called. The
     caller is still responsible for freeing memory.
 */
 #if GENERATING_DOCS
-template <class T, class Handler>
+template <class T, class CompletionHandler>
 class handler_alloc;
 #else
-template <class T, class Handler>
+template <class T, class CompletionHandler>
 class handler_alloc
 {
 private:
     // We want a partial template specialization as a friend
     // but that isn't allowed so we friend all versions. This
-    // should produce a compile error if Handler is not
+    // should produce a compile error if CompletionHandler is not
     // constructible from H.
     //
     template <class U, class H>
     friend class handler_alloc;
 
-    Handler h_;
+    CompletionHandler h_;
 
 public:
     using value_type = T;
@@ -66,7 +66,7 @@ public:
         The handler is moved or copied into the allocator.
     */
     explicit
-    handler_alloc(Handler&& h)
+    handler_alloc(CompletionHandler&& h)
         : h_(std::move(h))
     {
     }
@@ -76,21 +76,21 @@ public:
         A copy of the handler is made.
     */
     explicit
-    handler_alloc(Handler const& h)
+    handler_alloc(CompletionHandler const& h)
         : h_(h)
     {
     }
 
     template<class U>
     handler_alloc(
-            handler_alloc<U, Handler>&& other)
+            handler_alloc<U, CompletionHandler>&& other)
         : h_(std::move(other.h_))
     {
     }
 
     template<class U>
     handler_alloc(
-            handler_alloc<U, Handler> const& other)
+            handler_alloc<U, CompletionHandler> const& other)
         : h_(other.h_)
     {
     }
@@ -127,7 +127,7 @@ public:
     friend
     bool
     operator==(handler_alloc const& lhs,
-        handler_alloc<U, Handler> const& rhs)
+        handler_alloc<U, CompletionHandler> const& rhs)
     {
         return true;
     }
@@ -136,7 +136,7 @@ public:
     friend
     bool
     operator!=(handler_alloc const& lhs,
-        handler_alloc<U, Handler> const& rhs)
+        handler_alloc<U, CompletionHandler> const& rhs)
     {
         return !(lhs == rhs);
     }
