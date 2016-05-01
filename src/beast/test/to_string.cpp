@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/websocket/static_string.hpp>
+#include <beast/to_string.hpp>

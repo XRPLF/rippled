@@ -11,7 +11,6 @@
 #include "message_fuzz.hpp"
 
 #include <beast/streambuf.hpp>
-#include <beast/buffers_debug.hpp>
 #include <beast/write_streambuf.hpp>
 #include <beast/http/error.hpp>
 #include <beast/http/rfc2616.hpp>
@@ -183,6 +182,7 @@ public:
     void
     testCallbacks()
     {
+        using boost::asio::buffer;
         {
             cb_checker<true> p;
             error_code ec;
@@ -192,7 +192,7 @@ public:
                 "Content-Length: 1\r\n"
                 "\r\n"
                 "*";
-            p.write(s.data(), s.size(), ec);
+            p.write(buffer(s), ec);
             if( expect(! ec))
             {
                 expect(p.method);
@@ -214,7 +214,7 @@ public:
                 "Content-Length: 1\r\n"
                 "\r\n"
                 "*";
-            p.write(s.data(), s.size(), ec);
+            p.write(buffer(s), ec);
             if( expect(! ec))
             {
                 expect(p.reason);
@@ -235,10 +235,11 @@ public:
     void
     parse(boost::string_ref const& m, F&& f)
     {
+        using boost::asio::buffer;
         {
             error_code ec;
             Parser p;
-            p.write(m.data(), m.size(), ec);
+            p.write(buffer(m.data(), m.size()), ec);
             if(expect(p.complete()))
                 if(expect(! ec, ec.message()))
                     f(p);
@@ -247,7 +248,7 @@ public:
         {
             error_code ec;
             Parser p;
-            p.write(&m[0], i, ec);
+            p.write(buffer(&m[0], i), ec);
             if(! expect(! ec, ec.message()))
                 continue;
             if(p.complete())
@@ -256,7 +257,7 @@ public:
             }
             else
             {
-                p.write(&m[i], m.size() - i, ec);
+                p.write(buffer(&m[i], m.size() - i), ec);
                 if(! expect(! ec, ec.message()))
                     continue;
                 expect(p.complete());
@@ -271,10 +272,11 @@ public:
     void
     parse_ev(boost::string_ref const& m, parse_error ev)
     {
+        using boost::asio::buffer;
         {
             error_code ec;
             null_parser<isRequest> p;
-            p.write(m.data(), m.size(), ec);
+            p.write(buffer(m.data(), m.size()), ec);
             if(expect(! p.complete()))
                 expect(ec == ev, ec.message());
         }
@@ -282,7 +284,7 @@ public:
         {
             error_code ec;
             null_parser<isRequest> p;
-            p.write(&m[0], i, ec);
+            p.write(buffer(&m[0], i), ec);
             if(! expect(! p.complete()))
                 continue;
             if(ec)
@@ -290,7 +292,7 @@ public:
                 expect(ec == ev, ec.message());
                 continue;
             }
-            p.write(&m[i], m.size() - i, ec);
+            p.write(buffer(&m[i], m.size() - i), ec);
             if(! expect(! p.complete()))
                 continue;
             if(! expect(ec == ev, ec.message()))
@@ -449,11 +451,12 @@ public:
     void
     testUpgrade()
     {
+        using boost::asio::buffer;
         null_parser<true> p;
         boost::string_ref s =
             "GET / HTTP/1.1\r\nConnection: upgrade\r\nUpgrade: WebSocket\r\n\r\n";
         error_code ec;
-        p.write(s.data(), s.size(), ec);
+        p.write(buffer(s.data(), s.size()), ec);
         if(! expect(! ec, ec.message()))
             return;
         expect(p.complete());
@@ -481,6 +484,7 @@ public:
     void
     testRandomReq(std::size_t N)
     {
+        using boost::asio::buffer;
         using boost::asio::buffer_cast;
         using boost::asio::buffer_size;
         message_fuzz mg;
@@ -499,7 +503,7 @@ public:
             for(std::size_t j = 1; j < s.size() - 1; ++j)
             {
                 error_code ec;
-                p.write(&s[0], j, ec);
+                p.write(buffer(&s[0], j), ec);
                 if(! expect(! ec, ec.message()))
                 {
                     log << escaped_string(s);
@@ -507,7 +511,7 @@ public:
                 }
                 if(! p.complete())
                 {
-                    p.write(&s[j], s.size() - j, ec);
+                    p.write(buffer(&s[j], s.size() - j), ec);
                     if(! expect(! ec, ec.message()))
                     {
                         log << escaped_string(s);
@@ -528,6 +532,7 @@ public:
     void
     testRandomResp(std::size_t N)
     {
+        using boost::asio::buffer;
         using boost::asio::buffer_cast;
         using boost::asio::buffer_size;
         message_fuzz mg;
@@ -546,7 +551,7 @@ public:
             for(std::size_t j = 1; j < s.size() - 1; ++j)
             {
                 error_code ec;
-                p.write(&s[0], j, ec);
+                p.write(buffer(&s[0], j), ec);
                 if(! expect(! ec, ec.message()))
                 {
                     log << escaped_string(s);
@@ -554,7 +559,7 @@ public:
                 }
                 if(! p.complete())
                 {
-                    p.write(&s[j], s.size() - j, ec);
+                    p.write(buffer(&s[j], s.size() - j), ec);
                     if(! expect(! ec, ec.message()))
                     {
                         log << escaped_string(s);

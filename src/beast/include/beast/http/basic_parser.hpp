@@ -13,7 +13,7 @@
 #include <beast/http/rfc7230.hpp>
 #include <beast/http/detail/basic_parser.hpp>
 #include <beast/type_check.hpp>
-#include <beast/detail/ci_char_traits.hpp>
+#include <boost/asio/buffer.hpp>
 #include <array>
 #include <cassert>
 #include <climits>
@@ -37,11 +37,22 @@ enum values
 };
 } // parse_flag
 
-/** Parser for producing HTTP requests and responses.
+/** A parser for decoding HTTP/1 wire format messages.
 
-    During parsing, callbacks will be made to the derived class
-    if those members are present (detected through SFINAE). The
-    signatures which can be present in the derived class are:<br>
+    This parser is designed to efficiently parse messages in the
+    HTTP/1 wire format. It allocates no memory and uses minimal
+    state. It will handle chunked encoding and it understands the
+    semantics of the Connection and Content-Length header fields.
+
+    The interface uses CRTP (Curiously Recurring Template Pattern).
+    To use this class, derive from basic_parser. When bytes are
+    presented, the implementation will make a series of zero or
+    more calls to derived class members functions (referred to as
+    "callbacks" from here on) matching a specific signature.
+
+    Callbacks are detected through SFINAE. The derived class may
+    implement as few or as many of the members as needed.
+    These are the signatures of the callbacks:<br>
 
     @li `void on_method(boost::string_ref const&, error_code& ec)`
 
@@ -107,6 +118,9 @@ enum values
 
     If a callback sets an error, parsing stops at the current octet
     and the error is returned to the caller.
+
+    @tparam isRequest A `bool` indicating whether the parser will be
+    presented with request or response message.
 */
 template<bool isRequest, class Derived>
 class basic_parser
@@ -345,7 +359,7 @@ public:
         return s_ == s_restart;
     }
 
-    /** Write data to the parser.
+    /** Write a sequence of buffers to the parser.
 
         @param buffers An object meeting the requirements of
         ConstBufferSequence that represents the input sequence.
@@ -354,20 +368,23 @@ public:
 
         @return The number of bytes consumed in the input sequence.
     */
-    template<class ConstBufferSequence>
+    template<class ConstBufferSequence,
+        class = typename std::enable_if<
+            ! std::is_convertible<ConstBufferSequence,
+                boost::asio::const_buffer>::value>::type
+    >
     std::size_t
     write(ConstBufferSequence const& buffers, error_code& ec);
 
-    /** Write data to the parser.
+    /** Write a single buffer of data to the parser.
 
-        @param data A pointer to a buffer representing the input sequence.
-        @param size The number of bytes in the buffer pointed to by data.
+        @param buffer The buffer to write.
         @param ec Set to the error, if any error occurred.
 
-        @return The number of bytes consumed in the input sequence.
+        @return The number of bytes consumed in the buffer.
     */
     std::size_t
-    write(void const* data, std::size_t size, error_code& ec);
+    write(boost::asio::const_buffer const& buffer, error_code& ec);
 
     /** Called to indicate the end of file.
 

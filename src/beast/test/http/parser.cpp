@@ -20,6 +20,7 @@ class parser_test : public beast::detail::unit_test::suite
 public:
     void run() override
     {
+        using boost::asio::buffer;
         {
             error_code ec;
             parser<true, string_body,
@@ -30,11 +31,11 @@ public:
                 "Content-Length: 1\r\n"
                 "\r\n"
                 "*";
-            p.write(s.data(), s.size(), ec);
+            p.write(buffer(s), ec);
             expect(! ec);
             expect(p.complete());
             auto m = p.release();
-            expect(m.method == method_t::http_get);
+            expect(m.method == "GET");
             expect(m.url == "/");
             expect(m.version == 11);
             expect(m.headers["User-Agent"] == "test");
@@ -50,7 +51,7 @@ public:
                 "Content-Length: 1\r\n"
                 "\r\n"
                 "*";
-            p.write(s.data(), s.size(), ec);
+            p.write(buffer(s), ec);
             expect(! ec);
             expect(p.complete());
             auto m = p.release();

@@ -113,7 +113,7 @@ operator()(error_code ec, bool again)
         case 0:
             // send response
             d.state = 1;
-            http::async_write(d.ws.next_layer_,
+            http::async_write(d.ws.next_layer(),
                 d.resp, std::move(*this));
             return;
 

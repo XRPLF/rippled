@@ -20,8 +20,8 @@
 #ifndef BEAST_EXAMPLE_HTTP_ASYNC_SERVER_H_INCLUDED
 #define BEAST_EXAMPLE_HTTP_ASYNC_SERVER_H_INCLUDED
 
-#include "file_body.h"
-#include "http_stream.h"
+#include "file_body.hpp"
+#include "http_stream.hpp"
 
 #include <beast/placeholders.hpp>
 #include <boost/asio.hpp>
@@ -131,6 +131,7 @@ private:
                     {404, "Not Found", req_.version});
                 resp.headers.replace("Server", "http_async_server");
                 resp.body = "The file '" + path + "' was not found";
+                prepare(resp);
                 stream_.async_write(std::move(resp),
                     std::bind(&peer::on_write, shared_from_this(),
                         asio::placeholders::error));
@@ -141,6 +142,7 @@ private:
             resp.headers.replace("Server", "http_async_server");
             resp.headers.replace("Content-Type", "text/html");
             resp.body = path;
+            prepare(resp);
             stream_.async_write(std::move(resp),
                 std::bind(&peer::on_write, shared_from_this(),
                     asio::placeholders::error));

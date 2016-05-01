@@ -108,7 +108,6 @@ INPUT = \
         ../include/beast/bind_handler.hpp \
         ../include/beast/buffer_cat.hpp \
         ../include/beast/buffers_adapter.hpp \
-        ../include/beast/buffers_debug.hpp \
         ../include/beast/consuming_buffers.hpp \
         ../include/beast/handler_alloc.hpp \
         ../include/beast/http.hpp \
@@ -117,6 +116,7 @@ INPUT = \
         ../include/beast/static_streambuf.hpp \
         ../include/beast/streambuf.hpp \
         ../include/beast/streambuf_readstream.hpp \
+        ../include/beast/to_string.hpp \
         ../include/beast/type_check.hpp \
         ../include/beast/websocket.hpp \
         ../include/beast/write_streambuf.hpp \

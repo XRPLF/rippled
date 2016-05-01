@@ -17,7 +17,101 @@
 namespace beast {
 namespace http {
 
-/** Read a HTTP message from a stream.
+/** Parse a HTTP/1 message from a stream.
+
+    This function reads from a stream and passes data to the
+    specified parser. The call will block until one of the
+    following conditions are met:
+
+    @li The parser indicates it has received a complete message.
+
+    @li The stream returns an end of file.
+
+    @li An error is encountered by the stream or the parser.
+
+    This operation is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being parsed. This additional data is stored in the streambuf,
+    which may be used in subsequent calls.
+
+    @param stream The stream to parse the message from.
+
+    @param streambuf A Streambuf holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
+
+    @param parser An object meeting the requirements of Parser
+    which will receive the data.
+
+    @throws boost::system::system_error on failure.
+*/
+template<class SyncReadStream, class Streambuf, class Parser>
+void
+parse_v1(SyncReadStream& stream,
+    Streambuf& streambuf, Parser& parser)
+{
+    error_code ec;
+    parse_v1(stream, streambuf, parser, ec);
+    if(ec)
+        throw boost::system::system_error{ec};
+}
+
+/** Parse a HTTP/1 message from a stream.
+
+    This function reads from a stream and passes data to the
+    specified parser. The call will block until one of the
+    following conditions are met:
+
+    @li The parser indicates it has received a complete message.
+
+    @li The stream returns an end of file.
+
+    @li An error is encountered by the stream or the parser.
+
+    This operation is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being parsed. This additional data is stored in the streambuf,
+    which may be used in subsequent calls.
+
+    @param stream The stream to parse the message from.
+
+    @param streambuf A Streambuf holding additional bytes
+    read by the implementation from the stream. This is both
+    an input and an output parameter; on entry, any data in the
+    stream buffer's input sequence will be given to the parser
+    first.
+
+    @param parser An object meeting the requirements of Parser
+    which will receive the data.
+
+    @param ec Set to the error, if any occurred.
+*/
+template<class SyncReadStream, class Streambuf, class Parser>
+void
+parse_v1(SyncReadStream& stream, Streambuf& streambuf,
+    Parser& parser, error_code& ec);
+
+/** Read a message in HTTP/1 format from a stream.
+
+    This function reads from a stream and parses data in the
+    HTTP/1 wire format to produce a message. The call will block
+    until one of the following conditions are met:
+
+    @li The parser indicates it has received a complete message.
+
+    @li The stream returns an end of file.
+
+    @li An error is encountered by the stream or the parser.
+
+    This operation is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being read. This additional data is stored in the streambuf,
+    which may be used in subsequent calls.
 
     @param stream The stream to read the message from.
 
@@ -43,7 +137,23 @@ read(SyncReadStream& stream, Streambuf& streambuf,
         throw boost::system::system_error{ec};
 }
 
-/** Read a HTTP message from a stream.
+/** Read a message in HTTP/1 format from a stream.
+
+    This function reads from a stream and parses data in the
+    HTTP/1 wire format to produce a message. The call will block
+    until one of the following conditions are met:
+
+    @li The parser indicates it has received a complete message.
+
+    @li The stream returns an end of file.
+
+    @li An error is encountered by the stream or the parser.
+
+    This operation is implemented in terms of one or more calls
+    to the stream's `read_some` function. The implementation may
+    read additional octets that lie past the end of the message
+    being read. This additional data is stored in the streambuf,
+    which may be used in subsequent calls.
 
     @param stream The stream to read the message from.
 

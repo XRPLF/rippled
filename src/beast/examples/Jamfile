@@ -7,24 +7,20 @@
 
 import os ;
 
-exe http_crawl :
+exe http-crawl :
     http_crawl.cpp
     urls_large_data.cpp
     ;
 
-exe http_server :
+exe http-server :
     http_server.cpp
     ;
 
-exe http_example :
+exe http-example :
     http_example.cpp
     ;
 
-exe websocket_echo :
-    websocket_echo.cpp
-    ;
-
-exe websocket_example :
+exe websocket-example :
     websocket_example.cpp
     ;
 

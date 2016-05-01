@@ -252,7 +252,7 @@ In this table:
 ]
 [
     [`a.content_length()`]
-    [`std::size_t`]
+    [`std::uint64_t`]
     [
         If this member is present, it is called after initialization
         and before calls to provide buffers. The serialized message will
@@ -390,9 +390,12 @@ A `Stream` meets the following requirements:
 
 [section:Streambuf Streambuf]
 
-In the table below, `X` denotes a class, `a` denotes a value
-of type `X`, `n` denotes a value convertible to `std::size_t`,
-and `U` and `T` denote unspecified types.
+In the table below:
+
+* `X` denotes a class
+* `a` denotes a value of type `X`
+* `n` denotes a value convertible to `std::size_t`
+* `U`, `T` denote unspecified types.
 
 [table Streambuf requirements
 [[operation] [type] [semantics, pre/post-conditions]]
@@ -436,6 +439,19 @@ and `U` and `T` denote unspecified types.
     [`a.max_size()`]
     [`std::size_t`]
     [Returns the maximum size of the `Streambuf`.]
+]
+[
+    [`read_size_helper(a, n)`]
+    [`std::size_t`]
+    [
+        Returns the suggested number of bytes to read into the output
+        sequence where `n` is an upper limit on this value. One possible
+        implementation is to return the number of bytes that may be prepared
+        without causing a dynamic allocation, or `n` whichever is smaller.
+        Calls to `read_size_helper` will be made without namespace
+        qualification, to allow the rules for argument dependent lookup to
+        take effect.
+    ]
 ]
 ]
 
