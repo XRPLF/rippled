@@ -10,17 +10,23 @@ add_executable (core-tests
     basic_streambuf.cpp
     bind_handler.cpp
     buffer_cat.cpp
+    buffer_concepts.cpp
     buffers_adapter.cpp
     consuming_buffers.cpp
     handler_alloc.cpp
+    handler_concepts.cpp
+    http.cpp
     placeholders.cpp
     prepare_buffers.cpp
     static_streambuf.cpp
     static_string.cpp
+    stream_concepts.cpp
     streambuf.cpp
     streambuf_readstream.cpp
     to_string.cpp
-    type_check.cpp
+    version.cpp
+    websocket.cpp
+    write_streambuf.cpp
     detail/base64.cpp
     detail/empty_base_optimization.cpp
 )
@@ -34,13 +40,14 @@ add_executable (http-tests
     main.cpp
     http/basic_headers.cpp
     http/basic_parser_v1.cpp
+    http/body_type.cpp
     http/empty_body.cpp
     http/error.cpp
     http/headers.cpp
     http/message.cpp
     http/message_v1.cpp
     http/parse_error.cpp
-    http/parser.cpp
+    http/parser_v1.cpp
     http/read.cpp
     http/reason.cpp
     http/resume_context.cpp
@@ -49,6 +56,7 @@ add_executable (http-tests
     http/status.cpp
     http/streambuf_body.cpp
     http/string_body.cpp
+    http/type_check.cpp
     http/write.cpp
 )
 

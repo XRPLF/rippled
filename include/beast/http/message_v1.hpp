@@ -9,7 +9,6 @@
 #define BEAST_HTTP_MESSAGE_V1_HPP
 
 #include <beast/http/message.hpp>
-#include <beast/type_check.hpp>
 #include <memory>
 #include <string>
 
@@ -92,7 +91,7 @@ is_upgrade(message_v1<isRequest, Body, Headers> const& msg);
 
 /** HTTP/1 connection prepare options.
 
-    @note These values are used with `prepare`.
+    @note These values are used with @ref prepare.
 */
 enum class connection
 {

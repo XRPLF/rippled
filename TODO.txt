@@ -1,3 +1,5 @@
+* Add writer::prepare(msg&) interface to set Content-Type
+
 General:
 * Use SFINAE on return values (search for "class =")
 
@@ -13,18 +15,21 @@ Docs:
 * melpon sandbox?
 * Check DOXYGEN, GENERATIC_DOCS directives in source
   - See if we can include them now that xsl is fixed
+* Implement cleanup-param to remove spaces around template arguments
+  e.g. in basic_streambuf move constructor members
 
 Core:
 * Replace Jamroot with Jamfile
 * Fix bidirectional buffers iterators operator->()
-* Tidy up type_checks
-  - Derive from std::integral_constant
 * Complete allocator testing in basic_streambuf, basic_headers
 
 WebSocket:
 * optimized versions of key/masking, choose prepared_key size
 * invokable unit test
 * Finish up all of static_string including tests
+* Don't rely on default constructible mutable buffers
+  type in read_frame_op (smb_type). To see the error, use
+  boost::asio::streambuf in websocket_async_echo_peer
 
 HTTP:
 * Define Parser concept in HTTP
@@ -37,3 +42,4 @@ HTTP:
 * HTTP parser trailers with test
 * URL parser, strong URL checking in HTTP parser
 * Update for rfc7230
+* Consider rename to MessageBody concept

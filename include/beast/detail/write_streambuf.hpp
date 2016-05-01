@@ -8,6 +8,7 @@
 #ifndef BEAST_DETAIL_WRITE_STREAMBUF_HPP
 #define BEAST_DETAIL_WRITE_STREAMBUF_HPP
 
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <utility>

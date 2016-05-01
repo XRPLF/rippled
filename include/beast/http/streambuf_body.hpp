@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_STREAMBUF_BODY_HPP
 #define BEAST_HTTP_STREAMBUF_BODY_HPP
 
-#include <beast/http/body_writer.hpp>
+#include <beast/http/body_type.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/streambuf.hpp>
 #include <memory>
@@ -17,7 +17,9 @@
 namespace beast {
 namespace http {
 
-/** A Body represented by a Streambuf
+/** A message body represented by a Streambuf
+
+    Meets the requirements of @b `Body`.
 */
 template<class Streambuf>
 struct basic_streambuf_body
@@ -34,10 +36,10 @@ private:
         value_type& sb_;
 
     public:
-        template<bool isRequest, class Allocator>
+        template<bool isRequest, class Headers>
         explicit
         reader(message<isRequest,
-                basic_streambuf_body, Allocator>& m) noexcept
+                basic_streambuf_body, Headers>& m) noexcept
             : sb_(m.body)
         {
         }

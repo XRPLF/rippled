@@ -25,14 +25,14 @@ namespace websocket {
     `boost::asio::ssl::stream`, callers are responsible for
     providing a suitable overload of this function.
 
-    @param socket The stream to tear down.
+    @param stream The stream to tear down.
 
     @param ec Set to the error if any occurred.
 */
-template<class AsyncStream>
+template<class SyncStream>
 void
 teardown(
-    boost::asio::ssl::stream<AsyncStream>& stream,
+    boost::asio::ssl::stream<SyncStream>& stream,
         error_code& ec);
 
 /** Start tearing down a `boost::asio::ssl::stream`.

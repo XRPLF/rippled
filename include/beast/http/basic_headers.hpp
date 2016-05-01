@@ -8,7 +8,6 @@
 #ifndef BEAST_HTTP_BASIC_HEADERS_HPP
 #define BEAST_HTTP_BASIC_HEADERS_HPP
 
-#include <beast/type_check.hpp>
 #include <beast/detail/ci_char_traits.hpp>
 #include <beast/detail/empty_base_optimization.hpp>
 #include <boost/intrusive/list.hpp>
@@ -237,9 +236,20 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Container to store HTTP headers.
+/** A container for storing HTTP headers.
 
-    Meets the requirements of `FieldSequence`.
+    This container is designed to store the field value pairs that make
+    up the headers and trailers in a HTTP message. Objects of this type
+    are iterable, which each element holding the field name and field
+    value.
+
+    Field names are stored as-is, but comparison are case-insensitive.
+    The container preserves the order of insertion of fields with
+    different names. For fields with the same name, the implementation
+    concatenates values inserted with duplicate names as per the
+    rules in rfc2616 section 4.2.
+
+    @note Meets the requirements of @b `FieldSequence`.
 */
 template<class Allocator>
 class basic_headers

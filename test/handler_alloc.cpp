@@ -6,4 +6,23 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/handler_alloc.hpp>
+#include <beast/to_string.hpp>
+
+#include <beast/detail/unit_test/suite.hpp>
+#include <boost/asio/buffer.hpp>
+
+namespace beast {
+
+class to_string_test : public beast::detail::unit_test::suite
+{
+public:
+    void run()
+    {
+        expect(to_string(boost::asio::const_buffers_1("x", 1)) == "x");
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(to_string,core,beast);
+
+} // beast
+

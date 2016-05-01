@@ -20,7 +20,6 @@
 #ifndef BEAST_WEBSOCKET_STATIC_STRING_HPP
 #define BEAST_WEBSOCKET_STATIC_STRING_HPP
 
-#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iterator>
@@ -28,13 +27,11 @@
 #include <string>
 
 namespace beast {
-namespace websocket {
 
 /** A string with a fixed-size storage area.
 
-    `static_string` objects behave like `std::string` except that
-    the storage is not dynamically allocated but rather fixed in
-    size.
+    These objects behave like `std::string` except that the storage
+    is not dynamically allocated but rather fixed in size.
 
     These strings offer performance advantages when a protocol
     imposes a natural small upper limit on the size of a value.
@@ -281,7 +278,7 @@ public:
     {
         return N;
     }
-    
+
     /// Reduces memory usage by freeing unused memory.
     void
     shrink_to_fit()
@@ -401,7 +398,7 @@ operator=(const CharT (&s)[M]) ->
     static_assert(M-1 <= N,
         "static_string overflow");
     n_ = M-1;
-    std::copy(&s[0], &s[M], &s_[0]);
+    Traits::copy(&s_[0], &s[0], M);
     return *this;
 }
 
@@ -690,7 +687,6 @@ bool operator>=(
 
 #endif
 
-} // websocket
 } // beast
 
 #endif

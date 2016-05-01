@@ -14,7 +14,6 @@
 #include <iterator>
 
 namespace beast {
-namespace test {
 
 class buffers_adapter_test : public detail::unit_test::suite
 {
@@ -158,5 +157,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(buffers_adapter,core,beast);
 
-} // test
 } // beast

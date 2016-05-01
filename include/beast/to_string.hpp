@@ -8,24 +8,24 @@
 #ifndef BEAST_TO_STRING_HPP
 #define BEAST_TO_STRING_HPP
 
-#include <beast/type_check.hpp>
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
 
 namespace beast {
 
-/** Convert a `ConstBufferSequence` to a `std::string`.
+/** Convert a @b `ConstBufferSequence` to a `std::string`.
 
     This function will convert the octets in a buffer sequence to a string.
     All octets will be inserted into the resulting string, including null
     or unprintable characters.
 
     @param buffers The buffer sequence to convert.
-    
-    @returns A string representing the contents of the input area.
+
+    @return A string representing the contents of the input area.
 
     @note This function participates in overload resolution only if
-    the streambuf parameter meets the requirements of Streambuf.
+    the streambuf parameter meets the requirements of @b `Streambuf`.
 */
 template<class ConstBufferSequence
 #if ! GENERATING_DOCS

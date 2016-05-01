@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_STRING_BODY_HPP
 #define BEAST_HTTP_STRING_BODY_HPP
 
-#include <beast/http/body_writer.hpp>
+#include <beast/http/body_type.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/streambuf.hpp>
 #include <memory>
@@ -18,6 +18,8 @@ namespace beast {
 namespace http {
 
 /** A Body represented by a std::string.
+
+    Meets the requirements of @b `Body`.
 */
 struct string_body
 {
@@ -33,10 +35,10 @@ private:
         value_type& s_;
 
     public:
-        template<bool isRequest, class Allocator>
+        template<bool isRequest, class Headers>
         explicit
         reader(message<isRequest,
-                string_body, Allocator>& m) noexcept
+                string_body, Headers>& m) noexcept
             : s_(m.body)
         {
         }

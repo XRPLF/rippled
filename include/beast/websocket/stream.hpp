@@ -42,7 +42,7 @@ struct frame_info
 
 /** Provides message-oriented functionality using WebSocket.
 
-    The stream class template provides asynchronous and blocking
+    The @ref stream class template provides asynchronous and blocking
     message-oriented functionality necessary for clients and servers
     to utilize the WebSocket protocol.
 
@@ -54,8 +54,8 @@ struct frame_info
 
     @par Example
 
-    To use the WebSocket stream template with an
-    ip::tcp::socket, you would write:
+    To use the @ref stream template with an `ip::tcp::socket`,
+    you would write:
 
     @code
     websocket::stream<ip::tcp::socket> ws(io_service);
@@ -66,15 +66,20 @@ struct frame_info
     websocket::stream<ip::tcp::socket&> ws(sock);
     @endcode
 
-    @tparam NextLayer An object meeting the requirements of ReadStream,
-    WriteStream, AsyncReadStream, and AsyncWriteStream.
+    @tparam NextLayer The type representing the next layer, to which
+    data will be read and written during operations. For synchronous
+    operations, the type must support the @b `SyncStream` concept.
+    For asynchronous operations, the type must support the @b `AsyncStream`
+    concept.
 
     @note A stream object must not be destroyed while there are
     pending asynchronous operations associated with it.
 
     @par Concepts
-    AsyncReadStream, AsyncWriteStream,
-    Decorator, Streambuf, SyncReadStream, SyncWriteStream.
+        @b `AsyncStream`,
+        @b `Decorator`,
+        @b `Streambuf`,
+        @b `SyncStream`
 */
 template<class NextLayer>
 class stream : public detail::stream_base
@@ -90,8 +95,12 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
+#if GENERATING_DOCS
+        implementation_defined;
+#else
         typename beast::detail::get_lowest_layer<
             next_layer_type>::type;
+#endif
 
     /** Move-construct a stream.
 
@@ -105,7 +114,7 @@ public:
 
     /** Move assignment.
 
-        If @c NextLayer is move constructible, this function
+        If `NextLayer` is move constructible, this function
         will move-construct a new stream from the existing stream.
 
         @note The behavior of move assignment on or from streams
@@ -130,8 +139,8 @@ public:
 
     /** Destructor.
 
-        A stream object must not be destroyed while there are
-        pending asynchronous operations associated with it.
+        @note A stream object must not be destroyed while there
+        are pending asynchronous operations associated with it.
     */
     ~stream() = default;
 
@@ -157,6 +166,7 @@ public:
             std::forward<An>(an)...);
     }
 
+    /// Set the automatic fragment size option
     void
     set_option(auto_fragment_size const& o)
     {
@@ -167,36 +177,42 @@ public:
             wr_frag_size_ = o.value;
     }
 
+    /// Set the decorator used for HTTP messages
     void
     set_option(detail::decorator_type o)
     {
         d_ = std::move(o);
     }
 
+    /// Set the keep-alive option
     void
     set_option(keep_alive const& o)
     {
         keep_alive_ = o.value;
     }
 
+    /// Set the outgoing message type
     void
     set_option(message_type const& o)
     {
         wr_opcode_ = o.value;
     }
 
+    /// Set the read buffer size
     void
     set_option(read_buffer_size const& o)
     {
         stream_.reserve(o.value);
     }
 
+    /// Set the maximum incoming message size allowed
     void
     set_option(read_message_max const& o)
     {
         rd_msg_max_ = o.value;
     }
 
+    /// Set the size of the write buffer
     void
     set_option(write_buffer_size const& o)
     {
@@ -289,22 +305,25 @@ public:
     /** Read and respond to a WebSocket HTTP Upgrade request.
 
         This function is used to synchronously read a HTTP WebSocket
-        Upgrade request and send the HTTP response.
+        Upgrade request and send the HTTP response. The call blocks until
+        one of the following conditions is true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
-
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request"), and an appropriate
-        exception will be thrown.
-
-        The call blocks until one of the following conditions is true:
+        @li A HTTP request finishes receiving, and a HTTP response finishes
+        sending.
 
         @li An error occurs on the stream.
 
-        @li The entire HTTP response has been sent.
+        This function is implemented in terms of one or more calls to the
+        next layer's `read_some` and `write_some` functions.
+
+        If the stream receives a valid HTTP WebSocket Upgrade request, a
+        HTTP response is sent back indicating a successful upgrade. When this
+        call returns, the stream is then ready to send and receive WebSocket
+        protocol frames and messages.
+
+        If the HTTP Upgrade request is invalid or cannot be satisfied, a
+        HTTP response is sent indicating the reason and status code
+        (typically 400, "Bad Request"). This counts as a failure.
 
         @throws boost::system::system_error Thrown on failure.
     */
@@ -314,21 +333,25 @@ public:
     /** Read and respond to a WebSocket HTTP Upgrade request.
 
         This function is used to synchronously read a HTTP WebSocket
-        Upgrade request and send the HTTP response.
+        Upgrade request and send the HTTP response. The call blocks until
+        one of the following conditions is true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
-
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
-
-        The call blocks until one of the following conditions is true:
+        @li A HTTP request finishes receiving, and a HTTP response finishes
+        sending.
 
         @li An error occurs on the stream.
 
-        @li The entire HTTP response has been sent.
+        This function is implemented in terms of one or more calls to the
+        next layer's `read_some` and `write_some` functions.
+
+        If the stream receives a valid HTTP WebSocket Upgrade request, a
+        HTTP response is sent back indicating a successful upgrade. When this
+        call returns, the stream is then ready to send and receive WebSocket
+        protocol frames and messages.
+
+        If the HTTP Upgrade request is invalid or cannot be satisfied, a
+        HTTP response is sent indicating the reason and status code
+        (typically 400, "Bad Request"). This counts as a failure.
 
         @param ec Set to indicate what error occurred, if any.
     */
@@ -339,15 +362,28 @@ public:
 
         This function is used to asynchronously read a HTTP WebSocket
         Upgrade request and send the HTTP response. The function call
-        always returns immediately.
+        always returns immediately. The asynchronous operation will
+        continue until one of the following conditions is true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
+        @li A HTTP request finishes receiving, and a HTTP response finishes
+        sending.
 
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_read_some` and `async_write_some` functions, and
+        is known as a <em>composed operation</em>. The program must ensure
+        that the stream performs no other operations until this operation
+        completes.
+
+        If the stream receives a valid HTTP WebSocket Upgrade request, a
+        HTTP response is sent back indicating a successful upgrade. When
+        this call returns, the stream is then ready to send and receive
+        WebSocket protocol frames and messages.
+
+        If the HTTP Upgrade request is invalid or cannot be satisfied, a
+        HTTP response is sent indicating the reason and status code
+        (typically 400, "Bad Request"). This counts as a failure.
 
         @param handler The handler to be called when the request completes.
         Copies will be made of the handler as required. The equivalent
@@ -358,33 +394,41 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class AcceptHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
+    #endif
     async_accept(AcceptHandler&& handler);
 
     /** Read and respond to a WebSocket HTTP Upgrade request.
 
         This function is used to synchronously read a HTTP WebSocket
-        Upgrade request and send the HTTP response.
+        Upgrade request and send the HTTP response. The call blocks until
+        one of the following conditions is true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
-
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
-
-        The call blocks until one of the following conditions is true:
+        @li A HTTP request finishes receiving, and a HTTP response finishes
+        sending.
 
         @li An error occurs on the stream.
 
-        @li The entire HTTP response has been sent.
+        This function is implemented in terms of one or more calls to the
+        next layer's `read_some` and `write_some` functions.
 
-        @param buffers Caller provide data that has already been
+        If the stream receives a valid HTTP WebSocket Upgrade request, a
+        HTTP response is sent back indicating a successful upgrade. When
+        this call returns, the stream is then ready to send and receive
+        WebSocket protocol frames and messages.
+
+        If the HTTP Upgrade request is invalid or cannot be satisfied, a
+        HTTP response is sent indicating the reason and status code
+        (typically 400, "Bad Request"). This counts as a failure.
+
+        @param buffers Caller provided data that has already been
         received on the stream. This may be used for implementations
         allowing multiple protocols on the same stream. The
         buffered data will first be applied to the handshake, and
@@ -400,23 +444,27 @@ public:
     /** Read and respond to a WebSocket HTTP Upgrade request.
 
         This function is used to synchronously read a HTTP WebSocket
-        Upgrade request and send the HTTP response.
+        Upgrade request and send the HTTP response. The call blocks until
+        one of the following conditions is true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
-
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
-
-        The call blocks until one of the following conditions is true:
+        @li A HTTP request finishes receiving, and a HTTP response finishes
+        sending.
 
         @li An error occurs on the stream.
 
-        @li The entire HTTP response has been sent.
+        This function is implemented in terms of one or more calls to the
+        next layer's `read_some` and `write_some` functions.
 
-        @param buffers Caller provide data that has already been
+        If the stream receives a valid HTTP WebSocket Upgrade request, a
+        HTTP response is sent back indicating a successful upgrade. When
+        this call returns, the stream is then ready to send and receive
+        WebSocket protocol frames and messages.
+
+        If the HTTP Upgrade request is invalid or cannot be satisfied, a
+        HTTP response is sent indicating the reason and status code
+        (typically 400, "Bad Request"). This counts as a failure.
+
+        @param buffers Caller provided data that has already been
         received on the stream. This may be used for implementations
         allowing multiple protocols on the same stream. The
         buffered data will first be applied to the handshake, and
@@ -433,17 +481,30 @@ public:
 
         This function is used to asynchronously read a HTTP WebSocket
         Upgrade request and send the HTTP response. The function call
-        always returns immediately.
+        always returns immediately. The asynchronous operation will
+        continue until one of the following conditions is true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
+        @li A HTTP request finishes receiving, and a HTTP response finishes
+        sending.
 
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
+        @li An error occurs on the stream.
 
-        @param buffers Caller provide data that has already been
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_read_some` and `async_write_some` functions, and
+        is known as a <em>composed operation</em>. The program must ensure
+        that the stream performs no other operations until this operation
+        completes.
+
+        If the stream receives a valid HTTP WebSocket Upgrade request, a
+        HTTP response is sent back indicating a successful upgrade. When
+        this call returns, the stream is then ready to send and receive
+        WebSocket protocol frames and messages.
+
+        If the HTTP Upgrade request is invalid or cannot be satisfied, a
+        HTTP response is sent indicating the reason and status code
+        (typically 400, "Bad Request"). This counts as a failure.
+
+        @param buffers Caller provided data that has already been
         received on the stream. This may be used for implementations
         allowing multiple protocols on the same stream. The
         buffered data will first be applied to the handshake, and
@@ -459,36 +520,43 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class ConstBufferSequence, class AcceptHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
+    #endif
     async_accept(ConstBufferSequence const& buffers,
         AcceptHandler&& handler);
 
     /** Respond to a WebSocket HTTP Upgrade request
 
-        This function is used to synchronously send the HTTP response
-        to a HTTP WebSocket Upgrade request.
-
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
-
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
-
+        This function is used to synchronously send the HTTP response to
+        a HTTP request possibly containing a WebSocket Upgrade request.
         The call blocks until one of the following conditions is true:
+
+        @li A HTTP response finishes sending.
 
         @li An error occurs on the stream.
 
-        @li The entire HTTP response has been sent.
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
 
-        @param request An object containing the HTTP Upgrade request. The
-        implementation will make copies as necessary before this
-        function call returns.
+        If the passed HTTP request is a valid HTTP WebSocket Upgrade
+        request, a HTTP response is sent back indicating a successful
+        upgrade. When this call returns, the stream is then ready to send
+        and receive WebSocket protocol frames and messages.
+
+        If the HTTP request is invalid or cannot be satisfied, a HTTP
+        response is sent indicating the reason and status code (typically
+        400, "Bad Request"). This counts as a failure.
+
+        @param request An object containing the HTTP Upgrade request.
+        Ownership is not transferred, the implementation will not access
+        this object from other threads.
 
         @throws boost::system::system_error Thrown on failure.
     */
@@ -499,26 +567,29 @@ public:
 
     /** Respond to a WebSocket HTTP Upgrade request
 
-        This function is used to synchronously send the HTTP response
-        to a HTTP WebSocket Upgrade request.
-
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
-
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
-
+        This function is used to synchronously send the HTTP response to
+        a HTTP request possibly containing a WebSocket Upgrade request.
         The call blocks until one of the following conditions is true:
+
+        @li A HTTP response finishes sending.
 
         @li An error occurs on the stream.
 
-        @li The entire HTTP response has been sent.
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
 
-        @param request An object containing the HTTP Upgrade request. The
-        implementation will make copies as necessary before this
-        function call returns.
+        If the passed HTTP request is a valid HTTP WebSocket Upgrade
+        request, a HTTP response is sent back indicating a successful
+        upgrade. When this call returns, the stream is then ready to send
+        and receive WebSocket protocol frames and messages.
+
+        If the HTTP request is invalid or cannot be satisfied, a HTTP
+        response is sent indicating the reason and status code (typically
+        400, "Bad Request"). This counts as a failure.
+
+        @param request An object containing the HTTP Upgrade request.
+        Ownership is not transferred, the implementation will not access
+        this object from other threads.
 
         @param ec Set to indicate what error occurred, if any.
     */
@@ -527,23 +598,35 @@ public:
     accept(http::request_v1<Body, Headers> const& request,
         error_code& ec);
 
-    /** Start reading and responding to a WebSocket HTTP Upgrade request.
+    /** Start responding to a WebSocket HTTP Upgrade request.
 
-        This function is used to asynchronously read a HTTP WebSocket
-        Upgrade request and send the HTTP response. The function call
-        always returns immediately.
+        This function is used to asynchronously send the HTTP response
+        to a HTTP request possibly containing a WebSocket Upgrade request.
+        The function call always returns immediately. The asynchronous
+        operation will continue until one of the following conditions is
+        true:
 
-        If the contents of the request are valid, the HTTP response
-        indicates a successful upgrade and the stream is then ready
-        to send and receive WebSocket protocol frames and messages.
+        @li A HTTP response finishes sending.
 
-        If the WebSocket HTTP Upgrade request cannot be satisfied,
-        a HTTP response is sent indicating the reason and status
-        code (typically 400, "Bad Request").
+        @li An error occurs on the stream.
 
-        @param request An object containing the HTTP Upgrade request. The
-        implementation will make copies as necessary before this
-        function call returns.
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_write_some` functions, and is known as a
+        <em>composed operation</em>. The program must ensure that the
+        stream performs no other operations until this operation completes.
+
+        If the passed HTTP request is a valid HTTP WebSocket Upgrade
+        request, a HTTP response is sent back indicating a successful
+        upgrade. When this asynchronous operaiton completes, the stream is
+        then ready to send and receive WebSocket protocol frames and messages.
+
+        If the HTTP request is invalid or cannot be satisfied, a HTTP
+        response is sent indicating the reason and status code (typically
+        400, "Bad Request"). This counts as a failure.
+
+        @param request An object containing the HTTP Upgrade request.
+        Ownership is not transferred, the implementation will not access
+        this object from other threads.
 
         @param handler The handler to be called when the request completes.
         Copies will be made of the handler as required. The equivalent
@@ -554,32 +637,43 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class Body, class Headers, class AcceptHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
+    #endif
     async_accept(http::request_v1<Body, Headers> const& request,
         AcceptHandler&& handler);
 
-    /** Send a WebSocket Upgrade request.
+    /** Send a HTTP WebSocket Upgrade request and receive the response.
 
         This function is used to synchronously send the WebSocket
         upgrade HTTP request. The call blocks until one of the
         following conditions is true:
 
+        @li A HTTP request finishes sending and a HTTP response finishes
+        receiving.
+
         @li An error occurs on the stream
 
-        @li A complete HTTP response with the result of the upgrade
-        request is received.
+        This function is implemented in terms of one or more calls to the
+        next layer's `read_some` and `write_some` functions.
 
-        @throws boost::system::system_error Thrown on failure.
+        The operation is successful if the received HTTP response indicates
+        a successful HTTP Upgrade (represented by a Status-Code of 101,
+        "switching protocols").
 
-        @param host The name of the remote host, required by
-        the HTTP protocol.
+        @param host The name of the remote host,
+        required by the HTTP protocol.
 
         @param resource The requesting URI, which may not be empty,
         required by the HTTP protocol.
+
+        @throws boost::system::system_error Thrown on failure.
 
         @par Example
         @code
@@ -599,19 +693,26 @@ public:
     handshake(boost::string_ref const& host,
         boost::string_ref const& resource);
 
-    /** Send a WebSocket Upgrade request.
+    /** Send a HTTP WebSocket Upgrade request and receive the response.
 
         This function is used to synchronously send the WebSocket
         upgrade HTTP request. The call blocks until one of the
         following conditions is true:
 
-        @li An error occurs on the stream.
+        @li A HTTP request finishes sending and a HTTP response finishes
+        receiving.
 
-        @li A complete HTTP response with the result of the upgrade
-        request is received.
+        @li An error occurs on the stream
 
-        @param host The name of the remote host, required by
-        the HTTP protocol.
+        This function is implemented in terms of one or more calls to the
+        next layer's `read_some` and `write_some` functions.
+
+        The operation is successful if the received HTTP response indicates
+        a successful HTTP Upgrade (represented by a Status-Code of 101,
+        "switching protocols").
+
+        @param host The name of the remote host,
+        required by the HTTP protocol.
 
         @param resource The requesting URI, which may not be empty,
         required by the HTTP protocol.
@@ -634,11 +735,28 @@ public:
     handshake(boost::string_ref const& host,
         boost::string_ref const& resource, error_code& ec);
 
-    /** Asynchronously send a WebSocket Upgrade request.
+    /** Start an asynchronous operation to send an upgrade request and receive the response.
 
-        This function is used to asynchronously send the WebSocket
-        upgrade HTTP request. This function call always returns
-        immediately.
+        This function is used to asynchronously send the HTTP WebSocket
+        upgrade request and receive the HTTP WebSocket Upgrade response.
+        This function call always returns immediately. The asynchronous
+        operation will continue until one of the following conditions is
+        true:
+
+        @li A HTTP request finishes sending and a HTTP response finishes
+        receiving.
+
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_read_some` and `async_write_some` functions, and
+        is known as a <em>composed operation</em>. The program must ensure
+        that the stream performs no other operations until this operation
+        completes.
+
+        The operation is successful if the received HTTP response indicates
+        a successful HTTP Upgrade (represented by a Status-Code of 101,
+        "switching protocols").
 
         @param host The name of the remote host, required by
         the HTTP protocol. Copies may be made as needed.
@@ -656,45 +774,67 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class HandshakeHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         HandshakeHandler, void(error_code)>::result_type
+    #endif
     async_handshake(boost::string_ref const& host,
         boost::string_ref const& resource, HandshakeHandler&& h);
 
-    /** Perform a WebSocket close.
+    /** Send a WebSocket close frame.
 
-        This function initiates the WebSocket close procedure.
+        This function is used to sycnhronously send a close frame on
+        the stream. The call blocks until one of the following is true:
+
+        @li The close frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
 
         If the close reason specifies a close code other than
-        close_code::none, the close frame is sent with the close code
-        and optional reason string. Otherwise, the close frame
+        @ref close_code::none, the close frame is sent with the close
+        code and optional reason string. Otherwise, the close frame
         is sent with no payload.
 
         Callers should not attempt to write WebSocket data after
         initiating the close. Instead, callers should continue
-        reading until an error occurs. A read returning error::closed
+        reading until an error occurs. A read returning @ref error::closed
         indicates a successful connection closure.
 
         @param cr The reason for the close.
+
+        @throws boost::system::system_error Thrown on failure.
     */
     void
     close(close_reason const& cr);
 
-    /** Perform a WebSocket close.
+    /** Send a WebSocket close frame.
 
-        This function initiates the WebSocket close procedure.
+        This function is used to sycnhronously send a close frame on
+        the stream. The call blocks until one of the following is true:
+
+        @li The close frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
 
         If the close reason specifies a close code other than
-        close_code::none, the close frame is sent with the close code
-        and optional reason string. Otherwise, the close frame
+        @ref close_code::none, the close frame is sent with the close
+        code and optional reason string. Otherwise, the close frame
         is sent with no payload.
 
         Callers should not attempt to write WebSocket data after
         initiating the close. Instead, callers should continue
-        reading until an error occurs. A read returning error::closed
+        reading until an error occurs. A read returning @ref error::closed
         indicates a successful connection closure.
 
         @param cr The reason for the close.
@@ -704,18 +844,32 @@ public:
     void
     close(close_reason const& cr, error_code& ec);
 
-    /** Start an asychronous WebSocket close operation.
+    /** Start an asycnhronous operation to send a WebSocket close frame.
 
-        This function initiates the WebSocket close procedure.
+        This function is used to asynchronously send a close frame on
+        the stream. This function call always returns immediately. The
+        asynchronous operation will continue until one of the following
+        conditions is true:
+
+        @li The close frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_write_some` functions, and is known as a
+        <em>composed operation</em>. The program must ensure that the
+        stream performs no other write operations (such as
+        @ref stream::async_write, @ref stream::async_write_frame, or
+        @ref stream::async_close) until this operation completes.
 
         If the close reason specifies a close code other than
-        close_code::none, the close frame is sent with the close code
-        and optional reason string. Otherwise, the close frame
+        @ref close_code::none, the close frame is sent with the close
+        code and optional reason string. Otherwise, the close frame
         is sent with no payload.
 
         Callers should not attempt to write WebSocket data after
         initiating the close. Instead, callers should continue
-        reading until an error occurs. A read returning error::closed
+        reading until an error occurs. A read returning @ref error::closed
         indicates a successful connection closure.
 
         @param cr The reason for the close.
@@ -731,21 +885,39 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class CloseHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         CloseHandler, void(error_code)>::result_type
+    #endif
     async_close(close_reason const& cr, CloseHandler&& handler);
 
-    /** Read a message.
+    /** Read a message from the stream.
 
-        This function is used to read a message from the
-        websocket. The function call will block until the message
-        has been read successfully, or until an error occurs.
+        This function is used to synchronously read a message from
+        the stream. The call blocks until one of the following is true:
 
-        On success op is set to reflect the message type, binary
-        or text.
+        @li A complete message is received.
+
+        @li An error occurs on the stream.
+
+        This call is implemented in terms of one or more calls to the
+        stream's `read_some` and `write_some` operations.
+
+        Upon a success, op is set to either binary or text depending on
+        the message type, and the input area of the stream buffer will
+        hold all the message payload bytes (which may be zero in length).
+
+        Control frames encountered while reading frame or message data
+        are handled automatically. Pings are replied to, pongs are noted,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control frames,
+        read operations can cause writes to take place.
 
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
@@ -759,14 +931,28 @@ public:
     void
     read(opcode& op, Streambuf& streambuf);
 
-    /** Read a message.
+    /** Read a message from the stream.
 
-        This function is used to read a message from the
-        websocket. The function call will block until the message
-        has been read successfully, or until an error occurs.
+        This function is used to synchronously read a message from
+        the stream. The call blocks until one of the following is true:
 
-        On success op is set to reflect the message type, binary
-        or text.
+        @li A complete message is received.
+
+        @li An error occurs on the stream.
+
+        This call is implemented in terms of one or more calls to the
+        stream's `read_some` and `write_some` operations.
+
+        Upon a success, op is set to either binary or text depending on
+        the message type, and the input area of the stream buffer will
+        hold all the message payload bytes (which may be zero in length).
+
+        Control frames encountered while reading frame or message data
+        are handled automatically. Pings are replied to, pongs are noted,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control frames,
+        read operations can cause writes to take place.
 
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
@@ -781,15 +967,37 @@ public:
     read(opcode& op,
         Streambuf& streambuf, error_code& ec);
 
-    /** Start reading a message asynchronously.
+    /** Start an asynchronous operation to read a message from the stream.
 
         This function is used to asychronously read a message from
-        the websocket. The function call always returns immediately.
+        the stream. The function call always returns immediately. The
+        asynchronous operation will continue until one of the following
+        is true:
 
-        Upon a successful completion, op is set to either binary or
-        text depending on the message type, and the input area of the
-        streambuf will hold all the message payload bytes (which may
-        be zero in length).
+        @li A complete message is received.
+
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_read_some` and `async_write_some` functions,
+        and is known as a <em>composed operation</em>. The program must
+        ensure that the stream performs no other until this operation
+        completes.
+
+        Upon a success, op is set to either binary or text depending on
+        the message type, and the input area of the stream buffer will
+        hold all the message payload bytes (which may be zero in length).
+
+        Control frames encountered while reading frame or message data
+        are handled automatically. Pings are replied to, pongs are noted,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control frames,
+        read operations can cause writes to take place. These writes are
+        managed transparently; callers can still have one active
+        asynchronous read and asynchronous write operation pending
+        simultaneously (a user initiated call to @ref async_close
+        counts as a write).
 
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
@@ -808,7 +1016,7 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class Streambuf, class ReadHandler>
     #if GENERATING_DOCS
@@ -820,24 +1028,32 @@ public:
     async_read(opcode& op,
         Streambuf& streambuf, ReadHandler&& handler);
 
-    /** Read a message frame.
+    /** Read a message frame from the stream.
 
-        This function is used to read a single message frame from
-        the websocket. The function call will block until one message
-        frame has been read successfully, or an error occurs.
+        This function is used to synchronously read a single message
+        frame from the stream. The call blocks until one of the following
+        is true:
 
-        On success, fi is filled out to reflect the message payload
+        @li A complete frame is received.
+
+        @li An error occurs on the stream.
+
+        This call is implemented in terms of one or more calls to the
+        stream's `read_some` and `write_some` operations.
+
+        Upon success, fi is filled out to reflect the message payload
         contents. op is set to binary or text, and the fin flag
         indicates if all the message data has been read in. To read the
         entire message, callers should repeat the read_frame operation
         until fi.fin is true. A message with no payload will have
         fi.fin == true, and zero bytes placed into the stream buffer.
 
-        If a control frame is received while attempting to read a
-        message frame, the control frame is handled automatically.
-        If a ping control frame is received, a pong is sent immediately.
-        If a close control frame is received, a close is sent in
-        response and the read operation will return with `error::closed`.
+        Control frames encountered while reading frame or message data
+        are handled automatically. Pings are replied to, pongs are noted,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control frames,
+        read operations can cause writes to take place.
 
         @param fi An object to store metadata about the message.
 
@@ -849,24 +1065,32 @@ public:
     void
     read_frame(frame_info& fi, Streambuf& streambuf);
 
-    /** Read a message frame.
+    /** Read a message frame from the stream.
 
-        This function is used to read a single message frame from
-        the websocket. The function call will block until one message
-        frame has been read successfully, or an error occurs.
+        This function is used to synchronously read a single message
+        frame from the stream. The call blocks until one of the following
+        is true:
 
-        On success, fi is filled out to reflect the message payload
+        @li A complete frame is received.
+
+        @li An error occurs on the stream.
+
+        This call is implemented in terms of one or more calls to the
+        stream's `read_some` and `write_some` operations.
+
+        Upon success, fi is filled out to reflect the message payload
         contents. op is set to binary or text, and the fin flag
         indicates if all the message data has been read in. To read the
         entire message, callers should repeat the read_frame operation
         until fi.fin is true. A message with no payload will have
         fi.fin == true, and zero bytes placed into the stream buffer.
 
-        If a control frame is received while attempting to read a
-        message frame, the control frame is handled automatically.
-        If a ping control frame is received, a pong is sent immediately.
-        If a close control frame is received, a close is sent in
-        response and the read operation will return with `error::closed`.
+        Control frames encountered while reading frame or message data
+        are handled automatically. Pings are replied to, pongs are noted,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control frames,
+        read operations can cause writes to take place.
 
         @param fi An object to store metadata about the message.
 
@@ -878,11 +1102,22 @@ public:
     void
     read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec);
 
-    /** Start reading a message frame asynchronously.
+    /** Start an asynchronous operation to read a message frame from the stream.
 
         This function is used to asychronously read a single message
         frame from the websocket. The function call always returns
-        immediately.
+        immediately. The asynchronous operation will continue until
+        one of the following conditions is true:
+
+        @li A complete frame is received.
+
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_read_some` and `async_write_some` functions,
+        and is known as a <em>composed operation</em>. The program must
+        ensure that the stream performs no other until this operation
+        completes.
 
         Upon a successful completion, fi is filled out to reflect the
         message payload contents. op is set to binary or text, and the
@@ -892,11 +1127,16 @@ public:
         payload will have fi.fin == true, and zero bytes placed into
         the stream buffer.
 
-        If a control frame is received while attempting to read a
-        message frame, the control frame is handled automatically.
-        If a ping control frame is received, a pong is sent immediately.
-        If a close control frame is received, a close is sent in
-        response and the read operation will return with `error::closed`.
+        Control frames encountered while reading frame or message data
+        are handled automatically. Pings are replied to, pongs are noted,
+        and close frames initiate the WebSocket close procedure. When a
+        close frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control frames,
+        read operations can cause writes to take place. These writes are
+        managed transparently; callers can still have one active
+        asynchronous read and asynchronous write operation pending
+        simultaneously (a user initiated call to @ref async_close
+        counts as a write).
 
         @param fi An object to store metadata about the message.
         This object must remain valid until the handler is called.
@@ -919,24 +1159,33 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class Streambuf, class ReadHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
+    #endif
     async_read_frame(frame_info& fi,
         Streambuf& streambuf, ReadHandler&& handler);
 
-    /** Send a message.
+    /** Write a message to the stream.
 
-        This function is used to write a message to the websocket.
-        The call blocks until one of the following conditions is met:
+        This function is used to synchronously write a message to
+        the stream. The call blocks until one of the following conditions
+        is met:
 
         @li The entire message is sent.
 
         @li An error occurs.
 
-        The message opcode will be set to text or binary as
-        per the current setting of the `message_type` option.
-        If automatic fragmenting is enabled, the message will be
-        split into one or more frames as necessary.
+        This operation is implemented in terms of one or more calls to the
+        next layer's `write_some` function.
+
+        The current setting of the @ref message_type option controls
+        whether the message opcode is set to text or binary. If the
+        @ref auto_fragment_size option is set, the message will be split
+        into one or more frames as necessary. The actual payload contents
+        sent may be transformed as per the WebSocket protocol settings.
 
         @param buffers The buffers containing the entire message
         payload. The implementation will make copies of this object
@@ -948,27 +1197,30 @@ public:
         @throws boost::system::system_error Thrown on failure.
 
         @note This function always sends an entire message. To
-        send a message in fragments, use `write_frame`.
+        send a message in fragments, use @ref write_frame.
     */
     template<class ConstBufferSequence>
     void
     write(ConstBufferSequence const& buffers);
 
-    /** Send a message.
+    /** Write a message to the stream.
 
-        This function is used to write a message to the websocket.
-        The call blocks until one of the following conditions is met:
+        This function is used to synchronously write a message to
+        the stream. The call blocks until one of the following conditions
+        is met:
 
         @li The entire message is sent.
 
         @li An error occurs.
 
-        The message opcode will be set to text or binary as
-        per the current setting of the `message_type` option.
-        If automatic fragmenting is enabled, the message will be
-        split into one or more frames as necessary.
+        This operation is implemented in terms of one or more calls to the
+        next layer's `write_some` function.
 
-        @param ec Set to indicate what error occurred, if any.
+        The current setting of the @ref message_type option controls
+        whether the message opcode is set to text or binary. If the
+        @ref auto_fragment_size option is set, the message will be split
+        into one or more frames as necessary. The actual payload contents
+        sent may be transformed as per the WebSocket protocol settings.
 
         @param buffers The buffers containing the entire message
         payload. The implementation will make copies of this object
@@ -977,22 +1229,40 @@ public:
         the memory locations pointed to by buffers remains valid
         until the completion handler is called.
 
+        @param ec Set to indicate what error occurred, if any.
+
+        @throws boost::system::system_error Thrown on failure.
+
         @note This function always sends an entire message. To
-        send a message in fragments, use `write_frame`.
+        send a message in fragments, use @ref write_frame.
     */
     template<class ConstBufferSequence>
     void
     write(ConstBufferSequence const& buffers, error_code& ec);
 
-    /** Start writing a complete message asynchronously.
+    /** Start an asynchronous operation to write a message to the stream.
 
         This function is used to asychronously write a message to
-        the websocket. The function call always returns immediately.
+        the stream. The function call always returns immediately.
+        The asynchronous operation will continue until one of the
+        following conditions is true:
 
-        The message opcode will be set to text or binary as
-        per the current setting of the `message_type` option.
-        If automatic fragmenting is enabled, the message will be
-        split into one or more frames as necessary.
+        @li The entire message is sent.
+
+        @li An error occurs.
+
+        This operation is implemented in terms of one or more calls
+        to the next layer's `async_write_some` functions, and is known
+        as a <em>composed operation</em>. The program must ensure that
+        the stream performs no other write operations (such as
+        stream::async_write, stream::async_write_frame, or
+        stream::async_close).
+
+        The current setting of the @ref message_type option controls
+        whether the message opcode is set to text or binary. If the
+        @ref auto_fragment_size option is set, the message will be split
+        into one or more frames as necessary. The actual payload contents
+        sent may be transformed as per the WebSocket protocol settings.
 
         @param buffers The buffers containing the entire message
         payload. The implementation will make copies of this object
@@ -1012,7 +1282,7 @@ public:
         Regardless of whether the asynchronous operation completes
         immediately or not, the handler will not be invoked from within
         this function. Invocation of the handler will be performed in a
-        manner equivalent to using boost::asio::io_service::post().
+        manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class ConstBufferSequence, class WriteHandler>
     #if GENERATING_DOCS
@@ -1024,50 +1294,51 @@ public:
     async_write(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
-    /** Send a frame.
+    /** Send a message frame on the stream.
 
-        This function is used to write a frame to a stream. The
+        This function is used to write a frame to the stream. The
         call will block until one of the following conditions is true:
 
-        @li All of the data in the supplied buffers has been written.
+        @li The entire frame is sent.
 
         @li An error occurs.
 
         This operation is implemented in terms of one or more calls
-        to the stream's write_some function. The actual payload sent
-        may be transformed as per the WebSocket protocol settings.
+        to the stream's `write_some` function.
 
         If this is the beginning of a new message, the message opcode
         will be set to text or binary as per the current setting of
-        the `message_type` option.
-
-        @throws boost::system::system_error Thrown on failure.
+        the @ref message_type option. The actual payload sent
+        may be transformed as per the WebSocket protocol settings.
 
         @param fin `true` if this is the last frame in the message.
 
         @param buffers One or more buffers containing the frame's
         payload data.
+
+        @throws boost::system::system_error Thrown on failure.
     */
     template<class ConstBufferSequence>
     void
     write_frame(bool fin, ConstBufferSequence const& buffers);
 
-    /** Send a frame.
+    /** Send a message frame on the stream.
 
-        This function is used to write a frame to a stream. The
+        This function is used to write a frame to the stream. The
         call will block until one of the following conditions is true:
 
-        @li All of the data in the supplied buffers has been written.
+        @li The entire frame is sent.
 
         @li An error occurs.
 
         This operation is implemented in terms of one or more calls
-        to the stream's write_some function. The actual payload sent
+        to the stream's `write_some` function. The actual payload sent
         may be transformed as per the WebSocket protocol settings.
 
         If this is the beginning of a new message, the message opcode
         will be set to text or binary as per the current setting of
-        the `message_type` option.
+        the @ref message_type option. The actual payload sent
+        may be transformed as per the WebSocket protocol settings.
 
         @param fin `true` if this is the last frame in the message.
 
@@ -1081,19 +1352,29 @@ public:
     write_frame(bool fin,
         ConstBufferSequence const& buffers, error_code& ec);
 
-    /** Start sending a frame asynchronously.
+    /** Start an asynchronous operation to send a message frame on the stream.
 
-        This function is used to asynchronously write a WebSocket
-        frame on the stream. This function call always returns
-        immediately.
+        This function is used to asynchronously write a message frame
+        on the stream. This function call always returns immediately.
+        The asynchronous operation will continue until one of the following
+        conditions is true:
+
+        @li The entire frame is sent.
+
+        @li An error occurs.
+
+        This operation is implemented in terms of one or more calls
+        to the next layer's `async_write_some` functions, and is known
+        as a <em>composed operation</em>. The actual payload sent
+        may be transformed as per the WebSocket protocol settings. The
+        program must ensure that the stream performs no other write
+        operations (such as stream::async_write, stream::async_write_frame,
+        or stream::async_close).
 
         If this is the beginning of a new message, the message opcode
         will be set to text or binary as per the current setting of
-        the `message_type` option.
-
-        This operation is implemented in terms of one or more calls
-        to the stream's async_write_some function. The actual payload
-        sent may be transformed as per the WebSocket protocol settings.
+        the @ref message_type option. The actual payload sent
+        may be transformed as per the WebSocket protocol settings.
 
         @param fin A bool indicating whether or not the frame is the
         last frame in the corresponding WebSockets message.
@@ -1113,8 +1394,12 @@ public:
         ); @endcode
     */
     template<class ConstBufferSequence, class WriteHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
+    #endif
     async_write_frame(bool fin,
         ConstBufferSequence const& buffers, WriteHandler&& handler);
 

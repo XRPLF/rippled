@@ -5,8 +5,6 @@
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ]
 
-[section:types Type Requirements]
-
 
 
 [section:Body Body]
@@ -57,10 +55,10 @@ In this table:
 
 [section:BufferSequence BufferSequence]
 
-A `BufferSequence` meets [*one of] the following requirements:
+A `BufferSequence` is a type meeting either of the following requirements:
 
-* `ConstBufferSequence`
-* `MutableBufferSequence`
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*`ConstBufferSequence`]]
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*`MutableBufferSequence`]]
 
 [endsect]
 
@@ -223,7 +221,7 @@ In this table:
 * `m`  denotes a value of type `message const&` where
         `std::is_same<decltype(m.body), Body::value_type>:value == true`.
 
-* `rc` is an object of type [link beast.reference.http__resume_context resume_context].
+* `rc` is an object of type [link beast.ref.http__resume_context resume_context].
 
 * `ec` is a value of type `error_code&`.
 
@@ -373,74 +371,3 @@ public:
 
 [endsect]
 
-
-
-[section:Stream Stream]
-
-A `Stream` meets the following requirements:
-
-* `SyncReadStream`
-* `SyncWriteStream`
-* `AsyncReadStream`
-* `AsyncWriteStream`
-
-[endsect]
-
-
-
-[section:Streambuf Streambuf]
-
-In the table below, `X` denotes a class, `a` denotes a value
-of type `X`, `n` denotes a value convertible to `std::size_t`,
-and `U` and `T` denote unspecified types.
-
-[table Streambuf requirements
-[[operation] [type] [semantics, pre/post-conditions]]
-[
-    [`X::const_buffers_type`]
-    [`T`]
-    [`T` meets the requirements for `ConstBufferSequence`.]
-]
-[
-    [`X::mutable_buffers_type`]
-    [`U`]
-    [`U` meets the requirements for `MutableBufferSequence`.]
-]
-[
-    [`a.commit(n)`]
-    [`void`]
-    [Moves bytes from the output sequence to the input sequence.]
-]
-[
-    [`a.consume(n)`]
-    [`void`]
-    [Removes bytes from the input sequence.]
-]
-[
-    [`a.data()`]
-    [`T`]
-    [Returns a list of buffers that represents the input sequence.]
-]
-[
-    [`a.prepare(n)`]
-    [`U`]
-    [Returns a list of buffers that represents the output sequence, with
-    the given size.]
-]
-[
-    [`a.size()`]
-    [`std::size_t`]
-    [Returns the size of the input sequence.]
-]
-[
-    [`a.max_size()`]
-    [`std::size_t`]
-    [Returns the maximum size of the `Streambuf`.]
-]
-]
-
-[endsect]
-
-
-
-[endsect]

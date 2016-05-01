@@ -14,7 +14,6 @@
 #include <string>
 
 namespace beast {
-namespace test {
 
 class prepare_buffers_test : public beast::detail::unit_test::suite
 {
@@ -95,7 +94,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(prepare_buffers,asio,beast);
+BEAST_DEFINE_TESTSUITE(prepare_buffers,core,beast);
 
-} // test
 } // beast

@@ -5,11 +5,11 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_BODY_WRITER_HPP
-#define BEAST_HTTP_BODY_WRITER_HPP
+#ifndef BEAST_HTTP_BODY_TYPE_HPP
+#define BEAST_HTTP_BODY_TYPE_HPP
 
-// Convenience header to include everything necessary for
-// declaring an object meeting the BodyWriter requirements.
+// Convenience header to include everything
+// needed when declarating a user defined Body type.
 
 #include <beast/http/error.hpp>
 #include <beast/http/message.hpp>

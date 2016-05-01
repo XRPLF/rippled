@@ -5,12 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_HPP_INCLUDED
-#define BEAST_HTTP_HPP_INCLUDED
+#ifndef BEAST_HTTP_HPP
+#define BEAST_HTTP_HPP
 
 #include <beast/http/basic_headers.hpp>
 #include <beast/http/basic_parser_v1.hpp>
-#include <beast/http/body_writer.hpp>
+#include <beast/http/body_type.hpp>
 #include <beast/http/empty_body.hpp>
 #include <beast/http/error.hpp>
 #include <beast/http/headers.hpp>

@@ -85,7 +85,7 @@ public:
 
         template<class MutableBufferSequence, class ReadHandler>
         typename async_completion<ReadHandler,
-            void(std::size_t, error_code)>::result_type
+            void(error_code, std::size_t)>::result_type
         async_read_some(MutableBufferSequence const& buffers,
             ReadHandler&& handler)
         {
@@ -120,7 +120,7 @@ public:
 
         template<class ConstBuffeSequence, class WriteHandler>
         typename async_completion<WriteHandler,
-            void(std::size_t, error_code)>::result_type
+            void(error_code, std::size_t)>::result_type
         async_write_some(ConstBuffeSequence const& buffers,
             WriteHandler&& handler)
         {

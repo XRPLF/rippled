@@ -1,0 +1,118 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+
+
+[section:BufferSequence BufferSequence]
+
+A `BufferSequence` is a type meeting either of the following requirements:
+
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*`ConstBufferSequence`]]
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*`MutableBufferSequence`]]
+
+[endsect]
+
+
+
+[section:stream Streams]
+
+Stream types represent objects capable of performing synchronous or
+asynchronous I/O. They are based on concepts from `boost::asio`.
+
+[heading:Stream Stream]
+
+A type modeling [*`Stream`] meets either or both of the following requirements:
+
+* [link beast.types.stream.AsyncStream [*`AsyncStream`]]
+* [link beast.types.stream.SyncStream [*`SyncStream`]]
+
+[heading:AsyncStream AsyncStream]
+
+A type modeling [*`AsyncStream`] meets the following requirements:
+
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncReadStream.html [*`AsyncReadStream`]]
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncWriteStream.html [*`AsyncWriteStream`]]
+
+[heading:SyncStream SyncStream]
+
+A type modeling [*`SyncStream`] meets the following requirements:
+
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncReadStream.html [*`SyncReadStream`]]
+* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncWriteStream.html [*`SyncWriteStream`]]
+
+[endsect]
+
+
+
+[section:Streambuf Streambuf]
+
+In the table below:
+
+* `X` denotes a class
+* `a` denotes a value of type `X`
+* `n` denotes a value convertible to `std::size_t`
+* `U`, `T` denote unspecified types.
+
+[table Streambuf requirements
+[[operation] [type] [semantics, pre/post-conditions]]
+[
+    [`X::const_buffers_type`]
+    [`T`]
+    [`T` meets the requirements for `ConstBufferSequence`.]
+]
+[
+    [`X::mutable_buffers_type`]
+    [`U`]
+    [`U` meets the requirements for `MutableBufferSequence`.]
+]
+[
+    [`a.commit(n)`]
+    [`void`]
+    [Moves bytes from the output sequence to the input sequence.]
+]
+[
+    [`a.consume(n)`]
+    [`void`]
+    [Removes bytes from the input sequence.]
+]
+[
+    [`a.data()`]
+    [`T`]
+    [Returns a list of buffers that represents the input sequence.]
+]
+[
+    [`a.prepare(n)`]
+    [`U`]
+    [Returns a list of buffers that represents the output sequence, with
+    the given size.]
+]
+[
+    [`a.size()`]
+    [`std::size_t`]
+    [Returns the size of the input sequence.]
+]
+[
+    [`a.max_size()`]
+    [`std::size_t`]
+    [Returns the maximum size of the `Streambuf`.]
+]
+[
+    [`read_size_helper(a, n)`]
+    [`std::size_t`]
+    [
+        Returns the suggested number of bytes to read into the output
+        sequence where `n` is an upper limit on this value. One possible
+        implementation is to return the number of bytes that may be prepared
+        without causing a dynamic allocation or `n`, whichever is smaller.
+        Calls to `read_size_helper` will be made without namespace
+        qualification, to allow the rules for argument dependent lookup to
+        take effect.
+    ]
+]
+]
+
+[endsect]

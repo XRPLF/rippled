@@ -103,6 +103,11 @@ WARN_LOGFILE           =
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT = \
+        ../include/beast/ \
+        ../include/beast/http \
+        ../include/beast/websocket \
+        ../include/beast/doc_debug.hpp \
+
         ../include/beast/async_completion.hpp \
         ../include/beast/basic_streambuf.hpp \
         ../include/beast/bind_handler.hpp \
@@ -121,7 +126,7 @@ INPUT = \
         ../include/beast/websocket.hpp \
         ../include/beast/write_streambuf.hpp \
         ../include/beast/http/basic_headers.hpp \
-        ../include/beast/http/basic_parser.hpp \
+        ../include/beast/http/basic_parser_v1.hpp \
         ../include/beast/http/body_writer.hpp \
         ../include/beast/http/chunk_encode.hpp \
         ../include/beast/http/empty_body.hpp \

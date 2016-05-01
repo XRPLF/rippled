@@ -20,7 +20,7 @@
 #ifndef BEAST_EXAMPLE_FILE_BODY_H_INCLUDED
 #define BEAST_EXAMPLE_FILE_BODY_H_INCLUDED
 
-#include <beast/http/body_writer.hpp>
+#include <beast/http/body_type.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/filesystem.hpp>
 #include <cstdio>

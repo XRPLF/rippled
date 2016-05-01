@@ -9,7 +9,10 @@
 #define BEAST_IMPL_STREAMBUF_READSTREAM_IPP
 
 #include <beast/bind_handler.hpp>
+#include <beast/handler_concepts.hpp>
 #include <beast/handler_alloc.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 namespace beast {
 
@@ -157,8 +160,6 @@ streambuf_readstream<Stream, Streambuf>::
 streambuf_readstream(Args&&... args)
     : next_layer_(std::forward<Args>(args)...)
 {
-    static_assert(is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
 }
 
 template<class Stream, class Streambuf>
@@ -175,7 +176,7 @@ async_write_some(ConstBufferSequence const& buffers,
     static_assert(is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
-    static_assert(is_Handler<WriteHandler,
+    static_assert(is_CompletionHandler<WriteHandler,
         void(error_code, std::size_t)>::value,
             "WriteHandler requirements not met");
     return next_layer_.async_write_some(buffers,
