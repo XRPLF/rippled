@@ -5,12 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_PARSER_HPP
-#define BEAST_HTTP_PARSER_HPP
+#ifndef BEAST_HTTP_PARSER_V1_HPP
+#define BEAST_HTTP_PARSER_V1_HPP
 
-#include <beast/http/basic_parser.hpp>
+#include <beast/http/basic_parser_v1.hpp>
 #include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/message_v1.hpp>
 #include <boost/optional.hpp>
 #include <functional>
 #include <string>
@@ -35,15 +35,20 @@ struct parser_response
 
 } // detail
 
+/** A parser for producing HTTP/1 messages.
+
+    This class uses the basic HTTP/1 wire format parser to convert
+    a series of octets into a `message_v1`.
+*/
 template<bool isRequest, class Body, class Headers>
-class parser
-    : public basic_parser<isRequest,
-        parser<isRequest, Body, Headers>>
+class parser_v1
+    : public basic_parser_v1<isRequest,
+        parser_v1<isRequest, Body, Headers>>
     , private std::conditional<isRequest,
         detail::parser_request, detail::parser_response>::type
 {
     using message_type =
-        message<isRequest, Body, Headers>;
+        message_v1<isRequest, Body, Headers>;
 
     std::string field_;
     std::string value_;
@@ -51,9 +56,9 @@ class parser
     typename message_type::body_type::reader r_;
 
 public:
-    parser(parser&&) = default;
+    parser_v1(parser_v1&&) = default;
 
-    parser()
+    parser_v1()
         : r_(m_)
     {
     }
@@ -65,7 +70,7 @@ public:
     }
 
 private:
-    friend class basic_parser<isRequest, parser>;
+    friend class basic_parser_v1<isRequest, parser_v1>;
 
     void flush()
     {

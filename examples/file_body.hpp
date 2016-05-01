@@ -20,8 +20,7 @@
 #ifndef BEAST_EXAMPLE_FILE_BODY_H_INCLUDED
 #define BEAST_EXAMPLE_FILE_BODY_H_INCLUDED
 
-#include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
+#include <beast/http/body_writer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/filesystem.hpp>
 #include <cstdio>

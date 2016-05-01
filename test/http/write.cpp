@@ -89,7 +89,7 @@ public:
 
     template<bool isRequest, class Body, class Headers>
     std::string
-    str(message<isRequest, Body, Headers> const& m)
+    str(message_v1<isRequest, Body, Headers> const& m)
     {
         string_SyncStream ss;
         write(ss, m);
@@ -101,7 +101,7 @@ public:
     {
         // auto content-length HTTP/1.0
         {
-            message<true, string_body, headers> m{{
+            message_v1<true, string_body, headers> m{{
                 "GET", "/", 10}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -116,7 +116,7 @@ public:
         }
         // keep-alive HTTP/1.0
         {
-            message<true, string_body, headers> m{{
+            message_v1<true, string_body, headers> m{{
                 "GET", "/", 10}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -132,7 +132,7 @@ public:
         }
         // upgrade HTTP/1.0
         {
-            message<true, string_body, headers> m{{
+            message_v1<true, string_body, headers> m{{
                 "GET", "/", 10}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -148,7 +148,7 @@ public:
         }
         // no content-length HTTP/1.0
         {
-            message<true, test_Body, headers> m{{
+            message_v1<true, test_Body, headers> m{{
                 "GET", "/", 10}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -166,7 +166,7 @@ public:
         }
         // auto content-length HTTP/1.1
         {
-            message<true, string_body, headers> m{{
+            message_v1<true, string_body, headers> m{{
                 "GET", "/", 11}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -181,7 +181,7 @@ public:
         }
         // close HTTP/1.1
         {
-            message<true, string_body, headers> m{{
+            message_v1<true, string_body, headers> m{{
                 "GET", "/", 11}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -201,7 +201,7 @@ public:
         }
         // upgrade HTTP/1.1
         {
-            message<true, empty_body, headers> m{{
+            message_v1<true, empty_body, headers> m{{
                 "GET", "/", 11}};
             m.headers.insert("User-Agent", "test");
             prepare(m, connection::upgrade);
@@ -214,7 +214,7 @@ public:
         }
         // no content-length HTTP/1.1
         {
-            message<true, test_Body, headers> m{{
+            message_v1<true, test_Body, headers> m{{
                 "GET", "/", 11}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -236,7 +236,7 @@ public:
 
     void testConvert()
     {
-        message<true, string_body, headers> m{{
+        message_v1<true, string_body, headers> m{{
             "GET", "/", 11}};
         m.headers.insert("User-Agent", "test");
         m.body = "*";

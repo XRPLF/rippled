@@ -6,7 +6,7 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
 
 #include <beast/http/headers.hpp>
 #include <beast/http/string_body.hpp>
@@ -23,7 +23,7 @@ public:
         using boost::asio::buffer;
         {
             error_code ec;
-            parser<true, string_body,
+            parser_v1<true, string_body,
                 basic_headers<std::allocator<char>>> p;
             std::string const s =
                 "GET / HTTP/1.1\r\n"
@@ -43,7 +43,7 @@ public:
         }
         {
             error_code ec;
-            parser<false, string_body,
+            parser_v1<false, string_body,
                 basic_headers<std::allocator<char>>> p;
             std::string const s =
                 "HTTP/1.1 200 OK\r\n"

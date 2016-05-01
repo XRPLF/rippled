@@ -8,8 +8,7 @@
 #ifndef BEAST_HTTP_EMPTY_BODY_HPP
 #define BEAST_HTTP_EMPTY_BODY_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/body_writer.hpp>
 #include <beast/streambuf.hpp>
 #include <boost/asio/buffer.hpp>
 #include <memory>

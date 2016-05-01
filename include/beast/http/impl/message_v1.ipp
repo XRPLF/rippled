@@ -5,33 +5,21 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_IMPL_MESSAGE_IPP
-#define BEAST_HTTP_IMPL_MESSAGE_IPP
+#ifndef BEAST_HTTP_IMPL_MESSAGE_V1_IPP
+#define BEAST_HTTP_IMPL_MESSAGE_V1_IPP
 
-#include <beast/http/resume_context.hpp>
 #include <beast/http/rfc2616.hpp>
-#include <beast/write_streambuf.hpp>
+#include <beast/http/detail/has_content_length.hpp>
 #include <beast/type_check.hpp>
-#include <beast/http/detail/write_preparation.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/logic/tribool.hpp>
 #include <boost/optional.hpp>
-#include <condition_variable>
-#include <mutex>
 #include <stdexcept>
 
 namespace beast {
 namespace http {
 
 template<bool isRequest, class Body, class Headers>
-message<isRequest, Body, Headers>::
-message()
-{
-}
-
-template<bool isRequest, class Body, class Headers>
-message<isRequest, Body, Headers>::
-message(request_params params)
+message_v1<isRequest, Body, Headers>::
+message_v1(request_params params)
 {
     static_assert(isRequest, "message is not a request");
     this->method = params.method;
@@ -40,8 +28,8 @@ message(request_params params)
 }
 
 template<bool isRequest, class Body, class Headers>
-message<isRequest, Body, Headers>::
-message(response_params params)
+message_v1<isRequest, Body, Headers>::
+message_v1(response_params params)
 {
     static_assert(! isRequest, "message is not a response");
     this->status = params.status;
@@ -49,126 +37,11 @@ message(response_params params)
     version = params.version;
 }
 
-template<bool isRequest, class Body, class Headers>
-template<class Streambuf>
-void
-message<isRequest, Body, Headers>::
-write_firstline(Streambuf& streambuf,
-    std::true_type) const
-{
-    write(streambuf, this->method);
-    write(streambuf, " ");
-    write(streambuf, this->url);
-    switch(version)
-    {
-    case 10:
-        write(streambuf, " HTTP/1.0\r\n");
-        break;
-    case 11:
-        write(streambuf, " HTTP/1.1\r\n");
-        break;
-    default:
-        write(streambuf, " HTTP/");
-        write(streambuf, version / 10);
-        write(streambuf, ".");
-        write(streambuf, version % 10);
-        write(streambuf, "\r\n");
-        break;
-    }
-}
-
-template<bool isRequest, class Body, class Headers>
-template<class Streambuf>
-void
-message<isRequest, Body, Headers>::
-write_firstline(Streambuf& streambuf,
-    std::false_type) const
-{
-    switch(version)
-    {
-    case 10:
-        write(streambuf, "HTTP/1.0 ");
-        break;
-    case 11:
-        write(streambuf, "HTTP/1.1 ");
-        break;
-    default:
-        write(streambuf, " HTTP/");
-        write(streambuf, version / 10);
-        write(streambuf, ".");
-        write(streambuf, version % 10);
-        write(streambuf, " ");
-        break;
-    }
-    write(streambuf, this->status);
-    write(streambuf, " ");
-    write(streambuf, this->reason);
-    write(streambuf, "\r\n");
-}
-
 //------------------------------------------------------------------------------
 
 template<bool isRequest, class Body, class Headers>
-void
-set_connection(bool keep_alive,
-    message<isRequest, Body, Headers>& req)
-{
-    if(req.version >= 11)
-    {
-        if(! keep_alive)
-            req.headers.replace("Connection", "close");
-        else
-            req.headers.erase("Connection");
-    }
-    else
-    {
-        if(keep_alive)
-            req.headers.replace("Connection", "keep-alive");
-        else
-            req.headers.erase("Connection");
-    }
-}
-
-template<class Body, class Headers,
-    class OtherBody, class OtherAllocator>
-void
-set_connection(bool keep_alive,
-    message<false, Body, Headers>& resp,
-        message<true, OtherBody, OtherAllocator> const& req)
-{
-    if(req.version >= 11)
-    {
-        if(rfc2616::token_in_list(req["Connection"], "close"))
-            keep_alive = false;
-    }
-    else
-    {
-        if(! rfc2616::token_in_list(req["Connection"], "keep-alive"))
-            keep_alive = false;
-    }
-    set_connection(keep_alive, resp);
-}
-
-template<class Streambuf, class FieldSequence>
-void
-write_fields(Streambuf& streambuf, FieldSequence const& fields)
-{
-    static_assert(is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
-    //static_assert(is_FieldSequence<FieldSequence>::value,
-    //    "FieldSequence requirements not met");
-    for(auto const& field : fields)
-    {
-        write(streambuf, field.name());
-        write(streambuf, ": ");
-        write(streambuf, field.value());
-        write(streambuf, "\r\n");
-    }
-}
-
-template<bool isRequest, class Body, class Headers>
 bool
-is_keep_alive(message<isRequest, Body, Headers> const& msg)
+is_keep_alive(message_v1<isRequest, Body, Headers> const& msg)
 {
     if(msg.version >= 11)
     {
@@ -185,7 +58,7 @@ is_keep_alive(message<isRequest, Body, Headers> const& msg)
 
 template<bool isRequest, class Body, class Headers>
 bool
-is_upgrade(message<isRequest, Body, Headers> const& msg)
+is_upgrade(message_v1<isRequest, Body, Headers> const& msg)
 {
     if(msg.version < 11)
         return false;
@@ -207,14 +80,14 @@ template<bool isRequest, class Body, class Headers>
 inline
 void
 prepare_options(prepare_info& pi,
-    message<isRequest, Body, Headers>& msg)
+    message_v1<isRequest, Body, Headers>& msg)
 {
 }
 
 template<bool isRequest, class Body, class Headers>
 void
 prepare_option(prepare_info& pi,
-    message<isRequest, Body, Headers>& msg,
+    message_v1<isRequest, Body, Headers>& msg,
         connection value)
 {
     pi.connection_value = value;
@@ -225,7 +98,7 @@ template<
     class Opt, class... Opts>
 void
 prepare_options(prepare_info& pi,
-    message<isRequest, Body, Headers>& msg,
+    message_v1<isRequest, Body, Headers>& msg,
         Opt&& opt, Opts&&... opts)
 {
     prepare_option(pi, msg, opt);
@@ -236,7 +109,7 @@ prepare_options(prepare_info& pi,
 template<bool isRequest, class Body, class Headers>
 void
 prepare_content_length(prepare_info& pi,
-    message<isRequest, Body, Headers> const& msg,
+    message_v1<isRequest, Body, Headers> const& msg,
         std::true_type)
 {
     typename Body::writer w(msg);
@@ -247,7 +120,7 @@ prepare_content_length(prepare_info& pi,
 template<bool isRequest, class Body, class Headers>
 void
 prepare_content_length(prepare_info& pi,
-    message<isRequest, Body, Headers> const& msg,
+    message_v1<isRequest, Body, Headers> const& msg,
         std::false_type)
 {
     pi.content_length = boost::none;
@@ -258,7 +131,7 @@ prepare_content_length(prepare_info& pi,
 template<bool isRequest, class Body, class Headers>
 void
 prepare_connection(
-    message<isRequest, Body, Headers>& msg)
+    message_v1<isRequest, Body, Headers>& msg)
 {
     if(msg.version >= 11)
     {
@@ -286,7 +159,7 @@ template<
     bool isRequest, class Body, class Headers,
     class... Options>
 void
-prepare(message<isRequest, Body, Headers>& msg,
+prepare(message_v1<isRequest, Body, Headers>& msg,
     Options&&... options)
 {
     // VFALCO TODO

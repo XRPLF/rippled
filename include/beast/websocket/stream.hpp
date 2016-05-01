@@ -10,11 +10,11 @@
 
 #include <beast/websocket/option.hpp>
 #include <beast/websocket/detail/stream_base.hpp>
+#include <beast/http/message_v1.hpp>
+#include <beast/http/string_body.hpp>
 #include <beast/streambuf_readstream.hpp>
 #include <beast/async_completion.hpp>
 #include <beast/detail/get_lowest_layer.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/string_body.hpp>
 #include <boost/asio.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <algorithm>
@@ -495,8 +495,7 @@ public:
     // VFALCO TODO This should also take a streambuf with any leftover bytes.
     template<class Body, class Headers>
     void
-    accept(http::message<true,
-        Body, Headers> const& request);
+    accept(http::request_v1<Body, Headers> const& request);
 
     /** Respond to a WebSocket HTTP Upgrade request
 
@@ -525,8 +524,8 @@ public:
     */
     template<class Body, class Headers>
     void
-    accept(http::message<true,
-        Body, Headers> const& request, error_code& ec);
+    accept(http::request_v1<Body, Headers> const& request,
+        error_code& ec);
 
     /** Start reading and responding to a WebSocket HTTP Upgrade request.
 
@@ -560,8 +559,8 @@ public:
     template<class Body, class Headers, class AcceptHandler>
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    async_accept(http::message<true,
-        Body, Headers> const& request, AcceptHandler&& handler);
+    async_accept(http::request_v1<Body, Headers> const& request,
+        AcceptHandler&& handler);
 
     /** Send a WebSocket Upgrade request.
 
@@ -1129,18 +1128,18 @@ private:
     template<class Buffers, class Handler> class write_op;
     template<class Buffers, class Handler> class write_frame_op;
 
-    http::request<http::empty_body>
+    http::request_v1<http::empty_body>
     build_request(boost::string_ref const& host,
         boost::string_ref const& resource,
             std::string& key);
 
     template<class Body, class Headers>
-    http::response<http::string_body>
-    build_response(http::message<true, Body, Headers> const& req);
+    http::response_v1<http::string_body>
+    build_response(http::request_v1<Body, Headers> const& req);
 
     template<class Body, class Headers>
     void
-    do_response(http::message<false, Body, Headers> const& resp,
+    do_response(http::response_v1<Body, Headers> const& resp,
         boost::string_ref const& key, error_code& ec);
 
     void

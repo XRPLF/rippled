@@ -268,7 +268,7 @@ public:
     */
     template<bool isRequest, class Body, class Headers>
     void
-    read(message<isRequest, Body, Headers>& msg)
+    read(message_v1<isRequest, Body, Headers>& msg)
     {
         error_code ec;
         read(msg, ec);
@@ -295,7 +295,7 @@ public:
     */
     template<bool isRequest, class Body, class Headers>
     void
-    read(message<isRequest, Body, Headers>& msg,
+    read(message_v1<isRequest, Body, Headers>& msg,
         error_code& ec);
 
     /** Start reading a HTTP message from the stream asynchronously.
@@ -339,7 +339,7 @@ public:
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
     #endif
-    async_read(message<isRequest, Body, Headers>& msg,
+    async_read(message_v1<isRequest, Body, Headers>& msg,
         ReadHandler&& handler);
 
     /** Write a HTTP message to the stream.
@@ -365,7 +365,7 @@ public:
     */
     template<bool isRequest, class Body, class Headers>
     void
-    write(message<isRequest, Body, Headers> const& msg)
+    write(message_v1<isRequest, Body, Headers> const& msg)
     {
         error_code ec;
         write(msg, ec);
@@ -396,7 +396,7 @@ public:
     */
     template<bool isRequest, class Body, class Headers>
     void
-    write(message<isRequest, Body, Headers> const& msg,
+    write(message_v1<isRequest, Body, Headers> const& msg,
         error_code& ec);
 
     /** Start pipelining a HTTP message to the stream asynchronously.
@@ -434,7 +434,7 @@ public:
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
     #endif
-    async_write(message<isRequest, Body, Headers> const& msg,
+    async_write(message_v1<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler);
 
     /** Start pipelining a HTTP message to the stream asynchronously.
@@ -473,7 +473,7 @@ public:
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
     #endif
-    async_write(message<isRequest, Body, Headers>&& msg,
+    async_write(message_v1<isRequest, Body, Headers>&& msg,
         WriteHandler&& handler);
 
 private:

@@ -5,13 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_BASIC_PARSER_HPP
-#define BEAST_HTTP_BASIC_PARSER_HPP
+#ifndef BEAST_HTTP_BASIC_PARSER_v1_HPP
+#define BEAST_HTTP_BASIC_PARSER_v1_HPP
 
 #include <beast/http/message.hpp>
 #include <beast/http/parse_error.hpp>
 #include <beast/http/rfc7230.hpp>
-#include <beast/http/detail/basic_parser.hpp>
+#include <beast/http/detail/basic_parser_v1.hpp>
 #include <beast/type_check.hpp>
 #include <boost/asio/buffer.hpp>
 #include <array>
@@ -37,7 +37,7 @@ enum values
 };
 } // parse_flag
 
-/** Parser for producing HTTP requests and responses.
+/** Base class for parsing HTTP/1 requests and responses.
 
     During parsing, callbacks will be made to the derived class
     if those members are present (detected through SFINAE). The
@@ -84,7 +84,7 @@ enum values
     @li `void on_complete(error_code& ec)`
 
         Called when the entire message has been parsed successfully.
-        At this point, basic_parser::complete() returns `true`, and
+        At this point, basic_parser_v1::complete() returns `true`, and
         the parser is ready to parse another message if keep_alive()
         would return `true`.
 
@@ -109,10 +109,10 @@ enum values
     and the error is returned to the caller.
 */
 template<bool isRequest, class Derived>
-class basic_parser
+class basic_parser_v1
 {
 private:
-    using self = basic_parser;
+    using self = basic_parser_v1;
     typedef void(self::*pmf_t)(error_code&, boost::string_ref const&);
 
     static std::uint64_t constexpr no_content_length =
@@ -237,13 +237,13 @@ private:
 
 public:
     /// Copy constructor.
-    basic_parser(basic_parser const&) = default;
+    basic_parser_v1(basic_parser_v1 const&) = default;
 
     /// Copy assignment.
-    basic_parser& operator=(basic_parser const&) = default;
+    basic_parser_v1& operator=(basic_parser_v1 const&) = default;
 
     /// Constructor
-    basic_parser()
+    basic_parser_v1()
     {
         init(std::integral_constant<bool, isRequest>{});
     }
@@ -759,6 +759,6 @@ private:
 } // http
 } // beast
 
-#include <beast/http/impl/basic_parser.ipp>
+#include <beast/http/impl/basic_parser_v1.ipp>
 
 #endif

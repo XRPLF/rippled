@@ -9,9 +9,8 @@
 #define BEAST_HTTP_WRITE_HPP
 
 #include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/message_v1.hpp>
 #include <beast/async_completion.hpp>
-#include <beast/type_check.hpp>
 #include <boost/system/error_code.hpp>
 #include <ostream>
 #include <type_traits>
@@ -19,7 +18,7 @@
 namespace beast {
 namespace http {
 
-/** Write a HTTP message to a stream.
+/** Write a HTTP/1 message to a stream.
 
     @param stream The stream to send the message on.
 
@@ -31,15 +30,9 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Headers>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Headers> const& msg)
-{
-    error_code ec;
-    write(stream, msg, ec);
-    if(ec)
-        throw boost::system::system_error{ec};
-}
+    message_v1<isRequest, Body, Headers> const& msg);
 
-/** Write a HTTP message to a stream.
+/** Write a HTTP/1 message to a stream.
 
     @param stream The stream to send the message on.
 
@@ -51,10 +44,10 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Headers>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Headers> const& msg,
+    message_v1<isRequest, Body, Headers> const& msg,
         error_code& ec);
 
-/** Start writing a HTTP message to a stream asynchronously.
+/** Start writing a HTTP/1 message to a stream asynchronously.
 
     @param stream The stream to send the message on.
 
@@ -84,12 +77,12 @@ typename async_completion<
     WriteHandler, void(error_code)>::result_type
 #endif
 async_write(AsyncWriteStream& stream,
-    message<isRequest, Body, Headers> const& msg,
+    message_v1<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler);
 
-/** Serialize a message to an ostream.
+/** Serialize a HTTP/1 message to an ostream.
 
-    The function converts the message to its HTTP/1.* serialized
+    The function converts the message to its HTTP/1 serialized
     representation and stores the result in the output stream.
 
     @param os The ostream to write to.
@@ -99,7 +92,7 @@ async_write(AsyncWriteStream& stream,
 template<bool isRequest, class Body, class Headers>
 std::ostream&
 operator<<(std::ostream& os,
-    message<isRequest, Body, Headers> const& msg);
+    message_v1<isRequest, Body, Headers> const& msg);
 
 } // http
 } // beast

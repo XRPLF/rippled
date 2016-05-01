@@ -22,7 +22,7 @@
 #include <mutex>
 #include <thread>
 
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
 
 namespace beast {
 namespace websocket {

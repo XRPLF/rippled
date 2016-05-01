@@ -6,7 +6,7 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/http/basic_parser.hpp>
+#include <beast/http/basic_parser_v1.hpp>
 
 #include "message_fuzz.hpp"
 
@@ -27,7 +27,7 @@
 namespace beast {
 namespace http {
 
-class basic_parser_test : public beast::detail::unit_test::suite
+class basic_parser_v1_test : public beast::detail::unit_test::suite
 {
     std::mt19937 rng_;
 
@@ -47,9 +47,9 @@ public:
 
     template<bool isRequest>
     struct cb_checker
-        : public basic_parser<isRequest, cb_checker<isRequest>>
+        : public basic_parser_v1<isRequest, cb_checker<isRequest>>
         , std::conditional<isRequest,
-                cb_req_checker, cb_res_checker>::type
+            cb_req_checker, cb_res_checker>::type
 
     {
         bool field = false;
@@ -59,7 +59,7 @@ public:
         bool complete = false;
 
     private:
-        friend class basic_parser<isRequest, cb_checker<isRequest>>;
+        friend class basic_parser_v1<isRequest, cb_checker<isRequest>>;
 
         void on_method(boost::string_ref const&, error_code&)
         {
@@ -129,13 +129,13 @@ public:
     }
 
     template<bool isRequest>
-    struct null_parser : basic_parser<isRequest, null_parser<isRequest>>
+    struct null_parser : basic_parser_v1<isRequest, null_parser<isRequest>>
     {
     };
 
     template<bool isRequest>
     class test_parser :
-        public basic_parser<isRequest, test_parser<isRequest>>
+        public basic_parser_v1<isRequest, test_parser<isRequest>>
     {
         std::string field_;
         std::string value_;
@@ -635,7 +635,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(basic_parser,http,beast);
+BEAST_DEFINE_TESTSUITE(basic_parser_v1,http,beast);
 
 } // http
 } // beast

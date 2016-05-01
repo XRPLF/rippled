@@ -33,11 +33,12 @@ add_executable (http-tests
     ${BEAST_INCLUDES}
     main.cpp
     http/basic_headers.cpp
-    http/basic_parser.cpp
+    http/basic_parser_v1.cpp
     http/empty_body.cpp
     http/error.cpp
     http/headers.cpp
     http/message.cpp
+    http/message_v1.cpp
     http/parse_error.cpp
     http/parser.cpp
     http/read.cpp

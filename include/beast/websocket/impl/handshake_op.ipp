@@ -10,7 +10,7 @@
 
 #include <beast/handler_alloc.hpp>
 #include <beast/http/empty_body.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/message_v1.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
 #include <cassert>
@@ -33,8 +33,8 @@ class stream<NextLayer>::handshake_op
         stream<NextLayer>& ws;
         Handler h;
         std::string key;
-        http::request<http::empty_body> req;
-        http::response<http::string_body> resp;
+        http::request_v1<http::empty_body> req;
+        http::response_v1<http::string_body> resp;
         bool cont;
         int state = 0;
 

@@ -97,7 +97,7 @@ public:
     }
 
     template<bool isRequest>
-    struct null_parser : basic_parser<isRequest, null_parser<isRequest>>
+    struct null_parser : basic_parser_v1<isRequest, null_parser<isRequest>>
     {
     };
 
@@ -108,10 +108,10 @@ public:
         static std::size_t constexpr Repeat = 50;
 
         log << "sizeof(request parser)  == " <<
-            sizeof(basic_parser<true, null_parser<true>>);
+            sizeof(basic_parser_v1<true, null_parser<true>>);
 
         log << "sizeof(response parser) == " <<
-            sizeof(basic_parser<false, null_parser<true>>);
+            sizeof(basic_parser_v1<false, null_parser<true>>);
 
         testcase << "Parser speed test, " <<
             ((Repeat * size_ + 512) / 1024) << "KB in " <<
@@ -127,13 +127,13 @@ public:
                     false, streambuf_body, headers>>(
                         Repeat, cres_);
             });
-        timedTest(Trials, "http::basic_parser",
+        timedTest(Trials, "http::basic_parser_v1",
             [&]
             {
-                testParser<parser<
+                testParser<parser_v1<
                     true, streambuf_body, headers>>(
                         Repeat, creq_);
-                testParser<parser<
+                testParser<parser_v1<
                     false, streambuf_body, headers>>(
                         Repeat, cres_);
             });

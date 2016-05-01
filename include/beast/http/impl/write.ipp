@@ -10,12 +10,13 @@
 
 #include <beast/http/resume_context.hpp>
 #include <beast/http/detail/chunk_encode.hpp>
-#include <beast/http/detail/write_preparation.hpp>
+#include <beast/http/detail/has_content_length.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/type_check.hpp>
+#include <beast/write_streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
@@ -28,6 +29,114 @@ namespace beast {
 namespace http {
 
 namespace detail {
+
+template<class Streambuf, class Body, class Headers>
+void
+write_firstline(Streambuf& streambuf,
+    message_v1<true, Body, Headers> const& msg)
+{
+    write(streambuf, msg.method);
+    write(streambuf, " ");
+    write(streambuf, msg.url);
+    switch(msg.version)
+    {
+    case 10:
+        write(streambuf, " HTTP/1.0\r\n");
+        break;
+    case 11:
+        write(streambuf, " HTTP/1.1\r\n");
+        break;
+    default:
+        write(streambuf, " HTTP/");
+        write(streambuf, msg.version / 10);
+        write(streambuf, ".");
+        write(streambuf, msg.version % 10);
+        write(streambuf, "\r\n");
+        break;
+    }
+}
+
+template<class Streambuf, class Body, class Headers>
+void
+write_firstline(Streambuf& streambuf,
+    message_v1<false, Body, Headers> const& msg)
+{
+    switch(msg.version)
+    {
+    case 10:
+        write(streambuf, "HTTP/1.0 ");
+        break;
+    case 11:
+        write(streambuf, "HTTP/1.1 ");
+        break;
+    default:
+        write(streambuf, " HTTP/");
+        write(streambuf, msg.version / 10);
+        write(streambuf, ".");
+        write(streambuf, msg.version % 10);
+        write(streambuf, " ");
+        break;
+    }
+    write(streambuf, msg.status);
+    write(streambuf, " ");
+    write(streambuf, msg.reason);
+    write(streambuf, "\r\n");
+}
+
+template<class Streambuf, class FieldSequence>
+void
+write_fields(Streambuf& streambuf, FieldSequence const& fields)
+{
+    static_assert(is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
+    //static_assert(is_FieldSequence<FieldSequence>::value,
+    //    "FieldSequence requirements not met");
+    for(auto const& field : fields)
+    {
+        write(streambuf, field.name());
+        write(streambuf, ": ");
+        write(streambuf, field.value());
+        write(streambuf, "\r\n");
+    }
+}
+
+template<bool isRequest, class Body, class Headers>
+struct write_preparation
+{
+    using headers_type =
+        basic_headers<std::allocator<char>>;
+
+    message_v1<isRequest, Body, Headers> const& msg;
+    typename Body::writer w;
+    streambuf sb;
+    bool chunked;
+    bool close;
+
+    explicit
+    write_preparation(
+            message_v1<isRequest, Body, Headers> const& msg_)
+        : msg(msg_)
+        , w(msg)
+        , chunked(rfc2616::token_in_list(
+            msg.headers["Transfer-Encoding"], "chunked"))
+        , close(rfc2616::token_in_list(
+            msg.headers["Connection"], "close") ||
+                (msg.version < 11 && ! msg.headers.exists(
+                    "Content-Length")))
+    {
+    }
+
+    void
+    init(error_code& ec)
+    {
+        w.init(ec);
+        if(ec)
+            return;
+        write_firstline(sb, msg);
+        write_fields(sb, msg.headers);
+        beast::write(sb, "\r\n");
+    }
+};
 
 template<class Stream, class Handler,
     bool isRequest, class Body, class Headers>
@@ -50,7 +159,7 @@ class write_op
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, Stream& s_,
-                message<isRequest, Body, Headers> const& m_)
+                message_v1<isRequest, Body, Headers> const& m_)
             : s(s_)
             , wp(m_)
             , h(std::forward<DeducedHandler>(h_))
@@ -356,7 +465,21 @@ template<class SyncWriteStream,
     bool isRequest, class Body, class Headers>
 void
 write(SyncWriteStream& stream,
-    message<isRequest, Body, Headers> const& msg,
+    message_v1<isRequest, Body, Headers> const& msg)
+{
+    static_assert(is_SyncWriteStream<SyncWriteStream>::value,
+        "SyncWriteStream requirements not met");
+    error_code ec;
+    write(stream, msg, ec);
+    if(ec)
+        throw boost::system::system_error{ec};
+}
+
+template<class SyncWriteStream,
+    bool isRequest, class Body, class Headers>
+void
+write(SyncWriteStream& stream,
+    message_v1<isRequest, Body, Headers> const& msg,
         boost::system::error_code& ec)
 {
     static_assert(is_SyncWriteStream<SyncWriteStream>::value,
@@ -441,7 +564,7 @@ template<class AsyncWriteStream,
 typename async_completion<
     WriteHandler, void(error_code)>::result_type
 async_write(AsyncWriteStream& stream,
-    message<isRequest, Body, Headers> const& msg,
+    message_v1<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler)
 {
     static_assert(
@@ -506,7 +629,7 @@ public:
 template<bool isRequest, class Body, class Headers>
 std::ostream&
 operator<<(std::ostream& os,
-    message<isRequest, Body, Headers> const& msg)
+    message_v1<isRequest, Body, Headers> const& msg)
 {
     detail::ostream_SyncStream oss(os);
     error_code ec;

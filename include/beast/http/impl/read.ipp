@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_IMPL_READ_IPP_HPP
 #define BEAST_HTTP_IMPL_READ_IPP_HPP
 
+#include <beast/http/parser_v1.hpp>
 #include <beast/bind_handler.hpp>
 #include <beast/handler_alloc.hpp>
 #include <cassert>
@@ -26,10 +27,10 @@ class read_op
         handler_alloc<char, Handler>;
 
     using parser_type =
-        parser<isRequest, Body, Headers>;
+        parser_v1<isRequest, Body, Headers>;
 
     using message_type =
-        message<isRequest, Body, Headers>;
+        message_v1<isRequest, Body, Headers>;
 
     struct data
     {
@@ -214,14 +215,14 @@ template<class SyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers>
 void
 read(SyncReadStream& stream, Streambuf& streambuf,
-    message<isRequest, Body, Headers>& m,
+    message_v1<isRequest, Body, Headers>& m,
         error_code& ec)
 {
     static_assert(is_SyncReadStream<SyncReadStream>::value,
         "SyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
-    parser<isRequest, Body, Headers> p;
+    parser_v1<isRequest, Body, Headers> p;
     bool started = false;
     for(;;)
     {
@@ -264,7 +265,7 @@ template<class AsyncReadStream, class Streambuf,
 typename async_completion<
     ReadHandler, void(error_code)>::result_type
 async_read(AsyncReadStream& stream, Streambuf& streambuf,
-    message<isRequest, Body, Headers>& m,
+    message_v1<isRequest, Body, Headers>& m,
         ReadHandler&& handler)
 {
     static_assert(is_AsyncReadStream<AsyncReadStream>::value,

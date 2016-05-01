@@ -10,7 +10,8 @@
 
 #include "nodejs-parser/http_parser.h"
 
-#include <beast/http/basic_parser.hpp>
+#include <beast/http/error.hpp>
+#include <beast/http/message_v1.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <beast/type_check.hpp>
 #include <boost/asio/buffer.hpp>
@@ -18,6 +19,7 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 namespace beast {
 namespace http {
@@ -730,19 +732,6 @@ nodejs_basic_parser<Derived>::cb_chunk_complete(http_parser*)
     return 0;
 }
 
-} // http
-} // beast
-
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
-#include <boost/optional.hpp>
-#include <functional>
-#include <type_traits>
-#include <utility>
-
-namespace beast {
-namespace http {
-
 /** A HTTP parser.
 
     The parser may only be used once.
@@ -752,7 +741,7 @@ class nodejs_parser
     : public nodejs_basic_parser<nodejs_parser<isRequest, Body, Headers>>
 {
     using message_type =
-        message<isRequest, Body, Headers>;
+        message_v1<isRequest, Body, Headers>;
 
     message_type m_;
     typename message_type::body_type::reader r_;

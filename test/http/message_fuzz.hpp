@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_TEST_MESSAGE_FUZZ_HPP
 #define BEAST_HTTP_TEST_MESSAGE_FUZZ_HPP
 
-#include <beast/http/detail/basic_parser.hpp>
+#include <beast/http/detail/basic_parser_v1.hpp>
 #include <beast/write_streambuf.hpp>
 #include <cstdint>
 #include <random>

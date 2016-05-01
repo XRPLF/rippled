@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_DETAIL_BASIC_PARSER_HPP
-#define BEAST_HTTP_DETAIL_BASIC_PARSER_HPP
+#ifndef BEAST_HTTP_DETAIL_BASIC_PARSER_V1_HPP
+#define BEAST_HTTP_DETAIL_BASIC_PARSER_V1_HPP
 
 #include <boost/system/error_code.hpp>
 #include <boost/utility/string_ref.hpp>
