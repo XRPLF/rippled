@@ -89,6 +89,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { telFAILED_PROCESSING,      { "telFAILED_PROCESSING",     "Failed to correctly process transaction."                                      } },
         { telINSUF_FEE_P,            { "telINSUF_FEE_P",           "Fee insufficient."                                                             } },
         { telNO_DST_PARTIAL,         { "telNO_DST_PARTIAL",        "Partial payment to create account not allowed."                                } },
+        { telCAN_NOT_QUEUE,          { "telCAN_NOT_QUEUE",         "Can not queue at this time." } },
 
         { temMALFORMED,              { "temMALFORMED",             "Malformed transaction."                                                        } },
         { temBAD_AMOUNT,             { "temBAD_AMOUNT",            "Can only send positive amounts."                                               } },
@@ -132,7 +133,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { terNO_LINE,                { "terNO_LINE",               "No such line."                                                                 } },
         { terPRE_SEQ,                { "terPRE_SEQ",               "Missing/inapplicable prior transaction."                                       } },
         { terOWNERS,                 { "terOWNERS",                "Non-zero owner count."                                                         } },
-        { terQUEUED,                 { "terQUEUED",                "Held until fee drops."                                                         } },
+        { terQUEUED,                 { "terQUEUED",                "Held until escalated fee drops."                                                         } },
 
         { tesSUCCESS,                { "tesSUCCESS",               "The transaction was applied. Only final in a validated ledger."                } },
     };

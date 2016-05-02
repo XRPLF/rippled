@@ -32,10 +32,6 @@ enum ApplyFlags
     // Signature already checked
     tapNO_CHECK_SIGN    = 0x01,
 
-    // We expect the transaction to have a later
-    // sequence number than the account in the ledger
-    tapPOST_SEQ         = 0x04,
-
     // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
     tapRETRY            = 0x20,

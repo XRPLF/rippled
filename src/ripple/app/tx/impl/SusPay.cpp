@@ -128,6 +128,12 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
+XRPAmount
+SusPayCreate::calculateMaxSpend(STTx const& tx)
+{
+    return tx[sfAmount].xrp();
+}
+
 TER
 SusPayCreate::preflight (PreflightContext const& ctx)
 {

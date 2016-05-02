@@ -33,105 +33,18 @@ namespace ripple {
 
 class Application;
 
-namespace detail {
-
-class FeeMetrics
-{
-private:
-    // Fee escalation
-
-    // Limit of the txnsExpected value after a
-    // time leap.
-    std::size_t const targetTxnCount_;
-    // Minimum value of txnsExpected.
-    std::size_t minimumTxnCount_;
-    // Number of transactions expected per ledger.
-    // One more than this value will be accepted
-    // before escalation kicks in.
-    std::size_t txnsExpected_;
-    // Minimum value of escalationMultiplier.
-    std::uint32_t const minimumMultiplier_;
-    // Based on the median fee of the LCL. Used
-    // when fee escalation kicks in.
-    std::uint32_t escalationMultiplier_;
-    beast::Journal j_;
-
-    std::mutex mutable lock_;
-
-public:
-    static const std::uint64_t baseLevel = 256;
-
-public:
-    FeeMetrics(bool standAlone, beast::Journal j)
-        : targetTxnCount_(50)
-        , minimumTxnCount_(standAlone ? 1000 : 5)
-        , txnsExpected_(minimumTxnCount_)
-        , minimumMultiplier_(500)
-        , escalationMultiplier_(minimumMultiplier_)
-        , j_(j)
-    {
-    }
-
-    /**
-    Updates fee metrics based on the transactions in the ReadView
-    for use in fee escalation calculations.
-
-    @param view View of the LCL that was just closed or received.
-    @param timeLeap Indicates that rippled is under load so fees
-    should grow faster.
-    */
-    std::size_t
-    updateFeeMetrics(Application& app,
-        ReadView const& view, bool timeLeap);
-
-    /** Used by tests only.
-    */
-    std::size_t
-    setMinimumTx(int m)
-    {
-        std::lock_guard <std::mutex> sl(lock_);
-
-        auto const old = minimumTxnCount_;
-        minimumTxnCount_ = m;
-        txnsExpected_ = m;
-        return old;
-    }
-
-    std::size_t
-    getTxnsExpected() const
-    {
-        std::lock_guard <std::mutex> sl(lock_);
-
-        return txnsExpected_;
-    }
-
-    std::uint32_t
-    getEscalationMultiplier() const
-    {
-        std::lock_guard <std::mutex> sl(lock_);
-
-        return escalationMultiplier_;
-    }
-
-    std::uint64_t
-    scaleFeeLevel(OpenView const& view) const;
-};
-
-}
-
 /**
     Transaction Queue. Used to manage transactions in conjunction with
-    fee escalation. See also: RIPD-598, and subissues
-    RIPD-852, 853, and 854.
+    fee escalation.
 
     Once enough transactions are added to the open ledger, the required
     fee will jump dramatically. If additional transactions are added,
     the fee will grow exponentially.
 
     Transactions that don't have a high enough fee to be applied to
-    the ledger are added to the queue in order from highest fee to
+    the ledger are added to the queue in order from highest fee level to
     lowest. Whenever a new ledger is accepted as validated, transactions
-    are first applied from the queue to the open ledger in fee order
+    are first applied from the queue to the open ledger in fee level order
     until either all transactions are applied or the fee again jumps
     too high for the remaining transactions.
 */
@@ -141,7 +54,25 @@ public:
     struct Setup
     {
         std::size_t ledgersInQueue = 20;
-        std::uint32_t retrySequencePercent = 125;
+        std::uint32_t retrySequencePercent = 25;
+        // TODO: eahennis. Can we remove the multi tx factor?
+        std::int32_t multiTxnPercent = -90;
+        std::uint32_t minimumEscalationMultiplier = 500;
+        std::uint32_t minimumTxnInLedger = 5;
+        std::uint32_t minimumTxnInLedgerSA = 1000;
+        std::uint32_t targetTxnInLedger = 50;
+        boost::optional<std::uint32_t> maximumTxnInLedger;
+        std::uint32_t maximumTxnPerAccount = 10;
+        std::uint32_t minimumLastLedgerBuffer = 2;
+        /* So we don't deal with infinite fee levels, treat
+            any transaction with a 0 base fee (ie. SetRegularKey
+            password recovery) as having this fee level.
+            Should the network behavior change in the future such
+            that these transactions are unable to be processed,
+            we can make this more complicated. But avoid
+            bikeshedding for now.
+        */
+        std::uint64_t zeroBaseFeeTransactionFeeLevel = 256000;
         bool standAlone = false;
     };
 
@@ -166,32 +97,10 @@ public:
         Add a new transaction to the open ledger, hold it in the queue,
         or reject it.
 
-        How the decision is made:
-        1. Is there already a transaction for the same account with the
-           same sequence number in the queue?
-            Yes: Is `txn`'s fee higher than the queued transaction's fee?
-                Yes: Remove the queued transaction. Continue to step 2.
-                No: Reject `txn` with a low fee TER code. Stop.
-            No: Continue to step 2.
-        2. Is the `txn`s fee level >= the required fee level?
-            Yes: `txn` can be applied to the ledger. Pass it
-                 to the engine and return that result.
-            No: Can it be held in the queue? (See TxQImpl::canBeHeld).
-                No: Reject `txn` with a low fee TER code.
-                Yes: Is the queue full?
-                    No: Put `txn` in the queue.
-                    Yes: Is the `txn`'s fee higher than the end item's
-                         fee?
-                        Yes: Remove the end item, and add `txn`.
-                        No: Reject `txn` with a low fee TER code.
-
-        If the transaction is queued, addTransaction will return
-        { TD_held, terQUEUED }
-
-
-        @param txn The transaction to be attempted.
-        @param params Flags to control engine behaviors.
-        @param engine Transaction Engine.
+        @return A pair with the TER and a bool indicating
+                whether or not the transaction was applied.
+                If the transaction is queued, will return
+                { terQUEUED, false }.
     */
     std::pair<TER, bool>
     apply(Application& app, OpenView& view,
@@ -203,93 +112,164 @@ public:
         As we apply more transactions to the ledger, the required
         fee will increase.
 
-        Iterate over the transactions from highest fee to lowest.
-        For each transaction, compute the required fee.
-        Is the transaction fee is less than the required fee?
-            Yes: Stop. We're done.
-            No: Try to apply the transaction. Did it apply?
-                Yes: Take it out of the queue.
-                No: Leave it in the queue, and continue iterating.
-
         @return Whether any txs were added to the view.
     */
     bool
     accept(Application& app, OpenView& view);
 
     /**
-        We have a new last validated ledger, update and clean up the
+        A new ledger has been validated. Update and clean up the
         queue.
-
-        1) Keep track of the average non-empty ledger size. Once there
-            are enough data points, the maximum queue size will be
-            enough to hold 20 ledgers. (Parameters for this are
-            experimentally configurable, but should be left alone.)
-            1a) If the new limit makes the queue full, trim excess
-                transactions from the end of the queue.
-        2) Remove any transactions from the queue whos the
-            `LastLedgerSequence` has passed.
-
     */
     void
     processValidatedLedger(Application& app,
         OpenView const& view, bool timeLeap);
 
-    /** Used by tests only.
+    /** Returns fee metrics in reference fee level units.
     */
-    std::size_t
-    setMinimumTx(int m);
-
-    /** Returns fee metrics in reference fee (level) units.
-    */
-    struct Metrics
-    getMetrics(OpenView const& view) const;
+    boost::optional<Metrics>
+    getMetrics(Application& app, OpenView const& view) const;
 
     /** Packages up fee metrics for the `fee` RPC command.
     */
     Json::Value
     doRPC(Application& app) const;
 
-    /** Return the instantaneous fee to get into the current
-        open ledger for a reference transaction.
-    */
-    XRPAmount
-    openLedgerFee(OpenView const& view) const;
-
 private:
-    class CandidateTxn
+    class FeeMetrics
+    {
+    private:
+        // Fee escalation
+
+        // Minimum value of txnsExpected.
+        std::size_t const minimumTxnCount_;
+        // Limit of the txnsExpected value after a
+        // time leap.
+        std::size_t const targetTxnCount_;
+        // Maximum value of txnsExpected
+        boost::optional<std::size_t> const maximumTxnCount_;
+        // Number of transactions expected per ledger.
+        // One more than this value will be accepted
+        // before escalation kicks in.
+        std::size_t txnsExpected_;
+        // Minimum value of escalationMultiplier.
+        std::uint32_t const minimumMultiplier_;
+        // Based on the median fee of the LCL. Used
+        // when fee escalation kicks in.
+        std::uint32_t escalationMultiplier_;
+        beast::Journal j_;
+
+        std::mutex mutable lock_;
+
+    public:
+        static constexpr std::uint64_t baseLevel = 256;
+
+    public:
+        FeeMetrics(Setup const& setup, beast::Journal j)
+            : minimumTxnCount_(setup.standAlone ?
+                setup.minimumTxnInLedgerSA :
+                setup.minimumTxnInLedger)
+            , targetTxnCount_(setup.targetTxnInLedger < minimumTxnCount_ ?
+                minimumTxnCount_ : setup.targetTxnInLedger)
+            , maximumTxnCount_(setup.maximumTxnInLedger ?
+                *setup.maximumTxnInLedger < targetTxnCount_ ?
+                    targetTxnCount_ : *setup.maximumTxnInLedger :
+                        boost::optional<std::size_t>(boost::none))
+            , txnsExpected_(minimumTxnCount_)
+            , minimumMultiplier_(setup.minimumEscalationMultiplier)
+            , escalationMultiplier_(minimumMultiplier_)
+            , j_(j)
+        {
+        }
+
+        /**
+            Updates fee metrics based on the transactions in the ReadView
+            for use in fee escalation calculations.
+
+            @param view View of the LCL that was just closed or received.
+            @param timeLeap Indicates that rippled is under load so fees
+            should grow faster.
+        */
+        std::size_t
+        update(Application& app,
+            ReadView const& view, bool timeLeap,
+            TxQ::Setup const& setup);
+
+        std::size_t
+        getTxnsExpected() const
+        {
+            std::lock_guard <std::mutex> sl(lock_);
+
+            return txnsExpected_;
+        }
+
+        std::uint32_t
+        getEscalationMultiplier() const
+        {
+            std::lock_guard <std::mutex> sl(lock_);
+
+            return escalationMultiplier_;
+        }
+
+        std::uint64_t
+        scaleFeeLevel(OpenView const& view) const;
+    };
+
+    // Alternate name: MaybeTx
+    class MaybeTx
     {
     public:
         // Used by the TxQ::FeeHook and TxQ::FeeMultiSet below
-        // to put each candidate object into more than one
+        // to put each MaybeTx object into more than one
         // set without copies, pointers, etc.
         boost::intrusive::set_member_hook<> byFeeListHook;
 
         std::shared_ptr<STTx const> txn;
+
+        boost::optional<TxConsequences const> consequences;
 
         uint64_t const feeLevel;
         TxID const txID;
         boost::optional<TxID> priorTxID;
         AccountID const account;
         boost::optional<LedgerIndex> lastValid;
+        int retriesRemaining;
         TxSeq const sequence;
         ApplyFlags const flags;
-        // pfresult_ is never allowed to be empty. The
+        // Invariant: pfresult is never allowed to be empty. The
         // boost::optional is leveraged to allow `emplace`d
         // construction and replacement without a copy
         // assignment operation.
         boost::optional<PreflightResult const> pfresult;
 
+        /* In TxQ::accept, the required fee level may be low
+            enough that this transaction gets a chance to apply
+            to the ledger, but it may get a retry ter result for
+            another reason (eg. insufficient balance). When that
+            happens, the transaction is left in the queue to try
+            again later, but it shouldn't be allowed to fail
+            indefinitely. The number of failures allowed is
+            essentially arbitrary. It should be large enough to
+            allow temporary failures to clear up, but small enough
+            that the queue doesn't fill up with stale transactions
+            which prevent lower fee level transactions from queuing.
+        */
+        static constexpr int retriesAllowed = 10;
+
     public:
-        CandidateTxn(std::shared_ptr<STTx const> const&,
+        MaybeTx(std::shared_ptr<STTx const> const&,
             TxID const& txID, std::uint64_t feeLevel,
                 ApplyFlags const flags,
                     PreflightResult const& pfresult);
+
+        std::pair<TER, bool>
+        apply(Application& app, OpenView& view);
     };
 
     class GreaterFee
     {
     public:
-        bool operator()(const CandidateTxn& lhs, const CandidateTxn& rhs) const
+        bool operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
         {
             return lhs.feeLevel > rhs.feeLevel;
         }
@@ -298,11 +278,13 @@ private:
     class TxQAccount
     {
     public:
+        using TxMap = std::map <TxSeq, MaybeTx>;
 
         AccountID const account;
-        uint64_t totalFees;
         // Sequence number will be used as the key.
-        std::map <TxSeq, CandidateTxn> transactions;
+        TxMap transactions;
+        bool retryPenalty = false;
+        bool dropPenalty = false;
 
     public:
         explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
@@ -320,31 +302,29 @@ private:
             return !getTxnCount();
         }
 
-        CandidateTxn&
-        addCandidate(CandidateTxn&&);
+        MaybeTx&
+        add(MaybeTx&&);
 
         bool
-        removeCandidate(TxSeq const& sequence);
-
-        CandidateTxn const*
-        findCandidateAt(TxSeq const& sequence) const;
+        remove(TxSeq const& sequence);
     };
 
-
     using FeeHook = boost::intrusive::member_hook
-        <CandidateTxn, boost::intrusive::set_member_hook<>,
-        &CandidateTxn::byFeeListHook>;
+        <MaybeTx, boost::intrusive::set_member_hook<>,
+        &MaybeTx::byFeeListHook>;
 
     using FeeMultiSet = boost::intrusive::multiset
-        < CandidateTxn, FeeHook,
+        < MaybeTx, FeeHook,
         boost::intrusive::compare <GreaterFee> >;
+
+    using AccountMap = std::map <AccountID, TxQAccount>;
 
     Setup const setup_;
     beast::Journal j_;
 
-    detail::FeeMetrics feeMetrics_;
+    FeeMetrics feeMetrics_;
     FeeMultiSet byFee_;
-    std::map <AccountID, TxQAccount> byAccount_;
+    AccountMap byAccount_;
     boost::optional<size_t> maxSize_;
 
     // Most queue operations are done under the master lock,
@@ -352,14 +332,20 @@ private:
     std::mutex mutable mutex_;
 
 private:
-    bool isFull() const
-    {
-        return maxSize_ && byFee_.size() >= *maxSize_;
-    }
+    template<size_t fillPercentage = 100>
+    bool
+    isFull() const;
 
-    bool canBeHeld(std::shared_ptr<STTx const> const&);
+    bool canBeHeld(STTx const&, OpenView const&,
+        AccountMap::iterator,
+            boost::optional<FeeMultiSet::iterator>);
 
+    // Erase and return the next entry in byFee_ (lower fee level)
     FeeMultiSet::iterator_type erase(FeeMultiSet::const_iterator_type);
+    // Erase and return the next entry for the account (if fee level
+    // is higher), or next entry in byFee_ (lower fee level).
+    // Used to get the next "applyable" MaybeTx for accept().
+    FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
 
 };
 

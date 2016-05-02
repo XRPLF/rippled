@@ -32,6 +32,15 @@
 
 namespace ripple {
 
+XRPAmount
+CreateOffer::calculateMaxSpend(STTx const& tx)
+{
+    auto const& saTakerGets = tx[sfTakerGets];
+
+    return saTakerGets.native() ?
+        saTakerGets.xrp() : beast::zero;
+}
+
 TER
 CreateOffer::preflight (PreflightContext const& ctx)
 {

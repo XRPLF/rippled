@@ -2053,10 +2053,31 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (admin)
         info[jss::load] = m_job_queue.getJson ();
 
+    auto const escalationMetrics = app_.getTxQ().getMetrics(
+        app_, *app_.openLedger().current());
     if (!human)
     {
         info[jss::load_base] = app_.getFeeTrack ().getLoadBase ();
         info[jss::load_factor] = app_.getFeeTrack ().getLoadFactor ();
+        if (escalationMetrics)
+        {
+            /* Json::Value doesn't support uint64, so clamp to max
+                uint32 value. This is mostly theoretical, since there
+                probably isn't enough extant XRP to drive the factor
+                that high.
+            */
+            constexpr std::uint64_t max =
+                std::numeric_limits<std::uint32_t>::max();
+            info[jss::load_factor_fee_escalation] =
+                static_cast<std::uint32_t> (std::min(
+                    max, escalationMetrics->expFeeLevel));
+            info[jss::load_factor_fee_queue] =
+                static_cast<std::uint32_t> (std::min(
+                    max, escalationMetrics->minFeeLevel));
+            info[jss::load_factor_fee_reference] =
+                static_cast<std::uint32_t> (std::min(
+                    max, escalationMetrics->referenceFeeLevel));
+        }
     }
     else
     {
@@ -2078,6 +2099,19 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             if (fee != base)
                 info[jss::load_factor_cluster] =
                     static_cast<double> (fee) / base;
+        }
+        if (escalationMetrics)
+        {
+            if (escalationMetrics->expFeeLevel !=
+                    escalationMetrics->referenceFeeLevel)
+                info[jss::load_factor_fee_escalation] =
+                    static_cast<double> (escalationMetrics->expFeeLevel) /
+                        escalationMetrics->referenceFeeLevel;
+            if (escalationMetrics->minFeeLevel !=
+                    escalationMetrics->referenceFeeLevel)
+                info[jss::load_factor_fee_queue] =
+                    static_cast<double> (escalationMetrics->minFeeLevel) /
+                        escalationMetrics->referenceFeeLevel;
         }
     }
 

@@ -102,29 +102,6 @@ LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
     return fee;
 }
 
-Json::Value
-LoadFeeTrack::getJson (std::uint64_t baseFee,
-    std::uint32_t referenceFeeUnits) const
-{
-    Json::Value j (Json::objectValue);
-
-    {
-        ScopedLockType sl (mLock);
-
-        // base_fee = The cost to send a "reference" transaction under
-        // no load, in millionths of a Ripple
-        j[jss::base_fee] = Json::Value::UInt (baseFee);
-
-        // load_fee = The cost to send a "reference" transaction now,
-        // in millionths of a Ripple
-        j[jss::load_fee] = Json::Value::UInt (
-            mulDivThrow(baseFee, std::max(mLocalTxnLoadFee,
-                mRemoteTxnLoadFee), lftNormalFee));
-    }
-
-    return j;
-}
-
 bool
 LoadFeeTrack::raiseLocalFee ()
 {
