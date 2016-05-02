@@ -985,24 +985,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetPeers> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMPeers> const& m)
 {
-    // VFALCO TODO This message is now obsolete due to PeerFinder
-    std::vector <beast::IP::Endpoint> list;
-    list.reserve (m->nodes().size());
-    for (int i = 0; i < m->nodes ().size (); ++i)
-    {
-        in_addr addr;
-
-        addr.s_addr = m->nodes (i).ipv4 ();
-
-        {
-            beast::IP::AddressV4 v4 (ntohl (addr.s_addr));
-            beast::IP::Endpoint address (v4, m->nodes (i).ipv4port ());
-            list.push_back (address);
-        }
-    }
-
-    if (! list.empty())
-        overlay_.peerFinder().on_legacy_endpoints (list);
+    // This message is obsolete due to PeerFinder and
+    // we no longer process it.
 }
 
 void

@@ -816,15 +816,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void on_legacy_endpoints (IPAddresses const& list)
-    {
-        // Ignoring them also seems a valid choice.
-        std::lock_guard<std::recursive_mutex> _(lock_);
-        for (IPAddresses::const_iterator iter (list.begin());
-            iter != list.end(); ++iter)
-            bootcache_.insert (*iter);
-    }
-
     void remove (SlotImp::ptr const& slot)
     {
         auto const iter = slots_.find (
