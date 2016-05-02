@@ -33,7 +33,6 @@ class SetAccount
     : public Transactor
 {
     static std::size_t const DOMAIN_BYTES_MAX = 256;
-    static std::size_t const PUBLIC_BYTES_MAX = 33;
 
 public:
     SetAccount (ApplyContext& ctx)
