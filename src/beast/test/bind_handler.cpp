@@ -12,7 +12,6 @@
 #include <functional>
 
 namespace beast {
-namespace test {
 
 class bind_handler_test : public detail::unit_test::suite
 {
@@ -33,5 +32,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(bind_handler,core,beast);
 
-} // test
 } // beast

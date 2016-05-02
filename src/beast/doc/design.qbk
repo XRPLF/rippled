@@ -8,7 +8,7 @@
 [section:design Design choices]
 
 The implementations are driven by business needs of cryptocurrency server
-applications ([link https://ripple.com Ripple] written in C++. These
+applications ([@https://ripple.com Ripple] written in C++. These
 needs were not met by existing solutions so new code was written. The new
 code tries to avoid design flaws encountered in the already-existing software
 libraries:
@@ -194,8 +194,8 @@ start. Other design goals:
 
     The WebSocket implementation [*does] provides support for shutting down
     the TLS connection through the use of the ADL compile-time virtual functions
-    [link beast.ref.wsproto__teardown `teardown`] and
-    [link beast.ref.wsproto__async_teardown `async_teardown`]. These will
+    [link beast.ref.websocket__teardown `teardown`] and
+    [link beast.ref.websocket__async_teardown `async_teardown`]. These will
     properly close the connection as per rfc6455 and overloads are available
     for TLS streams. Callers may provide their own overloads of these functions
     for user-defined next layer types.

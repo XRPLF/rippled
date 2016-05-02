@@ -13,7 +13,6 @@
 #include <string>
 
 namespace beast {
-namespace test {
 
 class static_streambuf_test : public beast::detail::unit_test::suite
 {
@@ -105,7 +104,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(static_streambuf,asio,beast);
+BEAST_DEFINE_TESTSUITE(static_streambuf,core,beast);
 
-} // test
 } // beastp

@@ -9,7 +9,7 @@
 
 Beast.HTTP offers programmers simple and performant models of HTTP messages and
 their associated operations including synchronous and asynchronous reading and
-writing using Boost.Asio.
+writing of messages in the HTTP/1 wire format using Boost.Asio.
 
 The HTTP protocol is described fully in
 [@https://tools.ietf.org/html/rfc2616 rfc2616]
@@ -25,20 +25,43 @@ compliant with the Hypertext Transfer Protocol and the supplements that
 follow. Unfortunately reliable implementations or industry standards do not
 exist in C++.
 
-Beast.HTTP is built on Boost.Asio and uses HTTP parser from NodeJS, which is
-extensively field tested and exceptionally robust. A proposal to add networking
-functionality to the C++ standard library, based on Boost.Asio, is under
-consideration by the standards committee. Since the final approved networking
-interface for the C++ standard library will likely closely resemble the current
-interface of Boost.Asio, it is logical for Beast.HTTP to use Boost.Asio as its
-network transport.
+Beast.HTTP is built on Boost.Asio and uses its own robust header-only HTTP/1
+message parser modeled after the nodejs http-parser (written in C). A proposal
+to add networking functionality to the C++ standard library, based on
+Boost.Asio, is under consideration by the standards committee. Since the final
+approved networking interface for the C++ standard library will likely closely
+resemble the current interface of Boost.Asio, it is logical for Beast.HTTP to
+use Boost.Asio as its network transport.
 
-[heading Scope]
+[endsect]
 
-The scope of this library is meant to include only the functionality of
-modeling the HTTP message, serializing and deserializing the message, and
-sending and receiving messages on sockets or streams. It is designed to
-be a building block for creating higher level abstractions.
+
+
+[section:scope Scope]
+
+This library is designed to be a building block for creating higher level
+libraries. It is not designed to be end-user facing. There is no convenient
+class that implements the core of a web server, nor is there a convenient
+class to quickly perform common operations such as fetching a file or
+connecting and retrieving a document from a secure connection. These
+use-cases are important. But this library does not try to do that. Instead,
+it offers primitives that can be used to build those user-facing algorithms.
+
+A HTTP message (referred to hereafter as "message") contains request or
+response specific attributes, a series of zero or more name/value pairs
+(collectively termed "headers"), and a series of octets called the message
+body which may be zero in length. The HTTP protocol defines the client and
+server roles: clients send messages called requests and servers send back
+messages called responses. `http::message` models both requests and responses.
+Beast aims to offer this functionality:
+
+* [*Model]: Provide a universal HTTP message class model.
+
+* [*Build]: Construct a new message and manipulate its contents.
+
+* [*Parse]: Deserialize a message from a network or memory stream in HTTP/1 wire format.
+
+* [*Serialize]: Serialize a message into a network or memory stream in HTTP/1 wire format.
 
 [note The documentation which follows assumes familiarity with
 both Boost.Asio and the HTTP protocol specification described in
@@ -59,35 +82,17 @@ both Boost.Asio and the HTTP protocol specification described in
     ```
 ]
 
-A HTTP message (referred to hereafter as "message") contains a request or
-response line, a series of zero or more name/value pairs (collectively
-termed "headers"), and a series of octets called the message body which may
-be zero in length. The HTTP protocol defines the client and server roles:
-clients send messages called requests and servers send back messages called
-responses. `http::message` models both requests and responses. The library
-provides interfaces to perform these operations on messages:
 
-* [*Parse] a new message from a series of octets.
 
-* [*Assemble] a new message from scratch or from an existing message.
-
-* [*Serialize] a message into a series of octets.
-
-* [*Read] a message from a stream. This can be thought of as a compound
-operation; a network read, followed by a [*parse].
-
-* [*Write] a message to a stream. This can be thought of as a compound
-operation: a [*serialize] followed by a network write.
-
-In the paragraphs that follow we describe simple interfaces that will serve
-the majority of users looking merely to interact with a HTTP server, or
-handle simple HTTP requests from clients. Subsequent sections cover the
-message model in more depth, for advanced applications.
+In the paragraphs that follow we describe the available interfaces for
+performing typical operations such as interacting with a HTTP server
+or handling simple requests. Subsequent sections cover the message model
+and its customization points in more depth, for advanced applications.
 
 [heading Declarations]
 
 To do anything, a message must be declared. The message class template
-requires at mininum, a bool indicating whether the message is a request
+requires at mininum, a value indicating whether the message is a request
 (versus a response), and a `Body` type. The choice of `Body` determines the
 kind of container used to represent the message body. Here we will
 declare a request that has a `std::string` for the body container:

@@ -8,9 +8,7 @@
 #ifndef BEAST_HTTP_STRING_BODY_HPP
 #define BEAST_HTTP_STRING_BODY_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
+#include <beast/http/body_writer.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/streambuf.hpp>
 #include <memory>
@@ -20,6 +18,8 @@ namespace beast {
 namespace http {
 
 /** A Body represented by a std::string.
+
+    Meets the requirements of @b `Body`.
 */
 struct string_body
 {
@@ -70,7 +70,7 @@ private:
         {
         }
 
-        std::size_t
+        std::uint64_t
         content_length() const
         {
             return body_.size();

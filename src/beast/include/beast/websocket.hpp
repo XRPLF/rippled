@@ -24,7 +24,6 @@
 #include <beast/websocket/option.hpp>
 #include <beast/websocket/rfc6455.hpp>
 #include <beast/websocket/stream.hpp>
-#include <beast/websocket/static_string.hpp>
 #include <beast/websocket/teardown.hpp>
 
 #endif

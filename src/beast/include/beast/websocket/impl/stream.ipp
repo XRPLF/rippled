@@ -18,16 +18,17 @@
 #include <beast/websocket/impl/response_op.ipp>
 #include <beast/websocket/impl/write_op.ipp>
 #include <beast/websocket/impl/write_frame_op.ipp>
-#include <beast/buffer_cat.hpp>
-#include <beast/consuming_buffers.hpp>
-#include <beast/prepare_buffers.hpp>
-#include <beast/static_streambuf.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/type_check.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
 #include <beast/http/reason.hpp>
 #include <beast/http/rfc2616.hpp>
+#include <beast/buffer_cat.hpp>
+#include <beast/buffer_concepts.hpp>
+#include <beast/consuming_buffers.hpp>
+#include <beast/prepare_buffers.hpp>
+#include <beast/static_streambuf.hpp>
+#include <beast/stream_concepts.hpp>
+#include <beast/streambuf.hpp>
 #include <boost/endian/buffers.hpp>
 #include <algorithm>
 #include <cassert>
@@ -41,7 +42,7 @@ namespace detail {
 
 template<class _>
 void
-stream_base::prepare_fh(close_code& code)
+stream_base::prepare_fh(close_code::value& code)
 {
     // continuation without an active message
     if(! rd_cont_ && rd_fh_.op == opcode::cont)
@@ -99,7 +100,8 @@ stream_base::write_close(
     fh.rsv3 = false;
     fh.len = cr.code == close_code::none ?
         0 : 2 + cr.reason.size();
-    if((fh.mask = (role_ == role_type::client)))
+    fh.mask = role_ == role_type::client;
+    if(fh.mask)
         fh.key = maskgen_();
     detail::write(sb, fh);
     if(cr.code != close_code::none)
@@ -143,7 +145,8 @@ stream_base::write_ping(Streambuf& sb,
     fh.rsv2 = false;
     fh.rsv3 = false;
     fh.len = data.size();
-    if((fh.mask = (role_ == role_type::client)))
+    fh.mask = role_ == role_type::client;
+    if(fh.mask)
         fh.key = maskgen_();
     detail::write(sb, fh);
     if(data.empty())
@@ -168,11 +171,20 @@ template<class NextLayer>
 template<class... Args>
 stream<NextLayer>::
 stream(Args&&... args)
-    : next_layer_(std::forward<Args>(args)...)
-    , stream_(next_layer_)
+    : stream_(std::forward<Args>(args)...)
 {
-    static_assert(is_Stream<next_layer_type>::value,
-        "Stream requirements not met");
+}
+
+template<class NextLayer>
+void
+stream<NextLayer>::
+accept()
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    accept(boost::asio::null_buffers{}, ec);
+    detail::maybe_throw(ec, "accept");
 }
 
 template<class NextLayer>
@@ -180,6 +192,8 @@ void
 stream<NextLayer>::
 accept(error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     accept(boost::asio::null_buffers{}, ec);
 }
 
@@ -190,6 +204,8 @@ typename async_completion<
 stream<NextLayer>::
 async_accept(AcceptHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements requirements not met");
     return async_accept(boost::asio::null_buffers{},
         std::forward<AcceptHandler>(handler));
 }
@@ -200,6 +216,8 @@ void
 stream<NextLayer>::
 accept(ConstBufferSequence const& buffers)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     static_assert(is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -214,6 +232,8 @@ void
 stream<NextLayer>::
 accept(ConstBufferSequence const& buffers, error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -222,8 +242,8 @@ accept(ConstBufferSequence const& buffers, error_code& ec)
     stream_.buffer().commit(buffer_copy(
         stream_.buffer().prepare(
             buffer_size(buffers)), buffers));
-    http::request<http::empty_body> m;
-    http::read(next_layer_, stream_.buffer(), m, ec);
+    http::request_v1<http::empty_body> m;
+    http::read(next_layer(), stream_.buffer(), m, ec);
     if(ec)
         return;
     accept(m, ec);
@@ -236,6 +256,8 @@ typename async_completion<
 stream<NextLayer>::
 async_accept(ConstBufferSequence const& bs, AcceptHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements requirements not met");
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -251,8 +273,10 @@ template<class NextLayer>
 template<class Body, class Headers>
 void
 stream<NextLayer>::
-accept(http::message<true, Body, Headers> const& request)
+accept(http::request_v1<Body, Headers> const& request)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     error_code ec;
     accept(request, ec);
     detail::maybe_throw(ec, "accept");
@@ -262,10 +286,12 @@ template<class NextLayer>
 template<class Body, class Headers>
 void
 stream<NextLayer>::
-accept(http::message<true, Body, Headers> const& req,
+accept(http::request_v1<Body, Headers> const& req,
     error_code& ec)
 {
-    auto resp = build_response(req);
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    auto const resp = build_response(req);
     http::write(stream_, resp, ec);
     if(resp.status != 101)
     {
@@ -282,9 +308,11 @@ template<class Body, class Headers, class AcceptHandler>
 typename async_completion<
     AcceptHandler, void(error_code)>::result_type
 stream<NextLayer>::
-async_accept(http::message<true, Body, Headers> const& req,
+async_accept(http::request_v1<Body, Headers> const& req,
     AcceptHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements requirements not met");
     beast::async_completion<
         AcceptHandler, void(error_code)
             > completion(handler);
@@ -299,15 +327,30 @@ template<class NextLayer>
 void
 stream<NextLayer>::
 handshake(boost::string_ref const& host,
+    boost::string_ref const& resource)
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    handshake(host, resource, ec);
+    detail::maybe_throw(ec, "upgrade");
+}
+
+template<class NextLayer>
+void
+stream<NextLayer>::
+handshake(boost::string_ref const& host,
     boost::string_ref const& resource, error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     std::string key;
     http::write(stream_,
         build_request(host, resource, key), ec);
     if(ec)
         return;
-    http::response<http::string_body> resp;
-    http::read(next_layer_, stream_.buffer(), resp, ec);
+    http::response_v1<http::string_body> resp;
+    http::read(next_layer(), stream_.buffer(), resp, ec);
     if(ec)
         return;
     do_response(resp, key, ec);
@@ -321,6 +364,8 @@ stream<NextLayer>::
 async_handshake(boost::string_ref const& host,
     boost::string_ref const& resource, HandshakeHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements not met");
     beast::async_completion<
         HandshakeHandler, void(error_code)
             > completion(handler);
@@ -332,8 +377,22 @@ async_handshake(boost::string_ref const& host,
 template<class NextLayer>
 void
 stream<NextLayer>::
+close(close_reason const& cr)
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    close(cr, ec);
+    detail::maybe_throw(ec, "close");
+}
+
+template<class NextLayer>
+void
+stream<NextLayer>::
 close(close_reason const& cr, error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     assert(! wr_close_);
     wr_close_ = true;
     detail::frame_streambuf fb;
@@ -349,6 +408,8 @@ typename async_completion<
 stream<NextLayer>::
 async_close(close_reason const& cr, CloseHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements not met");
     beast::async_completion<
         CloseHandler, void(error_code)
             > completion(handler);
@@ -361,8 +422,23 @@ template<class NextLayer>
 template<class Streambuf>
 void
 stream<NextLayer>::
+read(opcode& op, Streambuf& streambuf)
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    read(op, streambuf, ec);
+    detail::maybe_throw(ec, "read");
+}
+
+template<class NextLayer>
+template<class Streambuf>
+void
+stream<NextLayer>::
 read(opcode& op, Streambuf& streambuf, error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     frame_info fi;
     for(;;)
     {
@@ -383,6 +459,8 @@ stream<NextLayer>::
 async_read(opcode& op,
     Streambuf& streambuf, ReadHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements requirements not met");
     static_assert(beast::is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
     beast::async_completion<
@@ -397,9 +475,24 @@ template<class NextLayer>
 template<class Streambuf>
 void
 stream<NextLayer>::
+read_frame(frame_info& fi, Streambuf& streambuf)
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    read_frame(fi, streambuf, ec);
+    detail::maybe_throw(ec, "read_some");
+}
+
+template<class NextLayer>
+template<class Streambuf>
+void
+stream<NextLayer>::
 read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
 {
-    close_code code{};
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    close_code::value code{};
     for(;;)
     {
         if(rd_need_ == 0)
@@ -407,7 +500,8 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
             // read header
             detail::frame_streambuf fb;
             do_read_fh(fb, code, ec);
-            if((error_ = ec != 0))
+            error_ = ec != 0;
+            if(error_)
                 return;
             if(code != close_code::none)
                 break;
@@ -419,7 +513,8 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
                     auto const mb = fb.prepare(
                         static_cast<std::size_t>(rd_fh_.len));
                     fb.commit(boost::asio::read(stream_, mb, ec));
-                    if((error_ = ec != 0))
+                    error_ = ec != 0;
+                    if(error_)
                         return;
                     if(rd_fh_.mask)
                         detail::mask_inplace(mb, rd_key_);
@@ -435,7 +530,8 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
                     write_ping<static_streambuf>(
                         fb, opcode::pong, data);
                     boost::asio::write(stream_, fb.data(), ec);
-                    if((error_ = ec != 0))
+                    error_ = ec != 0;
+                    if(error_)
                         return;
                     continue;
                 }
@@ -443,7 +539,7 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
                 {
                     ping_payload_type data;
                     detail::read(data, fb.data(), code);
-                    if((error_ = ec != 0))
+                    if(code != close_code::none)
                         break;
                     // VFALCO How to notify callers using
                     //        the synchronous interface?
@@ -464,7 +560,8 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
                         wr_close_ = true;
                         write_close<static_streambuf>(fb, cr);
                         boost::asio::write(stream_, fb.data(), ec);
-                        if((error_ = ec != 0))
+                        error_ = ec != 0;
+                        if(error_)
                             return;
                     }
                     break;
@@ -481,7 +578,8 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
             detail::clamp(rd_need_));
         auto const bytes_transferred =
             stream_.read_some(smb, ec);
-        if((error_ = ec != 0))
+        error_ = ec != 0;
+        if(error_)
             return;
         rd_need_ -= bytes_transferred;
         auto const pb = prepare_buffers(
@@ -512,18 +610,20 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
             detail::frame_streambuf fb;
             write_close<static_streambuf>(fb, code);
             boost::asio::write(stream_, fb.data(), ec);
-            if((error_ = ec != 0))
+            error_ = ec != 0;
+            if(error_)
                 return;
         }
-        wsproto_helpers::call_teardown(next_layer_, ec);
-        if((error_ = ec != 0))
+        websocket_helpers::call_teardown(next_layer(), ec);
+        error_ = ec != 0;
+        if(error_)
             return;
         ec = error::failed;
         error_ = true;
         return;
     }
     if(! ec)
-        wsproto_helpers::call_teardown(next_layer_, ec);
+        websocket_helpers::call_teardown(next_layer(), ec);
     if(! ec)
         ec = error::closed;
     error_ = ec != 0;
@@ -537,6 +637,8 @@ stream<NextLayer>::
 async_read_frame(frame_info& fi,
     Streambuf& streambuf, ReadHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements requirements not met");
     static_assert(beast::is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
     beast::async_completion<
@@ -550,8 +652,23 @@ template<class NextLayer>
 template<class ConstBufferSequence>
 void
 stream<NextLayer>::
+write(ConstBufferSequence const& buffers)
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    write(buffers, ec);
+    detail::maybe_throw(ec, "write");
+}
+
+template<class NextLayer>
+template<class ConstBufferSequence>
+void
+stream<NextLayer>::
 write(ConstBufferSequence const& bs, error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -580,6 +697,8 @@ typename async_completion<
 stream<NextLayer>::
 async_write(ConstBufferSequence const& bs, WriteHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements not met");
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -594,8 +713,23 @@ template<class NextLayer>
 template<class ConstBufferSequence>
 void
 stream<NextLayer>::
+write_frame(bool fin, ConstBufferSequence const& buffers)
+{
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
+    error_code ec;
+    write_frame(fin, buffers, ec);
+    detail::maybe_throw(ec, "write");
+}
+
+template<class NextLayer>
+template<class ConstBufferSequence>
+void
+stream<NextLayer>::
 write_frame(bool fin, ConstBufferSequence const& bs, error_code& ec)
 {
+    static_assert(is_SyncStream<next_layer_type>::value,
+        "SyncStream requirements not met");
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -610,7 +744,8 @@ write_frame(bool fin, ConstBufferSequence const& bs, error_code& ec)
     fh.rsv2 = false;
     fh.rsv3 = false;
     fh.len = buffer_size(bs);
-    if((fh.mask = (role_ == role_type::client)))
+    fh.mask = role_ == role_type::client;
+    if(fh.mask)
         fh.key = maskgen_();
     detail::fh_streambuf fh_buf;
     detail::write<static_streambuf>(fh_buf, fh);
@@ -675,6 +810,8 @@ stream<NextLayer>::
 async_write_frame(bool fin,
     ConstBufferSequence const& bs, WriteHandler&& handler)
 {
+    static_assert(is_AsyncStream<next_layer_type>::value,
+        "AsyncStream requirements not met");
     static_assert(beast::is_ConstBufferSequence<
         ConstBufferSequence>::value,
             "ConstBufferSequence requirements not met");
@@ -690,35 +827,35 @@ async_write_frame(bool fin,
 //------------------------------------------------------------------------------
 
 template<class NextLayer>
-http::request<http::empty_body>
+http::request_v1<http::empty_body>
 stream<NextLayer>::
 build_request(boost::string_ref const& host,
     boost::string_ref const& resource, std::string& key)
 {
-    http::request<http::empty_body> req;
+    http::request_v1<http::empty_body> req;
     req.url = "/";
     req.version = 11;
-    req.method = http::method_t::http_get;
+    req.method = "GET";
     req.headers.insert("Host", host);
-    req.headers.insert("Connection", "upgrade");
     req.headers.insert("Upgrade", "websocket");
     key = detail::make_sec_ws_key(maskgen_);
     req.headers.insert("Sec-WebSocket-Key", key);
     req.headers.insert("Sec-WebSocket-Version", "13");
     (*d_)(req);
+    http::prepare(req, http::connection::upgrade);
     return req;
 }
 
 template<class NextLayer>
 template<class Body, class Headers>
-http::response<http::string_body>
+http::response_v1<http::string_body>
 stream<NextLayer>::
-build_response(http::message<true, Body, Headers> const& req)
+build_response(http::request_v1<Body, Headers> const& req)
 {
     auto err =
         [&](std::string const& text)
         {
-            http::response<http::string_body> resp(
+            http::response_v1<http::string_body> resp(
                 {400, http::reason_string(400), req.version});
             resp.body = text;
             // VFALCO TODO respect keep-alive here
@@ -726,7 +863,7 @@ build_response(http::message<true, Body, Headers> const& req)
         };
     if(req.version < 11)
         return err("HTTP version 1.1 required");
-    if(req.method != http::method_t::http_get)
+    if(req.method != "GET")
         return err("Wrong method");
     if(! is_upgrade(req))
         return err("Expected Upgrade request");
@@ -745,10 +882,9 @@ build_response(http::message<true, Body, Headers> const& req)
     if(! rfc2616::token_in_list(
             req.headers["Upgrade"], "websocket"))
         return err("Missing websocket Upgrade token");
-    http::response<http::string_body> resp(
+    http::response_v1<http::string_body> resp(
         {101, http::reason_string(101), req.version});
     resp.headers.insert("Upgrade", "websocket");
-    resp.headers.insert("Connection", "upgrade");
     {
         auto const key =
             req.headers["Sec-WebSocket-Key"];
@@ -758,6 +894,7 @@ build_response(http::message<true, Body, Headers> const& req)
     }
     resp.headers.replace("Server", "Beast.WSProto");
     (*d_)(resp);
+    http::prepare(resp, http::connection::upgrade);
     return resp;
 }
 
@@ -765,7 +902,7 @@ template<class NextLayer>
 template<class Body, class Headers>
 void
 stream<NextLayer>::
-do_response(http::message<false, Body, Headers> const& resp,
+do_response(http::response_v1<Body, Headers> const& resp,
     boost::string_ref const& key, error_code& ec)
 {
     // VFALCO Review these error codes
@@ -789,7 +926,7 @@ template<class NextLayer>
 void
 stream<NextLayer>::
 do_read_fh(detail::frame_streambuf& fb,
-    close_code& code, error_code& ec)
+    close_code::value& code, error_code& ec)
 {
     fb.commit(boost::asio::read(
         stream_, fb.prepare(2), ec));

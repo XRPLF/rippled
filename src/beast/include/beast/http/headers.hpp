@@ -14,10 +14,7 @@
 namespace beast {
 namespace http {
 
-template<class Allocator>
-using headers = basic_headers<Allocator>;
-
-using http_headers =
+using headers =
     basic_headers<std::allocator<char>>;
 
 } // http

@@ -73,12 +73,6 @@ class utf8_checker_t
     std::uint32_t codepoint_ = 0;
 
 public:
-    utf8_checker_t() = default;
-    utf8_checker_t(utf8_checker_t&&) = default;
-    utf8_checker_t(utf8_checker_t const&) = default;
-    utf8_checker_t& operator=(utf8_checker_t&&) = default;
-    utf8_checker_t& operator=(utf8_checker_t const&) = default;
-
     void
     reset();
 

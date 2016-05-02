@@ -43,6 +43,7 @@
       <xsl:when test="@kind='class' or @kind='struct'">
         <xsl:if test="
             contains(compoundname, 'beast::') and
+            not(contains(compoundname, 'boost::')) and
             not(contains(compoundname, '::detail')) and
             not(contains(compoundname, 'rfc2616')) and
             not(contains(@prot, 'private'))">
@@ -61,7 +62,6 @@
   <xsl:text>&#xd;[endsect]</xsl:text>
 </xsl:template>
 
-
 <!--========== Utilities ==========-->
 
 <xsl:template name="strip-beast-ns">
@@ -72,6 +72,9 @@
     </xsl:when>
     <xsl:when test="contains($name, 'beast::')">
       <xsl:value-of select="substring-after($name, 'beast::')"/>
+    </xsl:when>
+    <xsl:when test="$name = 'beast'">
+      <xsl:text></xsl:text>
     </xsl:when>
     <xsl:otherwise>
       <xsl:value-of select="$name"/>
@@ -108,6 +111,38 @@
   </xsl:choose>
 </xsl:template>
 
+<xsl:template name="cleanup-param">
+  <xsl:param name="name"/>
+  <xsl:variable name="clean">
+    <xsl:value-of select="$name"/>
+  </xsl:variable>
+  <xsl:choose>
+    <xsl:when test="' *' = substring($clean, string-length($clean) - 1)">
+      <xsl:value-of select="substring($clean, 1, string-length($clean) - 2)"/>
+      <xsl:text>*</xsl:text>
+    </xsl:when>
+    <xsl:when test="' &amp;' = substring($clean, string-length($clean) - 1)">
+      <xsl:value-of select="substring($clean, 1, string-length($clean) - 2)"/>
+      <xsl:text>&amp;</xsl:text>
+    </xsl:when>
+    <xsl:when test="' &amp;...' = substring($clean, string-length($clean) - 4)">
+      <xsl:value-of select="substring($clean, 1, string-length($clean) - 5)"/>
+      <xsl:text>&amp;...</xsl:text>
+    </xsl:when>
+    <xsl:when test="' &amp;&amp;' = substring($clean, string-length($clean) - 2)">
+      <xsl:value-of select="substring($clean, 1, string-length($clean) - 3)"/>
+      <xsl:text>&amp;&amp;</xsl:text>
+    </xsl:when>
+    <xsl:when test="' &amp;&amp;...' = substring($clean, string-length($clean) - 5)">
+      <xsl:value-of select="substring($clean, 1, string-length($clean) - 6)"/>
+      <xsl:text>&amp;&amp;...</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$clean"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
 <xsl:template name="cleanup-type">
   <xsl:param name="name"/>
   <xsl:variable name="type">
@@ -124,20 +159,22 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
-  <xsl:choose>
-    <xsl:when test="$type='ConstBufferSequence'">
-      <xsl:text>``[link beast.ref.ConstBufferSequence ['ConstBufferSequence]]``</xsl:text>
-    </xsl:when>
-    <xsl:when test="$type='implementation_defined'">
-      <xsl:text>``['implementation-defined]``</xsl:text>
-    </xsl:when>
-    <xsl:when test="$type='void_or_deduced'">
-      <xsl:text>``[link beast.ref.asynchronous_operations.return_type_of_an_initiating_function ['void-or-deduced]]``</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:value-of select="$type"/>
-    </xsl:otherwise>
-  </xsl:choose>
+  <xsl:variable name="cleaned">
+    <xsl:choose>
+      <xsl:when test="$type='implementation_defined'">
+        <xsl:text>``['implementation-defined]``</xsl:text>
+      </xsl:when>
+      <xsl:when test="$type='void_or_deduced'">
+        <xsl:text>``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/asynchronous_operations.html#boost_asio.reference.asynchronous_operations.return_type_of_an_initiating_function ['void-or-deduced]]``</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$type"/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:call-template name="cleanup-param">
+    <xsl:with-param name="name" select="$cleaned"/>
+  </xsl:call-template>
 </xsl:template>
 
 <xsl:template name="make-id">
@@ -260,8 +297,9 @@
 <!--========== Markup ==========-->
 
 <xsl:template match="para" mode="markup">
-  <xsl:apply-templates mode="markup"/>
-  <xsl:text>&#xd;</xsl:text>
+<xsl:value-of select="$newline"/>
+<xsl:apply-templates mode="markup"/>
+<xsl:value-of select="$newline"/>
 </xsl:template>
 
 <xsl:template match="para" mode="markup-nested">
@@ -391,6 +429,8 @@
       <xsl:apply-templates mode="markup"/>
     </xsl:when>
     <xsl:when test="@kind='see'">
+      <xsl:text>[heading See Also]&#xd;</xsl:text>
+      <xsl:apply-templates mode="markup"/>
     </xsl:when>
     <xsl:when test="@kind='note'">
       <xsl:text>[heading Remarks]&#xd;</xsl:text>
@@ -536,12 +576,13 @@
 </xsl:template>
 
 
+
 <xsl:template match="ref[@kindref='compound']" mode="markup">
   <xsl:variable name="name">
     <xsl:value-of select="."/>
   </xsl:variable>
   <xsl:choose>
-    <xsl:when test="contains(@refid, 'asio') or contains($name, 'asio::')">
+    <xsl:when test="contains(@refid, 'beast')">
       <xsl:variable name="dox-ref-id" select="@refid"/>
       <xsl:variable name="ref-name">
         <xsl:call-template name="strip-beast-ns">
@@ -554,6 +595,14 @@
           <xsl:with-param name="name" select="$ref-name"/>
         </xsl:call-template>
       </xsl:variable>
+      <!--<xsl:text>|1|</xsl:text>-->
+      <!--
+      <xsl:text>[role red ref-name='</xsl:text>
+      <xsl:value-of select="$ref-name"/>
+      <xsl:text>'|ref-id='</xsl:text>
+      <xsl:value-of select="$ref-id"/>
+      <xsl:text>']|</xsl:text>
+      -->
       <xsl:text>[link beast.ref.</xsl:text>
       <xsl:value-of select="$ref-id"/>
       <xsl:text> `</xsl:text>
@@ -561,89 +610,106 @@
       <xsl:text>`]</xsl:text>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:text>`</xsl:text>
+      <xsl:text>[role red |1|</xsl:text>
       <xsl:value-of select="."/>
-      <xsl:text>`</xsl:text>
+      <xsl:text>]</xsl:text>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
+<xsl:template match="ref[@kindref='member']" mode="markup">
+  <xsl:variable name="name">
+    <xsl:value-of select="."/>
+  </xsl:variable>
+  <xsl:variable name="dox-ref-id" select="@refid"/>
+  <xsl:variable name="memberdefs" select="/doxygen//compounddef/sectiondef/memberdef[@id=$dox-ref-id]"/>
+  <xsl:variable name="def-kind" select="($memberdefs)/../../@kind"/>
+  <xsl:variable name="sec-kind" select="($memberdefs)/../@kind"/>
+  <xsl:choose>
+    <xsl:when test="contains(@refid, 'beast') and count($memberdefs) &gt; 0">
+      <xsl:variable name="dox-compound-name" select="($memberdefs)[1]/../../compoundname"/>
+      <xsl:variable name="dox-name" select="($memberdefs)[1]/name"/>
+      <xsl:variable name="ref-name">
+        <xsl:call-template name="strip-beast-ns">
+          <xsl:with-param name="name" select="$dox-compound-name"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <xsl:variable name="ref-id">
+        <xsl:call-template name="make-id">
+          <xsl:with-param name="name" select="$ref-name"/>
+        </xsl:call-template>
+      </xsl:variable>
+      <!--<xsl:text>|2|</xsl:text>-->
+      <!--
+      <xsl:text>[role red def-kind='</xsl:text>
+      <xsl:value-of select="$def-kind"/>
+      <xsl:text>', sec-kind='</xsl:text>
+      <xsl:value-of select="$sec-kind"/>
+      <xsl:text>', ref-id='</xsl:text>
+      <xsl:value-of select="$ref-id"/>
+      <xsl:text>'] </xsl:text>
+    -->
+      <xsl:choose>
+        <xsl:when test="$def-kind = 'namespace'">
+          <xsl:text>[link beast.ref.</xsl:text>
+          <xsl:choose>
+            <xsl:when test="string-length($ref-id) &gt; 0">
+              <xsl:value-of select="concat($ref-id,'__',$dox-name)"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="$dox-name"/>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:text> `</xsl:text>
+          <xsl:value-of name="text" select="$dox-name"/>
+          <xsl:text>`]</xsl:text>
+        </xsl:when>
+        <xsl:when test="$def-kind = 'class' or $def-kind = 'struct'">
+          <xsl:text>[link beast.ref.</xsl:text>
+          <xsl:value-of select="concat($ref-id,'.',$dox-name)"/>
+          <xsl:text> `</xsl:text>
+          <xsl:value-of name="text" select="$name"/>
+          <xsl:text>`]</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>[role red </xsl:text>
+          <xsl:value-of select="$name"/>
+          <xsl:text>]</xsl:text>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:text>[role red </xsl:text>
+      <xsl:value-of select="$name"/>
+      <xsl:text>]</xsl:text>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 <xsl:template match="ref[@kindref='compound']" mode="markup-nested">
   <xsl:variable name="name">
     <xsl:value-of select="."/>
   </xsl:variable>
-  <xsl:choose>
-    <xsl:when test="contains(@refid, 'asio') or contains($name, 'asio::')">
-      <xsl:variable name="dox-ref-id" select="@refid"/>
-      <xsl:variable name="ref-name">
-        <xsl:call-template name="strip-beast-ns">
-          <xsl:with-param name="name"
-            select="(/doxygen//compounddef[@id=$dox-ref-id])[1]/compoundname"/>
-        </xsl:call-template>
-      </xsl:variable>
-      <xsl:variable name="ref-id">
-        <xsl:call-template name="make-id">
-          <xsl:with-param name="name" select="$ref-name"/>
-        </xsl:call-template>
-      </xsl:variable>
-      <xsl:text>[link beast.ref.</xsl:text>
-      <xsl:value-of select="$ref-id"/>
-      <xsl:text> `</xsl:text>
-      <xsl:value-of name="text" select="$ref-name"/>
-      <xsl:text>`]</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>`</xsl:text>
-      <xsl:value-of select="."/>
-      <xsl:text>`</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
+  <xsl:text>[role red |3|</xsl:text>
+  <xsl:value-of select="."/>
+  <xsl:text>]</xsl:text>
 </xsl:template>
-
-
-<xsl:template match="ref[@kindref='member']" mode="markup">
-  <xsl:variable name="dox-ref-id" select="@refid"/>
-  <xsl:variable name="memberdefs" select="/doxygen//compounddef/sectiondef/memberdef[@id=$dox-ref-id]"/>
-  <xsl:choose>
-    <xsl:when test="contains(@refid, 'namespaceboost_1_1asio') and count($memberdefs) &gt; 0">
-      <xsl:variable name="dox-compound-name" select="($memberdefs)[1]/../../compoundname"/>
-      <xsl:variable name="dox-name" select="($memberdefs)[1]/name"/>
-      <xsl:variable name="ref-name">
-        <xsl:call-template name="strip-beast-ns">
-          <xsl:with-param name="name" select="concat($dox-compound-name,'::',$dox-name)"/>
-        </xsl:call-template>
-      </xsl:variable>
-      <xsl:variable name="ref-id">
-        <xsl:call-template name="make-id">
-          <xsl:with-param name="name" select="$ref-name"/>
-        </xsl:call-template>
-      </xsl:variable>
-      <xsl:text>[link beast.ref.</xsl:text>
-      <xsl:value-of select="$ref-id"/>
-      <xsl:text> `</xsl:text>
-      <xsl:value-of name="text" select="$ref-name"/>
-      <xsl:text>`]</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>`</xsl:text>
-      <xsl:value-of select="."/>
-      <xsl:text>`</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-</xsl:template>
-
 
 <xsl:template match="ref[@kindref='member']" mode="markup-nested">
+  <xsl:variable name="name">
+    <xsl:value-of select="."/>
+  </xsl:variable>
   <xsl:variable name="dox-ref-id" select="@refid"/>
   <xsl:variable name="memberdefs" select="/doxygen//compounddef/sectiondef/memberdef[@id=$dox-ref-id]"/>
+  <xsl:variable name="def-kind" select="($memberdefs)/../../@kind"/>
+  <xsl:variable name="sec-kind" select="($memberdefs)/../@kind"/>
   <xsl:choose>
-    <xsl:when test="contains(@refid, 'namespaceboost_1_1asio') and count($memberdefs) &gt; 0">
+    <xsl:when test="contains(@refid, 'beast') and count($memberdefs) &gt; 0">
       <xsl:variable name="dox-compound-name" select="($memberdefs)[1]/../../compoundname"/>
       <xsl:variable name="dox-name" select="($memberdefs)[1]/name"/>
       <xsl:variable name="ref-name">
         <xsl:call-template name="strip-beast-ns">
-          <xsl:with-param name="name" select="concat($dox-compound-name,'::',$dox-name)"/>
+          <xsl:with-param name="name" select="$dox-compound-name"/>
         </xsl:call-template>
       </xsl:variable>
       <xsl:variable name="ref-id">
@@ -651,16 +717,49 @@
           <xsl:with-param name="name" select="$ref-name"/>
         </xsl:call-template>
       </xsl:variable>
-      <xsl:text>[link beast.ref.</xsl:text>
+      <!--<xsl:text>|2|</xsl:text>-->
+      <!--
+      <xsl:text>[role red def-kind='</xsl:text>
+      <xsl:value-of select="$def-kind"/>
+      <xsl:text>', sec-kind='</xsl:text>
+      <xsl:value-of select="$sec-kind"/>
+      <xsl:text>', ref-id='</xsl:text>
       <xsl:value-of select="$ref-id"/>
-      <xsl:text> `</xsl:text>
-      <xsl:value-of name="text" select="$ref-name"/>
-      <xsl:text>`]</xsl:text>
+      <xsl:text>'] </xsl:text>
+    -->
+      <xsl:choose>
+        <xsl:when test="$def-kind = 'namespace'">
+          <xsl:text>[link beast.ref.</xsl:text>
+          <xsl:choose>
+            <xsl:when test="string-length($ref-id) &gt; 0">
+              <xsl:value-of select="concat($ref-id,'__',$dox-name)"/>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:value-of select="$dox-name"/>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:text> `</xsl:text>
+          <xsl:value-of name="text" select="$dox-name"/>
+          <xsl:text>`]</xsl:text>
+        </xsl:when>
+        <xsl:when test="$def-kind = 'class' or $def-kind = 'struct'">
+          <xsl:text>[link beast.ref.</xsl:text>
+          <xsl:value-of select="concat($ref-id,'.',$dox-name)"/>
+          <xsl:text> `</xsl:text>
+          <xsl:value-of name="text" select="$name"/>
+          <xsl:text>`]</xsl:text>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:text>[role red </xsl:text>
+          <xsl:value-of select="$name"/>
+          <xsl:text>]</xsl:text>
+        </xsl:otherwise>
+      </xsl:choose>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:text>`</xsl:text>
-      <xsl:value-of select="."/>
-      <xsl:text>`</xsl:text>
+      <xsl:text>[role red </xsl:text>
+      <xsl:value-of select="$name"/>
+      <xsl:text>]</xsl:text>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -1185,7 +1284,8 @@
         </xsl:call-template>
       </xsl:variable>
       <xsl:if test="string-length($stripped-type) &gt; 0">
-        <xsl:value-of select="$stripped-type"/><xsl:text> </xsl:text>
+        <xsl:value-of select="$stripped-type"/>
+        <xsl:text>&#xd;</xsl:text>
       </xsl:if>
       <xsl:text>``[link beast.ref.</xsl:text>
       <xsl:value-of select="$class-id"/>
@@ -1412,21 +1512,62 @@
 </xsl:template>
 
 
+
 <xsl:template match="templateparamlist" mode="class-detail">
   <xsl:text>template&lt;&#xd;</xsl:text>
   <xsl:apply-templates select="param" mode="class-detail-template"/>
   <xsl:text>&gt;&#xd;</xsl:text>
 </xsl:template>
 
+
+
 <xsl:template match="param" mode="class-detail-template">
   <xsl:text>    </xsl:text>
   <xsl:choose>
+    <xsl:when test="type = 'class AsyncStream'">
+      <xsl:text>class ``[link beast.types.stream.AsyncStream [*AsyncStream]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="type = 'class AsyncReadStream'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncReadStream.html [*AsyncReadStream]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="type = 'class AsyncWriteStream'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncWriteStream.html [*AsyncWriteStream]]``</xsl:text>
+    </xsl:when>
     <xsl:when test="type = 'class Body'">
       <xsl:text>class ``[link beast.types.Body [*Body]]``</xsl:text>
     </xsl:when>
-    <xsl:when test="type = 'class Streambuf'">
+    <xsl:when test="type = 'class BufferSequence'">
+      <xsl:text>class ``[link beast.types.BufferSequence [*BufferSequence]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="(type = 'class' or type = 'class...') and declname = 'BufferSequence'">
+      <xsl:value-of select="type"/>
+      <xsl:text> ``[link beast.types.BufferSequence [*BufferSequence]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="declname = 'CompletionHandler' or type = 'class CompletionHandler'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/CompletionHandler.html [*CompletionHandler]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="declname = 'ConstBufferSequence' or type = 'class ConstBufferSequence'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*ConstBufferSequence]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="declname = 'MutableBufferSequence' or type = 'class MutableBufferSequence'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*MutableBufferSequence]]``</xsl:text>
+    </xsl:when>
+   <xsl:when test="declname = 'Stream' or type = 'class Stream'">
+      <xsl:text>class ``[link beast.types.stream.Stream [*Stream]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="declname = 'Streambuf' or type = 'class Streambuf'">
       <xsl:text>class ``[link beast.types.Streambuf [*Streambuf]]``</xsl:text>
     </xsl:when>
+    <xsl:when test="type = 'class SyncStream'">
+      <xsl:text>class ``[link beast.types.stream.SyncStream [*SyncStream]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="declname = 'SyncReadStream' or type = 'class SyncReadStream'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncReadStream.html [*SyncReadStream]]``</xsl:text>
+    </xsl:when>
+    <xsl:when test="declname = 'SyncWriteStream' or type = 'class SyncWriteStream'">
+      <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncWriteStream.html [*SyncWriteStream]]``</xsl:text>
+    </xsl:when>
+
     <xsl:when test="declname = 'T'">
       <xsl:value-of select="declname"/>
     </xsl:when>
@@ -1466,28 +1607,19 @@
       <xsl:value-of select="array"/>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:choose>
-        <xsl:when test="' &amp;&amp;' = substring(type, string-length(type) - 2)">
-          <xsl:value-of select="substring(type, 1, string-length(type) - 3)"/>
-          <xsl:text>&amp;&amp;</xsl:text>
-        </xsl:when>
-        <xsl:when test="' &amp;' = substring(type, string-length(type) - 1)">
-          <xsl:value-of select="substring(type, 1, string-length(type) - 2)"/>
-          <xsl:text>&amp;</xsl:text>
-        </xsl:when>
-        <xsl:when test="' *' = substring(type, string-length(type) - 1)">
-          <xsl:value-of select="substring(type, 1, string-length(type) - 2)"/>
-          <xsl:text>*</xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:value-of select="type"/>
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="declname"/>
+      <xsl:call-template name="cleanup-param">
+        <xsl:with-param name="name" select="type"/>
+      </xsl:call-template>
+      <xsl:if test="count(declname) > 0">
+        <xsl:text> </xsl:text>
+        <xsl:value-of select="declname"/>
+      </xsl:if>
     </xsl:otherwise>
   </xsl:choose>
-  <xsl:if test="count(defval) > 0"> = <xsl:value-of select="defval"/></xsl:if>
+  <xsl:if test="count(defval) > 0">
+    <xsl:text> = </xsl:text>
+    <xsl:value-of select="defval"/>
+  </xsl:if>
   <xsl:if test="not(position() = last())">
     <xsl:text>,</xsl:text>
   </xsl:if>
