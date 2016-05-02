@@ -143,12 +143,6 @@ public:
     }
 
     void
-    on_legacy_endpoints (IPAddresses const& addresses)  override
-    {
-        m_logic.on_legacy_endpoints (addresses);
-    }
-
-    void
     on_closed (Slot::ptr const& slot)  override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));

@@ -189,9 +189,6 @@ public:
     virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;
 
-    /** Called when legacy IP/port addresses are received. */
-    virtual void on_legacy_endpoints (IPAddresses const& addresses) = 0;
-
     /** Called when the slot is closed.
         This always happens when the socket is closed, unless the socket
         was canceled.
