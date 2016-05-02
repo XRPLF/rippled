@@ -978,7 +978,8 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMCluster> const& m)
 void
 PeerImp::onMessage (std::shared_ptr <protocol::TMGetPeers> const& m)
 {
-    // VFALCO TODO This message is now obsolete due to PeerFinder
+    // This message is obsolete due to PeerFinder and
+    // we no longer provide a response to it.
 }
 
 void
@@ -1763,20 +1764,6 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 }
 
 //--------------------------------------------------------------------------
-
-void
-PeerImp::sendGetPeers ()
-{
-    // Ask peer for known other peers.
-    protocol::TMGetPeers msg;
-
-    msg.set_doweneedthis (1);
-
-    Message::pointer packet = std::make_shared<Message> (
-        msg, protocol::mtGET_PEERS);
-
-    send (packet);
-}
 
 void
 PeerImp::addLedger (uint256 const& hash)
