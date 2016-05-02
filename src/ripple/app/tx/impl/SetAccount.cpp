@@ -23,6 +23,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
 #include <ripple/ledger/View.h>
@@ -123,15 +124,17 @@ SetAccount::preflight (PreflightContext const& ctx)
         }
     }
 
-    auto const messageKey = tx[~sfMessageKey];
-    if (messageKey && messageKey->size() > PUBLIC_BYTES_MAX)
+    if (auto const mk = tx[~sfMessageKey])
     {
-        JLOG(j.trace()) << "message key too long";
-        return telBAD_PUBLIC_KEY;
+        if (mk->size() && ! publicKeyType ({mk->data(), mk->size()}))
+        {
+            JLOG(j.trace()) << "Invalid message key specified.";
+            return telBAD_PUBLIC_KEY;
+        }
     }
 
     auto const domain = tx[~sfDomain];
-    if (domain&& domain->size() > DOMAIN_BYTES_MAX)
+    if (domain && domain->size() > DOMAIN_BYTES_MAX)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
