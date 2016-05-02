@@ -441,9 +441,6 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    sendGetPeers();
-
-    void
     addLedger (uint256 const& hash);
 
     void
