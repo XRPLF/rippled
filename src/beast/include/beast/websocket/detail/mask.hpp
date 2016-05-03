@@ -41,9 +41,6 @@ class maskgen_t
 public:
     using result_type = typename std::mt19937::result_type;
 
-    maskgen_t(maskgen_t const&) = delete;
-    maskgen_t& operator=(maskgen_t const&) = delete;
-
     maskgen_t();
 
     result_type

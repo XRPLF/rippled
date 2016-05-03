@@ -23,7 +23,9 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/json/json_reader.h>
+#include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
+#include <beast/to_string.hpp>
 
 namespace ripple {
 
@@ -45,13 +47,6 @@ ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_se
         context, io_service))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
-    , parser_ (
-        [&](void const* data, std::size_t size)
-        {
-            body_.commit(boost::asio::buffer_copy(body_.prepare(size),
-                boost::asio::buffer(data, size)));
-        }
-        , response_, false)
     , slot_ (slot)
 {
     JLOG(journal_.debug()) <<
@@ -244,11 +239,13 @@ ConnectAttempt::onWrite (error_code ec)
         return;
     if(ec)
         return fail("onWrite", ec);
-    onRead(error_code(), 0);
+    beast::http::async_read(stream_, read_buf_, response_,
+        strand_.wrap(std::bind(&ConnectAttempt::onRead,
+            shared_from_this(), beast::asio::placeholders::error)));
 }
 
 void
-ConnectAttempt::onRead (error_code ec, std::size_t bytes_transferred)
+ConnectAttempt::onRead (error_code ec)
 {
     cancelTimer();
 
@@ -267,35 +264,7 @@ ConnectAttempt::onRead (error_code ec, std::size_t bytes_transferred)
     }
     if(ec)
         return fail("onRead", ec);
-    if(auto stream = journal_.trace())
-    {
-        if(bytes_transferred > 0)
-            stream << "onRead: " << bytes_transferred << " bytes";
-        else
-            stream << "onRead";
-    }
-
-    if (! ec)
-    {
-        write_buf_.commit(bytes_transferred);
-        auto bytes_consumed = parser_.write(
-            write_buf_.data(), ec);
-        if (! ec)
-        {
-            write_buf_.consume (bytes_consumed);
-            if (parser_.complete())
-                return processResponse(response_, body_);
-        }
-    }
-
-    if (ec)
-        return fail("onRead", ec);
-
-    setTimer();
-    stream_.async_read_some (write_buf_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&ConnectAttempt::onRead,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+    processResponse();
 }
 
 void
@@ -321,7 +290,7 @@ ConnectAttempt::makeRequest (bool crawl,
         request_type
 {
     request_type m;
-    m.method = beast::http::method_t::http_get;
+    m.method = "GET";
     m.url = "/";
     m.version = 11;
     m.headers.insert ("User-Agent", BuildInfo::getFullVersionString());
@@ -333,16 +302,14 @@ ConnectAttempt::makeRequest (bool crawl,
     return m;
 }
 
-template <class Streambuf>
 void
-ConnectAttempt::processResponse (beast::deprecated_http::message const& m,
-    Streambuf const& body)
+ConnectAttempt::processResponse()
 {
-    if (response_.status() == 503)
+    if (response_.status == 503)
     {
         Json::Value json;
         Json::Reader r;
-        auto const success = r.parse(to_string(body), json);
+        auto const success = r.parse(beast::to_string(response_.body.data()), json);
         if (success)
         {
             if (json.isObject() && json.isMember("peer-ips"))
@@ -369,10 +336,10 @@ ConnectAttempt::processResponse (beast::deprecated_http::message const& m,
         }
     }
 
-    if (! OverlayImpl::isPeerUpgrade(m))
+    if (! OverlayImpl::isPeerUpgrade(response_))
     {
         JLOG(journal_.info()) <<
-            "HTTP Response: " << m.status() << " " << m.reason();
+            "HTTP Response: " << response_.status << " " << response_.reason;
         return close();
     }
 

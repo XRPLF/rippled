@@ -47,7 +47,7 @@ public:
         Port const& port,
         Handler& handler,
         endpoint_type remote_address,
-        beast::http::message<true, Body, Headers>&& request,
+        beast::http::request_v1<Body, Headers>&& request,
         socket_type&& socket,
         beast::Journal journal);
 
@@ -63,7 +63,7 @@ PlainWSPeer::PlainWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_address,
-    beast::http::message<true, Body, Headers>&& request,
+    beast::http::request_v1<Body, Headers>&& request,
     socket_type&& socket,
     beast::Journal journal)
     : BaseWSPeer(port, handler, remote_address, std::move(request),

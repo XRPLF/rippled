@@ -9,6 +9,7 @@
 #define BEAST_HTTP_ERROR_HPP
 
 #include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 namespace beast {
 namespace http {

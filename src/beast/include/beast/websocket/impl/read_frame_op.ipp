@@ -132,7 +132,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
 {
     auto& d = *d_;
     d.cont = d.cont || again;
-    close_code code;
+    close_code::value code = close_code::none;
     while(! ec && d.state != 99)
     {
         switch(d.state)
@@ -195,7 +195,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             d.state = 4;
             break;
         }
-        
+
         // call handler
         case 4:
             d.state = 99;
@@ -396,8 +396,8 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         // teardown
         case 11:
             d.state = 12;
-            wsproto_helpers::call_async_teardown(
-                d.ws.next_layer_, std::move(*this));
+            websocket_helpers::call_async_teardown(
+                d.ws.next_layer(), std::move(*this));
             return;
 
         case 12:
@@ -482,8 +482,8 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         // teardown
         case 19:
             d.state = 20;
-            wsproto_helpers::call_async_teardown(
-                d.ws.next_layer_, std::move(*this));
+            websocket_helpers::call_async_teardown(
+                d.ws.next_layer(), std::move(*this));
             return;
 
         case 20:

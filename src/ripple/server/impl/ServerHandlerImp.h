@@ -26,7 +26,6 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/server/Handler.h>
-#include <ripple/server/JsonWriter.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/WSSession.h>
@@ -62,7 +61,12 @@ public:
         if(! sp)
             return;
         beast::streambuf sb;
-        write(sb, jv);
+        stream(jv,
+            [&](void const* data, std::size_t n)
+            {
+                sb.commit(boost::asio::buffer_copy(
+                    sb.prepare(n), boost::asio::buffer(data, n)));
+            });
         auto m = std::make_shared<
             StreambufWSMsg<decltype(sb)>>(
                 std::move(sb));

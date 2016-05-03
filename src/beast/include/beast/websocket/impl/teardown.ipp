@@ -9,7 +9,7 @@
 #define BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 
 #include <beast/async_completion.hpp>
-#include <beast/type_check.hpp>
+#include <beast/handler_concepts.hpp>
 #include <memory>
 
 namespace beast {
@@ -157,7 +157,7 @@ async_teardown(
     boost::asio::ip::tcp::socket& socket,
         TeardownHandler&& handler)
 {
-    static_assert(beast::is_Handler<
+    static_assert(beast::is_CompletionHandler<
         TeardownHandler, void(error_code)>::value,
             "TeardownHandler requirements not met");
     detail::teardown_tcp_op<typename std::decay<

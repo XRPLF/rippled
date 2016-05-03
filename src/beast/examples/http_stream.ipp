@@ -20,10 +20,11 @@
 #ifndef BEAST_HTTP_STREAM_IPP_INCLUDED
 #define BEAST_HTTP_STREAM_IPP_INCLUDED
 
-#include <beast/bind_handler.hpp>
-#include <beast/handler_alloc.hpp>
+#include <beast/http/message_v1.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
+#include <beast/bind_handler.hpp>
+#include <beast/handler_alloc.hpp>
 #include <cassert>
 
 namespace beast {
@@ -40,14 +41,14 @@ class stream<NextLayer, Allocator>::read_op
     struct data
     {
         stream<NextLayer>& s;
-        message<isRequest, Body, Headers>& m;
+        message_v1<isRequest, Body, Headers>& m;
         Handler h;
         bool cont;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, stream<NextLayer>& s_,
-                message<isRequest, Body, Headers>& m_)
+                message_v1<isRequest, Body, Headers>& m_)
             : s(s_)
             , m(m_)
             , h(std::forward<DeducedHandler>(h_))
@@ -142,14 +143,14 @@ class stream<NextLayer, Allocator>::write_op : public op
     struct data
     {
         stream<NextLayer>& s;
-        message<isRequest, Body, Headers> m;
+        message_v1<isRequest, Body, Headers> m;
         Handler h;
         bool cont;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, stream<NextLayer>& s_,
-            message<isRequest, Body, Headers> const& m_,
+            message_v1<isRequest, Body, Headers> const& m_,
                 bool cont_)
             : s(s_)
             , m(m_)
@@ -160,7 +161,7 @@ class stream<NextLayer, Allocator>::write_op : public op
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, stream<NextLayer>& s_,
-            message<isRequest, Body, Headers>&& m_,
+            message_v1<isRequest, Body, Headers>&& m_,
                 bool cont_)
             : s(s_)
             , m(std::move(m_))
@@ -305,7 +306,7 @@ template<class NextLayer, class Allocator>
 template<bool isRequest, class Body, class Headers>
 void
 stream<NextLayer, Allocator>::
-read(message<isRequest, Body, Headers>& msg,
+read(message_v1<isRequest, Body, Headers>& msg,
     error_code& ec)
 {
     beast::http::read(next_layer_, rd_buf_, msg, ec);
@@ -316,7 +317,7 @@ template<bool isRequest, class Body, class Headers,
     class ReadHandler>
 auto
 stream<NextLayer, Allocator>::
-async_read(message<isRequest, Body, Headers>& msg,
+async_read(message_v1<isRequest, Body, Headers>& msg,
     ReadHandler&& handler) ->
         typename async_completion<
             ReadHandler, void(error_code)>::result_type
@@ -334,7 +335,7 @@ template<class NextLayer, class Allocator>
 template<bool isRequest, class Body, class Headers>
 void
 stream<NextLayer, Allocator>::
-write(message<isRequest, Body, Headers> const& msg,
+write(message_v1<isRequest, Body, Headers> const& msg,
     error_code& ec)
 {
     beast::http::write(next_layer_, msg, ec);
@@ -345,7 +346,7 @@ template<bool isRequest, class Body, class Headers,
     class WriteHandler>
 auto
 stream<NextLayer, Allocator>::
-async_write(message<isRequest, Body, Headers> const& msg,
+async_write(message_v1<isRequest, Body, Headers> const& msg,
     WriteHandler&& handler) ->
         typename async_completion<
             WriteHandler, void(error_code)>::result_type
@@ -376,7 +377,7 @@ template<bool isRequest, class Body, class Headers,
     class WriteHandler>
 auto
 stream<NextLayer, Allocator>::
-async_write(message<isRequest, Body, Headers>&& msg,
+async_write(message_v1<isRequest, Body, Headers>&& msg,
     WriteHandler&& handler) ->
         typename async_completion<
             WriteHandler, void(error_code)>::result_type

@@ -30,8 +30,8 @@ namespace websocket {
 /** Tear down a connection.
 
     This tears down a connection. The implementation will call
-    the overload of this function based on the `Stream` parameter
-    used to consruct the socket. When `Stream` is a user defined
+    the overload of this function based on the `Socket` parameter
+    used to consruct the socket. When `Socket` is a user defined
     type, and not a `boost::asio::ip::tcp::socket` or any
     `boost::asio::ssl::stream`, callers are responsible for
     providing a suitable overload of this function.
@@ -48,7 +48,7 @@ teardown(Socket& socket, error_code& ec) = delete;
 
     This begins tearing down a connection asynchronously.
     The implementation will call the overload of this function
-    based on the `Stream` parameter used to consruct the socket.
+    based on the `Socket` parameter used to consruct the socket.
     When `Stream` is a user defined type, and not a
     `boost::asio::ip::tcp::socket` or any `boost::asio::ssl::stream`,
     callers are responsible for providing a suitable overload
@@ -68,9 +68,9 @@ teardown(Socket& socket, error_code& ec) = delete;
     manner equivalent to using boost::asio::io_service::post().
 
 */
-template<class AsyncSocket, class TeardownHandler>
+template<class Socket, class TeardownHandler>
 void
-async_teardown(AsyncSocket& socket, TeardownHandler&& handler) = delete;
+async_teardown(Socket& socket, TeardownHandler&& handler) = delete;
 
 //------------------------------------------------------------------------------
 
@@ -126,11 +126,11 @@ async_teardown(
 
 //------------------------------------------------------------------------------
 
-namespace wsproto_helpers {
+namespace websocket_helpers {
 
 // Calls to teardown and async_teardown must be made from
 // a namespace that does not contain any overloads of these
-// functions. The wsproto_helpers namespace is defined here
+// functions. The websocket_helpers namespace is defined here
 // for that purpose.
 
 template<class Socket>

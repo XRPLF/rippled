@@ -16,7 +16,6 @@
 #include <string>
 
 namespace beast {
-namespace test {
 
 struct test_allocator_info
 {
@@ -286,16 +285,22 @@ public:
         }
     }
 
+    void testStream()
+    {
+        streambuf sb;
+        sb << "x";
+    }
+
     void run() override
     {
         testPrepare();
         testStreambuf();
         testSpecial();
         testAllocator();
+        testStream();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(basic_streambuf,core,beast);
 
-} // test
 } // beast

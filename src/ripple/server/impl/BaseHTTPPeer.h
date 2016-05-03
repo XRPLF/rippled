@@ -30,7 +30,7 @@
 #include <ripple/beast/asio/ssl_error.h> // for is_short_read?
 #include <beast/http/read.hpp>
 #include <beast/http/message.hpp>
-#include <beast/http/parser.hpp>
+#include <beast/http/parser_v1.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>

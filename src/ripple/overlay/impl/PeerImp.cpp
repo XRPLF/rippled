@@ -46,6 +46,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/beast/utility/weak_fn.h>
+#include <beast/http/write.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
 #include <algorithm>
@@ -599,10 +600,9 @@ void PeerImp::doAccept()
 
     // TODO Apply headers to connection state.
 
-    auto resp = makeResponse(
+    beast::write (write_buffer_, makeResponse(
         ! overlay_.peerFinder().config().peerPrivate,
-            request_, remote_address_, *sharedValue);
-    beast::deprecated_http::write (write_buffer_, resp);
+            request_, remote_address_, *sharedValue));
 
     auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol);
@@ -641,17 +641,16 @@ void PeerImp::doAccept()
     onWriteResponse(error_code(), 0);
 }
 
-beast::deprecated_http::message
+http_response_type
 PeerImp::makeResponse (bool crawl,
     http_request_type const& req,
     beast::IP::Endpoint remote,
     uint256 const& sharedValue)
 {
-    beast::deprecated_http::message resp;
-    resp.request(false);
-    resp.status(101);
-    resp.reason("Switching Protocols");
-    resp.version(std::make_pair(req.version / 10, req.version % 10));
+    http_response_type resp;
+    resp.status = 101;
+    resp.reason = "Switching Protocols";
+    resp.version = req.version;
     resp.headers.insert("Connection", "Upgrade");
     resp.headers.insert("Upgrade", "RTXP/1.2");
     resp.headers.insert("Connect-AS", "Peer");

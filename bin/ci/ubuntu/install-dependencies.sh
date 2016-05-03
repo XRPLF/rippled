@@ -28,7 +28,15 @@ fi
 ls -lah ~/.npm || mkdir ~/.npm
 # Make sure we own it
 chown -Rc $USER ~/.npm
-# We use this so we can filter the subtrees from our coverage report
-pip install --user https://github.com/sublimator/codecov-python/zipball/source-match
+pip install --user https://github.com/codecov/codecov-python/archive/master.zip
 
 bash bin/sh/install-boost.sh
+
+# Install lcov
+# Download the archive
+wget http://downloads.sourceforge.net/ltp/lcov-1.12.tar.gz
+# Extract to ~/lcov-1.12
+tar xfvz lcov-1.12.tar.gz -C $HOME
+# Set install path
+mkdir -p $LCOV_ROOT
+cd $HOME/lcov-1.12 && make install PREFIX=$LCOV_ROOT

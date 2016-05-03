@@ -8,15 +8,16 @@
 #ifndef BEAST_BUFFERS_ADAPTER_HPP
 #define BEAST_BUFFERS_ADAPTER_HPP
 
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <type_traits>
 
 namespace beast {
 
-/** Adapts a `MutableBufferSequence` into a `Streambuf`.
+/** Adapts a @b `MutableBufferSequence` into a @b `Streambuf`.
 
-    This class wraps a `MutableBufferSequence` to meet the requirements
-    of `Streambuf`. Upon construction the input and output sequences are
+    This class wraps a @b `MutableBufferSequence` to meet the requirements
+    of @b `Streambuf`. Upon construction the input and output sequences are
     empty. A copy of the mutable buffer sequence object is stored; however,
     ownership of the underlying memory is not transferred. The caller is
     responsible for making sure that referenced memory remains valid
@@ -25,20 +26,18 @@ namespace beast {
     The size of the mutable buffer sequence determines the maximum
     number of bytes which may be prepared and committed.
 
-    @tparam Buffers The type of mutable buffer sequence to wrap.
+    @tparam MutableBufferSequence The type of mutable buffer sequence to wrap.
 */
-template<class Buffers>
+template<class MutableBufferSequence>
 class buffers_adapter
 {
 private:
-    using buffers_type = typename std::decay<Buffers>::type;
-    using iter_type = typename buffers_type::const_iterator;
+    static_assert(is_MutableBufferSequence<MutableBufferSequence>::value,
+        "MutableBufferSequence requirements not met");
 
-    static auto constexpr is_mutable =
-        std::is_constructible<boost::asio::mutable_buffer,
-            typename std::iterator_traits<iter_type>::value_type>::value;
+    using iter_type = typename MutableBufferSequence::const_iterator;
 
-    Buffers bs_;
+    MutableBufferSequence bs_;
     iter_type begin_;
     iter_type out_;
     iter_type end_;
@@ -98,7 +97,7 @@ public:
         transferred.
     */
     explicit
-    buffers_adapter(Buffers const& buffers);
+    buffers_adapter(MutableBufferSequence const& buffers);
 
     /// Returns the largest size output sequence possible.
     std::size_t
@@ -118,15 +117,25 @@ public:
 
         @throws std::length_error if the size would exceed the limit
         imposed by the underlying mutable buffer sequence.
+
+        @note Buffers representing the input sequence acquired prior to
+        this call remain valid.
     */
     mutable_buffers_type
     prepare(std::size_t n);
 
-    /// Move bytes from the output sequence to the input sequence.
+    /** Move bytes from the output sequence to the input sequence.
+
+        @note Buffers representing the input sequence acquired prior to
+        this call remain valid.
+    */
     void
     commit(std::size_t n);
 
-    /// Get a list of buffers that represents the input sequence.
+    /** Get a list of buffers that represents the input sequence.
+
+        @note These buffers remain valid across subsequent calls to `prepare`.
+    */
     const_buffers_type
     data() const;
 

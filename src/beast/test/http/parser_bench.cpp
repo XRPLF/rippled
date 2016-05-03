@@ -9,7 +9,7 @@
 #include "message_fuzz.hpp"
 #include <beast/http.hpp>
 #include <beast/streambuf.hpp>
-#include <beast/buffers_debug.hpp>
+#include <beast/to_string.hpp>
 #include <beast/detail/unit_test/suite.hpp>
 #include <chrono>
 #include <iostream>
@@ -74,8 +74,7 @@ public:
                 error_code ec;
                 p.write(sb.data(), ec);
                 if(! expect(! ec, ec.message()))
-                    log << debug::buffers_to_string(
-                        sb.data()) << std::endl;
+                    log << to_string(sb.data()) << std::endl;
             }
     }
 
@@ -98,7 +97,7 @@ public:
     }
 
     template<bool isRequest>
-    struct null_parser : basic_parser<isRequest, null_parser<isRequest>>
+    struct null_parser : basic_parser_v1<isRequest, null_parser<isRequest>>
     {
     };
 
@@ -109,10 +108,10 @@ public:
         static std::size_t constexpr Repeat = 50;
 
         log << "sizeof(request parser)  == " <<
-            sizeof(basic_parser<true, null_parser<true>>);
+            sizeof(basic_parser_v1<true, null_parser<true>>);
 
         log << "sizeof(response parser) == " <<
-            sizeof(basic_parser<false, null_parser<true>>);
+            sizeof(basic_parser_v1<false, null_parser<true>>);
 
         testcase << "Parser speed test, " <<
             ((Repeat * size_ + 512) / 1024) << "KB in " <<
@@ -122,20 +121,20 @@ public:
             [&]
             {
                 testParser<nodejs_parser<
-                    true, streambuf_body, http_headers>>(
+                    true, streambuf_body, headers>>(
                         Repeat, creq_);
                 testParser<nodejs_parser<
-                    false, streambuf_body, http_headers>>(
+                    false, streambuf_body, headers>>(
                         Repeat, cres_);
             });
-        timedTest(Trials, "http::basic_parser",
+        timedTest(Trials, "http::basic_parser_v1",
             [&]
             {
-                testParser<parser<
-                    true, streambuf_body, http_headers>>(
+                testParser<parser_v1<
+                    true, streambuf_body, headers>>(
                         Repeat, creq_);
-                testParser<parser<
-                    false, streambuf_body, http_headers>>(
+                testParser<parser_v1<
+                    false, streambuf_body, headers>>(
                         Repeat, cres_);
             });
         pass();

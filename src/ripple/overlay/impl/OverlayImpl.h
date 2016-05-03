@@ -25,7 +25,6 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/overlay/impl/TrafficCount.h>
-#include <ripple/beast/deprecated_http.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
@@ -259,7 +258,7 @@ public:
 
     static
     bool
-    isPeerUpgrade (beast::deprecated_http::message const& request);
+    isPeerUpgrade (http_response_type const& response);
 
     static
     std::string

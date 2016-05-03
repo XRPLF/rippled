@@ -8,6 +8,7 @@
 #ifndef BEAST_CONSUMING_BUFFERS_HPP
 #define BEAST_CONSUMING_BUFFERS_HPP
 
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
 #include <iterator>
@@ -28,26 +29,29 @@ namespace beast {
     Ownership of the underlying memory is not transferred, the application
     is still responsible for managing its lifetime.
 
-    @tparam Buffers The buffer sequence to wrap.
+    @tparam BufferSequence The buffer sequence to wrap.
 
-    @ptaram ValueType The type of buffer of the final buffer sequence. This
+    @tparam ValueType The type of buffer of the final buffer sequence. This
     can be different from the buffer type of the wrapped sequence. For
     example, a `MutableBufferSequence` can be transformed into a
     consumable `ConstBufferSequence`. Violations of buffer const safety
     are not permitted, and will result in a compile error.
 */
-template<class Buffers,
-    class ValueType = typename Buffers::value_type>
+template<class BufferSequence,
+    class ValueType = typename BufferSequence::value_type>
 class consuming_buffers
 {
     using iter_type =
-        typename Buffers::const_iterator;
+        typename BufferSequence::const_iterator;
+
+    static_assert(is_BufferSequence<BufferSequence, ValueType>::value,
+        "BufferSequence requirements not met");
 
     static_assert(std::is_constructible<ValueType,
         typename std::iterator_traits<iter_type>::value_type>::value,
             "ValueType requirements not met");
 
-    Buffers bs_;
+    BufferSequence bs_;
     iter_type begin_;
     std::size_t skip_ = 0;
 
@@ -90,7 +94,7 @@ public:
         underlying memory is not transferred or copied.
     */
     explicit
-    consuming_buffers(Buffers const& buffers);
+    consuming_buffers(BufferSequence const& buffers);
 
     /// Get a bidirectional iterator to the first element.
     const_iterator
@@ -110,10 +114,24 @@ public:
     consume(std::size_t n);
 };
 
-/// Returns a consumed buffer
-template<class Buffers>
-consuming_buffers<Buffers, typename Buffers::value_type>
-consumed_buffers(Buffers const& bs, std::size_t n);
+/** Returns a new, consumned buffer sequence.
+
+    This function returns a new buffer sequence which when iterated,
+    efficiently represents the portion of the original buffer sequence
+    with `n` bytes removed from the beginning.
+
+    Copies will be made of the buffer sequence passed, but ownership
+    of the underlying memory is not transferred.
+
+    @param buffers The buffer sequence to consume.
+
+    @param n The number of bytes to remove from the front. If this is
+    larger than the size of the buffer sequence, an empty buffer sequence
+    is returned.
+*/
+template<class BufferSequence>
+consuming_buffers<BufferSequence, typename BufferSequence::value_type>
+consumed_buffers(BufferSequence const& buffers, std::size_t n);
 
 } // beast
 
