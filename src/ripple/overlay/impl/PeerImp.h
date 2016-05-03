@@ -26,7 +26,6 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/beast/deprecated_http.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/Job.h>
@@ -361,7 +360,7 @@ private:
     void
     doAccept();
 
-    beast::deprecated_http::message
+    http_response_type
     makeResponse (bool crawl, http_request_type const& req,
         beast::IP::Endpoint remoteAddress,
         uint256 const& sharedValue);
