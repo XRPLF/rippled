@@ -1022,6 +1022,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
         buildLCL->updateSkipList ();
 
+        // unshare if buildLCL has been set back to v1, otherwise do nothing
         if (buildLCL->info().seq > v2_ledger_seq_switch &&
             !buildLCL->stateMap().is_v2())
         {

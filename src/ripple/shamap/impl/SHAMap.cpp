@@ -849,7 +849,7 @@ bool SHAMap::delItem (uint256 const& id)
                 else if (bc == 1)
                 {
                     // If there's only one item, pull up on the thread
-                    std::shared_ptr<SHAMapItem const> item = onlyBelow (node.get ());
+                    auto item = onlyBelow (node.get ());
 
                     if (item)
                     {

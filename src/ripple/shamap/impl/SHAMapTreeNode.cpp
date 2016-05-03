@@ -837,10 +837,7 @@ SHAMapInnerNode::invariants(bool is_v2, bool is_root) const
         assert(mHash.isNonZero());
         assert(count >= 1);
     }
-    if (count == 0)
-        assert(mHash.isZero());
-    else
-        assert(mHash.isNonZero());
+    assert((count == 0) ? mHash.isZero() : mHash.isNonZero());
 }
 
 void
