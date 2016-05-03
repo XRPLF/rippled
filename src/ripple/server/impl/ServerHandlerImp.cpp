@@ -22,7 +22,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/server/JsonWriter.h>
+#include <ripple/server/json_body.h>
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/server/impl/ServerHandlerImp.h>

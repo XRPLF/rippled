@@ -21,87 +21,59 @@
 #define RIPPLE_SERVER_SIMPLEWRITER_H_INCLUDED
 
 #include <ripple/server/Writer.h>
-#include <ripple/beast/deprecated_http.h>
+#include <beast/http/message_v1.hpp>
+#include <beast/http/write.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/write_streambuf.hpp>
 #include <utility>
 
 namespace ripple {
 
-/** Writer that sends a simple HTTP response with a message body. */
+/// Deprecated: Writer that serializes a HTTP/1 message
 class SimpleWriter : public Writer
 {
-private:
-    beast::deprecated_http::message message_;
-    beast::streambuf streambuf_;
-    std::string body_;
-    bool prepared_ = false;
+    beast::streambuf sb_;
 
 public:
+    template<bool isRequest, class Body, class Headers>
     explicit
-    SimpleWriter(beast::deprecated_http::message&& message)
-        : message_(std::forward<beast::deprecated_http::message>(message))
+    SimpleWriter(beast::http::message_v1<
+        isRequest, Body, Headers> const& msg)
     {
-    }
-
-    beast::deprecated_http::message&
-    message()
-    {
-        return message_;
+        beast::write(sb_, msg);
     }
 
     bool
     complete() override
     {
-        return streambuf_.size() == 0;
+        return sb_.size() == 0;
     }
 
     void
     consume (std::size_t bytes) override
     {
-        streambuf_.consume(bytes);
+        sb_.consume(bytes);
     }
 
     bool
-    prepare (std::size_t bytes,
+    prepare(std::size_t bytes,
         std::function<void(void)>) override
     {
-        if (! prepared_)
-            do_prepare();
         return true;
     }
 
     std::vector<boost::asio::const_buffer>
     data() override
     {
-        auto const& buf = streambuf_.data();
+        auto const& buf = sb_.data();
         std::vector<boost::asio::const_buffer> result;
         result.reserve(std::distance(buf.begin(), buf.end()));
         for (auto const& b : buf)
             result.push_back(b);
         return result;
     }
-
-    /** Set the content body. */
-    void
-    body (std::string const& s)
-    {
-        body_ = s;
-    }
-
-private:
-    void
-    do_prepare()
-    {
-        prepared_ = true;
-        message_.headers.erase("Content-Length");
-        message_.headers.insert("Content-Length",
-            std::to_string(body_.size()));
-        beast::deprecated_http::write(streambuf_, message_);
-        beast::write(streambuf_, body_);
-    }
 };
 
-}
+} // ripple
 
 #endif

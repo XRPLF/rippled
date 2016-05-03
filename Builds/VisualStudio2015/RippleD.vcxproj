@@ -317,6 +317,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\handler_concepts.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_headers.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_parser_v1.hpp">
@@ -3483,7 +3485,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
+    <ClInclude Include="..\..\src\ripple\server\json_body.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\make_Server.h">
     </ClInclude>

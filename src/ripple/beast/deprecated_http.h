@@ -22,6 +22,7 @@
 
 #include <beast/http/headers.hpp>
 #include <beast/http/rfc2616.hpp>
+#include <beast/http/write.hpp>
 #include <beast/write_streambuf.hpp>
 #include <beast/test/http/nodejs_parser.hpp>
 #include <beast/detail/ci_char_traits.hpp>
@@ -360,7 +361,7 @@ write (Streambuf& stream, message const& m)
         beast::write (stream, m.reason());
     }
     beast::write (stream, "\r\n");
-    write_fields(stream, m.headers);
+    beast::http::detail::write_fields(stream, m.headers);
     beast::write (stream, "\r\n");
 }
 

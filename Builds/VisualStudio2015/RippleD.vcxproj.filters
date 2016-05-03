@@ -657,6 +657,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\handler_concepts.hpp">
       <Filter>include\beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http.hpp">
+      <Filter>include\beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_headers.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
@@ -3951,7 +3954,7 @@
     <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
+    <ClInclude Include="..\..\src\ripple\server\json_body.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\make_Server.h">

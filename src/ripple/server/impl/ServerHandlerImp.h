@@ -26,7 +26,6 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/server/Handler.h>
-#include <ripple/server/JsonWriter.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/WSSession.h>
