@@ -455,15 +455,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\write_streambuf.hpp">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\test\http\nodejs-parser\http_parser.c">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\test\http\nodejs-parser\http_parser.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\test\http\nodejs_parser.cpp">
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\test\http\nodejs_parser.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-64bit.h">
@@ -1648,8 +1639,6 @@
     <ClInclude Include="..\..\src\ripple\beast\crypto\sha2.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\cxx17\type_traits.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\deprecated_http.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
     </ClInclude>

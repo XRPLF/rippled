@@ -21,7 +21,6 @@
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
 #include <ripple/server/Writer.h>
-#include <ripple/beast/deprecated_http.h>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <memory>

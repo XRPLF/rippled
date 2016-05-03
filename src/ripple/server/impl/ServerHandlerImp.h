@@ -61,7 +61,12 @@ public:
         if(! sp)
             return;
         beast::streambuf sb;
-        write(sb, jv);
+        stream(jv,
+            [&](void const* data, std::size_t n)
+            {
+                sb.commit(boost::asio::buffer_copy(
+                    sb.prepare(n), boost::asio::buffer(data, n)));
+            });
         auto m = std::make_shared<
             StreambufWSMsg<decltype(sb)>>(
                 std::move(sb));

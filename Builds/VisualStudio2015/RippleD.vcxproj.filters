@@ -478,15 +478,6 @@
     <Filter Include="sqlite\sqlite">
       <UniqueIdentifier>{D2A046B6-8986-92AC-082F-15B3A01B8E40}</UniqueIdentifier>
     </Filter>
-    <Filter Include="test">
-      <UniqueIdentifier>{D5859751-012E-81F5-D121-159FE9A25436}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\http">
-      <UniqueIdentifier>{F9ABC269-E86E-1034-C5DE-E9E5B48772DB}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="test\http\nodejs-parser">
-      <UniqueIdentifier>{617863D3-DC6A-1DDA-ACA5-7DC92DCEAFB3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="websocketpp_02">
       <UniqueIdentifier>{96CE200F-2670-323E-3B37-B90DBC0EDA11}</UniqueIdentifier>
     </Filter>
@@ -863,18 +854,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\write_streambuf.hpp">
       <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\test\http\nodejs-parser\http_parser.c">
-      <Filter>test\http\nodejs-parser</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\test\http\nodejs-parser\http_parser.h">
-      <Filter>test\http\nodejs-parser</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\test\http\nodejs_parser.cpp">
-      <Filter>test\http</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\test\http\nodejs_parser.hpp">
-      <Filter>test\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>
@@ -2180,9 +2159,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\cxx17\type_traits.h">
       <Filter>ripple\beast\cxx17</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\deprecated_http.h">
-      <Filter>ripple\beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
       <Filter>ripple\beast\hash</Filter>

@@ -39,6 +39,7 @@
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <beast/detail/base64.hpp>
+#include <beast/http/headers.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>

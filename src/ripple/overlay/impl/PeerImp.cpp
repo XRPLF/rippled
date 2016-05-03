@@ -46,6 +46,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/beast/utility/weak_fn.h>
+#include <beast/http/write.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/io_service.hpp>
 #include <algorithm>
