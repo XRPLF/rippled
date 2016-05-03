@@ -32,7 +32,7 @@ using http_request_type =
     beast::http::request_v1<beast::http::streambuf_body>;
 
 using http_response_type =
-    beast::deprecated_http::message;
+    beast::http::response_v1<beast::http::streambuf_body>;
 
 /** Used to indicate the result of a server connection handoff. */
 struct Handoff

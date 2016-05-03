@@ -325,15 +325,15 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
 }
 
 bool
-OverlayImpl::isPeerUpgrade(beast::deprecated_http::message const& request)
+OverlayImpl::isPeerUpgrade(http_response_type const& response)
 {
-    if (! request.upgrade())
+    if (! is_upgrade(response))
+        return false;
+    if(response.status != 101)
         return false;
     auto const versions = parse_ProtocolVersions(
-        request.headers["Upgrade"]);
+        response.headers["Upgrade"]);
     if (versions.size() == 0)
-        return false;
-    if(! request.request() && request.status() != 101)
         return false;
     return true;
 }

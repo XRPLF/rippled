@@ -26,6 +26,7 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
+#include <ripple/beast/deprecated_http.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/Job.h>
@@ -154,7 +155,7 @@ private:
     PeerFinder::Slot::ptr slot_;
     beast::streambuf read_buffer_;
     http_request_type request_;
-    beast::deprecated_http::message response_;
+    http_response_type response_;
     beast::http::headers const& headers_;
     beast::streambuf write_buffer_;
     std::queue<Message::pointer> send_queue_;
@@ -183,7 +184,7 @@ public:
     template <class Buffers>
     PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-            beast::deprecated_http::message&& response, Resource::Consumer usage,
+            http_response_type&& response, Resource::Consumer usage,
                 protocol::TMHello const& hello,
                     PublicKey const& publicKey, id_t id,
                         OverlayImpl& overlay);
@@ -477,7 +478,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     Buffers const& buffers, PeerFinder::Slot::ptr&& slot,
-        beast::deprecated_http::message&& response, Resource::Consumer usage,
+        http_response_type&& response, Resource::Consumer usage,
             protocol::TMHello const& hello,
                 PublicKey const& publicKey, id_t id,
                     OverlayImpl& overlay)

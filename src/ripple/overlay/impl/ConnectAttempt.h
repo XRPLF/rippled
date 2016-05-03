@@ -58,6 +58,9 @@ private:
     using request_type =
         beast::http::request_v1<beast::http::empty_body>;
 
+    using response_type =
+        beast::http::response_v1<beast::http::streambuf_body>;
+
     Application& app_;
     std::uint32_t const id_;
     beast::WrappedSink sink_;
@@ -70,10 +73,7 @@ private:
     beast::asio::ssl_bundle::socket_type& socket_;
     beast::asio::ssl_bundle::stream_type& stream_;
     beast::streambuf read_buf_;
-    beast::streambuf write_buf_;
-    beast::deprecated_http::message response_;
-    beast::streambuf body_;
-    beast::deprecated_http::parser parser_;
+    response_type response_;
     PeerFinder::Slot::ptr slot_;
     request_type req_;
 
@@ -103,7 +103,7 @@ private:
     void onConnect (error_code ec);
     void onHandshake (error_code ec);
     void onWrite (error_code ec);
-    void onRead (error_code ec, std::size_t bytes_transferred);
+    void onRead (error_code ec);
     void onShutdown (error_code ec);
 
     static
@@ -111,9 +111,7 @@ private:
     makeRequest (bool crawl,
         boost::asio::ip::address const& remote_address);
 
-    template <class Streambuf>
-    void processResponse (beast::deprecated_http::message const& m,
-        Streambuf const& body);
+    void processResponse();
 
     template <class = void>
     static
