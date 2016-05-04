@@ -59,7 +59,7 @@ delete_all()
     for(auto it = list_.begin(); it != list_.end();)
     {
         auto& e = *it++;
-        e.~element();
+        alloc_traits::destroy(this->member(), &e);
         alloc_traits::deallocate(
             this->member(), &e, 1);
     }
@@ -252,6 +252,7 @@ erase(boost::string_ref const& name)
     auto& e = *it;
     set_.erase(set_.iterator_to(e));
     list_.erase(list_.iterator_to(e));
+    alloc_traits::destroy(this->member(), &e);
     alloc_traits::deallocate(this->member(), &e, 1);
     return 1;
 }
