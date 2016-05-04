@@ -26,16 +26,16 @@ class streambuf_readstream<
 
     struct data
     {
-        streambuf_readstream& brs;
+        streambuf_readstream& srs;
         MutableBufferSequence bs;
         Handler h;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
-            streambuf_readstream& brs_,
+            streambuf_readstream& srs_,
                 MutableBufferSequence const& bs_)
-            : brs(brs_)
+            : srs(srs_)
             , bs(bs_)
             , h(std::forward<DeducedHandler>(h_))
         {
@@ -49,9 +49,10 @@ public:
     read_some_op(read_some_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    read_some_op(DeducedHandler&& h, Args&&... args)
+    read_some_op(DeducedHandler&& h,
+            streambuf_readstream& srs, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
-            std::forward<DeducedHandler>(h),
+            std::forward<DeducedHandler>(h), srs,
                 std::forward<Args>(args)...))
     {
         (*this)(error_code{}, 0);
@@ -106,44 +107,44 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
         switch(d.state)
         {
         case 0:
-            if(d.brs.sb_.size() == 0)
+            if(d.srs.sb_.size() == 0)
             {
                 d.state =
-                    d.brs.size_ > 0 ? 2 : 1;
+                    d.srs.size_ > 0 ? 2 : 1;
                 break;
             }
             d.state = 4;
-            d.brs.get_io_service().post(
+            d.srs.get_io_service().post(
                 bind_handler(std::move(*this), ec, 0));
             return;
 
         case 1:
             // read (unbuffered)
             d.state = 99;
-            d.brs.next_layer_.async_read_some(
+            d.srs.next_layer_.async_read_some(
                 d.bs, std::move(*this));
             return;
 
         case 2:
             // read
             d.state = 3;
-            d.brs.next_layer_.async_read_some(
-                d.brs.sb_.prepare(d.brs.size_),
+            d.srs.next_layer_.async_read_some(
+                d.srs.sb_.prepare(d.srs.size_),
                     std::move(*this));
             return;
 
         // got data
         case 3:
             d.state = 4;
-            d.brs.sb_.commit(bytes_transferred);
+            d.srs.sb_.commit(bytes_transferred);
             break;
 
         // copy
         case 4:
             bytes_transferred =
                 boost::asio::buffer_copy(
-                    d.bs, d.brs.sb_.data());
-            d.brs.sb_.consume(bytes_transferred);
+                    d.bs, d.srs.sb_.data());
+            d.srs.sb_.consume(bytes_transferred);
             // call handler
             d.state = 99;
             break;

@@ -32,8 +32,7 @@ class teardown_tcp_op
         int state = 0;
 
         template<class DeducedHandler>
-        data(DeducedHandler&& h_,
-                socket_type& socket_)
+        data(DeducedHandler&& h_, socket_type& socket_)
             : socket(socket_)
             , h(std::forward<DeducedHandler>(h_))
             , cont(boost_asio_handler_cont_helpers::
