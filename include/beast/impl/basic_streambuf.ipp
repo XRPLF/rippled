@@ -582,7 +582,7 @@ basic_streambuf<Allocator>::prepare(size_type n) ->
         list_.push_back(e);
         if(out_ == list_.end())
             out_ = list_.iterator_to(e);
-        if(n > e.size())
+        if(n >= e.size())
         {
             out_end_ = e.size();
             n -= e.size();

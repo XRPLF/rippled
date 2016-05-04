@@ -37,7 +37,6 @@ namespace websocket {
 class async_echo_peer
 {
 public:
-    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;

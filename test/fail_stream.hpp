@@ -22,10 +22,12 @@
 
 #include <beast/async_completion.hpp>
 #include <beast/bind_handler.hpp>
+#include <beast/error.hpp>
+#include <beast/websocket/teardown.hpp>
 #include <beast/detail/get_lowest_layer.hpp>
-#include <boost/system/error_code.hpp>
 
 namespace beast {
+namespace test {
 
 /*  A stream wrapper that fails.
 
@@ -35,12 +37,6 @@ namespace beast {
 template<class NextLayer>
 class fail_stream
 {
-    using error_code =
-        boost::system::error_code;
-
-    using system_error =
-        boost::system::system_error;
-
     error_code ec_;
     std::size_t n_ = 0;
     NextLayer next_layer_;
@@ -204,6 +200,7 @@ async_teardown(fail_stream<NextLayer>& stream,
         stream.next_layer(), std::forward<TeardownHandler>(handler));
 }
 
+} // test
 } // beast
 
 #endif

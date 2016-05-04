@@ -81,10 +81,22 @@ public:
         expect(buffer_copy(cb2, cb) == 0);
     }
 
+    void testIterator()
+    {
+        using boost::asio::const_buffer;
+        std::array<const_buffer, 3> ba;
+        consuming_buffers<decltype(ba)> cb(ba);
+        std::size_t n = 0;
+        for(auto it = cb.end(); it != cb.begin(); --it)
+            ++n;
+        expect(n == 3);
+    }
+
     void run() override
     {
         testBuffers();
         testNullBuffers();
+        testIterator();
     }
 };
 

@@ -28,7 +28,7 @@ using namespace boost::asio;
 
 template<class String>
 void
-err(error_code const& ec, String const& what)
+err(beast::error_code const& ec, String const& what)
 {
     std::cerr << what << ": " << ec.message() << std::endl;
 }

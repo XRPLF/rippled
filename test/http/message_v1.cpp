@@ -34,7 +34,6 @@ namespace test {
 class sync_echo_http_server
 {
 public:
-    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
@@ -136,10 +135,45 @@ private:
 class message_test : public beast::detail::unit_test::suite
 {
 public:
-    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
+
+    void testFunctions()
+    {
+        request_v1<empty_body> m;
+        m.version = 10;
+        expect(! is_upgrade(m));
+        m.headers.insert("Transfer-Encoding", "chunked");
+        try
+        {
+            prepare(m);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+        }
+        m.headers.erase("Transfer-Encoding");
+        m.headers.insert("Content-Length", "0");
+        try
+        {
+            prepare(m);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+        }
+        m.headers.erase("Content-Length");
+        m.headers.insert("Connection", "keep-alive");
+        try
+        {
+            prepare(m);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+        }
+    }
 
     void
     syncEcho(endpoint_type ep)
@@ -174,6 +208,7 @@ public:
 
     void run() override
     {
+        testFunctions();
         testAsio();
         pass();
     }

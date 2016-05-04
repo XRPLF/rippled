@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_WRITE_HPP
 #define BEAST_HTTP_WRITE_HPP
 
-#include <beast/http/error.hpp>
+#include <beast/error.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/async_completion.hpp>
 #include <boost/system/error_code.hpp>
@@ -33,7 +33,7 @@ namespace http {
     The implementation will automatically perform chunk encoding if
     the contents of the message indicate that chunk encoding is required.
     If the semantics of the message indicate that the connection should
-    be closed after the message is sent, the error returns from this
+    be closed after the message is sent, the error thrown from this
     function will be `boost::asio::error::eof`.
 
     @param stream The stream to which the data is to be written.
@@ -64,7 +64,7 @@ write(SyncWriteStream& stream,
     The implementation will automatically perform chunk encoding if
     the contents of the message indicate that chunk encoding is required.
     If the semantics of the message indicate that the connection should
-    be closed after the message is sent, the error returns from this
+    be closed after the message is sent, the error returned from this
     function will be `boost::asio::error::eof`.
 
     @param stream The stream to which the data is to be written.

@@ -93,6 +93,7 @@ public:
             expect(s3.back() == 'x');
             s2 = "y";
             expect(s2 == "y");
+            expect(s3 == "x");
             s1 = s2;
             expect(s1 == "y");
             s1.clear();
@@ -141,6 +142,35 @@ public:
             }
         }
         {
+            str1 s1("x");
+            str2 s2;
+            s2 = s1;
+            try
+            {
+                s1.resize(2);
+                fail();
+            }
+            catch(std::length_error const&)
+            {
+                pass();
+            }
+            s1 = "1";
+            s2 = "2";
+            expect(s1.compare(s2) < 0);
+            expect(s2.compare(s1) > 0);
+            expect(s1 < "10");
+            expect(s2 > "1");
+            expect("10" > s1);
+            expect("1" < s2);
+        }
+        pass();
+    }
+
+    void testCompare()
+    {
+        using str1 = static_string<1>;
+        using str2 = static_string<2>;
+        {
             str2 s1("x");
             str2 s2("x");
             expect(s1 == s2);
@@ -175,12 +205,49 @@ public:
             expect(! ("x" > s));
             expect(! ("x" != s));
         }
-        pass();
+        {
+            str2 s("x");
+            expect(s <= "y");
+            expect(s < "y");
+            expect(s != "y");
+            expect(! (s == "y"));
+            expect(! (s >= "y"));
+            expect(! (s > "x"));
+            expect("y" >= s);
+            expect("y" > s);
+            expect("y" != s);
+            expect(! ("y" == s));
+            expect(! ("y" <= s));
+            expect(! ("y" < s));
+        }
+        {
+            str1 s1("x");
+            str2 s2("y");
+            expect(s1 <= s2);
+            expect(s1 < s2);
+            expect(s1 != s2);
+            expect(! (s1 == s2));
+            expect(! (s1 >= s2));
+            expect(! (s1 > s2));
+        }
+        {
+            str1 s1("x");
+            str2 s2("xx");
+            expect(s1 < s2);
+            expect(s2 > s1);
+        }
+        {
+            str1 s1("x");
+            str2 s2("yy");
+            expect(s1 < s2);
+            expect(s2 > s1);
+        }
     }
 
     void run() override
     {
         testMembers();
+        testCompare();
     }
 };
 

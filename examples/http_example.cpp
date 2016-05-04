@@ -20,18 +20,16 @@ int main()
     boost::asio::connect(sock,
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
 
-    using namespace beast::http;
-
     // Send HTTP request using beast
-    request_v1<empty_body> req({"GET", "/", 11});
+    beast::http::request_v1<beast::http::empty_body> req({"GET", "/", 11});
     req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
     req.headers.replace("User-Agent", "Beast");
-    prepare(req);
-    write(sock, req);
+    beast::http::prepare(req);
+    beast::http::write(sock, req);
 
     // Receive and print HTTP response using beast
     beast::streambuf sb;
-    response_v1<streambuf_body> resp;
-    read(sock, sb, resp);
+    beast::http::response_v1<beast::http::streambuf_body> resp;
+    beast::http::read(sock, sb, resp);
     std::cout << resp;
 }

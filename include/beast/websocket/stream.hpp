@@ -617,7 +617,7 @@ public:
 
         If the passed HTTP request is a valid HTTP WebSocket Upgrade
         request, a HTTP response is sent back indicating a successful
-        upgrade. When this asynchronous operaiton completes, the stream is
+        upgrade. When this asynchronous operation completes, the stream is
         then ready to send and receive WebSocket protocol frames and messages.
 
         If the HTTP request is invalid or cannot be satisfied, a HTTP

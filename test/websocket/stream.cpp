@@ -9,163 +9,30 @@
 #include <beast/websocket/stream.hpp>
 
 #include "../fail_stream.hpp"
+#include "../string_stream.hpp"
+#include "../yield_to.hpp"
+
 #include "websocket_async_echo_peer.hpp"
 #include "websocket_sync_echo_peer.hpp"
 
-#include <beast/bind_handler.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/to_string.hpp>
 #include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <thread>
-
-#include <beast/http/parser_v1.hpp>
 
 namespace beast {
 namespace websocket {
 
-class stream_test : public beast::detail::unit_test::suite
+class stream_test
+    : public beast::detail::unit_test::suite
+    , public test::enable_yield_to
 {
-    boost::asio::io_service ios_;
-    boost::optional<boost::asio::io_service::work> work_;
-    std::thread thread_;
-    std::mutex m_;
-    std::condition_variable cv_;
-    bool running_ = false;;
-
 public:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
-
-    // meets the requirements of AsyncStream, SyncStream
-    class string_Stream
-    {
-        std::string s_;
-        boost::asio::io_service& ios_;
-
-    public:
-        string_Stream(boost::asio::io_service& ios,
-                std::string s)
-            : s_(s)
-            , ios_(ios)
-        {
-        }
-
-        boost::asio::io_service&
-        get_io_service()
-        {
-            return ios_;
-        }
-
-        template<class MutableBufferSequence>
-        std::size_t
-        read_some(MutableBufferSequence const& buffers)
-        {
-            error_code ec;
-            auto const n = read_some(buffers, ec);
-            if(ec)
-                throw boost::system::system_error{ec};
-            return n;
-        }
-
-        template<class MutableBufferSequence>
-        std::size_t
-        read_some(MutableBufferSequence const& buffers,
-            error_code& ec)
-        {
-            auto const n = boost::asio::buffer_copy(
-                buffers, boost::asio::buffer(s_));
-            s_.erase(0, n);
-            return n;
-        }
-
-        template<class MutableBufferSequence, class ReadHandler>
-        typename async_completion<ReadHandler,
-            void(error_code, std::size_t)>::result_type
-        async_read_some(MutableBufferSequence const& buffers,
-            ReadHandler&& handler)
-        {
-            auto const n = boost::asio::buffer_copy(
-                buffers, boost::asio::buffer(s_));
-            s_.erase(0, n);
-            async_completion<ReadHandler,
-                void(error_code, std::size_t)> completion(handler);
-            ios_.post(bind_handler(
-                completion.handler, error_code{}, n));
-            return completion.result.get();
-        }
-
-        template<class ConstBufferSequence>
-        std::size_t
-        write_some(ConstBufferSequence const& buffers)
-        {
-            error_code ec;
-            auto const n = write_some(buffers, ec);
-            if(ec)
-                throw boost::system::system_error{ec};
-            return n;
-        }
-
-        template<class ConstBufferSequence>
-        std::size_t
-        write_some(ConstBufferSequence const& buffers,
-            error_code&)
-        {
-            return boost::asio::buffer_size(buffers);
-        }
-
-        template<class ConstBuffeSequence, class WriteHandler>
-        typename async_completion<WriteHandler,
-            void(error_code, std::size_t)>::result_type
-        async_write_some(ConstBuffeSequence const& buffers,
-            WriteHandler&& handler)
-        {
-            async_completion<WriteHandler,
-                void(error_code, std::size_t)> completion(handler);
-            ios_.post(bind_handler(completion.handler,
-                error_code{}, boost::asio::buffer_size(buffers)));
-            return completion.result.get();
-        }
-    };
-
-    stream_test()
-        : work_(ios_)
-        , thread_([&]{ ios_.run(); })
-    {
-    }
-
-    ~stream_test()
-    {
-        work_ = boost::none;
-        thread_.join();
-    }
-
-    template<class Function>
-    void exec(Function&& f)
-    {
-        {
-            std::lock_guard<std::mutex> lock(m_);
-            running_ = true;
-        }
-        boost::asio::spawn(ios_,
-            [&](boost::asio::yield_context do_yield)
-            {
-                f(do_yield);
-                std::lock_guard<std::mutex> lock(m_);
-                running_ = false;
-                cv_.notify_all();
-            }
-            , boost::coroutines::attributes(2 * 1024 * 1024));
-
-        std::unique_lock<std::mutex> lock(m_);
-        cv_.wait(lock, [&]{ return ! running_; });
-    }
 
     void testSpecialMembers()
     {
@@ -177,6 +44,7 @@ public:
             stream<socket_type> ws2(ios_);
             ws = std::move(ws2);
         }
+        expect(&ws.get_io_service() == &ios_);
         pass();
     }
 
@@ -187,7 +55,15 @@ public:
         ws.set_option(read_buffer_size(8192));
         ws.set_option(read_message_max(1 * 1024 * 1024));
         ws.set_option(write_buffer_size(2048));
-        pass();
+        try
+        {
+            ws.set_option(message_type(opcode::close));
+            fail();
+        }
+        catch(std::exception const&)
+        {
+            pass();
+        }
     }
 
     template<std::size_t N>
@@ -198,10 +74,10 @@ public:
         return boost::asio::const_buffers_1(&s[0], N-1);
     }
 
-    void testAccept(boost::asio::yield_context do_yield)
+    void testAccept(yield_context do_yield)
     {
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost:80\r\n"
                 "Upgrade: WebSocket\r\n"
@@ -220,7 +96,7 @@ public:
             }
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "\r\n");
             try
@@ -234,7 +110,7 @@ public:
             }
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost:80\r\n"
                 "Upgrade: WebSocket\r\n"
@@ -247,7 +123,7 @@ public:
             expect(! ec, ec.message());
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "\r\n");
             error_code ec;
@@ -255,7 +131,7 @@ public:
             expect(ec);
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "Host: localhost:80\r\n"
                 "Upgrade: WebSocket\r\n"
@@ -268,7 +144,7 @@ public:
             expect(! ec, ec.message());
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "\r\n");
             error_code ec;
@@ -276,7 +152,7 @@ public:
             expect(ec);
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "Host: localhost:80\r\n"
                 "Upgrade: WebSocket\r\n"
                 "Connection: upgrade\r\n"
@@ -295,7 +171,7 @@ public:
             }
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "\r\n");
             try
             {
@@ -309,7 +185,7 @@ public:
             }
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "Host: localhost:80\r\n"
                 "Upgrade: WebSocket\r\n"
                 "Connection: upgrade\r\n"
@@ -322,7 +198,7 @@ public:
             expect(! ec, ec.message());
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "GET / HTTP/1.1\r\n"
                 "\r\n");
             error_code ec;
@@ -330,7 +206,7 @@ public:
             expect(ec);
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "Host: localhost:80\r\n"
                 "Upgrade: WebSocket\r\n"
                 "Connection: upgrade\r\n"
@@ -343,7 +219,7 @@ public:
             expect(! ec, ec.message());
         }
         {
-            stream<string_Stream> ws(ios_,
+            stream<test::string_stream> ws(ios_,
                 "\r\n");
             error_code ec;
             ws.async_accept(strbuf(
@@ -353,7 +229,7 @@ public:
     }
 
     void testHandshake(endpoint_type const& ep,
-        boost::asio::yield_context do_yield)
+        yield_context do_yield)
     {
         {
             // disconnected socket
@@ -423,7 +299,7 @@ public:
     }
 
     void testErrorHandling(endpoint_type const& ep,
-        boost::asio::yield_context do_yield)
+        yield_context do_yield)
     {
         static std::size_t constexpr limit = 100;
         std::size_t n;
@@ -436,7 +312,7 @@ public:
             sock.connect(ep, ec);
             if(! expect(! ec, ec.message()))
                 break;
-            stream<fail_stream<socket_type&>> ws(n, sock);
+            stream<test::fail_stream<socket_type&>> ws(n, sock);
             try
             {
                 ws.handshake("localhost", "/");
@@ -475,7 +351,7 @@ public:
             sock.connect(ep, ec);
             if(! expect(! ec, ec.message()))
                 break;
-            stream<fail_stream<socket_type&>> ws(n, sock);
+            stream<test::fail_stream<socket_type&>> ws(n, sock);
             ws.handshake("localhost", "/", ec);
             if(ec)
                 continue;
@@ -510,7 +386,7 @@ public:
             sock.connect(ep, ec);
             if(! expect(! ec, ec.message()))
                 break;
-            stream<fail_stream<socket_type&>> ws(n, sock);
+            stream<test::fail_stream<socket_type&>> ws(n, sock);
             ws.async_handshake("localhost", "/", do_yield[ec]);
             if(ec)
                 break;
@@ -538,13 +414,70 @@ public:
         expect(n < limit);
     }
 
+    void testMask(endpoint_type const& ep,
+        yield_context do_yield)
+    {
+        {
+            std::vector<char> v;
+            for(char n = 0; n < 20; ++n)
+            {
+                error_code ec;
+                socket_type sock(ios_);
+                sock.connect(ep, ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+                stream<socket_type&> ws(sock);
+                ws.handshake("localhost", "/", ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+                ws.write(boost::asio::buffer(v), ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+                opcode op;
+                streambuf sb;
+                ws.read(op, sb, ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+                expect(to_string(sb.data()) ==
+                    std::string{v.data(), v.size()});
+                v.push_back(n+1);
+            }
+        }
+        {
+            std::vector<char> v;
+            for(char n = 0; n < 20; ++n)
+            {
+                error_code ec;
+                socket_type sock(ios_);
+                sock.connect(ep, ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+                stream<socket_type&> ws(sock);
+                ws.handshake("localhost", "/", ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+                ws.async_write(boost::asio::buffer(v), do_yield[ec]);
+                if(! expect(! ec, ec.message()))
+                    break;
+                opcode op;
+                streambuf sb;
+                ws.async_read(op, sb, do_yield[ec]);
+                if(! expect(! ec, ec.message()))
+                    break;
+                expect(to_string(sb.data()) ==
+                    std::string{v.data(), v.size()});
+                v.push_back(n+1);
+            }
+        }
+    }
+
     void run() override
     {
         testSpecialMembers();
 
         testOptions();
 
-        exec(std::bind(&stream_test::testAccept,
+        yield_to(std::bind(&stream_test::testAccept,
             this, std::placeholders::_1));
 
         auto const any = endpoint_type{
@@ -552,22 +485,30 @@ public:
         {
             sync_echo_peer server(true, any);
 
-            exec(std::bind(&stream_test::testHandshake,
+            yield_to(std::bind(&stream_test::testHandshake,
                 this, server.local_endpoint(),
                     std::placeholders::_1));
 
-            exec(std::bind(&stream_test::testErrorHandling,
+            yield_to(std::bind(&stream_test::testErrorHandling,
+                this, server.local_endpoint(),
+                    std::placeholders::_1));
+
+            yield_to(std::bind(&stream_test::testMask,
                 this, server.local_endpoint(),
                     std::placeholders::_1));
         }
         {
             async_echo_peer server(true, any, 1);
 
-            exec(std::bind(&stream_test::testHandshake,
+            yield_to(std::bind(&stream_test::testHandshake,
                 this, server.local_endpoint(),
                     std::placeholders::_1));
 
-            exec(std::bind(&stream_test::testErrorHandling,
+            yield_to(std::bind(&stream_test::testErrorHandling,
+                this, server.local_endpoint(),
+                    std::placeholders::_1));
+
+            yield_to(std::bind(&stream_test::testMask,
                 this, server.local_endpoint(),
                     std::placeholders::_1));
         }
