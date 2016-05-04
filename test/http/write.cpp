@@ -8,7 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/http/write.hpp>
 
-#include <beast/http/error.hpp>
+#include <beast/error.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/empty_body.hpp>

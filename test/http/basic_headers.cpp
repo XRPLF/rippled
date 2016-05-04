@@ -12,7 +12,6 @@
 
 namespace beast {
 namespace http {
-namespace test {
 
 class basic_headers_test : public beast::detail::unit_test::suite
 {
@@ -48,6 +47,7 @@ public:
         bh h3(std::move(h1));
         expect(h3.size() == 2);
         expect(h1.size() == 0);
+        h2 = std::move(h2);
     }
 
     void run() override
@@ -58,6 +58,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(basic_headers,http,beast);
 
-} // test
 } // asio
 } // beast

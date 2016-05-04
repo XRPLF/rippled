@@ -13,6 +13,7 @@ add_executable (core-tests
     buffer_concepts.cpp
     buffers_adapter.cpp
     consuming_buffers.cpp
+    error.cpp
     handler_alloc.cpp
     handler_concepts.cpp
     http.cpp
@@ -38,12 +39,14 @@ endif()
 
 add_executable (http-tests
     ${BEAST_INCLUDES}
+    fail_stream.hpp
+    string_stream.hpp
+    yield_to.hpp
     main.cpp
     http/basic_headers.cpp
     http/basic_parser_v1.cpp
     http/body_type.cpp
     http/empty_body.cpp
-    http/error.cpp
     http/headers.cpp
     http/message.cpp
     http/message_v1.cpp
@@ -79,6 +82,8 @@ endif()
 add_executable (websocket-tests
     ${BEAST_INCLUDES}
     fail_stream.hpp
+    string_stream.hpp
+    yield_to.hpp
     websocket/websocket_async_echo_peer.hpp
     websocket/websocket_sync_echo_peer.hpp
     main.cpp

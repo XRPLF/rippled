@@ -7,7 +7,6 @@
 
 #include <beast/detail/sha1.hpp>
 #include <beast/detail/unit_test/suite.hpp>
-#include <boost/algorithm/hex.hpp>
 #include <array>
 
 namespace beast {
@@ -16,20 +15,45 @@ namespace detail {
 class sha1_test : public beast::detail::unit_test::suite
 {
 public:
+    static
+    inline
+    std::uint8_t
+    unhex(char c)
+    {
+        if(c >= '0' && c <= '9')
+            return c - '0';
+        if(c >= 'a' && c <= 'f')
+            return c - 'a' + 10;
+        if(c >= 'A' && c <= 'F')
+            return c - 'A' + 10;
+        throw std::invalid_argument("not a hex digit");
+    }
+
+    static
+    std::string
+    unhex(std::string const& in)
+    {
+        std::string out;
+        out.reserve(in.size() / 2);
+        if(in.size() % 2)
+            throw std::domain_error("invalid hex string");
+        for(std::size_t i = 0; i < in.size(); i += 2)
+            out.push_back(
+                (unhex(in[i])<<4) + unhex(in[i+1]));
+        return out;
+    }
+
     void
     check(std::string const& message, std::string const& answer)
     {
-        using digest_type =
-            std::array<std::uint8_t, sha1_context::digest_size>;
-        digest_type digest;
-        if(! expect(boost::algorithm::unhex(
-                answer, digest.begin()) == digest.end()))
-            return;
+        std::string digest;
+        digest = unhex(answer);
         sha1_context ctx;
-        digest_type result;
+        std::string result;
+        result.resize(sha1_context::digest_size);
         init(ctx);
         update(ctx, message.data(), message.size());
-        finish(ctx, result.data());
+        finish(ctx, &result[0]);
         expect(result == digest);
     }
 

@@ -25,6 +25,8 @@ public:
             streambuf_readstream<socket_type, streambuf> srs(ios);
             streambuf_readstream<socket_type, streambuf> srs2(std::move(srs));
             srs = std::move(srs2);
+            expect(&srs.get_io_service() == &ios);
+            expect(&srs.get_io_service() == &srs2.get_io_service());
         }
         {
             socket_type sock(ios);

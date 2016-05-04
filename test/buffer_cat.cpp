@@ -68,9 +68,64 @@ public:
         }
     }
 
+    void testIterators()
+    {
+        using boost::asio::buffer_size;
+        using boost::asio::const_buffer;
+        char buf[9];
+        std::vector<const_buffer> b1{
+            const_buffer{buf+0, 1},
+            const_buffer{buf+1, 2}};
+        std::array<const_buffer, 3> b2{{
+            const_buffer{buf+3, 1},
+            const_buffer{buf+4, 2},
+            const_buffer{buf+6, 3}}};
+        auto bs = buffer_cat(b1, b2);
+
+        try
+        {
+            std::size_t n = 0;
+            for(auto it = bs.begin(); n < 100; ++it)
+                ++n;
+            fail();
+        }
+        catch(std::exception const&)
+        {
+            pass();
+        }
+
+        try
+        {
+            std::size_t n = 0;
+            for(auto it = bs.end(); n < 100; --it)
+                ++n;
+            fail();
+        }
+        catch(std::exception const&)
+        {
+            pass();
+        }
+
+        try
+        {
+            expect((buffer_size(*bs.end()) == 0, false));
+        }
+        catch(std::exception const&)
+        {
+            pass();
+        }
+        auto bs2 = bs;
+        expect(bs.begin() != bs2.begin());
+        expect(bs.end() != bs2.end());
+        decltype(bs)::const_iterator it;
+        decltype(bs2)::const_iterator it2;
+        expect(it == it2);
+    }
+
     void run() override
     {
         testBufferCat();
+        testIterators();
     }
 };
 

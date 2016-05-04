@@ -2,6 +2,7 @@
 
 General:
 * Use SFINAE on return values (search for "class =")
+* Remove http,websocket error_code types and use the one in <beast/error.hpp>
 
 Boost.Http
 * Use enum instead of bool in isRequest
@@ -17,6 +18,8 @@ Docs:
   - See if we can include them now that xsl is fixed
 * Implement cleanup-param to remove spaces around template arguments
   e.g. in basic_streambuf move constructor members
+* Don't put using namespace at file scope in examples,
+  do something like "using ba = boost::asio" instead.
 
 Core:
 * Replace Jamroot with Jamfile
@@ -26,13 +29,13 @@ Core:
 WebSocket:
 * optimized versions of key/masking, choose prepared_key size
 * invokable unit test
-* Finish up all of static_string including tests
-* Don't rely on default constructible mutable buffers
-  type in read_frame_op (smb_type). To see the error, use
-  boost::asio::streambuf in websocket_async_echo_peer
+* Don't try to read requests into empty_body
+
 
 HTTP:
 * Define Parser concept in HTTP
+  - Need parse version of read() so caller can set parser options
+    like maximum size of headers, maximum body size, etc
 * trim public interface of rfc2616.h to essentials only
 * add bool should_close(message_v1 const&) to replace the use
   of eof return value from write and async_write
@@ -40,7 +43,7 @@ HTTP:
 * More fine grained parser errors
 * HTTP parser size limit with test (configurable?)
 * HTTP parser trailers with test
-* URL parser, strong URL checking in HTTP parser
+* URL parser, strong URL character checking in HTTP parser
 * Update for rfc7230
 * Consider rename to MessageBody concept
 * Fix prepare() calling content_length() without init()
@@ -48,3 +51,7 @@ HTTP:
 * Complete allocator testing in basic_streambuf, basic_headers
 * Fix http::async_write op, case 3 should break at the end.
 * Add tests for writer using the resume function / coros
+* Custom HTTP error codes for various situations
+* Make empty_body write-only, remove reader nested type
+* Add concepts WritableBody ReadableBody with type checks,
+  check them in read and write functions

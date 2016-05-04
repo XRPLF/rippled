@@ -10,7 +10,7 @@
 
 #include "nodejs-parser/http_parser.h"
 
-#include <beast/http/error.hpp>
+#include <beast/error.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <beast/buffer_concepts.hpp>

@@ -31,7 +31,6 @@ namespace beast {
 template<class MutableBufferSequence>
 class buffers_adapter
 {
-private:
     static_assert(is_MutableBufferSequence<MutableBufferSequence>::value,
         "MutableBufferSequence requirements not met");
 

@@ -469,49 +469,32 @@ template<class MutableBufferSequence>
 void
 buffers_adapter<MutableBufferSequence>::consume(std::size_t n)
 {
-    for(;;)
+    using boost::asio::buffer_size;
+    while(begin_ != out_)
     {
-        if(begin_ != out_)
+        auto const avail =
+            buffer_size(*begin_) - in_pos_;
+        if(n < avail)
         {
-            auto const avail =
-                buffer_size(*begin_) - in_pos_;
-            if(n < avail)
-            {
-                in_size_ -= n;
-                in_pos_ += n;
-                break;
-            }
-            n -= avail;
-            in_size_ -= avail;
-            in_pos_ = 0;
-            ++begin_;
+            in_size_ -= n;
+            in_pos_ += n;
+            return;
         }
-        else
-        {
-            auto const avail = out_pos_ - in_pos_;
-            if(n < avail)
-            {
-                in_size_ -= n;
-                in_pos_ += n;
-            }
-            else
-            {
-                in_size_ -= avail;
-                if(out_pos_ != out_end_||
-                    out_ != std::prev(bs_.end()))
-                {
-                    in_pos_ = out_pos_;
-                }
-                else
-                {
-                    // Use the whole buffer now.
-                    in_pos_ = 0;
-                    out_pos_ = 0;
-                    out_end_ = 0;
-                }
-            }
-            break;
-        }
+        n -= avail;
+        in_size_ -= avail;
+        in_pos_ = 0;
+        ++begin_;
+    }
+    auto const avail = out_pos_ - in_pos_;
+    if(n < avail)
+    {
+        in_size_ -= n;
+        in_pos_ += n;
+    }
+    else
+    {
+        in_size_ -= avail;
+        in_pos_ = out_pos_;
     }
 }
 
