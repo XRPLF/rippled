@@ -64,7 +64,7 @@ getEntropyFile(Config const& config)
 }
 
 bool
-adjustDescriptorLimit(int needed)
+adjustDescriptorLimit(int needed, beast::Journal j)
 {
 #ifdef RLIMIT_NOFILE
     // Get the current limit, then adjust it to what we need.
@@ -94,9 +94,16 @@ adjustDescriptorLimit(int needed)
 
     if (needed > available)
     {
-        std::cerr << "Insufficient number of file descriptors:\n";
-        std::cerr << "     Needed: " << needed << '\n';
-        std::cerr << "  Available: " << available << '\n';
+        j.fatal() <<
+            "Insufficient number of file descriptors: " <<
+            needed << " are needed, but only " <<
+            available << " are available.";
+
+        std::cerr <<
+            "Insufficient number of file descriptors: " <<
+            needed << " are needed, but only " <<
+            available << " are available.\n";
+
         return false;
     }
 #endif
@@ -446,7 +453,7 @@ int run (int argc, char** argv)
     {
         // We want at least 1024 file descriptors. We'll
         // tweak this further.
-        if (!adjustDescriptorLimit(1024))
+        if (!adjustDescriptorLimit(1024, logs->journal("Application")))
             return -1;
 
         if (HaveSustain() && !vm.count ("fg") && !config->RUN_STANDALONE)
@@ -471,7 +478,9 @@ int run (int argc, char** argv)
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
-        if (!adjustDescriptorLimit(app->fdlimit()))
+        if (!adjustDescriptorLimit(
+            app->fdlimit(),
+            app->logs().journal("Application")))
         {
             StopSustain();
             return -1;
