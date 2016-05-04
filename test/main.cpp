@@ -41,6 +41,8 @@
 
 namespace beast {
 namespace detail {
+
+inline
 namespace unit_test {
 
 std::string

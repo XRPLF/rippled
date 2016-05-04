@@ -64,7 +64,7 @@ public:
     read_op(read_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    read_op(DeducedHandler&& h, Stream&s, Args&&... args)
+    read_op(DeducedHandler&& h, Stream& s, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
             std::forward<DeducedHandler>(h), s,
                 std::forward<Args>(args)...))
