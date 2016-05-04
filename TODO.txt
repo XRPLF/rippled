@@ -21,7 +21,7 @@ Docs:
 Core:
 * Replace Jamroot with Jamfile
 * Fix bidirectional buffers iterators operator->()
-* Complete allocator testing in basic_streambuf, basic_headers
+* Complete allocator testing in basic_streambuf
 
 WebSocket:
 * optimized versions of key/masking, choose prepared_key size
@@ -43,3 +43,8 @@ HTTP:
 * URL parser, strong URL checking in HTTP parser
 * Update for rfc7230
 * Consider rename to MessageBody concept
+* Fix prepare() calling content_length() without init()
+* Use construct,destroy allocator routines in basic_headers
+* Complete allocator testing in basic_streambuf, basic_headers
+* Fix http::async_write op, case 3 should break at the end.
+* Add tests for writer using the resume function / coros

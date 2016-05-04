@@ -78,6 +78,7 @@ endif()
 
 add_executable (websocket-tests
     ${BEAST_INCLUDES}
+    fail_stream.hpp
     websocket/websocket_async_echo_peer.hpp
     websocket/websocket_sync_echo_peer.hpp
     main.cpp

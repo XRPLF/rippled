@@ -8,11 +8,13 @@
 // Test that header file is self-contained.
 #include <beast/websocket/stream.hpp>
 
+#include "../fail_stream.hpp"
 #include "websocket_async_echo_peer.hpp"
 #include "websocket_sync_echo_peer.hpp"
 
 #include <beast/bind_handler.hpp>
 #include <beast/streambuf.hpp>
+#include <beast/to_string.hpp>
 #include <beast/detail/unit_test/suite.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
@@ -420,6 +422,122 @@ public:
         }
     }
 
+    void testErrorHandling(endpoint_type const& ep,
+        boost::asio::yield_context do_yield)
+    {
+        static std::size_t constexpr limit = 100;
+        std::size_t n;
+
+        // synchronous, exceptions
+        for(n = 1; n < limit; ++n)
+        {
+            error_code ec;
+            socket_type sock(ios_);
+            sock.connect(ep, ec);
+            if(! expect(! ec, ec.message()))
+                break;
+            stream<fail_stream<socket_type&>> ws(n, sock);
+            try
+            {
+                ws.handshake("localhost", "/");
+                ws.write(boost::asio::const_buffers_1(
+                    "Hello", 5));
+                opcode op;
+                streambuf sb;
+                ws.read(op, sb);
+                expect(op == opcode::text);
+                expect(to_string(sb.data()) == "Hello");
+                ws.close({});
+                try
+                {
+                    ws.read(op, sb);
+                }
+                catch(boost::system::system_error const& se)
+                {
+                    if(se.code() == error::closed)
+                        break;
+                    throw;
+                }
+                fail();
+                break;
+            }
+            catch(boost::system::system_error const&)
+            {
+            }
+        }
+        expect(n < limit);
+
+        // synchronous, error codes
+        for(n = 1; n < limit; ++n)
+        {
+            error_code ec;
+            socket_type sock(ios_);
+            sock.connect(ep, ec);
+            if(! expect(! ec, ec.message()))
+                break;
+            stream<fail_stream<socket_type&>> ws(n, sock);
+            ws.handshake("localhost", "/", ec);
+            if(ec)
+                continue;
+            ws.write(boost::asio::const_buffers_1(
+                "Hello", 5), ec);
+            if(ec)
+                continue;
+            opcode op;
+            streambuf sb;
+            ws.read(op, sb, ec);
+            if(ec)
+                continue;
+            expect(op == opcode::text);
+            expect(to_string(sb.data()) == "Hello");
+            ws.close({}, ec);
+            if(ec)
+                continue;
+            ws.read(op, sb, ec);
+            if(ec == error::closed)
+            {
+                pass();
+                break;
+            }
+        }
+        expect(n < limit);
+
+        // asynchronous
+        for(n = 1; n < limit; ++n)
+        {
+            error_code ec;
+            socket_type sock(ios_);
+            sock.connect(ep, ec);
+            if(! expect(! ec, ec.message()))
+                break;
+            stream<fail_stream<socket_type&>> ws(n, sock);
+            ws.async_handshake("localhost", "/", do_yield[ec]);
+            if(ec)
+                break;
+            ws.async_write(boost::asio::const_buffers_1(
+                "Hello", 5), do_yield[ec]);
+            if(ec)
+                continue;
+            opcode op;
+            streambuf sb;
+            ws.async_read(op, sb, do_yield[ec]);
+            if(ec)
+                continue;
+            expect(op == opcode::text);
+            expect(to_string(sb.data()) == "Hello");
+            ws.async_close({}, do_yield[ec]);
+            if(ec)
+                continue;
+            ws.async_read(op, sb, do_yield[ec]);
+            if(ec == error::closed)
+            {
+                pass();
+                break;
+            }
+        }
+        expect(n < limit);
+    }
+
     void run() override
     {
         testSpecialMembers();
@@ -433,13 +551,23 @@ public:
             address_type::from_string("127.0.0.1"), 0};
         {
             sync_echo_peer server(true, any);
+
             exec(std::bind(&stream_test::testHandshake,
+                this, server.local_endpoint(),
+                    std::placeholders::_1));
+
+            exec(std::bind(&stream_test::testErrorHandling,
                 this, server.local_endpoint(),
                     std::placeholders::_1));
         }
         {
             async_echo_peer server(true, any, 1);
+
             exec(std::bind(&stream_test::testHandshake,
+                this, server.local_endpoint(),
+                    std::placeholders::_1));
+
+            exec(std::bind(&stream_test::testErrorHandling,
                 this, server.local_endpoint(),
                     std::placeholders::_1));
         }
