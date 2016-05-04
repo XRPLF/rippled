@@ -42,6 +42,7 @@ public:
     using socket_type = boost::asio::ip::tcp::socket;
 
 private:
+    bool log_ = false;
     boost::asio::io_service ios_;
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
@@ -83,23 +84,22 @@ public:
     }
 
 private:
-    static
     void
     fail(error_code ec, std::string what)
     {
-        std::cerr <<
-            what << ": " << ec.message() << std::endl;
+        if(log_)
+            std::cerr <<
+                what << ": " << ec.message() << std::endl;
     }
 
-    static
     void
     fail(int id, error_code ec, std::string what)
     {
-        std::cerr << "#" << std::to_string(id) << " " <<
-            what << ": " << ec.message() << std::endl;
+        if(log_)
+            std::cerr << "#" << std::to_string(id) << " " <<
+                what << ": " << ec.message() << std::endl;
     }
 
-    static
     void
     maybe_throw(error_code ec, std::string what)
     {
