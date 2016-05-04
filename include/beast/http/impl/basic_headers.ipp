@@ -136,8 +136,6 @@ basic_headers(basic_headers&& other)
     , detail::basic_headers_base(
         std::move(other.set_), std::move(other.list_))
 {
-    other.list_.clear();
-    other.set_.clear();
 }
 
 template<class Allocator>
