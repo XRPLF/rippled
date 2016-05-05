@@ -65,31 +65,43 @@ std::pair<PublicKey, SecretKey>
 keypairForSignature (Json::Value const& params, Json::Value& error)
 {
     bool const has_key_type  = params.isMember (jss::key_type);
-    bool const hasPassphrase = params.isMember (jss::passphrase);
-    bool const hasSecret     = params.isMember (jss::secret);
-    bool const hasSeed       = params.isMember (jss::seed);
-    bool const hasSeedHex    = params.isMember (jss::seed_hex);
 
-    int const n_secrets =
-        (hasPassphrase ? 1 : 0) +
-        (hasSecret ? 1 : 0) +
-        (hasSeed ? 1 : 0) +
-        (hasSeedHex ? 1 : 0);
+    // All of the signature types we allow.  Only one, though!
+    static constexpr char const* const sigTypes[]
+    {
+        jss::passphrase.c_str(),
+        jss::secret.c_str(),
+        jss::seed.c_str(),
+        jss::seed_hex.c_str()
+    };
 
-    if (n_secrets == 0)
+    // Identify which signature type is in use.
+    constexpr char noSig[] = "no signature";
+    char const* sigType = noSig;
+    int sigTypeCount = 0;
+    for (auto t : sigTypes)
+    {
+        if (params.isMember (t))
+        {
+            ++sigTypeCount;
+            sigType = t;
+        }
+    }
+
+    if (sigTypeCount == 0 || sigType == noSig)
     {
         error = RPC::missing_field_error (jss::secret);
         return { };
     }
 
-    if (n_secrets > 1)
+    if (sigTypeCount > 1)
     {
         // `passphrase`, `secret`, `seed`, and `seed_hex` are mutually exclusive.
         error = rpcError (rpcBAD_SECRET);
         return { };
     }
 
-    if (has_key_type && hasSecret)
+    if (has_key_type && (sigType == jss::secret.c_str()))
     {
         // `secret` is deprecated.
         error = rpcError (rpcBAD_SECRET);
@@ -121,7 +133,7 @@ keypairForSignature (Json::Value const& params, Json::Value& error)
     if (!seed)
     {
         error = RPC::make_error (rpcBAD_SEED,
-            RPC::invalid_field_message (jss::secret));
+            RPC::invalid_field_message (sigType));
         return { };
     }
 
