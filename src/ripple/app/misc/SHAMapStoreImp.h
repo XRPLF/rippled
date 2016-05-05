@@ -150,12 +150,16 @@ public:
         return setup_.advisoryDelete;
     }
 
+    // All ledgers prior to this one were deleted
+    // in the last rotation
     LedgerIndex
     getLastRotated() override
     {
         return state_db_.getState().lastRotated;
     }
 
+    // All ledgers after this are unprotected and online delete
+    // may delete them if appropriate
     LedgerIndex
     getCanDelete() override
     {
