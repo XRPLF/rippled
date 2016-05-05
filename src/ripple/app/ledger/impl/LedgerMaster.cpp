@@ -1560,12 +1560,15 @@ LedgerMaster::shouldAcquire (
     std::uint32_t const ledgerHistoryIndex,
     std::uint32_t const candidateLedger) const
 {
-    // If the ledger could be the current ledger acquire it.
-    // Otherwise, acquire it only if it's within our range of
-    // desired history and we wouldn't delete it if we had it.
-    bool ret = (candidateLedger >= currentLedger) ||
-        ((candidateLedger >= ledgerHistoryIndex) &&
-        ((currentLedger - candidateLedger) <= ledgerHistory));
+
+    // Fetch ledger if it might be the current ledger,
+    // is requested by the advisory delete setting, or
+    // is within our configured history range
+
+    bool ret (candidateLedger >= currentLedger ||
+        ((ledgerHistoryIndex > 0) &&
+            (candidateLedger > ledgerHistoryIndex)) ||
+        (currentLedger - candidateLedger) <= ledgerHistory);
 
     JLOG (m_journal.trace())
         << "Missing ledger "
