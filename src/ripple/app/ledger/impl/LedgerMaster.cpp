@@ -1557,15 +1557,13 @@ bool
 LedgerMaster::shouldAcquire (
     std::uint32_t const currentLedger,
     std::uint32_t const ledgerHistory,
-    std::uint32_t const ledgerHistoryIndex,
     std::uint32_t const candidateLedger) const
 {
     // If the ledger could be the current ledger acquire it.
     // Otherwise, acquire it only if it's within our range of
-    // desired history and we wouldn't delete it if we had it.
+    // desired history
     bool ret = (candidateLedger >= currentLedger) ||
-        ((candidateLedger >= ledgerHistoryIndex) &&
-        ((currentLedger - candidateLedger) <= ledgerHistory));
+        ((currentLedger - candidateLedger) <= ledgerHistory);
 
     JLOG (m_journal.trace())
         << "Missing ledger "
@@ -1602,8 +1600,7 @@ void LedgerMaster::doAdvance ()
                 JLOG (m_journal.trace())
                     << "tryAdvance discovered missing " << missing;
                 if ((missing != RangeSet::absent) && (missing > 0) &&
-                    shouldAcquire (mValidLedgerSeq, ledger_history_,
-                        app_.getSHAMapStore ().getCanDelete (), missing) &&
+                    shouldAcquire (mValidLedgerSeq, ledger_history_, missing) &&
                     ((mFillInProgress == 0) || (missing > mFillInProgress)))
                 {
                     JLOG (m_journal.trace())
