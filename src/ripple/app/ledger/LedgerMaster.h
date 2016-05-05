@@ -264,7 +264,6 @@ private:
     bool shouldAcquire(
         std::uint32_t const currentLedger,
         std::uint32_t const ledgerHistory,
-        std::uint32_t const ledgerHistoryIndex,
         std::uint32_t const candidateLedger) const;
 
     std::vector<std::shared_ptr<Ledger const>>
