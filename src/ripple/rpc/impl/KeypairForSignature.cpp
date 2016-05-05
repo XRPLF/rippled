@@ -65,31 +65,43 @@ std::pair<PublicKey, SecretKey>
 keypairForSignature (Json::Value const& params, Json::Value& error)
 {
     bool const has_key_type  = params.isMember (jss::key_type);
-    bool const hasPassphrase = params.isMember (jss::passphrase);
-    bool const hasSecret     = params.isMember (jss::secret);
-    bool const hasSeed       = params.isMember (jss::seed);
-    bool const hasSeedHex    = params.isMember (jss::seed_hex);
 
-    int const n_secrets =
-        (hasPassphrase ? 1 : 0) +
-        (hasSecret ? 1 : 0) +
-        (hasSeed ? 1 : 0) +
-        (hasSeedHex ? 1 : 0);
+    // All of the secret types we allow, but only one at a time.
+    // The array should be constexpr, but that makes Visual Studio unhappy.
+    static char const* const secretTypes[]
+    {
+        jss::passphrase.c_str(),
+        jss::secret.c_str(),
+        jss::seed.c_str(),
+        jss::seed_hex.c_str()
+    };
 
-    if (n_secrets == 0)
+    // Identify which secret type is in use.
+    char const* secretType = nullptr;
+    int secretCount = 0;
+    for (auto t : secretTypes)
+    {
+        if (params.isMember (t))
+        {
+            ++secretCount;
+            secretType = t;
+        }
+    }
+
+    if (secretCount == 0 || secretType == nullptr)
     {
         error = RPC::missing_field_error (jss::secret);
         return { };
     }
 
-    if (n_secrets > 1)
+    if (secretCount > 1)
     {
         // `passphrase`, `secret`, `seed`, and `seed_hex` are mutually exclusive.
         error = rpcError (rpcBAD_SECRET);
         return { };
     }
 
-    if (has_key_type && hasSecret)
+    if (has_key_type && (secretType == jss::secret.c_str()))
     {
         // `secret` is deprecated.
         error = rpcError (rpcBAD_SECRET);
@@ -121,7 +133,7 @@ keypairForSignature (Json::Value const& params, Json::Value& error)
     if (!seed)
     {
         error = RPC::make_error (rpcBAD_SEED,
-            RPC::invalid_field_message (jss::secret));
+            RPC::invalid_field_message (secretType));
         return { };
     }
 
