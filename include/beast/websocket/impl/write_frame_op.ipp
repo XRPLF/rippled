@@ -256,8 +256,8 @@ operator()(
             deallocate(d.tmp, d.tmp_size, d.h);
         d.tmp = nullptr;
     }
-    d.h(ec);
     d.ws.rd_op_.maybe_invoke();
+    d.h(ec);
 }
 
 } // websocket

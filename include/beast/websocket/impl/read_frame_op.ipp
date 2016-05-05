@@ -497,8 +497,8 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         d.ws.error_ = true;
     if(d.ws.wr_block_ == &d)
         d.ws.wr_block_ = nullptr;
-    d.h(ec);
     d.ws.wr_op_.maybe_invoke();
+    d.h(ec);
 }
 
 } // websocket

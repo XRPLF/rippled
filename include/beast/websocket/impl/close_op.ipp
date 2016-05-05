@@ -175,8 +175,8 @@ stream<NextLayer>::close_op<Handler>::operator()(
         d.ws.error_ = true;
     if(d.ws.wr_block_ == &d)
         d.ws.wr_block_ = nullptr;
-    d.h(ec);
     d.ws.rd_op_.maybe_invoke();
+    d.h(ec);
 }
 
 } // websocket
