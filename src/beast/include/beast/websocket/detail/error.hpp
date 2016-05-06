@@ -30,7 +30,7 @@ public:
     const char*
     name() const noexcept override
     {
-        return "wsproto";
+        return "websocket";
     }
 
     std::string
@@ -50,7 +50,7 @@ public:
         case error::request_invalid: return "upgrade request invalid";
         case error::request_denied: return "upgrade request denied";
         default:
-            return "wsproto.error";
+            return "websocket error";
         }
     }
 

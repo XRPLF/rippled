@@ -8,9 +8,7 @@
 #ifndef BEAST_HTTP_STRING_BODY_HPP
 #define BEAST_HTTP_STRING_BODY_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
-#include <beast/http/resume_context.hpp>
+#include <beast/http/body_type.hpp>
 #include <beast/buffer_cat.hpp>
 #include <beast/streambuf.hpp>
 #include <memory>
@@ -20,6 +18,8 @@ namespace beast {
 namespace http {
 
 /** A Body represented by a std::string.
+
+    Meets the requirements of @b `Body`.
 */
 struct string_body
 {
@@ -35,10 +35,10 @@ private:
         value_type& s_;
 
     public:
-        template<bool isRequest, class Allocator>
+        template<bool isRequest, class Headers>
         explicit
         reader(message<isRequest,
-                string_body, Allocator>& m) noexcept
+                string_body, Headers>& m) noexcept
             : s_(m.body)
         {
         }
@@ -58,9 +58,13 @@ private:
         value_type const& body_;
 
     public:
-        template<bool isRequest, class Allocator>
+        writer(writer const&) = delete;
+        writer& operator=(writer const&) = delete;
+
+        template<bool isRequest, class Headers>
         explicit
-        writer(message<isRequest, string_body, Allocator> const& msg)
+        writer(message<
+                isRequest, string_body, Headers> const& msg)
             : body_(msg.body)
         {
         }
@@ -70,7 +74,7 @@ private:
         {
         }
 
-        std::size_t
+        std::uint64_t
         content_length() const
         {
             return body_.size();

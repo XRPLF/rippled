@@ -26,7 +26,7 @@ public:
 
     class const_iterator;
 
-    const_buffers_type() = default;
+    const_buffers_type() = delete;
     const_buffers_type(
         const_buffers_type const&) = default;
     const_buffers_type& operator=(
@@ -51,8 +51,8 @@ private:
 
 class static_streambuf::const_buffers_type::const_iterator
 {
-    std::size_t n_;
-    std::uint8_t const* p_;
+    std::size_t n_ = 0;
+    std::uint8_t const* p_ = nullptr;
 
 public:
     using value_type = boost::asio::const_buffer;
@@ -158,7 +158,7 @@ public:
 
     class const_iterator;
 
-    mutable_buffers_type() = default;
+    mutable_buffers_type() = delete;
     mutable_buffers_type(
         mutable_buffers_type const&) = default;
     mutable_buffers_type& operator=(
@@ -183,8 +183,8 @@ private:
 
 class static_streambuf::mutable_buffers_type::const_iterator
 {
-    std::size_t n_;
-    std::uint8_t* p_;
+    std::size_t n_ = 0;
+    std::uint8_t* p_ = nullptr;
 
 public:
     using value_type = boost::asio::mutable_buffer;

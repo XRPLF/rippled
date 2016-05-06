@@ -9,7 +9,10 @@
 #define BEAST_STREAMBUF_READSTREAM_HPP
 
 #include <beast/async_completion.hpp>
+#include <beast/buffer_concepts.hpp>
+#include <beast/stream_concepts.hpp>
 #include <beast/streambuf.hpp>
+#include <beast/detail/get_lowest_layer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/system/error_code.hpp>
@@ -18,11 +21,11 @@
 
 namespace beast {
 
-/** A `Stream` with attached `Streambuf` to buffer reads.
+/** A @b `Stream` with attached @b `Streambuf` to buffer reads.
 
-    This wraps a `Stream` implementation so that calls to write are
+    This wraps a @b `Stream` implementation so that calls to write are
     passed through to the underlying stream, while calls to read will
-    first consume the input sequence stored in a `Streambuf` which
+    first consume the input sequence stored in a @b `Streambuf` which
     is part of the object.
 
     The use-case for this class is different than that of the
@@ -35,10 +38,10 @@ namespace beast {
 
     Uses:
 
-    * Transparently leave untouched input acquired in calls
+    @li Transparently leave untouched input acquired in calls
       to `boost::asio::read_until` behind for subsequent callers.
 
-    * "Preload" a stream with handshake input data acquired
+    @li "Preload" a stream with handshake input data acquired
       from other sources.
 
     Example:
@@ -83,10 +86,12 @@ namespace beast {
 
     @tparam Streambuf The type of stream buffer to use.
 */
-template<class Stream,
-    class Streambuf = streambuf>
+template<class Stream, class Streambuf>
 class streambuf_readstream
 {
+    static_assert(is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
+
     using error_code = boost::system::error_code;
 
     template<class Buffers, class Handler>
@@ -106,10 +111,26 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
-        typename next_layer_type::lowest_layer_type;
+#if GENERATING_DOCS
+        implementation_defined;
+#else
+        typename detail::get_lowest_layer<
+            next_layer_type>::type;
+#endif
 
-    /// Move constructor.
+    /** Move constructor.
+
+        @note The behavior of move assignment on or from streams
+        with active or pending operations is undefined.
+    */
     streambuf_readstream(streambuf_readstream&&) = default;
+
+    /** Move assignment.
+
+        @note The behavior of move assignment on or from streams
+        with active or pending operations is undefined.
+    */
+    streambuf_readstream& operator=(streambuf_readstream&&) = default;
 
     /** Construct the wrapping stream.
 
@@ -200,6 +221,8 @@ public:
     std::size_t
     write_some(ConstBufferSequence const& buffers)
     {
+        static_assert(is_SyncWriteStream<next_layer_type>::value,
+            "SyncWriteStream requirements not met");
         return next_layer_.write_some(buffers);
     }
 
@@ -210,14 +233,19 @@ public:
     write_some(ConstBufferSequence const& buffers,
         error_code& ec)
     {
+        static_assert(is_SyncWriteStream<next_layer_type>::value,
+            "SyncWriteStream requirements not met");
         return next_layer_.write_some(buffers, ec);
     }
 
     /// Start an asynchronous write. The data being written must be valid for the
     /// lifetime of the asynchronous operation.
     template<class ConstBufferSequence, class WriteHandler>
-    typename async_completion<
-        WriteHandler, void(error_code)>::result_type
+#if GENERATING_DOCS
+    void_or_deduced
+#else
+    typename async_completion<WriteHandler, void(error_code)>::result_type
+#endif
     async_write_some(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -237,8 +265,11 @@ public:
     /// Start an asynchronous read. The buffer into which the data will be read
     /// must be valid for the lifetime of the asynchronous operation.
     template<class MutableBufferSequence, class ReadHandler>
-    typename async_completion<
-        ReadHandler, void(error_code)>::result_type
+#if GENERATING_DOCS
+    void_or_deduced
+#else
+    typename async_completion<ReadHandler, void(error_code)>::result_type
+#endif
     async_read_some(MutableBufferSequence const& buffers,
         ReadHandler&& handler);
 };

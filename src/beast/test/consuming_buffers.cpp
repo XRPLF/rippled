@@ -13,7 +13,6 @@
 #include <string>
 
 namespace beast {
-namespace test {
 
 class consuming_buffers_test : public beast::detail::unit_test::suite
 {
@@ -89,7 +88,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(consuming_buffers,asio,beast);
+BEAST_DEFINE_TESTSUITE(consuming_buffers,core,beast);
 
-} // test
 } // beast

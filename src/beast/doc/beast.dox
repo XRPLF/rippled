@@ -103,12 +103,16 @@ WARN_LOGFILE           =
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT = \
+        ../include/beast/ \
+        ../include/beast/http \
+        ../include/beast/websocket \
+        ../include/beast/doc_debug.hpp \
+
         ../include/beast/async_completion.hpp \
         ../include/beast/basic_streambuf.hpp \
         ../include/beast/bind_handler.hpp \
         ../include/beast/buffer_cat.hpp \
         ../include/beast/buffers_adapter.hpp \
-        ../include/beast/buffers_debug.hpp \
         ../include/beast/consuming_buffers.hpp \
         ../include/beast/handler_alloc.hpp \
         ../include/beast/http.hpp \
@@ -117,17 +121,20 @@ INPUT = \
         ../include/beast/static_streambuf.hpp \
         ../include/beast/streambuf.hpp \
         ../include/beast/streambuf_readstream.hpp \
+        ../include/beast/to_string.hpp \
         ../include/beast/type_check.hpp \
         ../include/beast/websocket.hpp \
         ../include/beast/write_streambuf.hpp \
         ../include/beast/http/basic_headers.hpp \
-        ../include/beast/http/basic_parser.hpp \
+        ../include/beast/http/basic_parser_v1.hpp \
+        ../include/beast/http/body_writer.hpp \
         ../include/beast/http/chunk_encode.hpp \
         ../include/beast/http/empty_body.hpp \
         ../include/beast/http/error.hpp \
         ../include/beast/http/fields.hpp \
         ../include/beast/http/headers.hpp \
         ../include/beast/http/message.hpp \
+        ../include/beast/http/message_v1.hpp \
         ../include/beast/http/method.hpp \
         ../include/beast/http/parse_error.hpp \
         ../include/beast/http/parser.hpp \

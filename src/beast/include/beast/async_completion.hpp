@@ -8,7 +8,7 @@
 #ifndef BEAST_ASYNC_COMPLETION_HPP
 #define BEAST_ASYNC_COMPLETION_HPP
 
-#include <beast/type_check.hpp>
+#include <beast/handler_concepts.hpp>
 #include <boost/asio/async_result.hpp>
 #include <boost/asio/handler_type.hpp>
 #include <type_traits>
@@ -19,11 +19,11 @@ namespace beast {
 /** Helper for customizing the return type of asynchronous initiation functions.
 
     This class template is used to transform caller-provided completion
-    tokens in calls to asynchronous initiation functions. The transformation
+    handlers in calls to asynchronous initiation functions. The transformation
     allows customization of the return type of the initiating function, and the
     function signature of the final handler.
 
-    @tparam CompletionToken A CompletionHandler, or a user defined type
+    @tparam CompletionHandler A completion handler, or a user defined type
     with specializations for customizing the return type (for example,
     `boost::asio::use_future` or `boost::asio::yield_context`).
 
@@ -32,22 +32,22 @@ namespace beast {
     Example:
     @code
     ...
-    template<class CompletionToken>
-    typename async_completion<CompletionToken,
+    template<class CompletionHandler>
+    typename async_completion<CompletionHandler,
         void(boost::system::error_code)>::result_type
-    async_initfn(..., CompletionToken&& token)
+    async_initfn(..., CompletionHandler&& handler)
     {
-        async_completion<CompletionToken,
-            void(boost::system::error_code)> completion(token);
+        async_completion<CompletionHandler,
+            void(boost::system::error_code)> completion(handler);
         ...
         return completion.result.get();
     }
     @endcode
 
-    See <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3896.pdf">
+    @note See <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3896.pdf">
         Library Foundations For Asynchronous Operations</a>
 */
-template <class CompletionToken, class Signature>
+template <class CompletionHandler, class Signature>
 struct async_completion
 {
     /** The type of the final handler called by the asynchronous initiation function.
@@ -56,7 +56,7 @@ struct async_completion
     */
     using handler_type =
         typename boost::asio::handler_type<
-            CompletionToken, Signature>::type;
+            CompletionHandler, Signature>::type;
 
     /// The type of the value returned by the asynchronous initiation function.
     using result_type = typename
@@ -64,14 +64,14 @@ struct async_completion
 
     /** Construct the helper.
 
-        @param token The completion token. Copies will be made as
-        required. If `CompletionToken` is movable, it may also be moved.
+        @param token The completion handler. Copies will be made as
+        required. If `CompletionHandler` is movable, it may also be moved.
     */
-    async_completion(typename std::remove_reference<CompletionToken>::type& token)
-        : handler(std::forward<CompletionToken>(token))
+    async_completion(typename std::remove_reference<CompletionHandler>::type& token)
+        : handler(std::forward<CompletionHandler>(token))
         , result(handler)
     {
-        static_assert(is_Handler<handler_type, Signature>::value,
+        static_assert(is_CompletionHandler<handler_type, Signature>::value,
             "Handler requirements not met");
     }
 

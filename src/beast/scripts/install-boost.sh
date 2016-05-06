@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash -u
 # Assumptions:
 # 1) BOOST_ROOT and BOOST_URL are already defined,
 # and contain valid values.
@@ -13,7 +13,10 @@ then
   cd `dirname $BOOST_ROOT`
   rm -fr ${BOOST_ROOT}
   tar xzf /tmp/boost.tar.gz
-  params="define=_GLIBCXX_USE_CXX11_ABI=0 --with-program_options --with-system"
+
+  params="define=_GLIBCXX_USE_CXX11_ABI=0 \
+          address-model=$ADDRESS_MODEL --with-program_options \
+          --with-system --with-coroutine --with-filesystem"
   cd $BOOST_ROOT && \
     ./bootstrap.sh --prefix=$BOOST_ROOT && \
     ./b2 -d1 $params && \

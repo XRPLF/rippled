@@ -16,7 +16,6 @@
 #include <string>
 
 namespace beast {
-namespace test {
 
 struct test_allocator_info
 {
@@ -179,40 +178,81 @@ public:
         std::size_t v = s.size() - (t + u);
         {
             streambuf sb(i);
-            decltype(sb)::mutable_buffers_type d;
-            d = sb.prepare(z); expect(buffer_size(d) == z);
-            d = sb.prepare(0); expect(buffer_size(d) == 0);
-            d = sb.prepare(y); expect(buffer_size(d) == y);
-            d = sb.prepare(x); expect(buffer_size(d) == x);
-            sb.commit(buffer_copy(d, buffer(s.data(), x)));
+            {
+                auto d = sb.prepare(z);
+                expect(buffer_size(d) == z);
+            }
+            {
+                auto d = sb.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
+            {
+                auto d = sb.prepare(y);
+                expect(buffer_size(d) == y);
+            }
+            {
+                auto d = sb.prepare(x);
+                expect(buffer_size(d) == x);
+                sb.commit(buffer_copy(d, buffer(s.data(), x)));
+            }
             expect(sb.size() == x);
             expect(buffer_size(sb.data()) == sb.size());
-            d = sb.prepare(x); expect(buffer_size(d) == x);
-            d = sb.prepare(0); expect(buffer_size(d) == 0);
-            d = sb.prepare(z); expect(buffer_size(d) == z);
-            d = sb.prepare(y); expect(buffer_size(d) == y);
-            sb.commit(buffer_copy(d, buffer(s.data()+x, y)));
+            {
+                auto d = sb.prepare(x);
+                expect(buffer_size(d) == x);
+            }
+            {
+                auto d = sb.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
+            {
+                auto d = sb.prepare(z);
+                expect(buffer_size(d) == z);
+            }
+            {
+                auto d = sb.prepare(y);
+                expect(buffer_size(d) == y);
+                sb.commit(buffer_copy(d, buffer(s.data()+x, y)));
+            }
             sb.commit(1);
             expect(sb.size() == x + y);
             expect(buffer_size(sb.data()) == sb.size());
-            d = sb.prepare(x); expect(buffer_size(d) == x);
-            d = sb.prepare(y); expect(buffer_size(d) == y);
-            d = sb.prepare(0); expect(buffer_size(d) == 0);
-            d = sb.prepare(z); expect(buffer_size(d) == z);
-            sb.commit(buffer_copy(d, buffer(s.data()+x+y, z)));
+            {
+                auto d = sb.prepare(x);
+                expect(buffer_size(d) == x);
+            }
+            {
+                auto d = sb.prepare(y);
+                expect(buffer_size(d) == y);
+            }
+            {
+                auto d = sb.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
+            {
+                auto d = sb.prepare(z);
+                expect(buffer_size(d) == z);
+                sb.commit(buffer_copy(d, buffer(s.data()+x+y, z)));
+            }
             sb.commit(2);
             expect(sb.size() == x + y + z);
             expect(buffer_size(sb.data()) == sb.size());
             expect(to_string(sb.data()) == s);
             sb.consume(t);
-            d = sb.prepare(0); expect(buffer_size(d) == 0);
+            {
+                auto d = sb.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
             expect(to_string(sb.data()) == s.substr(t, std::string::npos));
             sb.consume(u);
             expect(to_string(sb.data()) == s.substr(t + u, std::string::npos));
             sb.consume(v);
             expect(to_string(sb.data()) == "");
             sb.consume(1);
-            d = sb.prepare(0); expect(buffer_size(d) == 0);
+            {
+                auto d = sb.prepare(0);
+                expect(buffer_size(d) == 0);
+            }
         }
         }}}}}
     }
@@ -286,16 +326,22 @@ public:
         }
     }
 
+    void testStream()
+    {
+        streambuf sb;
+        sb << "x";
+    }
+
     void run() override
     {
         testPrepare();
         testStreambuf();
         testSpecial();
         testAllocator();
+        testStream();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(basic_streambuf,core,beast);
 
-} // test
 } // beast

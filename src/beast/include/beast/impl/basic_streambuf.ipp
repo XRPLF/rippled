@@ -8,6 +8,7 @@
 #ifndef BEAST_IMPL_BASIC_STREAMBUF_IPP
 #define BEAST_IMPL_BASIC_STREAMBUF_IPP
 
+#include <beast/detail/write_streambuf.hpp>
 #include <algorithm>
 #include <cassert>
 #include <exception>
@@ -118,7 +119,7 @@ public:
 template<class Allocator>
 class basic_streambuf<Allocator>::const_buffers_type
 {
-    basic_streambuf const* sb_ = nullptr;
+    basic_streambuf const* sb_;
 
     friend class basic_streambuf;
 
@@ -126,12 +127,12 @@ class basic_streambuf<Allocator>::const_buffers_type
     const_buffers_type(basic_streambuf const& sb);
 
 public:
-    /// Why?
+    // Why?
     using value_type = boost::asio::const_buffer;
 
     class const_iterator;
 
-    const_buffers_type() = default;
+    const_buffers_type() = delete;
     const_buffers_type(const_buffers_type const&) = default;
     const_buffers_type& operator=(const_buffers_type const&) = default;
 
@@ -157,7 +158,7 @@ public:
 
     class const_iterator;
 
-    mutable_buffers_type() = default;
+    mutable_buffers_type() = delete;
     mutable_buffers_type(mutable_buffers_type const&) = default;
     mutable_buffers_type& operator=(mutable_buffers_type const&) = default;
 
@@ -849,22 +850,6 @@ basic_streambuf<Allocator>::debug_check() const
 #endif
 }
 
-template<class Alloc, class T>
-basic_streambuf<Alloc>&
-operator<<(basic_streambuf<Alloc>& streambuf, T const& t)
-{
-    using boost::asio::buffer;
-    using boost::asio::buffer_copy;
-    std::stringstream ss;
-    ss << t;
-    auto const& s = ss.str();
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(s.size()), buffer(s)));
-    return streambuf;
-}
-
-//------------------------------------------------------------------------------
-
 template<class Allocator>
 std::size_t
 read_size_helper(basic_streambuf<
@@ -874,17 +859,12 @@ read_size_helper(basic_streambuf<
         std::max<std::size_t>(512, streambuf.prepare_size()));
 }
 
-template<class Allocator>
-std::string
-to_string(basic_streambuf<Allocator> const& streambuf)
+template<class Alloc, class T>
+basic_streambuf<Alloc>&
+operator<<(basic_streambuf<Alloc>& streambuf, T const& t)
 {
-    using boost::asio::buffer;
-    using boost::asio::buffer_copy;
-    std::string s;
-    s.resize(streambuf.size());
-    buffer_copy(
-        buffer(&s[0], s.size()), streambuf.data());
-    return s;
+    detail::write_streambuf(streambuf, t);
+    return streambuf;
 }
 
 } // beast

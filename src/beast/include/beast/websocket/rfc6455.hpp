@@ -8,7 +8,7 @@
 #ifndef BEAST_WEBSOCKET_RFC6455_HPP
 #define BEAST_WEBSOCKET_RFC6455_HPP
 
-#include <beast/websocket/static_string.hpp>
+#include <beast/static_string.hpp>
 #include <boost/optional.hpp>
 #include <array>
 #include <cstdint>
@@ -41,17 +41,24 @@ enum class opcode : std::uint8_t
 
     These codes accompany close frames.
 
-    @see RFC 6455 7.4.1 Defined Status Codes
-    https://tools.ietf.org/html/rfc6455#section-7.4.1
+    @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC 6455 7.4.1 Defined Status Codes</a>
+
 */
-enum class close_code : std::uint16_t
+#if GENERATING_DOCS
+enum close_code
+#else
+namespace close_code {
+using value = std::uint16_t;
+enum
+#endif
 {
-    // used internally to mean "no error"
+    /// used internally to mean "no error"
     none            = 0,
 
     normal          = 1000,
     going_away      = 1001,
     protocol_error  = 1002,
+
     unknown_data    = 1003,
     bad_payload     = 1007,
     policy_error    = 1008,
@@ -69,16 +76,15 @@ enum class close_code : std::uint16_t
 
     last = 5000 // satisfy warnings
 };
+#if ! GENERATING_DOCS
+} // close_code
+#endif
 
 #if ! GENERATING_DOCS
-
 using reason_string_type =
     static_string<123, char>;
-
-/// Payload type for pings and pongs
 using ping_payload_type =
     static_string<125, char>;
-
 #endif
 
 /** Description of the close reason.
@@ -89,7 +95,7 @@ using ping_payload_type =
 struct close_reason
 {
     /// The close code.
-    close_code code = close_code::none;
+    close_code::value code = close_code::none;
 
     /// The optional utf8-encoded reason string.
     reason_string_type reason;
@@ -102,7 +108,7 @@ struct close_reason
     close_reason() = default;
 
     /// Construct from a code.
-    close_reason(close_code code_)
+    close_reason(close_code::value code_)
         : code(code_)
     {
     }
@@ -117,7 +123,7 @@ struct close_reason
 
     /// Construct from a code and reason.
     template<class CharT>
-    close_reason(close_code code_,
+    close_reason(close_code::value code_,
             CharT const* reason_)
         : code(code_)
         , reason(reason_)

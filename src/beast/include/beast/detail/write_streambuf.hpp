@@ -8,6 +8,7 @@
 #ifndef BEAST_DETAIL_WRITE_STREAMBUF_HPP
 #define BEAST_DETAIL_WRITE_STREAMBUF_HPP
 
+#include <beast/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <utility>
@@ -40,13 +41,6 @@ public:
     static bool const value = type::value &&
         ! is_string_literal<T>::value;
 };
-
-template<class Streambuf>
-inline
-void
-write_streambuf(Streambuf&)
-{
-}
 
 template<class Streambuf>
 void
@@ -133,11 +127,11 @@ write_streambuf(Streambuf& streambuf, T const& t)
 
 template<class Streambuf, class T0, class T1, class... TN>
 void
-write_streambuf(Streambuf& streambuf, T0&& t0, T1&& t1, TN... tn)
+write_streambuf(Streambuf& streambuf,
+    T0 const& t0, T1 const& t1, TN const&... tn)
 {
-    write_streambuf(streambuf, std::forward<T0>(t0));
-    write_streambuf(streambuf, std::forward<T1>(t1));
-    write_streambuf(streambuf, std::forward<TN>(tn)...);
+    write_streambuf(streambuf, t0);
+    write_streambuf(streambuf, t1, tn...);
 }
 
 } // detail

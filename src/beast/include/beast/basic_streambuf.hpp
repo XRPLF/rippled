@@ -18,12 +18,14 @@
 
 namespace beast {
 
-/** A `Streambuf` that uses multiple buffers internally.
+/** A @b `Streambuf` that uses multiple buffers internally.
 
     The implementation uses a sequence of one or more character arrays
     of varying sizes. Additional character array objects are appended to
     the sequence to accommodate changes in the size of the character
     sequence.
+
+    @note Meets the requirements of @b Streambuf.
 
     @tparam Allocator The allocator to use for managing memory.
 */
@@ -36,10 +38,14 @@ class basic_streambuf
 #endif
 {
 public:
+#if GENERATING_DOCS
     /// The type of allocator used.
+    using allocator_type = Allocator;
+#else
     using allocator_type = typename
         std::allocator_traits<Allocator>::
             template rebind_alloc<std::uint8_t>;
+#endif
 
 private:
     // Storage for the list of buffers representing the input
@@ -93,106 +99,104 @@ public:
 
     /** Move constructor.
 
-        The output sequence of this object will be empty.
+        The new object will have the input sequence of
+        the other stream buffer, and an empty output sequence.
 
-        After the move, the moved-from object will have an
-        empty input and output sequence, with no internal
+        @note After the move, the moved-from object will have
+        an empty input and output sequence, with no internal
         buffers allocated.
-
-        @param other The stream buffer to move from.
     */
-    basic_streambuf(basic_streambuf&& other);
+    basic_streambuf(basic_streambuf&&);
 
     /** Move constructor.
 
-        The output sequence of this object will be empty.
+        The new object will have the input sequence of
+        the other stream buffer, and an empty output sequence.
 
-        After the move, the moved-from object will have an
-        empty input and output sequence, with no internal
+        @note After the move, the moved-from object will have
+        an empty input and output sequence, with no internal
         buffers allocated.
-
-        @param other The stream buffer to move from.
 
         @param alloc The allocator to associate with the
         stream buffer.
     */
-    basic_streambuf(basic_streambuf&& other,
+    basic_streambuf(basic_streambuf&&,
         allocator_type const& alloc);
 
     /** Move assignment.
 
-        The output sequence of this object will be empty.
+        This object will have the input sequence of
+        the other stream buffer, and an empty output sequence.
 
-        After the move, the moved-from object will have an
-        empty input and output sequence, with no internal
+        @note After the move, the moved-from object will have
+        an empty input and output sequence, with no internal
         buffers allocated.
-
-        @param other The stream buffer to move from.
     */
     basic_streambuf&
-    operator=(basic_streambuf&& other);
-
-    /// Copy constructor.
-    basic_streambuf(basic_streambuf const& other);
+    operator=(basic_streambuf&&);
 
     /** Copy constructor.
 
-        The output sequence of this object will be empty.
+        This object will have a copy of the other stream
+        buffer's input sequence, and an empty output sequence.
+    */
+    basic_streambuf(basic_streambuf const&);
 
-        @param other The stream buffer to copy.
+    /** Copy constructor.
+
+        This object will have a copy of the other stream
+        buffer's input sequence, and an empty output sequence.
 
         @param alloc The allocator to associate with the
         stream buffer.
     */
-    basic_streambuf(basic_streambuf const& other,
+    basic_streambuf(basic_streambuf const&,
         allocator_type const& alloc);
 
     /** Copy assignment.
 
-        The output sequence of this object will be empty.
-
-        @param other The stream buffer to copy.
+        This object will have a copy of the other stream
+        buffer's input sequence, and an empty output sequence.
     */
-    basic_streambuf& operator=(basic_streambuf const& other);
+    basic_streambuf& operator=(basic_streambuf const&);
 
     /** Copy constructor.
 
-        The output sequence of this object will be empty.
-
-        @param other The stream buffer to copy.
+        This object will have a copy of the other stream
+        buffer's input sequence, and an empty output sequence.
     */
     template<class OtherAlloc>
-    basic_streambuf(basic_streambuf<OtherAlloc> const& other);
+    basic_streambuf(basic_streambuf<OtherAlloc> const&);
 
     /** Copy constructor.
 
-        The output sequence of this object will be empty.
-
-        @param other The stream buffer to copy.
+        This object will have a copy of the other stream
+        buffer's input sequence, and an empty output sequence.
 
         @param alloc The allocator to associate with the
         stream buffer.
     */
     template<class OtherAlloc>
-    basic_streambuf(basic_streambuf<OtherAlloc> const& other,
+    basic_streambuf(basic_streambuf<OtherAlloc> const&,
         allocator_type const& alloc);
 
     /** Copy assignment.
 
-        The output sequence of this object will be empty.
-
-        @param other The stream buffer to copy.
+        This object will have a copy of the other stream
+        buffer's input sequence, and an empty output sequence.
     */
     template<class OtherAlloc>
-    basic_streambuf& operator=(basic_streambuf<OtherAlloc> const& other);
+    basic_streambuf& operator=(basic_streambuf<OtherAlloc> const&);
 
-    /** Default constructor.
+    /** Construct a stream buffer.
 
-        @param alloc_size The size of buffer to allocate. This is a soft
-        limit, calls to prepare for buffers exceeding this size will allocate
-        the larger size.
+        @param alloc_size The size of buffer to allocate. This is a
+        soft limit, calls to prepare for buffers exceeding this size
+        will allocate the larger size. The default allocation size
+        is 1KB (1024 bytes).
 
-        @param alloc The allocator to use.
+        @param alloc The allocator to use. If this parameter is
+        unspecified, a default constructed allocator will be used.
     */
     explicit
     basic_streambuf(std::size_t alloc_size = 1024,
@@ -219,15 +223,26 @@ public:
         return in_size_;
     }
 
-    /// Get a list of buffers that represents the output sequence, with the given size.
+    /** Get a list of buffers that represents the output sequence, with the given size.
+
+        @note Buffers representing the input sequence acquired prior to
+        this call remain valid.
+    */
     mutable_buffers_type
     prepare(size_type n);
 
-    /// Move bytes from the output sequence to the input sequence.
+    /** Move bytes from the output sequence to the input sequence.
+
+        @note Buffers representing the input sequence acquired prior to
+        this call remain valid.
+    */
     void
     commit(size_type n);
 
-    /// Get a list of buffers that represents the input sequence.
+    /** Get a list of buffers that represents the input sequence.
+
+        @note These buffers remain valid across subsequent calls to `prepare`.
+    */
     const_buffers_type
     data() const;
 
@@ -277,19 +292,9 @@ private:
 
     @return The stream buffer.
 */
-template<class Alloc, class T>
-basic_streambuf<Alloc>&
-operator<<(basic_streambuf<Alloc>& streambuf, T const& t);
-
-/** Convert the entire basic_streambuf to a string.
-
-    @param streambuf The streambuf to convert.
-
-    @return A string representing the contents of the input sequence.
-*/
-template<class Allocator>
-std::string
-to_string(basic_streambuf<Allocator> const& streambuf);
+template<class Allocator, class T>
+basic_streambuf<Allocator>&
+operator<<(basic_streambuf<Allocator>& streambuf, T const& t);
 
 } // beast
 

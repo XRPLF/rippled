@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WSPROTO_DEBUG_H_INCLUDED
-#define BEAST_WSPROTO_DEBUG_H_INCLUDED
+#ifndef BEAST_WEBSOCKET_DETAIL_DEBUG_HPP
+#define BEAST_WEBSOCKET_DETAIL_DEBUG_HPP
 
-#include <beast/unit_test/suite.h>
 #include <boost/asio/buffer.hpp>
 #include <iomanip>
 #include <sstream>
@@ -82,7 +81,7 @@ format(std::string s)
 }
 
 } // detail
-} // wsproto
+} // websocket
 } // beast
 
 #endif

@@ -108,7 +108,7 @@ protected:
 
     template<class = void>
     void
-    prepare_fh(close_code& code);
+    prepare_fh(close_code::value& code);
 
     template<class Streambuf>
     void

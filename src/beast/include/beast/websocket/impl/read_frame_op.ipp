@@ -42,10 +42,10 @@ class stream<NextLayer>::read_frame_op
         stream<NextLayer>& ws;
         frame_info& fi;
         Streambuf& sb;
-        smb_type smb;
         Handler h;
         fb_type fb;
-        fmb_type fmb;
+        boost::optional<smb_type> smb;
+        boost::optional<fmb_type> fmb;
         bool cont;
         int state = 0;
 
@@ -132,7 +132,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
 {
     auto& d = *d_;
     d.cont = d.cont || again;
-    close_code code;
+    close_code::value code = close_code::none;
     while(! ec && d.state != 99)
     {
         switch(d.state)
@@ -161,7 +161,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             d.smb = d.sb.prepare(
                 detail::clamp(d.ws.rd_need_));
             d.ws.stream_.async_read_some(
-                d.smb, std::move(*this));
+                *d.smb, std::move(*this));
             return;
 
         case 2:
@@ -176,7 +176,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         {
             d.ws.rd_need_ -= bytes_transferred;
             auto const pb = prepare_buffers(
-                bytes_transferred, d.smb);
+                bytes_transferred, *d.smb);
             if(d.ws.rd_fh_.mask)
                 detail::mask_inplace(pb, d.ws.rd_key_);
             if(d.ws.rd_opcode_ == opcode::text)
@@ -195,7 +195,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             d.state = 4;
             break;
         }
-        
+
         // call handler
         case 4:
             d.state = 99;
@@ -252,7 +252,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                     d.fmb = d.fb.prepare(static_cast<
                         std::size_t>(d.ws.rd_fh_.len));
                     boost::asio::async_read(d.ws.stream_,
-                        d.fmb, std::move(*this));
+                        *d.fmb, std::move(*this));
                     return;
                 }
                 d.state = 8;
@@ -276,7 +276,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         case 7:
             if(d.ws.rd_fh_.mask)
                 detail::mask_inplace(
-                    d.fmb, d.ws.rd_key_);
+                    *d.fmb, d.ws.rd_key_);
             d.fb.commit(bytes_transferred);
             d.state = 8;
             break;
@@ -396,8 +396,8 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         // teardown
         case 11:
             d.state = 12;
-            wsproto_helpers::call_async_teardown(
-                d.ws.next_layer_, std::move(*this));
+            websocket_helpers::call_async_teardown(
+                d.ws.next_layer(), std::move(*this));
             return;
 
         case 12:
@@ -482,8 +482,8 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         // teardown
         case 19:
             d.state = 20;
-            wsproto_helpers::call_async_teardown(
-                d.ws.next_layer_, std::move(*this));
+            websocket_helpers::call_async_teardown(
+                d.ws.next_layer(), std::move(*this));
             return;
 
         case 20:
@@ -497,8 +497,8 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
         d.ws.error_ = true;
     if(d.ws.wr_block_ == &d)
         d.ws.wr_block_ = nullptr;
-    d.h(ec);
     d.ws.wr_op_.maybe_invoke();
+    d.h(ec);
 }
 
 } // websocket

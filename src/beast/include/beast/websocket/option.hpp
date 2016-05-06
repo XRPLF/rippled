@@ -19,17 +19,17 @@ namespace websocket {
 
 /** Automatic fragmentation size option.
 
-    Sets the maximum size of fragments generated when sending
-    messages on a WebSocket socket.
+    Sets the maximum size of fragments generated when sending messages
+    on a WebSocket stream.
 
-    When the automatic fragmentation size is non-zero, messages
-    exceeding the size will be split into multiple frames no
-    larger than the size. This setting does not affect frames
-    send explicitly using `write_frame` or `async_write_frame`.
+    When the automatic fragmentation size is non-zero, messages exceeding
+    the size will be split into multiple frames no larger than the size.
+    This setting does not affect frames sent explicitly using
+    @ref stream::write_frame or @ref stream::async_write_frame.
 
     The default setting is to fragment messages into 16KB frames.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the automatic fragmentation size option:
@@ -61,18 +61,20 @@ struct auto_fragment_size
     Server or User-Agent fields. The default setting applies no
     transformation to the HTTP message.
 
-    For synchronous operations, the implementation will call the
-    decorator before the function call to perform the operation
-    returns.
+    The context in which the decorator is called depends on the
+    type of operation performed:
 
-    For asynchronous operations, the implementation guarantees that
-    calls to the decorator will be made from the same implicit or
-    explicit strand used to call the asynchronous initiation
+    @li For synchronous operations, the implementation will call the
+    decorator before the operation unblocks.
+
+    @li For asynchronous operations, the implementation guarantees
+    that calls to the decorator will be made from the same implicit
+    or explicit strand used to call the asynchronous initiation
     function.
 
     The default setting is no decorator.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the decorator.
@@ -121,7 +123,7 @@ decorate(Decorator&& d)
     The default setting is to close connections after a failed
     upgrade request.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the keep alive option.
@@ -155,7 +157,7 @@ struct keep_alive
 
     The default setting is opcode::text.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the message type to binary.
@@ -191,7 +193,7 @@ struct message_type
 
     The default is no buffering.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the read buffer size.
@@ -224,7 +226,7 @@ struct read_buffer_size
 
     The default setting is 16 megabytes.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the maximum read message size.
@@ -262,7 +264,7 @@ struct read_message_max
 
     The default setting is 4096. The minimum value is 1024.
 
-    @note Objects of this type are passed to socket::set_option.
+    @note Objects of this type are passed to @ref stream::set_option.
 
     @par Example
     Setting the write buffer size.

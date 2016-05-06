@@ -9,6 +9,7 @@
 #define BEAST_WEBSOCKET_ERROR_HPP
 
 #include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 namespace beast {
 namespace websocket {
@@ -16,7 +17,7 @@ namespace websocket {
 /// The type of error used by functions and completion handlers.
 using error_code = boost::system::error_code;
 
-/// Error values
+/// Error codes returned from @ref stream operations.
 enum class error
 {
     /// Both sides performed a WebSocket close
@@ -50,8 +51,10 @@ enum class error
     request_denied
 };
 
+#if ! GENERATING_DOCS
 error_code
 make_error_code(error e);
+#endif
 
 } // websocket
 } // beast

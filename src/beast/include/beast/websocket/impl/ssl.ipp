@@ -9,7 +9,7 @@
 #define BEAST_WEBSOCKET_IMPL_SSL_IPP_INCLUDED
 
 #include <beast/async_completion.hpp>
-#include <beast/type_check.hpp>
+#include <beast/handler_concepts.hpp>
 
 namespace beast {
 namespace websocket {
@@ -144,7 +144,7 @@ async_teardown(
     boost::asio::ssl::stream<AsyncStream>& stream,
         TeardownHandler&& handler)
 {
-    static_assert(beast::is_Handler<
+    static_assert(beast::is_CompletionHandler<
         TeardownHandler, void(error_code)>::value,
             "TeardownHandler requirements not met");
     detail::teardown_ssl_op<AsyncStream, typename std::decay<

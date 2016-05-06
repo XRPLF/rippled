@@ -8,8 +8,7 @@
 #ifndef BEAST_HTTP_EMPTY_BODY_HPP
 #define BEAST_HTTP_EMPTY_BODY_HPP
 
-#include <beast/http/error.hpp>
-#include <beast/http/message.hpp>
+#include <beast/http/body_type.hpp>
 #include <beast/streambuf.hpp>
 #include <boost/asio/buffer.hpp>
 #include <memory>
@@ -19,6 +18,8 @@ namespace beast {
 namespace http {
 
 /** An empty content-body.
+
+    Meets the requirements of @b `Body`.
 */
 struct empty_body
 {
@@ -35,9 +36,9 @@ private:
 
     struct reader
     {
-        template<bool isRequest, class Allocator>
+        template<bool isRequest, class Headers>
         explicit
-        reader(message<isRequest, empty_body, Allocator>&)
+        reader(message<isRequest, empty_body, Headers>&)
         {
         }
 
@@ -49,9 +50,12 @@ private:
 
     struct writer
     {
-        template<bool isRequest, class Allocator>
+        writer(writer const&) = delete;
+        writer& operator=(writer const&) = delete;
+
+        template<bool isRequest, class Headers>
         explicit
-        writer(message<isRequest, empty_body, Allocator> const& m)
+        writer(message<isRequest, empty_body, Headers> const& m)
         {
         }
 
@@ -60,7 +64,7 @@ private:
         {
         }
 
-        std::size_t
+        std::uint64_t
         content_length() const
         {
             return 0;

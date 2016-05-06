@@ -1,32 +1,45 @@
-* Change build options to C++11 only
-* Replace Jamroot with Jamfile
-* Fix failing test/message.cpp
-* Complete allocator testing in basic_streambuf, basic_headers
-* Tidy up type_checks
-  - Derive from std::integral_constant
-* Check DOXYGEN, GENERATIC_DOCS directives in source
-  - See if we can include them now that xsl is fixed
-* Go over each header and split header material into detail and impl files
-* Make buffers_debug a detail
-* Roll header-only http parser
-* Define Parser concept in HTTP
-* melpon sandbox?
-* invokable unit test
-* trim public interface of rfc2616.h to essentials only
-* Use new http routines in JSONRPCClient
-* Remove or change http::headers alias
-* Do something about the methods.hpp and fields.hpp type headers
+* Add writer::prepare(msg&) interface to set Content-Type
+
+General:
+* Use SFINAE on return values (search for "class =")
+
+Boost.Http
+* Use enum instead of bool in isRequest
+* move version to a subclass of message
+
+Docs:
+* Include Example program listings in the docs
 * Fix index in docs
-* Fix integer warning in file_body.hpp
-* Use make_error_code in websocket to set the category right
 * Figure out why namespace rfc2616 is included in docs
   (currently disabled via GENERATING_DOCS macro)
-* Include Example program listings in the docs
-* Update for rfc7230
+* melpon sandbox?
+* Check DOXYGEN, GENERATIC_DOCS directives in source
+  - See if we can include them now that xsl is fixed
+* Implement cleanup-param to remove spaces around template arguments
+  e.g. in basic_streambuf move constructor members
+
+Core:
+* Replace Jamroot with Jamfile
+* Fix bidirectional buffers iterators operator->()
+* Complete allocator testing in basic_streambuf, basic_headers
+
+WebSocket:
+* optimized versions of key/masking, choose prepared_key size
+* invokable unit test
+* Finish up all of static_string including tests
+* Don't rely on default constructible mutable buffers
+  type in read_frame_op (smb_type). To see the error, use
+  boost::asio::streambuf in websocket_async_echo_peer
+
+HTTP:
+* Define Parser concept in HTTP
+* trim public interface of rfc2616.h to essentials only
+* add bool should_close(message_v1 const&) to replace the use
+  of eof return value from write and async_write
+* http type_check, e.g. is_WritableBody
+* More fine grained parser errors
 * HTTP parser size limit with test (configurable?)
 * HTTP parser trailers with test
 * URL parser, strong URL checking in HTTP parser
-* Fix method, use string instead of enum
-* More fine grained parser errors
-* Fix all the warnings in all projects/build configs
-* Fix bidirectional buffers iterators operator->()
+* Update for rfc7230
+* Consider rename to MessageBody concept
