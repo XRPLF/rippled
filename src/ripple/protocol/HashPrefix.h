@@ -76,8 +76,11 @@ public:
     /** account state */
     static HashPrefix const leafNode;
 
-    /** inner node in tree */
+    /** inner node in V1 tree */
     static HashPrefix const innerNode;
+
+    /** inner node in V2 tree */
+    static HashPrefix const innerNodeV2;
 
     /** ledger master data for signing */
     static HashPrefix const ledgerMaster;

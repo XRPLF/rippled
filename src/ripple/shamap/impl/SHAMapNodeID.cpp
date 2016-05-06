@@ -102,7 +102,7 @@ std::string SHAMapNodeID::getRawString () const
 SHAMapNodeID SHAMapNodeID::getChildNodeID (int m) const
 {
     assert ((m >= 0) && (m < 16));
-    assert (mDepth <= 64);
+    assert (mDepth < 64);
 
     uint256 child (mNodeID);
     child.begin ()[mDepth / 2] |= (mDepth & 1) ? m : (m << 4);
@@ -141,6 +141,25 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
     assert ((branch >= 0) && (branch < 16));
 
     return branch;
+}
+
+bool
+SHAMapNodeID::has_common_prefix(SHAMapNodeID const& other) const
+{
+    assert(mDepth <= other.mDepth);
+    auto x = mNodeID.begin();
+    auto y = other.mNodeID.begin();
+    for (unsigned i = 0; i < mDepth/2; ++i, ++x, ++y)
+    {
+        if (*x != *y)
+            return false;
+    }
+    if (mDepth & 1)
+    {
+        auto i = mDepth/2;
+        return (*(mNodeID.begin() + i) & 0xF0) == (*(other.mNodeID.begin() + i) & 0xF0);
+    }
+    return true;
 }
 
 void SHAMapNodeID::dump (beast::Journal journal) const

@@ -172,9 +172,9 @@ public:
 Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     : mImmutable (false)
     , txMap_  (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        family))
+        family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        family))
+        family, SHAMap::version{1}))
 {
     info_.seq = 1;
     info_.drops = SYSTEM_CURRENCY_START;
@@ -209,9 +209,9 @@ Ledger::Ledger (uint256 const& parentHash,
                 beast::Journal j)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, transHash, family))
-    , stateMap_ (std::make_shared <SHAMap> (
-        SHAMapType::STATE, accountHash, family))
+        SHAMapType::TRANSACTION, transHash, family, SHAMap::version{1}))
+    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE, accountHash,
+        family, SHAMap::version{1}))
 {
     info_.seq = ledgerSeq;
     info_.parentCloseTime = parentCloseTime;
@@ -257,7 +257,7 @@ Ledger::Ledger (Ledger const& prevLedger,
     NetClock::time_point closeTime)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        prevLedger.stateMap_->family()))
+        prevLedger.stateMap_->family(), prevLedger.stateMap_->get_version()))
     , stateMap_ (prevLedger.stateMap_->snapShot (true))
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
@@ -288,9 +288,9 @@ Ledger::Ledger (void const* data,
         Config const& config, Family& family)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family))
+          SHAMapType::TRANSACTION, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family))
+          SHAMapType::STATE, family, SHAMap::version{1}))
 {
     SerialIter sit (data, size);
     setRaw (sit, hasPrefix, family);
@@ -302,9 +302,9 @@ Ledger::Ledger (std::uint32_t ledgerSeq,
             Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family))
+          SHAMapType::TRANSACTION, family, SHAMap::version{1}))
     , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family))
+          SHAMapType::STATE, family, SHAMap::version{1}))
 {
     info_.seq = ledgerSeq;
     info_.closeTime = closeTime;
@@ -862,9 +862,9 @@ void Ledger::setRaw (SerialIter& sit, bool hasPrefix, Family& family)
     info_.closeFlags = sit.get8 ();
     updateHash ();
     txMap_ = std::make_shared<SHAMap> (SHAMapType::TRANSACTION, info_.txHash,
-        family);
+        family, SHAMap::version{1});
     stateMap_ = std::make_shared<SHAMap> (SHAMapType::STATE, info_.accountHash,
-        family);
+        family, SHAMap::version{1});
 }
 
 static bool saveValidatedLedger (
@@ -1198,6 +1198,30 @@ Ledger::getNeededAccountStateHashes (
     }
 
     return ret;
+}
+
+void
+Ledger::make_v2()
+{
+    assert (! mImmutable);
+    stateMap_ = stateMap_->make_v2();
+    txMap_ = txMap_->make_v2();
+    info_.validated = false;
+    updateHash();
+}
+
+void
+Ledger::unshare() const
+{
+    stateMap_->unshare();
+    txMap_->unshare();
+}
+
+void
+Ledger::invariants() const
+{
+    stateMap_->invariants();
+    txMap_->invariants();
 }
 
 //------------------------------------------------------------------------------
