@@ -13,14 +13,14 @@
 #include "../yield_to.hpp"
 
 #include <beast/http/streambuf_body.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/spawn.hpp>
 
 namespace beast {
 namespace http {
 
 class read_test
-    : public beast::detail::unit_test::suite
+    : public beast::unit_test::suite
     , public test::enable_yield_to
 {
 public:

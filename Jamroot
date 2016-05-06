@@ -64,6 +64,7 @@ variant asan
 project beast
   : requirements
     <include>.
+    <include>./extras
     <include>./include
     #<use>/boost//headers
     <library>/boost/system//boost_system

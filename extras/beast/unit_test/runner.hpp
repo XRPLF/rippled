@@ -5,19 +5,16 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_RUNNER_H_INCLUDED
-#define BEAST_DETAIL_UNIT_TEST_RUNNER_H_INCLUDED
+#ifndef BEAST_UNIT_TEST_RUNNER_H_INCLUDED
+#define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
-#include <beast/detail/unit_test/suite_info.hpp>
-#include <beast/detail/stream/abstract_ostream.hpp>
+#include <beast/unit_test/suite_info.hpp>
+#include <beast/unit_test/abstract_ostream.hpp>
 #include <cassert>
 #include <mutex>
 #include <string>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** Unit test runner interface.
@@ -28,7 +25,7 @@ class runner
 {
 private:
     // Reroutes log output to the runner
-    class stream_t : public beast::detail::abstract_ostream
+    class stream_t : public abstract_ostream
     {
     private:
         runner& owner_;
@@ -332,7 +329,6 @@ runner::log (std::string const& s)
 }
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

@@ -5,14 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_STREAM_BASIC_STD_OSTREAM_H_INCLUDED
-#define BEAST_DETAIL_STREAM_BASIC_STD_OSTREAM_H_INCLUDED
+#ifndef BEAST_UNIT_TEST_BASIC_STD_OSTREAM_HPP
+#define BEAST_UNIT_TEST_BASIC_STD_OSTREAM_HPP
 
-#include <beast/detail/stream/basic_abstract_ostream.hpp>
+#include <beast/unit_test/basic_abstract_ostream.hpp>
 #include <ostream>
 
 namespace beast {
-namespace detail {
 
 /** Wraps an existing std::basic_ostream as an abstract_ostream. */
 template <
@@ -56,7 +55,6 @@ make_std_ostream (std::basic_ostream <CharT, Traits>& stream)
     return basic_std_ostream <CharT, Traits> (stream);
 }
 
-} // detail
 } // beast
 
 #endif

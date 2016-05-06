@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <beast/detail/unit_test/amount.hpp>
-#include <beast/detail/unit_test/global_suites.hpp>
-#include <beast/detail/unit_test/match.hpp>
-#include <beast/detail/unit_test/reporter.hpp>
-#include <beast/detail/unit_test/suite.hpp>
-#include <beast/detail/stream/debug_ostream.hpp>
+#include <beast/unit_test/amount.hpp>
+#include <beast/unit_test/global_suites.hpp>
+#include <beast/unit_test/match.hpp>
+#include <beast/unit_test/reporter.hpp>
+#include <beast/unit_test/suite.hpp>
+#include <beast/unit_test/debug_ostream.hpp>
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <vector>
@@ -40,9 +40,6 @@
 #include <cstdlib>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 std::string
@@ -82,7 +79,6 @@ print(Log& log)
 }
 
 } // unit_test
-} // detail
 } // beast
 
 // Simple main used to produce stand
@@ -90,7 +86,7 @@ print(Log& log)
 int main(int ac, char const* av[])
 {
     using namespace std;
-    using namespace beast::detail::unit_test;
+    using namespace beast::unit_test;
 
 #ifdef _MSC_VER
     {
@@ -113,7 +109,7 @@ int main(int ac, char const* av[])
     po::store(po::parse_command_line(ac, av, desc), vm);
     po::notify(vm);
 
-    beast::detail::debug_ostream log;
+    beast::debug_ostream log;
 
     if(vm.count("help"))
     {

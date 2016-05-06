@@ -8,7 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/http/rfc2616.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <string>
 #include <vector>
 
@@ -16,7 +16,7 @@ namespace beast {
 namespace rfc2616 {
 namespace test {
 
-class rfc2616_test : public beast::detail::unit_test::suite
+class rfc2616_test : public beast::unit_test::suite
 {
 public:
     void

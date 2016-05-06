@@ -9,13 +9,13 @@
 #include <beast/websocket/detail/utf8_checker.hpp>
 
 #include <beast/streambuf.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <array>
 
 namespace beast {
 namespace websocket {
 
-class utf8_checker_test : public beast::detail::unit_test::suite
+class utf8_checker_test : public beast::unit_test::suite
 {
 public:
     void

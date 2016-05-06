@@ -8,7 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/buffer_cat.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <iterator>
@@ -17,7 +17,7 @@
 
 namespace beast {
 
-class buffer_cat_test : public detail::unit_test::suite
+class buffer_cat_test : public unit_test::suite
 {
 public:
     template< class Iterator >

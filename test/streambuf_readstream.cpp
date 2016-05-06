@@ -9,12 +9,12 @@
 #include <beast/streambuf_readstream.hpp>
 
 #include <beast/streambuf.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio.hpp>
 
 namespace beast {
 
-class streambuf_readstream_test : public beast::detail::unit_test::suite
+class streambuf_readstream_test : public beast::unit_test::suite
 {
 public:
     void testSpecial()

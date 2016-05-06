@@ -8,12 +8,12 @@
 // Test that header file is self-contained.
 #include <beast/to_string.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 
 namespace beast {
 
-class to_string_test : public beast::detail::unit_test::suite
+class to_string_test : public beast::unit_test::suite
 {
 public:
     void run()

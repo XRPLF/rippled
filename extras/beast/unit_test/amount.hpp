@@ -5,17 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_AMOUNT_HPP
-#define BEAST_DETAIL_UNIT_TEST_AMOUNT_HPP
+#ifndef BEAST_UNIT_TEST_AMOUNT_HPP
+#define BEAST_UNIT_TEST_AMOUNT_HPP
 
 #include <cstddef>
 #include <ostream>
 #include <string>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** Utility for producing nicely composed output of amounts with units. */
@@ -53,7 +50,6 @@ operator<< (std::ostream& s, amount const& t)
 }
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

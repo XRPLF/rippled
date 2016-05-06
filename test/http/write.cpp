@@ -16,14 +16,14 @@
 #include <beast/http/write.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/to_string.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/error.hpp>
 #include <string>
 
 namespace beast {
 namespace http {
 
-class write_test : public beast::detail::unit_test::suite
+class write_test : public beast::unit_test::suite
 {
 public:
     struct string_SyncStream

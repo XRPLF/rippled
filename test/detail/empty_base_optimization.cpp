@@ -6,13 +6,13 @@
 //
 
 #include <beast/detail/empty_base_optimization.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
 namespace detail {
 
 class empty_base_optimization_test
-    : public beast::detail::unit_test::suite
+    : public beast::unit_test::suite
 {
 public:
     template <class T>

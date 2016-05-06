@@ -8,12 +8,12 @@
 // Test that header file is self-contained.
 #include <beast/bind_handler.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <functional>
 
 namespace beast {
 
-class bind_handler_test : public detail::unit_test::suite
+class bind_handler_test : public unit_test::suite
 {
 public:
     static void foo (int)

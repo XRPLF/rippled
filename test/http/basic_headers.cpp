@@ -8,12 +8,12 @@
 // Test that header file is self-contained.
 #include <beast/http/basic_headers.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
 namespace http {
 
-class basic_headers_test : public beast::detail::unit_test::suite
+class basic_headers_test : public beast::unit_test::suite
 {
 public:
     template<class Allocator>
