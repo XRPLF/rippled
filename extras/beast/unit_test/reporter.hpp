@@ -5,13 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_REPORTER_HPP
-#define BEAST_DETAIL_UNIT_TEST_REPORTER_HPP
+#ifndef BEAST_UNIT_TEST_REPORTER_HPP
+#define BEAST_UNIT_TEST_REPORTER_HPP
 
-#include <beast/detail/unit_test/amount.hpp>
-#include <beast/detail/unit_test/recorder.hpp>
-#include <beast/detail/stream/abstract_ostream.hpp>
-#include <beast/detail/stream/basic_std_ostream.hpp>
+#include <beast/unit_test/amount.hpp>
+#include <beast/unit_test/recorder.hpp>
+#include <beast/unit_test/abstract_ostream.hpp>
+#include <beast/unit_test/basic_std_ostream.hpp>
 #include <boost/optional.hpp>
 #include <algorithm>
 #include <chrono>
@@ -23,9 +23,6 @@
 #include <utility>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 namespace detail {
@@ -87,7 +84,7 @@ private:
     };
 
     boost::optional <std_ostream> std_ostream_;
-    std::reference_wrapper <beast::detail::abstract_ostream> stream_;
+    std::reference_wrapper <beast::abstract_ostream> stream_;
     results results_;
     suite_results suite_results_;
     case_results case_results_;
@@ -102,7 +99,7 @@ public:
     reporter (std::ostream& stream = std::cout);
 
     explicit
-    reporter (beast::detail::abstract_ostream& stream);
+    reporter (beast::abstract_ostream& stream);
 
 private:
     static
@@ -229,7 +226,7 @@ reporter<_>::~reporter()
 
 template <class _>
 reporter<_>::reporter (
-        beast::detail::abstract_ostream& stream)
+        abstract_ostream& stream)
     : stream_ (stream)
 {
 }
@@ -318,7 +315,6 @@ reporter<_>::on_log (
 using reporter = detail::reporter<>;
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

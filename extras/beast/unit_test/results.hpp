@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_RESULTS_HPP
-#define BEAST_DETAIL_UNIT_TEST_RESULTS_HPP
+#ifndef BEAST_UNIT_TEST_RESULTS_HPP
+#define BEAST_UNIT_TEST_RESULTS_HPP
 
 #include <beast/detail/const_container.hpp>
 
@@ -14,9 +14,6 @@
 #include <vector>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** Holds a set of test condition outcomes in a testcase. */
@@ -43,7 +40,7 @@ public:
 
 private:
     class tests_t
-        : public const_container <std::vector <test>>
+        : public beast::detail::const_container <std::vector <test>>
     {
     private:
         std::size_t failed_;
@@ -85,7 +82,7 @@ private:
     };
 
     class log_t
-        : public const_container <std::vector <std::string>>
+        : public beast::detail::const_container <std::vector <std::string>>
     {
     public:
         /** Insert a string into the log. */
@@ -122,7 +119,7 @@ public:
 
 /** Holds the set of testcase results in a suite. */
 class suite_results
-    : public const_container <std::vector <case_results>>
+    : public beast::detail::const_container <std::vector <case_results>>
 {
 private:
     std::string name_;
@@ -181,7 +178,7 @@ public:
 // VFALCO TODO Make this a template class using scoped allocators
 /** Holds the results of running a set of testsuites. */
 class results
-    : public const_container <std::vector <suite_results>>
+    : public beast::detail::const_container <std::vector <suite_results>>
 {
 private:
     std::size_t m_cases;
@@ -240,7 +237,6 @@ public:
 };
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

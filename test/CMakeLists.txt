@@ -1,6 +1,7 @@
 # Part of Beast
 
 GroupSources(include/beast)
+GroupSources(extras)
 GroupSources(test)
 
 add_executable (core-tests

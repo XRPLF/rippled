@@ -9,13 +9,13 @@
 #include <beast/prepare_buffers.hpp>
 
 #include <beast/consuming_buffers.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
 
 namespace beast {
 
-class prepare_buffers_test : public beast::detail::unit_test::suite
+class prepare_buffers_test : public beast::unit_test::suite
 {
 public:
     template<class ConstBufferSequence>

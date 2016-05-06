@@ -5,17 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_SUITE_INFO_HPP
-#define BEAST_DETAIL_UNIT_TEST_SUITE_INFO_HPP
+#ifndef BEAST_UNIT_TEST_SUITE_INFO_HPP
+#define BEAST_UNIT_TEST_SUITE_INFO_HPP
 
 #include <functional>
 #include <string>
 #include <utility>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 class runner;
@@ -113,7 +110,6 @@ make_suite_info (std::string const& name, std::string const& module,
 }
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

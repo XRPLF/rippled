@@ -15,7 +15,7 @@
 #include <beast/write_streambuf.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <beast/detail/ci_char_traits.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cassert>
 #include <climits>
@@ -27,7 +27,7 @@
 namespace beast {
 namespace http {
 
-class basic_parser_v1_test : public beast::detail::unit_test::suite
+class basic_parser_v1_test : public beast::unit_test::suite
 {
 public:
     struct cb_req_checker

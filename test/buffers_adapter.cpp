@@ -9,14 +9,14 @@
 #include <beast/buffers_adapter.hpp>
 
 #include <beast/streambuf.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <iterator>
 
 namespace beast {
 
-class buffers_adapter_test : public detail::unit_test::suite
+class buffers_adapter_test : public unit_test::suite
 {
 public:
     template<class ConstBufferSequence>

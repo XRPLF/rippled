@@ -5,16 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_STREAM_BASIC_ABSTRACT_OSTREAM_HPP
-#define BEAST_DETAIL_STREAM_BASIC_ABSTRACT_OSTREAM_HPP
+#ifndef BEAST_UNIT_TEST_BASIC_ABSTRACT_OSTREAM_HPP
+#define BEAST_UNIT_TEST_BASIC_ABSTRACT_OSTREAM_HPP
 
-#include <beast/detail/stream/basic_scoped_ostream.hpp>
+#include <beast/unit_test/basic_scoped_ostream.hpp>
 #include <functional>
 #include <memory>
 #include <sstream>
 
 namespace beast {
-namespace detail {
 
 /** Abstraction for an output stream similar to std::basic_ostream. */
 template <
@@ -81,7 +80,6 @@ public:
     }
 };
 
-} // detail
 } // beast
 
 #endif

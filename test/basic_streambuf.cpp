@@ -10,7 +10,7 @@
 
 #include <beast/streambuf.hpp>
 #include <beast/to_string.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <algorithm>
 #include <atomic>
@@ -136,7 +136,7 @@ public:
     }
 };
 
-class basic_streambuf_test : public beast::detail::unit_test::suite
+class basic_streambuf_test : public beast::unit_test::suite
 {
 public:
     template<class Alloc1, class Alloc2>

@@ -5,10 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_STREAM_DEBUG_OSTREAM_HPP
-#define BEAST_DETAIL_STREAM_DEBUG_OSTREAM_HPP
+#ifndef BEAST_UNIT_TEST_DEBUG_OSTREAM_HPP
+#define BEAST_UNIT_TEST_DEBUG_OSTREAM_HPP
 
-#include <beast/detail/stream/abstract_ostream.hpp>
+#include <beast/unit_test/abstract_ostream.hpp>
 #include <iostream>
 
 #ifdef _MSC_VER
@@ -28,7 +28,6 @@
 #endif
 
 namespace beast {
-namespace detail {
 
 #ifdef _MSC_VER
 /** A basic_abstract_ostream that redirects output to an attached debugger. */
@@ -74,7 +73,6 @@ public:
 
 #endif
 
-} // detail
 } // beast
 
 #endif

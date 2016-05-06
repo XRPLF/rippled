@@ -6,12 +6,12 @@
 //
 
 #include <beast/detail/base64.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
 namespace detail {
 
-class base64_test : public beast::detail::unit_test::suite
+class base64_test : public beast::unit_test::suite
 {
 public:
     void

@@ -6,13 +6,13 @@
 //
 
 #include <beast/detail/sha1.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <array>
 
 namespace beast {
 namespace detail {
 
-class sha1_test : public beast::detail::unit_test::suite
+class sha1_test : public beast::unit_test::suite
 {
 public:
     static
