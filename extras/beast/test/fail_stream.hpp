@@ -20,11 +20,11 @@
 #ifndef BEAST_TEST_FAIL_STREAM_HPP
 #define BEAST_TEST_FAIL_STREAM_HPP
 
-#include <beast/async_completion.hpp>
-#include <beast/bind_handler.hpp>
-#include <beast/error.hpp>
+#include <beast/core/async_completion.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/error.hpp>
+#include <beast/core/detail/get_lowest_layer.hpp>
 #include <beast/websocket/teardown.hpp>
-#include <beast/detail/get_lowest_layer.hpp>
 
 namespace beast {
 namespace test {

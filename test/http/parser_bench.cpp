@@ -7,9 +7,10 @@
 
 #include "nodejs_parser.hpp"
 #include "message_fuzz.hpp"
+
 #include <beast/http.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/to_string.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/to_string.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <chrono>
 #include <iostream>

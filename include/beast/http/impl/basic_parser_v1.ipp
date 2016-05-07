@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 #define BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 
-#include <beast/buffer_concepts.hpp>
+#include <beast/core/buffer_concepts.hpp>
 
 namespace beast {
 namespace http {

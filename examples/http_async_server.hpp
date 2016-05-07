@@ -23,7 +23,7 @@
 #include "file_body.hpp"
 #include "http_stream.hpp"
 
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <cstdio>
 #include <iostream>

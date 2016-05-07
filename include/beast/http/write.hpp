@@ -8,10 +8,9 @@
 #ifndef BEAST_HTTP_WRITE_HPP
 #define BEAST_HTTP_WRITE_HPP
 
-#include <beast/error.hpp>
 #include <beast/http/message_v1.hpp>
-#include <beast/async_completion.hpp>
-#include <boost/system/error_code.hpp>
+#include <beast/core/error.hpp>
+#include <beast/core/async_completion.hpp>
 #include <ostream>
 #include <type_traits>
 

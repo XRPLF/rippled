@@ -9,9 +9,9 @@
 #define BEAST_WEBSOCKET_IMPL_READ_FRAME_OP_HPP
 
 #include <beast/websocket/teardown.hpp>
-#include <beast/handler_alloc.hpp>
-#include <beast/prepare_buffers.hpp>
-#include <beast/static_streambuf.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/prepare_buffers.hpp>
+#include <beast/core/static_streambuf.hpp>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <memory>

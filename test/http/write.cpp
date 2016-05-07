@@ -8,14 +8,14 @@
 // Test that header file is self-contained.
 #include <beast/http/write.hpp>
 
-#include <beast/error.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/empty_body.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/http/write.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/to_string.hpp>
+#include <beast/core/error.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/to_string.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/error.hpp>
 #include <string>
@@ -37,7 +37,7 @@ public:
             error_code ec;
             auto const n = write_some(buffers, ec);
             if(ec)
-                throw boost::system::system_error{ec};
+                throw system_error{ec};
             return n;
         }
 

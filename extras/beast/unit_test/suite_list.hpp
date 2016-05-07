@@ -9,7 +9,7 @@
 #define BEAST_UNIT_TEST_SUITE_LIST_HPP
 
 #include <beast/unit_test/suite_info.hpp>
-#include <beast/detail/const_container.hpp>
+#include <beast/unit_test/detail/const_container.hpp>
 #include <cassert>
 #include <typeindex>
 #include <set>

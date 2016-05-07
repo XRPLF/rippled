@@ -20,7 +20,7 @@
 #ifndef BEAST_WEBSOCKET_SYNC_ECHO_PEER_H_INCLUDED
 #define BEAST_WEBSOCKET_SYNC_ECHO_PEER_H_INCLUDED
 
-#include <beast/streambuf.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/websocket.hpp>
 #include <boost/optional.hpp>
 #include <functional>

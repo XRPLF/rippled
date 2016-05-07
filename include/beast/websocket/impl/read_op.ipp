@@ -8,7 +8,7 @@
 #ifndef BEAST_WEBSOCKET_IMPL_READ_OP_HPP
 #define BEAST_WEBSOCKET_IMPL_READ_OP_HPP
 
-#include <beast/handler_alloc.hpp>
+#include <beast/core/handler_alloc.hpp>
 #include <memory>
 
 namespace beast {

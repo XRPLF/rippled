@@ -20,11 +20,11 @@
 #ifndef BEAST_HTTP_STREAM_IPP_INCLUDED
 #define BEAST_HTTP_STREAM_IPP_INCLUDED
 
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/handler_alloc.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
-#include <beast/bind_handler.hpp>
-#include <beast/handler_alloc.hpp>
 #include <cassert>
 
 namespace beast {

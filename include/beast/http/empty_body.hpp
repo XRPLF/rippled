@@ -9,7 +9,7 @@
 #define BEAST_HTTP_EMPTY_BODY_HPP
 
 #include <beast/http/body_type.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/streambuf.hpp>
 #include <boost/asio/buffer.hpp>
 #include <memory>
 #include <string>

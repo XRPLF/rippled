@@ -11,7 +11,7 @@
 // Convenience header to include everything
 // needed when declarating a user defined Body type.
 
-#include <beast/error.hpp>
+#include <beast/core/error.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/resume_context.hpp>
 #include <boost/logic/tribool.hpp>

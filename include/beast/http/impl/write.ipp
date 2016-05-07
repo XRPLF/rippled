@@ -11,13 +11,13 @@
 #include <beast/http/resume_context.hpp>
 #include <beast/http/detail/chunk_encode.hpp>
 #include <beast/http/detail/has_content_length.hpp>
-#include <beast/buffer_cat.hpp>
-#include <beast/bind_handler.hpp>
-#include <beast/buffer_concepts.hpp>
-#include <beast/handler_alloc.hpp>
-#include <beast/stream_concepts.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/write_streambuf.hpp>
+#include <beast/core/buffer_cat.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/buffer_concepts.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/stream_concepts.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/write_streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
@@ -451,7 +451,7 @@ write(SyncWriteStream& stream,
     error_code ec;
     write(stream, msg, ec);
     if(ec)
-        throw boost::system::system_error{ec};
+        throw system_error{ec};
 }
 
 template<class SyncWriteStream,
@@ -575,7 +575,7 @@ public:
         error_code ec;
         auto const n = write_some(buffers, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
         return n;
     }
 
@@ -614,7 +614,7 @@ operator<<(std::ostream& os,
     error_code ec;
     write(oss, msg, ec);
     if(ec && ec != boost::asio::error::eof)
-        throw boost::system::system_error{ec};
+        throw system_error{ec};
     return os;
 }
 

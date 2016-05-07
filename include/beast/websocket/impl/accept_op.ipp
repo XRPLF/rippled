@@ -12,8 +12,8 @@
 #include <beast/http/message_v1.hpp>
 #include <beast/http/parser_v1.hpp>
 #include <beast/http/read.hpp>
-#include <beast/handler_alloc.hpp>
-#include <beast/prepare_buffers.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/prepare_buffers.hpp>
 #include <cassert>
 #include <memory>
 #include <type_traits>

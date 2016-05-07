@@ -8,9 +8,9 @@
 #ifndef BEAST_WEBSOCKET_IMPL_WRITE_OP_HPP
 #define BEAST_WEBSOCKET_IMPL_WRITE_OP_HPP
 
-#include <beast/consuming_buffers.hpp>
-#include <beast/prepare_buffers.hpp>
-#include <beast/handler_alloc.hpp>
+#include <beast/core/consuming_buffers.hpp>
+#include <beast/core/prepare_buffers.hpp>
+#include <beast/core/handler_alloc.hpp>
 #include <beast/websocket/detail/frame.hpp>
 #include <algorithm>
 #include <cassert>

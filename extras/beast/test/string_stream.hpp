@@ -8,8 +8,8 @@
 #ifndef BEAST_TEST_STRING_STREAM_HPP
 #define BEAST_TEST_STRING_STREAM_HPP
 
-#include <beast/bind_handler.hpp>
-#include <beast/error.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/error.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <string>
@@ -49,7 +49,7 @@ public:
         error_code ec;
         auto const n = read_some(buffers, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
         return n;
     }
 
@@ -87,7 +87,7 @@ public:
         error_code ec;
         auto const n = write_some(buffers, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
         return n;
     }
 

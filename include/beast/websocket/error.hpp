@@ -8,7 +8,7 @@
 #ifndef BEAST_WEBSOCKET_ERROR_HPP
 #define BEAST_WEBSOCKET_ERROR_HPP
 
-#include <beast/error.hpp>
+#include <beast/core/error.hpp>
 
 namespace beast {
 namespace websocket {

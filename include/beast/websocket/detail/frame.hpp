@@ -11,9 +11,9 @@
 #include <beast/websocket/rfc6455.hpp>
 #include <beast/websocket/detail/endian.hpp>
 #include <beast/websocket/detail/utf8_checker.hpp>
-#include <beast/consuming_buffers.hpp>
-#include <beast/static_streambuf.hpp>
-#include <beast/static_string.hpp>
+#include <beast/core/consuming_buffers.hpp>
+#include <beast/core/static_streambuf.hpp>
+#include <beast/core/static_string.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/endian/buffers.hpp>
 #include <cassert>

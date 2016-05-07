@@ -38,7 +38,3 @@ add_executable (bench-tests
     nodejs_parser.cpp
     parser_bench.cpp
 )
-
-if (NOT WIN32)
-    target_link_libraries(parser-bench ${Boost_LIBRARIES})
-endif()

@@ -10,10 +10,10 @@
 
 #include "message_fuzz.hpp"
 
-#include <beast/streambuf.hpp>
-#include <beast/write_streambuf.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/write_streambuf.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <beast/http/rfc2616.hpp>
-#include <beast/detail/ci_char_traits.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cassert>

@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_RESULTS_HPP
 #define BEAST_UNIT_TEST_RESULTS_HPP
 
-#include <beast/detail/const_container.hpp>
+#include <beast/unit_test/detail/const_container.hpp>
 
 #include <string>
 #include <vector>
@@ -40,7 +40,7 @@ public:
 
 private:
     class tests_t
-        : public beast::detail::const_container <std::vector <test>>
+        : public detail::const_container <std::vector <test>>
     {
     private:
         std::size_t failed_;
@@ -82,7 +82,7 @@ private:
     };
 
     class log_t
-        : public beast::detail::const_container <std::vector <std::string>>
+        : public detail::const_container <std::vector <std::string>>
     {
     public:
         /** Insert a string into the log. */
@@ -119,7 +119,7 @@ public:
 
 /** Holds the set of testcase results in a suite. */
 class suite_results
-    : public beast::detail::const_container <std::vector <case_results>>
+    : public detail::const_container <std::vector <case_results>>
 {
 private:
     std::string name_;
@@ -178,7 +178,7 @@ public:
 // VFALCO TODO Make this a template class using scoped allocators
 /** Holds the results of running a set of testsuites. */
 class results
-    : public beast::detail::const_container <std::vector <suite_results>>
+    : public detail::const_container <std::vector <suite_results>>
 {
 private:
     std::size_t m_cases;

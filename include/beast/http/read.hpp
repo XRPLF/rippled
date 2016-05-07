@@ -8,9 +8,9 @@
 #ifndef BEAST_HTTP_READ_HPP
 #define BEAST_HTTP_READ_HPP
 
-#include <beast/error.hpp>
 #include <beast/http/parser_v1.hpp>
-#include <beast/async_completion.hpp>
+#include <beast/core/error.hpp>
+#include <beast/core/async_completion.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/system/error_code.hpp>
 

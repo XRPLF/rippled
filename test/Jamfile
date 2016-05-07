@@ -7,33 +7,35 @@
 
 import os ;
 
+compile core.cpp : : ;
+compile http.cpp : : ;
+compile version.cpp : : ;
+compile websocket.cpp : : ;
+
 unit-test core-tests :
     ../extras/beast/unit_test/main.cpp
-    async_completion.cpp
-    basic_streambuf.cpp
-    bind_handler.cpp
-    buffer_cat.cpp
-    buffer_concepts.cpp
-    buffers_adapter.cpp
-    consuming_buffers.cpp
-    error.cpp
-    handler_alloc.cpp
-    handler_concepts.cpp
-    http.cpp
-    placeholders.cpp
-    prepare_buffers.cpp
-    static_streambuf.cpp
-    static_string.cpp
-    stream_concepts.cpp
-    streambuf.cpp
-    streambuf_readstream.cpp
-    to_string.cpp
-    version.cpp
-    websocket.cpp
-    write_streambuf.cpp
-    detail/base64.cpp
-    detail/empty_base_optimization.cpp
-    detail/sha1.cpp
+    core/async_completion.cpp
+    core/basic_streambuf.cpp
+    core/bind_handler.cpp
+    core/buffer_cat.cpp
+    core/buffer_concepts.cpp
+    core/buffers_adapter.cpp
+    core/consuming_buffers.cpp
+    core/error.cpp
+    core/handler_alloc.cpp
+    core/handler_concepts.cpp
+    core/placeholders.cpp
+    core/prepare_buffers.cpp
+    core/static_streambuf.cpp
+    core/static_string.cpp
+    core/stream_concepts.cpp
+    core/streambuf.cpp
+    core/streambuf_readstream.cpp
+    core/to_string.cpp
+    core/write_streambuf.cpp
+    core/detail/base64.cpp
+    core/detail/empty_base_optimization.cpp
+    core/detail/sha1.cpp
     ;
 
 unit-test http-tests :
@@ -80,4 +82,3 @@ unit-test websocket-tests :
 exe websocket-echo :
     websocket/websocket_echo.cpp
     ;
-

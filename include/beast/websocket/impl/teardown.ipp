@@ -8,8 +8,8 @@
 #ifndef BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 #define BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 
-#include <beast/async_completion.hpp>
-#include <beast/handler_concepts.hpp>
+#include <beast/core/async_completion.hpp>
+#include <beast/core/handler_concepts.hpp>
 #include <memory>
 
 namespace beast {

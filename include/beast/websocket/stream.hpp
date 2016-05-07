@@ -12,9 +12,9 @@
 #include <beast/websocket/detail/stream_base.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/streambuf_readstream.hpp>
-#include <beast/async_completion.hpp>
-#include <beast/detail/get_lowest_layer.hpp>
+#include <beast/core/streambuf_readstream.hpp>
+#include <beast/core/async_completion.hpp>
+#include <beast/core/detail/get_lowest_layer.hpp>
 #include <boost/asio.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <algorithm>

@@ -15,10 +15,10 @@
 #include <beast/websocket/detail/invokable.hpp>
 #include <beast/websocket/detail/mask.hpp>
 #include <beast/websocket/detail/utf8_checker.hpp>
-#include <beast/streambuf.hpp>
 #include <beast/http/empty_body.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/string_body.hpp>
+#include <beast/core/streambuf.hpp>
 #include <boost/asio/error.hpp>
 #include <cassert>
 #include <cstdint>
@@ -36,7 +36,7 @@ void
 maybe_throw(error_code const& ec, String const&)
 {
     if(ec)
-        throw boost::system::system_error{ec};
+        throw system_error{ec};
 }
 
 template<class UInt>

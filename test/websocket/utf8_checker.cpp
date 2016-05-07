@@ -8,7 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/websocket/detail/utf8_checker.hpp>
 
-#include <beast/streambuf.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <array>
 

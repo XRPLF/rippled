@@ -11,8 +11,8 @@
 #include "websocket_async_echo_peer.hpp"
 #include "websocket_sync_echo_peer.hpp"
 
-#include <beast/streambuf.hpp>
-#include <beast/to_string.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/to_string.hpp>
 #include <beast/test/fail_stream.hpp>
 #include <beast/test/string_stream.hpp>
 #include <beast/test/yield_to.hpp>

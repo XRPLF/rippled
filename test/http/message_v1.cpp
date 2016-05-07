@@ -22,8 +22,8 @@
 
 #include <beast/unit_test/suite.hpp>
 #include <beast/unit_test/thread.hpp>
-#include <beast/placeholders.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/placeholders.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/http.hpp>
 #include <boost/asio.hpp>
 

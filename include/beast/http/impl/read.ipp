@@ -9,9 +9,9 @@
 #define BEAST_HTTP_IMPL_READ_IPP_HPP
 
 #include <beast/http/parser_v1.hpp>
-#include <beast/bind_handler.hpp>
-#include <beast/handler_alloc.hpp>
-#include <beast/stream_concepts.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/stream_concepts.hpp>
 #include <cassert>
 
 namespace beast {
@@ -221,7 +221,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     error_code ec;
     read(stream, streambuf, msg, ec);
     if(ec)
-        throw boost::system::system_error{ec};
+        throw system_error{ec};
 }
 
 template<class SyncReadStream, class Streambuf,

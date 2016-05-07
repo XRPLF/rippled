@@ -20,8 +20,8 @@
 #ifndef BEAST_WEBSOCKET_ASYNC_ECHO_PEER_H_INCLUDED
 #define BEAST_WEBSOCKET_ASYNC_ECHO_PEER_H_INCLUDED
 
-#include <beast/placeholders.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/placeholders.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/websocket.hpp>
 #include <boost/optional.hpp>
 #include <functional>

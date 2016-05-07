@@ -8,8 +8,8 @@
 #ifndef BEAST_WEBSOCKET_DETAIL_HYBI13_HPP
 #define BEAST_WEBSOCKET_DETAIL_HYBI13_HPP
 
-#include <beast/detail/base64.hpp>
-#include <beast/detail/sha1.hpp>
+#include <beast/core/detail/base64.hpp>
+#include <beast/core/detail/sha1.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cstdint>
 #include <string>

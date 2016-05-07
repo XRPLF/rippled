@@ -57,6 +57,7 @@ file(GLOB_RECURSE BEAST_INCLUDES
 
 add_subdirectory (examples)
 add_subdirectory (test)
+add_subdirectory (test/core)
 add_subdirectory (test/http)
 add_subdirectory (test/websocket)
 

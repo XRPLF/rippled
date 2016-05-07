@@ -20,9 +20,9 @@
 #ifndef BEAST_HTTP_STREAM_H_INCLUDED
 #define BEAST_HTTP_STREAM_H_INCLUDED
 
+#include <beast/core/async_completion.hpp>
+#include <beast/core/basic_streambuf.hpp>
 #include <beast/http.hpp>
-#include <beast/async_completion.hpp>
-#include <beast/basic_streambuf.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/intrusive/list.hpp>
 #include <memory>
@@ -234,7 +234,7 @@ public:
         error_code ec;
         cancel(ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
     }
 
     /** Cancel pending operations.
@@ -273,7 +273,7 @@ public:
         error_code ec;
         read(msg, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
     }
 
     /** Read a HTTP message from the stream.
@@ -370,7 +370,7 @@ public:
         error_code ec;
         write(msg, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
     }
 
     /** Write a HTTP message to the stream.
