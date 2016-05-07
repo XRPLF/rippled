@@ -55,3 +55,4 @@ HTTP:
 * Make empty_body write-only, remove reader nested type
 * Add concepts WritableBody ReadableBody with type checks,
   check them in read and write functions
+* Branch prediction hints in parser

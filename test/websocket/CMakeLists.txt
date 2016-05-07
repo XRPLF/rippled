@@ -15,6 +15,8 @@ add_executable (websocket-tests
     stream.cpp
     teardown.cpp
     utf8_checker.cpp
+    detail/frame.cpp
+    detail/mask.cpp
 )
 
 if (NOT WIN32)

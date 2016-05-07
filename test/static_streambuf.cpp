@@ -139,9 +139,65 @@ public:
         }}}}}}
     }
 
+    void testIterators()
+    {
+        static_streambuf_n<2> ba;
+        {
+            auto mb = ba.prepare(2);
+            std::size_t n;
+            n = 0;
+            for(auto it = mb.begin();
+                    it != mb.end(); it++)
+                ++n;
+            expect(n == 1);
+            mb = ba.prepare(2);
+            n = 0;
+            for(auto it = mb.begin();
+                    it != mb.end(); ++it)
+                ++n;
+            expect(n == 1);
+            mb = ba.prepare(2);
+            n = 0;
+            for(auto it = mb.end();
+                    it != mb.begin(); it--)
+                ++n;
+            expect(n == 1);
+            mb = ba.prepare(2);
+            n = 0;
+            for(auto it = mb.end();
+                    it != mb.begin(); --it)
+                ++n;
+            expect(n == 1);
+        }
+        ba.prepare(2);
+        ba.commit(1);
+        std::size_t n;
+        n = 0;
+        for(auto it = ba.data().begin();
+                it != ba.data().end(); it++)
+            ++n;
+        expect(n == 1);
+        n = 0;
+        for(auto it = ba.data().begin();
+                it != ba.data().end(); ++it)
+            ++n;
+        expect(n == 1);
+        n = 0;
+        for(auto it = ba.data().end();
+                it != ba.data().begin(); it--)
+            ++n;
+        expect(n == 1);
+        n = 0;
+        for(auto it = ba.data().end();
+                it != ba.data().begin(); --it)
+            ++n;
+        expect(n == 1);
+    }
+
     void run() override
     {
         testStaticStreambuf();
+        testIterators();
     }
 };
 

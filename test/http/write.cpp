@@ -56,7 +56,7 @@ public:
         }
     };
 
-    struct test_Body
+    struct fail_body
     {
         using value_type = std::string;
 
@@ -67,7 +67,41 @@ public:
         public:
             template<bool isRequest, class Allocator>
             explicit
-            writer(message<isRequest, test_Body, Allocator> const& msg)
+            writer(message<isRequest, fail_body, Allocator> const& msg)
+                : body_(msg.body)
+            {
+            }
+
+            void
+            init(error_code& ec)
+            {
+                ec = boost::system::errc::make_error_code(
+                    boost::system::errc::errc_t::invalid_argument);
+            }
+
+            template<class Write>
+            boost::tribool
+            operator()(resume_context&&, error_code&, Write&& write)
+            {
+                write(boost::asio::buffer(body_));
+                return true;
+            }
+        };
+    };
+
+    struct test_body
+    {
+        using value_type = std::string;
+
+        class writer
+        {
+            std::size_t pos_ = 0;
+            value_type const& body_;
+
+        public:
+            template<bool isRequest, class Allocator>
+            explicit
+            writer(message<isRequest, test_body, Allocator> const& msg)
                 : body_(msg.body)
             {
             }
@@ -148,7 +182,7 @@ public:
         }
         // no content-length HTTP/1.0
         {
-            message_v1<true, test_Body, headers> m{{
+            message_v1<true, test_body, headers> m{{
                 "GET", "/", 10}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";
@@ -214,7 +248,7 @@ public:
         }
         // no content-length HTTP/1.1
         {
-            message_v1<true, test_Body, headers> m{{
+            message_v1<true, test_body, headers> m{{
                 "GET", "/", 11}};
             m.headers.insert("User-Agent", "test");
             m.body = "*";

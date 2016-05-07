@@ -228,12 +228,6 @@ prepare(message_v1<isRequest, Body, Headers>& msg,
             msg.headers["Connection"], "upgrade"))
         throw std::invalid_argument(
             "invalid version for Connection: upgrade");
-
-    // rfc7230 3.3.2
-    if(msg.headers.exists("Content-Length") &&
-            msg.headers.exists("Transfer-Encoding"))
-        throw std::invalid_argument(
-            "Content-Length and Transfer-Encoding cannot be combined");
 }
 
 } // http

@@ -119,6 +119,12 @@ write(Streambuf& sb, frame_header const& fh)
     std::size_t n;
     std::uint8_t b[14];
     b[0] = (fh.fin ? 0x80 : 0x00) | static_cast<std::uint8_t>(fh.op);
+    if(fh.rsv1)
+        b[0] |= 0x40;
+    if(fh.rsv2)
+        b[0] |= 0x20;
+    if(fh.rsv3)
+        b[0] |= 0x10;
     b[1] = fh.mask ? 0x80 : 0x00;
     if (fh.len <= 125)
     {
@@ -196,13 +202,6 @@ read_fh1(frame_header& fh, Streambuf& sb,
         code = close_code::protocol_error;
         return 0;
     }
-    // invalid opcode
-    // (only in locally generated headers)
-    if(! is_valid(fh.op))
-    {
-        code = close_code::protocol_error;
-        return 0;
-    }
     // fragmented control message
     if(is_control(fh.op) && ! fh.fin)
     {
@@ -243,13 +242,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
         std::uint8_t b[2];
         assert(buffer_size(sb.data()) >= sizeof(b));
         sb.consume(buffer_copy(buffer(b), sb.data()));
-    #if 0
-        // Causes strict-aliasing warning in gcc
-        fh.len = reinterpret_cast<
-            big_uint16_buf_t const*>(&b[0])->value();
-    #else
         fh.len = big_uint16_to_native(&b[0]);
-    #endif
         // length not canonical
         if(fh.len < 126)
         {
@@ -263,13 +256,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
         std::uint8_t b[8];
         assert(buffer_size(sb.data()) >= sizeof(b));
         sb.consume(buffer_copy(buffer(b), sb.data()));
-    #if 0
-        // Causes strict-aliasing warning in gcc
-        fh.len = reinterpret_cast<
-            big_uint64_buf_t const*>(&b[0])->value();
-    #else
         fh.len = big_uint64_to_native(&b[0]);
-    #endif
         // length not canonical
         if(fh.len < 65536)
         {
@@ -284,13 +271,12 @@ read_fh2(frame_header& fh, Streambuf& sb,
         std::uint8_t b[4];
         assert(buffer_size(sb.data()) >= sizeof(b));
         sb.consume(buffer_copy(buffer(b), sb.data()));
-    #if 0
-        // Causes strict-aliasing warning in gcc
-        fh.key = reinterpret_cast<
-            little_uint32_buf_t const*>(&b[0])->value();
-    #else
         fh.key = little_uint32_to_native(&b[0]);
-    #endif
+    }
+    else
+    {
+        // initialize this otherwise operator== breaks
+        fh.key = 0;
     }
     code = close_code::none;
 }

@@ -73,6 +73,8 @@ unit-test websocket-tests :
     websocket/stream.cpp
     websocket/teardown.cpp
     websocket/utf8_checker.cpp
+    websocket/detail/frame.cpp
+    websocket/detail/mask.cpp
     ;
 
 exe websocket-echo :

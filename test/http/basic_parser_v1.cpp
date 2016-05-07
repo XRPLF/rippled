@@ -10,7 +10,6 @@
 
 #include "message_fuzz.hpp"
 
-#include <beast/error.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/write_streambuf.hpp>
 #include <beast/http/rfc2616.hpp>
@@ -102,6 +101,68 @@ public:
         }
     };
 
+    template<bool isRequest>
+    struct cb_fail
+        : public basic_parser_v1<isRequest, cb_fail<isRequest>>
+
+    {
+        std::size_t n_;
+
+        void fail(error_code& ec)
+        {
+            if(n_ > 0)
+                --n_;
+            if(! n_)
+                ec = boost::system::errc::make_error_code(
+                    boost::system::errc::invalid_argument);
+        }
+
+    private:
+        friend class basic_parser_v1<isRequest, cb_checker<isRequest>>;
+
+        void on_method(boost::string_ref const&, error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_uri(boost::string_ref const&, error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_reason(boost::string_ref const&, error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_request(error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_response(error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_field(boost::string_ref const&, error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_value(boost::string_ref const&, error_code& ec)
+        {
+            fail(ec);
+        }
+        int on_headers(error_code& ec)
+        {
+            fail(ec);
+            return 0;
+        }
+        void on_body(boost::string_ref const&, error_code& ec)
+        {
+            fail(ec);
+        }
+        void on_complete(error_code& ec)
+        {
+            fail(ec);
+        }
+    };
+
     //--------------------------------------------------------------------------
 
     static
@@ -176,6 +237,50 @@ public:
             body.append(s.data(), s.size());
         }
     };
+
+    void
+    testFail()
+    {
+        using boost::asio::buffer;
+        {
+            std::string const s =
+                "GET / HTTP/1.1\r\n"
+                "User-Agent: test\r\n"
+                "Content-Length: 1\r\n"
+                "\r\n"
+                "*";
+            static std::size_t constexpr limit = 100;
+            std::size_t n = 1;
+            for(; n < limit; ++n)
+            {
+                error_code ec;
+                basic_parser_v1<true, cb_fail<true>> p;
+                p.write(buffer(s), ec);
+                if(! ec)
+                    break;
+            }
+            expect(n < limit);
+        }
+        {
+            std::string const s =
+                "HTTP/1.1 200 OK\r\n"
+                "Server: test\r\n"
+                "Content-Length: 1\r\n"
+                "\r\n"
+                "*";
+            static std::size_t constexpr limit = 100;
+            std::size_t n = 1;
+            for(; n < limit; ++n)
+            {
+                error_code ec;
+                basic_parser_v1<false, cb_fail<false>> p;
+                p.write(buffer(s), ec);
+                if(! ec)
+                    break;
+            }
+            expect(n < limit);
+        }
+    }
 
     void
     testCallbacks()
@@ -647,6 +752,7 @@ public:
 
     void run() override
     {
+        testFail();
         testCallbacks();
         testVersion();
         testFlags();

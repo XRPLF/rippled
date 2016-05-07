@@ -154,14 +154,6 @@ public:
             {
                 pass();
             }
-            s1 = "1";
-            s2 = "2";
-            expect(s1.compare(s2) < 0);
-            expect(s2.compare(s1) > 0);
-            expect(s1 < "10");
-            expect(s2 > "1");
-            expect("10" > s1);
-            expect("1" < s2);
         }
         pass();
     }
@@ -170,6 +162,21 @@ public:
     {
         using str1 = static_string<1>;
         using str2 = static_string<2>;
+        {
+            str1 s1;
+            str2 s2;
+            s1 = "1";
+            s2 = "22";
+            expect(s1.compare(s2) < 0);
+            expect(s2.compare(s1) > 0);
+            expect(s1 < "10");
+            expect(s2 > "1");
+            expect("10" > s1);
+            expect("1" < s2);
+            expect(s1 < "20");
+            expect(s2 > "1");
+            expect(s2 > "2");
+        }
         {
             str2 s1("x");
             str2 s2("x");

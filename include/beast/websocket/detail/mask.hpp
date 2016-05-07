@@ -1,24 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+//
+// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_WEBSOCKETDETAIL_MASKGEN_HPP
-#define BEAST_WEBSOCKETDETAIL_MASKGEN_HPP
+#ifndef BEAST_WEBSOCKET_DETAIL_MASK_HPP
+#define BEAST_WEBSOCKET_DETAIL_MASK_HPP
 
 #include <boost/asio/buffer.hpp>
 #include <array>
@@ -33,13 +21,14 @@ namespace detail {
 
 // Pseudo-random source of mask keys
 //
-template<class = void>
+template<class Generator>
 class maskgen_t
 {
-    std::mt19937 g_;
+    Generator g_;
 
 public:
-    using result_type = typename std::mt19937::result_type;
+    using result_type =
+        typename Generator::result_type;
 
     maskgen_t();
 
@@ -50,15 +39,15 @@ public:
     rekey();
 };
 
-template<class _>
-maskgen_t<_>::maskgen_t()
+template<class Generator>
+maskgen_t<Generator>::maskgen_t()
 {
     rekey();
 }
 
-template<class _>
+template<class Generator>
 auto
-maskgen_t<_>::operator()() noexcept ->
+maskgen_t<Generator>::operator()() noexcept ->
     result_type
 {
     for(;;)
@@ -78,7 +67,7 @@ maskgen_t<_>::rekey()
     g_.seed(ss);
 }
 
-using maskgen = maskgen_t<>;
+using maskgen = maskgen_t<std::mt19937>;
 
 //------------------------------------------------------------------------------
 

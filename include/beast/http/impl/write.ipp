@@ -39,22 +39,11 @@ write_firstline(Streambuf& streambuf,
     write(streambuf, msg.method);
     write(streambuf, " ");
     write(streambuf, msg.url);
-    switch(msg.version)
-    {
-    case 10:
-        write(streambuf, " HTTP/1.0\r\n");
-        break;
-    case 11:
-        write(streambuf, " HTTP/1.1\r\n");
-        break;
-    default:
-        write(streambuf, " HTTP/");
-        write(streambuf, msg.version / 10);
-        write(streambuf, ".");
-        write(streambuf, msg.version % 10);
-        write(streambuf, "\r\n");
-        break;
-    }
+    write(streambuf, " HTTP/");
+    write(streambuf, msg.version / 10);
+    write(streambuf, ".");
+    write(streambuf, msg.version % 10);
+    write(streambuf, "\r\n");
 }
 
 template<class Streambuf, class Body, class Headers>
@@ -62,22 +51,11 @@ void
 write_firstline(Streambuf& streambuf,
     message_v1<false, Body, Headers> const& msg)
 {
-    switch(msg.version)
-    {
-    case 10:
-        write(streambuf, "HTTP/1.0 ");
-        break;
-    case 11:
-        write(streambuf, "HTTP/1.1 ");
-        break;
-    default:
-        write(streambuf, " HTTP/");
-        write(streambuf, msg.version / 10);
-        write(streambuf, ".");
-        write(streambuf, msg.version % 10);
-        write(streambuf, " ");
-        break;
-    }
+    write(streambuf, "HTTP/");
+    write(streambuf, msg.version / 10);
+    write(streambuf, ".");
+    write(streambuf, msg.version % 10);
+    write(streambuf, " ");
     write(streambuf, msg.status);
     write(streambuf, " ");
     write(streambuf, msg.reason);
