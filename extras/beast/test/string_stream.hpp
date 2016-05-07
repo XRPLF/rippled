@@ -17,7 +17,12 @@
 namespace beast {
 namespace test {
 
-// meets the requirements of AsyncStream, SyncStream
+/** A SyncStream and AsyncStream that reads from a string.
+
+    This class behaves like a socket, except that written data is simply
+    discarded, and when data is read it comes from a string provided
+    at construction.
+*/
 class string_stream
 {
     std::string s_;

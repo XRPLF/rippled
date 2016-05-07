@@ -29,7 +29,7 @@
 namespace beast {
 namespace test {
 
-/*  A stream wrapper that fails.
+/** A stream wrapper that fails.
 
     On the Nth operation, the stream will fail with the specified
     error code, or the default error code of invalid_argument.

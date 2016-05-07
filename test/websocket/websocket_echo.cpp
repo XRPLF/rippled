@@ -19,7 +19,7 @@
 
 #include "websocket_async_echo_peer.hpp"
 #include "websocket_sync_echo_peer.hpp"
-#include "../sig_wait.hpp"
+#include <beast/test/sig_wait.hpp>
 
 int main()
 {
@@ -32,5 +32,5 @@ int main()
     beast::websocket::sync_echo_peer s2(true, endpoint_type{
         address_type::from_string("127.0.0.1"), 6001 });
 
-    sig_wait();
+    beast::test::sig_wait();
 }

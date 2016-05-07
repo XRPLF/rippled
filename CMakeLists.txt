@@ -25,20 +25,25 @@ endif()
 
 message ("cxx Flags: " ${CMAKE_CXX_FLAGS})
 
-macro(GroupSources curdir)
+function(DoGroupSources curdir rootdir folder)
     file(GLOB children RELATIVE ${PROJECT_SOURCE_DIR}/${curdir} ${PROJECT_SOURCE_DIR}/${curdir}/*)
     foreach(child ${children})
         if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/${curdir}/${child})
-            GroupSources(${curdir}/${child})
+            DoGroupSources(${curdir}/${child} ${rootdir} ${folder})
         elseif(${child} STREQUAL "CMakeLists.txt")
             source_group("" FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
         else()
-            string(REPLACE "/" "\\" groupname ${curdir})
-            string(REPLACE "src" "Common" groupname ${groupname})
+            string(REGEX REPLACE ^${rootdir} ${folder} groupname ${curdir})
+            #set(groupname ${curdir})
+            string(REPLACE "/" "\\" groupname ${groupname})
             source_group(${groupname} FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
         endif()
     endforeach()
-endmacro()
+endfunction()
+
+function(GroupSources curdir folder)
+    DoGroupSources(${curdir} ${curdir} ${folder})
+endfunction()
 
 include_directories (extras)
 include_directories (include)
@@ -52,5 +57,7 @@ file(GLOB_RECURSE BEAST_INCLUDES
 
 add_subdirectory (examples)
 add_subdirectory (test)
+add_subdirectory (test/http)
+add_subdirectory (test/websocket)
 
 #enable_testing()

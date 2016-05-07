@@ -1,8 +1,9 @@
 # Part of Beast
 
-GroupSources(include/beast)
-GroupSources(examples)
-GroupSources(test)
+GroupSources(extras/beast beast)
+GroupSources(include/beast beast)
+
+GroupSources(examples "/")
 
 add_executable (http-crawl
     ${BEAST_INCLUDES}
@@ -22,7 +23,6 @@ add_executable (http-server
     http_stream.hpp
     http_stream.ipp
     http_sync_server.hpp
-    ../test/sig_wait.hpp
     http_server.cpp
 )
 

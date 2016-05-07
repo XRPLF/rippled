@@ -8,11 +8,10 @@
 // Test that header file is self-contained.
 #include <beast/http/read.hpp>
 
-#include "../fail_stream.hpp"
-#include "../string_stream.hpp"
-#include "../yield_to.hpp"
-
 #include <beast/http/streambuf_body.hpp>
+#include <beast/test/fail_stream.hpp>
+#include <beast/test/string_stream.hpp>
+#include <beast/test/yield_to.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/asio/spawn.hpp>
 

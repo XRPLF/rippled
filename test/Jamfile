@@ -8,7 +8,7 @@
 import os ;
 
 unit-test core-tests :
-    main.cpp
+    ../extras/beast/unit_test/main.cpp
     async_completion.cpp
     basic_streambuf.cpp
     bind_handler.cpp
@@ -37,7 +37,7 @@ unit-test core-tests :
     ;
 
 unit-test http-tests :
-    main.cpp
+    ../extras/beast/unit_test/main.cpp
     http/basic_headers.cpp
     http/basic_parser_v1.cpp
     http/body_type.cpp
@@ -60,13 +60,13 @@ unit-test http-tests :
     ;
 
 unit-test bench-tests :
-    main.cpp
+    ../extras/beast/unit_test/main.cpp
     http/nodejs_parser.cpp
     http/parser_bench.cpp
     ;
 
 unit-test websocket-tests :
-    main.cpp
+    ../extras/beast/unit_test/main.cpp
     websocket/error.cpp
     websocket/option.cpp
     websocket/rfc6455.cpp

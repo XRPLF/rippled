@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_TEST_ENABLE_YIELD_TO_HPP
-#define BEAST_TEST_ENABLE_YIELD_TO_HPP
+#ifndef BEAST_TEST_YIELD_TO_HPP
+#define BEAST_TEST_YIELD_TO_HPP
 
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/spawn.hpp>
@@ -19,7 +19,12 @@
 namespace beast {
 namespace test {
 
-// Mix-in to support tests using coroutines
+/** Mix-in to support tests using asio coroutines.
+
+    Derive from this class and use yield_to to launch test functions
+    inside coroutines. This is handy for testing asynchronous asio
+    code.
+*/
 class enable_yield_to
 {
 protected:
@@ -33,6 +38,7 @@ private:
     bool running_ = false;;
 
 protected:
+    /// The type of yield context passed to functions.
     using yield_context =
         boost::asio::yield_context;
 
@@ -52,7 +58,16 @@ protected:
         thread_.join();
     }
 
-    // Run a function in a coroutine
+    /** Run a function in a coroutine.
+
+        This call will block until the coroutine terminates.
+
+        Function will be called with this signature:
+        
+        @code
+            void f(yield_context);
+        @endcode
+    */
     template<class Function>
     void
     yield_to(Function&& f);
