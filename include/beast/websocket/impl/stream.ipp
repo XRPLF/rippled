@@ -291,9 +291,9 @@ accept(http::request_v1<Body, Headers> const& req,
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
-    auto const resp = build_response(req);
-    http::write(stream_, resp, ec);
-    if(resp.status != 101)
+    auto const res = build_response(req);
+    http::write(stream_, res, ec);
+    if(res.status != 101)
     {
         ec = error::handshake_failed;
         // VFALCO TODO Respect keep alive setting, perform
@@ -349,11 +349,11 @@ handshake(boost::string_ref const& host,
         build_request(host, resource, key), ec);
     if(ec)
         return;
-    http::response_v1<http::string_body> resp;
-    http::read(next_layer(), stream_.buffer(), resp, ec);
+    http::response_v1<http::string_body> res;
+    http::read(next_layer(), stream_.buffer(), res, ec);
     if(ec)
         return;
-    do_response(resp, key, ec);
+    do_response(res, key, ec);
 }
 
 template<class NextLayer>
@@ -855,11 +855,13 @@ build_response(http::request_v1<Body, Headers> const& req)
     auto err =
         [&](std::string const& text)
         {
-            http::response_v1<http::string_body> resp(
-                {400, http::reason_string(400), req.version});
-            resp.body = text;
+            http::response_v1<http::string_body> res;
+            res.status = 400;
+            res.reason = http::reason_string(res.status);
+            res.version = req.version;
+            res.body = text;
             // VFALCO TODO respect keep-alive here
-            return resp;
+            return res;
         };
     if(req.version < 11)
         return err("HTTP version 1.1 required");
@@ -882,41 +884,43 @@ build_response(http::request_v1<Body, Headers> const& req)
     if(! rfc2616::token_in_list(
             req.headers["Upgrade"], "websocket"))
         return err("Missing websocket Upgrade token");
-    http::response_v1<http::string_body> resp(
-        {101, http::reason_string(101), req.version});
-    resp.headers.insert("Upgrade", "websocket");
+    http::response_v1<http::string_body> res;
+    res.status = 101;
+    res.reason = http::reason_string(res.status);
+    res.version = req.version;
+    res.headers.insert("Upgrade", "websocket");
     {
         auto const key =
             req.headers["Sec-WebSocket-Key"];
-        resp.headers.insert("Sec-WebSocket-Key", key);
-        resp.headers.insert("Sec-WebSocket-Accept",
+        res.headers.insert("Sec-WebSocket-Key", key);
+        res.headers.insert("Sec-WebSocket-Accept",
             detail::make_sec_ws_accept(key));
     }
-    resp.headers.replace("Server", "Beast.WSProto");
-    (*d_)(resp);
-    http::prepare(resp, http::connection::upgrade);
-    return resp;
+    res.headers.replace("Server", "Beast.WSProto");
+    (*d_)(res);
+    http::prepare(res, http::connection::upgrade);
+    return res;
 }
 
 template<class NextLayer>
 template<class Body, class Headers>
 void
 stream<NextLayer>::
-do_response(http::response_v1<Body, Headers> const& resp,
+do_response(http::response_v1<Body, Headers> const& res,
     boost::string_ref const& key, error_code& ec)
 {
     // VFALCO Review these error codes
     auto fail = [&]{ ec = error::response_failed; };
-    if(resp.status != 101)
+    if(res.status != 101)
         return fail();
-    if(! is_upgrade(resp))
+    if(! is_upgrade(res))
         return fail();
     if(! rfc2616::ci_equal(
-            resp.headers["Upgrade"], "websocket"))
+            res.headers["Upgrade"], "websocket"))
         return fail();
-    if(! resp.headers.exists("Sec-WebSocket-Accept"))
+    if(! res.headers.exists("Sec-WebSocket-Accept"))
         return fail();
-    if(resp.headers["Sec-WebSocket-Accept"] !=
+    if(res.headers["Sec-WebSocket-Accept"] !=
         detail::make_sec_ws_accept(key))
         return fail();
     role_ = role_type::client;

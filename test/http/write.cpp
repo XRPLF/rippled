@@ -135,8 +135,10 @@ public:
     {
         // auto content-length HTTP/1.0
         {
-            message_v1<true, string_body, headers> m{{
-                "GET", "/", 10}};
+            message_v1<true, string_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 10;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
@@ -150,8 +152,10 @@ public:
         }
         // keep-alive HTTP/1.0
         {
-            message_v1<true, string_body, headers> m{{
-                "GET", "/", 10}};
+            message_v1<true, string_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 10;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m, connection::keep_alive);
@@ -166,8 +170,10 @@ public:
         }
         // upgrade HTTP/1.0
         {
-            message_v1<true, string_body, headers> m{{
-                "GET", "/", 10}};
+            message_v1<true, string_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 10;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             try
@@ -182,8 +188,10 @@ public:
         }
         // no content-length HTTP/1.0
         {
-            message_v1<true, test_body, headers> m{{
-                "GET", "/", 10}};
+            message_v1<true, test_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 10;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
@@ -200,8 +208,10 @@ public:
         }
         // auto content-length HTTP/1.1
         {
-            message_v1<true, string_body, headers> m{{
-                "GET", "/", 11}};
+            message_v1<true, string_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 11;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
@@ -215,8 +225,10 @@ public:
         }
         // close HTTP/1.1
         {
-            message_v1<true, string_body, headers> m{{
-                "GET", "/", 11}};
+            message_v1<true, string_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 11;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m, connection::close);
@@ -235,8 +247,10 @@ public:
         }
         // upgrade HTTP/1.1
         {
-            message_v1<true, empty_body, headers> m{{
-                "GET", "/", 11}};
+            message_v1<true, empty_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 11;
             m.headers.insert("User-Agent", "test");
             prepare(m, connection::upgrade);
             expect(str(m) ==
@@ -248,8 +262,10 @@ public:
         }
         // no content-length HTTP/1.1
         {
-            message_v1<true, test_body, headers> m{{
-                "GET", "/", 11}};
+            message_v1<true, test_body, headers> m;
+            m.method = "GET";
+            m.url = "/";
+            m.version = 11;
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
@@ -270,8 +286,10 @@ public:
 
     void testConvert()
     {
-        message_v1<true, string_body, headers> m{{
-            "GET", "/", 11}};
+        message_v1<true, string_body, headers> m;
+        m.method = "GET";
+        m.url = "/";
+        m.version = 11;
         m.headers.insert("User-Agent", "test");
         m.body = "*";
         prepare(m);

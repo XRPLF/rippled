@@ -127,8 +127,10 @@ private:
             path = root_ + path;
             if(! boost::filesystem::exists(path))
             {
-                response_v1<string_body> resp(
-                    {404, "Not Found", req_.version});
+                response_v1<string_body> resp;
+                resp.status = 404;
+                resp.reason = "Not Found";
+                resp.version = req_.version;
                 resp.headers.replace("Server", "http_async_server");
                 resp.body = "The file '" + path + "' was not found";
                 prepare(resp);
@@ -137,8 +139,10 @@ private:
                         asio::placeholders::error));
                 return;
             }
-            resp_type resp(
-                {200, "OK", req_.version});
+            resp_type resp;
+            resp.status = 200;
+            resp.reason = "OK";
+            resp.version = req_.version;
             resp.headers.replace("Server", "http_async_server");
             resp.headers.replace("Content-Type", "text/html");
             resp.body = path;

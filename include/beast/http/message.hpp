@@ -9,8 +9,11 @@
 #define BEAST_HTTP_MESSAGE_HPP
 
 #include <beast/http/basic_headers.hpp>
+#include <beast/core/detail/integer_sequence.hpp>
 #include <memory>
 #include <string>
+#include <tuple>
+#include <utility>
 
 namespace beast {
 namespace http {
@@ -69,6 +72,79 @@ struct message
 
     /// A container representing the body.
     typename Body::value_type body;
+
+    /// Default constructor
+    message() = default;
+
+    /** Construct a message.
+
+        @param u An argument forwarded to the body constructor.
+    */
+    template<class U>
+    explicit
+    message(U&& u)
+        : body(std::forward<U>(u))
+    {
+    }
+
+    /** Construct a message.
+
+        @param u An argument forwarded to the body constructor.
+        @param v An argument forwarded to the headers constructor.
+    */
+    template<class U, class V>
+    explicit
+    message(U&& u, V&& v)
+        : headers(std::forward<V>(v))
+        , body(std::forward<U>(u))
+    {
+    }
+
+    /** Construct a message.
+
+        @param un A tuple forwarded as a parameter pack to the body constructor.
+    */
+    template<class... Un>
+    message(std::piecewise_construct_t, std::tuple<Un...> un)
+        : message(std::piecewise_construct, un,
+            beast::detail::make_index_sequence<sizeof...(Un)>{})
+    {
+
+    }
+
+    /** Construct a message.
+
+        @param un A tuple forwarded as a parameter pack to the body constructor.
+        @param vn A tuple forwarded as a parameter pack to the headers constructor.
+    */
+    template<class... Un, class... Vn>
+    explicit
+    message(std::piecewise_construct_t,
+            std::tuple<Un...>&& un, std::tuple<Vn...>&& vn)
+        : message(std::piecewise_construct, un, vn,
+            beast::detail::make_index_sequence<sizeof...(Un)>{},
+            beast::detail::make_index_sequence<sizeof...(Vn)>{})
+    {
+    }
+
+private:
+    template<class... Un, size_t... IUn>
+    message(std::piecewise_construct_t,
+            std::tuple<Un...>& tu, beast::detail::index_sequence<IUn...>)
+        : body(std::forward<Un>(std::get<IUn>(tu))...)
+    {
+    }
+
+    template<class... Un, class... Vn,
+        std::size_t... IUn, std::size_t... IVn>
+    message(std::piecewise_construct_t,
+            std::tuple<Un...>& tu, std::tuple<Vn...>& tv,
+                beast::detail::index_sequence<IUn...>,
+                    beast::detail::index_sequence<IVn...>)
+        : headers(std::forward<Vn>(std::get<IVn>(tv))...)
+        , body(std::forward<Un>(std::get<IUn>(tu))...)
+    {
+    }
 };
 
 #if ! GENERATING_DOCS

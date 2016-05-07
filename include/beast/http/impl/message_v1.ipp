@@ -17,28 +17,6 @@ namespace beast {
 namespace http {
 
 template<bool isRequest, class Body, class Headers>
-message_v1<isRequest, Body, Headers>::
-message_v1(request_params params)
-{
-    static_assert(isRequest, "message is not a request");
-    this->method = params.method;
-    this->url = std::move(params.url);
-    version = params.version;
-}
-
-template<bool isRequest, class Body, class Headers>
-message_v1<isRequest, Body, Headers>::
-message_v1(response_params params)
-{
-    static_assert(! isRequest, "message is not a response");
-    this->status = params.status;
-    this->reason = std::move(params.reason);
-    version = params.version;
-}
-
-//------------------------------------------------------------------------------
-
-template<bool isRequest, class Body, class Headers>
 bool
 is_keep_alive(message_v1<isRequest, Body, Headers> const& msg)
 {

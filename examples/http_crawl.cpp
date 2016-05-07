@@ -46,7 +46,10 @@ int main(int, char const*[])
             stream<ip::tcp::socket> hs(ios);
             connect(hs.lowest_layer(), it);
             auto ep = hs.lowest_layer().remote_endpoint();
-            request_v1<empty_body> req({"GET", "/", 11});
+            request_v1<empty_body> req;
+            req.method = "GET";
+            req.url = "/";
+            req.version = 11;
             req.headers.insert("Host", host +
                 std::string(":") + std::to_string(ep.port()));
             req.headers.insert("User-Agent", "beast/http");

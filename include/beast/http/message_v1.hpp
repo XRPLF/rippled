@@ -15,24 +15,6 @@
 namespace beast {
 namespace http {
 
-#if ! GENERATING_DOCS
-
-struct request_params
-{
-    std::string method;
-    std::string url;
-    int version;
-};
-
-struct response_params
-{
-    int status;
-    std::string reason;
-    int version;
-};
-
-#endif
-
 /** A HTTP/1 message.
 
     A message can be a request or response, depending on the `isRequest`
@@ -54,15 +36,18 @@ struct message_v1 : message<isRequest, Body, Headers>
     /// HTTP/1 version (10 or 11)
     int version;
 
+    /// Default constructor
     message_v1() = default;
 
-    /// Construct a HTTP/1 request.
+    /// Constructor
+    template<class Arg1, class... Argn>
     explicit
-    message_v1(request_params params);
-
-    /// Construct a HTTP/1 response.
-    explicit
-    message_v1(response_params params);
+    message_v1(Arg1& arg1, Argn&&... argn)
+        : message<isRequest, Body, Headers>(
+            std::forward<Arg1>(arg1),
+            std::forward<Argn>(argn)...)
+    {
+    }
 };
 
 #if ! GENERATING_DOCS

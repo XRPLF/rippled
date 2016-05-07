@@ -1,21 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+//
+// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
 
 // Test that header file is self-contained.
 #include <beast/http/message_v1.hpp>
@@ -29,7 +17,6 @@
 
 namespace beast {
 namespace http {
-namespace test {
 
 class sync_echo_http_server
 {
@@ -122,8 +109,10 @@ private:
             read(sock, rb, req, ec);
             if(ec)
                 break;
-            response_v1<string_body> resp(
-                {100, "OK", req.version});
+            response_v1<string_body> resp;
+            resp.status = 100;
+            resp.reason = "OK";
+            resp.version = req.version;
             resp.body = "Completed successfully.";
             write(sock, resp, ec);
             if(ec)
@@ -132,7 +121,7 @@ private:
     }
 };
 
-class message_test : public beast::unit_test::suite
+class message_v1_test : public beast::unit_test::suite
 {
 public:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -184,7 +173,10 @@ public:
 
         streambuf rb;
         {
-            request_v1<string_body> req({"GET", "/", 11});
+            request_v1<string_body> req;
+            req.method = "GET";
+            req.url = "/";
+            req.version = 11;
             req.body = "Beast.HTTP";
             req.headers.replace("Host",
                 ep.address().to_string() + ":" +
@@ -214,8 +206,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(message,http,beast);
+BEAST_DEFINE_TESTSUITE(message_v1,http,beast);
 
-} // test
 } // http
 } // beast

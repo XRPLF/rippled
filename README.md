@@ -63,7 +63,10 @@ int main()
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
 
     // Send HTTP request using beast
-    beast::http::request_v1<beast::http::empty_body> req({"GET", "/", 11});
+    beast::http::request_v1<beast::http::empty_body> req;
+    req.method = "GET";
+    req.url = "/";
+    req.version = 11;
     req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
     req.headers.replace("User-Agent", "Beast");
     beast::http::prepare(req);

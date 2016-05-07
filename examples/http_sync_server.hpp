@@ -155,8 +155,10 @@ public:
             path = root_ + path;
             if(! boost::filesystem::exists(path))
             {
-                response_v1<string_body> resp(
-                    {404, "Not Found", req.version});
+                response_v1<string_body> resp;
+                resp.status = 404;
+                resp.reason = "Not Found";
+                resp.version = req.version;
                 resp.headers.replace("Server", "http_sync_server");
                 resp.body = "The file '" + path + "' was not found";
                 prepare(resp);
@@ -164,8 +166,10 @@ public:
                 if(ec)
                     break;
             }
-            resp_type resp(
-                {200, "OK", req.version});
+            resp_type resp;
+            resp.status = 200;
+            resp.reason = "OK";
+            resp.version = req.version;
             resp.headers.replace("Server", "http_sync_server");
             resp.headers.replace("Content-Type", "text/html");
             resp.body = path;
