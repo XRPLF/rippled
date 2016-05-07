@@ -50,7 +50,7 @@ struct json_body
         }
 
         void
-        init(beast::http::error_code&)
+        init(beast::error_code&)
         {
         }
 
@@ -63,7 +63,7 @@ struct json_body
         template<class Write>
         boost::tribool
         operator()(beast::http::resume_context&&,
-            beast::http::error_code&, Write&& write)
+            beast::error_code&, Write&& write)
         {
             write(sb_.data());
             return true;

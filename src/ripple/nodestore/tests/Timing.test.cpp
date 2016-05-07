@@ -26,7 +26,7 @@
 #include <beast/detail/temp_dir.hpp>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
-#include <beast/detail/unit_test/thread.hpp>
+#include <beast/unit_test/thread.hpp>
 #include <boost/algorithm/string.hpp>
 #include <atomic>
 #include <chrono>
