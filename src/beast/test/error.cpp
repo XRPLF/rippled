@@ -6,4 +6,4 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/http/error.hpp>
+#include <beast/error.hpp>

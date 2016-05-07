@@ -9,8 +9,10 @@
 #include <beast/basic_streambuf.hpp>
 
 #include <beast/streambuf.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/to_string.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
+#include <algorithm>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -134,32 +136,119 @@ public:
     }
 };
 
-class basic_streambuf_test : public beast::detail::unit_test::suite
+class basic_streambuf_test : public beast::unit_test::suite
 {
 public:
-    template<class ConstBufferSequence>
+    template<class Alloc1, class Alloc2>
     static
-    std::string
-    to_string(ConstBufferSequence const& bs)
+    bool
+    eq(basic_streambuf<Alloc1> const& sb1,
+        basic_streambuf<Alloc2> const& sb2)
     {
+        return to_string(sb1.data()) == to_string(sb2.data());
+    }
+
+    void testSpecialMembers()
+    {
+        using boost::asio::buffer;
         using boost::asio::buffer_cast;
         using boost::asio::buffer_size;
-        std::string s;
-        s.reserve(buffer_size(bs));
-        for(auto const& b : bs)
-            s.append(buffer_cast<char const*>(b),
-                buffer_size(b));
-        return s;
+        std::string const s = "Hello, world";
+        expect(s.size() == 12);
+        for(std::size_t i = 1; i < 12; ++i) {
+        for(std::size_t x = 1; x < 4; ++x) {
+        for(std::size_t y = 1; y < 4; ++y) {
+        std::size_t z = s.size() - (x + y);
+        {
+            streambuf sb(i);
+            sb.commit(buffer_copy(sb.prepare(x), buffer(s.data(), x)));
+            sb.commit(buffer_copy(sb.prepare(y), buffer(s.data()+x, y)));
+            sb.commit(buffer_copy(sb.prepare(z), buffer(s.data()+x+y, z)));
+            expect(to_string(sb.data()) == s);
+            {
+                streambuf sb2(sb);
+                expect(eq(sb, sb2));
+            }
+            {
+                streambuf sb2;
+                sb2 = sb;
+                expect(eq(sb, sb2));
+            }
+            {
+                streambuf sb2(std::move(sb));
+                expect(to_string(sb2.data()) == s);
+                expect(buffer_size(sb.data()) == 0);
+                sb = std::move(sb2);
+                expect(to_string(sb.data()) == s);
+                expect(buffer_size(sb2.data()) == 0);
+            }
+            sb = sb;
+            sb = std::move(sb);
+        }
+        }}}
+    }
+
+    void testAllocator()
+    {
+        {
+            using alloc_type =
+                test_allocator<char, false, false, false, false>;
+            using sb_type = basic_streambuf<alloc_type>;
+            sb_type sb;
+            expect(sb.get_allocator().id() == 1);
+        }
+        {
+            using alloc_type =
+                test_allocator<char, false, false, false, false>;
+            using sb_type = basic_streambuf<alloc_type>;
+            sb_type sb;
+            expect(sb.get_allocator().id() == 2);
+            sb_type sb2(sb);
+            expect(sb2.get_allocator().id() == 2);
+            sb_type sb3(sb, alloc_type{});
+            //expect(sb3.get_allocator().id() == 3);
+        }
     }
 
     void
     testPrepare()
     {
         using boost::asio::buffer_size;
+        {
+            streambuf sb(2);
+            expect(buffer_size(sb.prepare(5)) == 5);
+            expect(buffer_size(sb.prepare(8)) == 8);
+            expect(buffer_size(sb.prepare(7)) == 7);
+        }
+        {
+            streambuf sb(2);
+            sb.prepare(2);
+            {
+                auto const bs = sb.prepare(5);
+                expect(std::distance(
+                    bs.begin(), bs.end()) == 2);
+            }
+            {
+                auto const bs = sb.prepare(8);
+                expect(std::distance(
+                    bs.begin(), bs.end()) == 3);
+            }
+            {
+                auto const bs = sb.prepare(4);
+                expect(std::distance(
+                    bs.begin(), bs.end()) == 2);
+            }
+        }
+    }
+
+    void testCommit()
+    {
+        using boost::asio::buffer_size;
         streambuf sb(2);
-        expect(buffer_size(sb.prepare(5)) == 5);
-        expect(buffer_size(sb.prepare(8)) == 8);
-        expect(buffer_size(sb.prepare(7)) == 7);
+        sb.prepare(2);
+        sb.prepare(5);
+        sb.commit(1);
+        expect(buffer_size(sb.data()) == 1);
     }
 
     void testStreambuf()
@@ -257,88 +346,67 @@ public:
         }}}}}
     }
 
-    template<class Alloc1, class Alloc2>
-    static
-    bool
-    eq(basic_streambuf<Alloc1> const& sb1,
-        basic_streambuf<Alloc2> const& sb2)
+    void testIterators()
     {
-        return to_string(sb1.data()) == to_string(sb2.data());
-    }
-
-    void testSpecial()
-    {
-        using boost::asio::buffer;
-        using boost::asio::buffer_cast;
         using boost::asio::buffer_size;
-        std::string const s = "Hello, world";
-        expect(s.size() == 12);
-        for(std::size_t i = 1; i < 12; ++i) {
-        for(std::size_t x = 1; x < 4; ++x) {
-        for(std::size_t y = 1; y < 4; ++y) {
-        std::size_t z = s.size() - (x + y);
+        streambuf sb(1);
+        sb.prepare(1);
+        sb.commit(1);
+        sb.prepare(2);
+        sb.commit(2);
+        expect(buffer_size(sb.data()) == 3);
+        sb.prepare(1);
+        expect(buffer_size(sb.prepare(3)) == 3);
+        expect(read_size_helper(sb, 3) == 3);
+        sb.commit(2);
+        try
         {
-            streambuf sb(i);
-            sb.commit(buffer_copy(sb.prepare(x), buffer(s.data(), x)));
-            sb.commit(buffer_copy(sb.prepare(y), buffer(s.data()+x, y)));
-            sb.commit(buffer_copy(sb.prepare(z), buffer(s.data()+x+y, z)));
-            expect(to_string(sb.data()) == s);
-            {
-                streambuf sb2(sb);
-                expect(eq(sb, sb2));
-            }
-            {
-                streambuf sb2;
-                sb2 = sb;
-                expect(eq(sb, sb2));
-            }
-            {
-                streambuf sb2(std::move(sb));
-                expect(to_string(sb2.data()) == s);
-                expect(buffer_size(sb.data()) == 0);
-                sb = std::move(sb2);
-                expect(to_string(sb.data()) == s);
-                expect(buffer_size(sb2.data()) == 0);
-            }
+            streambuf sb0(0);
+            fail();
         }
-        }}}
+        catch(std::exception const&)
+        {
+            pass();
+        }
+        std::size_t n;
+        n = 0;
+        for(auto it = sb.data().begin();
+                it != sb.data().end(); it++)
+            ++n;
+        expect(n == 4);
+        n = 0;
+        for(auto it = sb.data().begin();
+                it != sb.data().end(); ++it)
+            ++n;
+        expect(n == 4);
+        n = 0;
+        for(auto it = sb.data().end();
+                it != sb.data().begin(); it--)
+            ++n;
+        expect(n == 4);
+        n = 0;
+        for(auto it = sb.data().end();
+                it != sb.data().begin(); --it)
+            ++n;
+        expect(n == 4);
     }
 
-    void testAllocator()
-    {
-        {
-            using alloc_type =
-                test_allocator<char, false, false, false, false>;
-            using sb_type = basic_streambuf<alloc_type>;
-            sb_type sb;
-            expect(sb.get_allocator().id() == 1);
-        }
-        {
-            using alloc_type =
-                test_allocator<char, false, false, false, false>;
-            using sb_type = basic_streambuf<alloc_type>;
-            sb_type sb;
-            expect(sb.get_allocator().id() == 2);
-            sb_type sb2(sb);
-            expect(sb2.get_allocator().id() == 2);
-            sb_type sb3(sb, alloc_type{});
-            //expect(sb3.get_allocator().id() == 3);
-        }
-    }
-
-    void testStream()
+    void testOutputStream()
     {
         streambuf sb;
         sb << "x";
+        expect(to_string(sb.data()) == "x");
     }
 
     void run() override
     {
-        testPrepare();
-        testStreambuf();
-        testSpecial();
+        testSpecialMembers();
         testAllocator();
-        testStream();
+        testPrepare();
+        testCommit();
+        testStreambuf();
+        testIterators();
+        testOutputStream();
     }
 };
 

@@ -5,18 +5,20 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_ERROR_HPP
-#define BEAST_HTTP_ERROR_HPP
+#ifndef BEAST_ERROR_HPP
+#define BEAST_ERROR_HPP
 
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
 namespace beast {
-namespace http {
 
+/// The type of error code used by the library
 using error_code = boost::system::error_code;
 
-} // http
+/// The type of system error thrown by the library
+using system_error = boost::system::system_error;
+
 } // beast
 
 #endif

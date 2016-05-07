@@ -279,13 +279,6 @@ public:
         return N;
     }
 
-    /// Reduces memory usage by freeing unused memory.
-    void
-    shrink_to_fit()
-    {
-        // no-op
-    }
-
     /// Clears the contents.
     void
     clear()
@@ -310,7 +303,8 @@ public:
 
     /// Compare two character sequences.
     template<std::size_t M>
-    int compare(static_string<M, CharT, Traits> const& rhs) const;
+    int
+    compare(static_string<M, CharT, Traits> const& rhs) const;
 
     /// Return the characters as a `basic_string`.
     std::basic_string<CharT, Traits>
@@ -488,7 +482,8 @@ assign(CharT const* s)
 namespace detail {
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-int compare(
+int
+compare(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {
@@ -512,27 +507,13 @@ int compare(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-int compare(
+inline
+int
+compare(
     const CharT (&s)[M],
     static_string<N, CharT, Traits> const& rhs)
 {
-    if(M-1 < rhs.size())
-    {
-        auto const v = Traits::compare(
-            &s[0], rhs.data(), M-1);
-        if(v == 0)
-            return -1;
-        return v;
-    }
-    else if(M-1 > rhs.size())
-    {
-        auto const v = Traits::compare(
-            &s[0], rhs.data(), rhs.size());
-        if(v == 0)
-            return 1;
-        return v;
-    }
-    return Traits::compare(&s[0], rhs.data(), M-1);
+    return -compare(rhs, s);
 }
 
 } // detail
@@ -540,7 +521,8 @@ int compare(
 #if ! GENERATING_DOCS
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator==(
+bool
+operator==(
     static_string<N, CharT, Traits> const& lhs,
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -548,7 +530,8 @@ bool operator==(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator!=(
+bool
+operator!=(
     static_string<N, CharT, Traits> const& lhs,
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -556,7 +539,8 @@ bool operator!=(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator<(
+bool
+operator<(
     static_string<N, CharT, Traits> const& lhs,
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -564,7 +548,8 @@ bool operator<(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator<=(
+bool
+operator<=(
     static_string<N, CharT, Traits> const& lhs,
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -572,7 +557,8 @@ bool operator<=(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator>(
+bool
+operator>(
     static_string<N, CharT, Traits> const& lhs,
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -580,7 +566,8 @@ bool operator>(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator>=(
+bool
+operator>=(
     static_string<N, CharT, Traits> const& lhs,
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -590,7 +577,8 @@ bool operator>=(
 //---
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator==(
+bool
+operator==(
     const CharT (&s)[N],
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -598,7 +586,8 @@ bool operator==(
 }
 
 template<std::size_t N, class CharT, class Traits, std::size_t M>
-bool operator==(
+bool
+operator==(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {
@@ -606,7 +595,8 @@ bool operator==(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator!=(
+bool
+operator!=(
     const CharT (&s)[N],
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -614,7 +604,8 @@ bool operator!=(
 }
 
 template<std::size_t N, class CharT, class Traits, std::size_t M>
-bool operator!=(
+bool
+operator!=(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {
@@ -622,7 +613,8 @@ bool operator!=(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator<(
+bool
+operator<(
     const CharT (&s)[N],
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -630,7 +622,8 @@ bool operator<(
 }
 
 template<std::size_t N, class CharT, class Traits, std::size_t M>
-bool operator<(
+bool
+operator<(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {
@@ -638,7 +631,8 @@ bool operator<(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator<=(
+bool
+operator<=(
     const CharT (&s)[N],
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -646,7 +640,8 @@ bool operator<=(
 }
 
 template<std::size_t N, class CharT, class Traits, std::size_t M>
-bool operator<=(
+bool
+operator<=(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {
@@ -654,7 +649,8 @@ bool operator<=(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator>(
+bool
+operator>(
     const CharT (&s)[N],
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -662,7 +658,8 @@ bool operator>(
 }
 
 template<std::size_t N, class CharT, class Traits, std::size_t M>
-bool operator>(
+bool
+operator>(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {
@@ -670,7 +667,8 @@ bool operator>(
 }
 
 template<std::size_t N, std::size_t M, class CharT, class Traits>
-bool operator>=(
+bool
+operator>=(
     const CharT (&s)[N],
     static_string<M, CharT, Traits> const& rhs)
 {
@@ -678,7 +676,8 @@ bool operator>=(
 }
 
 template<std::size_t N, class CharT, class Traits, std::size_t M>
-bool operator>=(
+bool
+operator>=(
     static_string<N, CharT, Traits> const& lhs,
     const CharT (&s)[M])
 {

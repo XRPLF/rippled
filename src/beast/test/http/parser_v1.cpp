@@ -10,12 +10,12 @@
 
 #include <beast/http/headers.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
 namespace http {
 
-class parser_v1_test : public beast::detail::unit_test::suite
+class parser_v1_test : public beast::unit_test::suite
 {
 public:
     void run() override

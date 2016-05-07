@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TEST_SIG_WAIT_H_INCLUDED
-#define BEAST_TEST_SIG_WAIT_H_INCLUDED
+#ifndef BEAST_TEST_SIG_WAIT_HPP
+#define BEAST_TEST_SIG_WAIT_HPP
 
 #include <boost/asio.hpp>
 #include <condition_variable>

@@ -8,11 +8,11 @@
 // Test that header file is self-contained.
 #include <beast/write_streambuf.hpp>
 #include <beast/streambuf.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
 
-class write_streambuf_test : public beast::detail::unit_test::suite
+class write_streambuf_test : public beast::unit_test::suite
 {
 public:
     void run() override

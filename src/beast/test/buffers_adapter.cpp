@@ -8,14 +8,15 @@
 // Test that header file is self-contained.
 #include <beast/buffers_adapter.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/streambuf.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <iterator>
 
 namespace beast {
 
-class buffers_adapter_test : public detail::unit_test::suite
+class buffers_adapter_test : public unit_test::suite
 {
 public:
     template<class ConstBufferSequence>
@@ -149,9 +150,38 @@ public:
         }
         }}}}}}
     }
+    void testCommit()
+    {
+        using boost::asio::buffer_size;
+        {
+            using sb_type = boost::asio::streambuf;
+            sb_type sb;
+            buffers_adapter<
+                sb_type::mutable_buffers_type> ba(sb.prepare(3));
+            expect(buffer_size(ba.prepare(3)) == 3);
+            ba.commit(2);
+            expect(buffer_size(ba.data()) == 2);
+        }
+        {
+            using sb_type = beast::streambuf;
+            sb_type sb(2);
+            sb.prepare(3);
+            buffers_adapter<
+                sb_type::mutable_buffers_type> ba(sb.prepare(8));
+            expect(buffer_size(ba.prepare(8)) == 8);
+            ba.commit(2);
+            expect(buffer_size(ba.data()) == 2);
+            ba.consume(1);
+            ba.commit(6);
+            ba.consume(2);
+            expect(buffer_size(ba.data()) == 5);
+            ba.consume(5);
+        }
+    }
     void run() override
     {
         testBuffersAdapter();
+        testCommit();
     }
 };
 

@@ -64,7 +64,7 @@ public:
     read_op(read_op const&) = default;
 
     template<class DeducedHandler, class... Args>
-    read_op(DeducedHandler&& h, Stream&s, Args&&... args)
+    read_op(DeducedHandler&& h, Stream& s, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
             std::forward<DeducedHandler>(h), s,
                 std::forward<Args>(args)...))
@@ -211,6 +211,18 @@ operator()(error_code ec, std::size_t bytes_transferred, bool again)
 } // detail
 
 //------------------------------------------------------------------------------
+
+template<class SyncReadStream, class Streambuf,
+    bool isRequest, class Body, class Headers>
+void
+read(SyncReadStream& stream, Streambuf& streambuf,
+    message_v1<isRequest, Body, Headers>& msg)
+{
+    error_code ec;
+    read(stream, streambuf, msg, ec);
+    if(ec)
+        throw boost::system::system_error{ec};
+}
 
 template<class SyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers>

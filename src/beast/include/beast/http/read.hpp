@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_READ_HPP
 #define BEAST_HTTP_READ_HPP
 
-#include <beast/http/error.hpp>
+#include <beast/error.hpp>
 #include <beast/http/parser_v1.hpp>
 #include <beast/async_completion.hpp>
 #include <boost/asio/buffer.hpp>
@@ -47,13 +47,7 @@ template<class SyncReadStream, class Streambuf,
     bool isRequest, class Body, class Headers>
 void
 read(SyncReadStream& stream, Streambuf& streambuf,
-    message_v1<isRequest, Body, Headers>& msg)
-{
-    error_code ec;
-    read(stream, streambuf, msg, ec);
-    if(ec)
-        throw boost::system::system_error{ec};
-}
+    message_v1<isRequest, Body, Headers>& msg);
 
 /** Read a HTTP/1 message from a stream.
 

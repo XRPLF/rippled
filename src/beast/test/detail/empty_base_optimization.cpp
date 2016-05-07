@@ -1,42 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+//
+// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
 
 #include <beast/detail/empty_base_optimization.hpp>
-
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
-namespace test {
+namespace detail {
 
 class empty_base_optimization_test
-    : public beast::detail::unit_test::suite
+    : public beast::unit_test::suite
 {
 public:
     template <class T>
     class test1
-        : private detail::empty_base_optimization<T>
+        : private empty_base_optimization<T>
     {
-        using Base = detail::empty_base_optimization<T>;
+        using Base = empty_base_optimization<T>;
         void* m_p;
     public:
         explicit test1 (T const& t)
@@ -105,5 +88,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(empty_base_optimization,core,beast);
 
-} // test
+} // detail
 } // beast

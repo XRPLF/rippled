@@ -149,7 +149,9 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         case s_req_url_start:
             if(ch == ' ')
                 return err(parse_error::bad_uri);
-            // VFALCO TODO Require valid URL character
+            // VFALCO TODO Better checking for valid URL characters
+            if(! is_text(ch))
+                return err(parse_error::bad_uri);
             if(cb(&self::call_on_uri))
                 return used();
             s_ = s_req_url;
@@ -163,7 +165,9 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 s_ = s_req_http_start;
                 break;
             }
-            // VFALCO TODO Require valid URL character
+            // VFALCO TODO Better checking for valid URL characters
+            if(! is_text(ch))
+                return err(parse_error::bad_uri);
             break;
 
         case s_req_http_start:

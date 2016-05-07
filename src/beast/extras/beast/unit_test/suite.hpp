@@ -5,17 +5,14 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_SUITE_HPP
-#define BEAST_DETAIL_UNIT_TEST_SUITE_HPP
+#ifndef BEAST_UNIT_TEST_SUITE_HPP
+#define BEAST_UNIT_TEST_SUITE_HPP
 
-#include <beast/detail/unit_test/runner.hpp>
+#include <beast/unit_test/runner.hpp>
 #include <string>
 #include <sstream>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 class thread;
@@ -537,7 +534,6 @@ suite::run (runner& r)
 }
 
 } // unit_test
-} // detail
 } // beast
 
 //------------------------------------------------------------------------------
@@ -545,7 +541,7 @@ suite::run (runner& r)
 // detail:
 // This inserts the suite with the given manual flag
 #define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual) \
-    static beast::detail::unit_test::detail::insert_suite <Class##_test>   \
+    static beast::unit_test::detail::insert_suite <Class##_test>   \
         Library ## Module ## Class ## _test_instance (             \
             #Class, #Module, #Library, manual);
 
@@ -593,7 +589,7 @@ suite::run (runner& r)
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library)
 
 #else
-#include <beast/detail/unit_test/global_suites.hpp>
+#include <beast/unit_test/global_suites.hpp>
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library) \
         BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library) \

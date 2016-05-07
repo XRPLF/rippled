@@ -10,7 +10,7 @@
 #include <beast/http.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/to_string.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <chrono>
 #include <iostream>
 #include <vector>
@@ -18,7 +18,7 @@
 namespace beast {
 namespace http {
 
-class parser_bench_test : public beast::detail::unit_test::suite
+class parser_bench_test : public beast::unit_test::suite
 {
 public:
     static std::size_t constexpr N = 2000;

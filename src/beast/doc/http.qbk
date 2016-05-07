@@ -44,7 +44,7 @@ libraries. It is not designed to be end-user facing. There is no convenient
 class that implements the core of a web server, nor is there a convenient
 class to quickly perform common operations such as fetching a file or
 connecting and retrieving a document from a secure connection. These
-use-cases are important. But this library does not try to do that. Instead,
+use-cases are important, but this library does not try to do that. Instead,
 it offers primitives that can be used to build those user-facing algorithms.
 
 A HTTP message (referred to hereafter as "message") contains request or

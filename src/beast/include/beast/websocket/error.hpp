@@ -8,14 +8,10 @@
 #ifndef BEAST_WEBSOCKET_ERROR_HPP
 #define BEAST_WEBSOCKET_ERROR_HPP
 
-#include <boost/system/error_code.hpp>
-#include <boost/system/system_error.hpp>
+#include <beast/error.hpp>
 
 namespace beast {
 namespace websocket {
-
-/// The type of error used by functions and completion handlers.
-using error_code = boost::system::error_code;
 
 /// Error codes returned from @ref stream operations.
 enum class error

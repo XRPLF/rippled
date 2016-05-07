@@ -5,21 +5,18 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_PRINT_H_INCLUDED
-#define BEAST_DETAIL_UNIT_TEST_PRINT_H_INCLUDED
+#ifndef BEAST_UNIT_TEST_PRINT_H_INCLUDED
+#define BEAST_UNIT_TEST_PRINT_H_INCLUDED
 
-#include <beast/detail/unit_test/amount.hpp>
-#include <beast/detail/unit_test/results.hpp>
-#include <beast/detail/stream/abstract_ostream.hpp>
-#include <beast/detail/stream/basic_std_ostream.hpp>
+#include <beast/unit_test/amount.hpp>
+#include <beast/unit_test/results.hpp>
+#include <beast/unit_test/abstract_ostream.hpp>
+#include <beast/unit_test/basic_std_ostream.hpp>
 
 #include <iostream>
 #include <string>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** Write test results to the specified output stream. */
@@ -65,7 +62,6 @@ print (results const& r, std::ostream& stream = std::cout)
 }
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

@@ -5,16 +5,13 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_RECORDER_HPP
-#define BEAST_DETAIL_UNIT_TEST_RECORDER_HPP
+#ifndef BEAST_UNIT_TEST_RECORDER_HPP
+#define BEAST_UNIT_TEST_RECORDER_HPP
 
-#include <beast/detail/unit_test/results.hpp>
-#include <beast/detail/unit_test/runner.hpp>
+#include <beast/unit_test/results.hpp>
+#include <beast/unit_test/runner.hpp>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** A test runner that stores the results. */
@@ -90,7 +87,6 @@ private:
 };
 
 } // unit_test
-} // detail
 } // beast
 
 #endif
