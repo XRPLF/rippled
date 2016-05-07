@@ -16,6 +16,7 @@ unit-test core-tests :
     buffer_concepts.cpp
     buffers_adapter.cpp
     consuming_buffers.cpp
+    error.cpp
     handler_alloc.cpp
     handler_concepts.cpp
     http.cpp
@@ -32,6 +33,7 @@ unit-test core-tests :
     write_streambuf.cpp
     detail/base64.cpp
     detail/empty_base_optimization.cpp
+    detail/sha1.cpp
     ;
 
 unit-test http-tests :
@@ -40,7 +42,6 @@ unit-test http-tests :
     http/basic_parser_v1.cpp
     http/body_type.cpp
     http/empty_body.cpp
-    http/error.cpp
     http/headers.cpp
     http/message.cpp
     http/message_v1.cpp

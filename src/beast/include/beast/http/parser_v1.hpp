@@ -8,8 +8,8 @@
 #ifndef BEAST_HTTP_PARSER_V1_HPP
 #define BEAST_HTTP_PARSER_V1_HPP
 
+#include <beast/error.hpp>
 #include <beast/http/basic_parser_v1.hpp>
-#include <beast/http/error.hpp>
 #include <beast/http/message_v1.hpp>
 #include <boost/optional.hpp>
 #include <functional>

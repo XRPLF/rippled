@@ -218,13 +218,13 @@ transform(
 
 struct sha1_context
 {
-    static unsigned int const block_size = sha1::BLOCK_BYTES;
-    static unsigned int const digest_size = 20;
+    static unsigned int constexpr block_size = sha1::BLOCK_BYTES;
+    static unsigned int constexpr digest_size = 20;
 
-    std::uint32_t digest[5];
-    std::uint8_t buf[block_size];
     std::size_t buflen;
     std::size_t blocks;
+    std::uint32_t digest[5];
+    std::uint8_t buf[block_size];
 };
 
 template<class = void>
@@ -232,12 +232,12 @@ void
 init(sha1_context& ctx) noexcept
 {
     ctx.buflen = 0;
+    ctx.blocks = 0;
     ctx.digest[0] = 0x67452301;
     ctx.digest[1] = 0xefcdab89;
     ctx.digest[2] = 0x98badcfe;
     ctx.digest[3] = 0x10325476;
     ctx.digest[4] = 0xc3d2e1f0;
-    ctx.blocks = 0;
 }
 
 template<class = void>
@@ -275,15 +275,14 @@ finish(sha1_context& ctx, void* digest) noexcept
     std::uint64_t total_bits =
         (ctx.blocks*64 + ctx.buflen) * 8;
     // pad
-    auto const buflen = ctx.buflen;
     ctx.buf[ctx.buflen++] = 0x80;
+    auto const buflen = ctx.buflen;
     while(ctx.buflen < 64)
         ctx.buf[ctx.buflen++] = 0x00;
     std::uint32_t block[BLOCK_INTS];
     sha1::make_block(ctx.buf, block);
     if (buflen > BLOCK_BYTES - 8)
     {
-        ++ctx.blocks;
         sha1::transform(ctx.digest, block);
         for (size_t i = 0; i < BLOCK_INTS - 2; i++)
             block[i] = 0;

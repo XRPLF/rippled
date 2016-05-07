@@ -5,10 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_SUITE_LIST_HPP
-#define BEAST_DETAIL_UNIT_TEST_SUITE_LIST_HPP
+#ifndef BEAST_UNIT_TEST_SUITE_LIST_HPP
+#define BEAST_UNIT_TEST_SUITE_LIST_HPP
 
-#include <beast/detail/unit_test/suite_info.hpp>
+#include <beast/unit_test/suite_info.hpp>
 #include <beast/detail/const_container.hpp>
 #include <cassert>
 #include <typeindex>
@@ -16,14 +16,11 @@
 #include <unordered_set>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** A container of test suites. */
 class suite_list
-    : public const_container <std::set <suite_info>>
+    : public detail::const_container <std::set <suite_info>>
 {
 private:
 #ifndef NDEBUG
@@ -68,7 +65,6 @@ suite_list::insert (char const* name, char const* module, char const* library,
 }
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

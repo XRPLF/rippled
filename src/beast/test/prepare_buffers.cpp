@@ -9,13 +9,13 @@
 #include <beast/prepare_buffers.hpp>
 
 #include <beast/consuming_buffers.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
 
 namespace beast {
 
-class prepare_buffers_test : public beast::detail::unit_test::suite
+class prepare_buffers_test : public beast::unit_test::suite
 {
 public:
     template<class ConstBufferSequence>
@@ -87,10 +87,26 @@ public:
         expect(buffer_copy(pbc, cb) == 0);
     }
 
+    void testIterator()
+    {
+        using boost::asio::const_buffer;
+        char b[3];
+        std::array<const_buffer, 3> bs{{
+            const_buffer{&b[0], 1},
+            const_buffer{&b[1], 1},
+            const_buffer{&b[2], 1}}};
+        auto pb = prepare_buffers(2, bs);
+        std::size_t n = 0;
+        for(auto it = pb.end(); it != pb.begin(); --it)
+            ++n;
+        expect(n == 2);
+    }
+
     void run() override
     {
         testBuffers();
         testNullBuffers();
+        testIterator();
     }
 };
 

@@ -16,6 +16,6 @@
 //
 #define BEAST_VERSION 100000
 
-#define BEAST_VERSION_STRING "1.0.0-b3"
+#define BEAST_VERSION_STRING "1.0.0-b4"
 
 #endif

@@ -37,12 +37,12 @@ namespace websocket {
 class async_echo_peer
 {
 public:
-    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
 private:
+    bool log_ = false;
     boost::asio::io_service ios_;
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
@@ -72,7 +72,7 @@ public:
         }
         else
         {
-            Peer{std::move(sock_), ep};
+            Peer{log_, std::move(sock_), ep};
         }
         thread_.reserve(threads);
         for(std::size_t i = 0; i < threads; ++i)
@@ -100,6 +100,7 @@ private:
     {
         struct data
         {
+            bool log;
             int state = 0;
             boost::optional<endpoint_type> ep;
             websocket::stream<socket_type> ws;
@@ -107,8 +108,9 @@ private:
             beast::streambuf sb;
             int id;
 
-            data(socket_type&& sock_)
-                : ws(std::move(sock_))
+            data(bool log_, socket_type&& sock_)
+                : log(log_)
+                , ws(std::move(sock_))
                 , id([]
                     {
                         static int n = 0;
@@ -117,9 +119,10 @@ private:
             {
             }
 
-            data(socket_type&& sock_,
+            data(bool log_, socket_type&& sock_,
                     endpoint_type const& ep_)
-                : ep(ep_)
+                : log(log_)
+                , ep(ep_)
                 , ws(std::move(sock_))
                 , id([]
                     {
@@ -157,8 +160,8 @@ private:
 
         template<class... Args>
         explicit
-        Peer(socket_type&& sock, Args&&... args)
-            : d_(std::make_shared<data>(
+        Peer(bool log, socket_type&& sock, Args&&... args)
+            : d_(std::make_shared<data>(log,
                 std::forward<socket_type>(sock),
                     std::forward<Args>(args)...))
         {
@@ -186,7 +189,7 @@ private:
         void operator()(error_code ec)
         {
             auto& d = *d_;
-            switch(d_->state)
+            switch(d.state)
             {
             // did accept
             case 0:
@@ -232,17 +235,22 @@ private:
         void
         fail(error_code ec, std::string what)
         {
-            if(ec != websocket::error::closed)
-                std::cerr << "#" << d_->id << " " <<
-                    what << ": " << ec.message() << std::endl;
+            auto& d = *d_;
+            if(d.log)
+            {
+                if(ec != websocket::error::closed)
+                    std::cerr << "#" << d_->id << " " <<
+                        what << ": " << ec.message() << std::endl;
+            }
         }
     };
 
     void
     fail(error_code ec, std::string what)
     {
-        std::cerr <<
-            what << ": " << ec.message() << std::endl;
+        if(log_)
+            std::cerr << what << ": " <<
+                ec.message() << std::endl;
     }
 
     void
@@ -265,7 +273,7 @@ private:
         acceptor_.async_accept(sock_,
             std::bind(&async_echo_peer::on_accept, this,
                 beast::asio::placeholders::error));
-        Peer{std::move(sock)};
+        Peer{false, std::move(sock)};
     }
 };
 

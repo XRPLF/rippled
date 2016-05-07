@@ -5,15 +5,12 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_GLOBAL_SUITES_HPP
-#define BEAST_DETAIL_UNIT_TEST_GLOBAL_SUITES_HPP
+#ifndef BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
+#define BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
 
-#include <beast/detail/unit_test/suite_list.hpp>
+#include <beast/unit_test/suite_list.hpp>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 namespace detail {
@@ -54,7 +51,6 @@ global_suites()
 }
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

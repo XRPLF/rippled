@@ -136,7 +136,7 @@ namespace websocket_helpers {
 template<class Socket>
 inline
 void
-call_teardown(Socket& socket, websocket::error_code& ec)
+call_teardown(Socket& socket, error_code& ec)
 {
     using websocket::teardown;
     teardown(socket, ec);

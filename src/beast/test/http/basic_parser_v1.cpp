@@ -10,12 +10,12 @@
 
 #include "message_fuzz.hpp"
 
+#include <beast/error.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/write_streambuf.hpp>
-#include <beast/http/error.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <beast/detail/ci_char_traits.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cassert>
 #include <climits>
@@ -27,10 +27,8 @@
 namespace beast {
 namespace http {
 
-class basic_parser_v1_test : public beast::detail::unit_test::suite
+class basic_parser_v1_test : public beast::unit_test::suite
 {
-    std::mt19937 rng_;
-
 public:
     struct cb_req_checker
     {
@@ -302,17 +300,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    template<class UInt = std::size_t>
-    UInt
-    rand(std::size_t n)
-    {
-        return static_cast<UInt>(
-            std::uniform_int_distribution<
-                std::size_t>{0, n-1}(rng_));
-    }
-
-    //--------------------------------------------------------------------------
-
     // Parse a valid message with expected version
     //
     template<bool isRequest>
@@ -481,6 +468,42 @@ public:
         parse_ev<true>("GET / HTTP/1.1\r\nf :", parse_error::bad_field);
     }
 
+    void testCorrupt()
+    {
+        using boost::asio::buffer;
+        std::string s;
+        for(std::size_t n = 0;;++n)
+        {
+            // Create a request and set one octet to an invalid char
+            s =
+                "GET / HTTP/1.1\r\n"
+                "Host: localhost\r\n"
+                "User-Agent: test\r\n"
+                "Content-Length: 00\r\n"
+                "\r\n";
+            auto const len = s.size();
+            if(n >= s.size())
+            {
+                pass();
+                break;
+            }
+            s[n] = 0;
+            for(std::size_t m = 1; m < len - 1; ++m)
+            {
+                null_parser<true> p;
+                error_code ec;
+                p.write(buffer(s.data(), m), ec);
+                if(ec)
+                {
+                    pass();
+                    continue;
+                }
+                p.write(buffer(s.data() + m, len - m), ec);
+                expect(ec);
+            }
+        }
+    }
+
     void
     testRandomReq(std::size_t N)
     {
@@ -629,6 +652,7 @@ public:
         testFlags();
         testUpgrade();
         testBad();
+        testCorrupt();
         testRandomReq(100);
         testRandomResp(100);
         testBody();

@@ -5,18 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_UNIT_TEST_THREAD_HPP
-#define BEAST_DETAIL_UNIT_TEST_THREAD_HPP
+#ifndef BEAST_UNIT_TEST_THREAD_HPP
+#define BEAST_UNIT_TEST_THREAD_HPP
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <functional>
 #include <thread>
 #include <utility>
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
 
 /** Replacement for std::thread that handles exceptions in unit tests. */
@@ -122,7 +119,6 @@ private:
 };
 
 } // unit_test
-} // detail
 } // beast
 
 #endif

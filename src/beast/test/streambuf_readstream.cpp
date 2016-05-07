@@ -9,12 +9,12 @@
 #include <beast/streambuf_readstream.hpp>
 
 #include <beast/streambuf.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio.hpp>
 
 namespace beast {
 
-class streambuf_readstream_test : public beast::detail::unit_test::suite
+class streambuf_readstream_test : public beast::unit_test::suite
 {
 public:
     void testSpecial()
@@ -25,6 +25,8 @@ public:
             streambuf_readstream<socket_type, streambuf> srs(ios);
             streambuf_readstream<socket_type, streambuf> srs2(std::move(srs));
             srs = std::move(srs2);
+            expect(&srs.get_io_service() == &ios);
+            expect(&srs.get_io_service() == &srs2.get_io_service());
         }
         {
             socket_type sock(ios);

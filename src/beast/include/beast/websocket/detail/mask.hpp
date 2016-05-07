@@ -127,7 +127,7 @@ ror(T t, unsigned n = 1)
         static_cast<typename std::make_unsigned<T>::type>(t) >> n));
 }
 
-// 32-bit Uuoptimized
+// 32-bit Unoptimized
 //
 template<class = void>
 void

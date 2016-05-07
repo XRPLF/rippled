@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_STREAM_BASIC_SCOPED_OSTREAM_HPP
-#define BEAST_DETAIL_STREAM_BASIC_SCOPED_OSTREAM_HPP
+#ifndef BEAST_UNIT_TEST_BASIC_SCOPED_OSTREAM_HPP
+#define BEAST_UNIT_TEST_BASIC_SCOPED_OSTREAM_HPP
 
 #include <functional>
 #include <memory>
@@ -24,7 +24,6 @@
 #endif
 
 namespace beast {
-namespace detail {
 
 template <
     class CharT,
@@ -132,7 +131,6 @@ public:
     }
 };
 
-} // detail
 } // beast
 
 #endif

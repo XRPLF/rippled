@@ -5,19 +5,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <beast/detail/unit_test/amount.hpp>
-#include <beast/detail/unit_test/global_suites.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/amount.hpp>
+#include <beast/unit_test/global_suites.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <string>
 
 // Include this .cpp in your project to gain access to the printing suite
 
 namespace beast {
-namespace detail {
-
-inline
 namespace unit_test {
-namespace detail {
 
 /** A suite that prints the list of globally defined suites. */
 class print_test : public suite
@@ -35,7 +31,7 @@ public:
 
     template <class = void>
     void
-    print (suite_list &c);
+    print (suite_list const& c);
 
     void
     run()
@@ -65,7 +61,7 @@ print_test::prefix (suite_info const& s)
 
 template <class>
 void
-print_test::print (suite_list &c)
+print_test::print (suite_list const& c)
 {
     std::size_t manual (0);
     for (auto const& s : c)
@@ -84,7 +80,5 @@ print_test::print (suite_list &c)
 
 BEAST_DEFINE_TESTSUITE_MANUAL(print,unit_test,beast);
 
-} // detail
 } // unit_test
-} // detail
 } // beast

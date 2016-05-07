@@ -8,7 +8,7 @@
 // Test that header file is self-contained.
 #include <beast/http/write.hpp>
 
-#include <beast/http/error.hpp>
+#include <beast/error.hpp>
 #include <beast/http/headers.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/empty_body.hpp>
@@ -16,14 +16,14 @@
 #include <beast/http/write.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/to_string.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/asio/error.hpp>
 #include <string>
 
 namespace beast {
 namespace http {
 
-class write_test : public beast::detail::unit_test::suite
+class write_test : public beast::unit_test::suite
 {
 public:
     struct string_SyncStream

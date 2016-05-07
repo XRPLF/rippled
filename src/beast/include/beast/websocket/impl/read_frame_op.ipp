@@ -12,6 +12,7 @@
 #include <beast/handler_alloc.hpp>
 #include <beast/prepare_buffers.hpp>
 #include <beast/static_streambuf.hpp>
+#include <boost/optional.hpp>
 #include <cassert>
 #include <memory>
 

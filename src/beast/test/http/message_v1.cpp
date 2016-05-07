@@ -20,8 +20,8 @@
 // Test that header file is self-contained.
 #include <beast/http/message_v1.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
-#include <beast/detail/unit_test/thread.hpp>
+#include <beast/unit_test/suite.hpp>
+#include <beast/unit_test/thread.hpp>
 #include <beast/placeholders.hpp>
 #include <beast/streambuf.hpp>
 #include <beast/http.hpp>
@@ -34,21 +34,20 @@ namespace test {
 class sync_echo_http_server
 {
 public:
-    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
 private:
-    beast::detail::unit_test::suite& suite_;
+    unit_test::suite& suite_;
     boost::asio::io_service ios_;
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
-    beast::detail::unit_test::thread thread_;
+    unit_test::thread thread_;
 
 public:
     sync_echo_http_server(
-            endpoint_type ep, beast::detail::unit_test::suite& suite)
+            endpoint_type ep, unit_test::suite& suite)
         : suite_(suite)
         , sock_(ios_)
         , acceptor_(ios_)
@@ -64,7 +63,7 @@ public:
         acceptor_.async_accept(sock_,
             std::bind(&sync_echo_http_server::on_accept, this,
                 beast::asio::placeholders::error));
-        thread_ = beast::detail::unit_test::thread(suite_,
+        thread_ = unit_test::thread(suite_,
             [&]
             {
                 ios_.run();
@@ -133,13 +132,48 @@ private:
     }
 };
 
-class message_test : public beast::detail::unit_test::suite
+class message_test : public beast::unit_test::suite
 {
 public:
-    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
+
+    void testFunctions()
+    {
+        request_v1<empty_body> m;
+        m.version = 10;
+        expect(! is_upgrade(m));
+        m.headers.insert("Transfer-Encoding", "chunked");
+        try
+        {
+            prepare(m);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+        }
+        m.headers.erase("Transfer-Encoding");
+        m.headers.insert("Content-Length", "0");
+        try
+        {
+            prepare(m);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+        }
+        m.headers.erase("Content-Length");
+        m.headers.insert("Connection", "keep-alive");
+        try
+        {
+            prepare(m);
+            fail();
+        }
+        catch(std::exception const&)
+        {
+        }
+    }
 
     void
     syncEcho(endpoint_type ep)
@@ -174,6 +208,7 @@ public:
 
     void run() override
     {
+        testFunctions();
         testAsio();
         pass();
     }

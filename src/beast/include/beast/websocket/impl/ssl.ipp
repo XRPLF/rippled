@@ -60,11 +60,9 @@ public:
     template<class DeducedHandler>
     explicit
     teardown_ssl_op(
-        DeducedHandler&& h,
-            stream_type& stream)
+            DeducedHandler&& h, stream_type& stream)
         : d_(std::make_shared<data>(
-            std::forward<DeducedHandler>(h),
-                stream))
+            std::forward<DeducedHandler>(h), stream))
     {
         (*this)(error_code{}, false);
     }
