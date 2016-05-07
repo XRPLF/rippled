@@ -148,13 +148,13 @@ class write_op
         }
     };
 
-    class writef0
+    class writef0_lambda
     {
         write_op& self_;
 
     public:
         explicit
-        writef0(write_op& self)
+        writef0_lambda(write_op& self)
             : self_(self)
         {
         }
@@ -176,13 +176,13 @@ class write_op
         }
     };
 
-    class writef
+    class writef_lambda
     {
         write_op& self_;
 
     public:
         explicit
-        writef(write_op& self)
+        writef_lambda(write_op& self)
             : self_(self)
         {
         }
@@ -300,7 +300,7 @@ operator()(error_code ec, std::size_t, bool again)
         case 1:
         {
             auto const result = d.wp.w(
-                std::move(d.copy), ec, writef0{*this});
+                std::move(d.copy), ec, writef0_lambda{*this});
             if(ec)
             {
                 // call handler
@@ -331,7 +331,7 @@ operator()(error_code ec, std::size_t, bool again)
         case 3:
         {
             auto const result = d.wp.w(
-                std::move(d.copy), ec, writef{*this});
+                std::move(d.copy), ec, writef_lambda{*this});
             if(ec)
             {
                 // call handler
@@ -378,7 +378,7 @@ operator()(error_code ec, std::size_t, bool again)
 }
 
 template<class SyncWriteStream, class Streambuf>
-class writef0_write
+class writef0_lambda
 {
     Streambuf const& sb_;
     SyncWriteStream& stream_;
@@ -386,7 +386,7 @@ class writef0_write
     error_code& ec_;
 
 public:
-    writef0_write(SyncWriteStream& stream,
+    writef0_lambda(SyncWriteStream& stream,
             Streambuf const& sb, bool chunked, error_code& ec)
         : sb_(sb)
         , stream_(stream)
@@ -409,14 +409,14 @@ public:
 };
 
 template<class SyncWriteStream>
-class writef_write
+class writef_lambda
 {
     SyncWriteStream& stream_;
     bool chunked_;
     error_code& ec_;
 
 public:
-    writef_write(SyncWriteStream& stream,
+    writef_lambda(SyncWriteStream& stream,
             bool chunked, error_code& ec)
         : stream_(stream)
         , chunked_(chunked)
@@ -478,45 +478,43 @@ write(SyncWriteStream& stream,
             cv.notify_one();
         }};
     auto copy = resume;
-    for(;;)
+    boost::tribool result;
+    result = wp.w(std::move(copy), ec,
+        detail::writef0_lambda<SyncWriteStream, decltype(wp.sb)>{
+            stream, wp.sb, wp.chunked, ec});
+    if(ec)
+        return;
+    if(boost::indeterminate(result))
     {
+        copy = resume;
         {
-            auto result = wp.w(std::move(copy), ec,
-                detail::writef0_write<SyncWriteStream, decltype(wp.sb)>{
-                    stream, wp.sb, wp.chunked, ec});
-            if(ec)
-                return;
-            if(result)
-                break;
-            if(boost::indeterminate(result))
-            {
-                boost::asio::write(stream, wp.sb.data(), ec);
-                if(ec)
-                    return;
-                wp.sb.consume(wp.sb.size());
-                copy = resume;
-                std::unique_lock<std::mutex> lock(m);
-                cv.wait(lock, [&]{ return ready; });
-                ready = false;
-            }
+            std::unique_lock<std::mutex> lock(m);
+            cv.wait(lock, [&]{ return ready; });
+            ready = false;
         }
-        wp.sb.consume(wp.sb.size());
+        boost::asio::write(stream, wp.sb.data(), ec);
+        if(ec)
+            return;
+        result = false;
+    }
+    wp.sb.consume(wp.sb.size());
+    if(! result)
+    {
         for(;;)
         {
-            auto result = wp.w(std::move(copy), ec,
-                detail::writef_write<SyncWriteStream>{
+            result = wp.w(std::move(copy), ec,
+                detail::writef_lambda<SyncWriteStream>{
                     stream, wp.chunked, ec});
             if(ec)
                 return;
             if(result)
                 break;
-            if(boost::indeterminate(result))
-            {
-                copy = resume;
-                std::unique_lock<std::mutex> lock(m);
-                cv.wait(lock, [&]{ return ready; });
-                ready = false;
-            }
+            if(! result)
+                continue;
+            copy = resume;
+            std::unique_lock<std::mutex> lock(m);
+            cv.wait(lock, [&]{ return ready; });
+            ready = false;
         }
     }
     if(wp.chunked)

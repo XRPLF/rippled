@@ -27,7 +27,8 @@ public:
     {
         static std::size_t constexpr limit = 100;
         std::size_t n;
-        for(n = 1; n < limit; ++n)
+
+        for(n = 0; n < limit; ++n)
         {
             streambuf sb;
             test::fail_stream<test::string_stream> fs(n, ios_,
@@ -48,7 +49,8 @@ public:
             }
         }
         expect(n < limit);
-        for(n = 1; n < limit; ++n)
+
+        for(n = 0; n < limit; ++n)
         {
             streambuf sb;
             test::fail_stream<test::string_stream> fs(n, ios_,
@@ -65,11 +67,8 @@ public:
                 break;
         }
         expect(n < limit);
-        ios_.post(
-            [&]{
-                n = 1;
-            });
-        for(n = 1; n < limit; ++n)
+
+        for(n = 0; n < limit; ++n)
         {
             streambuf sb;
             test::fail_stream<test::string_stream> fs(n, ios_,

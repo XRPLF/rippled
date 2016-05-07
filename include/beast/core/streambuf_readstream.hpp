@@ -99,7 +99,7 @@ class streambuf_readstream
     class read_some_op;
 
     Streambuf sb_;
-    std::size_t size_ = 0;
+    std::size_t capacity_ = 0;
     Stream next_layer_;
 
 public:
@@ -211,9 +211,9 @@ public:
         than the amount of data in the buffer, no bytes are discarded.
     */
     void
-    reserve(std::size_t size)
+    capacity(std::size_t size)
     {
-        size_ = size;
+        capacity_ = size;
     }
 
     /// Write the given data to the stream. Returns the number of bytes written.

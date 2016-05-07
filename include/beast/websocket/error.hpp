@@ -44,7 +44,10 @@ enum class error
     request_invalid,
 
     /// Upgrade request denied
-    request_denied
+    request_denied,
+
+    /// General WebSocket error
+    general
 };
 
 #if ! GENERATING_DOCS

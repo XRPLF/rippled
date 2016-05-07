@@ -59,6 +59,7 @@ unit-test http-tests :
     http/string_body.cpp
     http/type_check.cpp
     http/write.cpp
+    http/detail/chunk_encode.cpp
     ;
 
 unit-test bench-tests :

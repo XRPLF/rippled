@@ -47,6 +47,7 @@ public:
         check("http", parse_error::bad_on_headers_rv);
         check("http", parse_error::invalid_chunk_size);
         check("http", parse_error::short_read);
+        check("http", parse_error::general);
     }
 };
 

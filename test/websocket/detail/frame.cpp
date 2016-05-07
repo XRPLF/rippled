@@ -154,6 +154,14 @@ public:
             check(fh);
             fh.rsv1 = false;
 
+            fh.rsv2 = true;
+            check(fh);
+            fh.rsv2 = false;
+
+            fh.rsv3 = true;
+            check(fh);
+            fh.rsv3 = false;
+
             fh.op = opcode::rsv3;
             check(fh);
             fh.op = opcode::text;

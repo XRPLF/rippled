@@ -573,11 +573,14 @@ public:
         parse_ev<true>("GET / HTTP/1.1\r\nf :", parse_error::bad_field);
     }
 
-    void testCorrupt()
+    void testInvalidMatrix()
     {
         using boost::asio::buffer;
+        static std::size_t constexpr limit = 200;
         std::string s;
-        for(std::size_t n = 0;;++n)
+        std::size_t n;
+
+        for(n = 0; n < limit; ++n)
         {
             // Create a request and set one octet to an invalid char
             s =
@@ -607,6 +610,41 @@ public:
                 expect(ec);
             }
         }
+        expect(n < limit);
+
+        for(n = 0; n < limit; ++n)
+        {
+            // Create a response and set one octet to an invalid char
+            s =
+                "HTTP/1.1 200 OK\r\n"
+                "Server: test\r\n"
+                "Transer-Encoding: chunked\r\n"
+                "\r\n"
+                "10\r\n"
+                "****************\r\n"
+                "0\r\n\r\n";
+            auto const len = s.size();
+            if(n >= s.size())
+            {
+                pass();
+                break;
+            }
+            s[n] = 0;
+            for(std::size_t m = 1; m < len - 1; ++m)
+            {
+                null_parser<true> p;
+                error_code ec;
+                p.write(buffer(s.data(), m), ec);
+                if(ec)
+                {
+                    pass();
+                    continue;
+                }
+                p.write(buffer(s.data() + m, len - m), ec);
+                expect(ec);
+            }
+        }
+        expect(n < limit);
     }
 
     void
@@ -758,7 +796,7 @@ public:
         testFlags();
         testUpgrade();
         testBad();
-        testCorrupt();
+        testInvalidMatrix();
         testRandomReq(100);
         testRandomResp(100);
         testBody();

@@ -58,5 +58,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(basic_headers,http,beast);
 
-} // asio
+} // http
 } // beast

@@ -33,6 +33,13 @@ public:
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
+    void testClamp()
+    {
+        expect(detail::clamp(
+            std::numeric_limits<std::uint64_t>::max()) ==
+                std::numeric_limits<std::size_t>::max());
+    }
+
     void testSpecialMembers()
     {
         stream<socket_type> ws(ios_);
@@ -304,7 +311,7 @@ public:
         std::size_t n;
 
         // synchronous, exceptions
-        for(n = 1; n < limit; ++n)
+        for(n = 0; n < limit; ++n)
         {
             error_code ec;
             socket_type sock(ios_);
@@ -343,7 +350,7 @@ public:
         expect(n < limit);
 
         // synchronous, error codes
-        for(n = 1; n < limit; ++n)
+        for(n = 0; n < limit; ++n)
         {
             error_code ec;
             socket_type sock(ios_);
@@ -378,7 +385,7 @@ public:
         expect(n < limit);
 
         // asynchronous
-        for(n = 1; n < limit; ++n)
+        for(n = 0; n < limit; ++n)
         {
             error_code ec;
             socket_type sock(ios_);
@@ -470,8 +477,35 @@ public:
         }
     }
 
+    void testWriteFrame(endpoint_type const& ep)
+    {
+        for(;;)
+        {
+            boost::asio::io_service ios;
+            error_code ec;
+            socket_type sock(ios);
+            sock.connect(ep, ec);
+            if(! expect(! ec, ec.message()))
+                break;
+            stream<socket_type&> ws(sock);
+            ws.handshake("localhost", "/", ec);
+            if(! expect(! ec, ec.message()))
+                break;
+            ws.async_write_frame(false,
+                boost::asio::null_buffers{},
+                    [](error_code){ });
+            //
+            // Destruction of the io_service will cause destruction
+            // of the write_frame_op without invoking the final handler.
+            //
+            break;
+        }
+    }
+
     void run() override
     {
+        testClamp();
+
         testSpecialMembers();
 
         testOptions();
@@ -483,33 +517,31 @@ public:
             address_type::from_string("127.0.0.1"), 0};
         {
             sync_echo_peer server(true, any);
+            auto const ep = server.local_endpoint();
 
             yield_to(std::bind(&stream_test::testHandshake,
-                this, server.local_endpoint(),
-                    std::placeholders::_1));
+                this, ep, std::placeholders::_1));
 
             yield_to(std::bind(&stream_test::testErrorHandling,
-                this, server.local_endpoint(),
-                    std::placeholders::_1));
+                this, ep, std::placeholders::_1));
 
             yield_to(std::bind(&stream_test::testMask,
-                this, server.local_endpoint(),
-                    std::placeholders::_1));
+                this, ep, std::placeholders::_1));
+
+            testWriteFrame(ep);
         }
         {
             async_echo_peer server(true, any, 1);
+            auto const ep = server.local_endpoint();
 
             yield_to(std::bind(&stream_test::testHandshake,
-                this, server.local_endpoint(),
-                    std::placeholders::_1));
+                this, ep, std::placeholders::_1));
 
             yield_to(std::bind(&stream_test::testErrorHandling,
-                this, server.local_endpoint(),
-                    std::placeholders::_1));
+                this, ep, std::placeholders::_1));
 
             yield_to(std::bind(&stream_test::testMask,
-                this, server.local_endpoint(),
-                    std::placeholders::_1));
+                this, ep, std::placeholders::_1));
         }
 
         pass();

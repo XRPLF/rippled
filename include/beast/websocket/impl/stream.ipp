@@ -861,6 +861,7 @@ build_response(http::request_v1<Body, Headers> const& req)
             res.version = req.version;
             res.body = text;
             // VFALCO TODO respect keep-alive here
+            prepare(res);
             return res;
         };
     if(req.version < 11)

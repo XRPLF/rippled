@@ -42,6 +42,7 @@ public:
         check("websocket", error::request_malformed);
         check("websocket", error::request_invalid);
         check("websocket", error::request_denied);
+        check("websocket", error::general);
     }
 };
 

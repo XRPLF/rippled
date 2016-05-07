@@ -81,7 +81,15 @@ public:
             const_buffer{buf+4, 2},
             const_buffer{buf+6, 3}}};
         auto bs = buffer_cat(b1, b2);
-
+        for(int n = 0;
+            n <= std::distance(bs.begin(), bs.end()); ++n)
+        {
+            auto it = std::next(bs.begin(), n);
+            decltype(it) it2(std::move(it));
+            it = std::move(it2);
+            auto pit = &it;
+            it = std::move(*pit);
+        }
         try
         {
             std::size_t n = 0;

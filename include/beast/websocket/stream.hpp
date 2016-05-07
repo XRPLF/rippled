@@ -202,7 +202,7 @@ public:
     void
     set_option(read_buffer_size const& o)
     {
-        stream_.reserve(o.value);
+        stream_.capacity(o.value);
     }
 
     /// Set the maximum incoming message size allowed
@@ -217,7 +217,7 @@ public:
     set_option(write_buffer_size const& o)
     {
         wr_buf_size_ = std::max<std::size_t>(o.value, 1024);
-        stream_.reserve(o.value);
+        stream_.capacity(o.value);
     }
 
     /** Get the io_service associated with the stream.

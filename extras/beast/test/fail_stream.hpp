@@ -1,21 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+//
+// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
 
 #ifndef BEAST_TEST_FAIL_STREAM_HPP
 #define BEAST_TEST_FAIL_STREAM_HPP
@@ -25,6 +13,7 @@
 #include <beast/core/error.hpp>
 #include <beast/core/detail/get_lowest_layer.hpp>
 #include <beast/websocket/teardown.hpp>
+#include <beast/test/fail_counter.hpp>
 
 namespace beast {
 namespace test {
@@ -37,31 +26,9 @@ namespace test {
 template<class NextLayer>
 class fail_stream
 {
-    error_code ec_;
-    std::size_t n_ = 0;
+    fail_counter* pfc_;
+    fail_counter fc_;
     NextLayer next_layer_;
-
-    void
-    fail()
-    {
-        if(n_ > 0)
-            --n_;
-        if(! n_)
-            throw system_error{ec_};
-    }
-
-    bool
-    fail(error_code& ec)
-    {
-        if(n_ > 0)
-            --n_;
-        if(! n_)
-        {
-            ec = ec_;
-            return true;
-        }
-        return false;
-    }
 
 public:
     using next_layer_type =
@@ -71,15 +38,24 @@ public:
         typename beast::detail::get_lowest_layer<
             next_layer_type>::type;
 
-    fail_stream(fail_stream&&) = default;
-    fail_stream& operator=(fail_stream&&) = default;
+    fail_stream(fail_stream&&) = delete;
+    fail_stream(fail_stream const&) = delete;
+    fail_stream& operator=(fail_stream&&) = delete;
+    fail_stream& operator=(fail_stream const&) = delete;
 
     template<class... Args>
     explicit
     fail_stream(std::size_t n, Args&&... args)
-        : ec_(boost::system::errc::make_error_code(
-            boost::system::errc::errc_t::invalid_argument))
-        , n_(n)
+        : pfc_(&fc_)
+        , fc_(n)
+        , next_layer_(std::forward<Args>(args)...)
+    {
+    }
+
+    template<class... Args>
+    explicit
+    fail_stream(fail_counter& fc, Args&&... args)
+        : pfc_(&fc)
         , next_layer_(std::forward<Args>(args)...)
     {
     }
@@ -112,7 +88,7 @@ public:
     std::size_t
     read_some(MutableBufferSequence const& buffers)
     {
-        fail();
+        pfc_->fail();
         return next_layer_.read_some(buffers);
     }
 
@@ -120,7 +96,7 @@ public:
     std::size_t
     read_some(MutableBufferSequence const& buffers, error_code& ec)
     {
-        if(fail(ec))
+        if(pfc_->fail(ec))
             return 0;
         return next_layer_.read_some(buffers, ec);
     }
@@ -132,7 +108,7 @@ public:
         ReadHandler&& handler)
     {
         error_code ec;
-        if(fail(ec))
+        if(pfc_->fail(ec))
         {
             async_completion<
                 ReadHandler, void(error_code, std::size_t)
@@ -149,7 +125,7 @@ public:
     std::size_t
     write_some(ConstBufferSequence const& buffers)
     {
-        fail();
+        pfc_->fail();
         return next_layer_.write_some(buffers);
     }
 
@@ -157,7 +133,7 @@ public:
     std::size_t
     write_some(ConstBufferSequence const& buffers, error_code& ec)
     {
-        if(fail(ec))
+        if(pfc_->fail(ec))
             return 0;
         return next_layer_.write_some(buffers, ec);
     }
@@ -169,7 +145,7 @@ public:
         WriteHandler&& handler)
     {
         error_code ec;
-        if(fail(ec))
+        if(pfc_->fail(ec))
         {
             async_completion<
                 WriteHandler, void(error_code, std::size_t)

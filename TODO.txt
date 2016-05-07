@@ -49,10 +49,10 @@ HTTP:
 * Fix prepare() calling content_length() without init()
 * Use construct,destroy allocator routines in basic_headers
 * Complete allocator testing in basic_streambuf, basic_headers
-* Fix http::async_write op, case 3 should break at the end.
 * Add tests for writer using the resume function / coros
 * Custom HTTP error codes for various situations
 * Make empty_body write-only, remove reader nested type
 * Add concepts WritableBody ReadableBody with type checks,
   check them in read and write functions
 * Branch prediction hints in parser
+* Check basic_parser_v1 against rfc7230 for leading message whitespace

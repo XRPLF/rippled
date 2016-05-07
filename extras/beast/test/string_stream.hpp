@@ -60,7 +60,10 @@ public:
     {
         auto const n = boost::asio::buffer_copy(
             buffers, boost::asio::buffer(s_));
-        s_.erase(0, n);
+        if(n > 0)
+            s_.erase(0, n);
+        else
+            ec = boost::asio::error::eof;
         return n;
     }
 
@@ -72,11 +75,15 @@ public:
     {
         auto const n = boost::asio::buffer_copy(
             buffers, boost::asio::buffer(s_));
-        s_.erase(0, n);
+        error_code ec;
+        if(n > 0)
+            s_.erase(0, n);
+        else
+            ec = boost::asio::error::eof;
         async_completion<ReadHandler,
             void(error_code, std::size_t)> completion(handler);
         ios_.post(bind_handler(
-            completion.handler, error_code{}, n));
+            completion.handler, ec, n));
         return completion.result.get();
     }
 

@@ -37,7 +37,7 @@ private:
     std::condition_variable cv_;
     bool running_ = false;;
 
-protected:
+public:
     /// The type of yield context passed to functions.
     using yield_context =
         boost::asio::yield_context;
@@ -56,6 +56,13 @@ protected:
     {
         work_ = boost::none;
         thread_.join();
+    }
+
+    /// Return the `io_service` associated with the object
+    boost::asio::io_service&
+    get_io_service()
+    {
+        return ios_;
     }
 
     /** Run a function in a coroutine.

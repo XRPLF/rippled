@@ -26,6 +26,7 @@ add_executable (http-tests
     string_body.cpp
     type_check.cpp
     write.cpp
+    detail/chunk_encode.cpp
 )
 
 if (NOT WIN32)

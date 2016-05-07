@@ -110,7 +110,7 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
             if(d.srs.sb_.size() == 0)
             {
                 d.state =
-                    d.srs.size_ > 0 ? 2 : 1;
+                    d.srs.capacity_ > 0 ? 2 : 1;
                 break;
             }
             d.state = 4;
@@ -129,7 +129,7 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
             // read
             d.state = 3;
             d.srs.next_layer_.async_read_some(
-                d.srs.sb_.prepare(d.srs.size_),
+                d.srs.sb_.prepare(d.srs.capacity_),
                     std::move(*this));
             return;
 
@@ -217,14 +217,12 @@ read_some(MutableBufferSequence const& buffers,
             "MutableBufferSequence requirements not met");
     using boost::asio::buffer_size;
     using boost::asio::buffer_copy;
-    if(buffer_size(buffers) == 0)
-        return 0;
-    if(size_ == 0)
-        return next_layer_.read_some(buffers, ec);
     if(sb_.size() == 0)
     {
+        if(capacity_ == 0)
+            return next_layer_.read_some(buffers, ec);
         sb_.commit(next_layer_.read_some(
-            sb_.prepare(size_), ec));
+            sb_.prepare(capacity_), ec));
         if(ec)
             return 0;
     }

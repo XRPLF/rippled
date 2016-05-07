@@ -197,7 +197,6 @@ private:
     void
     move(C<sizeof...(Bs)>, const_iterator&&)
     {
-        return;
     }
 
     template<std::size_t I>
@@ -216,7 +215,6 @@ private:
     void
     copy(C<sizeof...(Bs)>, const_iterator const&)
     {
-        return;
     }
 
     template<std::size_t I>
