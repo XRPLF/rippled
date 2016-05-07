@@ -18,47 +18,76 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/rpc/KeypairForSignature.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/rpc/KeypairForSignature.h>
 
 namespace ripple {
 namespace RPC {
 
 boost::optional<Seed>
-getSeedFromRPC (Json::Value const& params)
+getSeedFromRPC (Json::Value const& params, Json::Value& error)
 {
-    bool const hasPassphrase = params.isMember (jss::passphrase);
-    bool const hasSeed       = params.isMember (jss::seed);
-    bool const hasHexSeed    = params.isMember (jss::seed_hex);
-
-    int const count =
-        (hasPassphrase ? 1 : 0) +
-        (hasSeed ? 1 : 0) +
-        (hasHexSeed ? 1 : 0);
-
-    if (count == 1)
+    // The array should be constexpr, but that makes Visual Studio unhappy.
+    static char const* const seedTypes[]
     {
-        if (hasSeed)
-            return parseBase58<Seed> (params[jss::seed].asString());
+        jss::passphrase.c_str(),
+        jss::seed.c_str(),
+        jss::seed_hex.c_str()
+    };
 
-        if (hasPassphrase)
-            return parseGenericSeed (params[jss::passphrase].asString());
-
-        if (hasHexSeed)
+    // Identify which seed type is in use.
+    char const* seedType = nullptr;
+    int count = 0;
+    for (auto t : seedTypes)
+    {
+        if (params.isMember (t))
         {
-            uint128 seed;
-
-            if (seed.SetHexExact (params[jss::seed_hex].asString()))
-                return Seed { Slice(seed.data(), seed.size()) };
-
-            return boost::none;
+            ++count;
+            seedType = t;
         }
     }
 
-    return boost::none;
+    if (count != 1)
+    {
+        error = RPC::make_param_error (
+            "Exactly one of the following must be specified: " +
+            std::string(jss::passphrase) + ", " +
+            std::string(jss::seed) + " or " +
+            std::string(jss::seed_hex));
+        return boost::none;
+    }
+
+    // Make sure a string is present
+    if (! params[seedType].isString())
+    {
+        error = RPC::expected_field_error (seedType, "string");
+        return boost::none;
+    }
+
+    auto const fieldContents = params[seedType].asString();
+
+    // Convert string to seed.
+    boost::optional<Seed> seed;
+
+    if (seedType == jss::seed.c_str())
+        seed = parseBase58<Seed> (fieldContents);
+    else if (seedType == jss::passphrase.c_str())
+        seed = parseGenericSeed (fieldContents);
+    else if (seedType == jss::seed_hex.c_str())
+    {
+        uint128 s;
+
+        if (s.SetHexExact (fieldContents))
+            seed.emplace (Slice(s.data(), s.size()));
+    }
+
+    if (!seed)
+        error = rpcError (rpcBAD_SEED);
+
+    return seed;
 }
 
 std::pair<PublicKey, SecretKey>
@@ -78,33 +107,30 @@ keypairForSignature (Json::Value const& params, Json::Value& error)
 
     // Identify which secret type is in use.
     char const* secretType = nullptr;
-    int secretCount = 0;
+    int count = 0;
     for (auto t : secretTypes)
     {
         if (params.isMember (t))
         {
-            ++secretCount;
+            ++count;
             secretType = t;
         }
     }
 
-    if (secretCount == 0 || secretType == nullptr)
+    if (count == 0 || secretType == nullptr)
     {
         error = RPC::missing_field_error (jss::secret);
         return { };
     }
 
-    if (secretCount > 1)
+    if (count > 1)
     {
-        // `passphrase`, `secret`, `seed`, and `seed_hex` are mutually exclusive.
-        error = rpcError (rpcBAD_SECRET);
-        return { };
-    }
-
-    if (has_key_type && (secretType == jss::secret.c_str()))
-    {
-        // `secret` is deprecated.
-        error = rpcError (rpcBAD_SECRET);
+        error = RPC::make_param_error (
+            "Exactly one of the following must be specified: " +
+            std::string(jss::passphrase) + ", " +
+            std::string(jss::secret) + ", " +
+            std::string(jss::seed) + " or " +
+            std::string(jss::seed_hex));
         return { };
     }
 
@@ -113,27 +139,53 @@ keypairForSignature (Json::Value const& params, Json::Value& error)
 
     if (has_key_type)
     {
+        if (! params[jss::key_type].isString())
+        {
+            error = RPC::expected_field_error (
+                jss::key_type, "string");
+            return { };
+        }
+
         keyType = keyTypeFromString (
             params[jss::key_type].asString());
 
         if (keyType == KeyType::invalid)
         {
-            error = rpcError (rpcBAD_SEED);
+            error = RPC::invalid_field_error(jss::key_type);
             return { };
         }
 
-        seed = getSeedFromRPC (params);
+        if (secretType == jss::secret.c_str())
+        {
+            error = RPC::make_param_error (
+                "The secret field is not allowed if " +
+                std::string(jss::key_type) + " is used.");
+            return { };
+        }
+
+        seed = getSeedFromRPC (params, error);
     }
     else
     {
+        if (! params[jss::secret].isString())
+        {
+            error = RPC::expected_field_error (
+                jss::secret, "string");
+            return { };
+        }
+
         seed = parseGenericSeed (
             params[jss::secret].asString ());
     }
 
     if (!seed)
     {
-        error = RPC::make_error (rpcBAD_SEED,
+        if (!contains_error (error))
+        {
+            error = RPC::make_error (rpcBAD_SEED,
             RPC::invalid_field_message (secretType));
+        }
+
         return { };
     }
 

@@ -575,8 +575,8 @@ R"({
     }
 })",
 {
-"Invalid field 'seed'.",
-"Invalid field 'seed'.",
+"Disallowed seed.",
+"Disallowed seed.",
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'."}},
 
@@ -929,9 +929,9 @@ R"({
     }
 })",
 {
-"Invalid field 'seed'.",
-"Invalid field 'seed'.",
-"Invalid field 'seed'.",
+"Disallowed seed.",
+"Disallowed seed.",
+"Disallowed seed.",
 "Missing field 'tx_json.Signers'."}},
 
 { "Missing 'Account' in sign_for.",

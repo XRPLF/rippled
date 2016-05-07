@@ -24,12 +24,14 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Seed.h>
+#include <boost/optional.hpp>
+#include <utility>
 
 namespace ripple {
 namespace RPC {
 
 boost::optional<Seed>
-getSeedFromRPC (Json::Value const& params);
+getSeedFromRPC (Json::Value const& params, Json::Value& error);
 
 std::pair<PublicKey, SecretKey>
 keypairForSignature (Json::Value const& params, Json::Value& error);

@@ -77,6 +77,12 @@ Json::Value walletPropose (Json::Value const& params)
 
     if (params.isMember (jss::key_type))
     {
+        if (! params[jss::key_type].isString())
+        {
+            return RPC::expected_field_error (
+                jss::key_type, "string");
+        }
+
         keyType = keyTypeFromString (
             params[jss::key_type].asString());
 
@@ -88,10 +94,10 @@ Json::Value walletPropose (Json::Value const& params)
         params.isMember (jss::seed) ||
         params.isMember (jss::seed_hex))
     {
-        seed = RPC::getSeedFromRPC (params);
-
+        Json::Value err;
+        seed = RPC::getSeedFromRPC (params, err);
         if (!seed)
-            return rpcError(rpcBAD_SEED);
+            return err;
     }
     else
     {

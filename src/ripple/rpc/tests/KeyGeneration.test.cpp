@@ -187,11 +187,507 @@ public:
         expect (contains_error (walletPropose (params)));
     }
 
+    void testBadInput ()
+    {
+        testcase ("Bad inputs");
+
+        // Passing non-strings where strings are required
+        {
+            Json::Value params;
+            params[jss::key_type] = "secp256k1";
+            params[jss::passphrase] = 20160506;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Invalid field 'passphrase', not string.");
+        }
+
+        {
+            Json::Value params;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = Json::objectValue;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Invalid field 'seed', not string.");
+        }
+
+        {
+            Json::Value params;
+            params[jss::key_type] = "ed25519";
+            params[jss::seed_hex] = Json::arrayValue;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Invalid field 'seed_hex', not string.");
+        }
+
+        // Specifying multiple items at once
+        {
+            Json::Value params;
+            params[jss::key_type] = "secp256k1";
+            params[jss::passphrase] = common::master_key;
+            params[jss::seed_hex] = common::master_seed_hex;
+            params[jss::seed] = common::master_seed;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Exactly one of the following must be specified: passphrase, seed or seed_hex");
+        }
+
+        // Specifying bad key types:
+        {
+            Json::Value params;
+            params[jss::key_type] = "prime256v1";
+            params[jss::passphrase] = common::master_key;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Invalid parameters.");
+        }
+
+        {
+            Json::Value params;
+            params[jss::key_type] = Json::objectValue;
+            params[jss::seed_hex] = common::master_seed_hex;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Invalid field 'key_type', not string.");
+        }
+
+        {
+            Json::Value params;
+            params[jss::key_type] = Json::arrayValue;
+            params[jss::seed] = common::master_seed;
+            auto result = walletPropose (params);
+            expect (contains_error (result));
+            expect (result[jss::error_message] ==
+                "Invalid field 'key_type', not string.");
+        }
+    }
+
+    void testKeypairForSignature (
+        boost::optional<std::string> keyType,
+        key_strings const& strings)
+    {
+        testcase ("keypairForSignature - " +
+            (keyType ? *keyType : "no key_type"));
+
+        auto const publicKey = parseBase58<PublicKey>(
+            TokenType::TOKEN_ACCOUNT_PUBLIC, strings.public_key);
+        expect (publicKey);
+
+        if (!keyType)
+        {
+            {
+                Json::Value params;
+                Json::Value error;
+                params[jss::secret] = strings.master_seed;
+
+                auto ret = keypairForSignature (params, error);
+                expect (! contains_error (error));
+                expect (ret.first.size() != 0);
+                expect (ret.first == publicKey);
+            }
+
+            {
+                Json::Value params;
+                Json::Value error;
+                params[jss::secret] = strings.master_seed_hex;
+
+                auto ret = keypairForSignature (params, error);
+                expect (! contains_error (error));
+                expect (ret.first.size() != 0);
+                expect (ret.first == publicKey);
+            }
+
+            {
+                Json::Value params;
+                Json::Value error;
+                params[jss::secret] = strings.master_key;
+
+                auto ret = keypairForSignature (params, error);
+                expect (! contains_error (error));
+                expect (ret.first.size() != 0);
+                expect (ret.first == publicKey);
+            }
+
+            keyType.emplace ("secp256k1");
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+
+            params[jss::key_type] = *keyType;
+            params[jss::seed] = strings.master_seed;
+
+            auto ret = keypairForSignature (params, error);
+            expect (! contains_error (error));
+            expect (ret.first.size() != 0);
+            expect (ret.first == publicKey);
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+
+            params[jss::key_type] = *keyType;
+            params[jss::seed_hex] = strings.master_seed_hex;
+
+            auto ret = keypairForSignature (params, error);
+            expect (! contains_error (error));
+            expect (ret.first.size() != 0);
+            expect (ret.first == publicKey);
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+
+            params[jss::key_type] = *keyType;
+            params[jss::passphrase] = strings.master_key;
+
+            auto ret = keypairForSignature (params, error);
+            expect (! contains_error (error));
+            expect (ret.first.size() != 0);
+            expect (ret.first == publicKey);
+        }
+    }
+
+    void testKeypairForSignatureErrors()
+    {
+        // Specify invalid "secret"
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::secret] = 314159265;
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'secret', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::secret] = Json::arrayValue;
+            params[jss::secret].append ("array:0");
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'secret', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::secret] = Json::objectValue;
+            params[jss::secret]["string"] = "string";
+            params[jss::secret]["number"] = 702;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (ret.first.size() == 0);
+            expect (error[jss::error_message] ==
+                "Invalid field 'secret', not string.");
+        }
+
+        // Specify "secret" and "key_type"
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "ed25519";
+            params[jss::secret] = common::master_seed;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "The secret field is not allowed if key_type is used.");
+            expect (ret.first.size() == 0);
+        }
+
+        // Specify unknown or bad "key_type"
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "prime256v1";
+            params[jss::passphrase] = common::master_key;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'key_type'.");
+            expect (ret.first.size() == 0);
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = Json::objectValue;
+            params[jss::seed_hex] = common::master_seed_hex;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'key_type', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        {
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = Json::arrayValue;
+            params[jss::seed] = common::master_seed;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'key_type', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        // Specify non-string passphrase
+        { // not a passphrase: number
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::passphrase] = 1234567890;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'passphrase', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a passphrase: object
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::passphrase] = Json::objectValue;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'passphrase', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a passphrase: array
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::passphrase] = Json::arrayValue;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'passphrase', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a passphrase: empty string
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::passphrase] = "";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+
+        // Specify non-string or invalid seed
+        { // not a seed: number
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = 443556;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'seed', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a string: object
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = Json::objectValue;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'seed', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a string: array
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = Json::arrayValue;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'seed', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a seed: empty
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = "";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a seed: invalid characters
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = "s M V s h z D F p t Z E m h s";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a seed: random string
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed] = "pnnjkbnobnml43679nbvjdsklnbjs";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+        // Specify non-string or invalid seed_hex
+        { // not a string: number
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = 443556;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'seed_hex', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a string: object
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = Json::objectValue;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'seed_hex', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not a string: array
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = Json::arrayValue;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Invalid field 'seed_hex', not string.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // empty
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = "";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // short
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = "A670A19B";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // not hex
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = common::passphrase;
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+
+        { // overlong
+            Json::Value params;
+            Json::Value error;
+            params[jss::key_type] = "secp256k1";
+            params[jss::seed_hex] = "BE6A670A19B209E112146D0A7ED2AAD72567D0FC913";
+
+            auto ret = keypairForSignature (params, error);
+            expect (contains_error (error));
+            expect (error[jss::error_message] ==
+                "Disallowed seed.");
+            expect (ret.first.size() == 0);
+        }
+    }
+
     void run()
     {
         testKeyType (boost::none, secp256k1_strings);
         testKeyType (std::string("secp256k1"), secp256k1_strings);
         testKeyType (std::string("ed25519"), ed25519_strings);
+        testBadInput ();
+
+        testKeypairForSignature (boost::none, secp256k1_strings);
+        testKeypairForSignature (std::string("secp256k1"), secp256k1_strings);
+        testKeypairForSignature (std::string("ed25519"), ed25519_strings);
+        testKeypairForSignatureErrors ();
     }
 };
 
