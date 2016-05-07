@@ -810,7 +810,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE (Offer, tx, ripple)
+BEAST_DEFINE_TESTSUITE (Offer, tx, ripple);
 
 }  // test
 }  // ripple

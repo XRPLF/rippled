@@ -22,8 +22,8 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/bind_handler.hpp>
-#include <beast/placeholders.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>

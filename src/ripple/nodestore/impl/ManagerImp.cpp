@@ -23,7 +23,7 @@
 #include <ripple/nodestore/impl/DatabaseImp.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 #include <ripple/basics/StringUtilities.h>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <memory>
 #include <stdexcept>
 

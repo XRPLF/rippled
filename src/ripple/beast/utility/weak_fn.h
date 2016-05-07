@@ -20,7 +20,7 @@
 #ifndef BEAST_WEAK_FN_H_INCLUDED
 #define BEAST_WEAK_FN_H_INCLUDED
 
-#include <beast/detail/empty_base_optimization.hpp>
+#include <beast/core/detail/empty_base_optimization.hpp>
 #include <memory>
 
 // Original version:

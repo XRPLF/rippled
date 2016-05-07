@@ -74,7 +74,7 @@
 #include <ripple/crypto/csprng.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/optional.hpp>
 #include <fstream>

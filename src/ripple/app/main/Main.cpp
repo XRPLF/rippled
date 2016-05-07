@@ -40,7 +40,7 @@
 #include <ripple/beast/core/Time.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Debug.h>
-#include <beast/detail/stream/debug_ostream.hpp>
+#include <beast/unit_test/debug_ostream.hpp>
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
 #include <cstdlib>
@@ -201,7 +201,7 @@ static int runUnitTests(
     std::string const& argument)
 {
     using namespace beast::unit_test;
-    beast::detail::debug_ostream stream;
+    beast::debug_ostream stream;
     reporter r (stream);
     r.arg(argument);
     bool const failed (r.run_each_if (

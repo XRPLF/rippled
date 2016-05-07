@@ -21,7 +21,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/Factory.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <map>
 #include <memory>
 #include <mutex>

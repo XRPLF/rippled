@@ -769,6 +769,7 @@ base.Append(CPPPATH=[
     'src',
     os.path.join('src', 'beast'),
     os.path.join('src', 'beast', 'include'),
+    os.path.join('src', 'beast', 'extras'),
     os.path.join(build_dir, 'proto'),
     os.path.join('src','soci','src'),
     os.path.join('src','soci','include'),
@@ -1201,7 +1202,7 @@ for key, value in aliases.iteritems():
 vcxproj = base.VSProject(
     os.path.join('Builds', 'VisualStudio2015', 'RippleD'),
     source = [],
-    VSPROJECT_ROOT_DIRS = ['src/beast', 'src/beast/include', 'src', '.'],
+    VSPROJECT_ROOT_DIRS = ['src/beast', 'src/beast/include', 'src/beast/extras', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)
 

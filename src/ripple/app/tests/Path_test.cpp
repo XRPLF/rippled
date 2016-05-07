@@ -863,7 +863,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Path,app,ripple)
+BEAST_DEFINE_TESTSUITE(Path,app,ripple);
 
 } // test
 } // ripple

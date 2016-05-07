@@ -29,7 +29,7 @@
 #define WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 
 #include <ripple/websocket/AutoSocket.h>
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <functional>
 
 // Note that AutoSocket.h must be included before this file

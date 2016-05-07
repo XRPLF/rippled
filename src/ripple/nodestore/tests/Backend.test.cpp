@@ -21,7 +21,7 @@
 #include <ripple/nodestore/tests/Base.test.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/detail/temp_dir.hpp>
+#include <beast/core/detail/temp_dir.hpp>
 #include <algorithm>
 
 namespace ripple {

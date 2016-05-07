@@ -23,7 +23,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/websocket/AutoSocket.h>
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>

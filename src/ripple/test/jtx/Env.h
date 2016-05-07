@@ -42,7 +42,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
-#include <beast/detail/is_call_possible.hpp>
+#include <beast/core/detail/is_call_possible.hpp>
 #include <ripple/beast/unit_test.h>
 #include <functional>
 #include <string>

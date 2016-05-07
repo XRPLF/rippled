@@ -41,7 +41,7 @@
 #include <ripple/websocket/WebSocket.h>
 
 #include <boost/asio.hpp>
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <memory>
 
 namespace ripple {

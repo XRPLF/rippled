@@ -24,7 +24,7 @@
 #include <ripple/beast/container/detail/aged_associative_container.h>
 #include <ripple/beast/container/aged_container.h>
 #include <ripple/beast/clock/abstract_clock.h>
-#include <beast/detail/empty_base_optimization.hpp>
+#include <beast/core/detail/empty_base_optimization.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/version.hpp>

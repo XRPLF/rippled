@@ -25,7 +25,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/overlay/impl/TMHello.h>
-#include <beast/detail/base64.hpp>
+#include <beast/core/detail/base64.hpp>
 #include <beast/http/rfc2616.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <boost/regex.hpp>

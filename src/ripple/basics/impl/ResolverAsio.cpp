@@ -21,7 +21,7 @@
 #include <ripple/basics/ResolverAsio.h>
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <ripple/beast/core/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>

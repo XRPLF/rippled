@@ -126,7 +126,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BasicNetwork, test, ripple)
+BEAST_DEFINE_TESTSUITE(BasicNetwork, test, ripple);
 
 } // test
 } // ripple

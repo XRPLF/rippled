@@ -31,8 +31,8 @@
 #include <ripple/beast/asio/ssl_bundle.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/utility/WrappedSink.h>
-#include <beast/placeholders.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/placeholders.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/empty_body.hpp>
 #include <beast/http/parser_v1.hpp>

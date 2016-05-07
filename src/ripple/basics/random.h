@@ -22,7 +22,7 @@
 
 #include <ripple/basics/win32_workaround.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <beast/detail/is_call_possible.hpp>
+#include <beast/core/detail/is_call_possible.hpp>
 #include <boost/thread/tss.hpp>
 #include <cassert>
 #include <cstddef>

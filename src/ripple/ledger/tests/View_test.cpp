@@ -974,7 +974,7 @@ class DirIsEmpty_test
 
 BEAST_DEFINE_TESTSUITE(View,ledger,ripple);
 BEAST_DEFINE_TESTSUITE(GetAmendments,ledger,ripple);
-BEAST_DEFINE_TESTSUITE(DirIsEmpty, ledger,ripple)
+BEAST_DEFINE_TESTSUITE(DirIsEmpty, ledger,ripple);
 
 }  // test
 }  // ripple

@@ -13,20 +13,32 @@
     <Filter Include="ed25519-donna">
       <UniqueIdentifier>{9DEED977-2072-A182-5BD9-CEBF206E8C91}</UniqueIdentifier>
     </Filter>
+    <Filter Include="extras">
+      <UniqueIdentifier>{477971A7-4031-9D7E-C153-2FC390C183F6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extras\beast">
+      <UniqueIdentifier>{F8A3CFB1-5785-C83C-4338-5F27773F327D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extras\beast\unit_test">
+      <UniqueIdentifier>{8F81A840-0F90-3664-FE3C-4EAF71864EA3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="extras\beast\unit_test\detail">
+      <UniqueIdentifier>{C4E6332D-1115-85EB-D574-A18E70A03124}</UniqueIdentifier>
+    </Filter>
     <Filter Include="include">
       <UniqueIdentifier>{BFB5FB0D-E563-77CD-68EA-A6E186D6240D}</UniqueIdentifier>
     </Filter>
     <Filter Include="include\beast">
       <UniqueIdentifier>{0959FCA5-589F-980F-57AF-AB859F5A61AA}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include\beast\detail">
-      <UniqueIdentifier>{42B1E98B-3FD0-CA4B-41E1-1BF2B5548847}</UniqueIdentifier>
+    <Filter Include="include\beast\core">
+      <UniqueIdentifier>{0E36C1CA-6BDD-2413-4E69-64ED5F44F9D5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include\beast\detail\stream">
-      <UniqueIdentifier>{111F5668-0DD0-400E-97B7-0B01809D8BF2}</UniqueIdentifier>
+    <Filter Include="include\beast\core\detail">
+      <UniqueIdentifier>{A37B2E28-7A35-B699-8B09-D51004D302FA}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include\beast\detail\unit_test">
-      <UniqueIdentifier>{7A85C6E8-9F03-F94D-4302-A43773BF7E61}</UniqueIdentifier>
+    <Filter Include="include\beast\core\impl">
+      <UniqueIdentifier>{9EFA48D3-D5FA-A645-5DD5-ED6EBAF39EF6}</UniqueIdentifier>
     </Filter>
     <Filter Include="include\beast\http">
       <UniqueIdentifier>{78230F53-2814-6C7D-1558-87709A2F6090}</UniqueIdentifier>
@@ -36,9 +48,6 @@
     </Filter>
     <Filter Include="include\beast\http\impl">
       <UniqueIdentifier>{DDE347C4-F990-B1A8-1D36-357D36685D1F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="include\beast\impl">
-      <UniqueIdentifier>{3CFD7EE6-5D12-16E4-B83A-B16BA89B931D}</UniqueIdentifier>
     </Filter>
     <Filter Include="include\beast\websocket">
       <UniqueIdentifier>{A3314CD5-8DAB-E905-89CA-0DBAEF8A4FFF}</UniqueIdentifier>
@@ -528,125 +537,167 @@
     <ClInclude Include="..\..\src\BeastConfig.h">
       <Filter>.</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\async_completion.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\abstract_ostream.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\basic_streambuf.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\amount.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\bind_handler.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\basic_abstract_ostream.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\buffer_cat.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\basic_scoped_ostream.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\buffer_concepts.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\basic_std_ostream.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\consuming_buffers.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\debug_ostream.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\base64.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\detail\const_container.hpp">
+      <Filter>extras\beast\unit_test\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\bind_handler.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\global_suites.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\buffer_cat.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\match.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\buffer_concepts.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\print.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\ci_char_traits.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\recorder.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\const_container.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\reporter.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\empty_base_optimization.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\results.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\get_lowest_layer.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\runner.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\integer_sequence.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\suite.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\is_call_possible.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\suite_info.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\sha1.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\suite_list.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\abstract_ostream.hpp">
-      <Filter>include\beast\detail\stream</Filter>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\thread.hpp">
+      <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_abstract_ostream.hpp">
-      <Filter>include\beast\detail\stream</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\async_completion.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_scoped_ostream.hpp">
-      <Filter>include\beast\detail\stream</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\basic_streambuf.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\basic_std_ostream.hpp">
-      <Filter>include\beast\detail\stream</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\bind_handler.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\stream\debug_ostream.hpp">
-      <Filter>include\beast\detail\stream</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\buffer_cat.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\stream_concepts.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\buffer_concepts.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\temp_dir.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\consuming_buffers.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\amount.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\base64.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\include\beast\detail\unit_test\define_print.cpp">
-      <Filter>include\beast\detail\unit_test</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\global_suites.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\bind_handler.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\match.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\buffer_cat.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\print.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\buffer_concepts.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\recorder.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\ci_char_traits.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\reporter.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\empty_base_optimization.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\results.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\get_lowest_layer.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\runner.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\integer_sequence.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\is_call_possible.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite_info.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\sha1.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\suite_list.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\stream_concepts.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\unit_test\thread.hpp">
-      <Filter>include\beast\detail\unit_test</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\temp_dir.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\detail\write_streambuf.hpp">
-      <Filter>include\beast\detail</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\write_streambuf.hpp">
+      <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\handler_alloc.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\error.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\handler_concepts.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\core\handler_alloc.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\handler_concepts.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <None Include="..\..\src\beast\include\beast\core\impl\basic_streambuf.ipp">
+      <Filter>include\beast\core\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\consuming_buffers.ipp">
+      <Filter>include\beast\core\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\prepare_buffers.ipp">
+      <Filter>include\beast\core\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\static_streambuf.ipp">
+      <Filter>include\beast\core\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\streambuf_readstream.ipp">
+      <Filter>include\beast\core\impl</Filter>
+    </None>
+    <ClInclude Include="..\..\src\beast\include\beast\core\placeholders.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\prepare_buffers.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\static_streambuf.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\static_string.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\streambuf.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\streambuf_readstream.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\stream_concepts.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\to_string.hpp">
+      <Filter>include\beast\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\write_streambuf.hpp">
+      <Filter>include\beast\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http.hpp">
       <Filter>include\beast</Filter>
@@ -670,9 +721,6 @@
       <Filter>include\beast\http\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\empty_body.hpp">
-      <Filter>include\beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\error.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\headers.hpp">
@@ -726,47 +774,11 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\string_body.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\http\type_check.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
-    <None Include="..\..\src\beast\include\beast\impl\basic_streambuf.ipp">
-      <Filter>include\beast\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\impl\consuming_buffers.ipp">
-      <Filter>include\beast\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\impl\prepare_buffers.ipp">
-      <Filter>include\beast\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\impl\static_streambuf.ipp">
-      <Filter>include\beast\impl</Filter>
-    </None>
-    <None Include="..\..\src\beast\include\beast\impl\streambuf_readstream.ipp">
-      <Filter>include\beast\impl</Filter>
-    </None>
-    <ClInclude Include="..\..\src\beast\include\beast\placeholders.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\prepare_buffers.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\static_streambuf.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\static_string.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\streambuf.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\streambuf_readstream.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\stream_concepts.hpp">
-      <Filter>include\beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\to_string.hpp">
-      <Filter>include\beast</Filter>
+    <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
+      <Filter>include\beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket.hpp">
       <Filter>include\beast</Filter>
@@ -851,9 +863,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\websocket\teardown.hpp">
       <Filter>include\beast\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\write_streambuf.hpp">
-      <Filter>include\beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
       <Filter>ed25519-donna</Filter>
@@ -2157,6 +2166,9 @@
     <ClInclude Include="..\..\src\ripple\beast\cxx17\type_traits.h">
       <Filter>ripple\beast\cxx17</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\beast\define_print.cpp">
+      <Filter>ripple\beast</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\hash\endian.h">
       <Filter>ripple\beast\hash</Filter>
     </ClInclude>

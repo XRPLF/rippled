@@ -35,7 +35,7 @@
 #include <ripple/protocol/types.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
 #include <iostream>

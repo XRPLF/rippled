@@ -21,7 +21,7 @@
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
-#include <beast/handler_alloc.hpp>
+#include <beast/core/handler_alloc.hpp>
 
 namespace ripple {
 namespace test {

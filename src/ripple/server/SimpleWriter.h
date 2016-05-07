@@ -21,10 +21,10 @@
 #define RIPPLE_SERVER_SIMPLEWRITER_H_INCLUDED
 
 #include <ripple/server/Writer.h>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/write_streambuf.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/write.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/write_streambuf.hpp>
 #include <utility>
 
 namespace ripple {

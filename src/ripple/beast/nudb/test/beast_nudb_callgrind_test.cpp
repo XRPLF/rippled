@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/nudb/test/common.h>
-#include <beast/detail/temp_dir.hpp>
+#include <beast/core/detail/temp_dir.hpp>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
 #include <cmath>

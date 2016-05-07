@@ -23,7 +23,7 @@
 #include <ripple/server/impl/BasePeer.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <beast/websocket.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/http/message_v1.hpp>
 #include <cassert>
 

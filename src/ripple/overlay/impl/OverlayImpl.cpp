@@ -35,11 +35,11 @@
 #include <ripple/peerfinder/make_Manager.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/beast/core/ByteOrder.h>
-#include <beast/detail/base64.hpp>
+#include <beast/core/detail/base64.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/http.hpp>
 #include <beast/http/rfc2616.hpp>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
 
 #include <boost/utility/in_place_factory.hpp>

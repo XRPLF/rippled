@@ -24,8 +24,8 @@
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
-#include <beast/placeholders.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/placeholders.hpp>
+#include <beast/core/streambuf.hpp>
 #include <beast/websocket.hpp>
 #include <condition_variable>
 

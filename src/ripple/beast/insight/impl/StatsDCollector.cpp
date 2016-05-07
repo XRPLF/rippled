@@ -24,7 +24,7 @@
 #include <ripple/beast/insight/GaugeImpl.h>
 #include <ripple/beast/insight/MeterImpl.h>
 #include <ripple/beast/insight/StatsDCollector.h>
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <ripple/beast/core/List.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/optional.hpp>

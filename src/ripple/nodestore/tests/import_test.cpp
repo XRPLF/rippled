@@ -26,7 +26,7 @@
 #include <ripple/beast/nudb/create.h>
 #include <ripple/beast/nudb/detail/format.h>
 #include <ripple/beast/unit_test.h>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>

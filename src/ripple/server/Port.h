@@ -22,7 +22,7 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/beast/net/IPEndpoint.h>
-#include <beast/detail/ci_char_traits.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <memory>
