@@ -26,7 +26,6 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/ScopedLock.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/core/JobQueue.h>
