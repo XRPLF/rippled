@@ -121,9 +121,9 @@ operator()(error_code ec, bool again)
             auto const fin = d.remain <= 0;
             if(fin)
                 d.state = 99;
-            d.ws.async_write_frame(fin,
-                prepare_buffers(n, d.cb), std::move(*this));
+            auto const pb = prepare_buffers(n, d.cb);
             d.cb.consume(n);
+            d.ws.async_write_frame(fin, pb, std::move(*this));
             return;
         }
         }
