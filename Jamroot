@@ -61,6 +61,22 @@ variant asan
     <linkflags>"-fsanitize=address"
   ;
 
+variant msan
+  :
+    debug
+  :
+    <cxxflags>"-fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
+    <linkflags>"-fsanitize=memory"
+  ;
+
+variant usan
+  :
+    debug
+  :
+    <cxxflags>"-fsanitize=undefined -fno-omit-frame-pointer"
+    <linkflags>"-fsanitize=undefined"
+  ;
+
 project beast
   : requirements
     <include>.

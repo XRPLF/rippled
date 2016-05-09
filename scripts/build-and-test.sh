@@ -6,7 +6,16 @@ set -ex
 
 ################################## ENVIRONMENT #################################
 
-export PATH=$VALGRIND_ROOT/bin:$LCOV_ROOT/usr/bin:$PATH
+# If not CI, then set some defaults
+if [[ "${CI:-}" == "" ]]; then
+  TRAVIS_BRANCH=${TRAVIS_BRANCH:-feature}
+  CC=${CC:-gcc}
+  ADDRESS_MODEL=${ADDRESS_MODEL:-64}
+  VARIANT=${VARIANT:-debug}
+  # If running locally we assume we have lcov/valgrind on PATH
+else
+  export PATH=$VALGRIND_ROOT/bin:$LCOV_ROOT/usr/bin:$PATH
+fi
 
 echo "using toolset: $CC"
 echo "using variant: $VARIANT"
@@ -46,8 +55,8 @@ if [[ $VARIANT == "coverage" ]]; then
 
   # We need to wait a while so wstest can connect!
   sleep 5
-#  cd scripts && wstest -m fuzzingclient
-#  cd ..
+  cd scripts && wstest -m fuzzingclient
+  cd ..
   # Show the output
   cat nohup.out
   rm nohup.out

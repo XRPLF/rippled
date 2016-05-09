@@ -34,8 +34,8 @@ packages: &gcc5_pkgs
   - autotools-dev
   - libc6-dbg
 
-packages: &clang36_pkgs
-  - clang-3.6
+packages: &clang38_pkgs
+  - clang-3.8
   - g++-5
   - python-software-properties
   - libssl-dev
@@ -53,56 +53,57 @@ packages: &clang36_pkgs
 matrix:
   include:
     # GCC/Debug
+    # - compiler: gcc
+    #   env: GCC_VER=5 VARIANT=debug ADDRESS_MODEL=64
+    #   addons: &ao_gcc5
+    #     apt:
+    #       sources: ['ubuntu-toolchain-r-test']
+    #       packages: *gcc5_pkgs
+
+    # # GCC/Release
+    # - compiler: gcc
+    #   env: GCC_VER=5 VARIANT=release ADDRESS_MODEL=64
+    #   addons: *ao_gcc5
+
+    # Coverage
     - compiler: gcc
-      env: GCC_VER=5 VARIANT=debug ADDRESS_MODEL=64
+      env: GCC_VER=5 VARIANT=coverage ADDRESS_MODEL=64
       addons: &ao_gcc5
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: *gcc5_pkgs
 
-    # - compiler: gcc
-    #   env: GCC_VER=5 VARIANT=debug ADDRESS_MODEL=32
-    #   addons: *ao_gcc5
+    # # Clang/Debug
+    # - compiler: clang
+    #   env: GCC_VER=5 VARIANT=debug CLANG_VER=3.8 ADDRESS_MODEL=64
+    #   addons: &ao_clang38
+    #     apt:
+    #       sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
+    #       packages: *clang38_pkgs
 
-    # GCC/Release
-    - compiler: gcc
-      env: GCC_VER=5 VARIANT=release ADDRESS_MODEL=64
-      addons: *ao_gcc5
+    # # Clang/Release
+    # - compiler: clang
+    #   env: GCC_VER=5 VARIANT=release CLANG_VER=3.8 ADDRESS_MODEL=64
+    #   addons: *ao_clang38
 
-    # # - compiler: gcc
-    # #   env: GCC_VER=5 VARIANT=release ADDRESS_MODEL=32
-    # #   addons: *ao_gcc5
-
-    # Clang/Debug
+    # Clang/AddressSanitizer
     - compiler: clang
-      env: GCC_VER=5 VARIANT=debug CLANG_VER=3.6 ADDRESS_MODEL=64
-      addons: &ao_clang36
+      env: GCC_VER=5 VARIANT=asan CLANG_VER=3.8 ADDRESS_MODEL=64
+      addons: &ao_clang38
         apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
-          packages: *clang36_pkgs
+          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
+          packages: *clang38_pkgs
 
-    # # - compiler: clang
-    # #   env: GCC_VER=5 VARIANT=debug CLANG_VER=3.6 ADDRESS_MODEL=32
-    # #   addons: *ao_clang36
+    # Clang/MemorySanitizer
+    # VFALCO Generates false positives unless libc++ is compiled with msan turned on
+    #- compiler: clang
+    #  env: GCC_VER=5 VARIANT=msan CLANG_VER=3.8 ADDRESS_MODEL=64 MSAN_OPTIONS=poison_in_dtor=1,sanitize-memory-track-origins=2
+    #  addons: *ao_clang38
 
-    # Clang/Release
+    # Clang/UndefinedBehaviourSanitizer
     - compiler: clang
-      env: GCC_VER=5 VARIANT=release CLANG_VER=3.6 ADDRESS_MODEL=64
-      addons: *ao_clang36
-
-    # # - compiler: clang
-    # #   env: GCC_VER=5 VARIANT=release CLANG_VER=3.6 ADDRESS_MODEL=32
-    # #   addons: *ao_clang36
-
-    # Coverage
-    - compiler: gcc
-      env: GCC_VER=5 VARIANT=coverage ADDRESS_MODEL=64
-      addons: *ao_gcc5
-
-    # ASAN
-    - compiler: gcc
-      env: GCC_VER=5 VARIANT=asan ADDRESS_MODEL=64
-      addons: *ao_gcc5
+      env: GCC_VER=5 VARIANT=usan CLANG_VER=3.8 ADDRESS_MODEL=64
+      addons: *ao_clang38
 
 cache:
   directories:
