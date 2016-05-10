@@ -43,8 +43,7 @@ SHAMapInnerNode::clone(std::uint32_t seq) const
     p->mHash = mHash;
     p->mIsBranch = mIsBranch;
     p->mFullBelowGen = mFullBelowGen;
-    for (int i = 0; i < sizeof(mHashes) / sizeof(mHashes[0]); ++i)
-        p->mHashes[i] = mHashes[i];
+    p->mHashes = mHashes;
     std::unique_lock <std::mutex> lock(childLock);
     for (int i = 0; i < 16; ++i)
     {
@@ -369,7 +368,7 @@ SHAMapInnerNode::updateHash()
         sha512_half_hasher h;
         using beast::hash_append;
         hash_append(h, HashPrefix::innerNode);
-        for (int i = 0; i < sizeof(mHashes) / sizeof(mHashes[0]); ++i)
+        for (int i = 0; i < mHashes.size(); ++i)
             hash_append(h, mHashes[i]);
         nh = static_cast<typename
             sha512_half_hasher::result_type>(h);
@@ -442,7 +441,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32 (HashPrefix::innerNode);
 
-            for (int i = 0; i < 16; ++i)
+            for (int i = 0; i < mHashes.size(); ++i)
                 s.add256 (mHashes[i].as_uint256());
         }
         else  // format == snfWIRE
@@ -450,7 +449,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             if (getBranchCount () < 12)
             {
                 // compressed node
-                for (int i = 0; i < 16; ++i)
+                for (int i = 0; i < mHashes.size(); ++i)
                     if (!isEmptyBranch (i))
                     {
                         s.add256 (mHashes[i].as_uint256());
@@ -461,7 +460,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             }
             else
             {
-                for (int i = 0; i < 16; ++i)
+                for (int i = 0; i < mHashes.size(); ++i)
                     s.add256 (mHashes[i].as_uint256());
 
                 s.add8 (2);
@@ -610,7 +609,7 @@ std::string
 SHAMapInnerNode::getString(const SHAMapNodeID & id) const
 {
     std::string ret = SHAMapAbstractNode::getString(id);
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < mHashes.size(); ++i)
     {
         if (!isEmptyBranch (i))
         {

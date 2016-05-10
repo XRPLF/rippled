@@ -107,8 +107,8 @@ public:
 
     int addVL (Blob const& vector);
     int addVL (Slice const& slice);
-    template<class FwdIt>
-    int addVL (FwdIt begin, FwdIt end, int len);
+    template<class Iter>
+    int addVL (Iter begin, Iter end, int len);
     int addVL (const void* ptr, int len);
 
     // disassemble functions
@@ -282,16 +282,17 @@ private:
     int addEncoded (int length);
 };
 
-template<class FwdIt>
-int Serializer::addVL(FwdIt begin, FwdIt end, int len)
+template<class Iter>
+int Serializer::addVL(Iter begin, Iter end, int len)
 {
     int ret = addEncoded(len);
-    if (len)
-        for (; begin != end; ++begin)
-        {
-            addRaw(begin->data(), begin->size());
-            len -= begin->size();
-        }
+    for (; begin != end; ++begin)
+    {
+        addRaw(begin->data(), begin->size());
+#ifndef NDEBUG
+        len -= begin->size();
+#endif
+    }
     assert(len == 0);
     return ret;
 }
