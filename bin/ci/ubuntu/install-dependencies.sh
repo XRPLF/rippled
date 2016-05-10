@@ -34,7 +34,7 @@ bash bin/sh/install-boost.sh
 
 # Install lcov
 # Download the archive
-wget http://downloads.sourceforge.net/ltp/lcov-1.12.tar.gz
+wget https://github.com/linux-test-project/lcov/releases/download/v1.12/lcov-1.12.tar.gz
 # Extract to ~/lcov-1.12
 tar xfvz lcov-1.12.tar.gz -C $HOME
 # Set install path
