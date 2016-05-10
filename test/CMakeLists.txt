@@ -14,5 +14,5 @@ add_executable (lib-tests
 )
 
 if (NOT WIN32)
-    target_link_libraries(core-tests ${Boost_LIBRARIES})
+    target_link_libraries(lib-tests ${Boost_LIBRARIES})
 endif()

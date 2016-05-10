@@ -30,7 +30,7 @@ add_executable (http-tests
 )
 
 if (NOT WIN32)
-    target_link_libraries(http-tests ${Boost_LIBRARIES})
+    target_link_libraries(http-tests ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 add_executable (bench-tests
@@ -39,3 +39,7 @@ add_executable (bench-tests
     nodejs_parser.cpp
     parser_bench.cpp
 )
+
+if (NOT WIN32)
+    target_link_libraries(bench-tests ${Boost_LIBRARIES})
+endif()

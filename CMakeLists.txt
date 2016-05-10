@@ -12,7 +12,7 @@ if (WIN32)
 else()
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_MULTITHREADED ON)
-    find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
+    find_package(Boost REQUIRED COMPONENTS coroutine context thread filesystem program_options system)
     include_directories(${Boost_INCLUDE_DIRS})
     link_directories(${Boost_LIBRARY_DIR})
 
@@ -20,7 +20,7 @@ else()
     find_package(Threads)
 
     set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall /Wextra /Wpedantic /Wconversion -Wno-unused-variable")
+      "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Wpedantic -Wconversion -Wno-unused-variable")
 endif()
 
 message ("cxx Flags: " ${CMAKE_CXX_FLAGS})
