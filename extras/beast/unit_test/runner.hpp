@@ -9,9 +9,9 @@
 #define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
 #include <beast/unit_test/suite_info.hpp>
-#include <beast/unit_test/abstract_ostream.hpp>
 #include <cassert>
 #include <mutex>
+#include <ostream>
 #include <string>
 
 namespace beast {
@@ -23,28 +23,6 @@ namespace unit_test {
 */
 class runner
 {
-private:
-    // Reroutes log output to the runner
-    class stream_t : public abstract_ostream
-    {
-    private:
-        runner& owner_;
-
-    public:
-        stream_t() = delete;
-        stream_t& operator= (stream_t const&) = delete;
-
-        template <class = void>
-        stream_t (runner& owner);
-
-        void
-        write (string_type const& s) override
-        {
-            owner_.log (s);
-        }
-    };
-
-    stream_t stream_;
     std::string arg_;
     bool default_ = false;
     bool failed_ = false;
@@ -52,21 +30,20 @@ private:
     std::recursive_mutex mutex_;
 
 public:
+    runner() = default;
     virtual ~runner() = default;
-    runner (runner const&) = default;
-    runner& operator= (runner const&) = default;
-
-    template <class = void>
-    runner();
+    runner(runner const&) = delete;
+    runner& operator=(runner const&) = delete;
 
     /** Set the argument string.
+
         The argument string is available to suites and
         allows for customization of the test. Each suite
         defines its own syntax for the argumnet string.
         The same argument is passed to all suites.
     */
     void
-    arg (std::string const& s)
+    arg(std::string const& s)
     {
         arg_ = s;
     }
@@ -81,7 +58,7 @@ public:
     /** Run the specified suite.
         @return `true` if any conditions failed.
     */
-    template <class = void>
+    template<class = void>
     bool
     run (suite_info const& s);
 
@@ -124,68 +101,62 @@ public:
     bool
     run_each_if (SequenceContainer const& c, Pred pred = Pred{});
 
-private:
+protected:
     //
     // Overrides
     //
 
-    /** Called when a new suite starts. */
+    /// Called when a new suite starts.
     virtual
     void
-    on_suite_begin (suite_info const&)
+    on_suite_begin(suite_info const&)
     {
     }
 
-    /** Called when a suite ends. */
+    /// Called when a suite ends.
     virtual
     void
     on_suite_end()
     {
     }
 
-    /** Called when a new case starts. */
+    /// Called when a new case starts.
     virtual
     void
-    on_case_begin (std::string const&)
+    on_case_begin(std::string const&)
     {
     }
 
-    /** Called when a new case ends. */
+    /// Called when a new case ends.
     virtual
     void
     on_case_end()
     {
     }
 
-    /** Called for each passing condition. */
+    /// Called for each passing condition.
     virtual
     void
-    on_pass ()
+    on_pass()
     {
     }
 
-    /** Called for each failing condition. */
+    /// Called for each failing condition.
     virtual
     void
-    on_fail (std::string const&)
+    on_fail(std::string const&)
     {
     }
 
-    /** Called when a test logs output. */
+    /// Called when a test logs output.
     virtual
     void
-    on_log (std::string const&)
+    on_log(std::string const&)
     {
     }
 
 private:
     friend class suite;
-
-    abstract_ostream&
-    stream()
-    {
-        return stream_;
-    }
 
     // Start a new testcase.
     template <class = void>
@@ -206,20 +177,6 @@ private:
 };
 
 //------------------------------------------------------------------------------
-
-template <class>
-runner::stream_t::stream_t (runner& owner)
-    : owner_ (owner)
-{
-}
-
-//------------------------------------------------------------------------------
-
-template <class>
-runner::runner()
-    : stream_ (*this)
-{
-}
 
 template <class>
 bool

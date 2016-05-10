@@ -6,12 +6,13 @@
 //
 
 #include <beast/unit_test/amount.hpp>
+#include <beast/unit_test/dstream.hpp>
 #include <beast/unit_test/global_suites.hpp>
 #include <beast/unit_test/match.hpp>
 #include <beast/unit_test/reporter.hpp>
 #include <beast/unit_test/suite.hpp>
-#include <beast/unit_test/debug_ostream.hpp>
 #include <boost/program_options.hpp>
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -25,11 +26,10 @@
 # endif
 #endif
 
-#include <cstdlib>
-
 namespace beast {
 namespace unit_test {
 
+static
 std::string
 prefix(suite_info const& s)
 {
@@ -38,32 +38,34 @@ prefix(suite_info const& s)
     return "    ";
 }
 
-template<class Log>
+static
 void
-print(Log& log, suite_list const& c)
+print(std::ostream& os, suite_list const& c)
 {
     std::size_t manual = 0;
     for(auto const& s : c)
     {
-        log <<
-            prefix (s) <<
-            s.full_name();
+        os << prefix (s) << s.full_name() << '\n';
         if(s.manual())
             ++manual;
     }
-    log <<
+    os <<
         amount(c.size(), "suite") << " total, " <<
-        amount(manual, "manual suite")
+        amount(manual, "manual suite") <<
+        '\n'
         ;
 }
 
-template<class Log>
+// Print the list of suites
+// Used with the --print command line option
+static
 void
-print(Log& log)
+print(std::ostream& os)
 {
-    log << "------------------------------------------";
-    print(log, global_suites());
-    log << "------------------------------------------";
+    os << "------------------------------------------\n";
+    print(os, global_suites());
+    os << "------------------------------------------" <<
+        std::endl;
 }
 
 } // unit_test
@@ -97,11 +99,11 @@ int main(int ac, char const* av[])
     po::store(po::parse_command_line(ac, av, desc), vm);
     po::notify(vm);
 
-    beast::debug_ostream log;
+    dstream log;
 
     if(vm.count("help"))
     {
-        log << desc;
+        log << desc << std::endl;
     }
     else if(vm.count("print"))
     {

@@ -85,7 +85,7 @@ public:
     {
         using namespace std::chrono;
         using clock_type = std::chrono::high_resolution_clock;
-        log << name;
+        log << name << std::endl;
         for(std::size_t trial = 1; trial <= repeat; ++trial)
         {
             auto const t0 = clock_type::now();
@@ -93,7 +93,7 @@ public:
             auto const elapsed = clock_type::now() - t0;
             log <<
                 "Trial " << trial << ": " <<
-                duration_cast<milliseconds>(elapsed).count() << " ms";
+                duration_cast<milliseconds>(elapsed).count() << " ms" << std::endl;
         }
     }
 
@@ -109,10 +109,10 @@ public:
         static std::size_t constexpr Repeat = 50;
 
         log << "sizeof(request parser)  == " <<
-            sizeof(basic_parser_v1<true, null_parser<true>>);
+            sizeof(basic_parser_v1<true, null_parser<true>>) << '\n';
 
         log << "sizeof(response parser) == " <<
-            sizeof(basic_parser_v1<false, null_parser<true>>);
+            sizeof(basic_parser_v1<false, null_parser<true>>)<< '\n';
 
         testcase << "Parser speed test, " <<
             ((Repeat * size_ + 512) / 1024) << "KB in " <<

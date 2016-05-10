@@ -73,8 +73,8 @@ public:
     int
     sync() override
     {
-        write(str().c_str());
-        str("");
+        write(this->str().c_str());
+        this->str("");
         return 0;
     }
 };
@@ -107,8 +107,8 @@ public:
     int
     sync() override
     {
-        write(str().c_str());
-        str("");
+        write(this->str().c_str());
+        this->str("");
         return 0;
     }
 };
@@ -130,7 +130,7 @@ class basic_dstream
 {
 public:
     basic_dstream()
-        : std::basic_ostream<CharT, Traits>(&member)
+        : std::basic_ostream<CharT, Traits>(&this->member)
     {
     }
 };

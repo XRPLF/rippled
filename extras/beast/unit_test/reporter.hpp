@@ -10,8 +10,6 @@
 
 #include <beast/unit_test/amount.hpp>
 #include <beast/unit_test/recorder.hpp>
-#include <beast/unit_test/abstract_ostream.hpp>
-#include <beast/unit_test/basic_std_ostream.hpp>
 #include <boost/optional.hpp>
 #include <algorithm>
 #include <chrono>
@@ -30,7 +28,7 @@ namespace detail {
 /** A simple test runner that writes everything to a stream in real time.
     The totals are output when the object is destroyed.
 */
-template <class = void>
+template<class = void>
 class reporter : public runner
 {
 private:
@@ -42,7 +40,11 @@ private:
         std::size_t total = 0;
         std::size_t failed = 0;
 
-        case_results (std::string const& name_ = "");
+        explicit
+        case_results(std::string name_ = "")
+            : name(std::move(name_))
+        {
+        }
     };
 
     struct suite_results
@@ -51,14 +53,16 @@ private:
         std::size_t cases = 0;
         std::size_t total = 0;
         std::size_t failed = 0;
-        typename clock_type::time_point start =
-            clock_type::now();
+        typename clock_type::time_point start = clock_type::now();
 
         explicit
-        suite_results (std::string const& name_ = "");
+        suite_results(std::string const& name_ = "")
+            : name(std::move(name_))
+        {
+        }
 
         void
-        add (case_results const& r);
+        add(case_results const& r);
     };
 
     struct results
@@ -76,35 +80,30 @@ private:
         std::size_t total = 0;
         std::size_t failed = 0;
         std::vector<run_time> top;
-        typename clock_type::time_point start =
-            clock_type::now();
+        typename clock_type::time_point start = clock_type::now();
 
         void
         add (suite_results const& r);
     };
 
-    boost::optional <std_ostream> std_ostream_;
-    std::reference_wrapper <beast::abstract_ostream> stream_;
+    std::ostream& os_;
     results results_;
     suite_results suite_results_;
     case_results case_results_;
 
 public:
-    reporter (reporter const&) = delete;
-    reporter& operator= (reporter const&) = delete;
+    reporter(reporter const&) = delete;
+    reporter& operator=(reporter const&) = delete;
 
     ~reporter();
 
     explicit
-    reporter (std::ostream& stream = std::cout);
-
-    explicit
-    reporter (beast::abstract_ostream& stream);
+    reporter(std::ostream& os = std::cout);
 
 private:
     static
     std::string
-    fmtdur (typename clock_type::duration const& d);
+    fmtdur(typename clock_type::duration const& d);
 
     virtual
     void
@@ -137,42 +136,27 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class _>
-reporter<_>::case_results::case_results (
-        std::string const& name_)
-    : name (name_)
-{
-}
-
-template <class _>
-reporter<_>::suite_results::suite_results (
-        std::string const& name_)
-    : name (name_)
-{
-}
-
-template <class _>
+template<class _>
 void
-reporter<_>::suite_results::add (case_results const& r)
+reporter<_>::
+suite_results::add(case_results const& r)
 {
     ++cases;
     total += r.total;
     failed += r.failed;
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::results::add (
-    suite_results const& r)
+reporter<_>::
+results::add(suite_results const& r)
 {
     ++suites;
     total += r.total;
     cases += r.cases;
     failed += r.failed;
-
-    auto const elapsed =
-        clock_type::now() - r.start;
-    if (elapsed >= std::chrono::seconds(1))
+    auto const elapsed = clock_type::now() - r.start;
+    if (elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(top.begin(),
             top.end(), elapsed,
@@ -196,50 +180,40 @@ reporter<_>::results::add (
 
 //------------------------------------------------------------------------------
 
-template <class _>
-reporter<_>::reporter (
-        std::ostream& stream)
-    : std_ostream_ (std::ref (stream))
-    , stream_ (*std_ostream_)
+template<class _>
+reporter<_>::
+reporter(std::ostream& os)
+    : os_(os)
 {
 }
 
-template <class _>
+template<class _>
 reporter<_>::~reporter()
 {
-    if (results_.top.size() > 0)
+    if(results_.top.size() > 0)
     {
-        stream_.get() << "Longest suite times:";
-        for (auto const& i : results_.top)
-            stream_.get() << std::setw(8) <<
-                fmtdur(i.second) << " " << i.first;
+        os_ << "Longest suite times:\n";
+        for(auto const& i : results_.top)
+            os_ << std::setw(8) <<
+                fmtdur(i.second) << " " << i.first << '\n';
     }
-    auto const elapsed =
-        clock_type::now() - results_.start;
-    stream_.get() <<
+    auto const elapsed = clock_type::now() - results_.start;
+    os_ <<
         fmtdur(elapsed) << ", " <<
-        amount (results_.suites, "suite") << ", " <<
-        amount (results_.cases, "case") << ", " <<
-        amount (results_.total, "test") << " total, " <<
-        amount (results_.failed, "failure");
+        amount{results_.suites, "suite"} << ", " <<
+        amount{results_.cases, "case"} << ", " <<
+        amount{results_.total, "test"} << " total, " <<
+        amount{results_.failed, "failure"} <<
+        std::endl;
 }
 
-template <class _>
-reporter<_>::reporter (
-        abstract_ostream& stream)
-    : stream_ (stream)
-{
-}
-
-template <class _>
+template<class _>
 std::string
-reporter<_>::fmtdur (
-    typename clock_type::duration const& d)
+reporter<_>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
-    auto const ms =
-        duration_cast<milliseconds>(d);
-    if (ms < seconds(1))
+    auto const ms = duration_cast<milliseconds>(d);
+    if (ms < seconds{1})
         return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) <<
@@ -247,67 +221,67 @@ reporter<_>::fmtdur (
     return ss.str();
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::on_suite_begin (
-    suite_info const& info)
+reporter<_>::
+on_suite_begin(suite_info const& info)
 {
-    suite_results_ = suite_results (info.full_name());
+    suite_results_ = suite_results{info.full_name()};
 }
 
-template <class _>
+template<class _>
 void
 reporter<_>::on_suite_end()
 {
-    results_.add (suite_results_);
+    results_.add(suite_results_);
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::on_case_begin (
-    std::string const& name)
+reporter<_>::
+on_case_begin(std::string const& name)
 {
     case_results_ = case_results (name);
-
-    stream_.get() <<
+    os_ <<
         suite_results_.name <<
         (case_results_.name.empty() ?
-            "" : (" " + case_results_.name));
+            "" : (" " + case_results_.name)) << std::endl;
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::on_case_end()
+reporter<_>::
+on_case_end()
 {
-    suite_results_.add (case_results_);
+    suite_results_.add(case_results_);
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::on_pass()
+reporter<_>::
+on_pass()
 {
     ++case_results_.total;
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::on_fail (
-    std::string const& reason)
+reporter<_>::
+on_fail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
-    stream_.get() <<
-        "#" << case_results_.total <<
-        " failed" <<
-        (reason.empty() ? "" : ": ") << reason;
+    os_ <<
+        "#" << case_results_.total << " failed" <<
+        (reason.empty() ? "" : ": ") << reason << std::endl;
 }
 
-template <class _>
+template<class _>
 void
-reporter<_>::on_log (
-    std::string const& s)
+reporter<_>::
+on_log(std::string const& s)
 {
-    stream_.get() << s;
+    os_ << s;
 }
 
 } // detail

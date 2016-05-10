@@ -8,6 +8,7 @@
 #ifndef BEAST_UNIT_TEST_SUITE_INFO_HPP
 #define BEAST_UNIT_TEST_SUITE_INFO_HPP
 
+#include <cstring>
 #include <functional>
 #include <string>
 #include <utility>
@@ -20,19 +21,28 @@ class runner;
 /** Associates a unit test type with metadata. */
 class suite_info
 {
-private:
-    using run_type = std::function <void (runner&)>;
+    using run_type = std::function<void(runner&)>;
 
     std::string name_;
     std::string module_;
     std::string library_;
-    bool m_manual;
-    run_type m_run;
+    bool manual_;
+    run_type run_;
 
 public:
-    template <class = void>
-    suite_info (std::string const& name, std::string const& module,
-        std::string const& library, bool manual, run_type run);
+    suite_info(
+            std::string name,
+            std::string module,
+            std::string library,
+            bool manual,
+            run_type run)
+        : name_(std::move(name))
+        , module_(std::move(module))
+        , library_(std::move(library))
+        , manual_(manual)
+        , run_(std::move(run))
+    {
+    }
 
     std::string const&
     name() const
@@ -52,61 +62,58 @@ public:
         return library_;
     }
 
-    /** Returns `true` if this suite only runs manually. */
+    /// Returns `true` if this suite only runs manually.
     bool
     manual() const
     {
-        return m_manual;
+        return manual_;
     }
 
-    /** Return the canonical suite name as a string. */
-    template <class = void>
+    /// Return the canonical suite name as a string.
     std::string
-    full_name() const;
-
-    /** Run a new instance of the associated test suite. */
-    void
-    run (runner& r) const
+    full_name() const
     {
-        m_run (r);
+        return library_ + "." + module_ + "." + name_;
+    }
+
+    /// Run a new instance of the associated test suite.
+    void
+    run(runner& r) const
+    {
+        run_ (r);
+    }
+
+    friend
+    bool
+    operator<(suite_info const& lhs, suite_info const& rhs)
+    {
+        return
+            std::tie(lhs.library_, lhs.module_, lhs.name_) <
+            std::tie(rhs.library_, rhs.module_, rhs.name_);
     }
 };
 
 //------------------------------------------------------------------------------
 
-template <class>
-suite_info::suite_info (std::string const& name, std::string const& module,
-        std::string const& library, bool manual, run_type run)
-    : name_ (name)
-    , module_ (module)
-    , library_ (library)
-    , m_manual (manual)
-    , m_run (std::move (run))
-{
-}
-
-template <class>
-std::string
-suite_info::full_name() const
-{
-    return library_ + "." + module_ + "." + name_;
-}
-
-inline
-bool
-operator< (suite_info const& lhs, suite_info const& rhs)
-{
-    return lhs.full_name() < rhs.full_name();
-}
-
-/** Convenience for producing suite_info for a given test type. */
-template <class Suite>
+/// Convenience for producing suite_info for a given test type.
+template<class Suite>
 suite_info
-make_suite_info (std::string const& name, std::string const& module,
-    std::string const& library, bool manual)
+make_suite_info(
+    std::string name,
+    std::string module,
+    std::string library,
+    bool manual)
 {
-    return suite_info(name, module, library, manual,
-        [](runner& r) { return Suite{}(r); });
+    return suite_info(
+        std::move(name),
+        std::move(module),
+        std::move(library),
+        manual,
+        [](runner& r)
+        {
+            Suite{}(r);
+        }
+    );
 }
 
 } // unit_test
