@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
@@ -483,15 +484,15 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
                                          DatabaseCon& db)
 {
     auto const loaded = manifestCache_.loadValidatorKeys (
-        config.section ("validator_keys"),
+        config.section (SECTION_VALIDATOR_KEYS),
         journal_);
 
     if (!loaded)
         Throw<std::runtime_error> (
-            "Unable to load keys from [validator_keys]");
+            "Unable to load keys from [" SECTION_VALIDATOR_KEYS "]");
 
     auto const validation_manifest =
-        config.section ("validation_manifest");
+        config.section (SECTION_VALIDATION_MANIFEST);
 
     if (! validation_manifest.lines().empty())
     {
@@ -513,7 +514,8 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
     }
     else
     {
-        JLOG(journal_.debug()) << "No [validation_manifest] section in config";
+        JLOG(journal_.debug()) << "No [" SECTION_VALIDATION_MANIFEST <<
+            "] section in config";
     }
 
     manifestCache_.load (
