@@ -368,8 +368,8 @@ SHAMapInnerNode::updateHash()
         sha512_half_hasher h;
         using beast::hash_append;
         hash_append(h, HashPrefix::innerNode);
-        for (int i = 0; i < mHashes.size(); ++i)
-            hash_append(h, mHashes[i]);
+        for(auto const& hh : mHashes)
+            hash_append(h, hh);
         nh = static_cast<typename
             sha512_half_hasher::result_type>(h);
     }
@@ -441,8 +441,8 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32 (HashPrefix::innerNode);
 
-            for (int i = 0; i < mHashes.size(); ++i)
-                s.add256 (mHashes[i].as_uint256());
+            for (auto const& hh : mHashes)
+                s.add256 (hh.as_uint256());
         }
         else  // format == snfWIRE
         {
@@ -460,8 +460,8 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             }
             else
             {
-                for (int i = 0; i < mHashes.size(); ++i)
-                    s.add256 (mHashes[i].as_uint256());
+                for (auto const& hh : mHashes)
+                    s.add256 (hh.as_uint256());
 
                 s.add8 (2);
             }
