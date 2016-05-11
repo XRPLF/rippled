@@ -60,7 +60,7 @@ SHAMapInnerNodeV2::clone(std::uint32_t seq) const
     p->mHash = mHash;
     p->mIsBranch = mIsBranch;
     p->mFullBelowGen = mFullBelowGen;
-    std::memcpy(p->mHashes, mHashes, sizeof(mHashes));
+    p->mHashes = mHashes;
     p->common_ = common_;
     p->depth_ = depth_;
     std::unique_lock <std::mutex> lock(childLock);
