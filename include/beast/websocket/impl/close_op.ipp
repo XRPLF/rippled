@@ -69,19 +69,11 @@ public:
 
     void operator()()
     {
-        auto& d = *d_;
-        d.cont = false;
-        (*this)(error_code{}, 0, false);
-    }
-
-    void operator()(error_code const& ec)
-    {
-        (*this)(ec, 0);
+        (*this)(error_code{}, 0, true);
     }
 
     void
-    operator()(error_code ec,
-        std::size_t bytes_transferred, bool again = true);
+    operator()(error_code ec, std::size_t, bool again = true);
 
     friend
     void* asio_handler_allocate(
@@ -117,8 +109,8 @@ public:
 template<class NextLayer>
 template<class Handler>
 void 
-stream<NextLayer>::close_op<Handler>::operator()(
-    error_code ec, std::size_t bytes_transferred, bool again)
+stream<NextLayer>::close_op<Handler>::
+operator()(error_code ec, std::size_t, bool again)
 {
     auto& d = *d_;
     d.cont = d.cont || again;
@@ -144,11 +136,20 @@ stream<NextLayer>::close_op<Handler>::operator()(
                         boost::asio::error::operation_aborted, 0));
                 return;
             }
-            d.state = 2;
+            d.state = 3;
             break;
 
         // resume
         case 1:
+            // VFALCO NOTE Should d.cont be `true` or false here?
+            //             Does this count as a continuation of the original call
+            //             to the asynchronous initiation function (async_close)?
+            d.state = 2;
+            d.ws.get_io_service().post(bind_handler(
+                std::move(*this), ec, 0));
+            return;
+
+        case 2:
             if(d.ws.error_)
             {
                 // call handler
@@ -156,10 +157,10 @@ stream<NextLayer>::close_op<Handler>::operator()(
                 ec = boost::asio::error::operation_aborted;
                 break;
             }
-            d.state = 2;
+            d.state = 3; // VFALCO fall through?
             break;
 
-        case 2:
+        case 3:
             // send close
             d.state = 99;
             assert(! d.ws.wr_close_);

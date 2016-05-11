@@ -56,8 +56,7 @@ public:
     }
 
     void
-    operator()(
-        error_code ec, std::size_t, bool again = true);
+    operator()(error_code ec, std::size_t, bool again = true);
 
     friend
     void* asio_handler_allocate(std::size_t size,

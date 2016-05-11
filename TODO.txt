@@ -32,6 +32,10 @@ WebSocket:
 * Don't try to read requests into empty_body
 * Give callers control over the http request/response used during handshake
 * Investigate poor autobahn results in Debug builds
+* Fall through composed operation switch cases
+* Replace stream::error_ with stream::state_, example states: ok, error, abort_io
+  Need a cancel state so waking up a ping stored in invokable knows to call the
+  final handler with operation_aborted
 
 HTTP:
 * Define Parser concept in HTTP

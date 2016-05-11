@@ -81,9 +81,7 @@ public:
 
     void operator()()
     {
-        auto& d = *d_;
-        d.cont = false;
-        (*this)(error_code{}, 0, false);
+        (*this)(error_code{}, 0, true);
     }
 
     void operator()(error_code const& ec)
@@ -187,7 +185,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                         ! d.ws.rd_utf8_check_.finish()))
                 {
                     // invalid utf8
-                    d.state = 16;
+                    d.state = 18;
                     code = close_code::bad_payload;
                     break;
                 }
@@ -215,7 +213,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             if(code != close_code::none)
             {
                 // protocol error
-                d.state = 16;
+                d.state = 18;
                 break;
             }
             d.state = 6;
@@ -241,7 +239,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             if(code != close_code::none)
             {
                 // protocol error
-                d.state = 16;
+                d.state = 18;
                 break;
             }
             if(detail::is_control(d.ws.rd_fh_.op))
@@ -292,7 +290,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                 if(code != close_code::none)
                 {
                     // protocol error
-                    d.state = 16;
+                    d.state = 18;
                     break;
                 }
                 d.fb.reset();
@@ -323,7 +321,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                 if(code != close_code::none)
                 {
                     // protocol error
-                    d.state = 16;
+                    d.state = 18;
                     break;
                 }
                 d.fb.reset();
@@ -337,7 +335,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                 detail::read(d.ws.cr_, d.fb.data(), code);
                 if(code != close_code::none)
                 {
-                    d.state = 16;
+                    d.state = 18;
                     break;
                 }
                 if(! d.ws.wr_close_)
@@ -357,7 +355,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                             read_frame_op>(std::move(*this));
                         return;
                     }
-                    d.state = 10;
+                    d.state = 11;
                     break;
                 }
                 // call handler;
@@ -368,6 +366,12 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
 
         // resume
         case 9:
+            d.state = 10;
+            d.ws.get_io_service().post(bind_handler(
+                std::move(*this), ec, bytes_transferred));
+            return;
+
+        case 10:
             if(d.ws.error_)
             {
                 // call handler
@@ -382,12 +386,12 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                 ec = error::closed;
                 break;
             }
-            d.state = 10;
+            d.state = 11;
             break;
 
         // send close
-        case 10:
-            d.state = 11;
+        case 11:
+            d.state = 12;
             assert(! d.ws.wr_block_);
             d.ws.wr_block_ = &d;
             boost::asio::async_write(d.ws.stream_,
@@ -395,20 +399,26 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             return;;
 
         // teardown
-        case 11:
-            d.state = 12;
+        case 12:
+            d.state = 13;
             websocket_helpers::call_async_teardown(
                 d.ws.next_layer(), std::move(*this));
             return;
 
-        case 12:
+        case 13:
             // call handler
             d.state = 99;
             ec = error::closed;
             break;
 
         // resume
-        case 13:
+        case 14:
+            d.state = 15;
+            d.ws.get_io_service().post(bind_handler(
+                std::move(*this), ec, bytes_transferred));
+            return;
+
+        case 15:
             if(d.ws.error_)
             {
                 // call handler
@@ -422,12 +432,12 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                 d.state = 2;
                 break;
             }
-            d.state = 14;
+            d.state = 16;
             break;
 
-        case 14:
+        case 16:
             // write ping/pong
-            d.state = 15;
+            d.state = 17;
             assert(! d.ws.wr_block_);
             d.ws.wr_block_ = &d;
             boost::asio::async_write(d.ws.stream_,
@@ -435,14 +445,14 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             return;
 
         // sent ping/pong
-        case 15:
+        case 17:
             d.fb.reset();
             d.state = 2;
             d.ws.wr_block_ = nullptr;
             break;
 
         // fail the connection
-        case 16:
+        case 18:
             if(! d.ws.wr_close_)
             {
                 d.fb.reset();
@@ -451,28 +461,36 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                 if(d.ws.wr_block_)
                 {
                     // suspend
-                    d.state = 17;
+                    d.state = 19;
                     d.ws.rd_op_.template emplace<
                         read_frame_op>(std::move(*this));
                     return;
                 }
-                d.state = 18;
+                d.state = 21;
                 break;
             }
-
-        // resume
-        case 17:
-            if(d.ws.wr_close_)
-            {
-                d.state = 19;
-                break;
-            }
-            d.state = 18;
+            d.state = 22;
             break;
 
-        case 18:
+        // resume
+        case 19:
+            d.state = 20;
+            d.ws.get_io_service().post(bind_handler(
+                std::move(*this), ec, bytes_transferred));
+            return;
+
+        case 20:
+            if(d.ws.wr_close_)
+            {
+                d.state = 22;
+                break;
+            }
+            d.state = 21;
+            break;
+
+        case 21:
             // send close
-            d.state = 19;
+            d.state = 22;
             d.ws.wr_close_ = true;
             assert(! d.ws.wr_block_);
             d.ws.wr_block_ = &d;
@@ -481,13 +499,13 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
             return;
 
         // teardown
-        case 19:
-            d.state = 20;
+        case 22:
+            d.state = 23;
             websocket_helpers::call_async_teardown(
                 d.ws.next_layer(), std::move(*this));
             return;
 
-        case 20:
+        case 23:
             // call handler
             d.state = 99;
             ec = error::failed;

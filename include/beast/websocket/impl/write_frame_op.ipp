@@ -57,9 +57,9 @@ class stream<NextLayer>::write_frame_op
                 opcode::cont : ws.wr_opcode_;
             ws.wr_cont_ = ! fin;
             fh.fin = fin;
-            fh.rsv1 = 0;
-            fh.rsv2 = 0;
-            fh.rsv3 = 0;
+            fh.rsv1 = false;
+            fh.rsv2 = false;
+            fh.rsv3 = false;
             fh.len = boost::asio::buffer_size(cb);
             fh.mask = ws.role_ == role_type::client;
             if(fh.mask)
@@ -105,9 +105,7 @@ public:
 
     void operator()()
     {
-        auto& d = *d_;
-        d.cont = false;
-        (*this)(error_code{}, 0, false);
+        (*this)(error_code{}, 0, true);
     }
 
     void operator()(error_code ec,
@@ -179,11 +177,17 @@ operator()(
                 return;
             }
             assert(! d.ws.wr_close_);
-            d.state = 2;
+            d.state = 3;
             break;
 
         // resume
         case 1:
+            d.state = 2;
+            d.ws.get_io_service().post(bind_handler(
+                std::move(*this), ec, bytes_transferred));
+            return;
+
+        case 2:
             if(d.ws.error_)
             {
                 // call handler
@@ -191,10 +195,10 @@ operator()(
                 ec = boost::asio::error::operation_aborted;
                 break;
             }
-            d.state = 2;
+            d.state = 3;
             break;
 
-        case 2:
+        case 3:
         {
             if(! d.fh.mask)
             {
@@ -215,7 +219,7 @@ operator()(
             d.remain -= n;
             detail::mask_inplace(mb, d.key);
             // send header and payload
-            d.state = d.remain > 0 ? 3 : 99;
+            d.state = d.remain > 0 ? 4 : 99;
             assert(! d.ws.wr_block_);
             d.ws.wr_block_ = &d;
             boost::asio::async_write(d.ws.stream_,
@@ -225,7 +229,7 @@ operator()(
         }
 
         // sent masked payload
-        case 3:
+        case 4:
         {
             auto const n =
                 detail::clamp(d.remain, d.tmp_size);
