@@ -1,0 +1,58 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:Parser Parser]
+
+A [*`Parser`] is used to deserialize HTTP/1 messages from [link beast.types.streams streams].
+Objects of this type are used with [link beast.ref.http__parse http::parse] and
+[link beast.ref.http__async_parse http::async_parse].
+
+In this table:
+
+* `X` denotes a type meeting the requirements of [*`Parser`].
+
+* `a` denotes a value of type `X`.
+
+* `b` is a value meeting the requirements of [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConvertibleToConstBuffer.html [*`ConvertibleToConstBuffer`]].
+
+* `ec` is a value of type [link beast.ref.error_code `error_code&`].
+
+[table Parser requirements
+[[operation] [type] [semantics, pre/post-conditions]]
+[
+    [`a.complete()`]
+    [`bool`]
+    [
+        Returns `true` when a complete HTTP/1 message has been parsed.
+    ]
+]
+[
+    [`a.write(b, ec)`]
+    [`std::size_t`]
+    [
+        Parses the octets in the specified input buffer sequentially until
+        an error occurs, the end of the buffer is reached, or a complete
+        HTTP/1 message has been parsed. If an error occurs, `ec` is set
+        to the error code and parsing stops. This function returns the
+        number of bytes consumed in the input buffer.
+    ]
+]
+[
+    [`a.write_eof(ec)`]
+    [`void`]
+    [
+        Indicates to the parser that no more octets will be available.
+        Typically this function is called when the end of stream is reached.
+        For example, if a call to `boost::asio::ip::tcp::socket::read_some`
+        generates a `boost::asio::error::eof` error. Some HTTP/1 messages
+        determine the end of the message body by an end of file marker or
+        closing of the connection.
+    ]
+]
+]
+
+[endsect]

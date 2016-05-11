@@ -1,0 +1,96 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:Streambuf Streambuf]
+
+A [*`Streambuf`] represents a logical octet sequence divided in two sections,
+the input sequence and the output sequence. Octets are written to the output
+sequence, then moved to the input sequence where they are available for
+reading. When some or all of the input sequence is no longer needed, it may
+be consumed.
+
+The interface to this concept is intended to permit the following
+implementation strategies:
+
+* A single contiguous octet array, which is reallocated as necessary to
+  accommodate changes in the size of the octet sequence.
+
+* A sequence of one or more octet arrays, where each array is of the same
+  size. Additional octet array objects are appended to the sequence to
+  accommodate changes in the size of the octet sequence.
+
+* A sequence of one or more octet arrays of varying sizes. Additional octet
+  array objects are appended to the sequence to accommodate changes in the
+  size of the character sequence. This is the implementation approached
+  currently offered by [link beast.ref.basic_streambuf `basic_streambuf`].
+
+In the table below:
+
+* `X` denotes a class meeting the requirements of [*`Streambuf`]
+* `a` denotes a value of type `X`
+* `n` denotes a value convertible to `std::size_t`
+* `U`, `T` denote unspecified types.
+
+[table Streambuf requirements
+[[operation] [type] [semantics, pre/post-conditions]]
+[
+    [`X::const_buffers_type`]
+    [`T`]
+    [`T` meets the requirements for [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html `ConstBufferSequence`].]
+]
+[
+    [`X::mutable_buffers_type`]
+    [`U`]
+    [`U` meets the requirements for [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html `MutableBufferSequence`].]
+]
+[
+    [`a.commit(n)`]
+    [`void`]
+    [Moves bytes from the output sequence to the input sequence.]
+]
+[
+    [`a.consume(n)`]
+    [`void`]
+    [Removes bytes from the input sequence.]
+]
+[
+    [`a.data()`]
+    [`T`]
+    [Returns a list of buffers that represents the input sequence.]
+]
+[
+    [`a.prepare(n)`]
+    [`U`]
+    [Returns a list of buffers that represents the output sequence, with
+    the given size.]
+]
+[
+    [`a.size()`]
+    [`std::size_t`]
+    [Returns the size of the input sequence.]
+]
+[
+    [`a.max_size()`]
+    [`std::size_t`]
+    [Returns the maximum size of the stream buffer.]
+]
+[
+    [`read_size_helper(a, n)`]
+    [`std::size_t`]
+    [
+        Returns the suggested number of bytes to read into the output
+        sequence where `n` is an upper limit on this value. One possible
+        implementation is to return the number of bytes that may be prepared
+        without causing a dynamic allocation or `n`, whichever is smaller.
+        Calls to `read_size_helper` will be made without namespace
+        qualification, to allow the rules for argument dependent lookup to
+        take effect.
+    ]
+]
+]
+
+[endsect]

@@ -1528,7 +1528,7 @@
   <xsl:text>    </xsl:text>
   <xsl:choose>
     <xsl:when test="type = 'class AsyncStream'">
-      <xsl:text>class ``[link beast.types.stream.AsyncStream [*AsyncStream]]``</xsl:text>
+      <xsl:text>class ``[link beast.types.streams.AsyncStream [*AsyncStream]]``</xsl:text>
     </xsl:when>
     <xsl:when test="type = 'class AsyncReadStream'">
       <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncReadStream.html [*AsyncReadStream]]``</xsl:text>
@@ -1556,13 +1556,13 @@
       <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*MutableBufferSequence]]``</xsl:text>
     </xsl:when>
    <xsl:when test="declname = 'Stream' or type = 'class Stream'">
-      <xsl:text>class ``[link beast.types.stream.Stream [*Stream]]``</xsl:text>
+      <xsl:text>class ``[link beast.types.streams.Stream [*Stream]]``</xsl:text>
     </xsl:when>
     <xsl:when test="declname = 'Streambuf' or type = 'class Streambuf'">
       <xsl:text>class ``[link beast.types.Streambuf [*Streambuf]]``</xsl:text>
     </xsl:when>
     <xsl:when test="type = 'class SyncStream'">
-      <xsl:text>class ``[link beast.types.stream.SyncStream [*SyncStream]]``</xsl:text>
+      <xsl:text>class ``[link beast.types.streams.SyncStream [*SyncStream]]``</xsl:text>
     </xsl:when>
     <xsl:when test="declname = 'SyncReadStream' or type = 'class SyncReadStream'">
       <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncReadStream.html [*SyncReadStream]]``</xsl:text>

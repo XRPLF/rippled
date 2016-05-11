@@ -1,0 +1,54 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:Reader Reader]
+
+Parser implementations will construct the corresponding `reader` object
+during the parse. This customization point allows the Body to determine
+the strategy for storing incoming message body data.
+
+In this table:
+
+* `X` denotes a type meeting the requirements of [*`Reader`].
+
+* `a` denotes a value of type `X`.
+
+* `p` is any pointer.
+
+* `n` is a value convertible to `std::size_t`.
+
+* `ec` is a value of type `error_code&`.
+
+* `m` denotes a value of type `message const&` where
+    `std::is_same<decltype(m.body), Body::value_type>:value == true`
+
+
+[table Reader requirements
+[[operation] [type] [semantics, pre/post-conditions]]
+[
+    [`X a(m);`]
+    []
+    [
+        `a` is constructible from `m`. The lifetime of `m` is
+        guaranteed to end no earlier than after `a` is destroyed.
+    ]
+]
+[
+    [`a.write(p, n, ec)`]
+    [`void`]
+    [
+        Deserializes the input sequence into the body.
+        If `ec` is set, the deserialization is aborted and the error
+        is returned to the caller.
+    ]
+]
+]
+
+[note Definitions for required `Reader` member functions should be declared
+inline so the generated code becomes part of the implementation. ]
+
+[endsect]

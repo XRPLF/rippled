@@ -191,8 +191,15 @@ supporting its development.
 [include websocket.qbk]
 
 [section:types Type Requirements]
-[include core_types.qbk]
-[include http_types.qbk]
+[include types/Body.qbk]
+[include types/BufferSequence.qbk]
+[include types/Field.qbk]
+[include types/FieldSequence.qbk]
+[include types/Parser.qbk]
+[include types/Reader.qbk]
+[include types/Streambuf.qbk]
+[include types/Streams.qbk]
+[include types/Writer.qbk]
 [endsect]
 
 [include design.qbk]

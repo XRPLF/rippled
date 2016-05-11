@@ -47,8 +47,10 @@
         <entry valign="top">
           <bridgehead renderas="sect3">Functions</bridgehead>
           <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.http__async_parse">async_parse</link></member>
             <member><link linkend="beast.ref.http__async_read">async_read</link></member>
             <member><link linkend="beast.ref.http__async_write">async_write</link></member>
+            <member><link linkend="beast.ref.http__parse">parse</link></member>
             <member><link linkend="beast.ref.http__prepare">prepare</link></member>
             <member><link linkend="beast.ref.http__read">read</link></member>
             <member><link linkend="beast.ref.http__write">write</link></member>
@@ -62,6 +64,7 @@
             <member><link linkend="beast.types.Body">Body</link></member>
             <member><link linkend="beast.types.Field">Field</link></member>
             <member><link linkend="beast.types.FieldSequence">FieldSequence</link></member>
+            <member><link linkend="beast.types.Parser">Parser</link></member>
             <member><link linkend="beast.types.Reader">Reader</link></member>
             <member><link linkend="beast.types.Writer">Writer</link></member>
           </simplelist>
@@ -163,10 +166,10 @@
           <bridgehead renderas="sect3">Concepts</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.types.BufferSequence">BufferSequence</link></member>
-            <member><link linkend="beast.types.stream.AsyncStream">AsyncStream</link></member>
-            <member><link linkend="beast.types.stream.Stream">Stream</link></member>
+            <member><link linkend="beast.types.streams.AsyncStream">AsyncStream</link></member>
+            <member><link linkend="beast.types.streams.Stream">Stream</link></member>
             <member><link linkend="beast.types.Streambuf">Streambuf</link></member>
-            <member><link linkend="beast.types.stream.SyncStream">SyncStream</link></member>
+            <member><link linkend="beast.types.streams.SyncStream">SyncStream</link></member>
           </simplelist>
         </entry>
       </row>
