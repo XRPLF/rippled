@@ -20,7 +20,7 @@ else()
     find_package(Threads)
 
     set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wextra -Wpedantic -Wconversion -Wno-unused-variable")
+      "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wpedantic")
 endif()
 
 message ("cxx Flags: " ${CMAKE_CXX_FLAGS})

@@ -474,14 +474,14 @@ public:
             [](null_parser<true> const&)
             {
             });
-        
+
         parse_ev<true>(
             "GET / HTTP/1.0\r\n"
             "Content-Length: 1\r\n"
             "Content-Length: 2\r\n"
             "\r\n",
                 parse_error::bad_content_length);
-        
+
         parse_ev<true>(
             "GET / HTTP/1.0\r\n"
             "Transfer-Encoding: chunked\r\n"
@@ -489,7 +489,7 @@ public:
             "fffffffffffffffff\r\n"
             "0\r\n\r\n",
                 parse_error::bad_content_length);
-        
+
         parse_ev<true>("GET / HTTP/1.0\r\nContent-Length: 1e9\r\n\r\n",
             parse_error::bad_content_length);
 
@@ -533,9 +533,8 @@ public:
     {
         using boost::asio::buffer;
         std::string s;
-        std::size_t n;
 
-        for(n = 0;; ++n)
+        for(std::size_t n = 0;; ++n)
         {
             // Create a request and set one octet to an invalid char
             s =
@@ -572,7 +571,7 @@ public:
             }
         }
 
-        for(n = 0;; ++n)
+        for(std::size_t n = 0;; ++n)
         {
             // Create a response and set one octet to an invalid char
             s =

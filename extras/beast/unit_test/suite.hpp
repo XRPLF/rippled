@@ -543,7 +543,7 @@ suite::run (runner& r)
 #define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual) \
     static beast::unit_test::detail::insert_suite <Class##_test>   \
         Library ## Module ## Class ## _test_instance (             \
-            #Class, #Module, #Library, manual);
+            #Class, #Module, #Library, manual)
 
 //------------------------------------------------------------------------------
 

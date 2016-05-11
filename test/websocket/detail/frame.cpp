@@ -181,7 +181,7 @@ public:
             check(fh);
         }
     }
-    
+
     void bad(std::initializer_list<std::uint8_t> bs)
     {
         using boost::asio::buffer;

@@ -481,7 +481,6 @@ public:
     {
         stream<socket_type> ws;
 
-        explicit
         con(endpoint_type const& ep, boost::asio::io_service& ios)
             : ws(ios)
         {

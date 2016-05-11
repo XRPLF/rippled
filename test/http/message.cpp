@@ -72,19 +72,19 @@ public:
     {
         static_assert(std::is_constructible<
             message<true, default_body, headers>>::value, "");
-        
+
         static_assert(std::is_constructible<
             message<true, one_arg_body, headers>, Arg1>::value, "");
-        
+
         static_assert(std::is_constructible<
             message<true, one_arg_body, headers>, Arg1 const>::value, "");
-        
+
         static_assert(std::is_constructible<
             message<true, one_arg_body, headers>, Arg1 const&>::value, "");
-        
+
         static_assert(std::is_constructible<
             message<true, one_arg_body, headers>, Arg1&&>::value, "");
-        
+
         static_assert(! std::is_constructible<
             message<true, one_arg_body, headers>>::value, "");
 

@@ -93,7 +93,6 @@ struct message
         @param v An argument forwarded to the headers constructor.
     */
     template<class U, class V>
-    explicit
     message(U&& u, V&& v)
         : headers(std::forward<V>(v))
         , body(std::forward<U>(u))
@@ -118,7 +117,6 @@ struct message
         @param vn A tuple forwarded as a parameter pack to the headers constructor.
     */
     template<class... Un, class... Vn>
-    explicit
     message(std::piecewise_construct_t,
             std::tuple<Un...>&& un, std::tuple<Vn...>&& vn)
         : message(std::piecewise_construct, un, vn,

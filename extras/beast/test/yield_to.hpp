@@ -35,7 +35,7 @@ private:
     std::thread thread_;
     std::mutex m_;
     std::condition_variable cv_;
-    bool running_ = false;;
+    bool running_ = false;
 
 public:
     /// The type of yield context passed to functions.
@@ -70,7 +70,7 @@ public:
         This call will block until the coroutine terminates.
 
         Function will be called with this signature:
-        
+
         @code
             void f(yield_context);
         @endcode

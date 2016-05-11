@@ -478,10 +478,9 @@ write(SyncWriteStream& stream,
             cv.notify_one();
         }};
     auto copy = resume;
-    boost::tribool result;
-    result = wp.w(std::move(copy), ec,
-        detail::writef0_lambda<SyncWriteStream, decltype(wp.sb)>{
-            stream, wp.sb, wp.chunked, ec});
+    boost::tribool result = wp.w(std::move(copy),
+        ec, detail::writef0_lambda<SyncWriteStream,
+            decltype(wp.sb)>{stream, wp.sb, wp.chunked, ec});
     if(ec)
         return;
     if(boost::indeterminate(result))

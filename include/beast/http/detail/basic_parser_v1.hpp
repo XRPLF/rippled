@@ -146,7 +146,7 @@ unhex(char c)
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1  // 112
     }};
     return tab[static_cast<std::uint8_t>(c)];
-};
+}
 
 template<class = void>
 struct parser_str_t

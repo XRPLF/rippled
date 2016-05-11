@@ -42,53 +42,53 @@ public:
         {
             fc_.fail(ec);
         }
-        
+
         void on_method(boost::string_ref const&, error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_uri(boost::string_ref const&, error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_reason(boost::string_ref const&, error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_request(error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_response(error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_field(boost::string_ref const&, error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_value(boost::string_ref const&, error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         int on_headers(error_code& ec)
         {
             fc_.fail(ec);
             return 0;
         }
-        
+
         void on_body(boost::string_ref const&, error_code& ec)
         {
             fc_.fail(ec);
         }
-        
+
         void on_complete(error_code& ec)
         {
             fc_.fail(ec);

@@ -34,7 +34,7 @@ public:
     class string_write_stream
     {
         boost::asio::io_service& ios_;
-    
+
     public:
         std::string str;
 
