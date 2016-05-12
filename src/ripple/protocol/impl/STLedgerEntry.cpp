@@ -76,15 +76,19 @@ void STLedgerEntry::setSLEType ()
         Throw<std::runtime_error> ("invalid ledger entry type");
 
     type_ = mFormat->getType ();
-    if (!setType (mFormat->elements))
+    try
     {
-        if (auto j = debugJournal().warn())
+        setType(mFormat->elements);
+    }
+    catch(std::exception&)
+    {
+        if(auto j = debugJournal().warn())
         {
-            j << "Ledger entry not valid for type " << mFormat->getName ();
-            j << "Object: " << getJson (0);
+            j << "Ledger entry not valid for type " << mFormat->getName();
+            j << "Object: " << getJson(0);
         }
 
-        Throw<std::runtime_error> ("ledger entry not valid for type");
+        Throw<std::runtime_error>("ledger entry not valid for type");
     }
 }
 

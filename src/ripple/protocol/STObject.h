@@ -323,7 +323,7 @@ public:
         v_.reserve (n);
     }
 
-    bool setType (const SOTemplate & type);
+    void setType (const SOTemplate & type);
 
     enum ResultOfSetTypeFromSField : unsigned char
     {typeSetFail, typeIsSet, noTemplate};

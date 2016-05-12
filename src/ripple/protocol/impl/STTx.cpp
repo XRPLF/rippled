@@ -61,10 +61,7 @@ STTx::STTx (STObject&& object)
     : STObject (std::move (object))
 {
     tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
-
-    if (!setType (getTxFormat (tx_type_)->elements))
-        Throw<std::runtime_error> ("transaction not valid");
-
+    setType (getTxFormat (tx_type_)->elements);
     tid_ = getHash(HashPrefix::transactionID);
 }
 
@@ -78,10 +75,7 @@ STTx::STTx (SerialIter& sit)
 
     set (sit);
     tx_type_ = static_cast<TxType> (getFieldU16 (sfTransactionType));
-
-    if (!setType (getTxFormat (tx_type_)->elements))
-        Throw<std::runtime_error> ("transaction not valid");
-
+    setType(getTxFormat (tx_type_)->elements);
     tid_ = getHash(HashPrefix::transactionID);
 }
 
