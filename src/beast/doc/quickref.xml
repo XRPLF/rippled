@@ -33,7 +33,6 @@
             <member><link linkend="beast.ref.http__basic_parser_v1">basic_parser_v1</link></member>
             <member><link linkend="beast.ref.http__basic_streambuf_body">basic_streambuf_body</link></member>
             <member><link linkend="beast.ref.http__empty_body">empty_body</link></member>
-            <member><link linkend="beast.ref.http__error_code">error_code</link></member>
             <member><link linkend="beast.ref.http__headers">headers</link></member>
             <member><link linkend="beast.ref.http__message">message</link></member>
             <member><link linkend="beast.ref.http__resume_context">resume_context</link></member>
@@ -119,6 +118,7 @@
             <member><link linkend="beast.ref.basic_streambuf">basic_streambuf</link></member>
             <member><link linkend="beast.ref.buffers_adapter">buffers_adapter</link></member>
             <member><link linkend="beast.ref.consuming_buffers">consuming_buffers</link></member>
+            <member><link linkend="beast.ref.error_code">error_code</link></member>
             <member><link linkend="beast.ref.handler_alloc">handler_alloc</link></member>
             <member><link linkend="beast.ref.prepared_buffers">prepared_buffers</link></member>
             <member><link linkend="beast.ref.static_streambuf">static_streambuf</link></member>
@@ -126,6 +126,7 @@
             <member><link linkend="beast.ref.static_string">static_string</link></member>
             <member><link linkend="beast.ref.streambuf">streambuf</link></member>
             <member><link linkend="beast.ref.streambuf_readstream">streambuf_readstream</link></member>
+            <member><link linkend="beast.ref.system_error">system_error</link></member>
           </simplelist>
         </entry>
         <entry valign="top">

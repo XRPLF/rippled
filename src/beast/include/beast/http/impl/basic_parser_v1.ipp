@@ -8,7 +8,8 @@
 #ifndef BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 #define BEAST_HTTP_IMPL_BASIC_PARSER_V1_IPP
 
-#include <beast/buffer_concepts.hpp>
+#include <beast/core/buffer_concepts.hpp>
+#include <cassert>
 
 namespace beast {
 namespace http {
@@ -88,6 +89,11 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         s_ = s_closed;
         return used();
     };
+    auto errc = [&]
+    {
+        s_ = s_closed;
+        return used();
+    };
     auto piece = [&]
     {
         return boost::string_ref{
@@ -113,6 +119,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         switch(s_)
         {
         case s_closed:
+        case s_closed_complete:
             return err(parse_error::connection_closed);
             break;
 
@@ -126,6 +133,9 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         case s_req_method_start:
             if(! is_token(ch))
                 return err(parse_error::bad_method);
+            call_on_start(ec);
+            if(ec)
+                return errc();
             cb_ = &self::call_on_method;
             s_ = s_req_method;
             break;
@@ -134,7 +144,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             if(! is_token(ch))
             {
                 if(cb(nullptr))
-                    return used();
+                    return errc();
                 s_ = s_req_space_before_url;
                 goto redo;
             }
@@ -147,23 +157,29 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             break;
 
         case s_req_url_start:
+        {
             if(ch == ' ')
                 return err(parse_error::bad_uri);
-            // VFALCO TODO Require valid URL character
-            if(cb(&self::call_on_uri))
-                return used();
+            // VFALCO TODO Better checking for valid URL characters
+            if(! is_text(ch))
+                return err(parse_error::bad_uri);
+            assert(! cb_);
+            cb(&self::call_on_uri);
             s_ = s_req_url;
             break;
+        }
 
         case s_req_url:
             if(ch == ' ')
             {
                 if(cb(nullptr))
-                    return used();
+                    return errc();
                 s_ = s_req_http_start;
                 break;
             }
-            // VFALCO TODO Require valid URL character
+            // VFALCO TODO Better checking for valid URL characters
+            if(! is_text(ch))
+                return err(parse_error::bad_uri);
             break;
 
         case s_req_http_start:
@@ -241,7 +257,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 return err(parse_error::bad_crlf);
             call_on_request(ec);
             if(ec)
-                return used();
+                return errc();
             s_ = s_header_field_start;
             break;
 
@@ -253,7 +269,14 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             content_length_ = no_content_length;
             switch(ch)
             {
-            case 'H': s_ = s_res_H; break;
+            case 'H':
+                call_on_start(ec);
+                if(ec)
+                    return errc();
+                s_ = s_res_H;
+                break;
+            // VFALCO NOTE this allows whitespace at the beginning,
+            //        need to check rfc7230
             case '\r':
             case '\n':
                 break;
@@ -361,13 +384,16 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 s_ = s_res_line_almost_done;
                 break;
             }
+            // VFALCO Is this up to spec?
             if(ch == '\n')
             {
                 s_ = s_header_field_start;
                 break;
             }
+            if(! is_text(ch))
+                return err(parse_error::bad_status);
             if(cb(&self::call_on_reason))
-                return used();
+                return errc();
             pos_ = 0;
             s_ = s_res_status;
             break;
@@ -376,17 +402,19 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             if(ch == '\r')
             {
                 if(cb(nullptr))
-                    return used();
+                    return errc();
                 s_ = s_res_line_almost_done;
                 break;
             }
             if(ch == '\n')
             {
                 if(cb(nullptr))
-                    return used();
+                    return errc();
                 s_ = s_header_field_start;
                 break;
             }
+            if(! is_text(ch))
+                return err(parse_error::bad_status);
             break;
 
         case s_res_line_almost_done:
@@ -398,7 +426,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         case s_res_line_done:
             call_on_response(ec);
             if(ec)
-                return used();
+                return errc();
             s_ = s_header_field_start;
             goto redo;
 
@@ -427,8 +455,8 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 fs_ = h_general;
                 break;
             }
-            if(cb(&self::call_on_field))
-                return used();
+            assert(! cb_);
+            cb(&self::call_on_field);
             s_ = s_header_field;
             break;
         }
@@ -525,7 +553,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             if(ch == ':')
             {
                 if(cb(nullptr))
-                    return used();
+                    return errc();
                 s_ = s_header_value_start;
                 break;
             }
@@ -575,7 +603,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             }
             call_on_value(ec, boost::string_ref{"", 0});
             if(ec)
-                return used();
+                return errc();
             s_ = s_header_field_start;
             goto redo;
 
@@ -625,7 +653,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             }
             pos_ = 0;
             if(cb(&self::call_on_value))
-                return used();
+                return errc();
             s_ = s_header_value_text;
             break;
         }
@@ -637,7 +665,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 if(ch == '\r')
                 {
                     if(cb(nullptr))
-                        return used();
+                        return errc();
                     s_ = s_header_value_discard_lWs;
                     break;
                 }
@@ -771,9 +799,9 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 return err(parse_error::bad_value);
             call_on_value(ec, boost::string_ref(" ", 1));
             if(ec)
-                return used();
+                return errc();
             if(cb(&self::call_on_value))
-                return used();
+                return errc();
             s_ = s_header_value_text;
             break;
 
@@ -807,7 +835,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 return err(parse_error::bad_crlf);
             if(flags_ & parse_flag::trailing)
             {
-                //if(cb(&self::call_on_chunk_complete)) return used();
+                //if(cb(&self::call_on_chunk_complete)) return errc();
                 s_ = s_complete;
                 goto redo;
             }
@@ -817,7 +845,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 (parse_flag::upgrade | parse_flag::connection_upgrade)) /*|| method == "connect"*/;
             auto const maybe_skip = call_on_headers(ec);
             if(ec)
-                return used();
+                return errc();
             switch(maybe_skip)
             {
             case 0: break;
@@ -835,7 +863,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             assert(! cb_);
             call_on_headers(ec);
             if(ec)
-                return used();
+                return errc();
             bool const hasBody =
                 (flags_ & parse_flag::chunked) || (content_length_ > 0 &&
                     content_length_ != no_content_length);
@@ -874,8 +902,8 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         }
 
         case s_body_identity0:
-            if(cb(&self::call_on_body))
-                return used();
+            assert(! cb_);
+            cb(&self::call_on_body);
             s_ = s_body_identity;
             goto redo; // VFALCO fall through?
 
@@ -899,8 +927,8 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         }
 
         case s_body_identity_eof0:
-            if(cb(&self::call_on_body))
-                return used();
+            assert(! cb_);
+            cb(&self::call_on_body);
             s_ = s_body_identity_eof;
             goto redo; // VFALCO fall through?
 
@@ -959,13 +987,13 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
                 s_ = s_header_field_start;
                 break;
             }
-            //call_chunk_header(ec); if(ec) return used();
+            //call_chunk_header(ec); if(ec) return errc();
             s_ = s_chunk_data_start;
             break;
 
         case s_chunk_data_start:
-            if(cb(&self::call_on_body))
-                return used();
+            assert(! cb_);
+            cb(&self::call_on_body);
             s_ = s_chunk_data;
             goto redo; // VFALCO fall through?
 
@@ -987,7 +1015,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
             if(ch != '\r')
                 return err(parse_error::bad_crlf);
             if(cb(nullptr))
-                return used();
+                return errc();
             s_ = s_chunk_data_done;
             break;
 
@@ -1001,10 +1029,10 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
         case s_complete:
             ++p;
             if(cb(nullptr))
-                return used();
+                return errc();
             call_on_complete(ec);
             if(ec)
-                return used();
+                return errc();
             s_ = s_restart;
             return used();
 
@@ -1020,7 +1048,7 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
     {
         (this->*cb_)(ec, piece());
         if(ec)
-            return used();
+            return errc();
     }
     return used();
 }
@@ -1032,17 +1060,31 @@ write_eof(error_code& ec)
 {
     switch(s_)
     {
+    case s_restart:
+        s_ = s_closed_complete;
+        break;
+
+    case s_closed:
+    case s_closed_complete:
+        break;
+
+    case s_body_identity_eof0:
     case s_body_identity_eof:
         cb_ = nullptr;
         call_on_complete(ec);
         if(ec)
-            return;
-        return;
+        {
+            s_ = s_closed;
+            break;
+        }
+        s_ = s_closed_complete;
+        break;
+
     default:
+        s_ = s_closed;
+        ec = parse_error::short_read;
         break;
     }
-    ec = parse_error::short_read;
-    s_ = s_closed;
 }
 
 template<bool isRequest, class Derived>

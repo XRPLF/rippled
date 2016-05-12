@@ -8,8 +8,8 @@
 #ifndef BEAST_WEBSOCKET_IMPL_CLOSE_OP_HPP
 #define BEAST_WEBSOCKET_IMPL_CLOSE_OP_HPP
 
-#include <beast/handler_alloc.hpp>
-#include <beast/static_streambuf.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/static_streambuf.hpp>
 #include <memory>
 
 namespace beast {

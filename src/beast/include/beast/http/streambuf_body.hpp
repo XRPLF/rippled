@@ -9,8 +9,8 @@
 #define BEAST_HTTP_STREAMBUF_BODY_HPP
 
 #include <beast/http/body_type.hpp>
-#include <beast/buffer_cat.hpp>
-#include <beast/streambuf.hpp>
+#include <beast/core/buffer_cat.hpp>
+#include <beast/core/streambuf.hpp>
 #include <memory>
 #include <string>
 

@@ -8,8 +8,8 @@
 #ifndef BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 #define BEAST_WEBSOCKET_IMPL_TEARDOWN_IPP
 
-#include <beast/async_completion.hpp>
-#include <beast/handler_concepts.hpp>
+#include <beast/core/async_completion.hpp>
+#include <beast/core/handler_concepts.hpp>
 #include <memory>
 
 namespace beast {
@@ -32,8 +32,7 @@ class teardown_tcp_op
         int state = 0;
 
         template<class DeducedHandler>
-        data(DeducedHandler&& h_,
-                socket_type& socket_)
+        data(DeducedHandler&& h_, socket_type& socket_)
             : socket(socket_)
             , h(std::forward<DeducedHandler>(h_))
             , cont(boost_asio_handler_cont_helpers::

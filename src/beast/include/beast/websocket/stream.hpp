@@ -12,9 +12,9 @@
 #include <beast/websocket/detail/stream_base.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/streambuf_readstream.hpp>
-#include <beast/async_completion.hpp>
-#include <beast/detail/get_lowest_layer.hpp>
+#include <beast/core/streambuf_readstream.hpp>
+#include <beast/core/async_completion.hpp>
+#include <beast/core/detail/get_lowest_layer.hpp>
 #include <boost/asio.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <algorithm>
@@ -202,7 +202,7 @@ public:
     void
     set_option(read_buffer_size const& o)
     {
-        stream_.reserve(o.value);
+        stream_.capacity(o.value);
     }
 
     /// Set the maximum incoming message size allowed
@@ -217,7 +217,7 @@ public:
     set_option(write_buffer_size const& o)
     {
         wr_buf_size_ = std::max<std::size_t>(o.value, 1024);
-        stream_.reserve(o.value);
+        stream_.capacity(o.value);
     }
 
     /** Get the io_service associated with the stream.
@@ -617,7 +617,7 @@ public:
 
         If the passed HTTP request is a valid HTTP WebSocket Upgrade
         request, a HTTP response is sent back indicating a successful
-        upgrade. When this asynchronous operaiton completes, the stream is
+        upgrade. When this asynchronous operation completes, the stream is
         then ready to send and receive WebSocket protocol frames and messages.
 
         If the HTTP request is invalid or cannot be satisfied, a HTTP

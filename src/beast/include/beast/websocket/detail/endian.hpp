@@ -48,9 +48,9 @@ little_uint32_to_native(void const* buf)
         std::uint8_t const*>(buf);
     return
                                     p[0] +
-        (static_cast<std::uint64_t>(p[1])<< 8) +
-        (static_cast<std::uint64_t>(p[2])<<16) +
-        (static_cast<std::uint64_t>(p[3])<<24);
+        (static_cast<std::uint32_t>(p[1])<< 8) +
+        (static_cast<std::uint32_t>(p[2])<<16) +
+        (static_cast<std::uint32_t>(p[3])<<24);
 }
 
 inline

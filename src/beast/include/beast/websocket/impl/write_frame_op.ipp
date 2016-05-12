@@ -8,11 +8,11 @@
 #ifndef BEAST_WEBSOCKET_IMPL_WRITE_FRAME_OP_HPP
 #define BEAST_WEBSOCKET_IMPL_WRITE_FRAME_OP_HPP
 
-#include <beast/buffer_cat.hpp>
-#include <beast/bind_handler.hpp>
-#include <beast/consuming_buffers.hpp>
-#include <beast/handler_alloc.hpp>
-#include <beast/static_streambuf.hpp>
+#include <beast/core/buffer_cat.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/consuming_buffers.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/static_streambuf.hpp>
 #include <beast/websocket/detail/frame.hpp>
 #include <algorithm>
 #include <cassert>

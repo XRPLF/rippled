@@ -8,10 +8,10 @@
 #ifndef BEAST_WEBSOCKET_IMPL_RESPONSE_OP_HPP
 #define BEAST_WEBSOCKET_IMPL_RESPONSE_OP_HPP
 
-#include <beast/handler_alloc.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/http/write.hpp>
+#include <beast/core/handler_alloc.hpp>
 #include <memory>
 
 namespace beast {

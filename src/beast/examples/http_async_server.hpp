@@ -1,21 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+//
+// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
 
 #ifndef BEAST_EXAMPLE_HTTP_ASYNC_SERVER_H_INCLUDED
 #define BEAST_EXAMPLE_HTTP_ASYNC_SERVER_H_INCLUDED
@@ -23,7 +11,7 @@
 #include "file_body.hpp"
 #include "http_stream.hpp"
 
-#include <beast/placeholders.hpp>
+#include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <cstdio>
 #include <iostream>
@@ -127,8 +115,10 @@ private:
             path = root_ + path;
             if(! boost::filesystem::exists(path))
             {
-                response_v1<string_body> resp(
-                    {404, "Not Found", req_.version});
+                response_v1<string_body> resp;
+                resp.status = 404;
+                resp.reason = "Not Found";
+                resp.version = req_.version;
                 resp.headers.replace("Server", "http_async_server");
                 resp.body = "The file '" + path + "' was not found";
                 prepare(resp);
@@ -137,8 +127,10 @@ private:
                         asio::placeholders::error));
                 return;
             }
-            resp_type resp(
-                {200, "OK", req_.version});
+            resp_type resp;
+            resp.status = 200;
+            resp.reason = "OK";
+            resp.version = req_.version;
             resp.headers.replace("Server", "http_async_server");
             resp.headers.replace("Content-Type", "text/html");
             resp.body = path;

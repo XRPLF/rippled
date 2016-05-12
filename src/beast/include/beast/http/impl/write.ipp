@@ -11,13 +11,13 @@
 #include <beast/http/resume_context.hpp>
 #include <beast/http/detail/chunk_encode.hpp>
 #include <beast/http/detail/has_content_length.hpp>
-#include <beast/buffer_cat.hpp>
-#include <beast/bind_handler.hpp>
-#include <beast/buffer_concepts.hpp>
-#include <beast/handler_alloc.hpp>
-#include <beast/stream_concepts.hpp>
-#include <beast/streambuf.hpp>
-#include <beast/write_streambuf.hpp>
+#include <beast/core/buffer_cat.hpp>
+#include <beast/core/bind_handler.hpp>
+#include <beast/core/buffer_concepts.hpp>
+#include <beast/core/handler_alloc.hpp>
+#include <beast/core/stream_concepts.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/write_streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
@@ -39,22 +39,11 @@ write_firstline(Streambuf& streambuf,
     write(streambuf, msg.method);
     write(streambuf, " ");
     write(streambuf, msg.url);
-    switch(msg.version)
-    {
-    case 10:
-        write(streambuf, " HTTP/1.0\r\n");
-        break;
-    case 11:
-        write(streambuf, " HTTP/1.1\r\n");
-        break;
-    default:
-        write(streambuf, " HTTP/");
-        write(streambuf, msg.version / 10);
-        write(streambuf, ".");
-        write(streambuf, msg.version % 10);
-        write(streambuf, "\r\n");
-        break;
-    }
+    write(streambuf, " HTTP/");
+    write(streambuf, msg.version / 10);
+    write(streambuf, ".");
+    write(streambuf, msg.version % 10);
+    write(streambuf, "\r\n");
 }
 
 template<class Streambuf, class Body, class Headers>
@@ -62,22 +51,11 @@ void
 write_firstline(Streambuf& streambuf,
     message_v1<false, Body, Headers> const& msg)
 {
-    switch(msg.version)
-    {
-    case 10:
-        write(streambuf, "HTTP/1.0 ");
-        break;
-    case 11:
-        write(streambuf, "HTTP/1.1 ");
-        break;
-    default:
-        write(streambuf, " HTTP/");
-        write(streambuf, msg.version / 10);
-        write(streambuf, ".");
-        write(streambuf, msg.version % 10);
-        write(streambuf, " ");
-        break;
-    }
+    write(streambuf, "HTTP/");
+    write(streambuf, msg.version / 10);
+    write(streambuf, ".");
+    write(streambuf, msg.version % 10);
+    write(streambuf, " ");
     write(streambuf, msg.status);
     write(streambuf, " ");
     write(streambuf, msg.reason);
@@ -170,13 +148,13 @@ class write_op
         }
     };
 
-    class writef0
+    class writef0_lambda
     {
         write_op& self_;
 
     public:
         explicit
-        writef0(write_op& self)
+        writef0_lambda(write_op& self)
             : self_(self)
         {
         }
@@ -198,13 +176,13 @@ class write_op
         }
     };
 
-    class writef
+    class writef_lambda
     {
         write_op& self_;
 
     public:
         explicit
-        writef(write_op& self)
+        writef_lambda(write_op& self)
             : self_(self)
         {
         }
@@ -322,7 +300,7 @@ operator()(error_code ec, std::size_t, bool again)
         case 1:
         {
             auto const result = d.wp.w(
-                std::move(d.copy), ec, writef0{*this});
+                std::move(d.copy), ec, writef0_lambda{*this});
             if(ec)
             {
                 // call handler
@@ -353,7 +331,7 @@ operator()(error_code ec, std::size_t, bool again)
         case 3:
         {
             auto const result = d.wp.w(
-                std::move(d.copy), ec, writef{*this});
+                std::move(d.copy), ec, writef_lambda{*this});
             if(ec)
             {
                 // call handler
@@ -400,7 +378,7 @@ operator()(error_code ec, std::size_t, bool again)
 }
 
 template<class SyncWriteStream, class Streambuf>
-class writef0_write
+class writef0_lambda
 {
     Streambuf const& sb_;
     SyncWriteStream& stream_;
@@ -408,7 +386,7 @@ class writef0_write
     error_code& ec_;
 
 public:
-    writef0_write(SyncWriteStream& stream,
+    writef0_lambda(SyncWriteStream& stream,
             Streambuf const& sb, bool chunked, error_code& ec)
         : sb_(sb)
         , stream_(stream)
@@ -431,14 +409,14 @@ public:
 };
 
 template<class SyncWriteStream>
-class writef_write
+class writef_lambda
 {
     SyncWriteStream& stream_;
     bool chunked_;
     error_code& ec_;
 
 public:
-    writef_write(SyncWriteStream& stream,
+    writef_lambda(SyncWriteStream& stream,
             bool chunked, error_code& ec)
         : stream_(stream)
         , chunked_(chunked)
@@ -473,7 +451,7 @@ write(SyncWriteStream& stream,
     error_code ec;
     write(stream, msg, ec);
     if(ec)
-        throw boost::system::system_error{ec};
+        throw system_error{ec};
 }
 
 template<class SyncWriteStream,
@@ -500,45 +478,42 @@ write(SyncWriteStream& stream,
             cv.notify_one();
         }};
     auto copy = resume;
-    for(;;)
+    boost::tribool result = wp.w(std::move(copy),
+        ec, detail::writef0_lambda<SyncWriteStream,
+            decltype(wp.sb)>{stream, wp.sb, wp.chunked, ec});
+    if(ec)
+        return;
+    if(boost::indeterminate(result))
     {
+        copy = resume;
         {
-            auto result = wp.w(std::move(copy), ec,
-                detail::writef0_write<SyncWriteStream, decltype(wp.sb)>{
-                    stream, wp.sb, wp.chunked, ec});
-            if(ec)
-                return;
-            if(result)
-                break;
-            if(boost::indeterminate(result))
-            {
-                boost::asio::write(stream, wp.sb.data(), ec);
-                if(ec)
-                    return;
-                wp.sb.consume(wp.sb.size());
-                copy = resume;
-                std::unique_lock<std::mutex> lock(m);
-                cv.wait(lock, [&]{ return ready; });
-                ready = false;
-            }
+            std::unique_lock<std::mutex> lock(m);
+            cv.wait(lock, [&]{ return ready; });
+            ready = false;
         }
-        wp.sb.consume(wp.sb.size());
+        boost::asio::write(stream, wp.sb.data(), ec);
+        if(ec)
+            return;
+        result = false;
+    }
+    wp.sb.consume(wp.sb.size());
+    if(! result)
+    {
         for(;;)
         {
-            auto result = wp.w(std::move(copy), ec,
-                detail::writef_write<SyncWriteStream>{
+            result = wp.w(std::move(copy), ec,
+                detail::writef_lambda<SyncWriteStream>{
                     stream, wp.chunked, ec});
             if(ec)
                 return;
             if(result)
                 break;
-            if(boost::indeterminate(result))
-            {
-                copy = resume;
-                std::unique_lock<std::mutex> lock(m);
-                cv.wait(lock, [&]{ return ready; });
-                ready = false;
-            }
+            if(! result)
+                continue;
+            copy = resume;
+            std::unique_lock<std::mutex> lock(m);
+            cv.wait(lock, [&]{ return ready; });
+            ready = false;
         }
     }
     if(wp.chunked)
@@ -597,7 +572,7 @@ public:
         error_code ec;
         auto const n = write_some(buffers, ec);
         if(ec)
-            throw boost::system::system_error{ec};
+            throw system_error{ec};
         return n;
     }
 
@@ -636,7 +611,7 @@ operator<<(std::ostream& os,
     error_code ec;
     write(oss, msg, ec);
     if(ec && ec != boost::asio::error::eof)
-        throw boost::system::system_error{ec};
+        throw system_error{ec};
     return os;
 }
 

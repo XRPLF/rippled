@@ -774,6 +774,9 @@
   <xsl:value-of select="substring-after($file, 'include/')"/>
   <xsl:text>] &#xd;&#xd;</xsl:text>
   <xsl:choose>
+    <xsl:when test="contains($file, 'beast/core')">
+      <xsl:text>['Convenience header: ][^beast/core.hpp]</xsl:text>
+    </xsl:when>
     <xsl:when test="contains($file, 'beast/http')">
       <xsl:text>['Convenience header: ][^beast/http.hpp]</xsl:text>
     </xsl:when>

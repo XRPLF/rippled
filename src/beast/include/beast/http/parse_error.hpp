@@ -8,8 +8,7 @@
 #ifndef BEAST_HTTP_PARSE_ERROR_HPP
 #define BEAST_HTTP_PARSE_ERROR_HPP
 
-#include <beast/http/error.hpp>
-#include <boost/system/error_code.hpp>
+#include <beast/core/error.hpp>
 
 namespace beast {
 namespace http {
@@ -35,7 +34,9 @@ enum class parse_error
 
     invalid_chunk_size,
 
-    short_read
+    short_read,
+
+    general
 };
 
 class parse_error_category : public boost::system::error_category
@@ -98,7 +99,7 @@ public:
             return "unexpected end of data";
 
         default:
-            return "beast::http::parser error";
+            return "parse error";
         }
     }
 

@@ -8,8 +8,8 @@
 #ifndef BEAST_WEBSOCKET_IMPL_SSL_IPP_INCLUDED
 #define BEAST_WEBSOCKET_IMPL_SSL_IPP_INCLUDED
 
-#include <beast/async_completion.hpp>
-#include <beast/handler_concepts.hpp>
+#include <beast/core/async_completion.hpp>
+#include <beast/core/handler_concepts.hpp>
 
 namespace beast {
 namespace websocket {
@@ -60,11 +60,9 @@ public:
     template<class DeducedHandler>
     explicit
     teardown_ssl_op(
-        DeducedHandler&& h,
-            stream_type& stream)
+            DeducedHandler&& h, stream_type& stream)
         : d_(std::make_shared<data>(
-            std::forward<DeducedHandler>(h),
-                stream))
+            std::forward<DeducedHandler>(h), stream))
     {
         (*this)(error_code{}, false);
     }

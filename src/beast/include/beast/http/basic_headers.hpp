@@ -8,8 +8,8 @@
 #ifndef BEAST_HTTP_BASIC_HEADERS_HPP
 #define BEAST_HTTP_BASIC_HEADERS_HPP
 
-#include <beast/detail/ci_char_traits.hpp>
-#include <beast/detail/empty_base_optimization.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
+#include <beast/core/detail/empty_base_optimization.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/lexical_cast.hpp>

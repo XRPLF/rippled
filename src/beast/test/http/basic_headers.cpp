@@ -8,13 +8,12 @@
 // Test that header file is self-contained.
 #include <beast/http/basic_headers.hpp>
 
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 
 namespace beast {
 namespace http {
-namespace test {
 
-class basic_headers_test : public beast::detail::unit_test::suite
+class basic_headers_test : public beast::unit_test::suite
 {
 public:
     template<class Allocator>
@@ -29,6 +28,14 @@ public:
     {
         for(std::size_t i = 1; i<= n; ++i)
             h.insert(std::to_string(i), i);
+    }
+
+    template<class U, class V>
+    static
+    void
+    self_assign(U& u, V&& v)
+    {
+        u = std::forward<V>(v);
     }
 
     void testHeaders()
@@ -48,16 +55,27 @@ public:
         bh h3(std::move(h1));
         expect(h3.size() == 2);
         expect(h1.size() == 0);
+        self_assign(h3, std::move(h3));
+        expect(h3.size() == 2);
+        expect(h2.erase("Not-Present") == 0);
+    }
+
+    void testRFC2616()
+    {
+        bh h;
+        h.insert("a", "x");
+        h.insert("a", "y");
+        expect(h["a"] == "x,y");
     }
 
     void run() override
     {
         testHeaders();
+        testRFC2616();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(basic_headers,http,beast);
 
-} // test
-} // asio
+} // http
 } // beast

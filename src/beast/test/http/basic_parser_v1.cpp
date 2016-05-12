@@ -10,12 +10,11 @@
 
 #include "message_fuzz.hpp"
 
-#include <beast/streambuf.hpp>
-#include <beast/write_streambuf.hpp>
-#include <beast/http/error.hpp>
+#include <beast/core/streambuf.hpp>
+#include <beast/core/write_streambuf.hpp>
+#include <beast/core/detail/ci_char_traits.hpp>
 #include <beast/http/rfc2616.hpp>
-#include <beast/detail/ci_char_traits.hpp>
-#include <beast/detail/unit_test/suite.hpp>
+#include <beast/unit_test/suite.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cassert>
 #include <climits>
@@ -27,10 +26,8 @@
 namespace beast {
 namespace http {
 
-class basic_parser_v1_test : public beast::detail::unit_test::suite
+class basic_parser_v1_test : public beast::unit_test::suite
 {
-    std::mt19937 rng_;
-
 public:
     struct cb_req_checker
     {
@@ -52,6 +49,7 @@ public:
             cb_req_checker, cb_res_checker>::type
 
     {
+        bool start = false;
         bool field = false;
         bool value = false;
         bool headers = false;
@@ -61,6 +59,10 @@ public:
     private:
         friend class basic_parser_v1<isRequest, cb_checker<isRequest>>;
 
+        void on_start(error_code&)
+        {
+            this->start = true;
+        }
         void on_method(boost::string_ref const&, error_code&)
         {
             this->method = true;
@@ -179,55 +181,6 @@ public:
         }
     };
 
-    void
-    testCallbacks()
-    {
-        using boost::asio::buffer;
-        {
-            cb_checker<true> p;
-            error_code ec;
-            std::string const s =
-                "GET / HTTP/1.1\r\n"
-                "User-Agent: test\r\n"
-                "Content-Length: 1\r\n"
-                "\r\n"
-                "*";
-            p.write(buffer(s), ec);
-            if( expect(! ec))
-            {
-                expect(p.method);
-                expect(p.uri);
-                expect(p.request);
-                expect(p.field);
-                expect(p.value);
-                expect(p.headers);
-                expect(p.body);
-                expect(p.complete);
-            }
-        }
-        {
-            cb_checker<false> p;
-            error_code ec;
-            std::string const s =
-                "HTTP/1.1 200 OK\r\n"
-                "Server: test\r\n"
-                "Content-Length: 1\r\n"
-                "\r\n"
-                "*";
-            p.write(buffer(s), ec);
-            if( expect(! ec))
-            {
-                expect(p.reason);
-                expect(p.response);
-                expect(p.field);
-                expect(p.value);
-                expect(p.headers);
-                expect(p.body);
-                expect(p.complete);
-            }
-        }
-    }
-
     // Parse the entire input buffer as a valid message,
     // then parse in two pieces of all possible lengths.
     //
@@ -236,13 +189,22 @@ public:
     parse(boost::string_ref const& m, F&& f)
     {
         using boost::asio::buffer;
+        for(;;)
         {
             error_code ec;
             Parser p;
             p.write(buffer(m.data(), m.size()), ec);
+            if(! expect(! ec, ec.message()))
+                break;
+            if(p.needs_eof())
+            {
+                p.write_eof(ec);
+                if(! expect(! ec, ec.message()))
+                    break;
+            }
             if(expect(p.complete()))
-                if(expect(! ec, ec.message()))
-                    f(p);
+                f(p);
+            break;
         }
         for(std::size_t i = 1; i < m.size() - 1; ++i)
         {
@@ -251,18 +213,21 @@ public:
             p.write(buffer(&m[0], i), ec);
             if(! expect(! ec, ec.message()))
                 continue;
-            if(p.complete())
-            {
-                f(p);
-            }
-            else
+            if(! p.complete())
             {
                 p.write(buffer(&m[i], m.size() - i), ec);
                 if(! expect(! ec, ec.message()))
                     continue;
-                expect(p.complete());
-                f(p);
             }
+            if(! p.complete() && p.needs_eof())
+            {
+                p.write_eof(ec);
+                if(! expect(! ec, ec.message()))
+                    continue;
+            }
+            if(! expect(p.complete()))
+                continue;
+            f(p);
         }
     }
 
@@ -300,19 +265,6 @@ public:
         }
     }
 
-    //--------------------------------------------------------------------------
-
-    template<class UInt = std::size_t>
-    UInt
-    rand(std::size_t n)
-    {
-        return static_cast<UInt>(
-            std::uniform_int_distribution<
-                std::size_t>{0, n-1}(rng_));
-    }
-
-    //--------------------------------------------------------------------------
-
     // Parse a valid message with expected version
     //
     template<bool isRequest>
@@ -340,24 +292,89 @@ public:
             });
     }
 
+    //--------------------------------------------------------------------------
+
+    // Check all callbacks invoked
+    void
+    testCallbacks()
+    {
+        using boost::asio::buffer;
+        {
+            cb_checker<true> p;
+            error_code ec;
+            std::string const s =
+                "GET / HTTP/1.1\r\n"
+                "User-Agent: test\r\n"
+                "Content-Length: 1\r\n"
+                "\r\n"
+                "*";
+            p.write(buffer(s), ec);
+            if(expect(! ec))
+            {
+                expect(p.start);
+                expect(p.method);
+                expect(p.uri);
+                expect(p.request);
+                expect(p.field);
+                expect(p.value);
+                expect(p.headers);
+                expect(p.body);
+                expect(p.complete);
+            }
+        }
+        {
+            cb_checker<false> p;
+            error_code ec;
+            std::string const s =
+                "HTTP/1.1 200 OK\r\n"
+                "Server: test\r\n"
+                "Content-Length: 1\r\n"
+                "\r\n"
+                "*";
+            p.write(buffer(s), ec);
+            if(expect(! ec))
+            {
+                expect(p.start);
+                expect(p.reason);
+                expect(p.response);
+                expect(p.field);
+                expect(p.value);
+                expect(p.headers);
+                expect(p.body);
+                expect(p.complete);
+            }
+        }
+    }
+
     void
     testVersion()
     {
-        version<true>("GET / HTTP/0.0\r\n\r\n", 0, 0);
-        version<true>("GET / HTTP/0.1\r\n\r\n", 0, 1);
-        version<true>("GET / HTTP/0.9\r\n\r\n", 0, 9);
-        version<true>("GET / HTTP/1.0\r\n\r\n", 1, 0);
-        version<true>("GET / HTTP/1.1\r\n\r\n", 1, 1);
-        version<true>("GET / HTTP/9.9\r\n\r\n", 9, 9);
-        version<true>("GET / HTTP/999.999\r\n\r\n", 999, 999);
+        version <true>("GET / HTTP/0.0\r\n\r\n", 0, 0);
+        version <true>("GET / HTTP/0.1\r\n\r\n", 0, 1);
+        version <true>("GET / HTTP/0.9\r\n\r\n", 0, 9);
+        version <true>("GET / HTTP/1.0\r\n\r\n", 1, 0);
+        version <true>("GET / HTTP/1.1\r\n\r\n", 1, 1);
+        version <true>("GET / HTTP/9.9\r\n\r\n", 9, 9);
+        version <true>("GET / HTTP/999.999\r\n\r\n", 999, 999);
         parse_ev<true>("GET / HTTP/1000.0\r\n\r\n", parse_error::bad_version);
         parse_ev<true>("GET / HTTP/0.1000\r\n\r\n", parse_error::bad_version);
         parse_ev<true>("GET / HTTP/99999999999999999999.0\r\n\r\n", parse_error::bad_version);
         parse_ev<true>("GET / HTTP/0.99999999999999999999\r\n\r\n", parse_error::bad_version);
+
+        version <false>("HTTP/0.0 200 OK\r\n\r\n", 0, 0);
+        version <false>("HTTP/0.1 200 OK\r\n\r\n", 0, 1);
+        version <false>("HTTP/0.9 200 OK\r\n\r\n", 0, 9);
+        version <false>("HTTP/1.0 200 OK\r\n\r\n", 1, 0);
+        version <false>("HTTP/1.1 200 OK\r\n\r\n", 1, 1);
+        version <false>("HTTP/9.9 200 OK\r\n\r\n", 9, 9);
+        version <false>("HTTP/999.999 200 OK\r\n\r\n", 999, 999);
+        parse_ev<false>("HTTP/1000.0 200 OK\r\n\r\n", parse_error::bad_version);
+        parse_ev<false>("HTTP/0.1000 200 OK\r\n\r\n", parse_error::bad_version);
+        parse_ev<false>("HTTP/99999999999999999999.0 200 OK\r\n\r\n", parse_error::bad_version);
+        parse_ev<false>("HTTP/0.99999999999999999999 200 OK\r\n\r\n", parse_error::bad_version);
     }
 
-    void
-    testConnection(std::string const& token,
+    void testConnection(std::string const& token,
         std::uint8_t flag)
     {
         checkf("GET / HTTP/1.1\r\nConnection:" + token + "\r\n\r\n", flag);
@@ -380,8 +397,7 @@ public:
         checkf("GET / HTTP/1.1\r\nConnection: X," + token + "\t\r\n\r\n", flag);
     }
 
-    void
-    testContentLength()
+    void testContentLength()
     {
         std::size_t const length = 0;
         std::string const length_s =
@@ -401,8 +417,7 @@ public:
         checkf("GET / HTTP/1.1\r\nContent-Length:\t\r\n" "\t"+ length_s + "\r\n\r\n", parse_flag::contentlength);
     }
 
-    void
-    testTransferEncoding()
+    void testTransferEncoding()
     {
         checkf("GET / HTTP/1.1\r\nTransfer-Encoding:chunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
         checkf("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
@@ -418,17 +433,15 @@ public:
         checkf("GET / HTTP/1.1\r\nTransfer-Encoding:\t\r\n" "\tchunked\r\n\r\n0\r\n\r\n", parse_flag::chunked );
     }
 
-    void
-    testFlags()
+    void testFlags()
     {
-        testConnection("keep-alive",
-            parse_flag::connection_keep_alive);
+        testConnection("keep-alive", parse_flag::connection_keep_alive);
+        testConnection("close", parse_flag::connection_close);
+        testConnection("upgrade", parse_flag::connection_upgrade);
 
-        testConnection("close",
-            parse_flag::connection_close);
-
-        testConnection("upgrade",
-            parse_flag::connection_upgrade);
+        checkf("GET / HTTP/1.1\r\nConnection: close, win\r\n\r\n", parse_flag::connection_close);
+        checkf("GET / HTTP/1.1\r\nConnection: keep-alive, win\r\n\r\n", parse_flag::connection_keep_alive);
+        checkf("GET / HTTP/1.1\r\nConnection: upgrade, win\r\n\r\n", parse_flag::connection_upgrade);
 
         testContentLength();
 
@@ -445,11 +458,46 @@ public:
             "GET / HTTP/1.1\r\n"
             "Transfer-Encoding:chunked\r\n"
             "Content-Length: 0\r\n"
+            "Proxy-Connection: close\r\n"
             "\r\n", parse_error::illegal_content_length);
     }
 
-    void
-    testUpgrade()
+    void testHeaders()
+    {
+        parse<null_parser<true>>(
+            "GET / HTTP/1.0\r\n"
+            "Conniving: yes\r\n"
+            "Content-Lengthening: yes\r\n"
+            "Transfer-Encoding: deflate\r\n"
+            "Connection: sweep\r\n"
+            "\r\n",
+            [](null_parser<true> const&)
+            {
+            });
+
+        parse_ev<true>(
+            "GET / HTTP/1.0\r\n"
+            "Content-Length: 1\r\n"
+            "Content-Length: 2\r\n"
+            "\r\n",
+                parse_error::bad_content_length);
+
+        parse_ev<true>(
+            "GET / HTTP/1.0\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "\r\n"
+            "fffffffffffffffff\r\n"
+            "0\r\n\r\n",
+                parse_error::bad_content_length);
+
+        parse_ev<true>("GET / HTTP/1.0\r\nContent-Length: 1e9\r\n\r\n",
+            parse_error::bad_content_length);
+
+        parse_ev<true>("GET / HTTP/1.0\r\nContent-Length: 99999999999999999999999\r\n\r\n",
+            parse_error::bad_content_length);
+    }
+
+    void testUpgrade()
     {
         using boost::asio::buffer;
         null_parser<true> p;
@@ -479,6 +527,86 @@ public:
         parse_ev<true>("GET / HTTP/1.1000",     parse_error::bad_version);
         parse_ev<true>("GET / HTTP/1.1\r ",     parse_error::bad_crlf);
         parse_ev<true>("GET / HTTP/1.1\r\nf :", parse_error::bad_field);
+    }
+
+    void testInvalidMatrix()
+    {
+        using boost::asio::buffer;
+        std::string s;
+
+        for(std::size_t n = 0;; ++n)
+        {
+            // Create a request and set one octet to an invalid char
+            s =
+                "GET / HTTP/1.1\r\n"
+                "Host: localhost\r\n"
+                "User-Agent: test\r\n"
+                "Content-Length: 00\r\n"
+                "\r\n";
+            auto const len = s.size();
+            if(n < len)
+            {
+                s[n] = 0;
+                for(std::size_t m = 1; m < len - 1; ++m)
+                {
+                    null_parser<true> p;
+                    error_code ec;
+                    p.write(buffer(s.data(), m), ec);
+                    if(ec)
+                    {
+                        pass();
+                        continue;
+                    }
+                    p.write(buffer(s.data() + m, len - m), ec);
+                    expect(ec);
+                }
+            }
+            else
+            {
+                null_parser<true> p;
+                error_code ec;
+                p.write(buffer(s.data(), s.size()), ec);
+                expect(! ec, ec.message());
+                break;
+            }
+        }
+
+        for(std::size_t n = 0;; ++n)
+        {
+            // Create a response and set one octet to an invalid char
+            s =
+                "HTTP/1.1 200 OK\r\n"
+                "Server: test\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "\r\n"
+                "0\r\n\r\n";
+            auto const len = s.size();
+            if(n < len)
+            {
+                s[n] = 0;
+                for(std::size_t m = 1; m < len - 1; ++m)
+                {
+                    null_parser<false> p;
+                    error_code ec;
+                    p.write(buffer(s.data(), m), ec);
+                    if(ec)
+                    {
+                        pass();
+                        continue;
+                    }
+                    p.write(buffer(s.data() + m, len - m), ec);
+                    expect(ec);
+                }
+            }
+            else
+            {
+                null_parser<false> p;
+                error_code ec;
+                p.write(buffer(s.data(), s.size()), ec);
+                expect(! ec, ec.message());
+                break;
+            }
+        }
     }
 
     void
@@ -588,24 +716,30 @@ public:
                         expect(p.body == body);
                     };
             };
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nContent-Length: 1\r\n\r\n123", match("1"));
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nContent-Length: 3\r\n\r\n123", match("123"));
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nContent-Length: 0\r\n\r\n", match(""));
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
             "1\r\n"
             "a\r\n"
             "0\r\n"
             "\r\n", match("a"));
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
             "2\r\n"
             "ab\r\n"
             "0\r\n"
             "\r\n", match("ab"));
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
             "2\r\n"
@@ -614,6 +748,7 @@ public:
             "c\r\n"
             "0\r\n"
             "\r\n", match("abc"));
+
         parse<test_parser<true>>(
             "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
             "10\r\n"
@@ -627,8 +762,10 @@ public:
         testCallbacks();
         testVersion();
         testFlags();
+        testHeaders();
         testUpgrade();
         testBad();
+        testInvalidMatrix();
         testRandomReq(100);
         testRandomResp(100);
         testBody();

@@ -40,11 +40,11 @@
 
 [section:intro Introduction]
 
-Beast is a cross-platform C++ library built on Boost, containing two modules
-implementing widely used network protocols. Beast.HTTP offers a universal
-model for describing, sending, and receiving HTTP messages while Beast.WebSocket
-provides a complete implementation of the WebSocket protocol. Their design
-achieves these goals:
+Beast is a cross-platform C++ library built on Boost.Asio and Boost, containing
+two modules implementing widely used network protocols. Beast.HTTP offers a
+universal model for describing, sending, and receiving HTTP messages while
+Beast.WebSocket provides a complete implementation of the WebSocket protocol.
+Their design achieves these goals:
 
 * [*Symmetry.] Interfaces are role-agnostic; the same interfaces can be
 used to build clients, servers, or both.
@@ -60,7 +60,7 @@ strategies; important decisions such as buffer or thread management are
 left to users of the library.
 
 * [*Performance.] The implementation performs competitively, making it a
-realistic choice for building a high performance network server.
+realistic choice for building high performance network servers.
 
 * [*Scalability.] Development of network applications that scale to thousands
 of concurrent connections is possible with the implementation.
@@ -112,19 +112,20 @@ int main()
     boost::asio::connect(sock,
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
 
-    using namespace beast::http;
-
     // Send HTTP request using beast
-    request<empty_body> req({"GET", "/", 11});
+    beast::http::request_v1<beast::http::empty_body> req;
+    req.method = "GET";
+    req.url = "/";
+    req.version = 11;
     req.headers.replace("Host", host + ":" + std::to_string(sock.remote_endpoint().port()));
     req.headers.replace("User-Agent", "Beast");
-    prepare(req);
-    write(sock, req);
+    beast::http::prepare(req);
+    beast::http::write(sock, req);
 
     // Receive and print HTTP response using beast
     beast::streambuf sb;
-    response<streambuf_body> resp;
-    read(sock, sb, resp);
+    beast::http::response_v1<beast::http::streambuf_body> resp;
+    beast::http::read(sock, sb, resp);
     std::cout << resp;
 }
 ```
@@ -147,18 +148,16 @@ int main()
     boost::asio::connect(sock,
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "80"}));
 
-    using namespace beast::websocket;
-
     // WebSocket connect and send message using beast
-    stream<boost::asio::ip::tcp::socket&> ws(sock);
+    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws(sock);
     ws.handshake(host, "/");
     ws.write(boost::asio::buffer("Hello, world!"));
 
     // Receive WebSocket message, print and close using beast
     beast::streambuf sb;
-    opcode op;
+    beast::websocket::opcode op;
     ws.read(op, sb);
-    ws.close(close_code::normal);
+    ws.close(beast::websocket::close_code::normal);
     std::cout << to_string(sb.data()) << "\n";
 }
 ```
@@ -169,12 +168,16 @@ int main()
 
 [section:credits Credits]
 
+Boost.Asio is the inspiration behind which all of the interfaces and
+implementation strategies are built. Some parts of the documentation are
+written to closely resemble the wording and presentation of Boost.Asio
+documentation. Credit goes to Christopher Kohloff for the wonderful
+Asio library and the ideas upon which Beast is built.
+
 Beast would not be possible without the considerable time and patience
 contributed by David Schwartz, Edward Hennis, Howard Hinnant, Miguel Portilla,
 Nikolaos Bougalis, Scott Determan, Scott Schurr, and Ripple Labs for
-supporting its development. Thanks also to Christopher Kohloff, whose Asio
-C++ library is the inspiration behind which much of the design and
-documentation is based.
+supporting its development.
 
 [endsect]
 

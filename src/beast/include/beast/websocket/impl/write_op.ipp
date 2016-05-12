@@ -8,9 +8,9 @@
 #ifndef BEAST_WEBSOCKET_IMPL_WRITE_OP_HPP
 #define BEAST_WEBSOCKET_IMPL_WRITE_OP_HPP
 
-#include <beast/consuming_buffers.hpp>
-#include <beast/prepare_buffers.hpp>
-#include <beast/handler_alloc.hpp>
+#include <beast/core/consuming_buffers.hpp>
+#include <beast/core/prepare_buffers.hpp>
+#include <beast/core/handler_alloc.hpp>
 #include <beast/websocket/detail/frame.hpp>
 #include <algorithm>
 #include <cassert>
@@ -121,9 +121,9 @@ operator()(error_code ec, bool again)
             auto const fin = d.remain <= 0;
             if(fin)
                 d.state = 99;
-            d.ws.async_write_frame(fin,
-                prepare_buffers(n, d.cb), std::move(*this));
+            auto const pb = prepare_buffers(n, d.cb);
             d.cb.consume(n);
+            d.ws.async_write_frame(fin, pb, std::move(*this));
             return;
         }
         }
