@@ -50,17 +50,14 @@ class base_uint
     static_assert (Bits >= 64,
         "The length of a base_uint in bits must be at least 64.");
 
-    static_assert(sizeof(unsigned int) == 32 / CHAR_BIT,
-        "Expecting 32-bit unsigned ints");
-
 protected:
     enum { WIDTH = Bits / 32 };
 
     // This is really big-endian in byte order.
-    // We sometimes use unsigned int for speed.
+    // We sometimes use std::uint32_t for speed.
 
     // NIKB TODO: migrate to std::array
-    unsigned int pn[WIDTH];
+    std::uint32_t pn[WIDTH];
 
 public:
     //--------------------------------------------------------------------------
@@ -271,7 +268,7 @@ public:
     {
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            std::uint32_t prev = pn[i];
+            auto prev = pn[i];
             pn[i] = hostToBigend (bigendToHost (pn[i]) - 1);
 
             if (prev != 0)
