@@ -271,11 +271,16 @@ ServerHandlerImp::onWSMessage(
                 sb.commit(boost::asio::buffer_copy(
                     sb.prepare(n), boost::asio::buffer(p, n)));
             });
+        JLOG(m_journal.trace())
+            << "Websocket sending '" << jvResult << "'";
         session->send(std::make_shared<
             StreambufWSMsg<decltype(sb)>>(std::move(sb)));
         session->complete();
         return;
     }
+
+    JLOG(m_journal.trace())
+        << "Websocket received '" << jv << "'";
 
     m_jobQueue.postCoro(jtCLIENT, "WS-Client",
         [this, session = std::move(session),
@@ -290,6 +295,8 @@ ServerHandlerImp::onWSMessage(
                     sb.commit(boost::asio::buffer_copy(
                         sb.prepare(n), boost::asio::buffer(p, n)));
                 });
+            JLOG(m_journal.trace())
+                << "Websocket sending '" << jr << "'";
             session->send(std::make_shared<
                 StreambufWSMsg<decltype(sb)>>(std::move(sb)));
             session->complete();
