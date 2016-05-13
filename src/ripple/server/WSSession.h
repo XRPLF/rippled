@@ -22,6 +22,7 @@
 
 #include <ripple/server/Port.h>
 #include <ripple/server/Writer.h>
+#include <beast/core/prepare_buffers.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/logic/tribool.hpp>
@@ -82,28 +83,25 @@ public:
     prepare(std::size_t bytes,
         std::function<void(void)>) override
     {
-        if(sb_.size() == 0)
-            return { true, {} };
+        if (sb_.size() == 0)
+            return{true, {}};
         sb_.consume(n_);
         boost::tribool done;
-        // VFALCO TODO respect `bytes` fully
-        if(bytes < sb_.size())
+        if (bytes < sb_.size())
         {
             n_ = bytes;
-            done = boost::indeterminate;
+            done = false;
         }
         else
         {
             n_ = sb_.size();
             done = true;
         }
-        std::vector<boost::asio::const_buffer> vb;
-        auto const& data = sb_.data();
-        vb.reserve(std::distance(
-            data.begin(), data.end()));
-        std::copy(data.begin(), data.end(),
-            std::back_inserter(vb));
-        return { done, vb };
+        auto const pb = beast::prepare_buffers(n_, sb_.data());
+        std::vector<boost::asio::const_buffer> vb (
+            std::distance(pb.begin(), pb.end()));
+        std::copy(pb.begin(), pb.end(), std::back_inserter(vb));
+        return{done, vb};
     }
 };
 
