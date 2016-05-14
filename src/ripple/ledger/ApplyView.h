@@ -204,6 +204,14 @@ public:
         STAmount const& preCreditBalance)
     {
     }
+
+    // Called when the owner count changes
+    // This is required to support PaymentSandbox
+    virtual
+    void adjustOwnerCountHook (AccountID const& account,
+        std::uint32_t cur, std::uint32_t next)
+    {};
+
 };
 
 } // ripple

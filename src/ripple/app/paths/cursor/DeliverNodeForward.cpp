@@ -35,7 +35,8 @@ TER PathCursor::deliverNodeForward (
     AccountID const& uInAccountID,    // --> Input owner's account.
     STAmount const& saInReq,        // --> Amount to deliver.
     STAmount& saInAct,              // <-- Amount delivered, this invocation.
-    STAmount& saInFees) const       // <-- Fees charged, this invocation.
+    STAmount& saInFees,             // <-- Fees charged, this invocation.
+    bool callerHasLiquidity) const
 {
     TER resultCode   = tesSUCCESS;
 
@@ -66,7 +67,7 @@ TER PathCursor::deliverNodeForward (
 
         // Determine values for pass to adjust saInAct, saInFees, and
         // node().saFwdDeliver.
-        advanceNode (saInAct, false);
+        advanceNode (saInAct, false, callerHasLiquidity);
 
         // If needed, advance to next funded offer.
 
@@ -224,7 +225,8 @@ TER PathCursor::deliverNodeForward (
                     node().offerOwnerAccount_,  // --> Current holder.
                     saOutPassMax,             // --> Amount available.
                     saOutPassAct,             // <-- Amount delivered.
-                    saOutPassFees);           // <-- Fees charged.
+                    saOutPassFees,            // <-- Fees charged.
+                    saInAct > zero);
 
                 if (resultCode != tesSUCCESS)
                     break;

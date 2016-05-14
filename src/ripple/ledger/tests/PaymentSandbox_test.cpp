@@ -22,6 +22,7 @@
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/tests/PathSet.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/AmountConversions.h>
 
 namespace ripple {
 namespace test {
@@ -290,6 +291,46 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 expect (pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
         }
     }
+    void testReserve()
+    {
+        testcase ("Reserve");
+        using namespace jtx;
+
+        beast::Journal dj;
+
+        auto accountFundsXRP = [&dj](
+            ReadView const& view, AccountID const& id) -> XRPAmount
+        {
+            return toAmount<XRPAmount> (accountHolds (
+                view, id, xrpCurrency (), xrpAccount (), fhZERO_IF_FROZEN, dj));
+        };
+
+        auto reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount
+        {
+            return env.current ()->fees ().accountReserve (count);
+        };
+
+        Env env (*this);
+
+        Account const alice ("alice");
+        env.fund (reserve(env, 1), alice);
+
+        auto const closeTime = dcSoTime () +
+                100 * env.closed ()->info ().closeTimeResolution;
+        env.close (closeTime);
+        ApplyViewImpl av (&*env.current (), tapNONE);
+        PaymentSandbox sb (&av);
+        {
+            // Send alice an amount and spend it. The deferredCredits will cause her balance
+            // to drop below the reserve. Make sure her funds are zero (there was a bug that
+            // caused her funds to become negative).
+
+            accountSend (sb, xrpAccount (), alice, XRP(100), dj);
+            accountSend (sb, alice, xrpAccount (), XRP(100), dj);
+            expect (accountFundsXRP (sb, alice) == beast::zero);
+        }
+
+    }
 
 public:
     void run ()
@@ -297,6 +338,7 @@ public:
         testSelfFunding ();
         testSubtractCredits ();
         testTinyBalance ();
+        testReserve();
     }
 };
 

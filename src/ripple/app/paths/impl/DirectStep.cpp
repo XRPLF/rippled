@@ -197,7 +197,8 @@ maxFlow (
     AccountID const& dst,
     Currency const& cur)
 {
-    auto const srcOwed = creditBalance2 (sb, dst, src, cur);
+    auto const srcOwed = toAmount<IOUAmount> (
+        accountHolds (sb, src, cur, dst, fhIGNORE_FREEZE, beast::Journal{}));
 
     if (srcOwed.signum () > 0)
         return {srcOwed, true};
@@ -211,7 +212,8 @@ DirectStepI::redeems (ReadView const& sb, bool fwd) const
 {
     if (!fwd)
     {
-        auto const srcOwed = creditBalance2 (sb, dst_, src_, currency_);
+        auto const srcOwed = accountHolds (
+            sb, src_, currency_, dst_, fhIGNORE_FREEZE, beast::Journal{});
         return srcOwed.signum () > 0;
     }
     else
