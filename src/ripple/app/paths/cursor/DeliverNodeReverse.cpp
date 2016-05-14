@@ -39,8 +39,9 @@ TER PathCursor::deliverNodeReverseImpl (
     AccountID const& uOutAccountID, // --> Output owner's account.
     STAmount const& saOutReq,       // --> Funds requested to be
                                     // delivered for an increment.
-    STAmount& saOutAct              // <-- Funds actually delivered for an
+    STAmount& saOutAct,             // <-- Funds actually delivered for an
                                     // increment
+    bool callerHasLiquidity
                                         ) const
 {
     TER resultCode   = tesSUCCESS;
@@ -73,7 +74,7 @@ TER PathCursor::deliverNodeReverseImpl (
             return telFAILED_PROCESSING;
         }
 
-        resultCode = advanceNode (saOutAct, true);
+        resultCode = advanceNode (saOutAct, true, callerHasLiquidity);
         // If needed, advance to next funded offer.
 
         if (resultCode != tesSUCCESS || !node().offerIndex_)
@@ -251,7 +252,19 @@ TER PathCursor::deliverNodeReverseImpl (
             resultCode = increment(-1).deliverNodeReverseImpl(
                 node().offerOwnerAccount_,
                 saInPassReq,
-                saInPassAct);
+                saInPassAct,
+                saOutAct > zero);
+
+            if (dcSwitchover(view().info().parentCloseTime))
+            {
+                // The recursive call is dry this time, but we have liquidity
+                // from previous calls
+                if (resultCode == tecPATH_DRY && saOutAct > zero)
+                {
+                    resultCode = tesSUCCESS;
+                    break;
+                }
+            }
 
             JLOG (j_.trace())
                 << "deliverNodeReverse: offer --> OFFER --> ? :"
@@ -372,7 +385,7 @@ TER PathCursor::deliverNodeReverse (
     for (int i = nodeIndex_; i >= 0 && !node (i).isAccount(); --i)
         node (i).directory.restart (multiQuality_);
 
-    return deliverNodeReverseImpl(uOutAccountID, saOutReq, saOutAct);
+    return deliverNodeReverseImpl(uOutAccountID, saOutReq, saOutAct, /*callerHasLiquidity*/false);
 }
 
 }  // path

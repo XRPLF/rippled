@@ -34,14 +34,27 @@ namespace ripple {
 NetClock::time_point const& flowV2SoTime ()
 {
     using namespace std::chrono_literals;
-    // Wed May 25, 2016 10:00:00am PDT
-    static NetClock::time_point const soTime{517510800s};
+    // Mon Aug 29, 2016 10:00:00am PDT
+    static NetClock::time_point const soTime{525805200s};
     return soTime;
 }
 
 bool flowV2Switchover (NetClock::time_point const closeTime)
 {
     return closeTime > flowV2SoTime();
+}
+
+NetClock::time_point const& dcSoTime ()
+{
+    using namespace std::chrono_literals;
+    // Mon May 23, 2016 10:00:00am PDT
+    static NetClock::time_point const soTime{517338000s};
+    return soTime;
+}
+
+bool dcSwitchover (NetClock::time_point const closeTime)
+{
+    return closeTime > dcSoTime();
 }
 
 // VFALCO NOTE A copy of the other one for now
@@ -121,51 +134,85 @@ accountHolds (ReadView const& view,
     if (isXRP(currency))
     {
         // XRP: return balance minus reserve
-        auto const sle = view.read(
-            keylet::account(account));
-        auto const reserve =
-            view.fees().accountReserve(
-                sle->getFieldU32(sfOwnerCount));
-        auto const balance =
-            sle->getFieldAmount(sfBalance).xrp ();
-        if (balance < reserve)
-            amount.clear ();
+        if (dcSwitchover (view.info ().parentCloseTime))
+        {
+            auto const sle = view.read(
+                keylet::account(account));
+            auto const ownerCount =
+                view.ownerCountHook (account, sle->getFieldU32 (sfOwnerCount));
+            auto const reserve =
+                    view.fees().accountReserve(ownerCount);
+
+            auto const fullBalance =
+                sle->getFieldAmount(sfBalance);
+
+            auto const balance = view.balanceHook(
+                account, issuer, fullBalance).xrp();
+
+            if (balance < reserve)
+                amount.clear ();
+            else
+                amount = balance - reserve;
+
+            JLOG (j.trace()) << "accountHolds:" <<
+                " account=" << to_string (account) <<
+                " amount=" << amount.getFullText () <<
+                " fullBalance=" << to_string (fullBalance.xrp()) <<
+                " balance=" << to_string (balance) <<
+                " reserve=" << to_string (reserve);
+
+            return amount;
+        }
         else
-            amount = balance - reserve;
-        JLOG (j.trace()) << "accountHolds:" <<
-            " account=" << to_string (account) <<
-            " amount=" << amount.getFullText () <<
-            " balance=" << to_string (balance) <<
-            " reserve=" << to_string (reserve);
+        {
+            // pre-switchover
+            // XRP: return balance minus reserve
+            auto const sle = view.read(
+                keylet::account(account));
+            auto const reserve =
+                    view.fees().accountReserve(
+                        sle->getFieldU32(sfOwnerCount));
+            auto const balance =
+                    sle->getFieldAmount(sfBalance).xrp ();
+            if (balance < reserve)
+                amount.clear ();
+            else
+                amount = balance - reserve;
+            JLOG (j.trace()) << "accountHolds:" <<
+                    " account=" << to_string (account) <<
+                    " amount=" << amount.getFullText () <<
+                    " balance=" << to_string (balance) <<
+                    " reserve=" << to_string (reserve);
+            return view.balanceHook(
+                account, issuer, amount);
+        }
+    }
+
+    // IOU: Return balance on trust line modulo freeze
+    auto const sle = view.read(keylet::line(
+        account, issuer, currency));
+    if (! sle)
+    {
+        amount.clear ({currency, issuer});
+    }
+    else if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
+        isFrozen(view, account, currency, issuer))
+    {
+        amount.clear (Issue (currency, issuer));
     }
     else
     {
-        // IOU: Return balance on trust line modulo freeze
-        auto const sle = view.read(keylet::line(
-            account, issuer, currency));
-        if (! sle)
+        amount = sle->getFieldAmount (sfBalance);
+        if (account > issuer)
         {
-            amount.clear ({currency, issuer});
+            // Put balance in account terms.
+            amount.negate();
         }
-        else if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
-            isFrozen(view, account, currency, issuer))
-        {
-            amount.clear (Issue (currency, issuer));
-        }
-        else
-        {
-            amount = sle->getFieldAmount (sfBalance);
-            if (account > issuer)
-            {
-                // Put balance in account terms.
-                amount.negate();
-            }
-            amount.setIssuer (issuer);
-        }
-        JLOG (j.trace()) << "accountHolds:" <<
-            " account=" << to_string (account) <<
-            " amount=" << amount.getFullText ();
+        amount.setIssuer (issuer);
     }
+    JLOG (j.trace()) << "accountHolds:" <<
+        " account=" << to_string (account) <<
+        " amount=" << amount.getFullText ();
 
     return view.balanceHook(
         account, issuer, amount);
@@ -609,13 +656,14 @@ adjustOwnerCount (ApplyView& view,
     auto const current =
         sle->getFieldU32 (sfOwnerCount);
     auto adjusted = current + amount;
+    AccountID const id = (*sle)[sfAccount];
     if (amount > 0)
     {
         // Overflow is well defined on unsigned
         if (adjusted < current)
         {
             JLOG (j.fatal()) <<
-                "Account " << sle->getAccountID(sfAccount) <<
+                "Account " << id <<
                 " owner count exceeds max!";
             adjusted =
                 std::numeric_limits<std::uint32_t>::max ();
@@ -627,12 +675,13 @@ adjustOwnerCount (ApplyView& view,
         if (adjusted > current)
         {
             JLOG (j.fatal()) <<
-                "Account " << sle->getAccountID (sfAccount) <<
+                "Account " << id <<
                 " owner count set below 0!";
             adjusted = 0;
             assert(false);
         }
     }
+    view.adjustOwnerCountHook (id, current, adjusted);
     sle->setFieldU32 (sfOwnerCount, adjusted);
     view.update(sle);
 }

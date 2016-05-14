@@ -49,8 +49,8 @@ DeferredCredits::credit (AccountID const& sender,
     assert (!amount.negative());
 
     auto const k = makeKey (sender, receiver, amount.getCurrency ());
-    auto i = map_.find (k);
-    if (i == map_.end ())
+    auto i = credits_.find (k);
+    if (i == credits_.end ())
     {
         Value v;
 
@@ -67,7 +67,7 @@ DeferredCredits::credit (AccountID const& sender,
             v.lowAcctOrigBalance = -preCreditSenderBalance;
         }
 
-        map_[k] = v;
+        credits_[k] = v;
     }
     else
     {
@@ -80,6 +80,29 @@ DeferredCredits::credit (AccountID const& sender,
     }
 }
 
+void
+DeferredCredits::ownerCount (AccountID const& id,
+    std::uint32_t cur,
+    std::uint32_t next)
+{
+    auto const v = std::max (cur, next);
+    auto r = ownerCounts_.emplace (std::make_pair (id, v));
+    if (!r.second)
+    {
+        auto& mapVal = r.first->second;
+        mapVal = std::max (v, mapVal);
+    }
+}
+
+boost::optional<std::uint32_t>
+DeferredCredits::ownerCount (AccountID const& id) const
+{
+    auto i = ownerCounts_.find (id);
+    if (i != ownerCounts_.end ())
+        return i->second;
+    return boost::none;
+}
+
 // Get the adjustments for the balance between main and other.
 auto
 DeferredCredits::adjustments (AccountID const& main,
@@ -89,8 +112,8 @@ DeferredCredits::adjustments (AccountID const& main,
     boost::optional<Adjustment> result;
 
     Key const k = makeKey (main, other, currency);
-    auto i = map_.find (k);
-    if (i == map_.end ())
+    auto i = credits_.find (k);
+    if (i == credits_.end ())
         return result;
 
     auto const& v = i->second;
@@ -110,17 +133,27 @@ DeferredCredits::adjustments (AccountID const& main,
 void DeferredCredits::apply(
     DeferredCredits& to)
 {
-    for (auto& p : map_)
+    for (auto const& i : credits_)
     {
-        auto r =
-            to.map_.emplace(p);
-        if (! r.second)
+        auto r = to.credits_.emplace (i);
+        if (!r.second)
         {
             auto& toVal = r.first->second;
-            auto const& fromVal = p.second;
+            auto const& fromVal = i.second;
             toVal.lowAcctCredits += fromVal.lowAcctCredits;
             toVal.highAcctCredits += fromVal.highAcctCredits;
             // Do not update the orig balance, it's already correct
+        }
+    }
+
+    for (auto const& i : ownerCounts_)
+    {
+        auto r = to.ownerCounts_.emplace (i);
+        if (!r.second)
+        {
+            auto& toVal = r.first->second;
+            auto const& fromVal = i.second;
+            toVal = std::max (toVal, fromVal);
         }
     }
 }
@@ -172,8 +205,27 @@ PaymentSandbox::balanceHook (AccountID const& account,
         }
     }
 
-    assert (!isXRP(issuer) || adjustedAmt >= beast::zero);
+    if (isXRP(issuer) && adjustedAmt < beast::zero)
+        // A calculated negative XRP balance is not an error case. Consider a
+        // payment snippet that credits a large XRP amount and then debits the
+        // same amount. The credit can't be used but we subtract the debit and
+        // calculate a negative value. It's not an error case.
+        adjustedAmt.clear();
+
     return adjustedAmt;
+}
+
+std::uint32_t
+PaymentSandbox::ownerCountHook (AccountID const& account,
+    std::uint32_t count) const
+{
+    std::uint32_t result = count;
+    for (auto curSB = this; curSB; curSB = curSB->ps_)
+    {
+        if (auto adj = curSB->tab_.ownerCount (account))
+            result = std::max (result, *adj);
+    }
+    return result;
 }
 
 void
@@ -183,6 +235,14 @@ PaymentSandbox::creditHook (AccountID const& from,
             STAmount const& preCreditBalance)
 {
     tab_.credit (from, to, amount, preCreditBalance);
+}
+
+void
+PaymentSandbox::adjustOwnerCountHook (AccountID const& account,
+    std::uint32_t cur,
+        std::uint32_t next)
+{
+    tab_.ownerCount (account, cur, next);
 }
 
 void

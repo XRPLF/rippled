@@ -303,8 +303,11 @@ public:
     std::shared_ptr<SLE const>
     read (Keylet const& k) const = 0;
 
-    // Called to adjust returned balances
-    // This is required to support PaymentSandbox
+    // Accounts in a payment are not allowed to use assets acquired during that
+    // payment. The PaymentSandbox tracks the debits, credits, and owner count
+    // changes that accounts make during a payment. `balanceHook` adjusts balances
+    // so newly acquired assets are not counted toward the balance.
+    // This is required to support PaymentSandbox.
     virtual
     STAmount
     balanceHook (AccountID const& account,
@@ -312,6 +315,19 @@ public:
             STAmount const& amount) const
     {
         return amount;
+    }
+
+    // Accounts in a payment are not allowed to use assets acquired during that
+    // payment. The PaymentSandbox tracks the debits, credits, and owner count
+    // changes that accounts make during a payment. `ownerCountHook` adjusts the
+    // ownerCount so it returns the max value of the ownerCount so far.
+    // This is required to support PaymentSandbox.
+    virtual
+    std::uint32_t
+    ownerCountHook (AccountID const& account,
+        std::uint32_t count) const
+    {
+        return count;
     }
 
     // used by the implementation

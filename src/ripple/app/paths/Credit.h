@@ -60,13 +60,6 @@ STAmount creditBalance (
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency);
-
-IOUAmount
-creditBalance2 (
-    ReadView const& v,
-    AccountID const& acc,
-    AccountID const& iss,
-    Currency const& cur);
 /** @} */
 
 } // ripple

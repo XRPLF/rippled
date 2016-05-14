@@ -20,13 +20,16 @@
 #include <BeastConfig.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/View.h>
 
 namespace ripple {
 namespace path {
 
-TER PathCursor::advanceNode (STAmount const& amount, bool reverse) const
+TER PathCursor::advanceNode (STAmount const& amount, bool reverse, bool callerHasLiquidity) const
 {
-    bool multi = multiQuality_ || amount == zero;
+    bool const multi = dcSwitchover (view ().info ().parentCloseTime)
+        ? (multiQuality_ || (!callerHasLiquidity && amount == zero))
+        : (multiQuality_ || amount == zero);
 
     // If the multiQuality_ is unchanged, use the PathCursor we're using now.
     if (multi == multiQuality_)

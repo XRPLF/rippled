@@ -57,6 +57,16 @@ public:
         STAmount const& amount,
         STAmount const& preCreditSenderBalance);
 
+    void ownerCount (AccountID const& id,
+        std::uint32_t cur,
+            std::uint32_t next);
+
+    // Get the adjusted owner count. Since DeferredCredits is meant to be used
+    // in payments, and payments only decrease owner counts, return the max
+    // remembered owner count.
+    boost::optional<std::uint32_t>
+    ownerCount (AccountID const& id) const;
+
     void apply (DeferredCredits& to);
 private:
     // lowAccount, highAccount
@@ -75,7 +85,8 @@ private:
         AccountID const& a2,
             Currency const& c);
 
-    std::map<Key, Value> map_;
+    std::map<Key, Value> credits_;
+    std::map<AccountID, std::uint32_t> ownerCounts_;
 };
 
 } // detail
@@ -154,6 +165,15 @@ public:
         AccountID const& to,
             STAmount const& amount,
                 STAmount const& preCreditBalance) override;
+
+    void
+    adjustOwnerCountHook (AccountID const& account,
+        std::uint32_t cur,
+            std::uint32_t next) override;
+
+    std::uint32_t
+    ownerCountHook (AccountID const& account,
+        std::uint32_t count) const override;
 
     /** Apply changes to base view.
 

@@ -79,7 +79,7 @@ private:
       <-- uOfferIndex : 0=end of list.
     */
     TER advanceNode (bool reverse) const;
-    TER advanceNode (STAmount const& amount, bool reverse) const;
+    TER advanceNode (STAmount const& amount, bool reverse, bool callerHasLiquidity) const;
 
     // To deliver from an order book, when computing
     TER deliverNodeReverse (
@@ -91,13 +91,15 @@ private:
     TER deliverNodeReverseImpl (
         AccountID const& uOutAccountID,
         STAmount const& saOutReq,
-        STAmount& saOutAct) const;
+        STAmount& saOutAct,
+        bool callerHasLiquidity) const;
 
     TER deliverNodeForward (
         AccountID const& uInAccountID,
         STAmount const& saInReq,
         STAmount& saInAct,
-        STAmount& saInFees) const;
+        STAmount& saInFees,
+        bool callerHasLiquidity) const;
 
     // VFALCO TODO Rename this to view()
     PaymentSandbox&

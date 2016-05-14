@@ -291,6 +291,7 @@ TER RippleCalc::rippleCalculate ()
     boost::container::flat_set<uint256> unfundedOffersFromBestPaths;
 
     int iPass = 0;
+    auto const dcSwitch = dcSwitchover(view.info().parentCloseTime);
 
     while (resultCode == temUNCERTAIN)
     {
@@ -306,8 +307,12 @@ TER RippleCalc::rippleCalculate ()
             if (pathState->quality())
                 // Only do active paths.
             {
-                // If computing the only non-dry path, compute multi-quality.
-                multiQuality = ((pathStateList_.size () - iDry) == 1);
+                // If computing the only non-dry path, and not limiting quality,
+                // compute multi-quality.
+                multiQuality = dcSwitch
+                    ? !inputFlags.limitQuality &&
+                        ((pathStateList_.size () - iDry) == 1)
+                    : ((pathStateList_.size () - iDry) == 1);
 
                 // Update to current amount processed.
                 pathState->reset (actualAmountIn_, actualAmountOut_);

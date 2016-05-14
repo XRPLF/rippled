@@ -901,12 +901,289 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testFalseDryHelper (jtx::Env& env)
+    {
+        using namespace jtx;
+
+        auto const gw = Account ("gateway");
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+        Account const alice ("alice");
+        Account const bob ("bob");
+        Account const carol ("carol");
+
+        auto const closeTime = dcSoTime() +
+                100 * env.closed ()->info ().closeTimeResolution;
+        env.close (closeTime);
+
+        env.fund (XRP(10000), alice, carol, gw);
+        env.fund (reserve(env, 5), bob);
+        env.trust (USD (1000), alice, bob, carol);
+        env.trust (EUR (1000), alice, bob, carol);
+
+
+        env (pay (gw, alice, EUR (50)));
+        env (pay (gw, bob, USD (50)));
+
+        // Bob has _just_ slightly less than 50 xrp available
+        // If his owner count changes, he will have more liquidity.
+        // This is one error case to test (when FlowV2 is used).
+        // Computing the incomming xrp to the XRP/USD offer will require two
+        // recursive calls to the EUR/XRP offer. The second call will return
+        // tecPATH_DRY, but the entire path should not be marked as dry. This
+        // is the second error case to test (when flowV1 is used).
+        env (offer (bob, EUR (50), XRP (50)));
+        env (offer (bob, XRP (50), USD (50)));
+
+        env (pay (alice, carol, USD (1000000)), path (~XRP, ~USD),
+            sendmax (EUR (500)),
+            txflags (tfNoRippleDirect | tfPartialPayment));
+
+        auto const carolUSD = env.balance(carol, USD).value();
+        expect (carolUSD > USD (0) && carolUSD < USD (50));
+    }
+
+    void
+    testFalseDry ()
+    {
+        testcase ("falseDryChanges");
+        using namespace jtx;
+        {
+            Env env (*this, features (featureFlowV2));
+            testFalseDryHelper (env);
+        }
+        {
+            Env env (*this);
+            testFalseDryHelper (env);
+        }
+    }
+
+    void
+    testLimitQuality ()
+    {
+        // Single path with two offers and limit quality. The quality limit is
+        // such that the first offer should be taken but the second should not.
+        // The total amount delivered should be the sum of the two offers and
+        // sendMax should be more than the first offer.
+        testcase ("limitQuality");
+        using namespace jtx;
+
+        auto const gw = Account ("gateway");
+        auto const USD = gw["USD"];
+        Account const alice ("alice");
+        Account const bob ("bob");
+        Account const carol ("carol");
+
+        auto const timeDelta = Env{*this}.closed ()->info ().closeTimeResolution;
+
+        for(auto const& t :{dcSoTime(), flowV2SoTime()}){
+            for(auto const& d: {-timeDelta*100, +timeDelta*100}){
+                auto const closeTime = t+d;
+                Env env (*this);
+                env.close (closeTime);
+
+                env.fund (XRP(10000), alice, bob, carol, gw);
+
+                env.trust (USD(100), alice, bob, carol);
+                env (pay (gw, bob, USD (100)));
+                env (offer (bob, XRP (50), USD (50)));
+                env (offer (bob, XRP (100), USD (50)));
+
+                auto expectedResult =
+                    closeTime < dcSoTime () ? tecPATH_DRY : tesSUCCESS;
+                env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
+                    txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
+                    ter (expectedResult));
+
+                if (expectedResult == tesSUCCESS)
+                    env.require (balance (carol, USD (50)));
+            }
+        }
+
+    }
+
+    // Helper function that returns the reserve on an account based on
+    // the passed in number of owners.
+    static XRPAmount reserve(jtx::Env& env, std::uint32_t count)
+    {
+        return env.current()->fees().accountReserve (count);
+    }
+
+    // Helper function that returns the Offers on an account.
+    static std::vector<std::shared_ptr<SLE const>>
+    offersOnAccount (jtx::Env& env, jtx::Account account)
+    {
+        std::vector<std::shared_ptr<SLE const>> result;
+        forEachItem (*env.current (), account,
+            [&env, &result](std::shared_ptr<SLE const> const& sle)
+            {
+                if (sle->getType() == ltOFFER)
+                     result.push_back (sle);
+            });
+        return result;
+    }
+
+    void
+    testSelfPayment1()
+    {
+        testcase ("Self-payment 1");
+
+        // In this test case the new flow code mis-computes the amount
+        // of money to move.  Fortunately the new code's re-execute
+        // check catches the problem and throws out the transaction.
+        //
+        // The old payment code handles the payment correctly.
+        using namespace jtx;
+
+        auto const gw1 = Account ("gw1");
+        auto const gw2 = Account ("gw2");
+        auto const alice = Account ("alice");
+        auto const USD = gw1["USD"];
+        auto const EUR = gw2["EUR"];
+
+        Env env (*this, features (featureFlowV2));
+
+        auto const closeTime =
+            flowV2SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
+        env.close (closeTime);
+
+        env.fund (XRP (1000000), gw1, gw2);
+        env.close ();
+
+        // The fee that's charged for transactions.
+        auto const f = env.current ()->fees ().base;
+
+        env.fund (reserve (env, 3) + f * 4, alice);
+        env.close ();
+
+        env (trust (alice, USD (2000)));
+        env (trust (alice, EUR (2000)));
+        env.close ();
+
+        env (pay (gw1, alice, USD (1)));
+        env (pay (gw2, alice, EUR (1000)));
+        env.close ();
+
+        env (offer (alice, USD (500), EUR (600)));
+        env.close ();
+
+        env.require (owners (alice, 3));
+        env.require (balance (alice, USD (1)));
+        env.require (balance (alice, EUR (1000)));
+
+        auto aliceOffers = offersOnAccount (env, alice);
+        expect (aliceOffers.size () == 1);
+        for (auto const& offerPtr : aliceOffers)
+        {
+            auto const offer = *offerPtr;
+            expect (offer[sfLedgerEntryType] == ltOFFER);
+            expect (offer[sfTakerGets] == EUR (600));
+            expect (offer[sfTakerPays] == USD (500));
+        }
+
+        env (pay (alice, alice, EUR (600)), sendmax (USD (500)),
+            txflags (tfPartialPayment));
+        env.close ();
+
+        env.require (owners (alice, 3));
+        env.require (balance (alice, USD (1)));
+        env.require (balance (alice, EUR (1000)));
+        aliceOffers = offersOnAccount (env, alice);
+        expect (aliceOffers.size () == 1);
+        for (auto const& offerPtr : aliceOffers)
+        {
+            auto const offer = *offerPtr;
+            expect (offer[sfLedgerEntryType] == ltOFFER);
+            expect (offer[sfTakerGets] == EUR (598.8));
+            expect (offer[sfTakerPays] == USD (499));
+        }
+    }
+
+    void
+    testSelfPayment2()
+    {
+        testcase ("Self-payment 2");
+
+        // In this case the difference between the old payment code and
+        // the new is the values left behind in the offer.  Not saying either
+        // ios ring, they are just different.
+        using namespace jtx;
+
+        auto const gw1 = Account ("gw1");
+        auto const gw2 = Account ("gw2");
+        auto const alice = Account ("alice");
+        auto const USD = gw1["USD"];
+        auto const EUR = gw2["EUR"];
+
+        Env env (*this, features (featureFlowV2));
+
+        auto const closeTime =
+            flowV2SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
+        env.close (closeTime);
+
+        env.fund (XRP (1000000), gw1, gw2);
+        env.close ();
+
+        // The fee that's charged for transactions.
+        auto const f = env.current ()->fees ().base;
+
+        env.fund (reserve (env, 3) + f * 4, alice);
+        env.close ();
+
+        env (trust (alice, USD (506)));
+        env (trust (alice, EUR (606)));
+        env.close ();
+
+        env (pay (gw1, alice, USD (500)));
+        env (pay (gw2, alice, EUR (600)));
+        env.close ();
+
+        env (offer (alice, USD (500), EUR (600)));
+        env.close ();
+
+        env.require (owners (alice, 3));
+        env.require (balance (alice, USD (500)));
+        env.require (balance (alice, EUR (600)));
+
+        auto aliceOffers = offersOnAccount (env, alice);
+        expect (aliceOffers.size () == 1);
+        for (auto const& offerPtr : aliceOffers)
+        {
+            auto const offer = *offerPtr;
+            expect (offer[sfLedgerEntryType] == ltOFFER);
+            expect (offer[sfTakerGets] == EUR (600));
+            expect (offer[sfTakerPays] == USD (500));
+        }
+
+        env (pay (alice, alice, EUR (60)), sendmax (USD (50)),
+            txflags (tfPartialPayment));
+        env.close ();
+
+        env.require (owners (alice, 3));
+        env.require (balance (alice, USD (500)));
+        env.require (balance (alice, EUR (600)));
+        aliceOffers = offersOnAccount (env, alice);
+        expect (aliceOffers.size () == 1);
+        for (auto const& offerPtr : aliceOffers)
+        {
+            auto const offer = *offerPtr;
+            expect (offer[sfLedgerEntryType] == ltOFFER);
+            expect (offer[sfTakerGets] == EUR (594));
+            expect (offer[sfTakerPays] == USD (495));
+        }
+    }
+
     void run() override
     {
         testDirectStep ();
         testBookStep ();
         testTransferRate ();
         testToStrand ();
+        testFalseDry();
+        testLimitQuality();
+        testSelfPayment1();
+        testSelfPayment2();
     }
 };
 

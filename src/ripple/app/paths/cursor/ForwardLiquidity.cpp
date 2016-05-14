@@ -42,7 +42,8 @@ TER PathCursor::forwardLiquidity () const
         previousNode().account_,
         previousNode().saFwdDeliver, // Previous is sending this much.
         saInAct,
-        saInFees);
+        saInFees,
+        false);
 
     assert (resultCode != tesSUCCESS ||
             previousNode().saFwdDeliver == saInAct + saInFees);

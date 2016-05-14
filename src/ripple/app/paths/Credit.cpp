@@ -83,15 +83,4 @@ STAmount creditBalance (
     return result;
 }
 
-IOUAmount
-creditBalance2 (
-    ReadView const& v,
-    AccountID const& acc,
-    AccountID const& iss,
-    Currency const& cur)
-{
-    return toAmount<IOUAmount> (creditBalance (v, acc, iss, cur));
-}
-
-
 } // ripple
