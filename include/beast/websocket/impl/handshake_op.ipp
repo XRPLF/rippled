@@ -48,6 +48,7 @@ class stream<NextLayer>::handshake_op
             , cont(boost_asio_handler_cont_helpers::
                 is_continuation(h))
         {
+            ws.reset();
         }
     };
 

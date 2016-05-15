@@ -48,6 +48,7 @@ class stream<NextLayer>::accept_op
         {
             using boost::asio::buffer_copy;
             using boost::asio::buffer_size;
+            ws.reset();
             ws.stream_.buffer().commit(buffer_copy(
                 ws.stream_.buffer().prepare(
                     buffer_size(buffers)), buffers));
@@ -133,8 +134,14 @@ operator()(error_code const& ec,
         // got message
         case 1:
             // respond to request
+#if 1
+            // VFALCO I have no idea why passing std::move(*this) crashes
+            d.state = 99;
+            d.ws.async_accept(d.req, *this);
+#else
             response_op<Handler>{
                 std::move(d.h), d.ws, d.req, true};
+#endif
             return;
         }
     }

@@ -20,6 +20,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
+#include <mutex>
+#include <condition_variable>
 
 namespace beast {
 namespace websocket {
@@ -29,41 +31,143 @@ class stream_test
     , public test::enable_yield_to
 {
 public:
+    using self = stream_test;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
     using socket_type = boost::asio::ip::tcp::socket;
 
-    void testClamp()
+    struct con
     {
-        expect(detail::clamp(
-            std::numeric_limits<std::uint64_t>::max()) ==
-                std::numeric_limits<std::size_t>::max());
+        stream<socket_type> ws;
+
+        con(endpoint_type const& ep, boost::asio::io_service& ios)
+            : ws(ios)
+        {
+            ws.next_layer().connect(ep);
+            ws.handshake("localhost", "/");
+        }
+    };
+
+    template<std::size_t N>
+    class cbuf_helper
+    {
+        std::array<std::uint8_t, N> v_;
+        boost::asio::const_buffer cb_;
+
+    public:
+        using value_type = decltype(cb_);
+        using const_iterator = value_type const*;
+
+        template<class... Vn>
+        explicit
+        cbuf_helper(Vn... vn)
+            : v_({{ static_cast<std::uint8_t>(vn)... }})
+            , cb_(v_.data(), v_.size())
+        {
+        }
+
+        const_iterator
+        begin() const
+        {
+            return &cb_;
+        }
+
+        const_iterator
+        end() const
+        {
+            return begin()+1;
+        }
+    };
+
+    template<class... Vn>
+    cbuf_helper<sizeof...(Vn)>
+    cbuf(Vn... vn)
+    {
+        return cbuf_helper<sizeof...(Vn)>(vn...);
     }
 
-    void testSpecialMembers()
+    template<std::size_t N>
+    static
+    boost::asio::const_buffers_1
+    sbuf(const char (&s)[N])
     {
-        stream<socket_type> ws(ios_);
-        {
-            stream<socket_type> ws2(std::move(ws));
-        }
-        {
-            stream<socket_type> ws2(ios_);
-            ws = std::move(ws2);
-        }
-        expect(&ws.get_io_service() == &ios_);
-        pass();
+        return boost::asio::const_buffers_1(&s[0], N-1);
     }
+
+    template<class Pred>
+    static
+    bool
+    run_until(boost::asio::io_service& ios,
+        std::size_t limit, Pred&& pred)
+    {
+        for(std::size_t i = 0; i < limit; ++i)
+        {
+            if(pred())
+                return true;
+            ios.run_one();
+        }
+        return false;
+    }
+
+    template<class NextLayer, class Streambuf>
+    static
+    void
+    read(stream<NextLayer>& ws, opcode& op, Streambuf& sb)
+    {
+        frame_info fi;
+        for(;;)
+        {
+            ws.read_frame(fi, sb);
+            op = fi.op;
+            if(fi.fin)
+                break;
+        }
+    }
+
+    typedef void(self::*pmf_t)(endpoint_type const&, yield_context);
+
+    void yield_to_mf(endpoint_type const& ep, pmf_t mf)
+    {
+        yield_to(std::bind(mf, this, ep, std::placeholders::_1));
+    }
+
+    struct identity
+    {
+        template<class Body, class Headers>
+        void
+        operator()(http::message<true, Body, Headers>&)
+        {
+        }
+
+        template<class Body, class Headers>
+        void
+        operator()(http::message<false, Body, Headers>&)
+        {
+        }
+    };
 
     void testOptions()
     {
         stream<socket_type> ws(ios_);
-        ws.set_option(message_type(opcode::binary));
+        ws.set_option(auto_fragment_size{2048});
+        ws.set_option(decorate(identity{}));
+        ws.set_option(keep_alive{false});
+        ws.set_option(mask_buffer_size(2048));
+        ws.set_option(message_type{opcode::text});
         ws.set_option(read_buffer_size(8192));
         ws.set_option(read_message_max(1 * 1024 * 1024));
-        ws.set_option(write_buffer_size(2048));
         try
         {
-            ws.set_option(message_type(opcode::close));
+            ws.set_option(mask_buffer_size(0));
+            fail();
+        }
+        catch(std::exception const&)
+        {
+            pass();
+        }
+        try
+        {
+            message_type{opcode::close};
             fail();
         }
         catch(std::exception const&)
@@ -72,352 +176,261 @@ public:
         }
     }
 
-    template<std::size_t N>
-    static
-    boost::asio::const_buffers_1
-    strbuf(const char (&s)[N])
-    {
-        return boost::asio::const_buffers_1(&s[0], N-1);
-    }
-
-    void testAccept(yield_context do_yield)
+    void testAccept()
     {
         {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n");
-            try
+            static std::size_t constexpr limit = 100;
+            std::size_t n;
+            for(n = 0; n < limit; ++n)
             {
-                ws.accept();
-                pass();
-            }
-            catch(...)
-            {
-                fail();
-            }
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "\r\n");
-            try
-            {
-                ws.accept();
-                fail();
-            }
-            catch(...)
-            {
-                pass();
-            }
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n");
-            error_code ec;
-            ws.accept(ec);
-            expect(! ec, ec.message());
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "\r\n");
-            error_code ec;
-            ws.accept(ec);
-            expect(ec);
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n");
-            error_code ec;
-            ws.async_accept(do_yield[ec]);
-            expect(! ec, ec.message());
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "\r\n");
-            error_code ec;
-            ws.async_accept(do_yield[ec]);
-            expect(ec);
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n");
-            try
-            {
-                ws.accept(strbuf(
-                    "GET / HTTP/1.1\r\n"));
-                pass();
-            }
-            catch(...)
-            {
-                fail();
-            }
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "\r\n");
-            try
-            {
-                ws.accept(strbuf(
-                    "GET / HTTP/1.1\r\n"));
-                fail();
-            }
-            catch(...)
-            {
-                pass();
-            }
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n");
-            error_code ec;
-            ws.accept(strbuf(
-                "GET / HTTP/1.1\r\n"), ec);
-            expect(! ec, ec.message());
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "GET / HTTP/1.1\r\n"
-                "\r\n");
-            error_code ec;
-            ws.accept(ec);
-            expect(ec);
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "Host: localhost:80\r\n"
-                "Upgrade: WebSocket\r\n"
-                "Connection: upgrade\r\n"
-                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                "Sec-WebSocket-Version: 13\r\n"
-                "\r\n");
-            error_code ec;
-            ws.async_accept(strbuf(
-                "GET / HTTP/1.1\r\n"), do_yield[ec]);
-            expect(! ec, ec.message());
-        }
-        {
-            stream<test::string_stream> ws(ios_,
-                "\r\n");
-            error_code ec;
-            ws.async_accept(strbuf(
-                "GET / HTTP/1.1\r\n"), do_yield[ec]);
-            expect(ec);
-        }
-    }
-
-    void testHandshake(endpoint_type const& ep,
-        yield_context do_yield)
-    {
-        {
-            // disconnected socket
-            socket_type sock(ios_);
-            stream<decltype(sock)&> ws(sock);
-            try
-            {
-                ws.handshake("localhost", "/");
-                fail();
-            }
-            catch(boost::system::system_error const&)
-            {
-                pass();
-            }
-            catch(...)
-            {
-                fail();
-            }
-            error_code ec;
-            ws.handshake("localhost", "/", ec);
-            if(! expect(ec))
-                return;
-            ws.async_handshake("localhost", "/", do_yield[ec]);
-            if(! expect(ec))
-                return;
-        }
-        {
-            error_code ec;
-            socket_type sock(ios_);
-            sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
-                return;
-            stream<decltype(sock)&> ws(sock);
-            ws.handshake("localhost", "/", ec);
-            if(! expect(! ec, ec.message()))
-                return;
-            ws.close({}, ec);
-            if(! expect(! ec, ec.message()))
-                return;
-            streambuf sb;
-            opcode op;
-            ws.read(op, sb, ec);
-            if(! expect(ec == error::closed, ec.message()))
-                return;
-            expect(ws.reason().code == close_code::normal);
-        }
-        {
-            error_code ec;
-            socket_type sock(ios_);
-            sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
-                return;
-            stream<decltype(sock)&> ws(sock);
-            ws.async_handshake("localhost", "/", do_yield[ec]);
-            if(! expect(! ec, ec.message()))
-                return;
-            ws.async_close({}, do_yield[ec]);
-            if(! expect(! ec, ec.message()))
-                return;
-            streambuf sb;
-            opcode op;
-            ws.async_read(op, sb, do_yield[ec]);
-            if(! expect(ec == error::closed, ec.message()))
-                return;
-            expect(ws.reason().code == close_code::normal);
-        }
-    }
-
-    void testErrorHandling(endpoint_type const& ep,
-        yield_context do_yield)
-    {
-        static std::size_t constexpr limit = 100;
-        std::size_t n;
-
-        // synchronous, exceptions
-        for(n = 0; n < limit; ++n)
-        {
-            error_code ec;
-            socket_type sock(ios_);
-            sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
-                break;
-            stream<test::fail_stream<socket_type&>> ws(n, sock);
-            try
-            {
-                ws.handshake("localhost", "/");
-                ws.write(boost::asio::const_buffers_1(
-                    "Hello", 5));
-                opcode op;
-                streambuf sb;
-                ws.read(op, sb);
-                expect(op == opcode::text);
-                expect(to_string(sb.data()) == "Hello");
-                ws.close({});
+                // valid
+                http::request_v1<http::empty_body> req;
+                req.method = "GET";
+                req.url = "/";
+                req.version = 11;
+                req.headers.insert("Host", "localhost");
+                req.headers.insert("Upgrade", "websocket");
+                req.headers.insert("Connection", "upgrade");
+                req.headers.insert("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+                req.headers.insert("Sec-WebSocket-Version", "13");
+                stream<test::fail_stream<
+                    test::string_stream>> ws(n, ios_, "");
                 try
                 {
-                    ws.read(op, sb);
+                    ws.accept(req);
+                    break;
                 }
-                catch(boost::system::system_error const& se)
+                catch(system_error const&)
                 {
-                    if(se.code() == error::closed)
-                        break;
-                    throw;
                 }
+            }
+            expect(n < limit);
+        }
+        {
+            // valid
+            stream<test::string_stream> ws(ios_,
+                "GET / HTTP/1.1\r\n"
+                "Host: localhost:80\r\n"
+                "Upgrade: WebSocket\r\n"
+                "Connection: upgrade\r\n"
+                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                "Sec-WebSocket-Version: 13\r\n"
+                "\r\n"
+            );
+            try
+            {
+                ws.accept();
+                pass();
+            }
+            catch(system_error const&)
+            {
                 fail();
-                break;
-            }
-            catch(boost::system::system_error const&)
-            {
             }
         }
-        expect(n < limit);
-
-        // synchronous, error codes
-        for(n = 0; n < limit; ++n)
         {
-            error_code ec;
-            socket_type sock(ios_);
-            sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
-                break;
-            stream<test::fail_stream<socket_type&>> ws(n, sock);
-            ws.handshake("localhost", "/", ec);
-            if(ec)
-                continue;
-            ws.write(boost::asio::const_buffers_1(
-                "Hello", 5), ec);
-            if(ec)
-                continue;
-            opcode op;
-            streambuf sb;
-            ws.read(op, sb, ec);
-            if(ec)
-                continue;
-            expect(op == opcode::text);
-            expect(to_string(sb.data()) == "Hello");
-            ws.close({}, ec);
-            if(ec)
-                continue;
-            ws.read(op, sb, ec);
-            if(ec == error::closed)
+            // invalid
+            stream<test::string_stream> ws(ios_,
+                "GET / HTTP/1.0\r\n"
+                "\r\n"
+            );
+            try
+            {
+                ws.accept();
+                fail();
+            }
+            catch(system_error const&)
             {
                 pass();
-                break;
             }
         }
-        expect(n < limit);
+    }
 
-        // asynchronous
-        for(n = 0; n < limit; ++n)
-        {
-            error_code ec;
-            socket_type sock(ios_);
-            sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
-                break;
-            stream<test::fail_stream<socket_type&>> ws(n, sock);
-            ws.async_handshake("localhost", "/", do_yield[ec]);
-            if(ec)
-                break;
-            ws.async_write(boost::asio::const_buffers_1(
-                "Hello", 5), do_yield[ec]);
-            if(ec)
-                continue;
-            opcode op;
-            streambuf sb;
-            ws.async_read(op, sb, do_yield[ec]);
-            if(ec)
-                continue;
-            expect(op == opcode::text);
-            expect(to_string(sb.data()) == "Hello");
-            ws.async_close({}, do_yield[ec]);
-            if(ec)
-                continue;
-            ws.async_read(op, sb, do_yield[ec]);
-            if(ec == error::closed)
+    void testBadHandshakes()
+    {
+        auto const check =
+            [&](error_code const& ev, std::string const& s)
             {
-                pass();
-                break;
-            }
-        }
-        expect(n < limit);
+                for(std::size_t i = 0; i < s.size(); ++i)
+                {
+                    stream<test::string_stream> ws(ios_,
+                        s.substr(i, s.size() - i));
+                    ws.set_option(keep_alive{true});
+                    try
+                    {
+                        ws.accept(boost::asio::buffer(
+                            s.substr(0, i), i));
+                        expect(! ev);
+                    }
+                    catch(system_error const& se)
+                    {
+                        expect(se.code() == ev);
+                    }
+                }
+            };
+        // wrong version
+        check(error::handshake_failed,
+            "GET / HTTP/1.0\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive,upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // wrong method
+        check(error::handshake_failed,
+            "POST / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive,upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing Host
+        check(error::handshake_failed,
+            "GET / HTTP/1.1\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive,upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing Sec-WebSocket-Key
+        check(error::handshake_failed,
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive,upgrade\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing Sec-WebSocket-Version
+        check(error::handshake_failed,
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive,upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "\r\n"
+        );
+        // wrong Sec-WebSocket-Version
+        check(error::handshake_failed,
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive,upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 1\r\n"
+            "\r\n"
+        );
+        // missing upgrade token
+        check(error::handshake_failed,
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: HTTP/2\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing connection token
+        check(error::handshake_failed,
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // valid request
+        check({},
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost:80\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+    }
+
+    void testBadResponses()
+    {
+        auto const check =
+            [&](std::string const& s)
+            {
+                stream<test::string_stream> ws(ios_, s);
+                try
+                {
+                    ws.handshake("localhost:80", "/");
+                    fail();
+                }
+                catch(system_error const& se)
+                {
+                    expect(se.code() == error::response_failed);
+                }
+            };
+        // wrong HTTP version
+        check(
+            "HTTP/1.0 101 Switching Protocols\r\n"
+            "Server: beast\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // wrong status
+        check(
+            "HTTP/1.1 200 OK\r\n"
+            "Server: beast\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing upgrade token
+        check(
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Server: beast\r\n"
+            "Upgrade: HTTP/2\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing connection token
+        check(
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Server: beast\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: keep-alive\r\n"
+            "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // missing accept key
+        check(
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Server: beast\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
+        // wrong accept key
+        check(
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Server: beast\r\n"
+            "Upgrade: WebSocket\r\n"
+            "Connection: upgrade\r\n"
+            "Sec-WebSocket-Accept: *\r\n"
+            "Sec-WebSocket-Version: 13\r\n"
+            "\r\n"
+        );
     }
 
     void testMask(endpoint_type const& ep,
@@ -477,59 +490,8 @@ public:
         }
     }
 
-    struct con
-    {
-        stream<socket_type> ws;
-
-        con(endpoint_type const& ep, boost::asio::io_service& ios)
-            : ws(ios)
-        {
-            ws.next_layer().connect(ep);
-            ws.handshake("localhost", "/");
-        }
-    };
-
-    template<std::size_t N>
-    class cbuf_helper
-    {
-        std::array<std::uint8_t, N> v_;
-        boost::asio::const_buffer cb_;
-
-    public:
-        using value_type = decltype(cb_);
-        using const_iterator = value_type const*;
-
-        template<class... Vn>
-        explicit
-        cbuf_helper(Vn... vn)
-            : v_({{ static_cast<std::uint8_t>(vn)... }})
-            , cb_(v_.data(), v_.size())
-        {
-        }
-
-        const_iterator
-        begin() const
-        {
-            return &cb_;
-        }
-
-        const_iterator
-        end() const
-        {
-            return begin()+1;
-        }
-    };
-
-    template<class... Vn>
-    cbuf_helper<sizeof...(Vn)>
-    cbuf(Vn... vn)
-    {
-        return cbuf_helper<sizeof...(Vn)>(vn...);
-    }
-
     void testClose(endpoint_type const& ep, yield_context do_yield)
     {
-        using boost::asio::buffer;
         {
             // payload length 1
             con c(ep, ios_);
@@ -558,7 +520,815 @@ public:
         }
     }
 
-    void testWriteFrame(endpoint_type const& ep)
+#if 0
+    void testInvokable1(endpoint_type const& ep)
+    {
+        boost::asio::io_service ios;
+        stream<socket_type> ws(ios);
+        ws.next_layer().connect(ep);
+        ws.handshake("localhost", "/");
+
+        // Make remote send a ping frame
+        ws.set_option(message_type(opcode::text));
+        ws.write(buffer_cat(sbuf("PING"), sbuf("ping")));
+
+        std::size_t count = 0;
+
+        // Write a text message
+        ++count;
+        ws.async_write(sbuf("Hello"),
+            [&](error_code ec)
+            {
+                --count;
+            });
+
+        // Read
+        opcode op;
+        streambuf sb;
+        ++count;
+        ws.async_read(op, sb,
+            [&](error_code ec)
+            {
+                --count;
+            });
+        // Run until the read_op writes a close frame.
+        while(! ws.wr_block_)
+            ios.run_one();
+        // Write a text message, leaving
+        // the write_op suspended as invokable.
+        ws.async_write(sbuf("Hello"),
+            [&](error_code ec)
+            {
+                ++count;
+                // Send is canceled because close received.
+                expect(ec == boost::asio::
+                    error::operation_aborted,
+                        ec.message());
+                // Writes after close are aborted.
+                ws.async_write(sbuf("World"),
+                    [&](error_code ec)
+                    {
+                        ++count;
+                        expect(ec == boost::asio::
+                            error::operation_aborted,
+                                ec.message());
+                    });
+            });
+        // Run until all completions are delivered.
+        static std::size_t constexpr limit = 100;
+        std::size_t n;
+        for(n = 0; n < limit; ++n)
+        {
+            if(count >= 4)
+                break;
+            ios.run_one();
+        }
+        expect(n < limit);
+        ios.run();
+    }
+#endif
+
+    void testInvokable2(endpoint_type const& ep)
+    {
+        boost::asio::io_service ios;
+        stream<socket_type> ws(ios);
+        ws.next_layer().connect(ep);
+        ws.handshake("localhost", "/");
+
+        // Make remote send a text message with bad utf8.
+        ws.set_option(message_type(opcode::binary));
+        ws.write(buffer_cat(sbuf("TEXT"),
+            cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
+        opcode op;
+        streambuf sb;
+        std::size_t count = 0;
+        // Read text message with bad utf8.
+        // Causes a close to be sent, blocking writes.
+        ws.async_read(op, sb,
+            [&](error_code ec)
+            {
+                // Read should fail with protocol error
+                ++count;
+                expect(ec == error::failed,
+                    ec.message());
+                // Reads after failure are aborted
+                ws.async_read(op, sb,
+                    [&](error_code ec)
+                    {
+                        ++count;
+                        expect(ec == boost::asio::
+                            error::operation_aborted,
+                                ec.message());
+                    });
+            });
+        // Run until the read_op writes a close frame.
+        while(! ws.wr_block_)
+            ios.run_one();
+        // Write a text message, leaving
+        // the write_op suspended as invokable.
+        ws.async_write(sbuf("Hello"),
+            [&](error_code ec)
+            {
+                ++count;
+                // Send is canceled because close received.
+                expect(ec == boost::asio::
+                    error::operation_aborted,
+                        ec.message());
+                // Writes after close are aborted.
+                ws.async_write(sbuf("World"),
+                    [&](error_code ec)
+                    {
+                        ++count;
+                        expect(ec == boost::asio::
+                            error::operation_aborted,
+                                ec.message());
+                    });
+            });
+        // Run until all completions are delivered.
+        static std::size_t constexpr limit = 100;
+        std::size_t n;
+        for(n = 0; n < limit; ++n)
+        {
+            if(count >= 4)
+                break;
+            ios.run_one();
+        }
+        expect(n < limit);
+        ios.run();
+    }
+
+    void testInvokable3(endpoint_type const& ep)
+    {
+        boost::asio::io_service ios;
+        stream<socket_type> ws(ios);
+        ws.next_layer().connect(ep);
+        ws.handshake("localhost", "/");
+
+        // Cause close to be received
+        ws.set_option(message_type(opcode::binary));
+        ws.write(sbuf("CLOSE"));
+        opcode op;
+        streambuf sb;
+        std::size_t count = 0;
+        // Read a close frame.
+        // Sends a close frame, blocking writes.
+        ws.async_read(op, sb,
+            [&](error_code ec)
+            {
+                // Read should complete with error::closed
+                ++count;
+                expect(ec == error::closed,
+                    ec.message());
+                // Pings after a close are aborted
+                ws.async_ping("",
+                    [&](error_code ec)
+                    {
+                        ++count;
+                        expect(ec == boost::asio::
+                            error::operation_aborted,
+                                ec.message());
+                    });
+            });
+        if(! expect(run_until(ios, 100,
+                [&]{ return ws.wr_close_; })))
+            return;
+        // Try to ping
+        ws.async_ping("payload",
+            [&](error_code ec)
+            {
+                // Pings after a close are aborted
+                ++count;
+                expect(ec == boost::asio::
+                    error::operation_aborted,
+                        ec.message());
+                // Subsequent calls to close are aborted
+                ws.async_close({},
+                    [&](error_code ec)
+                    {
+                        ++count;
+                        expect(ec == boost::asio::
+                            error::operation_aborted,
+                                ec.message());
+                    });
+            });
+        static std::size_t constexpr limit = 100;
+        std::size_t n;
+        for(n = 0; n < limit; ++n)
+        {
+            if(count >= 4)
+                break;
+            ios.run_one();
+        }
+        expect(n < limit);
+        ios.run();
+    }
+
+    void testInvokable4(endpoint_type const& ep)
+    {
+        boost::asio::io_service ios;
+        stream<socket_type> ws(ios);
+        ws.next_layer().connect(ep);
+        ws.handshake("localhost", "/");
+
+        // Cause close to be received
+        ws.set_option(message_type(opcode::binary));
+        ws.write(sbuf("CLOSE"));
+        opcode op;
+        streambuf sb;
+        std::size_t count = 0;
+        ws.async_read(op, sb,
+            [&](error_code ec)
+            {
+                ++count;
+                expect(ec == error::closed,
+                    ec.message());
+            });
+        while(! ws.wr_block_)
+            ios.run_one();
+        // try to close
+        ws.async_close("payload",
+            [&](error_code ec)
+            {
+                ++count;
+                expect(ec == boost::asio::
+                    error::operation_aborted,
+                        ec.message());
+            });
+        static std::size_t constexpr limit = 100;
+        std::size_t n;
+        for(n = 0; n < limit; ++n)
+        {
+            if(count >= 2)
+                break;
+            ios.run_one();
+        }
+        expect(n < limit);
+        ios.run();
+    }
+
+#if 0
+    void testInvokable5(endpoint_type const& ep)
+    {
+        boost::asio::io_service ios;
+        stream<socket_type> ws(ios);
+        ws.next_layer().connect(ep);
+        ws.handshake("localhost", "/");
+
+        ws.async_write(sbuf("CLOSE"),
+            [&](error_code ec)
+            {
+                expect(! ec);
+                ws.async_write(sbuf("PING"),
+                    [&](error_code ec)
+                    {
+                        expect(! ec);
+                    });
+            });
+        opcode op;
+        streambuf sb;
+        ws.async_read(op, sb,
+            [&](error_code ec)
+            {
+                expect(ec == error::closed, ec.message());
+            });
+        if(! expect(run_until(ios, 100,
+                [&]{ return ios.stopped(); })))
+            return;
+    }
+#endif
+
+    void testSyncClient(endpoint_type const& ep)
+    {
+        using boost::asio::buffer;
+        static std::size_t constexpr limit = 200;
+        std::size_t n;
+        for(n = 0; n < limit; ++n)
+        {
+            stream<test::fail_stream<socket_type>> ws(n, ios_);
+            auto const restart =
+                [&](error_code ev)
+                {
+                    try
+                    {
+                        opcode op;
+                        streambuf sb;
+                        ws.read(op, sb);
+                        fail();
+                        return false;
+                    }
+                    catch(boost::system::system_error const& se)
+                    {
+                        if(se.code() != ev)
+                            throw;
+                    }
+                    error_code ec;
+                    ws.lowest_layer().connect(ep, ec);
+                    if(! expect(! ec, ec.message()))
+                        return false;
+                    ws.handshake("localhost", "/");
+                    return true;
+                };
+            try
+            {
+                {
+                    // connect
+                    error_code ec;
+                    ws.lowest_layer().connect(ep, ec);
+                    if(! expect(! ec, ec.message()))
+                        return;
+                }
+                ws.handshake("localhost", "/");
+
+                // send message
+                ws.set_option(auto_fragment_size(0));
+                ws.set_option(message_type(opcode::text));
+                ws.write(sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    read(ws, op, sb);
+                    expect(op == opcode::text);
+                    expect(to_string(sb.data()) == "Hello");
+                }
+
+                // close, no payload
+                ws.close({});
+                if(! restart(error::closed))
+                    return;
+
+                // close with code
+                ws.close(close_code::going_away);
+                if(! restart(error::closed))
+                    return;
+
+                // close with code and reason string
+                ws.close({close_code::going_away, "Going away"});
+                if(! restart(error::closed))
+                    return;
+
+                // send ping and message
+                bool pong = false;
+                ws.set_option(pong_callback{
+                    [&](ping_data const& payload)
+                    {
+                        expect(! pong);
+                        pong = true;
+                        expect(payload == "");
+                    }});
+                ws.ping("");
+                ws.set_option(message_type(opcode::binary));
+                ws.write(sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.read(op, sb);
+                    expect(pong == 1);
+                    expect(op == opcode::binary);
+                    expect(to_string(sb.data()) == "Hello");
+                }
+                ws.set_option(pong_callback{});
+
+                // send ping and fragmented message
+                ws.set_option(pong_callback{
+                    [&](ping_data const& payload)
+                    {
+                        expect(payload == "payload");
+                    }});
+                ws.ping("payload");
+                ws.write_frame(false, sbuf("Hello, "));
+                ws.write_frame(false, sbuf(""));
+                ws.write_frame(true, sbuf("World!"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.read(op, sb);
+                    expect(pong == 1);
+                    expect(to_string(sb.data()) == "Hello, World!");
+                }
+                ws.set_option(pong_callback{});
+
+                // send auto fragmented message
+                ws.set_option(auto_fragment_size(3));
+                ws.write(sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.read(op, sb);
+                    expect(to_string(sb.data()) == "Hello");
+                }
+                ws.set_option(auto_fragment_size(0));
+
+                // send message with write buffer limit
+                {
+                    std::string s(2000, '*');
+                    ws.set_option(mask_buffer_size(1200));
+                    ws.write(buffer(s.data(), s.size()));
+                    {
+                        // receive echoed message
+                        opcode op;
+                        streambuf sb;
+                        ws.read(op, sb);
+                        expect(to_string(sb.data()) == s);
+                    }
+                }
+
+                // cause ping
+                ws.set_option(message_type(opcode::binary));
+                ws.write(sbuf("PING"));
+                ws.set_option(message_type(opcode::text));
+                ws.write(sbuf("Hello"));
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.read(op, sb);
+                    expect(op == opcode::text);
+                    expect(to_string(sb.data()) == "Hello");
+                }
+
+                // cause close
+                ws.set_option(message_type(opcode::binary));
+                ws.write(sbuf("CLOSE"));
+                if(! restart(error::closed))
+                    return;
+
+                // send bad utf8
+                ws.set_option(message_type(opcode::binary));
+                ws.write(buffer_cat(sbuf("TEXT"),
+                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
+                if(! restart(error::failed))
+                    return;
+
+                // cause bad utf8
+                ws.set_option(message_type(opcode::binary));
+                ws.write(buffer_cat(sbuf("TEXT"),
+                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
+                ws.write(sbuf("Hello"));
+                if(! restart(error::failed))
+                    return;
+
+                // cause bad close
+                ws.set_option(message_type(opcode::binary));
+                ws.write(buffer_cat(sbuf("RAW"),
+                    cbuf(0x88, 0x02, 0x03, 0xed)));
+                if(! restart(error::failed))
+                    return;
+
+                // unexpected cont
+                boost::asio::write(ws.next_layer(),
+                    cbuf(0x80, 0x80, 0xff, 0xff, 0xff, 0xff));
+                if(! restart(error::closed))
+                    return;
+
+                // expected cont
+                ws.write_frame(false, boost::asio::null_buffers{});
+                boost::asio::write(ws.next_layer(),
+                    cbuf(0x81, 0x80, 0xff, 0xff, 0xff, 0xff));
+                if(! restart(error::closed))
+                    return;
+
+                // message size above 2^64
+                ws.write_frame(false, cbuf(0x00));
+                boost::asio::write(ws.next_layer(),
+                    cbuf(0x80, 0xff, 0xff, 0xff, 0xff, 0xff,
+                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff));
+                if(! restart(error::closed))
+                    return;
+
+                // message size exceeds max
+                ws.set_option(read_message_max{1});
+                ws.write(cbuf(0x00, 0x00));
+                if(! restart(error::failed))
+                    return;
+                ws.set_option(read_message_max{16*1024*1024});
+
+                // invalid fixed frame header
+                boost::asio::write(ws.next_layer(),
+                    cbuf(0x8f, 0x80, 0xff, 0xff, 0xff, 0xff));
+                if(! restart(error::closed))
+                    return;
+
+                // cause non-canonical extended size
+                ws.write(buffer_cat(sbuf("RAW"),
+                    cbuf(0x82, 0x7e, 0x00, 0x01, 0x00)));
+                if(! restart(error::failed))
+                    return;
+            }
+            catch(system_error const&)
+            {
+                continue;
+            }
+            break;
+        }
+        expect(n < limit);
+    }
+
+    void testAsyncClient(
+        endpoint_type const& ep, yield_context do_yield)
+    {
+        using boost::asio::buffer;
+        static std::size_t constexpr limit = 200;
+        std::size_t n;
+        for(n = 190; n < limit; ++n)
+        {
+            stream<test::fail_stream<socket_type>> ws(n, ios_);
+            auto const restart =
+                [&](error_code ev)
+                {
+                    opcode op;
+                    streambuf sb;
+                    error_code ec;
+                    ws.async_read(op, sb, do_yield[ec]);
+                    if(! ec)
+                    {
+                        fail();
+                        return false;
+                    }
+                    if(ec != ev)
+                    {
+                        auto const s = ec.message();
+                        throw system_error{ec};
+                    }
+                    ec = {};
+                    ws.lowest_layer().close(ec);
+                    ec = {};
+                    ws.lowest_layer().connect(ep, ec);
+                    if(! expect(! ec, ec.message()))
+                        return false;
+                    ws.async_handshake("localhost", "/", do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    return true;
+                };
+            try
+            {
+                error_code ec;
+
+                // connect
+                ws.lowest_layer().connect(ep, ec);
+                if(! expect(! ec, ec.message()))
+                    return;
+                ws.async_handshake("localhost", "/", do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+
+                // send message
+                ws.set_option(auto_fragment_size(0));
+                ws.set_option(message_type(opcode::text));
+                ws.async_write(sbuf("Hello"), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.async_read(op, sb, do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    expect(op == opcode::text);
+                    expect(to_string(sb.data()) == "Hello");
+                }
+
+                // close, no payload
+                ws.async_close({}, do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // close with code
+                ws.async_close(close_code::going_away, do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // close with code and reason string
+                ws.async_close({close_code::going_away, "Going away"}, do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // send ping and message
+                bool pong = false;
+                {
+                    ws.set_option(pong_callback{
+                        [&](ping_data const& payload)
+                        {
+                            expect(! pong);
+                            pong = true;
+                            expect(payload == "");
+                        }});
+                    ws.async_ping("", do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    ws.set_option(message_type(opcode::binary));
+                    ws.async_write(sbuf("Hello"), do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.async_read(op, sb, do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    expect(op == opcode::binary);
+                    expect(to_string(sb.data()) == "Hello");
+                    ws.set_option(pong_callback{});
+                }
+
+                // send ping and fragmented message
+                {
+                    ws.set_option(pong_callback{
+                        [&](ping_data const& payload)
+                        {
+                            expect(payload == "payload");
+                        }});
+                    ws.async_ping("payload", do_yield[ec]);
+                    if(! ec)
+                        ws.async_write_frame(false, sbuf("Hello, "), do_yield[ec]);
+                    if(! ec)
+                        ws.async_write_frame(false, sbuf(""), do_yield[ec]);
+                    if(! ec)
+                        ws.async_write_frame(true, sbuf("World!"), do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    {
+                        // receive echoed message
+                        opcode op;
+                        streambuf sb;
+                        ws.async_read(op, sb, do_yield[ec]);
+                        if(ec)
+                            throw system_error{ec};
+                        expect(to_string(sb.data()) == "Hello, World!");
+                    }
+                    ws.set_option(pong_callback{});
+                }
+
+                // send auto fragmented message
+                ws.set_option(auto_fragment_size(3));
+                ws.async_write(sbuf("Hello"), do_yield[ec]);
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.async_read(op, sb, do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    expect(to_string(sb.data()) == "Hello");
+                }
+                ws.set_option(auto_fragment_size(0));
+
+                // send message with mask buffer limit
+                {
+                    std::string s(2000, '*');
+                    ws.set_option(mask_buffer_size(1200));
+                    ws.async_write(buffer(s.data(), s.size()), do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    {
+                        // receive echoed message
+                        opcode op;
+                        streambuf sb;
+                        ws.async_read(op, sb, do_yield[ec]);
+                        if(ec)
+                            throw system_error{ec};
+                        expect(to_string(sb.data()) == s);
+                    }
+                }
+
+                // cause ping
+                ws.set_option(message_type(opcode::binary));
+                ws.async_write(sbuf("PING"), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                ws.set_option(message_type(opcode::text));
+                ws.async_write(sbuf("Hello"), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                {
+                    // receive echoed message
+                    opcode op;
+                    streambuf sb;
+                    ws.async_read(op, sb, do_yield[ec]);
+                    if(ec)
+                        throw system_error{ec};
+                    expect(op == opcode::text);
+                    expect(to_string(sb.data()) == "Hello");
+                }
+
+                // cause close
+                ws.set_option(message_type(opcode::binary));
+                ws.async_write(sbuf("CLOSE"), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // send bad utf8
+                ws.set_option(message_type(opcode::binary));
+                ws.async_write(buffer_cat(sbuf("TEXT"),
+                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::failed))
+                    return;
+
+                // cause bad utf8
+                ws.set_option(message_type(opcode::binary));
+                ws.async_write(buffer_cat(sbuf("TEXT"),
+                    cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                ws.async_write(sbuf("Hello"), do_yield[ec]);
+                if(! restart(error::failed))
+                    return;
+
+                // cause bad close
+                ws.set_option(message_type(opcode::binary));
+                ws.async_write(buffer_cat(sbuf("RAW"),
+                    cbuf(0x88, 0x02, 0x03, 0xed)), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::failed))
+                    return;
+
+                // unexpected cont
+                boost::asio::async_write(ws.next_layer(),
+                    cbuf(0x80, 0x80, 0xff, 0xff, 0xff, 0xff),
+                        do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // expected cont
+                ws.async_write_frame(false,
+                    boost::asio::null_buffers{}, do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                boost::asio::async_write(ws.next_layer(),
+                    cbuf(0x81, 0x80, 0xff, 0xff, 0xff, 0xff),
+                        do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // message size above 2^64
+                ws.async_write_frame(false, cbuf(0x00), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                boost::asio::async_write(ws.next_layer(),
+                    cbuf(0x80, 0xff, 0xff, 0xff, 0xff, 0xff,
+                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff),
+                            do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // message size exceeds max
+                ws.set_option(read_message_max{1});
+                ws.async_write(cbuf(0x00, 0x00), do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::failed))
+                    return;
+
+                // invalid fixed frame header
+                boost::asio::async_write(ws.next_layer(),
+                    cbuf(0x8f, 0x80, 0xff, 0xff, 0xff, 0xff),
+                        do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::closed))
+                    return;
+
+                // cause non-canonical extended size
+                ws.async_write(buffer_cat(sbuf("RAW"),
+                    cbuf(0x82, 0x7e, 0x00, 0x01, 0x00)),
+                        do_yield[ec]);
+                if(ec)
+                    throw system_error{ec};
+                if(! restart(error::failed))
+                    return;
+            }
+            catch(system_error const&)
+            {
+                continue;
+            }
+            break;
+        }
+        expect(n < limit);
+    }
+
+    void testAsyncWriteFrame(endpoint_type const& ep)
     {
         for(;;)
         {
@@ -574,7 +1344,13 @@ public:
                 break;
             ws.async_write_frame(false,
                 boost::asio::null_buffers{},
-                    [](error_code){ });
+                [&](error_code)
+                {
+                    fail();
+                });
+            ws.next_layer().cancel(ec);
+            if(! expect(! ec, ec.message()))
+                break;
             //
             // Destruction of the io_service will cause destruction
             // of the write_frame_op without invoking the final handler.
@@ -585,53 +1361,55 @@ public:
 
     void run() override
     {
-        testClamp();
+        static_assert(std::is_constructible<
+            stream<socket_type>, boost::asio::io_service&>::value, "");
 
-        testSpecialMembers();
+        static_assert(std::is_move_constructible<
+            stream<socket_type>>::value, "");
 
-        testOptions();
+        static_assert(std::is_move_assignable<
+            stream<socket_type>>::value, "");
 
-        yield_to(std::bind(&stream_test::testAccept,
-            this, std::placeholders::_1));
+        static_assert(std::is_constructible<
+            stream<socket_type&>, socket_type&>::value, "");
+
+        static_assert(std::is_move_constructible<
+            stream<socket_type&>>::value, "");
+
+        static_assert(! std::is_move_assignable<
+            stream<socket_type&>>::value, "");
 
         auto const any = endpoint_type{
             address_type::from_string("127.0.0.1"), 0};
+
+        for(std::size_t n = 0; n < 1; ++n)
         {
-            sync_echo_peer server(true, any);
-            auto const ep = server.local_endpoint();
-
-            yield_to(std::bind(&stream_test::testHandshake,
-                this, ep, std::placeholders::_1));
-
-            yield_to(std::bind(&stream_test::testErrorHandling,
-                this, ep, std::placeholders::_1));
-
-            yield_to(std::bind(&stream_test::testMask,
-                this, ep, std::placeholders::_1));
-
-            yield_to(std::bind(&stream_test::testClose,
-                this, ep, std::placeholders::_1));
-
-            testWriteFrame(ep);
+            testOptions();
+            testAccept();
+            testBadHandshakes();
+            testBadResponses();
+            {
+                sync_echo_peer server(true, any);
+                auto const ep = server.local_endpoint();
+            
+                //testInvokable1(ep);
+                testInvokable2(ep);
+                testInvokable3(ep);
+                testInvokable4(ep);
+                //testInvokable5(ep);
+            
+                testSyncClient(ep);
+                testAsyncWriteFrame(ep);
+                yield_to_mf(ep, &stream_test::testAsyncClient);
+            }
+            {
+                async_echo_peer server(true, any, 4);
+                auto const ep = server.local_endpoint();
+                testSyncClient(ep);
+                testAsyncWriteFrame(ep);
+                yield_to_mf(ep, &stream_test::testAsyncClient);
+            }
         }
-        {
-            async_echo_peer server(true, any, 1);
-            auto const ep = server.local_endpoint();
-
-            yield_to(std::bind(&stream_test::testHandshake,
-                this, ep, std::placeholders::_1));
-
-            yield_to(std::bind(&stream_test::testErrorHandling,
-                this, ep, std::placeholders::_1));
-
-            yield_to(std::bind(&stream_test::testMask,
-                this, ep, std::placeholders::_1));
-
-            yield_to(std::bind(&stream_test::testClose,
-                this, ep, std::placeholders::_1));
-        }
-
-        pass();
     }
 };
 

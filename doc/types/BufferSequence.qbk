@@ -9,7 +9,7 @@
 
 A `BufferSequence` is a type meeting either of the following requirements:
 
-* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*`ConstBufferSequence`]]
-* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*`MutableBufferSequence`]]
+* [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*`ConstBufferSequence`]]
+* [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*`MutableBufferSequence`]]
 
 [endsect]

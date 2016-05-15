@@ -46,13 +46,15 @@ model, handler allocation, and handler invocation hooks. Calls to
 Beast.WebSocket asynchronous initiation functions allow callers the choice
 of using a completion handler, stackful or stackless coroutines, futures,
 or user defined customizations (for example, Boost.Fiber). The
-implementation uses handler invocation hooks (`asio_handler_invoke`),
+implementation uses handler invocation hooks
+([@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asio_handler_invoke.html `asio_handler_invoke`]),
 providing execution guarantees on composed operations in a manner
-identical to Boost.Asio. The implementation also uses handler allocation
-hooks (`asio_handler_allocate`) when allocating memory internally for
-composed operations.
+identical to Boost.Asio. The implementation also uses handler allocation hooks
+([@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/asio_handler_allocate.html `asio_handler_allocate`])
+when allocating memory internally for composed operations.
 
-There is no need for inheritance or virtual members in `websocket::stream`.
+There is no need for inheritance or virtual members in a
+[link beast.ref.websocket__stream `beast::websocket::stream`].
 All operations are templated and transparent to the compiler, allowing for
 maximum inlining and optimization.
 
@@ -67,43 +69,47 @@ both Boost.Asio and the WebSocket protocol specification described in
 [section:creating Creating the socket]
 
 The interface to Beast's WebSocket implementation is a single template
-class [link beast.ref.websocket__stream `websocket::stream`] which wraps a
-"next layer" object. The next layer object must meet the requirements of
-`SyncReadStream` and `SyncWriteStream` if synchronous operations are performed,
-`AsyncReadStream` and `AsyncWriteStream` is asynchronous operations are
-performed, or both. Arguments supplied during construction are passed to
-next layer's constructor. Here we declare two websockets which have ownership
-of the next layer:
+class [link beast.ref.websocket__stream `beast::websocket::stream`] which
+wraps a "next layer" object. The next layer object must meet the requirements
+of [link beast.types.streams.SyncStream [*`SyncReadStream`]] if synchronous
+operations are performed, or
+[link beast.types.streams.AsyncStream [*`AsyncStream`]] if asynchronous
+operations are performed, or both. Arguments supplied during construction are
+passed to next layer's constructor. Here we declare two websockets which have
+ownership of the next layer:
 ```
-io_service ios;
-websocket::stream<ip::tcp::socket> ws(ios);
+boost::asio::io_service ios;
+beast::websocket::stream<boost::asio::ip::tcp::socket> ws(ios);
 
-ssl::context ctx(ssl::context::sslv23);
-websocket::stream<ssl::stream<ip::tcp::socket>> wss(ios, ctx);
+boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+beast::websocket::stream<
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> wss(ios, ctx);
 ```
 
 For servers that can handshake in multiple protocols, it may be desired
 to wrap an object that already exists. This socket can be moved in:
 ```
-    tcp::socket&& sock;
+    boost::asio::ip::tcp::socket&& sock;
     ...
-    websocket::stream<ip::tcp::socket> ws(std::move(sock));
+    beast::websocket::stream<
+        boost::asio::ip::tcp::socket> ws(std::move(sock));
 ```
 
 Or, the wrapper can be constructed with a non-owning reference. In
 this case, the caller is responsible for managing the lifetime of the
 underlying socket being wrapped:
 ```
-    tcp::socket sock;
+    boost::asio::ip::tcp::socket sock;
     ...
-    websocket::stream<ip::tcp::socket&> ws(sock);
+    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws(sock);
 ```
 
 The layer being wrapped can be accessed through the websocket's "next layer",
 permitting callers to interact directly with its interface.
 ```
-    ssl::context ctx(ssl::context::sslv23);
-    websocket::stream<ssl::stream<ip::tcp::socket>> ws(ios, ctx);
+    boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+    beast::websocket::stream<
+        boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ws(ios, ctx);
     ...
     ws.next_layer().shutdown(); // ssl::stream shutdown
 ```
@@ -122,17 +128,18 @@ Connections are established by using the interfaces which already exist
 for the next layer. For example, making an outgoing connection:
 ```
     std::string const host = "mywebapp.com";
-    io_service ios;
-    tcp::resolver r(ios);
-    websocket::stream<ip::tcp::socket> ws(ios);
-    connect(ws.next_layer(), r.resolve(tcp::resolver::query{host, "ws"}));
+    boost::asio::io_service ios;
+    boost::asio::ip::tcp::resolver r(ios);
+    beast::websocket::stream<boost::asio::ip::tcp::socket> ws(ios);
+    boost::asio::connect(ws.next_layer(),
+        r.resolve(boost::asio::ip::tcp::resolver::query{host, "ws"}));
 ```
 
 Accepting an incoming connection:
 ```
-void do_accept(tcp::acceptor& acceptor)
+void do_accept(boost::asio::ip::tcp::acceptor& acceptor)
 {
-    websocket::stream<ip::tcp::socket> ws(acceptor.get_io_service());
+    beast::websocket::stream<boost::asio::ip::tcp::socket> ws(acceptor.get_io_service());
     acceptor.accept(ws.next_layer());
 }
 ```
@@ -149,26 +156,26 @@ A WebSocket session begins when one side sends the HTTP Upgrade request
 for websocket, and the other side sends an appropriate HTTP response
 indicating that the request was accepted and that the connection has
 been upgraded. The HTTP Upgrade request must include the Host HTTP field,
-and the URI of the resource to request. `hanshake` is used to send the
+and the URI of the resource to request. `handshake` is used to send the
 request with the required host and resource strings.
 ```
-    websocket::stream<ip::tcp::socket> ws(ios);
+    beast::websocket::stream<boost::asio::ip::tcp::socket> ws(ios);
     ...
-    ws.set_option(websocket::keep_alive(true));
-    ws.handshake("ws.mywebapp.com:80", "/cgi-bin/bitcoin-prices");
+    ws.set_option(beast::websocket::keep_alive(true));
+    ws.handshake("ws.example.com:80", "/cgi-bin/bitcoin-prices");
 ```
 
-The `websocket::stream` automatically handles receiving and processing
-the HTTP response to the handshake request. The call to handshake is
-successful if a HTTP response is received with the 101 "Switching Protocols"
-status code. On failure, an error is returned or an exception is thrown.
-Depending on the keep alive setting, the socket may remain open for a
-subsequent handshake attempt
+The [link beast.ref.websocket__stream `beast::websocket::stream`] automatically
+handles receiving and processing the HTTP response to the handshake request.
+The call to handshake is successful if a HTTP response is received with the
+101 "Switching Protocols" status code. On failure, an error is returned or an
+exception is thrown. Depending on the keep alive setting, the socket may remain
+open for a subsequent handshake attempt
 
 Performing a handshake for an incoming websocket upgrade request operates
 similarly. If the handshake fails, an error is returned or exception thrown:
 ```
-    websocket::stream<ip::tcp::socket> ws(ios);
+    beast::websocket::stream<boost::asio::ip::tcp::socket> ws(ios);
     ...
     ws.accept();
 ```
@@ -178,12 +185,12 @@ on the connection, or might have already received an entire HTTP request
 containing the upgrade request. Overloads of `accept` allow callers to
 pass in this additional buffered handshake data.
 ```
-void do_accept(tcp::socket& sock)
+void do_accept(boost::asio::ip::tcp::socket& sock)
 {
     boost::asio::streambuf sb;
-    read_until(sock, sb, "\r\n\r\n");
+    boost::asio::read_until(sock, sb, "\r\n\r\n");
     ...
-    websocket::stream<ip::tcp::socket&> ws(sock);
+    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws(sock);
     ws.accept(sb.data());
     ...
 }
@@ -192,12 +199,12 @@ void do_accept(tcp::socket& sock)
 Alternatively, the caller can pass an entire HTTP request if it was
 obtained elsewhere:
 ```
-void do_accept(tcp::socket& sock)
+void do_accept(boost::asio::ip::tcp::socket& sock)
 {
     boost::asio::streambuf sb;
-    http::request<http::empty_body> request;
-    http::read(sock, request);
-    if(http::is_upgrade(request))
+    beast::http::request<http::empty_body> request;
+    beast::http::read(sock, request);
+    if(beast::http::is_upgrade(request))
     {
         websocket::stream<ip::tcp::socket&> ws(sock);
         ws.accept(request);
@@ -205,8 +212,6 @@ void do_accept(tcp::socket& sock)
     }
 }
 ```
-
-[note Identifiers in the `http` namespace are part of Beast.HTTP. ]
 
 [endsect]
 
@@ -218,20 +223,21 @@ After the WebSocket handshake is accomplished, callers may send and receive
 messages using the message oriented interface. This interface requires that
 all of the buffers representing the message are known ahead of time:
 ```
-void echo(websocket::stream<ip::tcp::socket>& ws)
+void echo(beast::websocket::stream<boost::asio::ip::tcp::socket>& ws)
 {
-    streambuf sb;
-    websocket::opcode::value op;
+    beast::streambuf sb;
+    beast::websocket::opcode::value op;
     ws.read(sb);
 
-    ws.set_option(websocket::message_type(op));
-    websocket::write(ws, sb.data());
+    ws.set_option(beast::websocket::message_type(op));
+    ws.write(sb.data());
     sb.consume(sb.size());
 }
 ```
 
-[important Calls to `set_option` must be made from the same implicit
-or explicit strand as that used to perform other operations. ]
+[important Calls to [link beast.ref.websocket__stream.set_option `set_option`]
+must be made from the same implicit or explicit strand as that used to perform
+other operations. ]
 
 [endsect]
 
@@ -249,18 +255,19 @@ message ahead of time:
 For these cases, the frame oriented interface may be used. This
 example reads and echoes a complete message using this interface:
 ```
-void echo(websocket::stream<ip::tcp::socket>& ws)
+void echo(beast::websocket::stream<boost::asio::ip::tcp::socket>& ws)
 {
-    streambuf sb;
-    websocket::frame_info fi;
+    beast::streambuf sb;
+    beast::websocket::frame_info fi;
     for(;;)
     {
         ws.read_frame(fi, sb);
         if(fi.fin)
             break;
     }
-    ws.set_option(websocket::message_type(fi.op));
-    consuming_buffers<streambuf::const_buffers_type> cb(sb.data());
+    ws.set_option(beast::websocket::message_type(fi.op));
+    beast::consuming_buffers<
+        beast::streambuf::const_buffers_type> cb(sb.data());
     for(;;)
     {
         using boost::asio::buffer_size;
@@ -287,10 +294,11 @@ void echo(websocket::stream<ip::tcp::socket>& ws)
 
 During read operations, the implementation automatically reads and processes
 WebSocket control frames such as ping, pong, and close. Pings are replied
-to as soon as possible, pongs are noted. The receipt of a close frame
-initiates the WebSocket close procedure, eventually resulting in the
-error code `websocket::error::closed` being delivered to the caller in
-a subsequent read operation, assuming no other error takes place.
+to as soon as possible, pongs are delivered to the pong callback. The receipt
+of a close frame initiates the WebSocket close procedure, eventually resulting
+in the error code [link beast.ref.websocket__error `error::closed`] being
+delivered to the caller in a subsequent read operation, assuming no other error
+takes place.
 
 To ensure timely delivery of control frames, large messages are broken up
 into smaller sized frames. The implementation chooses the size and number
@@ -298,19 +306,49 @@ of the frames making up the message. The automatic fragment size option
 gives callers control over the size of these frames:
 ```
     ...
-    ws.set_option(websocket::auto_fragment_size(8192));
+    ws.set_option(beast::websocket::auto_fragment_size(8192));
 ```
 
 The WebSocket protocol defines a procedure and control message for initiating
 a close of the session. Handling of close initiated by the remote end of the
 connection is performed automatically. To manually initiate a close, use
-`websocket::stream::close`:
+[link beast.ref.websocket__stream.close `close`]:
 ```
     ws.close();
 ```
 
-[note To receive the `websocket::error::closed` error, a read operation
-is required. ]
+[note To receive the [link beast.ref.websocket__error `error::closed`]
+error, a read operation is required. ]
+
+[endsect]
+
+
+
+[section:pongs Pong messages]
+
+To receive pong control frames, callers may register a "pong callback" using
+[link beast.ref.websocket__stream.set_option `set_option`]:
+
+the following signature:
+```
+    void on_pong(ping_data const& payload);
+    ...
+    ws.set_option(pong_callback{&on_pong});
+```
+
+When a pong callback is registered, any pongs received through either
+synchronous read functions or asynchronous read functions will invoke the
+pong callback, passing the payload in the pong message as the argument.
+
+Unlike regular completion handlers used in calls to asynchronous initiation
+functions, the pong callback only needs to be set once. The callback is not
+reset when a pong is received. The same callback is used for both synchronous
+and asynchronous reads. The pong callback is passive; in order to receive
+pongs, a synchronous or asynchronous stream read function must be active.
+
+[note When an asynchronous read function receives a pong, the the pong callback
+is invoked in the same manner as that used to invoke the final completion
+handler of the corresponding read function.]
 
 [endsect]
 
@@ -320,7 +358,8 @@ is required. ]
 
 Because calls to read data may return a variable amount of bytes, the
 interface to calls that read data require an object that meets the requirements
-of `Streambuf`. This concept is modeled on `boost::asio::basic_streambuf`.
+of [link beast.types.Streambuf [*`Streambuf`]]. This concept is modeled on
+[@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/basic_streambuf.html `boost::asio::basic_streambuf`].
 
 The implementation does not perform queueing or buffering of messages. If
 desired, these features should be provided by callers. The impact of this
@@ -329,6 +368,7 @@ used to store data and the back-pressure applied on the read and write side
 of the underlying TCP/IP connection.
 
 [endsect]
+
 
 
 [section:async Asynchronous interface]
@@ -361,12 +401,14 @@ void echo(websocket::stream<ip::tcp::socket>& ws,
 
 
 
-[section:io_service io_service]
+[section:io_service The io_service]
 
-The creation and operation of the `boost::asio::io_service` associated with
-the underlying stream is left to the callers, permitting any implementation
-strategy including one that does not require threads for environments where
-threads are unavailable. Beast.WSProto itself does not use or require threads.
+The creation and operation of the
+[@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/io_service.html `boost::asio::io_service`]
+associated with the underlying stream is left to the callers, permitting any
+implementation strategy including one that does not require threads for
+environments where threads are unavailable. Beast.WebSocket itself does not
+use or require threads.
 
 [endsect]
 
@@ -374,13 +416,13 @@ threads are unavailable. Beast.WSProto itself does not use or require threads.
 
 [section:safety Thread Safety]
 
-Like a regular asio socket, a `websocket::stream` is not thread safe. Callers
-are responsible for synchronizing operations on the socket using an implicit
-or explicit strand, as per the Asio documentation. The asynchronous interface
-supports one active read and one active write simultaneously. Undefined
-behavior results if two or more reads or two or more writes are attempted
-concurrently. Caller initiated WebSocket ping, pong, and close operations
-each count as an active write.
+Like a regular asio socket, a [link beast.ref.websocket__stream `stream`] is
+not thread safe. Callers are responsible for synchronizing operations on the
+socket using an implicit or explicit strand, as per the Asio documentation.
+The asynchronous interface supports one active read and one active write
+simultaneously. Undefined behavior results if two or more reads or two or
+more writes are attempted concurrently. Caller initiated WebSocket ping, pong,
+and close operations each count as an active write.
 
 The implementation uses composed asynchronous operations internally; a high
 level read can cause both reads and writes to take place on the underlying

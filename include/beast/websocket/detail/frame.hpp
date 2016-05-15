@@ -23,6 +23,16 @@ namespace beast {
 namespace websocket {
 namespace detail {
 
+/// Identifies the role of a WebSockets stream.
+enum class role_type
+{
+    /// Stream is operating as a client.
+    client,
+
+    /// Stream is operating as a server.
+    server
+};
+
 // Contents of a WebSocket frame header
 struct frame_header
 {
@@ -286,8 +296,7 @@ read_fh2(frame_header& fh, Streambuf& sb,
 //
 template<class Buffers>
 void
-read(ping_payload_type& data,
-    Buffers const& bs, close_code::value& code)
+read(ping_data& data, Buffers const& bs)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;

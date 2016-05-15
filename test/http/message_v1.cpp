@@ -59,6 +59,7 @@ public:
         }
         catch(std::exception const&)
         {
+            pass();
         }
         m.headers.erase("Content-Length");
         m.headers.insert("Connection", "keep-alive");
@@ -69,7 +70,12 @@ public:
         }
         catch(std::exception const&)
         {
+            pass();
         }
+        m.version = 11;
+        m.headers.erase("Connection");
+        m.headers.insert("Connection", "close");
+        expect(! is_keep_alive(m));
     }
 
     void run() override

@@ -105,33 +105,6 @@ prepare_content_length(prepare_info& pi,
 
 } // detail
 
-template<bool isRequest, class Body, class Headers>
-void
-prepare_connection(
-    message_v1<isRequest, Body, Headers>& msg)
-{
-    if(msg.version >= 11)
-    {
-        if(! msg.headers.exists("Content-Length") &&
-            ! rfc2616::token_in_list(
-                msg.headers["Transfer-Encoding"], "chunked"))
-            if(! rfc2616::token_in_list(
-                    msg.headers["Connection"], "close"))
-                msg.headers.insert("Connection", "close");
-    }
-    else
-    {
-        if(! msg.headers.exists("Content-Length"))
-        {
-            // VFALCO We are erasing the whole header when we
-            //        should be removing just the keep-alive.
-            if(rfc2616::token_in_list(
-                    msg.headers["Connection"], "keep-alive"))
-                msg.headers.erase("Connection");
-        }
-    }
-}
-
 template<
     bool isRequest, class Body, class Headers,
     class... Options>

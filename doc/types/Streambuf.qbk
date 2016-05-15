@@ -40,12 +40,12 @@ In the table below:
 [
     [`X::const_buffers_type`]
     [`T`]
-    [`T` meets the requirements for [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html `ConstBufferSequence`].]
+    [`T` meets the requirements for [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/ConstBufferSequence.html `ConstBufferSequence`].]
 ]
 [
     [`X::mutable_buffers_type`]
     [`U`]
-    [`U` meets the requirements for [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html `MutableBufferSequence`].]
+    [`U` meets the requirements for [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/MutableBufferSequence.html `MutableBufferSequence`].]
 ]
 [
     [`a.commit(n)`]

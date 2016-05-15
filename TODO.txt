@@ -36,6 +36,9 @@ WebSocket:
 * Replace stream::error_ with stream::state_, example states: ok, error, abort_io
   Need a cancel state so waking up a ping stored in invokable knows to call the
   final handler with operation_aborted
+* Use close_code::no_code instead of close_code::none
+* Make request_type, response_type public APIs,
+  use in stream member function signatures
 
 HTTP:
 * Define Parser concept in HTTP

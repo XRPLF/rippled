@@ -35,6 +35,7 @@ unit-test core-tests :
     core/write_streambuf.cpp
     core/detail/base64.cpp
     core/detail/empty_base_optimization.cpp
+    core/detail/get_lowest_layer.cpp
     core/detail/sha1.cpp
     ;
 
@@ -77,6 +78,7 @@ unit-test websocket-tests :
     websocket/teardown.cpp
     websocket/detail/frame.cpp
     websocket/detail/mask.cpp
+    websocket/detail/stream_base.cpp
     websocket/detail/utf8_checker.cpp
     ;
 

@@ -105,24 +105,34 @@ operator()(error_code const& ec, bool again)
 {
     auto& d = *d_;
     d.cont = d.cont || again;
-    while(! ec && d.state != 99)
+    while(! ec)
     {
         switch(d.state)
         {
         case 0:
             // read payload
             d.state = 1;
+#if 0
+            // VFALCO This causes dereference of null, because
+            //        the handler is moved from the data block
+            //        before asio_handler_deallocate is called.
             d.ws.async_read_frame(
                 d.fi, d.sb, std::move(*this));
+#else
+            d.ws.async_read_frame(d.fi, d.sb, *this);
+#endif
             return;
 
         // got payload
         case 1:
             d.op = d.fi.op;
-            d.state = d.fi.fin ? 99 : 0;
+            if(d.fi.fin)
+                goto upcall;
+            d.state = 0;
             break;
         }
     }
+upcall:
     d.h(ec);
 }
 

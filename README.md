@@ -2,7 +2,8 @@
 
 [![Build Status](https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast) [![codecov]
 (https://codecov.io/gh/vinniefalco/Beast/branch/master/graph/badge.svg)](https://codecov.io/gh/vinniefalco/Beast) [![Documentation]
-(https://img.shields.io/badge/documentation-master-brightgreen.svg)](http://vinniefalco.github.io/beast/)
+(https://img.shields.io/badge/documentation-master-brightgreen.svg)](http://vinniefalco.github.io/beast/) [![License]
+(https://img.shields.io/badge/license-boost-brightgreen.svg)](LICENSE_1_0.txt)
 
 Beast provides implementations of the HTTP and WebSocket protocols
 built on top of Boost.Asio and other parts of boost.

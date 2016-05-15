@@ -14,21 +14,21 @@ asynchronous I/O. They are based on concepts from `boost::asio`.
 
 A type modeling [*`Stream`] meets either or both of the following requirements:
 
-* [link beast.types.streams.AsyncStream [*`AsyncStream`]]
-* [link beast.types.streams.SyncStream [*`SyncStream`]]
+* [*`AsyncStream`]
+* [*`SyncStream`]
 
 [heading:AsyncStream AsyncStream]
 
 A type modeling [*`AsyncStream`] meets the following requirements:
 
-* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncReadStream.html [*`AsyncReadStream`]]
-* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/AsyncWriteStream.html [*`AsyncWriteStream`]]
+* [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/AsyncReadStream.html [*`AsyncReadStream`]]
+* [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/AsyncWriteStream.html [*`AsyncWriteStream`]]
 
 [heading:SyncStream SyncStream]
 
 A type modeling [*`SyncStream`] meets the following requirements:
 
-* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncReadStream.html [*`SyncReadStream`]]
-* [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/SyncWriteStream.html [*`SyncWriteStream`]]
+* [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/SyncReadStream.html [*`SyncReadStream`]]
+* [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/SyncWriteStream.html [*`SyncWriteStream`]]
 
 [endsect]

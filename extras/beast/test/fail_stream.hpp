@@ -157,24 +157,34 @@ public:
         return next_layer_.async_write_some(buffers,
             std::forward<WriteHandler>(handler));
     }
+
+    friend
+    void
+    teardown(fail_stream<NextLayer>& stream,
+        boost::system::error_code& ec)
+    {
+        if(stream.pfc_->fail(ec))
+            return;
+        websocket_helpers::call_teardown(stream.next_layer(), ec);
+    }
+
+    template<class TeardownHandler>
+    friend
+    void
+    async_teardown(fail_stream<NextLayer>& stream,
+        TeardownHandler&& handler)
+    {
+        error_code ec;
+        if(stream.pfc_->fail(ec))
+        {
+            stream.get_io_service().post(
+                bind_handler(std::move(handler), ec));
+            return;
+        }
+        websocket_helpers::call_async_teardown(
+            stream.next_layer(), std::forward<TeardownHandler>(handler));
+    }
 };
-
-template<class NextLayer>
-void
-teardown(fail_stream<NextLayer>& stream,
-    boost::system::error_code& ec)
-{
-    websocket_helpers::call_teardown(stream.next_layer(), ec);
-}
-
-template<class NextLayer, class TeardownHandler>
-void
-async_teardown(fail_stream<NextLayer>& stream,
-    TeardownHandler&& handler)
-{
-    websocket_helpers::call_async_teardown(
-        stream.next_layer(), std::forward<TeardownHandler>(handler));
-}
 
 } // test
 } // beast

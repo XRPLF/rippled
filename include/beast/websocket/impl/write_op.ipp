@@ -109,7 +109,7 @@ operator()(error_code ec, bool again)
 {
     auto& d = *d_;
     d.cont = d.cont || again;
-    while(! ec && d.state != 99)
+    if(! ec)
     {
         switch(d.state)
         {
@@ -126,6 +126,9 @@ operator()(error_code ec, bool again)
             d.ws.async_write_frame(fin, pb, std::move(*this));
             return;
         }
+
+        case 99:
+            break;
         }
     }
     d.h(ec);

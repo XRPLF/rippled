@@ -86,11 +86,14 @@ public:
 
     void operator()(error_code const& ec)
     {
-        (*this)(ec, 0);
+        (*this)(ec, 0, true);
     }
 
     void operator()(error_code ec,
-        std::size_t bytes_transferred, bool again = true);
+        std::size_t bytes_transferred);
+
+    void operator()(error_code ec,
+        std::size_t bytes_transferred, bool again);
 
     friend
     void* asio_handler_allocate(
@@ -127,393 +130,415 @@ template<class NextLayer>
 template<class Buffers, class Handler>
 void
 stream<NextLayer>::read_frame_op<Buffers, Handler>::
-operator()(error_code ec,std::size_t bytes_transferred, bool again)
+operator()(error_code ec, std::size_t bytes_transferred)
 {
     auto& d = *d_;
-    d.cont = d.cont || again;
-    close_code::value code = close_code::none;
-    while(! ec && d.state != 99)
+    if(ec)
+        d.ws.failed_ = true;
+    (*this)(ec, bytes_transferred, true);
+}
+
+template<class NextLayer>
+template<class Buffers, class Handler>
+void
+stream<NextLayer>::read_frame_op<Buffers, Handler>::
+operator()(error_code ec,std::size_t bytes_transferred, bool again)
+{
+    enum
     {
-        switch(d.state)
+        do_start = 0,
+        do_read_payload = 1,
+        do_frame_done = 3,
+        do_read_fh = 4,
+        do_control_payload = 7,
+        do_control = 8,
+        do_pong_resume = 9,
+        do_pong = 11,
+        do_close_resume = 13,
+        do_close = 15,
+        do_fail = 18,
+
+        do_call_handler = 99
+    };
+
+    auto& d = *d_;
+    if(! ec)
+    {
+        d.cont = d.cont || again;
+        close_code::value code = close_code::none;
+        do
         {
-        case 0:
-            if(d.ws.error_)
+            switch(d.state)
             {
+            case do_start:
+                if(d.ws.failed_)
+                {
+                    d.state = do_call_handler;
+                    d.ws.get_io_service().post(
+                        bind_handler(std::move(*this),
+                            boost::asio::error::operation_aborted, 0));
+                    return;
+                }
+                d.state =  d.ws.rd_need_ > 0 ?
+                    do_read_payload : do_read_fh;
+                break;
+
+            //------------------------------------------------------------------
+
+            case do_read_payload:
+                d.state = do_read_payload + 1;
+                d.smb = d.sb.prepare(
+                    detail::clamp(d.ws.rd_need_));
+                // receive payload data
+                d.ws.stream_.async_read_some(
+                    *d.smb, std::move(*this));
+                return;
+
+            case do_read_payload + 1:
+            {
+                d.ws.rd_need_ -= bytes_transferred;
+                auto const pb = prepare_buffers(
+                    bytes_transferred, *d.smb);
+                if(d.ws.rd_fh_.mask)
+                    detail::mask_inplace(pb, d.ws.rd_key_);
+                if(d.ws.rd_opcode_ == opcode::text)
+                {
+                    if(! d.ws.rd_utf8_check_.write(pb) ||
+                        (d.ws.rd_need_ == 0 && d.ws.rd_fh_.fin &&
+                            ! d.ws.rd_utf8_check_.finish()))
+                    {
+                        // invalid utf8
+                        code = close_code::bad_payload;
+                        d.state = do_fail;
+                        break;
+                    }
+                }
+                d.sb.commit(bytes_transferred);
+                if(d.ws.rd_need_ > 0)
+                {
+                    d.state = do_read_payload;
+                    break;
+                }
+                // fall through
+            }
+
+            //------------------------------------------------------------------
+
+            case do_frame_done:
                 // call handler
-                d.state = 99;
-                d.ws.get_io_service().post(
-                    bind_handler(std::move(*this),
-                        boost::asio::error::operation_aborted, 0));
+                d.fi.op = d.ws.rd_opcode_;
+                d.fi.fin = d.ws.rd_fh_.fin &&
+                    d.ws.rd_need_ == 0;
+                goto upcall;
+
+            //------------------------------------------------------------------
+
+            case do_read_fh:
+                d.state = do_read_fh + 1;
+                boost::asio::async_read(d.ws.stream_,
+                    d.fb.prepare(2), std::move(*this));
+                return;
+
+            case do_read_fh + 1:
+            {
+                d.fb.commit(bytes_transferred);
+                code = close_code::none;
+                auto const n = detail::read_fh1(
+                    d.ws.rd_fh_, d.fb, d.ws.role_, code);
+                if(code != close_code::none)
+                {
+                    // protocol error
+                    d.state = do_fail;
+                    break;
+                }
+                d.state = do_read_fh + 2;
+                if (n == 0)
+                {
+                    bytes_transferred = 0;
+                    break;
+                }
+                // read variable header
+                boost::asio::async_read(d.ws.stream_,
+                    d.fb.prepare(n), std::move(*this));
                 return;
             }
-            if(d.ws.rd_need_ > 0)
-            {
-                d.state = 1;
-                break;
-            }
-            d.state = 2;
-            break;
 
-        case 1:
-            // read payload
-            d.state = 3;
-            d.smb = d.sb.prepare(
-                detail::clamp(d.ws.rd_need_));
-            d.ws.stream_.async_read_some(
-                *d.smb, std::move(*this));
-            return;
-
-        case 2:
-            // read fixed header
-            d.state = 5;
-            boost::asio::async_read(d.ws.stream_,
-                d.fb.prepare(2), std::move(*this));
-            return;
-
-        // got payload
-        case 3:
-        {
-            d.ws.rd_need_ -= bytes_transferred;
-            auto const pb = prepare_buffers(
-                bytes_transferred, *d.smb);
-            if(d.ws.rd_fh_.mask)
-                detail::mask_inplace(pb, d.ws.rd_key_);
-            if(d.ws.rd_opcode_ == opcode::text)
-            {
-                if(! d.ws.rd_utf8_check_.write(pb) ||
-                    (d.ws.rd_need_ == 0 && d.ws.rd_fh_.fin &&
-                        ! d.ws.rd_utf8_check_.finish()))
-                {
-                    // invalid utf8
-                    d.state = 18;
-                    code = close_code::bad_payload;
-                    break;
-                }
-            }
-            d.sb.commit(bytes_transferred);
-            d.state = 4;
-            break;
-        }
-
-        // call handler
-        case 4:
-            d.state = 99;
-            d.fi.op = d.ws.rd_opcode_;
-            d.fi.fin = d.ws.rd_fh_.fin &&
-                d.ws.rd_need_ == 0;
-            break;
-
-        // got fixed header
-        case 5:
-        {
-            d.fb.commit(bytes_transferred);
-            code = close_code::none;
-            auto const n = detail::read_fh1(
-                d.ws.rd_fh_, d.fb, d.ws.role_, code);
-            if(code != close_code::none)
-            {
-                // protocol error
-                d.state = 18;
-                break;
-            }
-            d.state = 6;
-            if (n == 0)
-            {
-                bytes_transferred = 0;
-                break;
-            }
-            // read variable header
-            boost::asio::async_read(d.ws.stream_,
-                d.fb.prepare(n), std::move(*this));
-            return;
-        }
-
-        // got variable header
-        case 6:
-            d.fb.commit(bytes_transferred);
-            code = close_code::none;
-            detail::read_fh2(d.ws.rd_fh_,
-                d.fb, d.ws.role_, code);
-            if(code == close_code::none)
-                d.ws.prepare_fh(code);
-            if(code != close_code::none)
-            {
-                // protocol error
-                d.state = 18;
-                break;
-            }
-            if(detail::is_control(d.ws.rd_fh_.op))
-            {
-                if(d.ws.rd_fh_.len > 0)
-                {
-                    // read control payload
-                    d.state = 7;
-                    d.fmb = d.fb.prepare(static_cast<
-                        std::size_t>(d.ws.rd_fh_.len));
-                    boost::asio::async_read(d.ws.stream_,
-                        *d.fmb, std::move(*this));
-                    return;
-                }
-                d.state = 8;
-                break;
-            }
-            if(d.ws.rd_need_ > 0)
-            {
-                d.state = 1;
-                break;
-            }
-            if(! d.ws.rd_fh_.fin)
-            {
-                d.state = 2;
-                break;
-            }
-            // empty frame with fin
-            d.state = 4;
-            break;
-
-        // got control payload
-        case 7:
-            if(d.ws.rd_fh_.mask)
-                detail::mask_inplace(
-                    *d.fmb, d.ws.rd_key_);
-            d.fb.commit(bytes_transferred);
-            d.state = 8;
-            break;
-
-        // do control
-        case 8:
-            if(d.ws.rd_fh_.op == opcode::ping)
-            {
+            case do_read_fh + 2:
+                d.fb.commit(bytes_transferred);
                 code = close_code::none;
-                ping_payload_type data;
-                detail::read(data, d.fb.data(), code);
+                detail::read_fh2(d.ws.rd_fh_,
+                    d.fb, d.ws.role_, code);
+                if(code == close_code::none)
+                    d.ws.prepare_fh(code);
                 if(code != close_code::none)
                 {
                     // protocol error
-                    d.state = 18;
+                    d.state = do_fail;
                     break;
                 }
-                d.fb.reset();
-                if(d.ws.wr_close_)
+                if(detail::is_control(d.ws.rd_fh_.op))
                 {
-                    d.state = 2;
+                    if(d.ws.rd_fh_.len > 0)
+                    {
+                        // read control payload
+                        d.state = do_control_payload;
+                        d.fmb = d.fb.prepare(static_cast<
+                            std::size_t>(d.ws.rd_fh_.len));
+                        boost::asio::async_read(d.ws.stream_,
+                            *d.fmb, std::move(*this));
+                        return;
+                    }
+                    d.state = do_control;
                     break;
                 }
-                d.ws.template write_ping<static_streambuf>(
-                    d.fb, opcode::pong, data);
-                if(d.ws.wr_block_)
+                if(d.ws.rd_need_ > 0)
                 {
-                    assert(d.ws.wr_block_ != &d);
-                    // suspend
-                    d.state = 13;
-                    d.ws.rd_op_.template emplace<
-                        read_frame_op>(std::move(*this));
-                    return;
+                    d.state = do_read_payload;
+                    break;
                 }
-                d.state = 14;
+                // empty frame
+                d.state = do_frame_done;
                 break;
-            }
-            else if(d.ws.rd_fh_.op == opcode::pong)
-            {
-                code = close_code::none;
-                ping_payload_type data;
-                detail::read(data, d.fb.data(), code);
-                if(code != close_code::none)
-                {
-                    // protocol error
-                    d.state = 18;
-                    break;
-                }
-                d.fb.reset();
-                // VFALCO TODO maybe_invoke an async pong handler
-                //             For now just ignore the pong.
-                d.state = 2;
+
+            //------------------------------------------------------------------
+
+            case do_control_payload:
+                if(d.ws.rd_fh_.mask)
+                    detail::mask_inplace(
+                        *d.fmb, d.ws.rd_key_);
+                d.fb.commit(bytes_transferred);
+                d.state = do_control; // VFALCO fall through?
                 break;
-            }
-            assert(d.ws.rd_fh_.op == opcode::close);
-            {
-                detail::read(d.ws.cr_, d.fb.data(), code);
-                if(code != close_code::none)
+
+            //------------------------------------------------------------------
+
+            case do_control:
+                if(d.ws.rd_fh_.op == opcode::ping)
                 {
-                    d.state = 18;
-                    break;
-                }
-                if(! d.ws.wr_close_)
-                {
-                    auto cr = d.ws.cr_;
-                    if(cr.code == close_code::none)
-                        cr.code = close_code::normal;
-                    cr.reason = "";
+                    ping_data data;
+                    detail::read(data, d.fb.data());
                     d.fb.reset();
-                    d.ws.template write_close<
-                        static_streambuf>(d.fb, cr);
+                    if(d.ws.wr_close_)
+                    {
+                        // ignore ping when closing
+                        d.state = do_read_fh;
+                        break;
+                    }
+                    d.ws.template write_ping<static_streambuf>(
+                        d.fb, opcode::pong, data);
                     if(d.ws.wr_block_)
                     {
                         // suspend
-                        d.state = 9;
+                        d.state = do_pong_resume;
+                        assert(d.ws.wr_block_ != &d);
                         d.ws.rd_op_.template emplace<
                             read_frame_op>(std::move(*this));
                         return;
                     }
-                    d.state = 11;
+                    d.state = do_pong;
                     break;
                 }
-                // call handler;
-                d.state = 99;
-                ec = error::closed;
-                break;
-            }
+                else if(d.ws.rd_fh_.op == opcode::pong)
+                {
+                    code = close_code::none;
+                    ping_data payload;
+                    detail::read(payload, d.fb.data());
+                    if(d.ws.pong_cb_)
+                        d.ws.pong_cb_(payload);
+                    d.fb.reset();
+                    d.state = do_read_fh;
+                    break;
+                }
+                assert(d.ws.rd_fh_.op == opcode::close);
+                {
+                    detail::read(d.ws.cr_, d.fb.data(), code);
+                    if(code != close_code::none)
+                    {
+                        // protocol error
+                        d.state = do_fail;
+                        break;
+                    }
+                    if(! d.ws.wr_close_)
+                    {
+                        auto cr = d.ws.cr_;
+                        if(cr.code == close_code::none)
+                            cr.code = close_code::normal;
+                        cr.reason = "";
+                        d.fb.reset();
+                        d.ws.template write_close<
+                            static_streambuf>(d.fb, cr);
+                        if(d.ws.wr_block_)
+                        {
+                            // suspend
+                            d.state = do_close_resume;
+                            d.ws.rd_op_.template emplace<
+                                read_frame_op>(std::move(*this));
+                            return;
+                        }
+                        d.state = do_close;
+                        break;
+                    }
+                    // call handler;
+                    ec = error::closed;
+                    goto upcall;
+                }
 
-        // resume
-        case 9:
-            d.state = 10;
-            d.ws.get_io_service().post(bind_handler(
-                std::move(*this), ec, bytes_transferred));
-            return;
+            //------------------------------------------------------------------
 
-        case 10:
-            if(d.ws.error_)
-            {
-                // call handler
-                d.state = 99;
-                ec = boost::asio::error::operation_aborted;
-                break;
-            }
-            if(d.ws.wr_close_)
-            {
-                // call handler
-                d.state = 99;
-                ec = error::closed;
-                break;
-            }
-            d.state = 11;
-            break;
+            case do_pong_resume:
+                d.state = do_pong_resume + 1;
+                d.ws.get_io_service().post(bind_handler(
+                    std::move(*this), ec, bytes_transferred));
+                return;
 
-        // send close
-        case 11:
-            d.state = 12;
-            assert(! d.ws.wr_block_);
-            d.ws.wr_block_ = &d;
-            boost::asio::async_write(d.ws.stream_,
-                d.fb.data(), std::move(*this));
-            return;;
+            case do_pong_resume + 1:
+                if(d.ws.failed_)
+                {
+                    // call handler
+                    ec = boost::asio::error::operation_aborted;
+                    goto upcall;
+                }
+                d.state = do_pong;
+                break; // VFALCO fall through?
 
-        // teardown
-        case 12:
-            d.state = 13;
-            websocket_helpers::call_async_teardown(
-                d.ws.next_layer(), std::move(*this));
-            return;
+            //------------------------------------------------------------------
 
-        case 13:
-            // call handler
-            d.state = 99;
-            ec = error::closed;
-            break;
+            case do_pong:
+                if(d.ws.wr_close_)
+                {
+                    // ignore ping when closing
+                    d.fb.reset();
+                    d.state = do_read_fh;
+                    break;
+                }
+                // send pong
+                d.state = do_pong + 1;
+                assert(! d.ws.wr_block_);
+                d.ws.wr_block_ = &d;
+                boost::asio::async_write(d.ws.stream_,
+                    d.fb.data(), std::move(*this));
+                return;
 
-        // resume
-        case 14:
-            d.state = 15;
-            d.ws.get_io_service().post(bind_handler(
-                std::move(*this), ec, bytes_transferred));
-            return;
-
-        case 15:
-            if(d.ws.error_)
-            {
-                // call handler
-                d.state = 99;
-                ec = boost::asio::error::operation_aborted;
-                break;
-            }
-            if(d.ws.wr_close_)
-            {
+            case do_pong + 1:
                 d.fb.reset();
-                d.state = 2;
+                d.state = do_read_fh;
+                d.ws.wr_block_ = nullptr;
                 break;
-            }
-            d.state = 16;
-            break;
 
-        case 16:
-            // write ping/pong
-            d.state = 17;
-            assert(! d.ws.wr_block_);
-            d.ws.wr_block_ = &d;
-            boost::asio::async_write(d.ws.stream_,
-                d.fb.data(), std::move(*this));
-            return;
+            //------------------------------------------------------------------
 
-        // sent ping/pong
-        case 17:
-            d.fb.reset();
-            d.state = 2;
-            d.ws.wr_block_ = nullptr;
-            break;
+            case do_close_resume:
+                d.state = do_close_resume + 1;
+                d.ws.get_io_service().post(bind_handler(
+                    std::move(*this), ec, bytes_transferred));
+                return;
 
-        // fail the connection
-        case 18:
-            if(! d.ws.wr_close_)
-            {
+            case do_close_resume + 1:
+                if(d.ws.failed_)
+                {
+                    // call handler
+                    d.state = do_call_handler;
+                    ec = boost::asio::error::operation_aborted;
+                    break;
+                }
+                if(d.ws.wr_close_)
+                {
+                    // call handler
+                    ec = error::closed;
+                    goto upcall;
+                }
+                d.state = do_close;
+                break;
+
+            //------------------------------------------------------------------
+
+            case do_close:
+                d.state = do_close + 1;
+                d.ws.wr_close_ = true;
+                assert(! d.ws.wr_block_);
+                d.ws.wr_block_ = &d;
+                boost::asio::async_write(d.ws.stream_,
+                    d.fb.data(), std::move(*this));
+                return;
+
+            case do_close + 1:
+                d.state = do_close + 2;
+                websocket_helpers::call_async_teardown(
+                    d.ws.next_layer(), std::move(*this));
+                return;
+
+            case do_close + 2:
+                // call handler
+                ec = error::closed;
+                goto upcall;
+
+            //------------------------------------------------------------------
+
+            case do_fail:
+                if(d.ws.wr_close_)
+                {
+                    d.state = do_fail + 4;
+                    break;
+                }
                 d.fb.reset();
                 d.ws.template write_close<
                     static_streambuf>(d.fb, code);
                 if(d.ws.wr_block_)
                 {
                     // suspend
-                    d.state = 19;
+                    d.state = do_fail + 2;
                     d.ws.rd_op_.template emplace<
                         read_frame_op>(std::move(*this));
                     return;
                 }
-                d.state = 21;
+                // fall through
+
+            case do_fail + 1:
+                d.ws.failed_ = true;
+                // send close frame
+                d.state = do_fail + 4;
+                d.ws.wr_close_ = true;
+                assert(! d.ws.wr_block_);
+                d.ws.wr_block_ = &d;
+                boost::asio::async_write(d.ws.stream_,
+                    d.fb.data(), std::move(*this));
+                return;
+
+            case do_fail + 2:
+                d.state = do_fail + 3;
+                d.ws.get_io_service().post(bind_handler(
+                    std::move(*this), ec, bytes_transferred));
+                return;
+
+            case do_fail + 3:
+                if(d.ws.failed_)
+                {
+                    d.state = do_fail + 5;
+                    break;
+                }
+                d.state = do_fail + 1;
                 break;
+
+            case do_fail + 4:
+                d.state = do_fail + 5;
+                websocket_helpers::call_async_teardown(
+                    d.ws.next_layer(), std::move(*this));
+                return;
+
+            case do_fail + 5:
+                // call handler
+                ec = error::failed;
+                goto upcall;
+
+            //------------------------------------------------------------------
+
+            case do_call_handler:
+                goto upcall;
             }
-            d.state = 22;
-            break;
-
-        // resume
-        case 19:
-            d.state = 20;
-            d.ws.get_io_service().post(bind_handler(
-                std::move(*this), ec, bytes_transferred));
-            return;
-
-        case 20:
-            if(d.ws.wr_close_)
-            {
-                d.state = 22;
-                break;
-            }
-            d.state = 21;
-            break;
-
-        case 21:
-            // send close
-            d.state = 22;
-            d.ws.wr_close_ = true;
-            assert(! d.ws.wr_block_);
-            d.ws.wr_block_ = &d;
-            boost::asio::async_write(d.ws.stream_,
-                d.fb.data(), std::move(*this));
-            return;
-
-        // teardown
-        case 22:
-            d.state = 23;
-            websocket_helpers::call_async_teardown(
-                d.ws.next_layer(), std::move(*this));
-            return;
-
-        case 23:
-            // call handler
-            d.state = 99;
-            ec = error::failed;
-            break;
         }
+        while(! ec);
     }
-    if(ec)
-        d.ws.error_ = true;
+upcall:
     if(d.ws.wr_block_ == &d)
         d.ws.wr_block_ = nullptr;
     d.ws.wr_op_.maybe_invoke();

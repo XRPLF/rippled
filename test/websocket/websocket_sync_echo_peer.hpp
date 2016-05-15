@@ -101,15 +101,17 @@ private:
     {
         int id;
         sync_echo_peer& self;
-        socket_type sock;
         boost::asio::io_service::work work;
+        // Must be destroyed before work otherwise the
+        // io_service could be destroyed before the socket.
+        socket_type sock;
 
         lambda(int id_, sync_echo_peer& self_,
                 socket_type&& sock_)
             : id(id_)
             , self(self_)
+            , work(sock_.get_io_service())
             , sock(std::move(sock_))
-            , work(sock.get_io_service())
         {
         }
 
@@ -149,10 +151,31 @@ private:
         }
     };
 
+    template<class Streambuf, std::size_t N>
+    static
+    bool
+    match(Streambuf& sb, char const(&s)[N])
+    {
+        using boost::asio::buffer;
+        using boost::asio::buffer_copy;
+        if(sb.size() < N-1)
+            return false;
+        static_string<N-1> t;
+        t.resize(N-1);
+        buffer_copy(buffer(t.data(), t.size()),
+            sb.data());
+        if(t != s)
+            return false;
+        sb.consume(N-1);
+        return true;
+    }
+
     void
     do_peer(int id, socket_type&& sock)
     {
-        websocket::stream<socket_type> ws(std::move(sock));
+        using boost::asio::buffer;
+        using boost::asio::buffer_copy;
+        stream<socket_type> ws(std::move(sock));
         ws.set_option(decorate(identity{}));
         ws.set_option(read_message_max(64 * 1024 * 1024));
         error_code ec;
@@ -164,17 +187,45 @@ private:
         }
         for(;;)
         {
-            websocket::opcode op;
+            opcode op;
             beast::streambuf sb;
             ws.read(op, sb, ec);
             if(ec)
+            {
+                auto const s = ec.message();
                 break;
-            ws.set_option(websocket::message_type(op));
-            ws.write(sb.data(), ec);
+            }
+            ws.set_option(message_type(op));
+            if(match(sb, "RAW"))
+            {
+                boost::asio::write(
+                    ws.next_layer(), sb.data(), ec);
+            }
+            else if(match(sb, "TEXT"))
+            {
+                ws.set_option(message_type{opcode::text});
+                ws.write(sb.data(), ec);
+            }
+            else if(match(sb, "PING"))
+            {
+                ping_data payload;
+                sb.consume(buffer_copy(
+                    buffer(payload.data(), payload.size()),
+                        sb.data()));
+                ws.ping(payload, ec);
+            }
+            else if(match(sb, "CLOSE"))
+            {
+                ws.close({}, ec);
+            }
+            else
+            {
+                ws.write(sb.data(), ec);
+            }
             if(ec)
                 break;
         }
-        if(ec && ec != websocket::error::closed)
+        if(ec && ec != error::closed)
         {
             fail(id, ec, "read");
         }

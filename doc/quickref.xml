@@ -73,16 +73,20 @@
           <bridgehead renderas="sect3">Classes</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.websocket__close_reason">close_reason</link></member>
+            <member><link linkend="beast.ref.websocket__ping_data">ping_data</link></member>
             <member><link linkend="beast.ref.websocket__stream">stream</link></member>
+            <member><link linkend="beast.ref.websocket__reason_string">reason_string</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Options</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.websocket__auto_fragment_size">auto_fragment_size</link></member>
             <member><link linkend="beast.ref.websocket__decorate">decorate</link></member>
             <member><link linkend="beast.ref.websocket__keep_alive">keep_alive</link></member>
+            <member><link linkend="beast.ref.websocket__mask_buffer_size">mask_buffer_size</link></member>
+            <member><link linkend="beast.ref.websocket__message_type">message_type</link></member>
+            <member><link linkend="beast.ref.websocket__pong_callback">pong_callback</link></member>
             <member><link linkend="beast.ref.websocket__read_buffer_size">read_buffer_size</link></member>
             <member><link linkend="beast.ref.websocket__read_message_max">read_message_max</link></member>
-            <member><link linkend="beast.ref.websocket__write_buffer_size">write_buffer_size</link></member>
           </simplelist>
         </entry>
         <entry valign="top">
@@ -94,6 +98,7 @@
           <bridgehead renderas="sect3">Constants</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.websocket__close_code">close_code</link></member>
+            <member><link linkend="beast.ref.websocket__error">error</link></member>
             <member><link linkend="beast.ref.websocket__opcode">opcode</link></member>
           </simplelist>
         </entry>

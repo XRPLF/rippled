@@ -17,7 +17,7 @@ In this table:
 
 * `a` denotes a value of type `X`.
 
-* `b` is a value meeting the requirements of [@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConvertibleToConstBuffer.html [*`ConvertibleToConstBuffer`]].
+* `b` is a value meeting the requirements of [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/ConvertibleToConstBuffer.html [*`ConvertibleToConstBuffer`]].
 
 * `ec` is a value of type [link beast.ref.error_code `error_code&`].
 

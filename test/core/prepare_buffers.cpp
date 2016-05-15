@@ -89,6 +89,7 @@ public:
 
     void testIterator()
     {
+        using boost::asio::buffer_size;
         using boost::asio::const_buffer;
         char b[3];
         std::array<const_buffer, 3> bs{{
@@ -98,7 +99,12 @@ public:
         auto pb = prepare_buffers(2, bs);
         std::size_t n = 0;
         for(auto it = pb.end(); it != pb.begin(); --it)
+        {
+            decltype(pb)::const_iterator it2(std::move(it));
+            expect(buffer_size(*it2) == 1);
+            it = std::move(it2);
             ++n;
+        }
         expect(n == 2);
     }
 
