@@ -532,6 +532,7 @@ public:
     void testInvalidMatrix()
     {
         using boost::asio::buffer;
+        using boost::asio::buffer_copy;
         std::string s;
 
         for(std::size_t n = 0;; ++n)
@@ -549,15 +550,24 @@ public:
                 s[n] = 0;
                 for(std::size_t m = 1; m < len - 1; ++m)
                 {
+                    // Use separately allocated buffers so
+                    // address sanitizer has something to chew on.
+                    //
+                    std::unique_ptr<char[]> p1(new char[m]);
+                    std::unique_ptr<char[]> p2(new char[len - m]);
+                    auto const b1 = buffer(p1.get(), m);
+                    auto const b2 = buffer(p2.get(), len - m);
+                    buffer_copy(b1, buffer(s.data(), m));
+                    buffer_copy(b2, buffer(s.data() + m, len - m));
                     null_parser<true> p;
                     error_code ec;
-                    p.write(buffer(s.data(), m), ec);
+                    p.write(b1, ec);
                     if(ec)
                     {
                         pass();
                         continue;
                     }
-                    p.write(buffer(s.data() + m, len - m), ec);
+                    p.write(b2, ec);
                     expect(ec);
                 }
             }
