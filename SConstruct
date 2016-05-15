@@ -457,7 +457,7 @@ def add_boost_and_protobuf(toolchain, env):
             os.path.join(BOOST_ROOT, 'stage', 'lib'),
             ])
         env['BOOST_ROOT'] = BOOST_ROOT
-        if toolchain == 'gcc':
+        if toolchain in ['gcc', 'clang']:
             env.Append(CCFLAGS=['-isystem' + env['BOOST_ROOT']])
         else:
             env.Append(CPPPATH=[
