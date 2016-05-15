@@ -98,9 +98,9 @@ void STObject::set (const SOTemplate& type)
     }
 }
 
-bool STObject::setType (const SOTemplate& type)
+void
+STObject::setType (const SOTemplate& type)
 {
-    bool valid = true;
     mType = &type;
     decltype(v_) v;
     v.reserve(type.size());
@@ -116,7 +116,8 @@ bool STObject::setType (const SOTemplate& type)
                 JLOG (debugJournal().warn())
                     << "setType(" << getFName().getName()
                     << "): explicit default " << e->e_field.fieldName;
-                valid = false;
+                Throw<std::runtime_error>("Explicit default " +
+                    e->e_field.fieldName);
             }
             v.emplace_back(std::move(*iter));
             v_.erase(iter);
@@ -128,7 +129,8 @@ bool STObject::setType (const SOTemplate& type)
                 JLOG (debugJournal().warn())
                     << "setType(" << getFName().getName()
                     << "): missing " << e->e_field.fieldName;
-                valid = false;
+                Throw<std::runtime_error>("Missing " +
+                    e->e_field.fieldName);
             }
             v.emplace_back(detail::nonPresentObject, e->e_field);
         }
@@ -141,13 +143,13 @@ bool STObject::setType (const SOTemplate& type)
             JLOG (debugJournal().warn())
                 << "setType(" << getFName().getName()
                 << "): non-discardable leftover " << e->getFName().getName ();
-            valid = false;
+            Throw<std::runtime_error>("non-discardable leftover " +
+                e->getFName().getName());
         }
     }
     // Swap the template matching data in for the old data,
     // freeing any leftover junk
     v_.swap(v);
-    return valid;
 }
 
 STObject::ResultOfSetTypeFromSField
@@ -159,7 +161,15 @@ STObject::setTypeFromSField (SField const& sField)
         InnerObjectFormats::getInstance ().findSOTemplateBySField (sField);
     if (elements)
     {
-        ret = setType (*elements) ? typeIsSet : typeSetFail;
+        try
+        {
+            setType(*elements);
+            ret = typeIsSet;
+        }
+        catch(std::exception&)
+        {
+            ret = typeSetFail;
+        }
     }
     return ret;
 }

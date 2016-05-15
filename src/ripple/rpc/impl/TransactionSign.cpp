@@ -481,10 +481,9 @@ transactionPreProcessImpl (
         stpTrans = std::make_shared<STTx> (
             std::move (parsed.object.get()));
     }
-    catch (std::exception&)
+    catch (std::exception& e)
     {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred constructing serialized transaction");
+        return RPC::make_error(rpcINVALID_PARAMS, e.what());
     }
 
     std::string reason;
