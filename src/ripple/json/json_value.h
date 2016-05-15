@@ -71,17 +71,17 @@ enum CommentPlacement
 class StaticString
 {
 public:
-    explicit StaticString ( const char* czstring )
+    constexpr explicit StaticString ( const char* czstring )
         : str_ ( czstring )
     {
     }
 
-    operator const char* () const
+    constexpr operator const char* () const
     {
         return str_;
     }
 
-    const char* c_str () const
+    constexpr const char* c_str () const
     {
         return str_;
     }

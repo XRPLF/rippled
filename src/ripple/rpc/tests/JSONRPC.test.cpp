@@ -35,6 +35,15 @@ struct TxnTestData
 {
     char const* const description;
     char const* const json;
+    // The JSON is applied to four different interfaces:
+    //   1. sign,
+    //   2. submit,
+    //   3. sign_for, and
+    //   4. submit_multisigned.
+    // The JSON is not valid for all of these interfaces, but it should
+    // crash none of them, and should provide reliable error messages.
+    //
+    // The expMsg array contains the expected error string for the above cases.
     char const* const expMsg[4];
 
     // Default and copy ctors should be deleted, but that displeases gcc 4.6.3.
@@ -533,6 +542,44 @@ R"({
 "Missing field 'tx_json.Sequence'.",
 "Missing field 'tx_json.Sequence'."}},
 
+{ "Use 'seed' instead of 'secret'.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
+    "tx_json": {
+        "Account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"",
+"",
+"Missing field 'tx_json.Sequence'.",
+"Missing field 'tx_json.Sequence'."}},
+
+{ "Malformed 'seed'.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "not a seed",
+    "tx_json": {
+        "Account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Invalid field 'seed'.",
+"Invalid field 'seed'.",
+"Missing field 'tx_json.Sequence'.",
+"Missing field 'tx_json.Sequence'."}},
+
 { "'tx_json' must be present.",
 R"({
     "command": "doesnt_matter",
@@ -839,6 +886,52 @@ R"({
 "",
 "",
 "",
+"Missing field 'tx_json.Signers'."}},
+
+{ "Offline sign_for using 'seed' instead of 'secret'.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
+    "offline": 1,
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"",
+"",
+"",
+"Missing field 'tx_json.Signers'."}},
+
+{ "Malformed seed in sign_for.",
+R"({
+    "command": "doesnt_matter",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "ed25519",
+    "seed": "sh1yJfwoi98zCygwjUzuHmJDeVKd",
+    "offline": 1,
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+{
+"Invalid field 'seed'.",
+"Invalid field 'seed'.",
+"Invalid field 'seed'.",
 "Missing field 'tx_json.Signers'."}},
 
 { "Missing 'Account' in sign_for.",
@@ -1840,12 +1933,16 @@ public:
         test::jtx::Account const a {"a"}; // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
         test::jtx::Account const g {"g"}; // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
         auto const USD = g["USD"];
+
+        // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
+        // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
+        test::jtx::Account const ed {"ed", KeyType::ed25519};
         // master is rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh.
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
         test::jtx::Env env(*this, test::jtx::features(featureMultiSign));
-        env.fund(test::jtx::XRP(100000), a, g);
+        env.fund(test::jtx::XRP(100000), a, ed, g);
         env.close();
 
         env(trust(a, USD(1000)));
