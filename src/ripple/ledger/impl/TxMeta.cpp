@@ -170,7 +170,6 @@ TxMeta::getAffectedAccounts() const
 
 STObject& TxMeta::getAffectedNode (SLE::ref node, SField const& type)
 {
-    assert (&type);
     uint256 index = node->getIndex ();
     for (auto& n : mNodes)
     {
