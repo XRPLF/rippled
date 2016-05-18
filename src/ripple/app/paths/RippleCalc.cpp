@@ -143,7 +143,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         {
             JLOG (j.trace()) << "Exception from flow" << e.what ();
             if (!useFlowV1Output)
-                Throw();
+                Rethrow();
         }
 
         if (j.debug())
@@ -151,12 +151,12 @@ RippleCalc::Output RippleCalc::rippleCalculate (
             auto logResult = [&] (std::string const& algoName, Output const& result)
             {
                 j.debug() << "RippleCalc Result> " <<
-                " actualIn: " << result.actualAmountIn <<
-                ", actualOut: " << result.actualAmountOut <<
-                ", result: " << result.result () <<
-                ", dstAmtReq: " << saDstAmountReq <<
-                ", sendMax: " << saMaxAmountReq <<
-                ", algo: " << algoName;
+                    " actualIn: " << result.actualAmountIn <<
+                    ", actualOut: " << result.actualAmountOut <<
+                    ", result: " << result.result () <<
+                    ", dstAmtReq: " << saDstAmountReq <<
+                    ", sendMax: " << saMaxAmountReq <<
+                    ", algo: " << algoName;
             };
             if (callFlowV1)
             {

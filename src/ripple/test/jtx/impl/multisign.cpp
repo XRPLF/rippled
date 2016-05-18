@@ -89,7 +89,7 @@ msig::operator()(Env& env, JTx& jt) const
         catch(parse_error const&)
         {
             env.test.log << pretty(jt.jv);
-            Throw();
+            Rethrow();
         }
         auto& js = jt[sfSigners.getJsonName()];
         js.resize(mySigners.size());

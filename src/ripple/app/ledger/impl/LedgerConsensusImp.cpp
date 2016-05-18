@@ -487,7 +487,7 @@ void LedgerConsensusImp::mapComplete (
         leaveConsensus();
         JLOG (j_.error()) <<
             "Missing node processing complete map " << mn;
-        Throw();
+        Rethrow();
     }
 }
 
@@ -693,7 +693,7 @@ void LedgerConsensusImp::timerEntry ()
         leaveConsensus ();
         JLOG (j_.error()) <<
            "Missing node during consensus process " << mn;
-        Throw();
+        Rethrow();
     }
 }
 

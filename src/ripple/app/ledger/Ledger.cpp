@@ -603,7 +603,7 @@ Ledger::setup (Config const& config)
     }
     catch (std::exception const&)
     {
-        Throw();
+        Rethrow();
     }
 
     try
@@ -616,7 +616,7 @@ Ledger::setup (Config const& config)
     }
     catch (std::exception const&)
     {
-        Throw();
+        Rethrow();
     }
 
     return ret;
@@ -639,7 +639,6 @@ Ledger::peek (Keylet const& k) const
 }
 
 //------------------------------------------------------------------------------
-
 bool Ledger::walkLedger (beast::Journal j) const
 {
     std::vector <SHAMapMissingNode> missingNodes1;

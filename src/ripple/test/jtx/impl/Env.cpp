@@ -450,7 +450,7 @@ Env::autofill (JTx& jt)
         test.log <<
             "parse failed:\n" <<
             pretty(jv);
-        Throw();
+        Rethrow();
     }
 }
 
@@ -469,7 +469,7 @@ Env::st (JTx const& jt)
         test.log <<
             "Exception: parse_error\n" <<
             pretty(jt.jv);
-        Throw();
+        Rethrow();
     }
 
     try

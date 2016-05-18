@@ -39,7 +39,7 @@ public:
 
             try
             {
-                Throw();
+                Rethrow();
             }
             catch (std::runtime_error const& e)
             {
