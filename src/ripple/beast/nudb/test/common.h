@@ -209,47 +209,43 @@ num (T t)
     return s2;
 }
 
-template <class Log>
+inline
 void
-print (Log log,
+print(std::ostream& log,
     beast::nudb::verify_info const& info)
 {
-    log << "avg_fetch:       " << std::fixed << std::setprecision(3) <<
-                                    info.avg_fetch;
-    log << "waste:           " << std::fixed << std::setprecision(3) <<
-                                    info.waste * 100 << "%";
-    log << "overhead:        " << std::fixed << std::setprecision(1) <<
-                                    info.overhead * 100 << "%";
-    log << "actual_load:     " << std::fixed << std::setprecision(0) <<
-                                    info.actual_load * 100 << "%";
-    log << "version:         " << num(info.version);
-    log << "uid:             " << std::showbase << std::hex << info.uid;
-    log << "appnum:          " << info.appnum;
-    log << "key_size:        " << num(info.key_size);
-    log << "salt:            " << std::showbase << std::hex << info.salt;
-    log << "pepper:          " << std::showbase << std::hex << info.pepper;
-    log << "block_size:      " << num(info.block_size);
-    log << "bucket_size:     " << num(info.bucket_size);
-    log << "load_factor:     " << std::fixed << std::setprecision(0) <<
-                                    info.load_factor * 100 << "%";
-    log << "capacity:        " << num(info.capacity);
-    log << "buckets:         " << num(info.buckets);
-    log << "key_count:       " << num(info.key_count);
-    log << "value_count:     " << num(info.value_count);
-    log << "value_bytes:     " << num(info.value_bytes);
-    log << "spill_count:     " << num(info.spill_count);
-    log << "spill_count_tot: " << num(info.spill_count_tot);
-    log << "spill_bytes:     " << num(info.spill_bytes);
-    log << "spill_bytes_tot: " << num(info.spill_bytes_tot);
-    log << "key_file_size:   " << num(info.key_file_size);
-    log << "dat_file_size:   " << num(info.dat_file_size);
+    log <<
+        "avg_fetch:       " << std::fixed << std::setprecision(3) << info.avg_fetch << '\n' <<
+        "waste:           " << std::fixed << std::setprecision(3) << info.waste * 100 << "%\n" <<
+        "overhead:        " << std::fixed << std::setprecision(1) << info.overhead * 100 << "%\n" <<
+        "actual_load:     " << std::fixed << std::setprecision(0) << info.actual_load * 100 << "%\n" <<
+        "version:         " << num(info.version) << '\n' <<
+        "uid:             " << std::showbase << std::hex << info.uid << '\n' <<
+        "appnum:          " << info.appnum << '\n' <<
+        "key_size:        " << num(info.key_size) << '\n' <<
+        "salt:            " << std::showbase << std::hex << info.salt << '\n' <<
+        "pepper:          " << std::showbase << std::hex << info.pepper << '\n' <<
+        "block_size:      " << num(info.block_size) << '\n' <<
+        "bucket_size:     " << num(info.bucket_size) << '\n' <<
+        "load_factor:     " << std::fixed << std::setprecision(0) << info.load_factor * 100 << "%\n" <<
+        "capacity:        " << num(info.capacity) << '\n' <<
+        "buckets:         " << num(info.buckets) << '\n' <<
+        "key_count:       " << num(info.key_count) << '\n' <<
+        "value_count:     " << num(info.value_count) << '\n' <<
+        "value_bytes:     " << num(info.value_bytes) << '\n' <<
+        "spill_count:     " << num(info.spill_count) << '\n' <<
+        "spill_count_tot: " << num(info.spill_count_tot) << '\n' <<
+        "spill_bytes:     " << num(info.spill_bytes) << '\n' <<
+        "spill_bytes_tot: " << num(info.spill_bytes_tot) << '\n' <<
+        "key_file_size:   " << num(info.key_file_size) << '\n' <<
+        "dat_file_size:   " << num(info.dat_file_size) << std::endl;
 
     std::string s;
     for (int i = 0; i < info.hist.size(); ++i)
         s += (i==0) ?
             std::to_string(info.hist[i]) :
             (", " + std::to_string(info.hist[i]));
-    log << "hist:            " << s;
+    log << "hist:            " << s << std::endl;
 }
 
 } // test

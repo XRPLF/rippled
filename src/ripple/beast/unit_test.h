@@ -21,7 +21,6 @@
 #define BEAST_UNIT_TEST_H_INCLUDED
 
 #include <beast/unit_test/amount.hpp>
-#include <beast/unit_test/print.hpp>
 #include <beast/unit_test/global_suites.hpp>
 #include <beast/unit_test/match.hpp>
 #include <beast/unit_test/recorder.hpp>

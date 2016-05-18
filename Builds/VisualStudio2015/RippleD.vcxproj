@@ -240,6 +240,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\detail\const_container.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\dstream.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\global_suites.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\match.hpp">
@@ -1894,6 +1896,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\utility\tagged_integer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\temp_dir.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\utility\test\beast_Journal_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>

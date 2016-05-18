@@ -543,6 +543,9 @@
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\detail\const_container.hpp">
       <Filter>extras\beast\unit_test\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\dstream.hpp">
+      <Filter>extras\beast\unit_test</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\global_suites.hpp">
       <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
@@ -2458,6 +2461,9 @@
       <Filter>ripple\beast\utility\src</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\utility\tagged_integer.h">
+      <Filter>ripple\beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\utility\temp_dir.h">
       <Filter>ripple\beast\utility</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\utility\test\beast_Journal_test.cpp">

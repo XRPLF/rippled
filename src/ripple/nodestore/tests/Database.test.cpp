@@ -21,7 +21,7 @@
 #include <ripple/nodestore/tests/Base.test.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/core/detail/temp_dir.hpp>
+#include <ripple/beast/utility/temp_dir.h>
 #include <algorithm>
 
 namespace ripple {
@@ -35,7 +35,7 @@ public:
     {
         DummyScheduler scheduler;
 
-        beast::detail::temp_dir node_db;
+        beast::temp_dir node_db;
         Section srcParams;
         srcParams.set ("type", srcBackendType);
         srcParams.set ("path", node_db.path());
@@ -61,7 +61,7 @@ public:
                 "test", scheduler, j, 2, srcParams);
 
             // Set up the destination database
-            beast::detail::temp_dir dest_db;
+            beast::temp_dir dest_db;
             Section destParams;
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.path());
@@ -98,7 +98,7 @@ public:
 
         testcase (s);
 
-        beast::detail::temp_dir node_db;
+        beast::temp_dir node_db;
         Section nodeParams;
         nodeParams.set ("type", type);
         nodeParams.set ("path", node_db.path());

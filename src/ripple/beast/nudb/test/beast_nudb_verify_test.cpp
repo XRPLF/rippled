@@ -242,7 +242,7 @@ public:
     void
     run() override
     {
-        testcase(abort_on_fail) << "verify " << arg();
+        testcase(beast::unit_test::abort_on_fail) << "verify " << arg();
         if (arg().empty())
             return fail("missing unit test argument");
         do_verify(arg());
@@ -270,7 +270,7 @@ public:
     void
     run() override
     {
-        testcase(abort_on_fail) << "verify_fast " << arg();
+        testcase(beast::unit_test::abort_on_fail) << "verify_fast " << arg();
         if (arg().empty())
             return fail("missing unit test argument");
         do_verify(arg());

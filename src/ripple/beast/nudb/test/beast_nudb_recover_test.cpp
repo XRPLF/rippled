@@ -20,7 +20,7 @@
 #include <ripple/beast/nudb/test/common.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
-#include <beast/core/detail/temp_dir.hpp>
+#include <ripple/beast/utility/temp_dir.h>
 #include <cmath>
 #include <cstring>
 #include <memory>
@@ -117,7 +117,7 @@ public:
     {
         testcase << count << " inserts";
 
-        beast::detail::temp_dir tempDir;
+        beast::temp_dir tempDir;
 
         auto const path = tempDir.path();
         for (std::size_t n = 1;;++n)

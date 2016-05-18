@@ -21,7 +21,7 @@
 #include <ripple/nodestore/tests/Base.test.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-#include <beast/core/detail/temp_dir.hpp>
+#include <ripple/beast/utility/temp_dir.h>
 #include <algorithm>
 
 namespace ripple {
@@ -42,7 +42,7 @@ public:
         testcase ("Backend type=" + type);
 
         Section params;
-        beast::detail::temp_dir tempDir;
+        beast::temp_dir tempDir;
         params.set ("type", type);
         params.set ("path", tempDir.path());
 

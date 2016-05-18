@@ -301,7 +301,7 @@ public:
     void
     run() override
     {
-        testcase(abort_on_fail) << arg();
+        testcase(beast::unit_test::abort_on_fail) << arg();
 
         using namespace beast::nudb;
         using namespace beast::nudb::detail;
@@ -573,7 +573,7 @@ public:
     void
     run() override
     {
-        testcase(abort_on_fail) << arg();
+        testcase(beast::unit_test::abort_on_fail) << arg();
 
         using namespace beast::nudb;
         using namespace beast::nudb::detail;

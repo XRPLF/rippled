@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/nudb/test/common.h>
-#include <beast/core/detail/temp_dir.hpp>
+#include <ripple/beast/utility/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/beast/unit_test.h>
 #include <cmath>
@@ -43,8 +43,8 @@ public:
     do_test (std::size_t N,
         std::size_t block_size, float load_factor)
     {
-        testcase (abort_on_fail);
-        beast::detail::temp_dir tempDir;
+        testcase (beast::unit_test::abort_on_fail);
+        beast::temp_dir tempDir;
 
         auto const dp = tempDir.file ("nudb.dat");
         auto const kp = tempDir.file ("nudb.key");
