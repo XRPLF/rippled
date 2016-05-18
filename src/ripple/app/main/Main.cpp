@@ -122,7 +122,7 @@ void startServer (Application& app)
         {
             Json::Value const& jvCommand    = app.config().RPC_STARTUP[i];
 
-            if (!app.config().QUIET)
+            if (!app.config().quiet())
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
@@ -133,7 +133,7 @@ void startServer (Application& app)
             Json::Value jvResult;
             RPC::doCommand (context, jvResult);
 
-            if (!app.config().QUIET)
+            if (!app.config().quiet())
                 std::cerr << "Result: " << jvResult << std::endl;
         }
     }
@@ -318,16 +318,8 @@ int run (int argc, char** argv)
             vm["conf"].as<std::string> () : std::string();
 
     // config file, quiet flag.
-    config->setup (configFile, bool (vm.count ("quiet")));
-
-    if (vm.count ("silent"))
-        config->SILENT = true;
-
-    if (vm.count ("standalone"))
-    {
-        config->RUN_STANDALONE = true;
-        config->LEDGER_HISTORY = 0;
-    }
+    config->setup (configFile, bool (vm.count ("quiet")),
+        bool(vm.count("silent")), bool(vm.count("standalone")));
 
     {
         // Stir any previously saved entropy into the pool:
@@ -456,7 +448,7 @@ int run (int argc, char** argv)
         if (!adjustDescriptorLimit(1024, logs->journal("Application")))
             return -1;
 
-        if (HaveSustain() && !vm.count ("fg") && !config->RUN_STANDALONE)
+        if (HaveSustain() && !vm.count ("fg") && !config->standalone())
         {
             auto const ret = DoSustain ();
 

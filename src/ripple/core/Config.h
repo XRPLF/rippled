@@ -98,10 +98,21 @@ private:
     void load ();
     beast::Journal j_;
 
-public:
-    bool doImport = false;
     bool QUIET = false;          // Minimize logging verbosity.
     bool SILENT = false;         // No output to console after startup.
+    /** Operate in stand-alone mode.
+
+        In stand alone mode:
+
+        - Peer connections are not attempted or accepted
+        - The ledger is not advanced automatically.
+        - If no ledger is loaded, the default ledger with the root
+          account is created.
+    */
+    bool                        RUN_STANDALONE = false;
+
+public:
+    bool doImport = false;
     bool ELB_SUPPORT = false;
 
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
@@ -125,17 +136,6 @@ public:
 
     // Network parameters
     int const                   TRANSACTION_FEE_BASE = 10;   // The number of fee units a reference transaction costs
-
-    /** Operate in stand-alone mode.
-
-        In stand alone mode:
-
-        - Peer connections are not attempted or accepted
-        - The ledger is not advanced automatically.
-        - If no ledger is loaded, the default ledger with the root
-          account is created.
-    */
-    bool                        RUN_STANDALONE = false;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     std::size_t                 NETWORK_QUORUM = 0;         // Minimum number of nodes to consider the network present
@@ -188,7 +188,12 @@ public:
     Config() = default;
 
     int getSize (SizedItemName) const;
-    void setup (std::string const& strConf, bool bQuiet);
+    /* Be very careful to make sure these bool params
+        are in the right order. */
+    void setup (std::string const& strConf, bool bQuiet,
+        bool bSilent, bool bStandalone);
+    void setupControl (bool bQuiet,
+        bool bSilent, bool bStandalone);
 
     /**
      *  Load the conig from the contents of the sting.
@@ -196,6 +201,10 @@ public:
      *  @param fileContents String representing the config contents.
      */
     void loadFromString (std::string const& fileContents);
+
+    bool quiet() const { return QUIET; }
+    bool silent() const { return SILENT; }
+    bool standalone() const { return RUN_STANDALONE; }
 };
 
 } // ripple

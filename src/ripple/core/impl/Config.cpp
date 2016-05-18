@@ -150,10 +150,18 @@ getEnvVar (char const* name)
     return value;
 }
 
-void Config::setup (std::string const& strConf, bool bQuiet)
+void Config::setupControl(bool bQuiet,
+    bool bSilent, bool bStandalone)
+{
+    QUIET = bQuiet || bSilent;
+    SILENT = bSilent;
+    RUN_STANDALONE = bStandalone;
+}
+
+void Config::setup (std::string const& strConf, bool bQuiet,
+    bool bSilent, bool bStandalone)
 {
     boost::filesystem::path dataDir;
-    boost::system::error_code ec;
     std::string strDbPath, strConfFile;
 
     // Determine the config and data directories.
@@ -162,7 +170,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
     // config directory and that with "db" as the data
     // directory.
 
-    QUIET = bQuiet;
+    setupControl(bQuiet, bSilent, bStandalone);
 
     strDbPath = databaseDirName;
 
@@ -230,20 +238,27 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         // load() may have set a new value for the dataDir
         std::string const dbPath (legacy ("database_path"));
         if (!dbPath.empty ())
-        {
             dataDir = boost::filesystem::path (dbPath);
-        }
+        else if (RUN_STANDALONE)
+            dataDir.clear();
     }
 
-    boost::filesystem::create_directories (dataDir, ec);
+    if (!dataDir.empty())
+    {
+        boost::system::error_code ec;
+        boost::filesystem::create_directories(dataDir, ec);
 
-    if (ec)
-        Throw<std::runtime_error> (
-            boost::str (boost::format ("Can not create %s") % dataDir));
+        if (ec)
+            Throw<std::runtime_error>(
+                boost::str(boost::format("Can not create %s") % dataDir));
 
-    legacy ("database_path", boost::filesystem::absolute (dataDir).string ());
+        legacy("database_path", boost::filesystem::absolute(dataDir).string());
+    }
 
     HTTPClient::initializeSSLContext(*this);
+
+    if (RUN_STANDALONE)
+        LEDGER_HISTORY = 0;
 }
 
 void Config::load ()

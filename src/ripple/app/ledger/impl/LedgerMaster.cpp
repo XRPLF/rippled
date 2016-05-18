@@ -86,7 +86,7 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     , mValidLedgerSign (0)
     , mValidLedgerSeq (0)
     , mBuildingLedgerSeq (0)
-    , standalone_ (app_.config().RUN_STANDALONE)
+    , standalone_ (app_.config().standalone())
     , fetch_depth_ (app_.getSHAMapStore ().clampFetchDepth (
         app_.config().FETCH_DEPTH))
     , ledger_history_ (app_.config().LEDGER_HISTORY)
@@ -209,7 +209,7 @@ LedgerMaster::setValidLedger(
 {
     std::vector <NetClock::time_point> times;
 
-    if (! app_.config().RUN_STANDALONE)
+    if (! standalone_)
     {
         times = app_.getValidations().getValidationTimes(
             l->info().hash);

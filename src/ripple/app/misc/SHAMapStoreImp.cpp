@@ -804,7 +804,7 @@ setup_SHAMapStore (Config const& c)
 {
     SHAMapStore::Setup setup;
 
-    setup.standalone = c.RUN_STANDALONE;
+    setup.standalone = c.standalone();
 
     // Get existing settings and add some default values if not specified:
     setup.nodeDatabase = c.section (ConfigSection::nodeDatabase ());

@@ -62,9 +62,7 @@ setupConfigForUnitTests (Config& cfg)
     cfg.overwrite (ConfigSection::nodeDatabase (), "path", "main");
     cfg.deprecatedClearSection (ConfigSection::importNodeDatabase ());
     cfg.legacy("database_path", "");
-    cfg.RUN_STANDALONE = true;
-    cfg.QUIET = true;
-    cfg.SILENT = true;
+    cfg.setupControl(true, true, true);
     cfg["server"].append("port_peer");
     cfg["port_peer"].set("ip", "127.0.0.1");
     cfg["port_peer"].set("port", "8080");

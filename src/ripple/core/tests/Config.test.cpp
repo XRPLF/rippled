@@ -223,11 +223,16 @@ public:
         }
 
         rmDataDir_ = !exists (dataDir_);
-        config_.setup (configFile_.string (), /*bQuiet*/ false);
+        config_.setup (configFile_.string (), /*bQuiet*/ false,
+            /* bSilent */ false, /* bStandalone */ false);
     }
     Config& config ()
     {
         return config_;
+    }
+    std::string configFile() const
+    {
+        return configFile_.string();
     }
     bool dataDirExists () const
     {
@@ -448,6 +453,7 @@ port_wss_admin
                     "dbPath No Path");
         }
     }
+
     void testValidatorsFile ()
     {
         testcase ("validators_file");
@@ -682,11 +688,104 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             expect (error == expectedError);
         }
     }
+
+    void testSetup(bool explicitPath)
+    {
+        detail::RippledCfgGuard cfg(*this, "testSetup",
+            explicitPath ? "test_db" : "", "");
+        /* ConfigGuard has a Config object that gets loaded on construction,
+            but Config::setup is not reentrant, so we need a fresh config
+            for every test case, so ignore it.
+        */
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ false,
+                /* bSilent */ false, /* bStandalone */ false);
+            expect(!config.quiet());
+            expect(!config.silent());
+            expect(!config.standalone());
+            expect(config.LEDGER_HISTORY == 256);
+            expect(!config.legacy("database_path").empty());
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ true,
+                /* bSilent */ false, /* bStandalone */ false);
+            expect(config.quiet());
+            expect(!config.silent());
+            expect(!config.standalone());
+            expect(config.LEDGER_HISTORY == 256);
+            expect(!config.legacy("database_path").empty());
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ false,
+                /* bSilent */ true, /* bStandalone */ false);
+            expect(config.quiet());
+            expect(config.silent());
+            expect(!config.standalone());
+            expect(config.LEDGER_HISTORY == 256);
+            expect(!config.legacy("database_path").empty());
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ true,
+                /* bSilent */ true, /* bStandalone */ false);
+            expect(config.quiet());
+            expect(config.silent());
+            expect(!config.standalone());
+            expect(config.LEDGER_HISTORY == 256);
+            expect(!config.legacy("database_path").empty());
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ false,
+                /* bSilent */ false, /* bStandalone */ true);
+            expect(!config.quiet());
+            expect(!config.silent());
+            expect(config.standalone());
+            expect(config.LEDGER_HISTORY == 0);
+            expect(config.legacy("database_path").empty() == !explicitPath);
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ true,
+                /* bSilent */ false, /* bStandalone */ true);
+            expect(config.quiet());
+            expect(!config.silent());
+            expect(config.standalone());
+            expect(config.LEDGER_HISTORY == 0);
+            expect(config.legacy("database_path").empty() == !explicitPath);
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ false,
+                /* bSilent */ true, /* bStandalone */ true);
+            expect(config.quiet());
+            expect(config.silent());
+            expect(config.standalone());
+            expect(config.LEDGER_HISTORY == 0);
+            expect(config.legacy("database_path").empty() == !explicitPath);
+        }
+        {
+            Config config;
+            config.setup(cfg.configFile(), /*bQuiet*/ true,
+                /* bSilent */ true, /* bStandalone */ true);
+            expect(config.quiet());
+            expect(config.silent());
+            expect(config.standalone());
+            expect(config.LEDGER_HISTORY == 0);
+            expect(config.legacy("database_path").empty() == !explicitPath);
+        }
+    }
+
     void run ()
     {
         testLegacy ();
         testDbPath ();
         testValidatorsFile ();
+        testSetup (false);
+        testSetup (true);
     }
 };
 

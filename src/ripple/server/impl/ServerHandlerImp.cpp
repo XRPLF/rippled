@@ -770,7 +770,7 @@ parse_Ports (
         result.push_back(to_Port(parsed, log));
     }
 
-    if (config.RUN_STANDALONE)
+    if (config.standalone())
     {
         auto it = result.begin ();
 
