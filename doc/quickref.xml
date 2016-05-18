@@ -41,7 +41,10 @@
           </simplelist>
           <bridgehead renderas="sect3">Type Traits</bridgehead>
           <simplelist type="vert" columns="1">
+           <member><link linkend="beast.ref.http__is_Body">is_Body</link></member>
            <member><link linkend="beast.ref.http__is_Parser">is_Parser</link></member>
+           <member><link linkend="beast.ref.http__is_ReadableBody">is_ReadableBody</link></member>
+           <member><link linkend="beast.ref.http__is_WritableBody">is_WritableBody</link></member>
           </simplelist>
         </entry>
         <entry valign="top">

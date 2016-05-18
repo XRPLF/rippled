@@ -38,7 +38,7 @@ In this table:
         an error occurs, the end of the buffer is reached, or a complete
         HTTP/1 message has been parsed. If an error occurs, `ec` is set
         to the error code and parsing stops. This function returns the
-        number of bytes consumed in the input buffer.
+        number of bytes consumed from the input buffer.
     ]
 ]
 [

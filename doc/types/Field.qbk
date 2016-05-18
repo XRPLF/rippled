@@ -22,7 +22,7 @@ In this table:
     [`boost::string_ref`]
     [
         This function returns a value implicitly convertible to
-        `boost::string_ref` containing the case-insensitve field
+        `boost::string_ref` containing the case-insensitive field
         name, without leading or trailing white space.
     ]
 ]

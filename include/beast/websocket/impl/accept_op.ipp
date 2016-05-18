@@ -33,7 +33,7 @@ class stream<NextLayer>::accept_op
     struct data
     {
         stream<NextLayer>& ws;
-        http::request_v1<http::empty_body> req;
+        http::request_v1<http::string_body> req;
         Handler h;
         bool cont;
         int state = 0;

@@ -12,8 +12,10 @@
 #include <beast/http/headers.hpp>
 #include <beast/http/parser_v1.hpp>
 #include <beast/http/read.hpp>
+#include <beast/http/write.hpp>
 #include <beast/test/string_stream.hpp>
 #include <beast/unit_test/suite.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace beast {
 namespace http {
@@ -25,16 +27,18 @@ class streambuf_body_test : public beast::unit_test::suite
 public:
     void run() override
     {
-        test::string_stream ss(ios_,
+        std::string const s =
             "HTTP/1.1 200 OK\r\n"
             "Server: test\r\n"
             "Content-Length: 3\r\n"
             "\r\n"
-            "xyz");
+            "xyz";
+        test::string_stream ss(ios_, s);
         parser_v1<false, streambuf_body, headers> p;
         streambuf sb;
         parse(ss, sb, p);
         expect(to_string(p.get().body.data()) == "xyz");
+        expect(boost::lexical_cast<std::string>(p.get()) == s);
     }
 };
 

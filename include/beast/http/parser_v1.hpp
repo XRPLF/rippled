@@ -9,6 +9,7 @@
 #define BEAST_HTTP_PARSER_V1_HPP
 
 #include <beast/http/basic_parser_v1.hpp>
+#include <beast/http/concepts.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/core/error.hpp>
 #include <functional>
@@ -54,6 +55,9 @@ public:
         message_v1<isRequest, Body, Headers>;
 
 private:
+    static_assert(is_ReadableBody<Body>::value,
+        "ReadableBody requirements not met");
+
     std::string field_;
     std::string value_;
     message_type m_;

@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_IMPL_WRITE_IPP
 #define BEAST_HTTP_IMPL_WRITE_IPP
 
+#include <beast/http/concepts.hpp>
 #include <beast/http/resume_context.hpp>
 #include <beast/http/detail/chunk_encode.hpp>
 #include <beast/http/detail/has_content_length.hpp>
@@ -448,6 +449,8 @@ write(SyncWriteStream& stream,
 {
     static_assert(is_SyncWriteStream<SyncWriteStream>::value,
         "SyncWriteStream requirements not met");
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     error_code ec;
     write(stream, msg, ec);
     if(ec)
@@ -463,6 +466,8 @@ write(SyncWriteStream& stream,
 {
     static_assert(is_SyncWriteStream<SyncWriteStream>::value,
         "SyncWriteStream requirements not met");
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     detail::write_preparation<isRequest, Body, Headers> wp(msg);
     wp.init(ec);
     if(ec)
@@ -546,6 +551,8 @@ async_write(AsyncWriteStream& stream,
     static_assert(
         is_AsyncWriteStream<AsyncWriteStream>::value,
             "AsyncWriteStream requirements not met");
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     beast::async_completion<WriteHandler,
         void(error_code)> completion(handler);
     detail::write_op<AsyncWriteStream, decltype(completion.handler),
@@ -607,6 +614,8 @@ std::ostream&
 operator<<(std::ostream& os,
     message_v1<isRequest, Body, Headers> const& msg)
 {
+    static_assert(is_WritableBody<Body>::value,
+        "WritableBody requirements not met");
     detail::ostream_SyncStream oss(os);
     error_code ec;
     write(oss, msg, ec);

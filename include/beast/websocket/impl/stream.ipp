@@ -253,7 +253,7 @@ accept(ConstBufferSequence const& buffers, error_code& ec)
     stream_.buffer().commit(buffer_copy(
         stream_.buffer().prepare(
             buffer_size(buffers)), buffers));
-    http::request_v1<http::empty_body> m;
+    http::request_v1<http::string_body> m;
     http::read(next_layer(), stream_.buffer(), m, ec);
     if(ec)
         return;
