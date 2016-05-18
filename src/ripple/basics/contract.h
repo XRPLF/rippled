@@ -33,11 +33,22 @@ namespace ripple {
     preconditions, postconditions, and invariants.
 */
 
+/** Generates and logs a call stack */
+void
+LogThrow (std::string const& title);
+
+/** Rethrow the exception currently being handled.
+
+    When called from within a catch block, it will pass
+    control to the next matching exception handler, if any.
+    Otherwise, std::terminate will be called.
+*/
 [[noreturn]]
 inline
 void
-Throw ()
+Rethrow ()
 {
+    LogThrow ("Re-throwing exception");
     throw;
 }
 
@@ -49,7 +60,10 @@ Throw (Args&&... args)
 {
     static_assert (std::is_convertible<E*, std::exception*>::value,
         "Exception must derive from std::exception.");
-    throw E(std::forward<Args>(args)...);
+
+    E e(std::forward<Args>(args)...);
+    LogThrow (std::string("Throwing exception: ") + e.what());
+    throw e;
 }
 
 /** Called when faulty logic causes a broken invariant. */

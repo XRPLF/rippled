@@ -154,7 +154,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Invalid value '" << result.first <<
                     "' for key 'ip' in [" << section.name() << "]\n";
-                Throw();
+                Rethrow();
             }
         }
     }
@@ -177,7 +177,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 log <<
                     "Invalid value '" << result.first << "' for key " <<
                     "'port' in [" << section.name() << "]\n";
-                Throw();
+                Rethrow();
             }
         }
     }
@@ -207,7 +207,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
                 log <<
                     "Invalid value '" << lim << "' for key " <<
                     "'limit' in [" << section.name() << "]\n";
-                Throw();
+                Rethrow();
             }
         }
     }

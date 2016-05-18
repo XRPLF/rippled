@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Log.h>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -39,10 +40,17 @@ accessViolation() noexcept
 
 } // detail
 
+void
+LogThrow (std::string const& title)
+{
+    JLOG(debugLog()) << title;
+}
+
 [[noreturn]]
 void
 LogicError (std::string const& s) noexcept
 {
+    JLOG(debugLog()) << s;
     std::cerr << "Logic error: " << s << std::endl;
     detail::accessViolation();
 }
