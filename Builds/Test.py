@@ -48,8 +48,15 @@ import itertools
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
+
+
+def powerset(iterable):
+    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+    s = list(iterable)
+    return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s)+1))
 
 IS_WINDOWS = platform.system().lower() == 'windows'
 
@@ -59,7 +66,11 @@ if IS_WINDOWS:
 else:
     BINARY_RE = re.compile(r'build/([^/]+)/rippled')
 
-ALL_TARGETS = ['debug', 'release']
+ALL_TARGETS = ['coverage', 'debug', ' profile', 'release']
+
+ALL_OPTIONS = list(set(
+        [' '.join(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=address'])] +
+        [' '.join(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=thread'])]))
 
 parser = argparse.ArgumentParser(
     description='Test.py - run ripple tests'
@@ -97,12 +108,19 @@ parser.add_argument(
  )
 
 parser.add_argument(
+    '--clean', '-c',
+    action='store_true',
+    help='delete all build artifacts after testing',
+ )
+
+parser.add_argument(
     'scons_args',
     default=(),
     nargs='*'
     )
 
 ARGS = parser.parse_args()
+
 
 def shell(*cmd, **kwds):
     "Execute a shell command and return the output."
@@ -137,27 +155,12 @@ def shell(*cmd, **kwds):
     process.wait()
     return process.returncode, lines
 
-if __name__ == '__main__':
-    args = list(ARGS.scons_args)
-    if ARGS.all:
-        for a in ALL_TARGETS:
-            if a not in args:
-                args.append(a)
-    print('Building:', *(args or ['(default)']))
 
-    # Build everything.
-    resultcode, lines = shell('scons', *args)
-    if resultcode:
-        print('Build FAILED:')
-        if not ARGS.verbose:
-            print(*lines, sep='')
-        exit(1)
-
-    # Now extract the executable names and corresponding targets.
+def run_tests(*args):
     failed = []
     _, lines = shell('scons', '-n', '--tree=derived', *args, silent=True)
     for line in lines:
-        match = BINARY_RE.search(line)
+        match = BINARY_RE.search(line.decode())
         if match:
             executable, target = match.group(0, 1)
 
@@ -183,9 +186,74 @@ if __name__ == '__main__':
                     break
             else:
                 ARGS.verbose and print(*lines, sep='')
+    return failed
 
-    if failed:
-        print('FAILED:', *(':'.join(f) for f in failed))
-        exit(1)
+
+def build_and_test_all():
+    for o in ALL_OPTIONS:
+        for a in ALL_TARGETS:
+            args = list(ARGS.scons_args)
+            if a not in args:
+                args.append(a)
+            print('Building:', *(args or ['(default)']))
+            resultcode, lines = shell('scons', o, *args)
+
+            if resultcode:
+                print('Build FAILED:')
+                if not ARGS.verbose:
+                    print(*lines, sep='')
+                exit(1)
+            ninja = False
+            if 'ninja' in o:
+                ninja = True
+                resultcode, lines = shell('ninja')
+
+                if resultcode:
+                    print('Build FAILED:')
+                    if not ARGS.verbose:
+                        print(*lines, sep='')
+                    exit(1)
+
+            failed = run_tests(*args)
+            if failed:
+                print('FAILED:', *(':'.join(f) for f in failed))
+                if not ARGS.keep_going:
+                    exit(1)
+            else:
+                print('Success')
+
+            if ARGS.clean:
+                shutil.rmtree('build')
+                if ninja:
+                    os.remove('build.ninja')
+
+
+def main():
+    if ARGS.all:
+        build_and_test_all()
+
     else:
-        print('Success')
+        args = list(ARGS.scons_args)
+        print('Building:', *(args or ['(default)']))
+
+        # Build everything.
+        resultcode, lines = shell('scons', *args)
+        if resultcode:
+            print('Build FAILED:')
+            if not ARGS.verbose:
+                print(*lines, sep='')
+            exit(1)
+
+        # Now extract the executable names and corresponding targets.
+        failed = run_tests(*args)
+
+        if failed:
+            print('FAILED:', *(':'.join(f) for f in failed))
+            exit(1)
+        else:
+            print('Success')
+
+
+if __name__ == '__main__':
+    main()
+    exit(0)
