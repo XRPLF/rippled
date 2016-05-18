@@ -62,7 +62,7 @@ DatabaseCon::Setup setup_DatabaseCon (Config const& c)
     DatabaseCon::Setup setup;
 
     setup.startUp = c.START_UP;
-    setup.standAlone = c.RUN_STANDALONE;
+    setup.standAlone = c.standalone();
     setup.dataDir = c.legacy ("database_path");
     if (!setup.standAlone && setup.dataDir.empty())
     {

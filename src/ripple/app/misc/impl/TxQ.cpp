@@ -1214,7 +1214,7 @@ setup_TxQ(Config const& config)
     set(setup.zeroBaseFeeTransactionFeeLevel,
         "zero_basefee_transaction_feelevel", section);
 
-    setup.standAlone = config.RUN_STANDALONE;
+    setup.standAlone = config.standalone();
     return setup;
 }
 

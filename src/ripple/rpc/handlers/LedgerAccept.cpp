@@ -36,7 +36,7 @@ Json::Value doLedgerAccept (RPC::Context& context)
     auto lock = make_lock(context.app.getMasterMutex());
     Json::Value jvResult;
 
-    if (!context.app.config().RUN_STANDALONE)
+    if (!context.app.config().standalone())
     {
         jvResult[jss::error] = "notStandAlone";
     }

@@ -548,7 +548,7 @@ OverlayImpl::onPrepare()
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
     config.autoConnect =
-        !app_.config().RUN_STANDALONE &&
+        !app_.config().standalone() &&
         !app_.config().PEER_PRIVATE;
     config.listeningPort = port;
     config.features = "";
@@ -591,7 +591,7 @@ OverlayImpl::onPrepare()
         });
 
     // Add the ips_fixed from the rippled.cfg file
-    if (! app_.config().RUN_STANDALONE && !app_.config().IPS_FIXED.empty ())
+    if (! app_.config().standalone() && !app_.config().IPS_FIXED.empty ())
     {
         m_resolver.resolve (app_.config().IPS_FIXED,
             [this](

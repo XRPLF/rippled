@@ -466,7 +466,7 @@ public:
             logs_->journal("TaggedCache"))
 
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
-            config_->RUN_STANDALONE, config_->NETWORK_QUORUM, config_->START_VALID,
+            config_->standalone(), config_->NETWORK_QUORUM, config_->START_VALID,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue,
             logs_->journal("NetworkOPs")))
 
@@ -882,7 +882,7 @@ public:
         {
             // VFALCO TODO Move all this into doSweep
 
-            if (! config_->RUN_STANDALONE)
+            if (! config_->standalone())
             {
                 boost::filesystem::space_info space =
                         boost::filesystem::space (config_->legacy ("database_path"));
@@ -951,7 +951,7 @@ private:
 void ApplicationImp::setup()
 {
     // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-    m_jobQueue->setThreadCount (0, config_->RUN_STANDALONE);
+    m_jobQueue->setThreadCount (0, config_->standalone());
 
     // We want to intercept and wait for CTRL-C to terminate the process
     m_signals.add (SIGINT);
@@ -976,9 +976,9 @@ void ApplicationImp::setup()
             logs_->threshold (kDebug);
     }
 
-    logs_->silent (config_->SILENT);
+    logs_->silent (config_->silent());
 
-    if (!config_->RUN_STANDALONE)
+    if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
 
     if (!initSqliteDbs ())
@@ -998,8 +998,7 @@ void ApplicationImp::setup()
     mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
     mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
 
-    if (!config_->RUN_STANDALONE)
-        updateTables ();
+    updateTables ();
 
     // Configure the amendments the server supports
     {
@@ -1049,7 +1048,7 @@ void ApplicationImp::setup()
     else if (startUp == Config::NETWORK)
     {
         // This should probably become the default once we have a stable network.
-        if (!config_->RUN_STANDALONE)
+        if (!config_->standalone())
             m_networkOPs->needNetworkLedger ();
 
         startGenesisLedger ();
@@ -1075,7 +1074,7 @@ void ApplicationImp::setup()
         Throw<std::exception>();
     }
 
-    if (validators_->size () == 0 && !config_->RUN_STANDALONE)
+    if (validators_->size () == 0 && !config_->standalone())
     {
         JLOG(m_journal.warn()) << "No validators are configured.";
     }
@@ -1095,7 +1094,7 @@ void ApplicationImp::setup()
     //             foolishly calls overlay(). When this is fixed we can
     //             move the instantiation inside a conditional:
     //
-    //             if (!config_.RUN_STANDALONE)
+    //             if (!config_.standalone())
     m_overlay = make_Overlay (*this, setup_Overlay(*config_), *m_jobQueue,
         *serverHandler_, *m_resourceManager, *m_resolver, get_io_service(),
         *config_);
@@ -1135,7 +1134,7 @@ void ApplicationImp::setup()
     //----------------------------------------------------------------------
 
     // Begin connecting to network.
-    if (!config_->RUN_STANDALONE)
+    if (!config_->standalone())
     {
         // Should this message be here, conceptually? In theory this sort
         // of message, if displayed, should be displayed from PeerFinder.
@@ -1167,7 +1166,7 @@ ApplicationImp::doStart()
 void
 ApplicationImp::run()
 {
-    if (!config_->RUN_STANDALONE)
+    if (!config_->standalone())
     {
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
         //             manager then the deadlock detector can just always be "armed"
