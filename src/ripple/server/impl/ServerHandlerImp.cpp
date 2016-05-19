@@ -284,7 +284,7 @@ ServerHandlerImp::onWSMessage(
             auto const jr =
                 this->processSession(session, jc, jv);
             auto const s = to_string(jr);
-            auto const n = s.length();
+            auto const n = s.size();
             beast::streambuf sb(n);
             sb.commit(boost::asio::buffer_copy(
                 sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
