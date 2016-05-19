@@ -53,7 +53,6 @@ public:
             bool plainOnly)
         : mSecure (secureOnly)
         , mBuffer ((plainOnly || secureOnly) ? 0 : 4)
-        , j_ (ripple::debugJournal())
     {
         mSocket = std::make_unique<ssl_socket> (s, c);
     }

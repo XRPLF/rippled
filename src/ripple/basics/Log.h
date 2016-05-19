@@ -249,18 +249,18 @@ private:
 //------------------------------------------------------------------------------
 // Debug logging:
 
-/** Returns the debug journal. The journal may drain to a null sink. */
-beast::Journal const&
-debugJournal();
-
-/** Set the sink for the debug journal
-
-    This operation is not thread safe and should only be called
-    from a controlled context, when no other threads are in a
-    call to debugJournal.
-*/
+/** Set the sink for the debug journal. */
 void
-setDebugJournalSink(beast::Journal::Sink& sink);
+setDebugLogSink(
+    std::unique_ptr<beast::Journal::Sink> sink);
+
+/** Returns a debug journal.
+    The journal may drain to a null sink, so its output
+    may never be seen. Never use it for critical
+    information.
+*/
+beast::Journal::Stream
+debugLog();
 
 } // ripple
 
