@@ -45,11 +45,9 @@ STVar::~STVar()
 }
 
 STVar::STVar (STVar const& other)
-    : p_(nullptr)
 {
     if (other.p_ != nullptr)
-        p_ = other.p_->copy(
-            sizeof(d_), &d_);
+        p_ = other.p_->copy(max_size, &d_);
 }
 
 STVar::STVar (STVar&& other)
@@ -61,37 +59,42 @@ STVar::STVar (STVar&& other)
     }
     else
     {
-        p_ = other.p_->move(
-            sizeof(d_), &d_);
+        p_ = other.p_->move(max_size, &d_);
     }
 }
 
 STVar&
 STVar::operator= (STVar const& rhs)
 {
-    destroy();
-    p_ = nullptr;
-    if (rhs.p_)
-        p_ = rhs.p_->copy(
-            sizeof(d_), &d_);
+    if (&rhs != this)
+    {
+        destroy();
+        if (rhs.p_)
+            p_ = rhs.p_->copy(max_size, &d_);
+        else
+            p_ = nullptr;
+    }
+
     return *this;
 }
 
 STVar&
 STVar::operator= (STVar&& rhs)
 {
-    destroy();
-    if (rhs.on_heap())
+    if (&rhs != this)
     {
-        p_ = rhs.p_;
-        rhs.p_ = nullptr;
+        destroy();
+        if (rhs.on_heap())
+        {
+            p_ = rhs.p_;
+            rhs.p_ = nullptr;
+        }
+        else
+        {
+            p_ = rhs.p_->move(max_size, &d_);
+        }
     }
-    else
-    {
-        p_ = nullptr;
-        p_ = rhs.p_->move(
-            sizeof(d_), &d_);
-    }
+
     return *this;
 }
 
@@ -161,6 +164,8 @@ STVar::destroy()
         delete p_;
     else
         p_->~STBase();
+
+    p_ = nullptr;
 }
 
 } // detail

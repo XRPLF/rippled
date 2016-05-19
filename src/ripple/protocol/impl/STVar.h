@@ -42,7 +42,10 @@ extern nonPresentObject_t nonPresentObject;
 class STVar
 {
 private:
-    std::aligned_storage<72>::type d_;
+    // The largest "small object" we can accomodate
+    static std::size_t constexpr max_size = 72;
+
+    std::aligned_storage<max_size>::type d_;
     STBase* p_ = nullptr;
 
 public:
@@ -54,12 +57,12 @@ public:
 
     STVar (STBase&& t)
     {
-        p_ = t.move(sizeof(d_), &d_);
+        p_ = t.move(max_size, &d_);
     }
 
     STVar (STBase const& t)
     {
-        p_ = t.copy(sizeof(d_), &d_);
+        p_ = t.copy(max_size, &d_);
     }
 
     STVar (defaultObject_t, SField const& name);
@@ -89,12 +92,10 @@ private:
     void
     construct(Args&&... args)
     {
-        if(sizeof(T) > sizeof(d_))
-            p_ = new T(
-                std::forward<Args>(args)...);
+        if(sizeof(T) > max_size)
+            p_ = new T(std::forward<Args>(args)...);
         else
-            p_ = new(&d_) T(
-                std::forward<Args>(args)...);
+            p_ = new(&d_) T(std::forward<Args>(args)...);
     }
 
     bool
