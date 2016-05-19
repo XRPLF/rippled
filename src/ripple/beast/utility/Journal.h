@@ -176,8 +176,13 @@ public:
     public:
         /** Create a stream which produces no output. */
         Stream ()
-        : m_sink (getNullSink())
-        , m_level (severities::kDisabled)
+            : m_sink (getNullSink())
+            , m_level (severities::kDisabled)
+        { }
+
+        Stream (Sink& sink)
+            : m_sink (sink)
+            , m_level (sink.threshold())
         { }
 
         /** Create stream that writes at the given level.
@@ -194,7 +199,7 @@ public:
         /** Construct or copy another Stream. */
         Stream (Stream const& other)
             : Stream (other.m_sink, other.m_level)
-        {  }
+        { }
 
         Stream& operator= (Stream const& other) = delete;
 

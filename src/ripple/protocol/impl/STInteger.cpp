@@ -52,7 +52,7 @@ STUInt8::getText () const
         if (transResultInfo (static_cast<TER> (value_), token, human))
             return human;
 
-        JLOG (debugJournal().warn())
+        JLOG (debugLog())
             << "Unknown result code in metadata: " << value_;
     }
 
@@ -70,7 +70,7 @@ STUInt8::getJson (int) const
         if (transResultInfo (static_cast<TER> (value_), token, human))
             return token;
 
-        JLOG (debugJournal().warn())
+        JLOG (debugLog())
             << "Unknown result code in metadata: " << value_;
     }
 

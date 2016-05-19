@@ -465,7 +465,10 @@ int run (int argc, char** argv)
         }
 
         if (vm.count ("debug"))
-            setDebugJournalSink (logs->get("Debug"));
+        {
+            setDebugLogSink (logs->makeSink (
+                "Debug", beast::severities::kTrace));
+        }
 
         auto timeKeeper = make_TimeKeeper(
             logs->journal("TimeKeeper"));

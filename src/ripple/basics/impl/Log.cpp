@@ -20,10 +20,14 @@
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <boost/algorithm/string.hpp>
 #include <cassert>
-#include <iostream>
 #include <fstream>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <mutex>
 
 namespace ripple {
 
@@ -340,21 +344,66 @@ Logs::format (std::string& output, std::string const& message,
 }
 
 //------------------------------------------------------------------------------
-static std::unique_ptr<beast::Journal> debugJournal_;
 
-beast::Journal const&
-debugJournal()
+class DebugSink
 {
-    if (!debugJournal_)
-        debugJournal_ = std::make_unique<beast::Journal>();
+private:
+    std::reference_wrapper<beast::Journal::Sink> sink_;
+    std::unique_ptr<beast::Journal::Sink> holder_;
+    std::mutex m_;
 
-    return *debugJournal_;
+public:
+    DebugSink ()
+        : sink_ (beast::Journal::getNullSink())
+    {
+    }
+
+    DebugSink (DebugSink const&) = delete;
+    DebugSink& operator=(DebugSink const&) = delete;
+
+    DebugSink(DebugSink&&) = delete;
+    DebugSink& operator=(DebugSink&&) = delete;
+
+    void
+    set(std::unique_ptr<beast::Journal::Sink> sink)
+    {
+        std::lock_guard<std::mutex> _(m_);
+
+        holder_ = std::move(sink);
+
+        if (holder_)
+            sink_ = *holder_;
+        else
+            sink_ = beast::Journal::getNullSink();
+    }
+
+    beast::Journal::Sink&
+    get()
+    {
+        std::lock_guard<std::mutex> _(m_);
+        return sink_.get();
+    }
+};
+
+static
+DebugSink&
+debugSink()
+{
+    static DebugSink _;
+    return _;
 }
 
 void
-setDebugJournalSink(beast::Journal::Sink& sink)
+setDebugLogSink(
+    std::unique_ptr<beast::Journal::Sink> sink)
 {
-    debugJournal_ = std::make_unique<beast::Journal>(sink);
+    debugSink().set(std::move(sink));
+}
+
+beast::Journal::Stream
+debugLog()
+{
+    return { debugSink().get() };
 }
 
 } // ripple
