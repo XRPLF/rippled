@@ -27,7 +27,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 
 namespace ripple {
 namespace RPC {

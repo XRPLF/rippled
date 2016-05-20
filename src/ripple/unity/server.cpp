@@ -23,11 +23,7 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/server/impl/Door.cpp>
 #include <ripple/server/impl/JSONRPCUtil.cpp>
 #include <ripple/server/impl/Port.cpp>
-#include <ripple/server/impl/Role.cpp>
-#include <ripple/server/impl/ServerImpl.cpp>
-#include <ripple/server/impl/ServerHandlerImp.cpp>
 
 #include <ripple/server/tests/Server_test.cpp>

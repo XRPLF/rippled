@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 
 namespace ripple {
 

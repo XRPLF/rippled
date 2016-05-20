@@ -34,7 +34,6 @@
 #include <ripple/net/RPCCall.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/server/Role.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/Time.h>

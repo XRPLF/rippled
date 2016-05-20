@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_JSON_BODY_H
-#define RIPPLE_SERVER_JSON_BODY_H
+#ifndef RIPPLE_RPC_JSON_BODY_H
+#define RIPPLE_RPC_JSON_BODY_H
 
 #include <ripple/json/json_value.h>
 #include <beast/core/streambuf.hpp>

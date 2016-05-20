@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/rpc/Context.h>
 
 namespace ripple {

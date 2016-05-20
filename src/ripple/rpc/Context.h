@@ -23,7 +23,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/JobCoro.h>
 #include <ripple/net/InfoSub.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 
 #include <ripple/beast/utility/Journal.h>
 

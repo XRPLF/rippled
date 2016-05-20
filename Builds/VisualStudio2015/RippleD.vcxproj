@@ -3296,6 +3296,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\LegacyPathFind.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Role.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3305,6 +3309,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\RPCHelpers.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\ServerHandlerImp.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\ServerHandlerImp.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -3318,11 +3328,19 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\WSInfoSub.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\json_body.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Role.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\ServerHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
     </ClInclude>
@@ -3364,8 +3382,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\Handler.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handoff.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\BaseHTTPPeer.h">
@@ -3374,10 +3390,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\BaseWSPeer.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\impl\Door.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\io_list.h">
@@ -3396,41 +3408,15 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\server\impl\Role.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\server\impl\ServerHandlerImp.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\server\impl\ServerHandlerImp.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\server\impl\ServerImpl.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\SSLHTTPPeer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\json_body.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\make_Server.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\make_ServerHandler.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Port.h">
     </ClInclude>
-    <None Include="..\..\src\ripple\server\README.md">
-    </None>
-    <ClInclude Include="..\..\src\ripple\server\Role.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Server.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\ServerHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Session.h">
     </ClInclude>

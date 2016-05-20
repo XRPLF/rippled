@@ -35,7 +35,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/resource/Fees.h>
 
 namespace ripple {

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright(c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -30,9 +30,9 @@
 namespace ripple {
 
 /** Represents an active WebSocket connection. */
-template <class Impl>
+template<class Handler, class Impl>
 class BaseWSPeer
-    : public BasePeer<Impl>
+    : public BasePeer<Handler, Impl>
     , public WSSession
 {
 protected:
@@ -40,8 +40,8 @@ protected:
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
-    using BasePeer<Impl>::fail;
-    using BasePeer<Impl>::strand_;
+    using BasePeer<Handler, Impl>::fail;
+    using BasePeer<Handler, Impl>::strand_;
 
     enum
     {
@@ -50,7 +50,7 @@ protected:
     };
 
 private:
-    friend class BasePeer<Impl>;
+    friend class BasePeer<Handler, Impl>;
 
     http_request_type request_;
     beast::websocket::opcode op_;
@@ -168,25 +168,27 @@ protected:
 
 //------------------------------------------------------------------------------
 
-template<class Impl>
+template<class Handler, class Impl>
 template<class Body, class Headers>
-BaseWSPeer<Impl>::BaseWSPeer(
+BaseWSPeer<Handler, Impl>::
+BaseWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_address,
     beast::http::request_v1<Body, Headers>&& request,
     boost::asio::io_service& io_service,
     beast::Journal journal)
-    : BasePeer<Impl>(port, handler, remote_address,
+    : BasePeer<Handler, Impl>(port, handler, remote_address,
         io_service, journal)
     , request_(std::move(request))
     , timer_(io_service)
 {
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::run()
+BaseWSPeer<Handler, Impl>::
+run()
 {
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
@@ -198,9 +200,10 @@ BaseWSPeer<Impl>::run()
             placeholders::error)));
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::send(std::shared_ptr<WSMsg> w)
+BaseWSPeer<Handler, Impl>::
+send(std::shared_ptr<WSMsg> w)
 {
     // Maximum send queue size
     static std::size_t constexpr limit = 100;
@@ -208,7 +211,7 @@ BaseWSPeer<Impl>::send(std::shared_ptr<WSMsg> w)
         return strand_.post(std::bind(
             &BaseWSPeer::send, impl().shared_from_this(),
                 std::move(w)));
-    if (wq_.size() >= limit)
+    if(wq_.size() >= limit)
     {
         cr_.code = static_cast<beast::websocket::close_code::value>(4000);
         cr_.reason = "Client is too slow.";
@@ -221,9 +224,10 @@ BaseWSPeer<Impl>::send(std::shared_ptr<WSMsg> w)
         on_write({});
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::close()
+BaseWSPeer<Handler, Impl>::
+close()
 {
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
@@ -236,28 +240,31 @@ BaseWSPeer<Impl>::close()
                 beast::asio::placeholders::error)));
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::complete()
+BaseWSPeer<Handler, Impl>::
+complete()
 {
-    if (! strand_.running_in_this_thread())
+    if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &BaseWSPeer::complete, impl().shared_from_this()));
     do_read();
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::on_write_sb(error_code const& ec)
+BaseWSPeer<Handler, Impl>::
+on_write_sb(error_code const& ec)
 {
     if(ec)
         return fail(ec, "write_resp");
     do_read();
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::do_write()
+BaseWSPeer<Handler, Impl>::
+do_write()
 {
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
@@ -265,9 +272,10 @@ BaseWSPeer<Impl>::do_write()
     on_write({});
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::on_write(error_code const& ec)
+BaseWSPeer<Handler, Impl>::
+on_write(error_code const& ec)
 {
     cancel_timer();
     if(ec)
@@ -292,9 +300,10 @@ BaseWSPeer<Impl>::on_write(error_code const& ec)
                     placeholders::error)));
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::on_write_fin(error_code const& ec)
+BaseWSPeer<Handler, Impl>::
+on_write_fin(error_code const& ec)
 {
     if(ec)
         return fail(ec, "write_fin");
@@ -307,9 +316,10 @@ BaseWSPeer<Impl>::on_write_fin(error_code const& ec)
         on_write({});
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::do_read()
+BaseWSPeer<Handler, Impl>::
+do_read()
 {
     if(! strand_.running_in_this_thread())
         return strand_.post(std::bind(
@@ -321,9 +331,10 @@ BaseWSPeer<Impl>::do_read()
     cancel_timer();
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::on_read(error_code const& ec)
+BaseWSPeer<Handler, Impl>::
+on_read(error_code const& ec)
 {
     if(ec == beast::websocket::error::closed)
         return do_close();
@@ -338,48 +349,52 @@ BaseWSPeer<Impl>::on_read(error_code const& ec)
     rb_.consume(rb_.size());
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::on_close(error_code const& ec)
+BaseWSPeer<Handler, Impl>::
+on_close(error_code const& ec)
 {
     // great
 }
 
-template <class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::start_timer()
+BaseWSPeer<Handler, Impl>::
+start_timer()
 {
     // Max seconds without completing a message
     static constexpr std::chrono::seconds timeout{30};
     error_code ec;
-    timer_.expires_from_now (timeout, ec);
-    if (ec)
-        return fail (ec, "start_timer");
-    timer_.async_wait (strand_.wrap (std::bind (
-        &BaseWSPeer<Impl>::on_timer, impl().shared_from_this(),
+    timer_.expires_from_now(timeout, ec);
+    if(ec)
+        return fail(ec, "start_timer");
+    timer_.async_wait(strand_.wrap(std::bind(
+        &BaseWSPeer<Handler, Impl>::on_timer, impl().shared_from_this(),
             beast::asio::placeholders::error)));
 }
 
 // Convenience for discarding the error code
-template <class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::cancel_timer()
+BaseWSPeer<Handler, Impl>::
+cancel_timer()
 {
     error_code ec;
     timer_.cancel(ec);
 }
 
 // Called when session times out
-template <class Impl>
+template<class Handler, class Impl>
 void
-BaseWSPeer<Impl>::on_timer (error_code ec)
+BaseWSPeer<Handler, Impl>::
+on_timer(error_code ec)
 {
-    if (ec == boost::asio::error::operation_aborted)
+    if(ec == boost::asio::error::operation_aborted)
         return;
-    if (! ec)
-        ec = boost::system::errc::make_error_code (
+    if(! ec)
+        ec = boost::system::errc::make_error_code(
             boost::system::errc::timed_out);
-    fail (ec, "timer");
+    fail(ec, "timer");
 }
 } // ripple
 

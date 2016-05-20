@@ -26,7 +26,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/server/json_body.h>
+#include <ripple/rpc/json_body.h>
 #include <ripple/server/SimpleWriter.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>

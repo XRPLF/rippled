@@ -90,8 +90,10 @@
 
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>
-#include <ripple/rpc/impl/TransactionSign.cpp>
+#include <ripple/rpc/impl/Role.cpp>
 #include <ripple/rpc/impl/RPCHelpers.cpp>
+#include <ripple/rpc/impl/ServerHandlerImp.cpp>
+#include <ripple/rpc/impl/TransactionSign.cpp>
 
 #include <ripple/rpc/tests/AccountInfo_test.cpp>
 #include <ripple/rpc/tests/AccountLinesRPC.test.cpp>
