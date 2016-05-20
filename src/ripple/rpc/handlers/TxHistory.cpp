@@ -27,7 +27,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 #include <boost/format.hpp>
 
 namespace ripple {

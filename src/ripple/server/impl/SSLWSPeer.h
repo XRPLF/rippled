@@ -29,13 +29,14 @@
 
 namespace ripple {
 
+template<class Handler>
 class SSLWSPeer
-    : public BaseWSPeer<SSLWSPeer>
-    , public std::enable_shared_from_this<SSLWSPeer>
+    : public BaseWSPeer<Handler, SSLWSPeer<Handler>>
+    , public std::enable_shared_from_this<SSLWSPeer<Handler>>
 {
 private:
-    friend class BasePeer<SSLWSPeer>;
-    friend class BaseWSPeer<SSLWSPeer>;
+    friend class BasePeer<Handler, SSLWSPeer>;
+    friend class BaseWSPeer<Handler, SSLWSPeer>;
 
     using clock_type = std::chrono::system_clock;
     using error_code = boost::system::error_code;
@@ -68,8 +69,10 @@ private:
 
 //------------------------------------------------------------------------------
 
+template<class Handler>
 template<class Body, class Headers>
-SSLWSPeer::SSLWSPeer(
+SSLWSPeer<Handler>::
+SSLWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_endpoint,
@@ -77,25 +80,30 @@ SSLWSPeer::SSLWSPeer(
     std::unique_ptr<
         beast::asio::ssl_bundle>&& ssl_bundle,
     beast::Journal journal)
-    : BaseWSPeer(port, handler, remote_endpoint, std::move(request),
-        ssl_bundle->socket.get_io_service(), journal)
+    : BaseWSPeer<Handler, SSLWSPeer>(port, handler,
+        remote_endpoint, std::move(request),
+            ssl_bundle->socket.get_io_service(), journal)
     , ssl_bundle_(std::move(ssl_bundle))
     , ws_(ssl_bundle_->stream)
 {
 }
 
+template<class Handler>
 void
-SSLWSPeer::do_close()
+SSLWSPeer<Handler>::
+do_close()
 {
     //start_timer();
     using namespace beast::asio;
     ws_.next_layer().async_shutdown(
-        strand_.wrap(std::bind(&SSLWSPeer::on_shutdown,
-            shared_from_this(), placeholders::error)));
+        this->strand_.wrap(std::bind(&SSLWSPeer::on_shutdown,
+            this->shared_from_this(), placeholders::error)));
 }
 
+template<class Handler>
 void
-SSLWSPeer::on_shutdown(error_code ec)
+SSLWSPeer<Handler>::
+on_shutdown(error_code ec)
 {
     //cancel_timer();
     ws_.lowest_layer().close(ec);

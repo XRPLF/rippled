@@ -20,7 +20,6 @@
 #ifndef RIPPLE_SERVER_BASEPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEPEER_H_INCLUDED
 
-#include <ripple/server/Handler.h>
 #include <ripple/server/Port.h>
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/utility/WrappedSink.h>
@@ -32,7 +31,7 @@
 namespace ripple {
 
 // Common part of all peers
-template<class Impl>
+template<class Handler, class Impl>
 class BasePeer
     : public io_list::work
 {
@@ -76,8 +75,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-template<class Impl>
-BasePeer<Impl>::BasePeer(Port const& port, Handler& handler,
+template<class Handler, class Impl>
+BasePeer<Handler, Impl>::
+BasePeer(Port const& port, Handler& handler,
     endpoint_type remote_address,
         boost::asio::io_service& io_service,
             beast::Journal journal)
@@ -96,9 +96,10 @@ BasePeer<Impl>::BasePeer(Port const& port, Handler& handler,
 {
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 void
-BasePeer<Impl>::close()
+BasePeer<Handler, Impl>::
+close()
 {
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
@@ -107,10 +108,11 @@ BasePeer<Impl>::close()
     impl().ws_.lowest_layer().close(ec);
 }
 
-template<class Impl>
+template<class Handler, class Impl>
 template<class String>
 void
-BasePeer<Impl>::fail(error_code ec, String const& what)
+BasePeer<Handler, Impl>::
+fail(error_code ec, String const& what)
 {
     assert(strand_.running_in_this_thread());
     if(! ec_ &&

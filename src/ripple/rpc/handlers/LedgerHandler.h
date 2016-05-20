@@ -30,7 +30,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Handler.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 
 namespace Json {
 class Object;

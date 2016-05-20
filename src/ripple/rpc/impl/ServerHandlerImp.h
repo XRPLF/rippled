@@ -17,22 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
-#define RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
+#ifndef RIPPLE_RPC_SERVERHANDLERIMP_H_INCLUDED
+#define RIPPLE_RPC_SERVERHANDLERIMP_H_INCLUDED
 
 #include <ripple/core/Job.h>
 #include <ripple/core/JobCoro.h>
-#include <ripple/json/Output.h>
-#include <ripple/json/to_string.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/server/Handler.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/impl/WSInfoSub.h>
+#include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/WSSession.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <map>
 #include <mutex>
+#include <vector>
 
 namespace ripple {
 
@@ -42,69 +40,42 @@ bool operator< (Port const& lhs, Port const& rhs)
     return lhs.name < rhs.name;
 }
 
-class WSInfoSub : public InfoSub
-{
-    std::weak_ptr<WSSession> ws_;
-    std::string user_;
-    std::string fwdfor_;
-
-public:
-    WSInfoSub(Source& source,
-            std::shared_ptr<WSSession> const& ws)
-        : InfoSub(source)
-        , ws_(ws)
-    {
-        auto const& h = ws->request().headers;
-        auto it = h.find("X-User");
-        if (it != h.end() &&
-            isIdentified(
-                ws->port(), beast::IPAddressConversion::from_asio(
-                    ws->remote_endpoint()).address(), it->second))
-        {
-            user_ = it->second;
-            it = h.find("X-Forwarded-For");
-            if (it != h.end())
-                fwdfor_ = it->second;
-        }
-    }
-
-    std::string
-    user() const
-    {
-        return user_;
-    }
-
-    std::string
-    forwarded_for() const
-    {
-        return fwdfor_;
-    }
-
-    void
-    send(Json::Value const& jv, bool)
-    {
-        auto sp = ws_.lock();
-        if(! sp)
-            return;
-        beast::streambuf sb;
-        stream(jv,
-            [&](void const* data, std::size_t n)
-            {
-                sb.commit(boost::asio::buffer_copy(
-                    sb.prepare(n), boost::asio::buffer(data, n)));
-            });
-        auto m = std::make_shared<
-            StreambufWSMsg<decltype(sb)>>(
-                std::move(sb));
-        sp->send(m);
-    }
-};
-
-// Private implementation
 class ServerHandlerImp
-    : public ServerHandler
-    , public Handler
+    : public Stoppable
 {
+public:
+    struct Setup
+    {
+        std::vector<Port> ports;
+
+        // Memberspace
+        struct client_t
+        {
+            bool secure = false;
+            std::string ip;
+            std::uint16_t port = 0;
+            std::string user;
+            std::string password;
+            std::string admin_user;
+            std::string admin_password;
+        };
+
+        // Configuration when acting in client role
+        client_t client;
+
+        // Configuration for the Overlay
+        struct overlay_t
+        {
+            boost::asio::ip::address ip;
+            std::uint16_t port = 0;
+        };
+
+        overlay_t overlay;
+
+        void
+        makeContexts();
+    };
+
 private:
 
     Application& app_;
@@ -128,14 +99,13 @@ public:
 
     ~ServerHandlerImp();
 
-private:
     using Output = Json::Output;
 
     void
-    setup (Setup const& setup, beast::Journal journal) override;
+    setup (Setup const& setup, beast::Journal journal);
 
     Setup const&
-    setup() const override
+    setup() const
     {
         return setup_;
     }
@@ -145,7 +115,7 @@ private:
     //
 
     void
-    onStop() override;
+    onStop();
 
     //
     // Handler
@@ -153,31 +123,31 @@ private:
 
     bool
     onAccept (Session& session,
-        boost::asio::ip::tcp::endpoint endpoint) override;
+        boost::asio::ip::tcp::endpoint endpoint);
 
     Handoff
     onHandoff (Session& session,
         std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
             http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address) override;
+                boost::asio::ip::tcp::endpoint remote_address);
 
     Handoff
     onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
         http_request_type&& request,
-            boost::asio::ip::tcp::endpoint remote_address) override;
+            boost::asio::ip::tcp::endpoint remote_address);
     void
-    onRequest (Session& session) override;
+    onRequest (Session& session);
 
     void
     onWSMessage(std::shared_ptr<WSSession> session,
-        std::vector<boost::asio::const_buffer> const& buffers) override;
+        std::vector<boost::asio::const_buffer> const& buffers);
 
     void
     onClose (Session& session,
-        boost::system::error_code const&) override;
+        boost::system::error_code const&);
 
     void
-    onStopped (Server&) override;
+    onStopped (Server&);
 
     //--------------------------------------------------------------------------
 

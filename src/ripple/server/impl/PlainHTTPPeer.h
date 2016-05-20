@@ -26,19 +26,21 @@
 
 namespace ripple {
 
+template<class Handler>
 class PlainHTTPPeer
-    : public BaseHTTPPeer<PlainHTTPPeer>
-    , public std::enable_shared_from_this <PlainHTTPPeer>
+    : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>
+    , public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
 {
 private:
-    friend class BaseHTTPPeer<PlainHTTPPeer>;
+    friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
     using socket_type = boost::asio::ip::tcp::socket;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     socket_type stream_;
 
 public:
-    template <class ConstBufferSequence>
-    PlainHTTPPeer (Port const& port, Handler& handler,
+    template<class ConstBufferSequence>
+    PlainHTTPPeer(Port const& port, Handler& handler,
         beast::Journal journal, endpoint_type remote_address,
             ConstBufferSequence const& buffers, socket_type&& socket);
 
@@ -58,12 +60,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class ConstBufferSequence>
-PlainHTTPPeer::PlainHTTPPeer (Port const& port, Handler& handler,
+template<class Handler>
+template<class ConstBufferSequence>
+PlainHTTPPeer<Handler>::
+PlainHTTPPeer(Port const& port, Handler& handler,
     beast::Journal journal, endpoint_type remote_endpoint,
         ConstBufferSequence const& buffers, socket_type&& socket)
-    : BaseHTTPPeer(port, handler, socket.get_io_service(),
-        journal, remote_endpoint, buffers)
+    : BaseHTTPPeer<Handler, PlainHTTPPeer>(port, handler,
+        socket.get_io_service(), journal, remote_endpoint, buffers)
     , stream_(std::move(socket))
 {
     // Set TCP_NODELAY on loopback interfaces,
@@ -74,67 +78,75 @@ PlainHTTPPeer::PlainHTTPPeer (Port const& port, Handler& handler,
         stream_.set_option(boost::asio::ip::tcp::no_delay{true});
 }
 
+template<class Handler>
 void
-PlainHTTPPeer::run()
+PlainHTTPPeer<Handler>::
+run()
 {
-    if (!handler_.onAccept (session(), remote_address_))
+    if (! this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        boost::asio::spawn (strand_,
+        boost::asio::spawn(this->strand_,
             std::bind (&PlainHTTPPeer::do_close,
-                shared_from_this()));
+                this->shared_from_this()));
         return;
     }
 
     if (! stream_.is_open())
         return;
 
-    boost::asio::spawn (strand_, std::bind (&PlainHTTPPeer::do_read,
-        shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_read,
+        this->shared_from_this(), std::placeholders::_1));
 }
 
+template<class Handler>
 std::shared_ptr<WSSession>
-PlainHTTPPeer::websocketUpgrade()
+PlainHTTPPeer<Handler>::
+websocketUpgrade()
 {
-    auto ws = ios().emplace<PlainWSPeer>(
-        port_, handler_, remote_address_,
-            std::move(message_), std::move(stream_),
-                journal_);
+    auto ws = this->ios().template emplace<PlainWSPeer<Handler>>(
+        this->port_, this->handler_, this->remote_address_,
+            std::move(this->message_), std::move(stream_),
+                this->journal_);
     return ws;
 }
 
+template<class Handler>
 void
-PlainHTTPPeer::do_request()
+PlainHTTPPeer<Handler>::
+do_request()
 {
-    ++request_count_;
-    auto const what = handler_.onHandoff (session(),
-        std::move(stream_), std::move(message_), remote_address_);
+    ++this->request_count_;
+    auto const what = this->handler_.onHandoff(this->session(),
+        std::move(stream_), std::move(this->message_), this->remote_address_);
     if (what.moved)
         return;
-    error_code ec;
+    boost::system::error_code ec;
     if (what.response)
     {
         // half-close on Connection: close
         if (! what.keep_alive)
-            stream_.shutdown (socket_type::shutdown_receive, ec);
+            stream_.shutdown(socket_type::shutdown_receive, ec);
         if (ec)
-            return fail (ec, "request");
-        return write(what.response, what.keep_alive);
+            return this->fail(ec, "request");
+        return this->write(what.response, what.keep_alive);
     }
 
     // Perform half-close when Connection: close and not SSL
-    if (! is_keep_alive(message_))
-        stream_.shutdown (socket_type::shutdown_receive, ec);
+    if (! is_keep_alive(this->message_))
+        stream_.shutdown(socket_type::shutdown_receive, ec);
     if (ec)
-        return fail (ec, "request");
+        return this->fail(ec, "request");
     // legacy
-    handler_.onRequest (session());
+    this->handler_.onRequest(this->session());
 }
 
+template<class Handler>
 void
-PlainHTTPPeer::do_close()
+PlainHTTPPeer<Handler>::
+do_close()
 {
-    error_code ec;
-    stream_.shutdown (socket_type::shutdown_send, ec);
+    boost::system::error_code ec;
+    stream_.shutdown(socket_type::shutdown_send, ec);
 }
 
 } // ripple

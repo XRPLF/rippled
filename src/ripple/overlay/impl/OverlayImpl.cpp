@@ -27,7 +27,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/server/json_body.h>
+#include <ripple/rpc/json_body.h>
 #include <ripple/server/SimpleWriter.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>

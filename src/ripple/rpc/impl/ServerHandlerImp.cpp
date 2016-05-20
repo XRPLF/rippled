@@ -23,17 +23,17 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/server/json_body.h>
-#include <ripple/server/make_ServerHandler.h>
+#include <ripple/rpc/json_body.h>
+#include <ripple/rpc/ServerHandler.h>
+#include <ripple/server/Server.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
-#include <ripple/server/impl/ServerHandlerImp.h>
+#include <ripple/rpc/impl/ServerHandlerImp.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCErr.h>
-#include <ripple/server/make_Server.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/resource/Fees.h>
@@ -50,18 +50,11 @@
 
 namespace ripple {
 
-ServerHandler::ServerHandler (Stoppable& parent)
-    : Stoppable ("ServerHandler", parent)
-{
-}
-
-//------------------------------------------------------------------------------
-
 ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
             CollectorManager& cm)
-    : ServerHandler (parent)
+    : Stoppable("ServerHandler", parent)
     , app_ (app)
     , m_resourceManager (resourceManager)
     , m_journal (app_.journal("Server"))

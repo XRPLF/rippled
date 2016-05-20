@@ -33,11 +33,12 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/types.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/ServerHandler.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
+#include <openssl/bio.h>
 #include <iostream>
 #include <type_traits>
 

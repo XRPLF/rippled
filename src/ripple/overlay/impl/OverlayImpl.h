@@ -26,7 +26,7 @@
 #include <ripple/overlay/impl/Manifest.h>
 #include <ripple/overlay/impl/TrafficCount.h>
 #include <ripple/server/Handoff.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/ServerHandler.h>
 #include <ripple/basics/Resolver.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/UnorderedContainers.h>

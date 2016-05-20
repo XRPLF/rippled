@@ -67,7 +67,6 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
-#include <ripple/server/make_ServerHandler.h>
 #include <ripple/shamap/Family.h>
 #include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>

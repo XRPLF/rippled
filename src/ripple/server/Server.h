@@ -21,51 +21,22 @@
 #define RIPPLE_SERVER_SERVER_H_INCLUDED
 
 #include <ripple/server/Port.h>
+#include <ripple/server/impl/ServerImpl.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <boost/asio/io_service.hpp>
 
 namespace ripple {
 
-/** A multi-protocol server.
-
-    This server maintains multiple configured listening ports,
-    with each listening port allows for multiple protocols including
-    HTTP, HTTP/S, WebSocket, Secure WebSocket, and the Peer protocol.
-*/
-class Server
+/** Create the HTTP server using the specified handler. */
+template<class Handler>
+std::unique_ptr<Server>
+make_Server(Handler& handler,
+    boost::asio::io_service& io_service, beast::Journal journal)
 {
-public:
-    /** Destroy the server.
-        The server is closed if it is not already closed. This call
-        blocks until the server has stopped.
-    */
-    virtual
-    ~Server() = default;
-
-    /** Returns the Journal associated with the server. */
-    virtual
-    beast::Journal
-    journal() = 0;
-
-    /** Set the listening port settings.
-        This may only be called once.
-    */
-    virtual
-    void
-    ports (std::vector<Port> const& v) = 0;
-
-    /** Close the server.
-        The close is performed asynchronously. The handler will be notified
-        when the server has stopped. The server is considered stopped when
-        there are no pending I/O completion handlers and all connections
-        have closed.
-        Thread safety:
-            Safe to call concurrently from any thread.
-    */
-    virtual
-    void
-    close() = 0;
-};
+    return std::make_unique<ServerImpl<Handler>>(
+        handler, io_service, journal);
+}
 
 } // ripple
 
