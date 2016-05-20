@@ -83,6 +83,12 @@ class test_Sign(TestCase):
         self.assertEquals(
             skh, 'pnEp13Zu7xTeKQVQ2RZVaUraE9GXKqFtnXQVUFKXbTE6wsP4wne')
 
+    def test_create_ed_public_key(self):
+        pkh = Sign.create_ed_public_key(
+            'pnEp13Zu7xTeKQVQ2RZVaUraE9GXKqFtnXQVUFKXbTE6wsP4wne')
+        self.assertEquals(
+            pkh, 'nHUUaKHpxyRP4TZZ79tTpXuTpoM8pRNs5crZpGVA5jdrjib5easY')
+
     def get_test_keypair(self):
         public = (Base58.VER_NODE_PUBLIC, '\x02' + (32 * 'v'))
         private = (Base58.VER_NODE_PRIVATE, 32 * 'k')
@@ -114,6 +120,18 @@ class test_Sign(TestCase):
 
     def test_create(self):
         Sign.perform_create(self.urandom, self.print)
+        self.assertEquals(
+            self.results,
+            [[['[validator_keys]',
+               'nHUUaKHpxyRP4TZZ79tTpXuTpoM8pRNs5crZpGVA5jdrjib5easY',
+               '',
+               '[master_secret]',
+               'pnEp13Zu7xTeKQVQ2RZVaUraE9GXKqFtnXQVUFKXbTE6wsP4wne'],
+              {'sep': '\n'}]])
+
+    def test_create_public(self):
+        Sign.perform_create_public(
+            'pnEp13Zu7xTeKQVQ2RZVaUraE9GXKqFtnXQVUFKXbTE6wsP4wne', self.print)
         self.assertEquals(
             self.results,
             [[['[validator_keys]',

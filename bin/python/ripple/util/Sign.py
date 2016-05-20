@@ -16,6 +16,9 @@ Usage:
     create
         Create a new master public/secret key pair.
 
+    create <master-secret>
+        Generate master key pair using provided secret.
+
     check <key>
         Check an existing key for validity.
 
@@ -87,6 +90,15 @@ def create_ed_keys(urandom=os.urandom):
         Base58.VER_NODE_PRIVATE, private_key)
     return public_key_human, private_key_human
 
+def create_ed_public_key(private_key_human):
+    v, private_key = Base58.decode_version(private_key_human)
+    check_master_secret(v, private_key)
+
+    public_key = ed25519.publickey(private_key)
+    public_key_human = Base58.encode_version(
+        Base58.VER_NODE_PUBLIC, ED25519_BYTE + public_key)
+    return public_key_human
+
 def check_validator_public(v, validator_public_key):
     Base58.check_version(v, Base58.VER_NODE_PUBLIC)
     if len(validator_public_key) != 33:
@@ -132,6 +144,12 @@ def perform_create(urandom=os.urandom, print=print):
     public, private = create_ed_keys(urandom)
     print('[validator_keys]', public, '', '[master_secret]', private, sep='\n')
 
+def perform_create_public(private_key_human, print=print):
+    public_key_human = create_ed_public_key(private_key_human)
+    print(
+        '[validator_keys]',public_key_human, '',
+        '[master_secret]', private_key_human, sep='\n')
+
 def perform_check(s, print=print):
     version, b = Base58.decode_version(s)
     print('version        = ' + Base58.version_name(version))
@@ -151,8 +169,11 @@ def perform_verify(
     print('Signature valid for', public_key_human)
 
 # Externally visible versions of functions.
-def create():
-    perform_create()
+def create(private_key_human=None):
+    if private_key_human:
+        perform_create_public(private_key_human)
+    else:
+        perform_create()
 
 def check(s):
     perform_check(s)
