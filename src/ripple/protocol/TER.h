@@ -130,7 +130,9 @@ enum TER
     //
     // Implications:
     // - Not applied
-    // - Not forwarded
+    // - May be forwarded
+    //   - Results indicating the txn was forwarded: terQUEUED
+    //   - All others are not forwarded.
     // - Might succeed later
     // - Hold
     // - Makes hole in sequence which jams transactions.
