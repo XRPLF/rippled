@@ -28,7 +28,6 @@
 
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
-#include <ripple/rpc/impl/Utilities.cpp>
 
 #include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/handlers/AccountCurrenciesHandler.cpp>
@@ -89,15 +88,10 @@
 #include <ripple/rpc/handlers/WalletPropose.cpp>
 #include <ripple/rpc/handlers/WalletSeed.cpp>
 
-#include <ripple/rpc/impl/AccountFromString.cpp>
-#include <ripple/rpc/impl/GetAccountObjects.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
-#include <ripple/rpc/impl/KeypairForSignature.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>
-#include <ripple/rpc/impl/LookupLedger.cpp>
-#include <ripple/rpc/impl/ParseAccountIds.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
-#include <ripple/rpc/impl/RPCVersion.cpp>
+#include <ripple/rpc/impl/RPCHelpers.cpp>
 
 #include <ripple/rpc/tests/AccountInfo_test.cpp>
 #include <ripple/rpc/tests/AccountLinesRPC.test.cpp>

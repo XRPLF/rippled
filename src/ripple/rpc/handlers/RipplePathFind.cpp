@@ -41,7 +41,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/RipplePathFind.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
-#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/server/Role.h>
 
