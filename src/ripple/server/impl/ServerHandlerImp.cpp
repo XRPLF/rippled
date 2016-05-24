@@ -283,13 +283,11 @@ ServerHandlerImp::onWSMessage(
         {
             auto const jr =
                 this->processSession(session, jc, jv);
-            beast::streambuf sb;
-            Json::stream(jr,
-                [&sb](auto const p, auto const n)
-                {
-                    sb.commit(boost::asio::buffer_copy(
-                        sb.prepare(n), boost::asio::buffer(p, n)));
-                });
+            auto const s = to_string(jr);
+            auto const n = s.size();
+            beast::streambuf sb(n);
+            sb.commit(boost::asio::buffer_copy(
+                sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
             session->send(std::make_shared<
                 StreambufWSMsg<decltype(sb)>>(std::move(sb)));
             session->complete();
