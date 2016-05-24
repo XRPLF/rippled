@@ -27,8 +27,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/AccountFromString.h>
-#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 

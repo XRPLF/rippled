@@ -27,7 +27,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Seed.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/KeypairForSignature.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ed25519-donna/ed25519.h>
 #include <boost/optional.hpp>

@@ -30,8 +30,7 @@
 #include <ripple/protocol/types.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/LookupLedger.h>
-#include <ripple/rpc/impl/Utilities.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/server/Role.h>
 
 namespace ripple {

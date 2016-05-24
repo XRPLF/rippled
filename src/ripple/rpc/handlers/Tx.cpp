@@ -27,7 +27,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/Utilities.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
