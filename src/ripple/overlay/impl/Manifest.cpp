@@ -420,13 +420,7 @@ void ManifestCache::load (
 
             if (trusted(mo->masterKey) || unl.trusted(mo->masterKey))
             {
-                auto const result = applyManifest (
-                    std::move(*mo), unl, journal);
-                if (result != ManifestDisposition::accepted)
-                {
-                    Throw<std::runtime_error> (
-                        "Trusted manifest in db was not accepted");
-                }
+                applyManifest (std::move(*mo), unl, journal);
             }
             else
             {
