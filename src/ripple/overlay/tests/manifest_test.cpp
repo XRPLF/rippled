@@ -221,10 +221,20 @@ public:
         expect (!cache.loadValidatorKeys (s6, journal));
         expect (!cache.trusted (node1));
         expect (!cache.trusted (node2));
+
+        // Trust our own master public key from configured manifest
+        auto unl = std::make_unique<ValidatorList> (journal);
+
+        auto const sk = randomSecretKey();
+        auto const pk = derivePublicKey(KeyType::ed25519, sk);
+        auto const kp = randomKeyPair(KeyType::secp256k1);
+        auto const m  = make_Manifest (KeyType::ed25519, sk, kp.first, 0);
+
+        cache.configManifest (clone (m), *unl, journal);
+        expect (cache.trusted (m.masterKey));
     }
 
-    void testLoadStore (ManifestCache const& m, ValidatorList& unl,
-        PublicKey& pk)
+    void testLoadStore (ManifestCache const& m, ValidatorList& unl)
     {
         testcase ("load/store");
 
@@ -236,18 +246,12 @@ public:
             setup.dataDir = getDatabasePath ();
             DatabaseCon dbCon(setup, dbName, WalletDBInit, WalletDBCount);
 
+            if (!m.size ())
+                fail ();
+
             m.save (dbCon);
 
-            ManifestCache loaded;
             beast::Journal journal;
-
-            // load should remove master key from permanent key list
-            expect (m.trusted(pk));
-            expect (unl.insertPermanentKey(pk, "trusted key"));
-            expect (unl.trusted(pk));
-            loaded.load (dbCon, unl, journal);
-            expect (!unl.trusted(pk));
-            expect (loaded.trusted(pk));
 
             auto getPopulatedManifests =
                     [](ManifestCache const& cache) -> std::vector<Manifest const*>
@@ -270,19 +274,51 @@ public:
                     };
             std::vector<Manifest const*> const inManifests (
                 sort (getPopulatedManifests (m)));
-            std::vector<Manifest const*> const loadedManifests (
-                sort (getPopulatedManifests (loaded)));
-            if (inManifests.size () == loadedManifests.size ())
             {
-                expect (std::equal
-                        (inManifests.begin (), inManifests.end (),
-                         loadedManifests.begin (),
-                         [](Manifest const* lhs, Manifest const* rhs)
-                         {return *lhs == *rhs;}));
+                // load should not load untrusted master keys from db
+                ManifestCache loaded;
+
+                loaded.load (dbCon, unl, journal);
+                expect (loaded.size() == 0);
             }
-            else
             {
-                fail ();
+                // load should load all trusted master keys from db
+                ManifestCache loaded;
+
+                for (auto const& man : inManifests)
+                    loaded.addTrustedKey (man->masterKey, "");
+
+                loaded.load (dbCon, unl, journal);
+
+                std::vector<Manifest const*> const loadedManifests (
+                    sort (getPopulatedManifests (loaded)));
+
+                if (inManifests.size () == loadedManifests.size ())
+                {
+                    expect (std::equal
+                            (inManifests.begin (), inManifests.end (),
+                             loadedManifests.begin (),
+                             [](Manifest const* lhs, Manifest const* rhs)
+                             {return *lhs == *rhs;}));
+                }
+                else
+                {
+                    fail ();
+                }
+            }
+            {
+                // load should remove master key from permanent key list
+                ManifestCache loaded;
+                auto const iMan = inManifests.begin();
+
+                if (!*iMan)
+                    fail ();
+                expect (m.trusted((*iMan)->masterKey));
+                expect (unl.insertPermanentKey((*iMan)->masterKey, "trusted key"));
+                expect (unl.trusted((*iMan)->masterKey));
+                loaded.load (dbCon, unl, journal);
+                expect (!unl.trusted((*iMan)->masterKey));
+                expect (loaded.trusted((*iMan)->masterKey));
             }
         }
         boost::filesystem::remove (getDatabasePath () /
@@ -315,7 +351,6 @@ public:
         ManifestCache cache;
         beast::Journal journal;
         auto unl = std::make_unique<ValidatorList> (journal);
-        PublicKey pk;
         {
             testcase ("apply");
             auto const accepted = ManifestDisposition::accepted;
@@ -360,18 +395,18 @@ public:
             // When trusted permanent key is found as manifest master key
             // move to manifest cache
             auto const sk_c = randomSecretKey();
-            pk = derivePublicKey(KeyType::ed25519, sk_c);
+            auto const pk_c = derivePublicKey(KeyType::ed25519, sk_c);
             auto const kp_c = randomKeyPair(KeyType::secp256k1);
             auto const s_c0 = make_Manifest (KeyType::ed25519, sk_c, kp_c.first, 0);
-            expect (unl->insertPermanentKey(pk, "trusted key"));
-            expect (unl->trusted(pk));
-            expect (!cache.trusted(pk));
+            expect (unl->insertPermanentKey(pk_c, "trusted key"));
+            expect (unl->trusted(pk_c));
+            expect (!cache.trusted(pk_c));
             expect (cache.applyManifest(clone (s_c0), *unl, journal) == accepted);
-            expect (!unl->trusted(pk));
-            expect (cache.trusted(pk));
+            expect (!unl->trusted(pk_c));
+            expect (cache.trusted(pk_c));
         }
         testConfigLoad();
-        testLoadStore (cache, *unl, pk);
+        testLoadStore (cache, *unl);
         testGetSignature ();
     }
 };

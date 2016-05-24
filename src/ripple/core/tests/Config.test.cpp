@@ -30,7 +30,8 @@
 
 namespace ripple {
 namespace detail {
-std::string configContents (std::string const& dbPath)
+std::string configContents (std::string const& dbPath,
+    std::string const& validatorsFile)
 {
     static boost::format configContentsTemplate (R"rippleConfig(
 [server]
@@ -80,6 +81,7 @@ file_size_mb=8
 file_size_mult=2
 
 %1%
+
 %2%
 
 # This needs to be an absolute directory reference, not a relative one.
@@ -98,20 +100,6 @@ pool.ntp.org
 [ips]
 r.ripple.com 51235
 
-# The latest validators can be obtained from
-# https://ripple.com/ripple.txt
-#
-[validators]
-n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7    RL1
-n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj    RL2
-n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C    RL3
-n9KiYM9CgngLvtRCQHZwgC2gjpdaZcCcbt3VboxiNFcKuwFVujzS    RL4
-n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA    RL5
-
-# Ditto.
-[validation_quorum]
-3
-
 # Turn down default logging to save disk space in the long run.
 # Valid values here are trace, debug, info, warning, error, and fatal
 [rpc_startup]
@@ -126,10 +114,12 @@ n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA    RL5
 backend=sqlite
 )rippleConfig");
 
-    if (!dbPath.empty ())
-        return boost::str (configContentsTemplate % "[database_path]" % dbPath);
-    else
-        return boost::str (configContentsTemplate % "" % "");
+    std::string dbPathSection =
+        dbPath.empty () ? "" : "[database_path]\n" + dbPath;
+    std::string valFileSection =
+        validatorsFile.empty () ? "" : "[validators_file]\n" + validatorsFile;
+    return boost::str (
+        configContentsTemplate % dbPathSection % valFileSection);
 }
 
 /**
@@ -138,28 +128,28 @@ backend=sqlite
 class ConfigGuard
 {
 private:
+    bool rmSubDir_{false};
+
+protected:
     using path = boost::filesystem::path;
     path subDir_;
-    path configFile_;
-    path dataDir_;
+    beast::unit_test::suite& test_;
 
-    bool rmSubDir_{false};
-    bool rmDataDir_{false};
-
-    Config config_;
+    auto rmDir (path const& toRm)
+    {
+        if (is_directory (toRm) && is_empty (toRm))
+            remove (toRm);
+        else
+            test_.log << "Expected " << toRm.string ()
+                      << " to be an empty existing directory.";
+    };
 
 public:
-    ConfigGuard (std::string subDir, std::string const& dbPath)
-        : subDir_ (std::move (subDir)), dataDir_ (dbPath)
+    ConfigGuard (beast::unit_test::suite& test, std::string subDir)
+        : subDir_ (std::move (subDir))
+        , test_ (test)
     {
         using namespace boost::filesystem;
-
-        if (dbPath.empty ())
-        {
-            dataDir_ = subDir_ / path (Config::databaseDirName);
-        }
-
-        configFile_ = subDir_ / path (Config::configFileName);
         {
             if (!exists (subDir_))
             {
@@ -170,17 +160,60 @@ public:
                 rmSubDir_ = false;
             else
             {
-                // Cannot run the test someone created a file where we want to
-                // put out directory
+                // Cannot run the test. Someone created a file where we want to
+                // put our directory
                 Throw<std::runtime_error> (
                     "Cannot create directory: " + subDir_.string ());
             }
         }
+    }
+    ~ConfigGuard ()
+    {
+        try
+        {
+            using namespace boost::filesystem;
+
+            if (rmSubDir_)
+                rmDir (subDir_);
+            else
+                test_.log << "Skipping rm dir: " << subDir_.string ();
+        }
+        catch (std::exception& e)
+        {
+            // if we throw here, just let it die.
+            test_.log << "Error in ~ConfigGuard: " << e.what ();
+        };
+    }
+};
+
+/**
+   Write a rippled config file and remove when done.
+ */
+class RippledCfgGuard : ConfigGuard
+{
+private:
+    path configFile_;
+    path dataDir_;
+
+    bool rmDataDir_{false};
+
+    Config config_;
+
+public:
+    RippledCfgGuard (beast::unit_test::suite& test,
+        std::string subDir, std::string const& dbPath,
+            std::string const& validatorsFile)
+        : ConfigGuard (test, std::move (subDir)), dataDir_ (dbPath)
+    {
+        if (dbPath.empty ())
+            dataDir_ = subDir_ / path (Config::databaseDirName);
+
+        configFile_ = subDir_ / path (Config::configFileName);
 
         if (!exists (configFile_))
         {
             std::ofstream o (configFile_.string ());
-            o << configContents (dbPath);
+            o << configContents (dbPath, validatorsFile);
         }
         else
         {
@@ -202,42 +235,111 @@ public:
     }
     bool configFileExists () const
     {
-        return boost::filesystem::is_regular_file (configFile_);
+        return boost::filesystem::exists (configFile_);
     }
-    ~ConfigGuard ()
+    ~RippledCfgGuard ()
     {
         try
         {
             using namespace boost::filesystem;
-            if (!is_regular_file (configFile_))
-                std::cerr << "Expected " << configFile_.string ()
-                          << " to be an existing file.\n";
+            if (!boost::filesystem::exists (configFile_))
+                test_.log << "Expected " << configFile_.string ()
+                          << " to be an existing file.";
             else
                 remove (configFile_.string ());
-
-            auto rmDir = [](path const& toRm)
-            {
-                if (is_directory (toRm) && is_empty (toRm))
-                    remove (toRm);
-                else
-                    std::cerr << "Expected " << toRm.string ()
-                              << " to be an empty existing directory.\n";
-            };
 
             if (rmDataDir_)
                 rmDir (dataDir_);
             else
-                std::cerr << "Skipping rm dir: " << dataDir_.string () << "\n";
-
-            if (rmSubDir_)
-                rmDir (subDir_);
-            else
-                std::cerr << "Skipping rm dir: " << subDir_.string () << "\n";
+                test_.log << "Skipping rm dir: " << dataDir_.string ();
         }
         catch (std::exception& e)
         {
             // if we throw here, just let it die.
-            std::cerr << "Error in CreateConfigGuard: " << e.what () << "\n";
+            test_.log << "Error in ~RippledCfgGuard: " << e.what ();
+        };
+    }
+};
+
+std::string valFileContents (boost::optional<int> const& quorum)
+{
+    static boost::format configContentsTemplate (R"rippleConfig(
+[validators]
+n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
+n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
+n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C
+n9KiYM9CgngLvtRCQHZwgC2gjpdaZcCcbt3VboxiNFcKuwFVujzS
+n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA
+
+[validator_keys]
+nHUhG1PgAG8H8myUENypM35JgfqXAKNQvRVVAFDRzJrny5eZN8d5
+nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
+nHUPDdcdb2Y5DZAJne4c2iabFuAP3F34xZUgYQT2NH7qfkdapgnz
+
+%1%
+
+)rippleConfig");
+
+    std::string quorumSection =
+        quorum ? "[validation_quorum]\n" + to_string(*quorum) : "";
+    return boost::str (
+        configContentsTemplate % quorumSection);
+}
+
+/**
+   Write a validators.txt file and remove when done.
+ */
+class ValidatorsTxtGuard : ConfigGuard
+{
+private:
+    path validatorsFile_;
+
+public:
+    ValidatorsTxtGuard (beast::unit_test::suite& test,
+        std::string subDir, std::string const& validatorsFileName,
+            boost::optional<int> const& quorum)
+        : ConfigGuard (test, std::move (subDir))
+    {
+        using namespace boost::filesystem;
+        validatorsFile_ = current_path () / subDir_ / path (
+            validatorsFileName.empty () ? Config::validatorsFileName :
+            validatorsFileName);
+
+        if (!exists (validatorsFile_))
+        {
+            std::ofstream o (validatorsFile_.string ());
+            o << valFileContents (quorum);
+        }
+        else
+        {
+            Throw<std::runtime_error> (
+                "Refusing to overwrite existing config file: " +
+                    validatorsFile_.string ());
+        }
+    }
+    bool validatorsFileExists () const
+    {
+        return boost::filesystem::exists (validatorsFile_);
+    }
+    std::string validatorsFile () const
+    {
+        return validatorsFile_.string ();
+    }
+    ~ValidatorsTxtGuard ()
+    {
+        try
+        {
+            using namespace boost::filesystem;
+            if (!boost::filesystem::exists (validatorsFile_))
+                test_.log << "Expected " << validatorsFile_.string ()
+                          << " to be an existing file.";
+            else
+                remove (validatorsFile_.string ());
+        }
+        catch (std::exception& e)
+        {
+            // if we throw here, just let it die.
+            test_.log << "Error in ~ValidatorsTxtGuard: " << e.what ();
         };
     }
 };
@@ -301,7 +403,7 @@ port_wss_admin
                 expect (c.legacy ("database_path") == dataDirAbs.string ());
             }
             {
-                // No db sectcion.
+                // No db section.
                 // N.B. Config::setup will give database_path a default,
                 // load will not.
                 Config c;
@@ -314,7 +416,7 @@ port_wss_admin
             auto const cwd = current_path ();
             path const dataDirRel ("test_data_dir");
             path const dataDirAbs (cwd / path ("test_db") / dataDirRel);
-            detail::ConfigGuard g ("test_db", dataDirAbs.string ());
+            detail::RippledCfgGuard g (*this, "test_db", dataDirAbs.string (), "");
             auto& c (g.config ());
             expect (g.dataDirExists ());
             expect (g.configFileExists ());
@@ -324,7 +426,7 @@ port_wss_admin
         {
             // read from file relative path
             std::string const dbPath ("my_db");
-            detail::ConfigGuard g ("test_db", dbPath);
+            detail::RippledCfgGuard g (*this, "test_db", dbPath, "");
             auto& c (g.config ());
             std::string const nativeDbPath = absolute (path (dbPath)).string ();
             expect (g.dataDirExists ());
@@ -334,7 +436,7 @@ port_wss_admin
         }
         {
             // read from file no path
-            detail::ConfigGuard g ("test_db", "");
+            detail::RippledCfgGuard g (*this, "test_db", "", "");
             auto& c (g.config ());
             std::string const nativeDbPath =
                 absolute (path ("test_db") /
@@ -346,10 +448,245 @@ port_wss_admin
                     "dbPath No Path");
         }
     }
+    void testValidatorsFile ()
+    {
+        testcase ("validators_file");
+
+        using namespace boost::filesystem;
+        {
+            // load should throw for missing specified validators file
+            Config c;
+            boost::format cc ("[validators_file]\n%1%\n");
+            std::string error;
+            std::string const missingPath = "/no/way/this/path/exists";
+            auto const expectedError =
+                "The file specified in [validators_file] does not exist: " +
+                missingPath;
+            try {
+                c.loadFromString (boost::str (cc % missingPath));
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            expect (error == expectedError);
+        }
+        {
+            // load should throw for invalid [validators_file]
+            int const quorum = 3;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", quorum);
+            Config c;
+            path const invalidFile = current_path () / "test_cfg";
+            boost::format cc ("[validators_file]\n%1%\n");
+            std::string error;
+            auto const expectedError =
+                "Invalid file specified in [validators_file]: " +
+                invalidFile.string ();
+            try {
+                c.loadFromString (boost::str (cc % invalidFile.string ()));
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            expect (error == expectedError);
+        }
+        {
+            // load validators and quorum from config
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validators]
+n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
+n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
+n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C
+
+[validator_keys]
+nHUhG1PgAG8H8myUENypM35JgfqXAKNQvRVVAFDRzJrny5eZN8d5
+nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
+
+[validation_quorum]
+4
+)rippleConfig");
+            c.loadFromString (toLoad);
+            expect (c.legacy ("validators_file").empty ());
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 3);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 2);
+            expect (c.VALIDATION_QUORUM == 4);
+        }
+        {
+            // load from specified [validators_file] absolute path
+            int const quorum = 3;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", quorum);
+            expect (vtg.validatorsFileExists ());
+            Config c;
+            boost::format cc ("[validators_file]\n%1%\n");
+            c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
+            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            expect (c.VALIDATION_QUORUM == quorum);
+        }
+        {
+            // load from specified [validators_file] file name
+            // in config directory
+            int const quorum = 3;
+            std::string const valFileName = "validators.txt";
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", valFileName, quorum);
+            detail::RippledCfgGuard rcg (
+                *this, "test_cfg", "", valFileName);
+            expect (vtg.validatorsFileExists ());
+            expect (rcg.configFileExists ());
+            auto& c (rcg.config ());
+            expect (c.legacy ("validators_file") == valFileName);
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            expect (c.VALIDATION_QUORUM == quorum);
+        }
+        {
+            // load from specified [validators_file] relative path
+            // to config directory
+            int const quorum = 3;
+            std::string const valFilePath = "../test_cfg/validators.txt";
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.txt", quorum);
+            detail::RippledCfgGuard rcg (
+                *this, "test_cfg", "", valFilePath);
+            expect (vtg.validatorsFileExists ());
+            expect (rcg.configFileExists ());
+            auto& c (rcg.config ());
+            expect (c.legacy ("validators_file") == valFilePath);
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            expect (c.VALIDATION_QUORUM == quorum);
+        }
+        {
+            // load from validators file in default location
+            int const quorum = 3;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.txt", quorum);
+            detail::RippledCfgGuard rcg (*this, "test_cfg", "", "");
+            expect (vtg.validatorsFileExists ());
+            expect (rcg.configFileExists ());
+            auto& c (rcg.config ());
+            expect (c.legacy ("validators_file").empty ());
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            expect (c.VALIDATION_QUORUM == quorum);
+        }
+        {
+            // load from specified [validators_file] instead
+            // of default location
+            int const quorum = 3;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", quorum);
+            expect (vtg.validatorsFileExists ());
+            detail::ValidatorsTxtGuard vtgDefault (
+                *this, "test_cfg", "validators.txt", 4);
+            expect (vtgDefault.validatorsFileExists ());
+            detail::RippledCfgGuard rcg (
+                *this, "test_cfg", "", vtg.validatorsFile ());
+            expect (rcg.configFileExists ());
+            auto& c (rcg.config ());
+            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            expect (c.VALIDATION_QUORUM == quorum);
+        }
+        {
+            // do not load quorum from validators file if in config
+            boost::format cc (R"rippleConfig(
+[validators_file]
+%1%
+
+[validation_quorum]
+4
+)rippleConfig");
+            int const quorum = 3;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", quorum);
+            expect (vtg.validatorsFileExists ());
+            Config c;
+            c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
+            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            expect (c.VALIDATION_QUORUM == 4);
+        }
+        {
+            // load validators from both config and validators file
+            boost::format cc (R"rippleConfig(
+[validators_file]
+%1%
+
+[validators]
+n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
+n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
+n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C
+n9KiYM9CgngLvtRCQHZwgC2gjpdaZcCcbt3VboxiNFcKuwFVujzS
+n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA
+
+[validator_keys]
+nHB1X37qrniVugfQcuBTAjswphC1drx7QjFFojJPZwKHHnt8kU7v
+nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
+
+)rippleConfig");
+            int const quorum = 3;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", quorum);
+            expect (vtg.validatorsFileExists ());
+            Config c;
+            c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
+            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
+            expect (c.section (SECTION_VALIDATORS).values ().size () == 10);
+            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 5);
+            expect (c.VALIDATION_QUORUM == quorum);
+        }
+        {
+            // load should throw if [validators] and [validator_keys] are
+            // missing from rippled cfg and validators file
+            Config c;
+            boost::format cc ("[validators_file]\n%1%\n");
+            std::string error;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", boost::none);
+            expect (vtg.validatorsFileExists ());
+            auto const expectedError =
+                "The file specified in [validators_file] does not contain a "
+                "[validators] or [validator_keys] section: " +
+                vtg.validatorsFile ();
+            std::ofstream o (vtg.validatorsFile ());
+            o << "[validation_quorum]\n3\n";
+            try {
+                c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            expect (error == expectedError);
+        }
+        {
+            // load should throw if [validation_quorum] is
+            // missing from rippled cfg and validators file
+            Config c;
+            boost::format cc ("[validators_file]\n%1%\n");
+            std::string error;
+            detail::ValidatorsTxtGuard vtg (
+                *this, "test_cfg", "validators.cfg", boost::none);
+            expect (vtg.validatorsFileExists ());
+            auto const expectedError =
+                "The file specified in [validators_file] does not contain a "
+                "[validation_quorum] section: " + vtg.validatorsFile ();
+            try {
+                c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            expect (error == expectedError);
+        }
+    }
     void run ()
     {
         testLegacy ();
         testDbPath ();
+        testValidatorsFile ();
     }
 };
 

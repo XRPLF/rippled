@@ -198,6 +198,12 @@ ManifestCache::configManifest (
         Throw<std::runtime_error> ("Unverifiable manifest in config");
     }
 
+    // Trust our own master public key
+    if (!trusted(m.masterKey) && !unl.trusted (m.masterKey))
+    {
+        addTrustedKey (m.masterKey, "");
+    }
+
     auto const result = applyManifest (std::move(m), unl, journal);
 
     if (result != ManifestDisposition::accepted)
@@ -412,15 +418,15 @@ void ManifestCache::load (
                 Throw<std::runtime_error> ("Unverifiable manifest in db");
             }
 
-            // Remove master public key from permanent trusted key list
-            if (unl.trusted(mo->masterKey))
-                unl.removePermanentKey (mo->masterKey);
-
-            // add trusted key
-            map_[mo->masterKey];
-
-            // OK if not accepted (may have been loaded from the config file)
-            applyManifest (std::move(*mo), unl, journal);
+            if (trusted(mo->masterKey) || unl.trusted(mo->masterKey))
+            {
+                applyManifest (std::move(*mo), unl, journal);
+            }
+            else
+            {
+                JLOG(journal.info())
+                   << "Manifest in db is no longer trusted";
+            }
         }
         else
         {
