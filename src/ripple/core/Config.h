@@ -196,7 +196,7 @@ public:
         bool bSilent, bool bStandalone);
 
     /**
-     *  Load the conig from the contents of the sting.
+     *  Load the config from the contents of the string.
      *
      *  @param fileContents String representing the config contents.
      */

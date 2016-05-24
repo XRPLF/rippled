@@ -50,6 +50,7 @@
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/core/DeadlineTimer.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
@@ -67,10 +68,12 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/ResourceManager.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/core/SystemStats.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/basics/make_lock.h>
+#include <beast/core/detail/base64.hpp>
 #include <boost/optional.hpp>
 #include <condition_variable>
 #include <memory>
@@ -2021,6 +2024,30 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     {
         if (app_.config().VALIDATION_PUB.size ())
         {
+            auto const& validation_manifest =
+                app_.config().section (SECTION_VALIDATION_MANIFEST);
+
+            if (! validation_manifest.lines().empty())
+            {
+                std::string s;
+                s.reserve (188);
+                for (auto const& line : validation_manifest.lines())
+                    s += beast::rfc2616::trim(line);
+                if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
+                {
+                    Json::Value valManifest = Json::objectValue;
+                    valManifest [jss::master_key] = toBase58 (
+                        TokenType::TOKEN_NODE_PUBLIC,
+                        mo->masterKey);
+                    valManifest [jss::signing_key] = toBase58 (
+                        TokenType::TOKEN_NODE_PUBLIC,
+                        mo->signingKey);
+                    valManifest [jss::seq] = Json::UInt (mo->sequence);
+
+                    info[jss::validation_manifest] = valManifest;
+                }
+            }
+
             info[jss::pubkey_validator] = toBase58 (
                 TokenType::TOKEN_NODE_PUBLIC,
                 app_.config().VALIDATION_PUB);
