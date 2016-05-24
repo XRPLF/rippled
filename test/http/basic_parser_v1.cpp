@@ -13,7 +13,7 @@
 #include <beast/core/streambuf.hpp>
 #include <beast/core/write_streambuf.hpp>
 #include <beast/core/detail/ci_char_traits.hpp>
-#include <beast/http/rfc2616.hpp>
+#include <beast/http/rfc7230.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <cassert>
@@ -135,6 +135,13 @@ public:
     {
     };
 
+    static
+    std::string
+    str(boost::string_ref const& s)
+    {
+        return std::string{s.data(), s.size()};
+    }
+
     template<bool isRequest>
     class test_parser :
         public basic_parser_v1<isRequest, test_parser<isRequest>>
@@ -146,8 +153,7 @@ public:
         {
             if(! value_.empty())
             {
-                rfc2616::trim_right_in_place(value_);
-                fields.emplace(field_, value_);
+                fields.emplace(field_, str(detail::trim(value_)));
                 field_.clear();
                 value_.clear();
             }

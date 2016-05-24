@@ -97,10 +97,10 @@ struct write_preparation
             message_v1<isRequest, Body, Headers> const& msg_)
         : msg(msg_)
         , w(msg)
-        , chunked(rfc2616::token_in_list(
-            msg.headers["Transfer-Encoding"], "chunked"))
-        , close(rfc2616::token_in_list(
-            msg.headers["Connection"], "close") ||
+        , chunked(token_list{
+            msg.headers["Transfer-Encoding"]}.exists("chunked"))
+        , close(token_list{
+            msg.headers["Connection"]}.exists("close") ||
                 (msg.version < 11 && ! msg.headers.exists(
                     "Content-Length")))
     {

@@ -20,7 +20,7 @@
 #include <beast/http/read.hpp>
 #include <beast/http/reason.hpp>
 #include <beast/http/resume_context.hpp>
-#include <beast/http/rfc2616.hpp>
+#include <beast/http/rfc7230.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/http/string_body.hpp>
 #include <beast/http/write.hpp>

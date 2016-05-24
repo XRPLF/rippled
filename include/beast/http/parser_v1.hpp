@@ -124,8 +124,6 @@ private:
     {
         if(! value_.empty())
         {
-            rfc2616::trim_right_in_place(value_);
-            // VFALCO could std::move
             m_.headers.insert(field_, value_);
             field_.clear();
             value_.clear();

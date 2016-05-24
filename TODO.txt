@@ -2,7 +2,6 @@
 
 Boost.Http
 * Use enum instead of bool in isRequest
-* move version to a subclass of message
 
 Docs:
 * Include Example program listings in the docs
@@ -33,21 +32,15 @@ HTTP:
 * Define Parser concept in HTTP
   - Need parse version of read() so caller can set parser options
     like maximum size of headers, maximum body size, etc
-* trim public interface of rfc2616.h to essentials only
 * add bool should_close(message_v1 const&) to replace the use
   of eof return value from write and async_write
-* http type_check, e.g. is_WritableBody
 * More fine grained parser errors
 * HTTP parser size limit with test (configurable?)
 * HTTP parser trailers with test
 * Decode chunk encoding parameters
 * URL parser, strong URL character checking in HTTP parser
-* Update for rfc7230
-* Consider rename to MessageBody concept
 * Fix prepare() calling content_length() without init()
-* Use construct,destroy allocator routines in basic_headers
 * Complete allocator testing in basic_streambuf, basic_headers
-* Add tests for writer using the resume function / coros
 * Custom HTTP error codes for various situations
 * Branch prediction hints in parser
 * Check basic_parser_v1 against rfc7230 for leading message whitespace

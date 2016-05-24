@@ -120,7 +120,7 @@ decorate(Decorator&& d)
     This setting only affects the behavior of HTTP requests that
     implicitly or explicitly ask for a keepalive. For HTTP requests
     that indicate the connection should be closed, the connection is
-    closed as per rfc2616.
+    closed as per rfc7230.
 
     The default setting is to close connections after a failed
     upgrade request.

@@ -22,7 +22,7 @@
 #include <beast/http/read.hpp>
 #include <beast/http/write.hpp>
 #include <beast/http/reason.hpp>
-#include <beast/http/rfc2616.hpp>
+#include <beast/http/rfc7230.hpp>
 #include <beast/core/buffer_cat.hpp>
 #include <beast/core/buffer_concepts.hpp>
 #include <beast/core/consuming_buffers.hpp>
@@ -951,8 +951,7 @@ build_response(http::request_v1<Body, Headers> const& req)
         return err("Missing Host");
     if(! req.headers.exists("Sec-WebSocket-Key"))
         return err("Missing Sec-WebSocket-Key");
-    if(! rfc2616::token_in_list(
-            req.headers["Upgrade"], "websocket"))
+    if(! http::token_list{req.headers["Upgrade"]}.exists("websocket"))
         return err("Missing websocket Upgrade token");
     {
         auto const version =
@@ -1005,8 +1004,7 @@ do_response(http::response_v1<Body, Headers> const& res,
         return fail();
     if(! is_upgrade(res))
         return fail();
-    if(! rfc2616::ci_equal(
-            res.headers["Upgrade"], "websocket"))
+    if(! http::token_list{res.headers["Upgrade"]}.exists("websocket"))
         return fail();
     if(! res.headers.exists("Sec-WebSocket-Accept"))
         return fail();

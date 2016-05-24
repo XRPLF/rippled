@@ -8,7 +8,7 @@
 #ifndef BEAST_HTTP_IMPL_MESSAGE_V1_IPP
 #define BEAST_HTTP_IMPL_MESSAGE_V1_IPP
 
-#include <beast/http/rfc2616.hpp>
+#include <beast/http/rfc7230.hpp>
 #include <beast/http/detail/has_content_length.hpp>
 #include <boost/optional.hpp>
 #include <stdexcept>
@@ -22,13 +22,11 @@ is_keep_alive(message_v1<isRequest, Body, Headers> const& msg)
 {
     if(msg.version >= 11)
     {
-        if(rfc2616::token_in_list(
-                msg.headers["Connection"], "close"))
+        if(token_list{msg.headers["Connection"]}.exists("close"))
             return false;
         return true;
     }
-    if(rfc2616::token_in_list(
-            msg.headers["Connection"], "keep-alive"))
+    if(token_list{msg.headers["Connection"]}.exists("keep-alive"))
         return true;
     return false;
 }
@@ -39,8 +37,7 @@ is_upgrade(message_v1<isRequest, Body, Headers> const& msg)
 {
     if(msg.version < 11)
         return false;
-    if(rfc2616::token_in_list(
-            msg.headers["Connection"], "upgrade"))
+    if(token_list{msg.headers["Connection"]}.exists("upgrade"))
         return true;
     return false;
 }
@@ -129,8 +126,7 @@ prepare(message_v1<isRequest, Body, Headers>& msg,
         throw std::invalid_argument(
             "prepare called with Content-Length field set");
 
-    if(rfc2616::token_in_list(
-            msg.headers["Transfer-Encoding"], "chunked"))
+    if(token_list{msg.headers["Transfer-Encoding"]}.exists("chunked"))
         throw std::invalid_argument(
             "prepare called with Transfer-Encoding: chunked set");
 
@@ -175,8 +171,8 @@ prepare(message_v1<isRequest, Body, Headers>& msg,
     }
 
     // rfc7230 6.7.
-    if(msg.version < 11 && rfc2616::token_in_list(
-            msg.headers["Connection"], "upgrade"))
+    if(msg.version < 11 && token_list{
+            msg.headers["Connection"]}.exists("upgrade"))
         throw std::invalid_argument(
             "invalid version for Connection: upgrade");
 }

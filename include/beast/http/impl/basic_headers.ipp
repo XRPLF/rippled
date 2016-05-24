@@ -8,6 +8,8 @@
 #ifndef BEAST_HTTP_IMPL_BASIC_HEADERS_IPP
 #define BEAST_HTTP_IMPL_BASIC_HEADERS_IPP
 
+#include <beast/http/detail/rfc7230.hpp>
+
 namespace beast {
 namespace http {
 
@@ -257,12 +259,13 @@ template<class Allocator>
 void
 basic_headers<Allocator>::
 insert(boost::string_ref const& name,
-    boost::string_ref const& value)
+    boost::string_ref value)
 {
+    value = detail::trim(value);
     typename set_t::insert_commit_data d;
     auto const result =
         set_.insert_check(name, less{}, d);
-    if (result.second)
+    if(result.second)
     {
         auto const p = alloc_traits::allocate(
             this->member(), 1);
@@ -284,8 +287,9 @@ template<class Allocator>
 void
 basic_headers<Allocator>::
 replace(boost::string_ref const& name,
-    boost::string_ref const& value)
+    boost::string_ref value)
 {
+    value = detail::trim(value);
     erase(name);
     insert(name, value);
 }

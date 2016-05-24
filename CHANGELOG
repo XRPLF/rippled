@@ -1,8 +1,16 @@
 1.0.0-b6
 
-* Add HTTP field value parsers
 * Use SFINAE on return values
 * Use beast::error_code instead of nested types
 * Tidy up use of GENERATING_DOCS
+* Remove obsolete RFC2616 functions
+* Add HTTP field value parser containers:
+    - ext_list
+    - param_list
+    - token_list
+
+API Changes:
+
+* ci_equal is moved to beast::http namespace, in rfc7230.hpp
 
 --------------------------------------------------------------------------------

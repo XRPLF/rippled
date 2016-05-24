@@ -20,7 +20,6 @@ add_executable (http-tests
     read.cpp
     reason.cpp
     resume_context.cpp
-    rfc2616.cpp
     rfc7230.cpp
     status.cpp
     streambuf_body.cpp
