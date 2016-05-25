@@ -222,7 +222,7 @@ public:
                 Json::Value& entry = (ret[inboundEntry.to_string()] = Json::objectValue);
                 entry[jss::local] = localBalance;
                 entry[jss::remote] = inboundEntry.remote_balance;
-                entry[jss::type] = "outbound";
+                entry[jss::type] = "inbound";
             }
 
         }

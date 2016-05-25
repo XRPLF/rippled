@@ -114,7 +114,6 @@ Handler handlerArray[] {
     {   "consensus_info",       byRef (&doConsensusInfo),       Role::ADMIN,   NO_CONDITION     },
     {   "gateway_balances",     byRef (&doGatewayBalances),     Role::USER,  NO_CONDITION  },
     {   "get_counts",           byRef (&doGetCounts),           Role::ADMIN,   NO_CONDITION     },
-    {   "internal",             byRef (&doInternal),            Role::ADMIN,   NO_CONDITION     },
     {   "feature",              byRef (&doFeature),             Role::ADMIN,   NO_CONDITION     },
     {   "fee",                  byRef (&doFee),                 Role::USER,    NO_CONDITION     },
     {   "fetch_info",           byRef (&doFetchInfo),           Role::ADMIN,   NO_CONDITION     },

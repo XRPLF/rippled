@@ -42,7 +42,6 @@ Json::Value doFee                   (RPC::Context&);
 Json::Value doFetchInfo             (RPC::Context&);
 Json::Value doGatewayBalances       (RPC::Context&);
 Json::Value doGetCounts             (RPC::Context&);
-Json::Value doInternal              (RPC::Context&);
 Json::Value doLedgerAccept          (RPC::Context&);
 Json::Value doLedgerCleaner         (RPC::Context&);
 Json::Value doLedgerClosed          (RPC::Context&);
