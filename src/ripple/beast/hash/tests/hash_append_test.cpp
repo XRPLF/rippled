@@ -461,7 +461,7 @@ public:
             std::setw (13) << std::setprecision (5) <<
                 results.windowed_score << " | " <<
             std::left <<
-            results.elapsed.count();
+            results.elapsed.count() << std::endl;
         pass ();
     }
 
@@ -469,8 +469,8 @@ public:
     run()
     {
         log <<
-            "name                                    |     collision |  distribution |   windowed    | time (milliseconds)" << std::endl <<
-            "----------------------------------------+---------------+---------------+---------------+--------------------";
+            "name                                    |     collision |  distribution |   windowed    | time (milliseconds)" << '\n' <<
+            "----------------------------------------+---------------+---------------+---------------+--------------------" << std::endl;
 
         //test_hasher <hash_append_tests::prng_hasher<>, SlowKey> ("prng_hasher <SlowKey>", 10000);
         //test_hasher <hash_append_tests::prng_hasher<>, FastKey> ("prng_hasher <FastKey>", 100000);

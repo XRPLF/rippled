@@ -220,7 +220,8 @@ private:
                 if (acceptor_.is_open())
                 {
                     if (ec != boost::asio::error::operation_aborted)
-                        test_.log << what << ": " << ec.message();
+                        test_.log << what <<
+                            ": " << ec.message() << std::endl;
                     acceptor_.close();
                 }
             }
@@ -292,7 +293,8 @@ private:
                 if (socket_.is_open())
                 {
                     if (ec != boost::asio::error::operation_aborted)
-                        test_.log << "[server] " << what << ": " << ec.message();
+                        test_.log << "[server] " << what <<
+                            ": " << ec.message() << std::endl;
                     socket_.close();
                     timer_.cancel();
                 }
@@ -305,7 +307,7 @@ private:
                     return;
                 if (ec)
                     return fail("timer", ec);
-                test_.log << "[server] timeout";
+                test_.log << "[server] timeout" << std::endl;
                 socket_.close();
             }
 
@@ -329,7 +331,7 @@ private:
             {
                 if (ec == boost::asio::error::eof)
                 {
-                    server_.test_.log << "[server] read: EOF";
+                    server_.test_.log << "[server] read: EOF" << std::endl;
                     return stream_.async_shutdown(strand_.wrap(std::bind(
                         &Connection::on_shutdown, shared_from_this(),
                             beast::asio::placeholders::error)));
@@ -442,7 +444,8 @@ private:
                 if (socket_.is_open())
                 {
                     if (ec != boost::asio::error::operation_aborted)
-                        test_.log << "[client] " << what << ": " << ec.message();
+                        test_.log << "[client] " << what <<
+                            ": " << ec.message() << std::endl;
                     socket_.close();
                     timer_.cancel();
                 }

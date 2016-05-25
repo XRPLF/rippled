@@ -18,65 +18,34 @@ namespace unit_test {
 /** A suite that prints the list of globally defined suites. */
 class print_test : public suite
 {
-private:
-    template <class = void>
-    void
-    do_run();
-
 public:
-    template <class = void>
-    static
-    std::string
-    prefix (suite_info const& s);
-
-    template <class = void>
-    void
-    print (suite_list const& c);
-
     void
     run()
     {
-        do_run();
+        std::size_t manual = 0;
+        std::size_t total = 0;
+
+        auto prefix = [](suite_info const& s)
+        {
+            return s.manual() ? "|M| " : "    ";
+        };
+
+        for (auto const& s : global_suites())
+        {
+            log << prefix (s) << s.full_name() << '\n';
+
+            if (s.manual())
+                ++manual;
+            ++total;
+        }
+
+        log <<
+            amount (total, "suite") << " total, " <<
+            amount (manual, "manual suite") << std::endl;
+
+        pass();
     }
 };
-
-template <class>
-void
-print_test::do_run()
-{
-    log << "------------------------------------------";
-    print (global_suites());
-    log << "------------------------------------------";
-    pass();
-}
-
-template <class>
-std::string
-print_test::prefix (suite_info const& s)
-{
-    if (s.manual())
-        return "|M| ";
-    return "    ";
-}
-
-template <class>
-void
-print_test::print (suite_list const& c)
-{
-    std::size_t manual (0);
-    for (auto const& s : c)
-    {
-        log <<
-            prefix (s) <<
-            s.full_name();
-        if (s.manual())
-            ++manual;
-    }
-    log <<
-        amount (c.size(), "suite") << " total, " <<
-        amount (manual, "manual suite")
-        ;
-}
 
 BEAST_DEFINE_TESTSUITE_MANUAL(print,unit_test,beast);
 

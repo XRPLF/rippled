@@ -57,7 +57,7 @@ public:
 
             if (!map.addItem (std::move(*item), false, false))
             {
-                log << "Unable to add item to map";
+                log << "Unable to add item to map\n";
                 return false;
             }
         }
@@ -66,14 +66,16 @@ public:
         {
             if (!map.delItem (item))
             {
-                log << "Unable to remove item from map";
+                log << "Unable to remove item from map\n";
                 return false;
             }
         }
 
         if (beforeHash != map.getHash ())
         {
-            log << "Hashes do not match " << beforeHash << " " << map.getHash ();
+            log <<
+                "Hashes do not match " << beforeHash <<
+                " " << map.getHash () << std::endl;
             return false;
         }
 
@@ -82,10 +84,10 @@ public:
 
     void run()
     {
-        std::cerr << "Run, version 1" << std::endl;
+        log << "Run, version 1\n" << std::endl;
         run(SHAMap::version{1});
 
-        std::cerr << "Run, version 2" << std::endl;
+        log << "Run, version 2\n" << std::endl;
         run(SHAMap::version{2});
     }
 

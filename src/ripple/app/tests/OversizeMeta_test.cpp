@@ -88,7 +88,6 @@ public:
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
-            //env(offer("alice", XRP(i), iou(1)));
             env(offer("alice", XRP(1), iou(1)));
     }
 
@@ -153,7 +152,6 @@ public:
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
             env(offer("alice", XRP(i), iou(1)));
-            //env(offer("alice", XRP(1), iou(1)));
     }
 
     bool
@@ -178,9 +176,8 @@ public:
     run()
     {
         auto const result = bfind(100, 9000,
-            [&](std::size_t n)
-                { return oversize(n); });
-        log << "Min oversize offers = " << result;
+            [&](std::size_t n) { return oversize(n); });
+        log << "Min oversize offers = " << result << '\n';
     }
 };
 

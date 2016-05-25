@@ -107,8 +107,9 @@ public:
 
         expect (current_protocol >= minimum_protocol);
 
-        log << "   Ripple Version: " << BuildInfo::getVersionString();
-        log << " Protocol Version: " << to_string (current_protocol);
+        log <<
+            "   Ripple Version: " << BuildInfo::getVersionString() << '\n' <<
+            " Protocol Version: " << to_string (current_protocol) << std::endl;
     }
 };
 

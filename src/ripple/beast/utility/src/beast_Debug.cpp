@@ -147,10 +147,11 @@ public:
 
     void run ()
     {
-        log << "_DEBUG              = " << envDebug ();
-        log << "BEAST_DEBUG         = " << beastDebug ();
-        log << "BEAST_FORCE_DEBUG   = " << beastForceDebug ();
-        log << "sizeof(std::size_t) = " << sizeof(std::size_t);
+        log <<
+            "_DEBUG              = " << envDebug () << '\n' <<
+            "BEAST_DEBUG         = " << beastDebug () << '\n' <<
+            "BEAST_FORCE_DEBUG   = " << beastForceDebug () << '\n' <<
+            "sizeof(std::size_t) = " << sizeof(std::size_t) << std::endl;
         pass ();
     }
 };

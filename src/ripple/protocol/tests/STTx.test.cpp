@@ -61,8 +61,9 @@ public:
 
         if (copy != j)
         {
-            log << j.getJson (0);
-            log << copy.getJson (0);
+            log <<
+                "j=" << j.getJson (0) << '\n' <<
+                "copy=" << copy.getJson (0) << std::endl;
             fail ("Transaction fails serialize/deserialize test");
         }
         else
@@ -76,8 +77,9 @@ public:
 
         if (STObject (j) != parsed.object)
         {
-            log << "ORIG: " << j.getJson (0);
-            log << "BUILT " << parsed.object->getJson (0);
+            log <<
+                "ORIG: " << j.getJson (0) << '\n' <<
+                "BUILT " << parsed.object->getJson (0) << std::endl;
             fail ("Built a different transaction");
         }
         else

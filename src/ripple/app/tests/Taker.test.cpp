@@ -218,10 +218,9 @@ private:
         {
             log <<
                 "Expected: " << format_amount (expected.in) <<
-                " : " << format_amount (expected.out);
-            log <<
+                " : " << format_amount (expected.out) << '\n' <<
                 "  Actual: " << format_amount (result.in) <<
-                " : " << format_amount (result.out);
+                " : " << format_amount (result.out) << std::endl;
         }
     }
 

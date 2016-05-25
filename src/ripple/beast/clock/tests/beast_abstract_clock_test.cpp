@@ -32,59 +32,55 @@ class abstract_clock_test : public unit_test::suite
 {
 public:
     template <class Clock>
-    void test (abstract_clock<Clock>& c)
+    void test (std::string name, abstract_clock<Clock>& c)
     {
-        {
-            auto const t1 (c.now ());
-            std::this_thread::sleep_for (
-                std::chrono::milliseconds (1500));
-            auto const t2 (c.now ());
+        testcase (name);
 
-            std::stringstream ss;
-            ss <<
-                "t1= " << t1.time_since_epoch().count() <<
-                ", t2= " << t2.time_since_epoch().count() <<
-                ", elapsed= " << (t2 - t1).count();
-            log << ss.str();
-        }
+        auto const t1 (c.now ());
+        std::this_thread::sleep_for (
+            std::chrono::milliseconds (1500));
+        auto const t2 (c.now ());
+
+        log <<
+            "t1= " << t1.time_since_epoch().count() <<
+            ", t2= " << t2.time_since_epoch().count() <<
+            ", elapsed= " << (t2 - t1).count() << std::endl;
+
+        pass ();
     }
 
     void test_manual ()
     {
+        testcase ("manual");
+
         using clock_type = manual_clock<std::chrono::steady_clock>;
         clock_type c;
 
         std::stringstream ss;
 
-        ss << "now() = " << c.now().time_since_epoch().count() << std::endl;
-
+        auto c1 = c.now().time_since_epoch();
         c.set (clock_type::time_point (std::chrono::seconds(1)));
-        ss << "now() = " << c.now().time_since_epoch().count() << std::endl;
-
+        auto c2 = c.now().time_since_epoch();
         c.set (clock_type::time_point (std::chrono::seconds(2)));
-        ss << "now() = " << c.now().time_since_epoch().count() << std::endl;
+        auto c3 = c.now().time_since_epoch();
 
-        log << ss.str();
+        log <<
+            "[" << c1.count () << "," << c2.count () <<
+            "," << c3.count () << "]" << std::endl;
+
+        pass ();
     }
 
     void run ()
     {
-        log << "steady_clock";
-        test (get_abstract_clock<
+        test ("steady_clock", get_abstract_clock<
             std::chrono::steady_clock>());
-
-        log << "system_clock";
-        test (get_abstract_clock<
+        test ("system_clock", get_abstract_clock<
             std::chrono::system_clock>());
-
-        log << "high_resolution_clock";
-        test (get_abstract_clock<
+        test ("high_resolution_clock", get_abstract_clock<
             std::chrono::high_resolution_clock>());
 
-        log << "manual_clock";
         test_manual ();
-
-        pass ();
     }
 };
 

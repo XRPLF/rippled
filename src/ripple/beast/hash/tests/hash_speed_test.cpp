@@ -94,7 +94,7 @@ public:
         }
         auto const elapsed = clock_type::now() - start;
         log << setw(12) << what << " " <<
-            duration<double>(elapsed).count() << "s";
+            duration<double>(elapsed).count() << "s" << std::endl;
     }
 
     void

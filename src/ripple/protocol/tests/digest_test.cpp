@@ -68,7 +68,7 @@ class digest_test : public beast::unit_test::suite
             result = d;
         }
 
-        log << "    " << name << ":";
+        log << "    " << name << ":" << '\n';
 
         auto const sum = std::accumulate(
             results.begin(), results.end(),
@@ -78,7 +78,7 @@ class digest_test : public beast::unit_test::suite
             auto ms = duration_cast<milliseconds>(sum) - s;
             log <<
                 "       Total Time = " << s.count() <<
-                "." << ms.count() << " seconds";
+                "." << ms.count() << " seconds" << std::endl;
         }
 
         auto const mean = sum / results.size();
@@ -87,7 +87,7 @@ class digest_test : public beast::unit_test::suite
             auto ms = duration_cast<milliseconds>(mean) - s;
             log <<
                 "        Mean Time = " << s.count() <<
-                "." << ms.count() << " seconds";
+                "." << ms.count() << " seconds" << std::endl;
         }
 
         std::vector<nanoseconds::rep> diff(results.size());
@@ -108,7 +108,7 @@ class digest_test : public beast::unit_test::suite
             auto ms = duration_cast<milliseconds>(stddev) - s;
             log <<
                 "          Std Dev = " << s.count() <<
-                "." << ms.count() << " seconds";
+                "." << ms.count() << " seconds" << std::endl;
         }
     }
 

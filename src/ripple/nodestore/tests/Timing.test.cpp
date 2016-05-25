@@ -661,15 +661,14 @@ public:
             if (w < test.first.size())
                 w = test.first.size();
         log <<
-            "\n" <<
             threads << " Thread" << (threads > 1 ? "s" : "") << ", " <<
-            default_items << " Objects";
+            default_items << " Objects" << std::endl;
         {
             std::stringstream ss;
             ss << std::left << setw(10) << "Backend" << std::right;
             for (auto const& test : tests)
                 ss << " " << setw(w) << test.first;
-            log << ss.str();
+            log << ss.str() << std::endl;
         }
 
         for (auto const& config_string : config_strings)
@@ -689,7 +688,7 @@ public:
                     ss << " " << setw(w) << to_string(
                         do_test (test.second, config, params));
                 ss << "   " << to_string(config);
-                log << ss.str();
+                log << ss.str() << std::endl;
             }
         }
     }

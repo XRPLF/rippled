@@ -125,7 +125,7 @@ public:
 
         // Only write the string if the level at least equals the threshold.
         if (level >= threshold())
-            suite_.log << s << partition_ << text;
+            suite_.log << s << partition_ << text << std::endl;
     }
 };
 
@@ -383,7 +383,7 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
                 transToken(*jt.ter) + " (" +
                     transHuman(*jt.ter) + ")"))
     {
-        test.log << pretty(jt.jv);
+        test.log << pretty(jt.jv) << std::endl;
         // Don't check postconditions if
         // we didn't get the expected result.
         return;
@@ -392,7 +392,7 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
     {
         if (trace_ > 0)
             --trace_;
-        test.log << pretty(jt.jv);
+        test.log << pretty(jt.jv) << std::endl;
     }
     for (auto const& f : jt.requires)
         f(*this);
@@ -447,9 +447,8 @@ Env::autofill (JTx& jt)
     }
     catch (parse_error const&)
     {
-        test.log <<
-            "parse failed:\n" <<
-            pretty(jv);
+        test.log << "parse failed:\n" <<
+            pretty(jv) << std::endl;
         Rethrow();
     }
 }
@@ -466,9 +465,8 @@ Env::st (JTx const& jt)
     }
     catch(jtx::parse_error const&)
     {
-        test.log <<
-            "Exception: parse_error\n" <<
-            pretty(jt.jv);
+        test.log << "Exception: parse_error\n" <<
+            pretty(jt.jv) << std::endl;
         Rethrow();
     }
 
