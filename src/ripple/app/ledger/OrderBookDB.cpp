@@ -70,7 +70,7 @@ void OrderBookDB::setup(
     {
         // nothing to do
     }
-    else if (app_.config().RUN_STANDALONE)
+    else if (app_.config().standalone())
         update(ledger);
     else
         app_.getJobQueue().addJob(

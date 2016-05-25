@@ -1433,7 +1433,7 @@ void LedgerConsensusImp::takeInitialPosition (
             SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
     }
 
-    if ((app_.config().RUN_STANDALONE || (mProposing && mHaveCorrectLCL))
+    if ((app_.config().standalone() || (mProposing && mHaveCorrectLCL))
             && ((mPreviousLedger->info().seq % 256) == 0))
     {
         // previous ledger was flag ledger, add pseudo-transactions

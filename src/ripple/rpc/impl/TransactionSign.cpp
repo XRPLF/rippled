@@ -280,7 +280,7 @@ checkTxJsonFields (
     }
 
     // Check for current ledger.
-    if (verify && !config.RUN_STANDALONE &&
+    if (verify && !config.standalone() &&
         (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
     {
         ret.first = rpcError (rpcNO_CURRENT);

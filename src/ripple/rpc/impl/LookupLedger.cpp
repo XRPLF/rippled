@@ -93,7 +93,7 @@ Status ledgerFromRequest (T& ledger, Context& context)
             return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
 
         if (ledger->info().seq > ledgerMaster.getValidLedgerIndex() &&
-            isValidatedOld(ledgerMaster, context.app.config().RUN_STANDALONE))
+            isValidatedOld(ledgerMaster, context.app.config().standalone()))
         {
             ledger.reset();
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -101,7 +101,7 @@ Status ledgerFromRequest (T& ledger, Context& context)
     }
     else
     {
-        if (isValidatedOld (ledgerMaster, context.app.config().RUN_STANDALONE))
+        if (isValidatedOld (ledgerMaster, context.app.config().standalone()))
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
 
         auto const index = indexValue.asString ();

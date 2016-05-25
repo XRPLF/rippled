@@ -1208,7 +1208,7 @@ rpcClient(std::vector<std::string> const& args,
                         ? jvRequest["method"].asString () : args[0],
                     jvParams,                               // Parsed, execute.
                     setup.client.secure != 0,                // Use SSL
-                    config.QUIET,
+                    config.quiet(),
                     logs,
                     std::bind (RPCCallImp::callRPCHandler, &jvOutput,
                                std::placeholders::_1));
