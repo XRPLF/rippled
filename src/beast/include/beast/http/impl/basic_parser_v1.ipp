@@ -463,8 +463,9 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
 
         case s_header_field:
         {
-            for(; p != end; ch = *++p)
+            for(; p != end; ++p)
             {
+                ch = *p;
                 auto c = to_field_char(ch);
                     if(! c)
                         break;
@@ -660,8 +661,9 @@ write(boost::asio::const_buffer const& buffer, error_code& ec)
 
         case s_header_value_text:
         {
-            for(; p != end; ch = *++p)
+            for(; p != end; ++p)
             {
+                ch = *p;
                 if(ch == '\r')
                 {
                     if(cb(nullptr))

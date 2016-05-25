@@ -225,7 +225,6 @@ public:
         testCloseCodes();
         testFrameHeader();
         testBadFrameHeaders();
-        pass();
     }
 };
 

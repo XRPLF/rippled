@@ -60,6 +60,13 @@ enum
     protocol_error  = 1002,
 
     unknown_data    = 1003,
+
+    /// Indicates a received close frame has no close code
+    //no_code         = 1005, // TODO
+
+    /// Indicates the connection was closed without receiving a close frame
+    no_close        = 1006,
+
     bad_payload     = 1007,
     policy_error    = 1008,
     too_big         = 1009,
@@ -80,12 +87,11 @@ enum
 } // close_code
 #endif
 
-#if ! GENERATING_DOCS
-using reason_string_type =
-    static_string<123, char>;
-using ping_payload_type =
-    static_string<125, char>;
-#endif
+/// The type representing the reason string in a close frame.
+using reason_string = static_string<123, char>;
+
+/// The type representing the payload of ping and pong messages.
+using ping_data = static_string<125, char>;
 
 /** Description of the close reason.
 
@@ -98,7 +104,7 @@ struct close_reason
     close_code::value code = close_code::none;
 
     /// The optional utf8-encoded reason string.
-    reason_string_type reason;
+    reason_string reason;
 
     /** Default constructor.
 
@@ -114,17 +120,17 @@ struct close_reason
     }
 
     /// Construct from a reason. code is close_code::normal.
-    template<class CharT>
-    close_reason(CharT const* reason_)
+    template<std::size_t N>
+    close_reason(char const (&reason_)[N])
         : code(close_code::normal)
         , reason(reason_)
     {
     }
 
     /// Construct from a code and reason.
-    template<class CharT>
+    template<std::size_t N>
     close_reason(close_code::value code_,
-            CharT const* reason_)
+            char const (&reason_)[N])
         : code(code_)
         , reason(reason_)
     {
@@ -136,20 +142,6 @@ struct close_reason
         return code != close_code::none;
     }
 };
-
-#if ! GENERATING_DOCS
-
-/// Identifies the role of a WebSockets stream.
-enum class role_type
-{
-    /// Stream is operating as a client.
-    client,
-
-    /// Stream is operating as a server.
-    server
-};
-
-#endif
 
 } // websocket
 } // beast

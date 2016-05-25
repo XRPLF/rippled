@@ -6,43 +6,33 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/websocket/detail/mask.hpp>
+#include <beast/websocket/detail/stream_base.hpp>
 
 #include <beast/unit_test/suite.hpp>
+#include <initializer_list>
+#include <climits>
 
 namespace beast {
 namespace websocket {
 namespace detail {
 
-class mask_test : public beast::unit_test::suite
+class stream_base_test : public beast::unit_test::suite
 {
 public:
-    struct test_generator
+    void testClamp()
     {
-        using result_type = std::uint32_t;
-
-        result_type n = 0;
-
-        void
-        seed(std::seed_seq const&)
-        {
-        }
-
-        std::uint32_t
-        operator()()
-        {
-            return n++;
-        }
-    };
+        expect(detail::clamp(
+            std::numeric_limits<std::uint64_t>::max()) ==
+                std::numeric_limits<std::size_t>::max());
+    }
 
     void run() override
     {
-        maskgen_t<test_generator> mg;
-        expect(mg() != 0);
+        testClamp();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(mask,websocket,beast);
+BEAST_DEFINE_TESTSUITE(stream_base,websocket,beast);
 
 } // detail
 } // websocket

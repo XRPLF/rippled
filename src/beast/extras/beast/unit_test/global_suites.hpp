@@ -15,7 +15,8 @@ namespace unit_test {
 
 namespace detail {
 
-template <class = void>
+/// Holds test suites registered during static initialization.
+inline
 suite_list&
 global_suites()
 {
@@ -23,26 +24,20 @@ global_suites()
     return s;
 }
 
-template <class Suite>
+template<class Suite>
 struct insert_suite
 {
-    template <class = void>
-    insert_suite (char const* name, char const* module,
-        char const* library, bool manual);
+    insert_suite(char const* name, char const* module,
+        char const* library, bool manual)
+    {
+        global_suites().insert<Suite>(
+            name, module, library, manual);
+    }
 };
-
-template <class Suite>
-template <class>
-insert_suite<Suite>::insert_suite (char const* name,
-    char const* module, char const* library, bool manual)
-{
-    global_suites().insert <Suite> (
-        name, module, library, manual);
-}
 
 } // detail
 
-/** Holds suites registered during static initialization. */
+/// Holds test suites registered during static initialization.
 inline
 suite_list const&
 global_suites()

@@ -34,20 +34,6 @@ struct empty_body
 private:
 #endif
 
-    struct reader
-    {
-        template<bool isRequest, class Headers>
-        explicit
-        reader(message<isRequest, empty_body, Headers>&)
-        {
-        }
-
-        void
-        write(void const*, std::size_t, error_code&)
-        {
-        }
-    };
-
     struct writer
     {
         writer(writer const&) = delete;

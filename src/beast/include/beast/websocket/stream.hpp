@@ -69,8 +69,8 @@ struct frame_info
     @tparam NextLayer The type representing the next layer, to which
     data will be read and written during operations. For synchronous
     operations, the type must support the @b `SyncStream` concept.
-    For asynchronous operations, the type must support the @b `AsyncStream`
-    concept.
+    For asynchronous operations, the type must support the
+    @b `AsyncStream` concept.
 
     @note A stream object must not be destroyed while there are
     pending asynchronous operations associated with it.
@@ -84,7 +84,7 @@ struct frame_info
 template<class NextLayer>
 class stream : public detail::stream_base
 {
-    friend class ws_test;
+    friend class stream_test;
 
     streambuf_readstream<NextLayer, streambuf> stream_;
 
@@ -124,12 +124,12 @@ public:
 
     /** Construct a WebSocket stream.
 
-        This constructor creates a websocket stream and initialises
+        This constructor creates a websocket stream and initializes
         the next layer object.
 
         @throws Any exceptions thrown by the NextLayer constructor.
 
-        @param args The arguments to be passed to initialise the
+        @param args The arguments to be passed to initialize the
         next layer object. The arguments are forwarded to the next
         layer's constructor.
     */
@@ -198,6 +198,13 @@ public:
         wr_opcode_ = o.value;
     }
 
+    /// Set the pong callback
+    void
+    set_option(pong_callback o)
+    {
+        pong_cb_ = std::move(o.value);
+    }
+
     /// Set the read buffer size
     void
     set_option(read_buffer_size const& o)
@@ -212,11 +219,11 @@ public:
         rd_msg_max_ = o.value;
     }
 
-    /// Set the size of the write buffer
+    /// Set the size of the mask buffer
     void
-    set_option(write_buffer_size const& o)
+    set_option(mask_buffer_size const& o)
     {
-        wr_buf_size_ = std::max<std::size_t>(o.value, 1024);
+        mask_buf_size_ = o.value;
         stream_.capacity(o.value);
     }
 
@@ -788,7 +795,7 @@ public:
 
     /** Send a WebSocket close frame.
 
-        This function is used to sycnhronously send a close frame on
+        This function is used to synchronously send a close frame on
         the stream. The call blocks until one of the following is true:
 
         @li The close frame finishes sending.
@@ -817,7 +824,7 @@ public:
 
     /** Send a WebSocket close frame.
 
-        This function is used to sycnhronously send a close frame on
+        This function is used to synchronously send a close frame on
         the stream. The call blocks until one of the following is true:
 
         @li The close frame finishes sending.
@@ -844,7 +851,7 @@ public:
     void
     close(close_reason const& cr, error_code& ec);
 
-    /** Start an asycnhronous operation to send a WebSocket close frame.
+    /** Start an asynchronous operation to send a WebSocket close frame.
 
         This function is used to asynchronously send a close frame on
         the stream. This function call always returns immediately. The
@@ -858,7 +865,7 @@ public:
         This operation is implemented in terms of one or more calls to the
         next layer's `async_write_some` functions, and is known as a
         <em>composed operation</em>. The program must ensure that the
-        stream performs no other write operations (such as
+        stream performs no other write operations (such as @ref async_ping,
         @ref stream::async_write, @ref stream::async_write_frame, or
         @ref stream::async_close) until this operation completes.
 
@@ -895,6 +902,84 @@ public:
         CloseHandler, void(error_code)>::result_type
     #endif
     async_close(close_reason const& cr, CloseHandler&& handler);
+
+    /** Send a WebSocket ping frame.
+
+        This function is used to synchronously send a ping frame on
+        the stream. The call blocks until one of the following is true:
+
+        @li The ping frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
+
+        @param payload The payload of the ping message, which may be empty.
+
+        @throws boost::system::system_error Thrown on failure.
+    */
+    void
+    ping(ping_data const& payload);
+
+    /** Send a WebSocket ping frame.
+
+        This function is used to synchronously send a ping frame on
+        the stream. The call blocks until one of the following is true:
+
+        @li The ping frame finishes sending.
+
+        @li An error occurs on the stream.
+
+        This function is implemented in terms of one or more calls to the
+        next layer's `write_some` functions.
+
+        @param payload The payload of the ping message, which may be empty.
+
+        @param ec Set to indicate what error occurred, if any.
+    */
+    void
+    ping(ping_data const& payload, error_code& ec);
+
+    /** Start an asynchronous operation to send a WebSocket ping frame.
+
+        This function is used to asynchronously send a ping frame to
+        the stream. The function call always returns immediately. The
+        asynchronous operation will continue until one of the following
+        is true:
+
+        @li The entire ping frame is sent.
+
+        @li An error occurs on the stream.
+
+        This operation is implemented in terms of one or more calls to the
+        next layer's `async_write_some` functions, and is known as a
+        <em>composed operation</em>. The program must ensure that the
+        stream performs no other writes until this operation completes.
+
+        @param payload The payload of the ping message, which may be empty.
+
+        @param handler The handler to be called when the read operation
+        completes. Copies will be made of the handler as required. The
+        function signature of the handler must be:
+        @code
+        void handler(
+            error_code const& error     // Result of operation
+        );
+        @endcode
+        Regardless of whether the asynchronous operation completes
+        immediately or not, the handler will not be invoked from within
+        this function. Invocation of the handler will be performed in a
+        manner equivalent to using `boost::asio::io_service::post`.
+    */
+    template<class PingHandler>
+    #if GENERATING_DOCS
+    void_or_deduced
+    #else
+    typename async_completion<
+        PingHandler, void(error_code)>::result_type
+    #endif
+    async_ping(ping_data const& payload, PingHandler&& handler);
 
     /** Read a message from the stream.
 
@@ -969,7 +1054,7 @@ public:
 
     /** Start an asynchronous operation to read a message from the stream.
 
-        This function is used to asychronously read a message from
+        This function is used to asynchronously read a message from
         the stream. The function call always returns immediately. The
         asynchronous operation will continue until one of the following
         is true:
@@ -981,7 +1066,7 @@ public:
         This operation is implemented in terms of one or more calls to the
         next layer's `async_read_some` and `async_write_some` functions,
         and is known as a <em>composed operation</em>. The program must
-        ensure that the stream performs no other until this operation
+        ensure that the stream performs no other reads until this operation
         completes.
 
         Upon a success, op is set to either binary or text depending on
@@ -989,15 +1074,14 @@ public:
         hold all the message payload bytes (which may be zero in length).
 
         Control frames encountered while reading frame or message data
-        are handled automatically. Pings are replied to, pongs are noted,
-        and close frames initiate the WebSocket close procedure. When a
-        close frame is received, this call will eventually return
-        @ref error::closed. Because of the need to handle control frames,
-        read operations can cause writes to take place. These writes are
-        managed transparently; callers can still have one active
-        asynchronous read and asynchronous write operation pending
-        simultaneously (a user initiated call to @ref async_close
-        counts as a write).
+        are handled automatically. Pings are replied to, pongs cause
+        an outstanding call to `async_ping` to complete, and close
+        frames initiate the WebSocket close procedure. When a close
+        frame is received, this call will eventually return
+        @ref error::closed. Because of the need to handle control
+        frames, these read operations can cause writes to take place.
+        Despite this, calls to `async_read` and `async_read_frame`
+        only count as read operations.
 
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
@@ -1104,7 +1188,7 @@ public:
 
     /** Start an asynchronous operation to read a message frame from the stream.
 
-        This function is used to asychronously read a single message
+        This function is used to asynchronously read a single message
         frame from the websocket. The function call always returns
         immediately. The asynchronous operation will continue until
         one of the following conditions is true:
@@ -1116,7 +1200,7 @@ public:
         This operation is implemented in terms of one or more calls to the
         next layer's `async_read_some` and `async_write_some` functions,
         and is known as a <em>composed operation</em>. The program must
-        ensure that the stream performs no other until this operation
+        ensure that the stream performs no other reads until this operation
         completes.
 
         Upon a successful completion, fi is filled out to reflect the
@@ -1242,7 +1326,7 @@ public:
 
     /** Start an asynchronous operation to write a message to the stream.
 
-        This function is used to asychronously write a message to
+        This function is used to asynchronously write a message to
         the stream. The function call always returns immediately.
         The asynchronous operation will continue until one of the
         following conditions is true:
@@ -1407,11 +1491,15 @@ private:
     template<class Handler> class accept_op;
     template<class Handler> class close_op;
     template<class Handler> class handshake_op;
+    template<class Handler> class ping_op;
     template<class Handler> class response_op;
-    template<class Streambuf, class Handler> class read_op;
-    template<class Streambuf, class Handler> class read_frame_op;
     template<class Buffers, class Handler> class write_op;
     template<class Buffers, class Handler> class write_frame_op;
+    template<class Streambuf, class Handler> class read_op;
+    template<class Streambuf, class Handler> class read_frame_op;
+
+    void
+    reset();
 
     http::request_v1<http::empty_body>
     build_request(boost::string_ref const& host,

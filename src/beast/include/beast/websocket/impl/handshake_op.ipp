@@ -48,6 +48,7 @@ class stream<NextLayer>::handshake_op
             , cont(boost_asio_handler_cont_helpers::
                 is_continuation(h))
         {
+            ws.reset();
         }
     };
 
@@ -64,16 +65,11 @@ public:
             std::forward<DeducedHandler>(h), ws,
                 std::forward<Args>(args)...))
     {
-        (*this)(error_code{}, 0, false);
+        (*this)(error_code{}, false);
     }
 
-    void operator()(error_code const& ec)
-    {
-        (*this)(ec, 0);
-    }
-
-    void operator()(error_code ec,
-        std::size_t bytes_transferred, bool again = true);
+    void
+    operator()(error_code ec, bool again = true);
 
     friend
     void* asio_handler_allocate(
@@ -109,9 +105,8 @@ public:
 template<class NextLayer>
 template<class Handler>
 void
-stream<NextLayer>::handshake_op<
-    Handler>::operator()(error_code ec,
-        std::size_t bytes_transferred, bool again)
+stream<NextLayer>::handshake_op<Handler>::
+operator()(error_code ec, bool again)
 {
     auto& d = *d_;
     d.cont = d.cont || again;

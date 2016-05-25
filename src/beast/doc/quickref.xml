@@ -41,14 +41,19 @@
           </simplelist>
           <bridgehead renderas="sect3">Type Traits</bridgehead>
           <simplelist type="vert" columns="1">
+           <member><link linkend="beast.ref.http__is_Body">is_Body</link></member>
            <member><link linkend="beast.ref.http__is_Parser">is_Parser</link></member>
+           <member><link linkend="beast.ref.http__is_ReadableBody">is_ReadableBody</link></member>
+           <member><link linkend="beast.ref.http__is_WritableBody">is_WritableBody</link></member>
           </simplelist>
         </entry>
         <entry valign="top">
           <bridgehead renderas="sect3">Functions</bridgehead>
           <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.http__async_parse">async_parse</link></member>
             <member><link linkend="beast.ref.http__async_read">async_read</link></member>
             <member><link linkend="beast.ref.http__async_write">async_write</link></member>
+            <member><link linkend="beast.ref.http__parse">parse</link></member>
             <member><link linkend="beast.ref.http__prepare">prepare</link></member>
             <member><link linkend="beast.ref.http__read">read</link></member>
             <member><link linkend="beast.ref.http__write">write</link></member>
@@ -62,6 +67,7 @@
             <member><link linkend="beast.types.Body">Body</link></member>
             <member><link linkend="beast.types.Field">Field</link></member>
             <member><link linkend="beast.types.FieldSequence">FieldSequence</link></member>
+            <member><link linkend="beast.types.Parser">Parser</link></member>
             <member><link linkend="beast.types.Reader">Reader</link></member>
             <member><link linkend="beast.types.Writer">Writer</link></member>
           </simplelist>
@@ -70,16 +76,20 @@
           <bridgehead renderas="sect3">Classes</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.websocket__close_reason">close_reason</link></member>
+            <member><link linkend="beast.ref.websocket__ping_data">ping_data</link></member>
             <member><link linkend="beast.ref.websocket__stream">stream</link></member>
+            <member><link linkend="beast.ref.websocket__reason_string">reason_string</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Options</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.websocket__auto_fragment_size">auto_fragment_size</link></member>
             <member><link linkend="beast.ref.websocket__decorate">decorate</link></member>
             <member><link linkend="beast.ref.websocket__keep_alive">keep_alive</link></member>
+            <member><link linkend="beast.ref.websocket__mask_buffer_size">mask_buffer_size</link></member>
+            <member><link linkend="beast.ref.websocket__message_type">message_type</link></member>
+            <member><link linkend="beast.ref.websocket__pong_callback">pong_callback</link></member>
             <member><link linkend="beast.ref.websocket__read_buffer_size">read_buffer_size</link></member>
             <member><link linkend="beast.ref.websocket__read_message_max">read_message_max</link></member>
-            <member><link linkend="beast.ref.websocket__write_buffer_size">write_buffer_size</link></member>
           </simplelist>
         </entry>
         <entry valign="top">
@@ -91,6 +101,7 @@
           <bridgehead renderas="sect3">Constants</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.websocket__close_code">close_code</link></member>
+            <member><link linkend="beast.ref.websocket__error">error</link></member>
             <member><link linkend="beast.ref.websocket__opcode">opcode</link></member>
           </simplelist>
         </entry>
@@ -163,10 +174,10 @@
           <bridgehead renderas="sect3">Concepts</bridgehead>
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.types.BufferSequence">BufferSequence</link></member>
-            <member><link linkend="beast.types.stream.AsyncStream">AsyncStream</link></member>
-            <member><link linkend="beast.types.stream.Stream">Stream</link></member>
+            <member><link linkend="beast.types.streams.AsyncStream">AsyncStream</link></member>
+            <member><link linkend="beast.types.streams.Stream">Stream</link></member>
             <member><link linkend="beast.types.Streambuf">Streambuf</link></member>
-            <member><link linkend="beast.types.stream.SyncStream">SyncStream</link></member>
+            <member><link linkend="beast.types.streams.SyncStream">SyncStream</link></member>
           </simplelist>
         </entry>
       </row>

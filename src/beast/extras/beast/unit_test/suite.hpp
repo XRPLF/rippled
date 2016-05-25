@@ -9,15 +9,23 @@
 #define BEAST_UNIT_TEST_SUITE_HPP
 
 #include <beast/unit_test/runner.hpp>
-#include <string>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 namespace beast {
 namespace unit_test {
 
 class thread;
 
+enum abort_t
+{
+    no_abort_on_fail,
+    abort_on_fail
+};
+
 /** A testsuite class.
+
     Derived classes execute a series of testcases, where each testcase is
     a series of pass/fail tests. To provide a unit test using this class,
     derive from it and use the BEAST_DEFINE_UNIT_TEST macro in a
@@ -25,13 +33,6 @@ class thread;
 */
 class suite
 {
-public:
-    enum abort_t
-    {
-        no_abort_on_fail,
-        abort_on_fail
-    };
-
 private:
     bool abort_ = false;
     bool aborted_ = false;
@@ -44,95 +45,100 @@ private:
         char const*
         what() const noexcept override
         {
-            return "suite aborted";
+            return "test suite aborted";
         }
     };
 
-public:
-    // Memberspace
-    class log_t
+    template<class CharT, class Traits, class Allocator>
+    class log_buf
+        : public std::basic_stringbuf<CharT, Traits, Allocator>
     {
-    private:
-        friend class suite;
-        suite* suite_ = nullptr;
+        suite& suite_;
 
     public:
-        log_t () = default;
+        explicit
+        log_buf(suite& self)
+            : suite_(self)
+        {
+        }
 
-        template <class T>
-        abstract_ostream::scoped_stream_type
-        operator<< (T const& t);
+        ~log_buf()
+        {
+            sync();
+        }
 
-        /** Returns the raw stream used for output. */
-        abstract_ostream&
-        stream();
+        int
+        sync() override
+        {
+            auto const& s = this->str();
+            if(s.size() > 0)
+                suite_.runner_->on_log(s);
+            this->str("");
+            return 0;
+        }
     };
-private:
+
+    template<
+        class CharT,
+        class Traits = std::char_traits<CharT>,
+        class Allocator = std::allocator<CharT>
+    >
+    class log_os : public std::basic_ostream<CharT, Traits>
+    {
+        log_buf<CharT, Traits, Allocator> buf_;
+
+    public:
+        explicit
+        log_os(suite& self)
+            : std::basic_ostream<CharT, Traits>(&buf_)
+            , buf_(self)
+        {
+        }
+    };
 
     class scoped_testcase;
 
-    // Memberspace
     class testcase_t
     {
-    private:
-        friend class suite;
-        suite* suite_ = nullptr;
+        suite& suite_;
         std::stringstream ss_;
 
     public:
-        testcase_t() = default;
+        explicit
+        testcase_t(suite& self)
+            : suite_(self)
+        {
+        }
 
         /** Open a new testcase.
-            A testcase is a series of evaluated test conditions. A test suite
-            may have multiple test cases. A test is associated with the last
-            opened testcase. When the test first runs, a default unnamed
-            case is opened. Tests with only one case may omit the call
-            to testcase.
-            @param abort If `true`, the suite will be stopped on first failure.
+        
+            A testcase is a series of evaluated test conditions. A test
+            suite may have multiple test cases. A test is associated with
+            the last opened testcase. When the test first runs, a default
+            unnamed case is opened. Tests with only one case may omit the
+            call to testcase.
+
+            @param abort Determines if suite continues running after a failure.
         */
         void
-        operator() (std::string const& name,
+        operator()(std::string const& name,
             abort_t abort = no_abort_on_fail);
 
-        /** Stream style composition of testcase names. */
-        /** @{ */
         scoped_testcase
-        operator() (abort_t abort);
+        operator()(abort_t abort);
 
         template <class T>
         scoped_testcase
-        operator<< (T const& t);
-        /** @} */
+        operator<<(T const& t);
     };
 
 public:
-    /** Type for scoped stream logging.
-        To use this type, declare a local variable of the type
-        on the stack in derived class member function and construct
-        it from log.stream();
+    /** Logging output stream.
 
-        @code
-
-        scoped_stream ss (log.stream();
-
-        ss << "Hello" << std::endl;
-        ss << "world" << std::endl;
-
-        @endcode
-
-        Streams constructed in this fashion will not have the line
-        ending automatically appended.
-
-        Thread safety:
-
-            The scoped_stream may only be used by one thread.
-            Multiline output sent to the stream will be atomically
-            written to the underlying abstract_Ostream
+        Text sent to the log output stream will be forwarded to
+        the output stream associated with the runner.
     */
-    using scoped_stream = abstract_ostream::scoped_stream_type;
-
-    /** Memberspace for logging. */
-    log_t log;
+    log_os<char> log;
 
     /** Memberspace for declaring test cases. */
     testcase_t testcase;
@@ -143,6 +149,12 @@ public:
     static suite* this_suite()
     {
         return *p_this_suite();
+    }
+
+    suite()
+        : log(*this)
+        , testcase(*this)
+    {
     }
 
     /** Invokes the test using the specified runner.
@@ -272,83 +284,50 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class T>
-inline
-abstract_ostream::scoped_stream_type
-suite::log_t::operator<< (T const& t)
-{
-    return suite_->runner_->stream() << t;
-}
-
-/** Returns the raw stream used for output. */
-inline
-abstract_ostream&
-suite::log_t::stream()
-{
-    return suite_->runner_->stream();
-}
-
-//------------------------------------------------------------------------------
-
 // Helper for streaming testcase names
 class suite::scoped_testcase
 {
 private:
-    suite* suite_;
-    std::stringstream* ss_;
+    suite& suite_;
+    std::stringstream& ss_;
 
 public:
-    ~scoped_testcase();
+    scoped_testcase& operator=(scoped_testcase const&) = delete;
 
-    scoped_testcase (suite* s, std::stringstream* ss);
+    ~scoped_testcase()
+    {
+        auto const& name = ss_.str();
+        if(! name.empty())
+            suite_.runner_->testcase (name);
+    }
 
-    template <class T>
-    scoped_testcase (suite* s, std::stringstream* ss, T const& t);
+    scoped_testcase(suite& self, std::stringstream& ss)
+        : suite_(self)
+        , ss_(ss)
+    {
+        ss_.clear();
+        ss_.str({});
+    }
 
-    scoped_testcase& operator= (scoped_testcase const&) = delete;
+    template<class T>
+    scoped_testcase(suite& self,
+            std::stringstream& ss, T const& t)
+        : suite_(self)
+        , ss_(ss)
+    {
+        ss_.clear();
+        ss_.str({});
+        ss_ << t;
+    }
 
-    template <class T>
+    template<class T>
     scoped_testcase&
-    operator<< (T const& t);
+    operator<<(T const& t)
+    {
+        ss_ << t;
+        return *this;
+    }
 };
-
-inline
-suite::scoped_testcase::~scoped_testcase()
-{
-    auto const& name (ss_->str());
-    if (! name.empty())
-        suite_->runner_->testcase (name);
-}
-
-inline
-suite::scoped_testcase::scoped_testcase (suite* s, std::stringstream* ss)
-    : suite_ (s)
-    , ss_ (ss)
-{
-    ss_->clear();
-    ss_->str({});
-
-}
-
-template <class T>
-inline
-suite::scoped_testcase::scoped_testcase (suite* s, std::stringstream* ss, T const& t)
-    : suite_ (s)
-    , ss_ (ss)
-{
-    ss_->clear();
-    ss_->str({});
-    *ss_ << t;
-}
-
-template <class T>
-inline
-suite::scoped_testcase&
-suite::scoped_testcase::operator<< (T const& t)
-{
-    *ss_ << t;
-    return *this;
-}
 
 //------------------------------------------------------------------------------
 
@@ -357,16 +336,16 @@ void
 suite::testcase_t::operator() (std::string const& name,
     abort_t abort)
 {
-    suite_->abort_ = abort == abort_on_fail;
-    suite_->runner_->testcase (name);
+    suite_.abort_ = abort == abort_on_fail;
+    suite_.runner_->testcase (name);
 }
 
 inline
 suite::scoped_testcase
 suite::testcase_t::operator() (abort_t abort)
 {
-    suite_->abort_ = abort == abort_on_fail;
-    return { suite_, &ss_ };
+    suite_.abort_ = abort == abort_on_fail;
+    return { suite_, ss_ };
 }
 
 template<class T>
@@ -374,7 +353,7 @@ inline
 suite::scoped_testcase
 suite::testcase_t::operator<< (T const& t)
 {
-    return { suite_, &ss_, t };
+    return { suite_, ss_, t };
 }
 
 //------------------------------------------------------------------------------
@@ -511,8 +490,6 @@ void
 suite::run (runner& r)
 {
     runner_ = &r;
-    log.suite_ = this;
-    testcase.suite_ = this;
 
     try
     {

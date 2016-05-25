@@ -18,23 +18,27 @@
 namespace beast {
 namespace unit_test {
 
-/** A container of test suites. */
+/// A container of test suites.
 class suite_list
     : public detail::const_container <std::set <suite_info>>
 {
 private:
 #ifndef NDEBUG
-    std::unordered_set <std::string> names_;
-    std::unordered_set <std::type_index> classes_;
+    std::unordered_set<std::string> names_;
+    std::unordered_set<std::type_index> classes_;
 #endif
 
 public:
     /** Insert a suite into the set.
+
         The suite must not already exist.
     */
     template <class Suite>
     void
-    insert (char const* name, char const* module, char const* library,
+    insert(
+        char const* name,
+        char const* module,
+        char const* library,
         bool manual);
 };
 
@@ -42,7 +46,10 @@ public:
 
 template <class Suite>
 void
-suite_list::insert (char const* name, char const* module, char const* library,
+suite_list::insert(
+    char const* name,
+    char const* module,
+    char const* library,
     bool manual)
 {
 #ifndef NDEBUG
@@ -59,9 +66,8 @@ suite_list::insert (char const* name, char const* module, char const* library,
         assert (result.second); // Duplicate type
     }
 #endif
-
-    cont().emplace (std::move (make_suite_info <Suite> (
-        name, module, library, manual)));
+    cont().emplace(make_suite_info<Suite>(
+        name, module, library, manual));
 }
 
 } // unit_test

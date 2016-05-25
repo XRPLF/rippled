@@ -9,7 +9,7 @@ do
   test -x $( type -p ${g}-$GCC_VER )
   ln -sv $(type -p ${g}-$GCC_VER) $HOME/bin/${g}
 done
-for c in clang clang++
+for c in clang clang++ llvm-symbolizer
 do
     test -x $( type -p ${c}-$CLANG_VER )
     ln -sv $(type -p ${c}-$CLANG_VER) $HOME/bin/${c}

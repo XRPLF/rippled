@@ -29,6 +29,7 @@ add_executable (core-tests
     write_streambuf.cpp
     detail/base64.cpp
     detail/empty_base_optimization.cpp
+    detail/get_lowest_layer.cpp
     detail/sha1.cpp
 )
 

@@ -44,6 +44,9 @@ class stream<NextLayer>::response_op
             , h(std::forward<DeducedHandler>(h_))
             , cont(cont_)
         {
+            // can't call stream::reset() here
+            // otherwise accept_op will malfunction
+            //
             if(resp.status != 101)
                 final_ec = error::handshake_failed;
         }
@@ -123,7 +126,7 @@ operator()(error_code ec, bool again)
             d.state = 99;
             ec = d.final_ec;
             if(! ec)
-                d.ws.role_ = role_type::server;
+                d.ws.open(detail::role_type::server);
             break;
         }
     }

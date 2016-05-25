@@ -8,11 +8,13 @@
 #ifndef BEAST_WEBSOCKET_OPTION_HPP
 #define BEAST_WEBSOCKET_OPTION_HPP
 
+#include <beast/websocket/rfc6455.hpp>
 #include <beast/websocket/detail/stream_base.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 namespace beast {
 namespace websocket {
@@ -147,6 +149,45 @@ struct keep_alive
 };
 #endif
 
+/** Mask buffer size option.
+
+    Sets the size of the buffer allocated when the implementation
+    must allocate memory to apply the mask to a payload. Only affects
+    streams operating in the client role, since only clients send
+    masked frames. Lowering the size of the buffer can decrease the
+    memory requirements for each connection, while increasing the size
+    of the buffer can reduce the number of calls made to the next
+    layer to write masked data.
+
+    The default setting is 4096. The minimum value is 1.
+
+    @note Objects of this type are passed to @ref stream::set_option.
+
+    @par Example
+    Setting the write buffer size.
+    @code
+    ...
+    websocket::stream<ip::tcp::socket> ws(ios);
+    ws.set_option(mask_buffer_size{8192});
+    @endcode
+*/
+#if GENERATING_DOCS
+using mask_buffer_size = implementation_defined;
+#else
+struct mask_buffer_size
+{
+    std::size_t value;
+
+    explicit
+    mask_buffer_size(std::size_t n)
+        : value(n)
+    {
+        if(n == 0)
+            throw std::domain_error("invalid mask buffer size");
+    }
+};
+#endif
+
 /** Message type option.
 
     This controls the opcode set for outgoing messages. Valid
@@ -180,6 +221,50 @@ struct message_type
         if(op != opcode::binary && op != opcode::text)
             throw std::domain_error("bad opcode");
         value = op;
+    }
+};
+#endif
+
+/** Pong callback option.
+
+    Sets the callback to be invoked whenever a pong is received
+    during a call to @ref read, @ref read_frame, @ref async_read,
+    or @ref async_read_frame.
+
+    Unlike completion handlers, the callback will be invoked for
+    each received pong during a call to any synchronous or
+    asynchronous read function. The operation is passive, with
+    no associated error code, and triggered by reads.
+
+    The signature of the callback must be:
+    @code
+    void callback(
+        ping_data const& payload    // Payload of the pong frame
+    );
+    @endcode
+
+    If the read operation receiving a pong frame is an asynchronous
+    operation, the callback will be invoked using the same method as
+    that used to invoke the final handler.
+
+    @note To remove the pong callback, construct the option with
+    no parameters: `set_option(pong_callback{})`
+*/
+#if GENERATING_DOCS
+using pong_callback = implementation_defined;
+#else
+struct pong_callback
+{
+    detail::pong_cb value;
+
+    pong_callback() = default;
+    pong_callback(pong_callback&&) = default;
+    pong_callback(pong_callback const&) = default;
+
+    explicit
+    pong_callback(detail::pong_cb f)
+        : value(std::move(f))
+    {
     }
 };
 #endif
@@ -224,7 +309,8 @@ struct read_buffer_size
     frame headers indicating a size that would bring the total
     message size over this limit will cause a protocol failure.
 
-    The default setting is 16 megabytes.
+    The default setting is 16 megabytes. A value of zero indicates
+    a limit of `std::numeric_limits<std::uint64_t>::max()`.
 
     @note Objects of this type are passed to @ref stream::set_option.
 
@@ -245,44 +331,6 @@ struct read_message_max
 
     explicit
     read_message_max(std::size_t n)
-        : value(n)
-    {
-    }
-};
-#endif
-
-/** Write buffer size option.
-
-    Sets the number of bytes allocated to the socket's write buffer.
-    This buffer is used to hold masked frame payload data. Lowering
-    the size of the buffer can decrease the memory requirements for
-    each connection, at the cost of an increased number of calls to
-    perform socket writes.
-
-    This setting does not affect connections operating in the server
-    role, since servers do not apply a masking key to frame payloads.
-
-    The default setting is 4096. The minimum value is 1024.
-
-    @note Objects of this type are passed to @ref stream::set_option.
-
-    @par Example
-    Setting the write buffer size.
-    @code
-    ...
-    websocket::stream<ip::tcp::socket> ws(ios);
-    ws.set_option(write_buffer_size{8192});
-    @endcode
-*/
-#if GENERATING_DOCS
-using write_buffer_size = implementation_defined;
-#else
-struct write_buffer_size
-{
-    std::size_t value;
-
-    explicit
-    write_buffer_size(std::size_t n)
         : value(n)
     {
     }

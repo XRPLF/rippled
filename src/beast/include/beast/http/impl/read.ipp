@@ -8,8 +8,8 @@
 #ifndef BEAST_HTTP_IMPL_READ_IPP_HPP
 #define BEAST_HTTP_IMPL_READ_IPP_HPP
 
+#include <beast/http/concepts.hpp>
 #include <beast/http/parser_v1.hpp>
-#include <beast/http/type_check.hpp>
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/handler_alloc.hpp>
 #include <beast/core/stream_concepts.hpp>
@@ -323,6 +323,12 @@ void
 parse(SyncReadStream& stream,
     Streambuf& streambuf, Parser& parser)
 {
+    static_assert(is_SyncReadStream<SyncReadStream>::value,
+        "SyncReadStream requirements not met");
+    static_assert(is_Streambuf<Streambuf>::value,
+        "Streambuf requirements not met");
+    static_assert(is_Parser<Parser>::value,
+        "Parser requirements not met");
     error_code ec;
     parse(stream, streambuf, parser, ec);
     if(ec)
@@ -403,6 +409,8 @@ read(SyncReadStream& stream, Streambuf& streambuf,
         "SyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
+    static_assert(is_ReadableBody<Body>::value,
+        "ReadableBody requirements not met");
     error_code ec;
     read(stream, streambuf, msg, ec);
     if(ec)
@@ -420,6 +428,8 @@ read(SyncReadStream& stream, Streambuf& streambuf,
         "SyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
+    static_assert(is_ReadableBody<Body>::value,
+        "ReadableBody requirements not met");
     parser_v1<isRequest, Body, Headers> p;
     parse(stream, streambuf, p, ec);
     if(ec)
@@ -441,6 +451,8 @@ async_read(AsyncReadStream& stream, Streambuf& streambuf,
         "AsyncReadStream requirements not met");
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
+    static_assert(is_ReadableBody<Body>::value,
+        "ReadableBody requirements not met");
     beast::async_completion<ReadHandler,
         void(error_code)> completion(handler);
     detail::read_op<AsyncReadStream, Streambuf,

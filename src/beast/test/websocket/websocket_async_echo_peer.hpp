@@ -91,14 +91,16 @@ private:
             bool log;
             int state = 0;
             boost::optional<endpoint_type> ep;
-            websocket::stream<socket_type> ws;
-            websocket::opcode op;
+            stream<socket_type> ws;
+            boost::asio::io_service::strand strand;
+            opcode op;
             beast::streambuf sb;
             int id;
 
             data(bool log_, socket_type&& sock_)
                 : log(log_)
                 , ws(std::move(sock_))
+                , strand(ws.get_io_service())
                 , id([]
                     {
                         static int n = 0;
@@ -112,6 +114,7 @@ private:
                 : log(log_)
                 , ep(ep_)
                 , ws(std::move(sock_))
+                , strand(ws.get_io_service())
                 , id([]
                     {
                         static int n = 0;
@@ -174,8 +177,34 @@ private:
             }
         }
 
+        template<class Streambuf, std::size_t N>
+        static
+        bool
+        match(Streambuf& sb, char const(&s)[N])
+        {
+            using boost::asio::buffer;
+            using boost::asio::buffer_copy;
+            if(sb.size() < N-1)
+                return false;
+            static_string<N-1> t;
+            t.resize(N-1);
+            buffer_copy(buffer(t.data(), t.size()),
+                sb.data());
+            if(t != s)
+                return false;
+            sb.consume(N-1);
+            return true;
+        }
+
+        void operator()(error_code ec, std::size_t)
+        {
+            (*this)(ec);
+        }
+
         void operator()(error_code ec)
         {
+            using boost::asio::buffer;
+            using boost::asio::buffer_copy;
             auto& d = *d_;
             switch(d.state)
             {
@@ -191,19 +220,54 @@ private:
                 d.sb.consume(d.sb.size());
                 // read message
                 d.state = 2;
-                d.ws.async_read(d.op, d.sb, std::move(*this));
+                d.ws.async_read(d.op, d.sb,
+                    d.strand.wrap(std::move(*this)));
                 return;
 
             // got message
             case 2:
-                if(ec == websocket::error::closed)
+                if(ec == error::closed)
                     return;
                 if(ec)
                     return fail(ec, "async_read");
+                if(match(d.sb, "RAW"))
+                {
+                    d.state = 1;
+                    boost::asio::async_write(d.ws.next_layer(),
+                        d.sb.data(), d.strand.wrap(std::move(*this)));
+                    return;
+                }
+                else if(match(d.sb, "TEXT"))
+                {
+                    d.state = 1;
+                    d.ws.set_option(message_type{opcode::text});
+                    d.ws.async_write(
+                        d.sb.data(), d.strand.wrap(std::move(*this)));
+                    return;
+                }
+                else if(match(d.sb, "PING"))
+                {
+                    ping_data payload;
+                    d.sb.consume(buffer_copy(
+                        buffer(payload.data(), payload.size()),
+                            d.sb.data()));
+                    d.state = 1;
+                    d.ws.async_ping(payload,
+                        d.strand.wrap(std::move(*this)));
+                    return;
+                }
+                else if(match(d.sb, "CLOSE"))
+                {
+                    d.state = 1;
+                    d.ws.async_close({},
+                        d.strand.wrap(std::move(*this)));
+                    return;
+                }
                 // write message
                 d.state = 1;
-                d.ws.set_option(websocket::message_type(d.op));
-                d.ws.async_write(d.sb.data(), std::move(*this));
+                d.ws.set_option(message_type(d.op));
+                d.ws.async_write(d.sb.data(),
+                    d.strand.wrap(std::move(*this)));
                 return;
 
             // connected
@@ -214,7 +278,7 @@ private:
                 d.ws.async_handshake(
                     d.ep->address().to_string() + ":" +
                         std::to_string(d.ep->port()),
-                            "/", std::move(*this));
+                            "/", d.strand.wrap(std::move(*this)));
                 return;
             }
         }
@@ -226,7 +290,7 @@ private:
             auto& d = *d_;
             if(d.log)
             {
-                if(ec != websocket::error::closed)
+                if(ec != error::closed)
                     std::cerr << "#" << d_->id << " " <<
                         what << ": " << ec.message() << std::endl;
             }
@@ -255,6 +319,8 @@ private:
     on_accept(error_code ec)
     {
         if(! acceptor_.is_open())
+            return;
+        if(ec == boost::asio::error::operation_aborted)
             return;
         maybe_throw(ec, "accept");
         socket_type sock(std::move(sock_));

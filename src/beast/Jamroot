@@ -61,6 +61,22 @@ variant asan
     <linkflags>"-fsanitize=address"
   ;
 
+variant msan
+  :
+    debug
+  :
+    <cxxflags>"-fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
+    <linkflags>"-fsanitize=memory"
+  ;
+
+variant usan
+  :
+    debug
+  :
+    <cxxflags>"-fsanitize=undefined -fno-omit-frame-pointer"
+    <linkflags>"-fsanitize=undefined"
+  ;
+
 project beast
   : requirements
     <include>.
@@ -90,7 +106,7 @@ project beast
     <os>SOLARIS:<define>__EXTENSIONS__
     <os>SOLARIS:<library>socket
     <os>SOLARIS:<library>nsl
-    <os>NT:<define>_WIN32_WINNT=0x0501
+    <os>NT:<define>_WIN32_WINNT=0x0601
     <os>NT,<toolset>cw:<library>ws2_32
     <os>NT,<toolset>cw:<library>mswsock
     <os>NT,<toolset>gcc:<library>ws2_32

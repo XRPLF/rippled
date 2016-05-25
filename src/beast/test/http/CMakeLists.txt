@@ -10,6 +10,7 @@ add_executable (http-tests
     basic_headers.cpp
     basic_parser_v1.cpp
     body_type.cpp
+    concepts.cpp
     empty_body.cpp
     headers.cpp
     message.cpp
@@ -24,7 +25,6 @@ add_executable (http-tests
     status.cpp
     streambuf_body.cpp
     string_body.cpp
-    type_check.cpp
     write.cpp
     detail/chunk_encode.cpp
 )

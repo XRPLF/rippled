@@ -537,22 +537,7 @@
     <ClInclude Include="..\..\src\BeastConfig.h">
       <Filter>.</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\abstract_ostream.hpp">
-      <Filter>extras\beast\unit_test</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\amount.hpp">
-      <Filter>extras\beast\unit_test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\basic_abstract_ostream.hpp">
-      <Filter>extras\beast\unit_test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\basic_scoped_ostream.hpp">
-      <Filter>extras\beast\unit_test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\basic_std_ostream.hpp">
-      <Filter>extras\beast\unit_test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\debug_ostream.hpp">
       <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\detail\const_container.hpp">
@@ -562,9 +547,6 @@
       <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\match.hpp">
-      <Filter>extras\beast\unit_test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\extras\beast\unit_test\print.hpp">
       <Filter>extras\beast\unit_test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\recorder.hpp">
@@ -642,9 +624,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\stream_concepts.hpp">
       <Filter>include\beast\core\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\temp_dir.hpp">
-      <Filter>include\beast\core\detail</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\write_streambuf.hpp">
       <Filter>include\beast\core\detail</Filter>
     </ClInclude>
@@ -711,6 +690,9 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\body_type.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\concepts.hpp">
+      <Filter>include\beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\basic_parser_v1.hpp">
       <Filter>include\beast\http\detail</Filter>
     </ClInclude>
@@ -774,9 +756,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\string_body.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\type_check.hpp">
-      <Filter>include\beast\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\write.hpp">
       <Filter>include\beast\http</Filter>
     </ClInclude>
@@ -823,6 +802,9 @@
       <Filter>include\beast\websocket\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\handshake_op.ipp">
+      <Filter>include\beast\websocket\impl</Filter>
+    </None>
+    <None Include="..\..\src\beast\include\beast\websocket\impl\ping_op.ipp">
       <Filter>include\beast\websocket\impl</Filter>
     </None>
     <None Include="..\..\src\beast\include\beast\websocket\impl\read_frame_op.ipp">
