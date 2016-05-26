@@ -710,6 +710,33 @@ SHAMapInnerNode::canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractNod
     else
     {
         // Hook this node up
+        // node must not be a v2 inner node
+        assert(std::dynamic_pointer_cast<SHAMapInnerNodeV2>(node) == nullptr);
+        mChildren[branch] = node;
+    }
+    return node;
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapInnerNodeV2::canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractNode> node)
+{
+    assert (branch >= 0 && branch < 16);
+    assert (isInner());
+    assert (node);
+    assert (node->getNodeHash() == mHashes[branch]);
+
+    std::unique_lock <std::mutex> lock (childLock);
+    if (mChildren[branch])
+    {
+        // There is already a node hooked up, return it
+        node = mChildren[branch];
+    }
+    else
+    {
+        // Hook this node up
+        // node must not be a v1 inner node
+        assert(std::dynamic_pointer_cast<SHAMapInnerNodeV2>(node) != nullptr ||
+               std::dynamic_pointer_cast<SHAMapTreeNode>(node)    != nullptr);
         mChildren[branch] = node;
     }
     return node;

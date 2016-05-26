@@ -207,7 +207,8 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
             if (inNode->isInner())
             {
                 auto n = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(inNode);
-                assert(n);
+                if (n == nullptr)
+                    return nullptr;
                 nodeID = SHAMapNodeID{n->depth(), n->common()};
             }
             else
@@ -255,6 +256,11 @@ SHAMap::fetchNodeFromDB (SHAMapHash const& hash) const
                     {
                         auto root =  std::dynamic_pointer_cast<SHAMapInnerNode>(root_);
                         assert(root);
+if (!root->isEmpty())
+{
+    std::cerr << "isv2 = " << isv2 << '\n';
+    std::cerr << "is_v2() = " << is_v2() << '\n';
+}
                         assert(root->isEmpty());
                         if (isv2)
                         {
@@ -405,7 +411,7 @@ SHAMapAbstractNode* SHAMap::descend (SHAMapInnerNode* parent, int branch) const
         return ret;
 
     std::shared_ptr<SHAMapAbstractNode> node = fetchNodeNT (parent->getChildHash (branch));
-    if (!node)
+    if (!node || isInconsistentNode(node))
         return nullptr;
 
     node = parent->canonicalizeChild (branch, std::move(node));
@@ -420,7 +426,7 @@ SHAMap::descend (std::shared_ptr<SHAMapInnerNode> const& parent, int branch) con
         return node;
 
     node = fetchNode (parent->getChildHash (branch));
-    if (!node)
+    if (!node || isInconsistentNode(node))
         return nullptr;
 
     node = parent->canonicalizeChild (branch, std::move(node));
@@ -452,6 +458,8 @@ SHAMap::descend (SHAMapInnerNode * parent, SHAMapNodeID const& parentID,
     if (!child)
     {
         std::shared_ptr<SHAMapAbstractNode> childNode = fetchNodeNT (childHash, filter);
+        if (isInconsistentNode(childNode))
+            childNode = nullptr;
 
         if (childNode)
         {
@@ -518,6 +526,8 @@ SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
         }
     }
 
+    if (isInconsistentNode(ptr))
+        ptr = nullptr;
     if (ptr)
         ptr = parent->canonicalizeChild (branch, std::move(ptr));
 
@@ -561,7 +571,8 @@ SHAMap::firstBelow(std::shared_ptr<SHAMapAbstractNode> node,
     {
         if (is_v2())
         {
-            auto inner2 = std::static_pointer_cast<SHAMapInnerNodeV2>(inner);
+            auto inner2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(inner);
+            assert(inner2 != nullptr);
             stack.push({inner2, {inner2->depth(), inner2->common()}});
         }
         else
@@ -1373,7 +1384,20 @@ SHAMap::invariants() const
     auto node = root_.get();
     assert(node != nullptr);
     assert(!node->isLeaf());
+    SharedPtrNodeStack stack;
+    for (auto leaf = peekFirstItem(stack); leaf != nullptr;
+         leaf = peekNextItem(leaf->peekItem()->key(), stack))
+        ;
     node->invariants(is_v2(), true);
+}
+
+bool
+SHAMap::isInconsistentNode(std::shared_ptr<SHAMapAbstractNode> const& node) const
+{
+    if (std::dynamic_pointer_cast<SHAMapTreeNode>(node) != nullptr)
+        return false;
+    bool is_node_v2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(node) != nullptr;
+    return is_v2() != is_node_v2;
 }
 
 } // ripple

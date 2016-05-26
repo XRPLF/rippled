@@ -166,7 +166,7 @@ public:
     void shareChild (int m, std::shared_ptr<SHAMapAbstractNode> const& child);
     SHAMapAbstractNode* getChildPointer (int branch);
     std::shared_ptr<SHAMapAbstractNode> getChild (int branch);
-    std::shared_ptr<SHAMapAbstractNode>
+    virtual std::shared_ptr<SHAMapAbstractNode>
         canonicalizeChild (int branch, std::shared_ptr<SHAMapAbstractNode> node);
 
     // sync functions
@@ -212,6 +212,8 @@ public:
     uint256 const& key() const override;
     void setChildren(std::shared_ptr<SHAMapTreeNode> const& child1,
                      std::shared_ptr<SHAMapTreeNode> const& child2);
+    std::shared_ptr<SHAMapAbstractNode>
+        canonicalizeChild (int branch, std::shared_ptr<SHAMapAbstractNode> node) override;
     void invariants(bool is_v2, bool is_root = false) const override;
 
     friend std::shared_ptr<SHAMapAbstractNode>

@@ -53,5 +53,6 @@ uint256 const featureFeeEscalation = feature("FeeEscalation");
 uint256 const featureFlowV2 = feature("FlowV2");
 uint256 const featureOwnerPaysFee = feature("OwnerPaysFee");
 uint256 const featureCompareFlowV1V2 = feature("CompareFlowV1V2");
+uint256 const featureSHAMapV2 = feature("SHAMapV2");
 
 } // ripple
