@@ -26,6 +26,7 @@
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/core/ReportUncaughtException.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
@@ -333,8 +334,15 @@ public:
 
     //------------------------------------------------------------------------------
 
-    // Entry point for async read threads
+    // Uncaught exception handling for async read threads
     void threadEntry ()
+    {
+        reportUncaughtException (
+            this, &DatabaseImp::threadEntryImpl, "DatabaseImp::threadEntry()");
+    }
+
+    // Entry point for async read threads
+    void threadEntryImpl ()
     {
         beast::Thread::setCurrentThreadName ("prefetch");
         while (1)

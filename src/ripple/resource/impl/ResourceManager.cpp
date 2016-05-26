@@ -22,6 +22,7 @@
 #include <ripple/resource/impl/Logic.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/core/ReportUncaughtException.h>
 #include <ripple/beast/core/Thread.h>
 #include <condition_variable>
 #include <memory>
@@ -112,6 +113,12 @@ public:
 
 private:
     void run ()
+    {
+        reportUncaughtException (
+            this, &ManagerImp::runImpl, "Resource::Manager::run()");
+    }
+
+    void runImpl ()
     {
         beast::Thread::setCurrentThreadName ("Resource::Manager");
         for(;;)

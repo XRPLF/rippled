@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/core/impl/Workers.h>
+#include <ripple/core/ReportUncaughtException.h>
 #include <ripple/beast/unit_test.h>
 #include <cassert>
 
@@ -156,6 +157,16 @@ Workers::Worker::~Worker ()
 }
 
 void Workers::Worker::run ()
+{
+    // Call runImpl() and report if any exceptions escape runImpl.
+    reportUncaughtException (this, &Workers::Worker::runImpl,
+        "Workers::Worker::run()", [this] ()
+            {
+                return "Thread: " + Thread::getThreadName();
+            });
+}
+
+void Workers::Worker::runImpl ()
 {
     while (! threadShouldExit ())
     {

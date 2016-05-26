@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/Job.h>
+#include <ripple/core/ReportUncaughtException.h>
 #include <cassert>
 
 namespace ripple {
@@ -76,14 +77,15 @@ bool Job::shouldCancel () const
 
 void Job::doJob ()
 {
-    m_loadEvent->start ();
-    m_loadEvent->reName (mName);
-
-    mJob (*this);
-
-    // Destroy the lambda, otherwise we won't include
-    // its duration in the time measurement
-    mJob = std::function<void(Job&)>();
+    reportUncaughtException (this, &Job::doJobImpl, "Job::doJob()",
+        [this] ()
+        {
+            std::stringstream ss;
+            ss << "Job name: " << this->mName
+                << "; Job type: " << this->mType
+                << "; Job info: " << this->mJob.target_type().name();
+            return ss.str();
+        });
 }
 
 void Job::rename (std::string const& newName)
@@ -133,6 +135,18 @@ bool Job::operator<= (const Job& j) const
         return true;
 
     return mJobIndex <= j.mJobIndex;
+}
+
+void Job::doJobImpl ()
+{
+    m_loadEvent->start ();
+    m_loadEvent->reName (mName);
+
+    mJob (*this);
+
+    // Destroy the lambda, otherwise we won't include
+    // its duration in the time measurement
+    mJob = std::function<void(Job&)>();
 }
 
 }
