@@ -364,17 +364,20 @@ public:
     DebugSink(DebugSink&&) = delete;
     DebugSink& operator=(DebugSink&&) = delete;
 
-    void
+    std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
         std::lock_guard<std::mutex> _(m_);
 
-        holder_ = std::move(sink);
+        using std::swap;
+        swap (holder_, sink);
 
         if (holder_)
             sink_ = *holder_;
         else
             sink_ = beast::Journal::getNullSink();
+
+        return sink;
     }
 
     beast::Journal::Sink&
@@ -393,11 +396,11 @@ debugSink()
     return _;
 }
 
-void
+std::unique_ptr<beast::Journal::Sink>
 setDebugLogSink(
     std::unique_ptr<beast::Journal::Sink> sink)
 {
-    debugSink().set(std::move(sink));
+    return debugSink().set(std::move(sink));
 }
 
 beast::Journal::Stream

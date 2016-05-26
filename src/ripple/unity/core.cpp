@@ -35,5 +35,6 @@
 #include <ripple/core/tests/Config.test.cpp>
 #include <ripple/core/tests/Coroutine.test.cpp>
 #include <ripple/core/tests/LoadFeeTrack.test.cpp>
+#include <ripple/core/tests/ReportUncaughtException.test.cpp>
 #include <ripple/core/tests/Stoppable.test.cpp>
 

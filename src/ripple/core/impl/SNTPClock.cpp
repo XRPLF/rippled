@@ -18,12 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/core/impl/SNTPClock.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/ThreadName.h>
 #include <ripple/basics/random.h>
-#include <ripple/core/impl/SNTPClock.h>
-#include <beast/core/placeholders.hpp>
 #include <ripple/beast/core/Thread.h>
+#include <ripple/core/ReportUncaughtException.h>
+#include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <cmath>
@@ -203,7 +204,12 @@ public:
     void doRun ()
     {
         setCallingThreadName("SNTPClock");
-        io_service_.run();
+
+        // Get the address of an overloaded asio method
+        using Pio_service_mem = std::size_t (boost::asio::io_service::*)();
+        Pio_service_mem pRun = &boost::asio::io_service::run;
+
+        reportUncaughtException (&io_service_, pRun, "SNTPClientImp::doRun()");
     }
 
     void

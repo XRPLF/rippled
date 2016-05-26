@@ -114,7 +114,7 @@ private:
 
         Active: Running the task processing loop.
         Idle:   Active, but blocked on waiting for a task.
-        Pausd:  Blocked waiting to exit or become active.
+        Paused: Blocked waiting to exit or become active.
     */
     class Worker
         : public beast::LockFreeStack <Worker>::Node
@@ -127,7 +127,8 @@ private:
         ~Worker ();
 
     private:
-        void run ();
+        void run () override;
+        void runImpl ();
 
     private:
         Workers& m_workers;

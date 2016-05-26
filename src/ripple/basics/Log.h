@@ -249,8 +249,12 @@ private:
 //------------------------------------------------------------------------------
 // Debug logging:
 
-/** Set the sink for the debug journal. */
-void
+/** Set the sink for the debug journal.
+
+    @param sink unique_ptr to new debug Sink.
+    @return unique_ptr to the previous Sink.  nullptr if there was no Sink.
+*/
+std::unique_ptr<beast::Journal::Sink>
 setDebugLogSink(
     std::unique_ptr<beast::Journal::Sink> sink);
 

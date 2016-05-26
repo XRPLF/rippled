@@ -25,6 +25,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/ReportUncaughtException.h>
 #include <boost/format.hpp>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
@@ -296,6 +297,13 @@ SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
 
 void
 SHAMapStoreImp::run()
+{
+    reportUncaughtException (
+        this, &SHAMapStoreImp::runImpl, "SHAMapStoreImp::run()");
+}
+
+void
+SHAMapStoreImp::runImpl()
 {
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();

@@ -2592,6 +2592,9 @@
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\ReportUncaughtException.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
@@ -2605,6 +2608,9 @@
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\LoadFeeTrack.test.cpp">
+      <Filter>ripple\core\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\tests\ReportUncaughtException.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\SociDB.test.cpp">
