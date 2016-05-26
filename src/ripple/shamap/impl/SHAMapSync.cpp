@@ -262,7 +262,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             auto const& nodeHash = parent->getChildHash (branch);
 
             auto nodePtr = fetchNodeNT(nodeHash, filter);
-            if (nodePtr)
+            if (nodePtr && !isInconsistentNode(nodePtr))
             {
                 ++hits;
                 if (backed_)
@@ -523,15 +523,18 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
                 return SHAMapAddNode::useful ();
             }
 
-#ifndef NDEBUG
-            if (newNode && newNode->isInner())
+            if (newNode && isInconsistentNode(newNode))
             {
-                bool isv2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) != nullptr;
-                assert(isv2 == is_v2());
+                return SHAMapAddNode::invalid();
             }
-#endif
+
             if (backed_)
+            {
+                auto temp = newNode;
                 canonicalize (childHash, newNode);
+                if (isInconsistentNode(newNode))
+                    newNode = temp;
+            }
             newNode = prevNode->canonicalizeChild (branch, std::move(newNode));
 
             if (filter)

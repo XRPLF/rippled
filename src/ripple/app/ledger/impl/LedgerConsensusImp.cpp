@@ -981,11 +981,13 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         auto buildLCL = std::make_shared<Ledger>(
             *mPreviousLedger,
             app_.timeKeeper().closeTime());
-        auto constexpr v2_ledger_seq_switch = 40'000'000;
-        if (buildLCL->info().seq > v2_ledger_seq_switch &&
-           !buildLCL->stateMap().is_v2())
+        auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2,
+                                                       app_.config().features);
+        auto v2_transition = false;
+        if (v2_enabled && !buildLCL->stateMap().is_v2())
         {
             buildLCL->make_v2();
+            v2_transition = true;
         }
 
         // Set up to write SHAMap changes to our database,
@@ -1022,15 +1024,10 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 
         buildLCL->updateSkipList ();
 
-        // unshare in case a nodestore load changed the
-        // version back, otherwise the map is inconsistent
-        if (buildLCL->info().seq > v2_ledger_seq_switch &&
-            !buildLCL->stateMap().is_v2())
         {
-            buildLCL->unshare();
-        }
+            // Write the final version of all modified SHAMap
+            // nodes to the node store to preserve the new LCL
 
-        {
             int asf = buildLCL->stateMap().flushDirty (
                 hotACCOUNT_NODE, buildLCL->info().seq);
             int tmf = buildLCL->txMap().flushDirty (
@@ -1039,6 +1036,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                 asf << " accounts and " <<
                 tmf << " transaction nodes";
         }
+        buildLCL->unshare();
 
         // Accept ledger
         buildLCL->setAccepted(closeTime, mCloseResolution,

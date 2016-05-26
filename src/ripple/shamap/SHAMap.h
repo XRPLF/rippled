@@ -315,6 +315,7 @@ private:
                      std::shared_ptr<SHAMapItem const> const& otherMapItem,
                      bool isFirstMap, Delta & differences, int & maxCount) const;
     int walkSubTree (bool doWrite, NodeObjectType t, std::uint32_t seq);
+    bool isInconsistentNode(std::shared_ptr<SHAMapAbstractNode> const& node) const;
 };
 
 inline

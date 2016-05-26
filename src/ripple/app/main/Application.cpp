@@ -1006,7 +1006,7 @@ bool ApplicationImp::setup()
         enabledAmendments.append (detail::preEnabledAmendments ());
 
         m_amendmentTable = make_AmendmentTable (
-            weeks(2),
+            weeks{2},
             MAJORITY_FRACTION,
             supportedAmendments,
             enabledAmendments,
