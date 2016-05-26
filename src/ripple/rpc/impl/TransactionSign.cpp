@@ -34,8 +34,8 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/KeypairForSignature.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <algorithm>
 #include <iterator>

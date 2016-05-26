@@ -25,7 +25,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
-#include <ripple/rpc/KeypairForSignature.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 

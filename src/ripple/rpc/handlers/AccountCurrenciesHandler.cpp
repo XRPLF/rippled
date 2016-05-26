@@ -23,8 +23,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/rpc/impl/AccountFromString.h>
-#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 

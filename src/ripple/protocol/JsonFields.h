@@ -206,15 +206,15 @@ JSS ( latency );                    // out: PeerImp
 JSS ( last );                       // out: RPCVersion
 JSS ( last_close );                 // out: NetworkOPs
 JSS ( ledger );                     // in: NetworkOPs, LedgerCleaner,
-                                    //     LookupLedger
+                                    //     RPCHelpers
                                     // out: NetworkOPs, PeerImp
-JSS ( ledger_current_index );       // out: NetworkOPs, LookupLedger,
+JSS ( ledger_current_index );       // out: NetworkOPs, RPCHelpers,
                                     //      LedgerCurrent, LedgerAccept
 JSS ( ledger_data );                // out: LedgerHeader
-JSS ( ledger_hash );                // in: LookupLedger, LedgerRequest,
+JSS ( ledger_hash );                // in: RPCHelpers, LedgerRequest,
                                     //     RipplePathFind, TransactionEntry,
                                     //     handlers/Ledger
-                                    // out: NetworkOPs, LookupLedger,
+                                    // out: NetworkOPs, RPCHelpers,
                                     //      LedgerClosed, LedgerData
 JSS ( ledger_hit_rate );            // out: GetCounts
 JSS ( ledger_index );               // in/out: many
@@ -412,7 +412,7 @@ JSS ( url_password );               // in: Subscribe
 JSS ( url_username );               // in: Subscribe
 JSS ( urlgravatar );                //
 JSS ( username );                   // in: Subscribe
-JSS ( validated );                  // out: NetworkOPs, LookupLedger, AccountTx*
+JSS ( validated );                  // out: NetworkOPs, RPCHelpers, AccountTx*
                                     //      Tx
 JSS ( validated_ledger );           // out: NetworkOPs
 JSS ( validated_ledgers );          // out: NetworkOPs

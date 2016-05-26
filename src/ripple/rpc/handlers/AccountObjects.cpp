@@ -27,11 +27,8 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/AccountFromString.h>
-#include <ripple/rpc/impl/GetAccountObjects.h>
-#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <ripple/rpc/impl/Utilities.h>
 
 #include <string>
 #include <sstream>

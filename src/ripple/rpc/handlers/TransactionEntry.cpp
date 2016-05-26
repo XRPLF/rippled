@@ -19,9 +19,10 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/LookupLedger.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
