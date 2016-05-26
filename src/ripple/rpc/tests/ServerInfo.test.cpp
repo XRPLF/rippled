@@ -71,14 +71,14 @@ public:
         {
             Env env(*this);
             auto const result = env.rpc("server_info", "1");
-            expect (!RPC::contains_error(result[jss::result]));
+            expect (!result[jss::result].isMember (jss::error));
             expect (result[jss::status] == "success");
             expect (result[jss::result].isMember(jss::info));
         }
         {
             Env env(*this, makeValidatorConfig());
             auto const result = env.rpc("server_info", "1");
-            expect (!RPC::contains_error(result[jss::result]));
+            expect (!result[jss::result].isMember (jss::error));
             expect (result[jss::status] == "success");
             expect (result[jss::result].isMember(jss::info));
             expect(result[jss::result][jss::info]
