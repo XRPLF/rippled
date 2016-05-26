@@ -71,26 +71,26 @@ public:
         {
             Env env(*this);
             auto const result = env.rpc("server_info", "1");
-            expect(!RPC::contains_error(result[jss::result]) &&
-                result[jss::status] == "success" &&
-                result[jss::result].isMember(jss::info));
+            expect (!RPC::contains_error(result[jss::result]));
+            expect (result[jss::status] == "success");
+            expect (result[jss::result].isMember(jss::info));
         }
         {
             Env env(*this, makeValidatorConfig());
             auto const result = env.rpc("server_info", "1");
-            expect(!RPC::contains_error(result[jss::result]) &&
-                result[jss::status] == "success" &&
-                result[jss::result].isMember(jss::info) &&
-                result[jss::result][jss::info]
-                    [jss::pubkey_validator] == validator::signing_key &&
-                result[jss::result][jss::info].isMember(
-                    jss::validation_manifest) &&
-                result[jss::result][jss::info][jss::validation_manifest]
-                    [jss::master_key] == validator::master_key &&
-                result[jss::result][jss::info][jss::validation_manifest]
-                    [jss::signing_key] == validator::signing_key &&
-                result[jss::result][jss::info][jss::validation_manifest]
-                    [jss::seq] == validator::sequence);
+            expect (!RPC::contains_error(result[jss::result]));
+            expect (result[jss::status] == "success");
+            expect (result[jss::result].isMember(jss::info));
+            expect(result[jss::result][jss::info]
+                [jss::pubkey_validator] == validator::signing_key);
+            expect (result[jss::result][jss::info].isMember(
+                jss::validation_manifest));
+            expect (result[jss::result][jss::info][jss::validation_manifest]
+                [jss::master_key] == validator::master_key);
+            expect (result[jss::result][jss::info][jss::validation_manifest]
+                [jss::signing_key] == validator::signing_key);
+            expect (result[jss::result][jss::info][jss::validation_manifest]
+                [jss::seq] == validator::sequence);
         }
     }
 
