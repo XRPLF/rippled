@@ -78,7 +78,7 @@ ApplyStateTable::visit (ReadView const& to,
         uint256 const& key,
         bool isDelete,
         std::shared_ptr <SLE const> const& before,
-        std::shared_ptr <SLE const> const& after)> const& func)
+        std::shared_ptr <SLE const> const& after)> const& func) const
 {
     for (auto& item : items_)
     {

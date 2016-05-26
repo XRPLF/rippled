@@ -96,7 +96,7 @@ public:
             uint256 const& key,
             bool isDelete,
             std::shared_ptr <SLE const> const& before,
-            std::shared_ptr <SLE const> const& after)> const& func);
+            std::shared_ptr <SLE const> const& after)> const& func) const;
 
     void
     erase (ReadView const& base,
@@ -120,6 +120,12 @@ public:
 
     void
     destroyXRP (XRPAmount const& fee);
+
+    // For debugging
+    XRPAmount const& dropsDestroyed () const
+    {
+        return dropsDestroyed_;
+    }
 
 private:
     using Mods = hash_map<key_type,
