@@ -34,8 +34,8 @@ namespace ripple {
 NetClock::time_point const& flowV2SoTime ()
 {
     using namespace std::chrono_literals;
-    // Mon Aug 29, 2016 10:00:00am PDT
-    static NetClock::time_point const soTime{525805200s};
+    // Wed May 26, 2016 07:00:00am PDT
+    static NetClock::time_point const soTime{517586400s};
     return soTime;
 }
 
