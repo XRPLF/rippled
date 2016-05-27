@@ -145,8 +145,6 @@ private:
     }
 };
 
-#if ! GENERATING_DOCS
-
 /// A typical HTTP request
 template<class Body,
     class Headers = basic_headers<std::allocator<char>>>
@@ -156,8 +154,6 @@ using request = message<true, Body, Headers>;
 template<class Body,
     class Headers = basic_headers<std::allocator<char>>>
 using response = message<false, Body, Headers>;
-
-#endif
 
 } // http
 } // beast

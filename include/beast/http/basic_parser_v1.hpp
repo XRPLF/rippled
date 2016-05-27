@@ -373,14 +373,14 @@ public:
         @return The number of bytes consumed in the input sequence.
     */
     template<class ConstBufferSequence>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     std::size_t
-    #else
+#else
     typename std::enable_if<
         ! std::is_convertible<ConstBufferSequence,
             boost::asio::const_buffer>::value,
                 std::size_t>::type
-    #endif
+#endif
     write(ConstBufferSequence const& buffers, error_code& ec);
 
     /** Write a single buffer of data to the parser.

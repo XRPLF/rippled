@@ -50,8 +50,6 @@ struct message_v1 : message<isRequest, Body, Headers>
     }
 };
 
-#if ! GENERATING_DOCS
-
 /// A typical HTTP/1 request
 template<class Body,
     class Headers = basic_headers<std::allocator<char>>>
@@ -61,8 +59,6 @@ using request_v1 = message_v1<true, Body, Headers>;
 template<class Body,
     class Headers = basic_headers<std::allocator<char>>>
 using response_v1 = message_v1<false, Body, Headers>;
-
-#endif
 
 /// Returns `true` if a HTTP/1 message indicates a keep alive
 template<bool isRequest, class Body, class Headers>

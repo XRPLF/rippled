@@ -95,12 +95,12 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
-#if GENERATING_DOCS
+    #if GENERATING_DOCS
         implementation_defined;
-#else
+    #else
         typename beast::detail::get_lowest_layer<
             next_layer_type>::type;
-#endif
+    #endif
 
     /** Move-construct a stream.
 
@@ -404,12 +404,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class AcceptHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_accept(AcceptHandler&& handler);
 
     /** Read and respond to a WebSocket HTTP Upgrade request.
@@ -530,12 +530,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class ConstBufferSequence, class AcceptHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_accept(ConstBufferSequence const& buffers,
         AcceptHandler&& handler);
 
@@ -647,12 +647,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class Body, class Headers, class AcceptHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_accept(http::request_v1<Body, Headers> const& request,
         AcceptHandler&& handler);
 
@@ -784,12 +784,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class HandshakeHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         HandshakeHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_handshake(boost::string_ref const& host,
         boost::string_ref const& resource, HandshakeHandler&& h);
 
@@ -895,12 +895,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class CloseHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         CloseHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_close(close_reason const& cr, CloseHandler&& handler);
 
     /** Send a WebSocket ping frame.
@@ -973,12 +973,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class PingHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         PingHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_ping(ping_data const& payload, PingHandler&& handler);
 
     /** Read a message from the stream.
@@ -1103,12 +1103,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class Streambuf, class ReadHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_read(opcode& op,
         Streambuf& streambuf, ReadHandler&& handler);
 
@@ -1243,12 +1243,12 @@ public:
         manner equivalent to using boost::asio::io_service::post().
     */
     template<class Streambuf, class ReadHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_read_frame(frame_info& fi,
         Streambuf& streambuf, ReadHandler&& handler);
 
@@ -1369,12 +1369,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class ConstBufferSequence, class WriteHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_write(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -1478,12 +1478,12 @@ public:
         ); @endcode
     */
     template<class ConstBufferSequence, class WriteHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_write_frame(bool fin,
         ConstBufferSequence const& buffers, WriteHandler&& handler);
 

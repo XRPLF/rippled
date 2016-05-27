@@ -7,11 +7,7 @@ Boost.Http
 Docs:
 * Include Example program listings in the docs
 * Fix index in docs
-* Figure out why namespace rfc2616 is included in docs
-  (currently disabled via GENERATING_DOCS macro)
 * melpon sandbox?
-* Check DOXYGEN, GENERATIC_DOCS directives in source
-  - See if we can include them now that xsl is fixed
 * Implement cleanup-param to remove spaces around template arguments
   e.g. in basic_streambuf move constructor members
 * Don't put using namespace at file scope in examples,
@@ -23,15 +19,12 @@ Core:
 * Complete allocator testing in basic_streambuf
 
 WebSocket:
+* more invokable unit test coverage
+* More control over the HTTP request and response during handshakes
 * optimized versions of key/masking, choose prepared_key size
-* invokable unit test
-* Don't try to read requests into empty_body
 * Give callers control over the http request/response used during handshake
 * Investigate poor autobahn results in Debug builds
 * Fall through composed operation switch cases
-* Replace stream::error_ with stream::state_, example states: ok, error, abort_io
-  Need a cancel state so waking up a ping stored in invokable knows to call the
-  final handler with operation_aborted
 * Use close_code::no_code instead of close_code::none
 * Make request_type, response_type public APIs,
   use in stream member function signatures
@@ -56,8 +49,5 @@ HTTP:
 * Complete allocator testing in basic_streambuf, basic_headers
 * Add tests for writer using the resume function / coros
 * Custom HTTP error codes for various situations
-* Make empty_body write-only, remove reader nested type
-* Add concepts WritableBody ReadableBody with type checks,
-  check them in read and write functions
 * Branch prediction hints in parser
 * Check basic_parser_v1 against rfc7230 for leading message whitespace

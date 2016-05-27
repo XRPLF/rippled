@@ -1,6 +1,8 @@
 1.0.0-b6
 
+* Add HTTP field value parsers
 * Use SFINAE on return values
 * Use beast::error_code instead of nested types
+* Tidy up use of GENERATING_DOCS
 
 --------------------------------------------------------------------------------
