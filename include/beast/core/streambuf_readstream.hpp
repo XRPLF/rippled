@@ -93,8 +93,6 @@ class streambuf_readstream
     static_assert(is_Streambuf<Streambuf>::value,
         "Streambuf requirements not met");
 
-    using error_code = boost::system::error_code;
-
     template<class Buffers, class Handler>
     class read_some_op;
 
