@@ -18,8 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
@@ -29,13 +30,20 @@ namespace ripple
     Json::Value doFee(RPC::Context& context)
     {
         // Bail if fee escalation is not enabled.
-        if (!context.app.getLedgerMaster().getValidatedRules().
-            enabled(featureFeeEscalation, context.app.config().features))
+        auto const view = context.app.openLedger().current();
+        if (!view || !view->rules().
+            enabled(featureFeeEscalation,
+                context.app.config().features))
         {
             RPC::inject_error(rpcNOT_ENABLED, context.params);
             return context.params;
         }
 
-        return context.app.getTxQ().doRPC(context.app);
+        auto result = context.app.getTxQ().doRPC(context.app);
+        if (result.type() == Json::objectValue)
+            return result;
+        assert(false);
+        RPC::inject_error(rpcINTERNAL, context.params);
+        return context.params;
     }
 } // ripple
