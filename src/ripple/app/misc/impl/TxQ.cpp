@@ -1151,6 +1151,7 @@ TxQ::doRPC(Application& app) const
 
     auto const view = app.openLedger().current();
     auto const metrics = getMetrics(app, *view);
+    assert(metrics);
     if (!metrics)
         return{};
 
