@@ -1,9 +1,5 @@
 * Add writer::prepare(msg&) interface to set Content-Type
 
-General:
-* Use SFINAE on return values (search for "class =")
-* Remove http,websocket error_code types and use the one in <beast/error.hpp>
-
 Boost.Http
 * Use enum instead of bool in isRequest
 * move version to a subclass of message

@@ -1,3 +1,6 @@
 1.0.0-b6
 
+* Use SFINAE on return values
+* Use beast::error_code instead of nested types
+
 --------------------------------------------------------------------------------

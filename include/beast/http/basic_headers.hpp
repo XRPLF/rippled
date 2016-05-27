@@ -401,10 +401,9 @@ public:
         If a field value already exists the new value will be
         extended as per RFC2616 Section 4.2.
     */
-    template<class T,
-        class = typename std::enable_if<
-            ! std::is_constructible<boost::string_ref, T>::value>::type>
-    void
+    template<class T>
+    typename std::enable_if<
+        ! std::is_constructible<boost::string_ref, T>::value>::type
     insert(boost::string_ref name, T const& value)
     {
         insert(name,
@@ -414,7 +413,7 @@ public:
     /** Replace a field value.
 
         The current field value, if any, is removed. Then the
-        specified value is inserted as if by insert(field, value).
+        specified value is inserted as if by `insert(field, value)`.
     */
     void
     replace(boost::string_ref const& name,
@@ -423,12 +422,11 @@ public:
     /** Replace a field value.
 
         The current field value, if any, is removed. Then the
-        specified value is inserted as if by insert(field, value).
+        specified value is inserted as if by `insert(field, value)`.
     */
-    template<class T,
-        class = typename std::enable_if<
-            ! std::is_constructible<boost::string_ref, T>::value>::type>
-    void
+    template<class T>
+    typename std::enable_if<
+        ! std::is_constructible<boost::string_ref, T>::value>::type
     replace(boost::string_ref const& name, T const& value)
     {
         replace(name,
