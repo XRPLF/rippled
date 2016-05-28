@@ -14,13 +14,6 @@ env:
 packages: &gcc5_pkgs
   - gcc-5
   - g++-5
-  # - gcc-5-multilib
-  # - g++-5-multilib
-  # - gcc-multilib
-  # - g++-multilib
-  # - libgd2-xpm
-  # - ia32-libs
-  # - ia32-libs-multiarch
   - python-software-properties
   - libssl-dev
   - libffi-dev
@@ -52,20 +45,7 @@ packages: &clang38_pkgs
 
 matrix:
   include:
-    # GCC/Debug
-    # - compiler: gcc
-    #   env: GCC_VER=5 VARIANT=debug ADDRESS_MODEL=64
-    #   addons: &ao_gcc5
-    #     apt:
-    #       sources: ['ubuntu-toolchain-r-test']
-    #       packages: *gcc5_pkgs
-
-    # # GCC/Release
-    # - compiler: gcc
-    #   env: GCC_VER=5 VARIANT=release ADDRESS_MODEL=64
-    #   addons: *ao_gcc5
-
-    # Coverage
+    # GCC/Coverage
     - compiler: gcc
       env: GCC_VER=5 VARIANT=coverage ADDRESS_MODEL=64
       addons: &ao_gcc5
@@ -73,36 +53,25 @@ matrix:
           sources: ['ubuntu-toolchain-r-test']
           packages: *gcc5_pkgs
 
-    # # Clang/Debug
-    # - compiler: clang
-    #   env: GCC_VER=5 VARIANT=debug CLANG_VER=3.8 ADDRESS_MODEL=64
-    #   addons: &ao_clang38
-    #     apt:
-    #       sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
-    #       packages: *clang38_pkgs
+    # # GCC/Debug
+    # - compiler: gcc
+    #   env: GCC_VER=5 VARIANT=debug ADDRESS_MODEL=64
+    #   addons: *ao_gcc5
+    #   branches: # NOTE: this does NOT work, though it SHOULD
+    #     - master
+    #     - develop
 
-    # # Clang/Release
-    # - compiler: clang
-    #   env: GCC_VER=5 VARIANT=release CLANG_VER=3.8 ADDRESS_MODEL=64
-    #   addons: *ao_clang38
-
-    # Clang/AddressSanitizer
+    # Clang/UndefinedBehaviourSanitizer
     - compiler: clang
-      env: GCC_VER=5 VARIANT=asan CLANG_VER=3.8 ADDRESS_MODEL=64
+      env: GCC_VER=5 VARIANT=usan CLANG_VER=3.8 ADDRESS_MODEL=64 UBSAN_OPTIONS='print_stacktrace=1'
       addons: &ao_clang38
         apt:
           sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
           packages: *clang38_pkgs
 
-    # Clang/MemorySanitizer
-    # VFALCO Generates false positives unless libc++ is compiled with msan turned on
-    #- compiler: clang
-    #  env: GCC_VER=5 VARIANT=msan CLANG_VER=3.8 ADDRESS_MODEL=64 MSAN_OPTIONS=poison_in_dtor=1,sanitize-memory-track-origins=2
-    #  addons: *ao_clang38
-
-    # Clang/UndefinedBehaviourSanitizer
+    # Clang/AddressSanitizer
     - compiler: clang
-      env: GCC_VER=5 VARIANT=usan CLANG_VER=3.8 ADDRESS_MODEL=64
+      env: GCC_VER=5 VARIANT=asan CLANG_VER=3.8 ADDRESS_MODEL=64
       addons: *ao_clang38
 
 cache:

@@ -1,4 +1,4 @@
-#!/bin/bash -u
+#!/usr/bin/env bash
 # Assumptions:
 # 1) BOOST_ROOT and BOOST_URL are already defined,
 # and contain valid values.
@@ -6,7 +6,7 @@
 # folder name internal to boost's .tar.gz
 # When testing you can force a boost build by clearing travis caches:
 # https://travis-ci.org/ripple/rippled/caches
-set -e
+set -eu
 if [ ! -d "$BOOST_ROOT/lib" ]
 then
   wget $BOOST_URL -O /tmp/boost.tar.gz
