@@ -48,7 +48,31 @@ struct message_v1 : message<isRequest, Body, Headers>
             std::forward<Argn>(argn)...)
     {
     }
+
+    /// Swap this message for another message.
+    void
+    swap(message_v1& other);
 };
+
+template<bool isRequest, class Body, class Headers>
+void
+message_v1<isRequest, Body, Headers>::
+swap(message_v1& other)
+{
+    using std::swap;
+    message<isRequest, Body, Headers>::swap(other);
+    swap(version, other.version);
+}
+
+/// Swap one message for another message.
+template<bool isRequest, class Body, class Headers>
+inline
+void
+swap(message_v1<isRequest, Body, Headers>& lhs,
+    message_v1<isRequest, Body, Headers>& rhs)
+{
+    lhs.swap(rhs);
+}
 
 /// A typical HTTP/1 request
 template<class Body,

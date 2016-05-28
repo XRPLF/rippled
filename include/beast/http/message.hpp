@@ -24,12 +24,30 @@ struct request_fields
 {
     std::string method;
     std::string url;
+
+protected:
+    void
+    swap(request_fields& other)
+    {
+        using std::swap;
+        swap(method, other.method);
+        swap(url, other.url);
+    }
 };
 
 struct response_fields
 {
     int status;
     std::string reason;
+
+protected:
+    void
+    swap(response_fields& other)
+    {
+        using std::swap;
+        swap(status, other.status);
+        swap(reason, other.reason);
+    }
 };
 
 } // detail
@@ -125,7 +143,14 @@ struct message
     {
     }
 
+    /// Swap this message for another message.
+    void
+    swap(message& other);
+
 private:
+    using base = typename std::conditional<isRequest,
+        detail::request_fields, detail::response_fields>::type;
+
     template<class... Un, size_t... IUn>
     message(std::piecewise_construct_t,
             std::tuple<Un...>& tu, beast::detail::index_sequence<IUn...>)
@@ -144,6 +169,27 @@ private:
     {
     }
 };
+
+template<bool isRequest, class Body, class Headers>
+void
+message<isRequest, Body, Headers>::
+swap(message& other)
+{
+    using std::swap;
+    base::swap(other);
+    swap(headers, other.headers);
+    swap(body, other.body);
+}
+
+/// Swap one message for another message.
+template<bool isRequest, class Body, class Headers>
+inline
+void
+swap(message<isRequest, Body, Headers>& lhs,
+    message<isRequest, Body, Headers>& rhs)
+{
+    lhs.swap(rhs);
+}
 
 /// A typical HTTP request
 template<class Body,

@@ -56,6 +56,7 @@
             <member><link linkend="beast.ref.http__parse">parse</link></member>
             <member><link linkend="beast.ref.http__prepare">prepare</link></member>
             <member><link linkend="beast.ref.http__read">read</link></member>
+            <member><link linkend="beast.ref.http__swap">swap</link></member>
             <member><link linkend="beast.ref.http__write">write</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Constants</bridgehead>
