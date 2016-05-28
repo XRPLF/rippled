@@ -71,7 +71,8 @@ if IS_WINDOWS:
 else:
     ALL_TARGETS = [cc + "." + target
       for cc in ['gcc', 'clang']
-        for target in ['debug', 'release', 'coverage', 'profile']]
+        for target in ['debug', 'release', 'coverage', 'profile',
+                       'debug.nounity', 'release.nounity', 'coverage.nounity', 'profile.nounity']]
 
 # list of tuples of all possible options
 ALL_OPTIONS = list(set(
@@ -247,6 +248,8 @@ def build_and_test_all():
             shutil.rmtree('build')
             if ninja:
                 os.remove('build.ninja')
+                os.remove('.ninja_deps')
+                os.remove('.ninja_log')
 
 
 def main():
