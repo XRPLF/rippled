@@ -11,4 +11,7 @@ API Changes:
 
 * ci_equal is moved to beast::http namespace, in rfc7230.hpp
 
+* "DynamicBuffer","dynabuf" renamed from "Streambuf", "streambuf". See:
+  http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4478.html#requirements.dynamic_buffers
+
 --------------------------------------------------------------------------------

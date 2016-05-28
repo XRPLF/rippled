@@ -86,7 +86,7 @@ public:
 };
 
 template<class T>
-class is_Streambuf
+class is_DynamicBuffer
 {
     template<class U, class R = std::integral_constant<
         bool, is_BufferSequence<decltype(

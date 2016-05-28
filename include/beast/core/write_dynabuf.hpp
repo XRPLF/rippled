@@ -5,20 +5,20 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_WRITE_STREAMBUF_HPP
-#define BEAST_WRITE_STREAMBUF_HPP
+#ifndef BEAST_WRITE_DYNABUF_HPP
+#define BEAST_WRITE_DYNABUF_HPP
 
 #include <beast/core/buffer_concepts.hpp>
-#include <beast/core/detail/write_streambuf.hpp>
+#include <beast/core/detail/write_dynabuf.hpp>
 #include <type_traits>
 #include <utility>
 
 namespace beast {
 
-/** Write to a Streambuf.
+/** Write to a @b `DynamicBuffer`.
 
     This function appends the serialized representation of each provided
-    argument into the stream buffer. It is capable of converting the
+    argument into the dynamic buffer. It is capable of converting the
     following types of arguments:
 
     @li `boost::asio::const_buffer`
@@ -33,29 +33,29 @@ namespace beast {
 
     For all types not listed above, the function will invoke
     `boost::lexical_cast` on the argument in an attempt to convert to
-    a string, which is then appended to the stream buffer.
+    a string, which is then appended to the dynamic buffer.
 
     When this function serializes numbers, it converts them to
     their text representation as if by a call to `std::to_string`.
 
-    @param streambuf The stream buffer to write to.
+    @param dynabuf The dynamic buffer to write to.
 
     @param args A list of one or more arguments to write.
 
     @throws unspecified Any exceptions thrown by `boost::lexical_cast`.
 
     @note This function participates in overload resolution only if
-    the `streambuf` parameter meets the requirements of @b `Streambuf`.
+    the `dynabuf` parameter meets the requirements of @b `DynamicBuffer`.
 */
-template<class Streambuf, class... Args>
+template<class DynamicBuffer, class... Args>
 #if GENERATING_DOCS
 void
 #else
-typename std::enable_if<is_Streambuf<Streambuf>::value>::type
+typename std::enable_if<is_DynamicBuffer<DynamicBuffer>::value>::type
 #endif
-write(Streambuf& streambuf, Args const&... args)
+write(DynamicBuffer& dynabuf, Args const&... args)
 {
-    detail::write_streambuf(streambuf, args...);
+    detail::write_dynabuf(dynabuf, args...);
 }
 
 } // beast

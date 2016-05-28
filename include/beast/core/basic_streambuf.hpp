@@ -18,14 +18,14 @@
 
 namespace beast {
 
-/** A @b `Streambuf` that uses multiple buffers internally.
+/** A @b `DynamicBuffer` that uses multiple buffers internally.
 
     The implementation uses a sequence of one or more character arrays
     of varying sizes. Additional character array objects are appended to
     the sequence to accommodate changes in the size of the character
     sequence.
 
-    @note Meets the requirements of @b Streambuf.
+    @note Meets the requirements of @b `DynamicBuffer`.
 
     @tparam Allocator The allocator to use for managing memory.
 */
@@ -202,26 +202,37 @@ public:
     basic_streambuf(std::size_t alloc_size = 1024,
         Allocator const& alloc = allocator_type{});
 
-    /// Get the associated allocator
+    /// Returns a copy of the associated allocator.
     allocator_type
     get_allocator() const
     {
         return this->member();
     }
 
-    /// Get the maximum size of the basic_streambuf.
+    /// Returns the size of the input sequence.
+    size_type
+    size() const
+    {
+        return in_size_;
+    }
+
+    /// Returns the permitted maximum sum of the sizes of the input and output sequence.
     size_type
     max_size() const
     {
         return std::numeric_limits<std::size_t>::max();
     }
 
-    /// Get the size of the input sequence.
-    size_type
-    size() const
-    {
-        return in_size_;
-    }
+    /// Returns the maximum sum of the sizes of the input sequence and output sequence the buffer can hold without requiring reallocation.
+    std::size_t
+    capacity() const;
+
+    /** Get a list of buffers that represents the input sequence.
+
+        @note These buffers remain valid across subsequent calls to `prepare`.
+    */
+    const_buffers_type
+    data() const;
 
     /** Get a list of buffers that represents the output sequence, with the given size.
 
@@ -239,22 +250,11 @@ public:
     void
     commit(size_type n);
 
-    /** Get a list of buffers that represents the input sequence.
-
-        @note These buffers remain valid across subsequent calls to `prepare`.
-    */
-    const_buffers_type
-    data() const;
-
     /// Remove bytes from the input sequence.
     void
     consume(size_type n);
 
-    /// Clear everything.
-    void
-    clear();
-
-    // Helper for read_until
+    // Helper for boost::asio::read_until
     template<class OtherAllocator>
     friend
     std::size_t
@@ -262,6 +262,9 @@ public:
         OtherAllocator> const& streambuf, std::size_t max_size);
 
 private:
+    void
+    clear();
+
     void
     move_assign(basic_streambuf& other, std::false_type);
 
@@ -277,20 +280,17 @@ private:
     void
     delete_list();
 
-    std::size_t
-    prepare_size() const;
-
     void
     debug_check() const;
 };
 
-/** Format output to a stream buffer.
+/** Format output to a @ref basic_streambuf.
 
-    @param streambuf The streambuf to write to.
+    @param streambuf The @ref basic_streambuf to write to.
 
     @param t The object to write.
 
-    @return The stream buffer.
+    @return A reference to the @ref basic_streambuf.
 */
 template<class Allocator, class T>
 basic_streambuf<Allocator>&

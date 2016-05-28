@@ -182,21 +182,9 @@ used in the examples:
     resp.body = "Here is the data you requested";
 ```
 
-* [link beast.ref.http__basic_streambuf_body [*`basic_streambuf_body`:]] A body with a
-`value_type` of `streambuf`. A streambuf is an efficient storage object which
-uses multiple octet arrays of varying lengths to represent data. Here is
-a body that uses a `boost::asio::streambuf` as its container:
-```
-    template<class ConstBufferSequence>
-    http::response<http::basic_streambuf_body<boost::asio::streambuf>>
-    make_response(ConstBufferSequence const& buffers)
-    {
-        http::response<http::streambuf_body<boost::asio::streambuf>> resp;
-        resp.body.commit(boost::asio::buffer_copy(resp.body.prepare(
-            boost::asio::buffer_size(buffers)), buffers));
-        return resp;
-    }
-```
+* [link beast.ref.http__streambuf_body [*`streambuf_body`:]] A body with a
+`value_type` of [link beast.ref.streambuf `streambuf`]: an efficient storage
+object which uses multiple octet arrays of varying lengths to represent data.
 
 [heading Sockets]
 
@@ -234,7 +222,7 @@ When the implementation reads messages from a socket, it can read bytes lying
 after the end of the message if they are present (the alternative is to read
 a single byte at a time which is unsuitable for performance reasons). To
 store and re-use these extra bytes on subsequent messages, the read interface
-requires an additional paramter: a [link beast.types.Streambuf [*`Streambuf`]]
+requires an additional paramter: a [link beast.types.DynamicBuffer [*`DynamicBuffer`]]
 object. This example reads a message from the socket, with the extra bytes
 stored in the streambuf parameter for use in a subsequent call to read:
 ```
@@ -264,7 +252,7 @@ called:
 
 An alternative to using a `boost::asio::streambuf` is to use a
 [link beast.ref.streambuf `beast::streambuf`], which meets the requirements of
-[*`Streambuf`] and is optimized for performance:
+[*`DynamicBuffer`] and is optimized for performance:
 ```
     void handle_read(boost::system::error_code);
     ...
@@ -274,7 +262,7 @@ An alternative to using a `boost::asio::streambuf` is to use a
 ```
 
 The `read` implementation can use any object meeting the requirements of
-[link beast.types.Streambuf [*`Streambuf`]], allowing callers to define custom
+[link beast.types.DynamicBuffer [*`DynamicBuffer`]], allowing callers to define custom
 memory management strategies used by the implementation.
 
 [endsect]

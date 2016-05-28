@@ -7,6 +7,7 @@ GroupSources(test/http "/")
 add_executable (http-tests
     ${BEAST_INCLUDES}
     ../../extras/beast/unit_test/main.cpp
+    basic_dynabuf_body.cpp
     basic_headers.cpp
     basic_parser_v1.cpp
     body_type.cpp

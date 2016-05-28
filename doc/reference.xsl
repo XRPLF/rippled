@@ -1552,14 +1552,14 @@
     <xsl:when test="declname = 'ConstBufferSequence' or type = 'class ConstBufferSequence'">
       <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/ConstBufferSequence.html [*ConstBufferSequence]]``</xsl:text>
     </xsl:when>
+    <xsl:when test="declname = 'DynamicBuffer' or type = 'class DynamicBuffer'">
+      <xsl:text>class ``[link beast.types.DynamicBuffer [*DynamicBuffer]]``</xsl:text>
+    </xsl:when>
     <xsl:when test="declname = 'MutableBufferSequence' or type = 'class MutableBufferSequence'">
       <xsl:text>class ``[@http://www.boost.org/doc/libs/1_60_0/doc/html/boost_asio/reference/MutableBufferSequence.html [*MutableBufferSequence]]``</xsl:text>
     </xsl:when>
-   <xsl:when test="declname = 'Stream' or type = 'class Stream'">
+    <xsl:when test="declname = 'Stream' or type = 'class Stream'">
       <xsl:text>class ``[link beast.types.streams.Stream [*Stream]]``</xsl:text>
-    </xsl:when>
-    <xsl:when test="declname = 'Streambuf' or type = 'class Streambuf'">
-      <xsl:text>class ``[link beast.types.Streambuf [*Streambuf]]``</xsl:text>
     </xsl:when>
     <xsl:when test="type = 'class SyncStream'">
       <xsl:text>class ``[link beast.types.streams.SyncStream [*SyncStream]]``</xsl:text>

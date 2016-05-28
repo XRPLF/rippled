@@ -15,6 +15,11 @@ Requirements:
 * C++11 or greater
 * OpenSSL (optional)
 
+This software is currently in beta: interfaces are subject to change. For
+recent changes see [CHANGELOG](CHANGELOG).
+The library has been submitted to the
+[Boost Library Incubator](http://rrsd.com/blincubator.com/bi_library/beast-2/?gform_post_id=1579)
+
 Example WebSocket program:
 ```C++
 #include <beast/to_string.hpp>

@@ -17,7 +17,7 @@ namespace websocket {
 // read an entire message
 //
 template<class NextLayer>
-template<class Streambuf, class Handler>
+template<class DynamicBuffer, class Handler>
 class stream<NextLayer>::read_op
 {
     using alloc_type =
@@ -27,7 +27,7 @@ class stream<NextLayer>::read_op
     {
         stream<NextLayer>& ws;
         opcode& op;
-        Streambuf& sb;
+        DynamicBuffer& db;
         Handler h;
         frame_info fi;
         bool cont;
@@ -36,10 +36,10 @@ class stream<NextLayer>::read_op
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
             stream<NextLayer>& ws_, opcode& op_,
-                Streambuf& sb_)
+                DynamicBuffer& sb_)
             : ws(ws_)
             , op(op_)
-            , sb(sb_)
+            , db(sb_)
             , h(std::forward<DeducedHandler>(h_))
             , cont(boost_asio_handler_cont_helpers::
                 is_continuation(h))
@@ -98,9 +98,9 @@ public:
 };
 
 template<class NextLayer>
-template<class Streambuf, class Handler>
+template<class DynamicBuffer, class Handler>
 void
-stream<NextLayer>::read_op<Streambuf, Handler>::
+stream<NextLayer>::read_op<DynamicBuffer, Handler>::
 operator()(error_code const& ec, bool again)
 {
     auto& d = *d_;
@@ -117,9 +117,9 @@ operator()(error_code const& ec, bool again)
             //        the handler is moved from the data block
             //        before asio_handler_deallocate is called.
             d.ws.async_read_frame(
-                d.fi, d.sb, std::move(*this));
+                d.fi, d.db, std::move(*this));
 #else
-            d.ws.async_read_frame(d.fi, d.sb, *this);
+            d.ws.async_read_frame(d.fi, d.db, *this);
 #endif
             return;
 

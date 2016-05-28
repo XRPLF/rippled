@@ -12,7 +12,6 @@
 #include <beast/core/error.hpp>
 #include <beast/core/async_completion.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/system/error_code.hpp>
 
 namespace beast {
 namespace http {
@@ -36,7 +35,7 @@ namespace http {
     @param stream The stream from which the data is to be read.
     The type must support the @b `SyncReadStream` concept.
 
-    @param streambuf A `Streambuf` holding additional bytes
+    @param dynabuf A @b `DynamicBuffer` holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
     stream buffer's input sequence will be given to the parser
@@ -47,10 +46,10 @@ namespace http {
 
     @throws boost::system::system_error on failure.
 */
-template<class SyncReadStream, class Streambuf, class Parser>
+template<class SyncReadStream, class DynamicBuffer, class Parser>
 void
 parse(SyncReadStream& stream,
-    Streambuf& streambuf, Parser& parser);
+    DynamicBuffer& dynabuf, Parser& parser);
 
 /** Parse a HTTP/1 message from a stream.
 
@@ -71,7 +70,7 @@ parse(SyncReadStream& stream,
     @param stream The stream from which the data is to be read.
     The type must support the @b `SyncReadStream` concept.
 
-    @param streambuf A `Streambuf` holding additional bytes
+    @param dynabuf A @b `DynamicBuffer` holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
     stream buffer's input sequence will be given to the parser
@@ -82,10 +81,10 @@ parse(SyncReadStream& stream,
 
     @param ec Set to the error, if any occurred.
 */
-template<class SyncReadStream, class Streambuf, class Parser>
+template<class SyncReadStream, class DynamicBuffer, class Parser>
 void
 parse(SyncReadStream& stream,
-    Streambuf& streambuf, Parser& parser, error_code& ec);
+    DynamicBuffer& dynabuf, Parser& parser, error_code& ec);
 
 /** Start an asynchronous operation to parse a HTTP/1 message from a stream.
 
@@ -106,7 +105,7 @@ parse(SyncReadStream& stream,
     @param stream The stream from which the data is to be read.
     The type must support the @b `AsyncReadStream` concept.
 
-    @param streambuf A `Streambuf` holding additional bytes
+    @param dynabuf A @b `DynamicBuffer` holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
     stream buffer's input sequence will be given to the parser
@@ -128,14 +127,14 @@ parse(SyncReadStream& stream,
     manner equivalent to using `boost::asio::io_service::post`.
 */
 template<class AsyncReadStream,
-    class Streambuf, class Parser, class ReadHandler>
+    class DynamicBuffer, class Parser, class ReadHandler>
 #if GENERATING_DOCS
 void_or_deduced
 #else
 typename async_completion<
     ReadHandler, void(error_code)>::result_type
 #endif
-async_parse(AsyncReadStream& stream, Streambuf& streambuf,
+async_parse(AsyncReadStream& stream, DynamicBuffer& dynabuf,
     Parser& parser, ReadHandler&& handler);
 
 /** Read a HTTP/1 message from a stream.
@@ -157,7 +156,7 @@ async_parse(AsyncReadStream& stream, Streambuf& streambuf,
     @param stream The stream from which the data is to be read.
     The type must support the @b `SyncReadStream` concept.
 
-    @param streambuf A `Streambuf` holding additional bytes
+    @param dynabuf A @b `DynamicBuffer` holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
     stream buffer's input sequence will be given to the parser
@@ -168,10 +167,10 @@ async_parse(AsyncReadStream& stream, Streambuf& streambuf,
 
     @throws boost::system::system_error Thrown on failure.
 */
-template<class SyncReadStream, class Streambuf,
+template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Body, class Headers>
 void
-read(SyncReadStream& stream, Streambuf& streambuf,
+read(SyncReadStream& stream, DynamicBuffer& dynabuf,
     message_v1<isRequest, Body, Headers>& msg);
 
 /** Read a HTTP/1 message from a stream.
@@ -193,7 +192,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     @param stream The stream from which the data is to be read.
     The type must support the @b `SyncReadStream` concept.
 
-    @param streambuf A `Streambuf` holding additional bytes
+    @param dynabuf A @b `DynamicBuffer` holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
     stream buffer's input sequence will be given to the parser
@@ -204,10 +203,10 @@ read(SyncReadStream& stream, Streambuf& streambuf,
 
     @param ec Set to the error, if any occurred.
 */
-template<class SyncReadStream, class Streambuf,
+template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Body, class Headers>
 void
-read(SyncReadStream& stream, Streambuf& streambuf,
+read(SyncReadStream& stream, DynamicBuffer& dynabuf,
     message_v1<isRequest, Body, Headers>& msg,
         error_code& ec);
 
@@ -229,7 +228,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     @param stream The stream to read the message from.
     The type must support the @b `AsyncReadStream` concept.
 
-    @param streambuf A `Streambuf` holding additional bytes
+    @param dynabuf A @b `DynamicBuffer` holding additional bytes
     read by the implementation from the stream. This is both
     an input and an output parameter; on entry, any data in the
     stream buffer's input sequence will be given to the parser
@@ -249,7 +248,7 @@ read(SyncReadStream& stream, Streambuf& streambuf,
     this function. Invocation of the handler will be performed in a
     manner equivalent to using `boost::asio::io_service::post`.
 */
-template<class AsyncReadStream, class Streambuf,
+template<class AsyncReadStream, class DynamicBuffer,
     bool isRequest, class Body, class Headers,
         class ReadHandler>
 #if GENERATING_DOCS
@@ -258,7 +257,7 @@ void_or_deduced
 typename async_completion<
     ReadHandler, void(error_code)>::result_type
 #endif
-async_read(AsyncReadStream& stream, Streambuf& streambuf,
+async_read(AsyncReadStream& stream, DynamicBuffer& dynabuf,
     message_v1<isRequest, Body, Headers>& msg,
         ReadHandler&& handler);
 

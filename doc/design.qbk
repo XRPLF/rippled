@@ -25,13 +25,13 @@ libraries:
 * Let library users make the important decisions such as how to
   allocate memory or how to leverage flow control.
 
-Beast formalizes the [link beast.types.Streambuf [*`Streambuf`]] concept,
-and relies heavily on the Boost.Asio [*`ConstBufferSequence`] and
-[*`MutableBufferSequence`] concepts for passing buffers to functions.
-The authors have found the `Streambuf` and buffer sequence interfaces
-to be optimal for interacting with Asio, and for other tasks such as
-incremental parsing of data in buffers (for example, parsing websocket
-frames stored in a [link beast.ref.static_streambuf `static_streambuf`]).
+Beast uses the [link beast.types.DynamicBuffer [*`DynamicBuffer`]] concept
+presented in the Netwoking TS, and relies heavily on the Boost.Asio
+[*`ConstBufferSequence`] and [*`MutableBufferSequence`] concepts for passing
+buffers to functions. The authors have found the dynamic buffer and buffer
+sequence interfaces to be optimal for interacting with Asio, and for other
+tasks such as incremental parsing of data in buffers (for example, parsing
+websocket frames stored in a [link beast.ref.static_streambuf `static_streambuf`]).
 
 During the development of Beast the authors have studied other software
 packages and in particular the comments left during the Boost Review process

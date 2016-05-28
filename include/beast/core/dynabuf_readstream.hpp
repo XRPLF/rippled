@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_STREAMBUF_READSTREAM_HPP
-#define BEAST_STREAMBUF_READSTREAM_HPP
+#ifndef BEAST_DYNABUF_READSTREAM_HPP
+#define BEAST_DYNABUF_READSTREAM_HPP
 
 #include <beast/core/async_completion.hpp>
 #include <beast/core/buffer_concepts.hpp>
@@ -22,11 +22,11 @@
 
 namespace beast {
 
-/** A @b `Stream` with attached @b `Streambuf` to buffer reads.
+/** A @b `Stream` with attached @b `DynamicBuffer` to buffer reads.
 
     This wraps a @b `Stream` implementation so that calls to write are
     passed through to the underlying stream, while calls to read will
-    first consume the input sequence stored in a @b `Streambuf` which
+    first consume the input sequence stored in a @b `DynamicBuffer` which
     is part of the object.
 
     The use-case for this class is different than that of the
@@ -50,9 +50,9 @@ namespace beast {
     // Process the next HTTP headers on the stream,
     // leaving excess bytes behind for the next call.
     //
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void process_http_message(
-        streambuf_readstream<Streambuf>& stream)
+        dynabuf_readstream<DynamicBuffer>& stream)
     {
         // Read up to and including the end of the HTTP
         // headers, leaving the sequence in the stream's
@@ -85,24 +85,24 @@ namespace beast {
 
     @tparam Stream The type of stream to wrap.
 
-    @tparam Streambuf The type of stream buffer to use.
+    @tparam DynamicBuffer The type of stream buffer to use.
 */
-template<class Stream, class Streambuf>
-class streambuf_readstream
+template<class Stream, class DynamicBuffer>
+class dynabuf_readstream
 {
-    static_assert(is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
+    static_assert(is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
 
     template<class Buffers, class Handler>
     class read_some_op;
 
-    Streambuf sb_;
+    DynamicBuffer sb_;
     std::size_t capacity_ = 0;
     Stream next_layer_;
 
 public:
     /// The type of the internal buffer
-    using streambuf_type = Streambuf;
+    using dynabuf_type = DynamicBuffer;
 
     /// The type of the next layer.
     using next_layer_type =
@@ -122,14 +122,14 @@ public:
         @note The behavior of move assignment on or from streams
         with active or pending operations is undefined.
     */
-    streambuf_readstream(streambuf_readstream&&) = default;
+    dynabuf_readstream(dynabuf_readstream&&) = default;
 
     /** Move assignment.
 
         @note The behavior of move assignment on or from streams
         with active or pending operations is undefined.
     */
-    streambuf_readstream& operator=(streambuf_readstream&&) = default;
+    dynabuf_readstream& operator=(dynabuf_readstream&&) = default;
 
     /** Construct the wrapping stream.
 
@@ -137,7 +137,7 @@ public:
     */
     template<class... Args>
     explicit
-    streambuf_readstream(Args&&... args);
+    dynabuf_readstream(Args&&... args);
 
     /// Get a reference to the next layer.
     next_layer_type&
@@ -174,7 +174,7 @@ public:
         by causing the internal buffer size to increase beyond
         the caller defined maximum.
     */
-    Streambuf&
+    DynamicBuffer&
     buffer()
     {
         return sb_;
@@ -187,7 +187,7 @@ public:
         by causing the internal buffer size to increase beyond
         the caller defined maximum.
     */
-    Streambuf const&
+    DynamicBuffer const&
     buffer() const
     {
         return sb_;
@@ -275,6 +275,6 @@ public:
 
 } // beast
 
-#include <beast/core/impl/streambuf_readstream.ipp>
+#include <beast/core/impl/dynabuf_readstream.ipp>
 
 #endif

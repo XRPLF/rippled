@@ -6,7 +6,7 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/core/streambuf_readstream.hpp>
+#include <beast/core/dynabuf_readstream.hpp>
 
 #include <beast/core/streambuf.hpp>
 #include <beast/test/fail_stream.hpp>
@@ -17,11 +17,11 @@
 
 namespace beast {
 
-class streambuf_readstream_test
+class dynabuf_readstream_test
     : public unit_test::suite
     , public test::enable_yield_to
 {
-    using self = streambuf_readstream_test;
+    using self = dynabuf_readstream_test;
 
 public:
     void testSpecialMembers()
@@ -29,16 +29,16 @@ public:
         using socket_type = boost::asio::ip::tcp::socket;
         boost::asio::io_service ios;
         {
-            streambuf_readstream<socket_type, streambuf> srs(ios);
-            streambuf_readstream<socket_type, streambuf> srs2(std::move(srs));
+            dynabuf_readstream<socket_type, streambuf> srs(ios);
+            dynabuf_readstream<socket_type, streambuf> srs2(std::move(srs));
             srs = std::move(srs2);
             expect(&srs.get_io_service() == &ios);
             expect(&srs.get_io_service() == &srs2.get_io_service());
         }
         {
             socket_type sock(ios);
-            streambuf_readstream<socket_type&, streambuf> srs(sock);
-            streambuf_readstream<socket_type&, streambuf> srs2(std::move(srs));
+            dynabuf_readstream<socket_type&, streambuf> srs(sock);
+            dynabuf_readstream<socket_type&, streambuf> srs2(std::move(srs));
         }
     }
 
@@ -55,7 +55,7 @@ public:
         {
             test::fail_stream<
                 test::string_stream> fs(n, ios_, ", world!");
-            streambuf_readstream<
+            dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.buffer().commit(buffer_copy(
                 srs.buffer().prepare(5), buffer("Hello", 5)));
@@ -73,7 +73,7 @@ public:
         {
             test::fail_stream<
                 test::string_stream> fs(n, ios_, ", world!");
-            streambuf_readstream<
+            dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.capacity(3);
             srs.buffer().commit(buffer_copy(
@@ -92,7 +92,7 @@ public:
         {
             test::fail_stream<
                 test::string_stream> fs(n, ios_, ", world!");
-            streambuf_readstream<
+            dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.buffer().commit(buffer_copy(
                 srs.buffer().prepare(5), buffer("Hello", 5)));
@@ -111,7 +111,7 @@ public:
         {
             test::fail_stream<
                 test::string_stream> fs(n, ios_, ", world!");
-            streambuf_readstream<
+            dynabuf_readstream<
                 decltype(fs)&, streambuf> srs(fs);
             srs.capacity(3);
             srs.buffer().commit(buffer_copy(
@@ -137,7 +137,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(streambuf_readstream,core,beast);
+BEAST_DEFINE_TESTSUITE(dynabuf_readstream,core,beast);
 
 } // beast
 

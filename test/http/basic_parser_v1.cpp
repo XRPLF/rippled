@@ -11,7 +11,7 @@
 #include "message_fuzz.hpp"
 
 #include <beast/core/streambuf.hpp>
-#include <beast/core/write_streambuf.hpp>
+#include <beast/core/write_dynabuf.hpp>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/unit_test/suite.hpp>

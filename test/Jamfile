@@ -21,6 +21,7 @@ unit-test core-tests :
     core/buffer_concepts.cpp
     core/buffers_adapter.cpp
     core/consuming_buffers.cpp
+    core/dynabuf_readstream.cpp
     core/error.cpp
     core/handler_alloc.cpp
     core/handler_concepts.cpp
@@ -30,9 +31,8 @@ unit-test core-tests :
     core/static_string.cpp
     core/stream_concepts.cpp
     core/streambuf.cpp
-    core/streambuf_readstream.cpp
     core/to_string.cpp
-    core/write_streambuf.cpp
+    core/write_dynabuf.cpp
     core/detail/base64.cpp
     core/detail/empty_base_optimization.cpp
     core/detail/get_lowest_layer.cpp
@@ -41,6 +41,7 @@ unit-test core-tests :
 
 unit-test http-tests :
     ../extras/beast/unit_test/main.cpp
+    http/basic_dynabuf_body.cpp
     http/basic_headers.cpp
     http/basic_parser_v1.cpp
     http/body_type.cpp

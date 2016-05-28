@@ -8,7 +8,7 @@
 #ifndef BEAST_IMPL_BASIC_STREAMBUF_IPP
 #define BEAST_IMPL_BASIC_STREAMBUF_IPP
 
-#include <beast/core/detail/write_streambuf.hpp>
+#include <beast/core/detail/write_dynabuf.hpp>
 #include <algorithm>
 #include <cassert>
 #include <exception>
@@ -528,6 +528,28 @@ basic_streambuf<Allocator>::basic_streambuf(
 }
 
 template<class Allocator>
+std::size_t
+basic_streambuf<Allocator>::capacity() const
+{
+    auto pos = out_;
+    if(pos == list_.end())
+        return 0;
+    auto n = pos->size() - out_pos_;
+    while(++pos != list_.end())
+        n += pos->size();
+    return in_size_ + n;
+}
+
+template<class Allocator>
+auto
+basic_streambuf<Allocator>::
+data() const ->
+    const_buffers_type
+{
+    return const_buffers_type(*this);
+}
+
+template<class Allocator>
 auto
 basic_streambuf<Allocator>::prepare(size_type n) ->
     mutable_buffers_type
@@ -647,14 +669,6 @@ basic_streambuf<Allocator>::commit(size_type n)
 }
 
 template<class Allocator>
-auto
-basic_streambuf<Allocator>::data() const ->
-    const_buffers_type
-{
-    return const_buffers_type(*this);
-}
-
-template<class Allocator>
 void
 basic_streambuf<Allocator>::consume(size_type n)
 {
@@ -717,7 +731,8 @@ basic_streambuf<Allocator>::consume(size_type n)
 
 template<class Allocator>
 void
-basic_streambuf<Allocator>::clear()
+basic_streambuf<Allocator>::
+clear()
 {
     delete_list();
     list_.clear();
@@ -795,21 +810,6 @@ basic_streambuf<Allocator>::delete_list()
     }
 }
 
-// Returns the number of bytes which can be
-// prepared without causing a memory allocation.
-template<class Allocator>
-std::size_t
-basic_streambuf<Allocator>::prepare_size() const
-{
-    auto pos = out_;
-    if(pos == list_.end())
-        return 0;
-    auto n = pos->size() - out_pos_;
-    while(++pos != list_.end())
-        n += pos->size();
-    return n;
-}
-
 template<class Allocator>
 void
 basic_streambuf<Allocator>::debug_check() const
@@ -855,7 +855,7 @@ std::size_t
 read_size_helper(basic_streambuf<
     Allocator> const& streambuf, std::size_t max_size)
 {
-    auto const avail = streambuf.prepare_size();
+    auto const avail = streambuf.capacity() - streambuf.size();
     if(avail == 0)
         return std::min(max_size,
             std::max<std::size_t>(512, streambuf.alloc_size_));
@@ -866,7 +866,7 @@ template<class Alloc, class T>
 basic_streambuf<Alloc>&
 operator<<(basic_streambuf<Alloc>& streambuf, T const& t)
 {
-    detail::write_streambuf(streambuf, t);
+    detail::write_dynabuf(streambuf, t);
     return streambuf;
 }
 

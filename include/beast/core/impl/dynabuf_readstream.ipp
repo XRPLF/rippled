@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_IMPL_STREAMBUF_READSTREAM_IPP
-#define BEAST_IMPL_STREAMBUF_READSTREAM_IPP
+#ifndef BEAST_IMPL_DYNABUF_READSTREAM_HPP
+#define BEAST_IMPL_DYNABUF_READSTREAM_HPP
 
 #include <beast/core/bind_handler.hpp>
 #include <beast/core/handler_concepts.hpp>
@@ -16,24 +16,24 @@
 
 namespace beast {
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class MutableBufferSequence, class Handler>
-class streambuf_readstream<
-    Stream, Streambuf>::read_some_op
+class dynabuf_readstream<
+    Stream, DynamicBuffer>::read_some_op
 {
     using alloc_type =
         handler_alloc<char, Handler>;
 
     struct data
     {
-        streambuf_readstream& srs;
+        dynabuf_readstream& srs;
         MutableBufferSequence bs;
         Handler h;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_,
-            streambuf_readstream& srs_,
+            dynabuf_readstream& srs_,
                 MutableBufferSequence const& bs_)
             : srs(srs_)
             , bs(bs_)
@@ -50,7 +50,7 @@ public:
 
     template<class DeducedHandler, class... Args>
     read_some_op(DeducedHandler&& h,
-            streambuf_readstream& srs, Args&&... args)
+            dynabuf_readstream& srs, Args&&... args)
         : d_(std::allocate_shared<data>(alloc_type{h},
             std::forward<DeducedHandler>(h), srs,
                 std::forward<Args>(args)...))
@@ -94,10 +94,10 @@ public:
     }
 };
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class MutableBufferSequence, class Handler>
 void
-streambuf_readstream<Stream, Streambuf>::
+dynabuf_readstream<Stream, DynamicBuffer>::
 read_some_op<MutableBufferSequence, Handler>::operator()(
     error_code const& ec, std::size_t bytes_transferred)
 {
@@ -155,18 +155,18 @@ read_some_op<MutableBufferSequence, Handler>::operator()(
 
 //------------------------------------------------------------------------------
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class... Args>
-streambuf_readstream<Stream, Streambuf>::
-streambuf_readstream(Args&&... args)
+dynabuf_readstream<Stream, DynamicBuffer>::
+dynabuf_readstream(Args&&... args)
     : next_layer_(std::forward<Args>(args)...)
 {
 }
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class ConstBufferSequence, class WriteHandler>
 auto
-streambuf_readstream<Stream, Streambuf>::
+dynabuf_readstream<Stream, DynamicBuffer>::
 async_write_some(ConstBufferSequence const& buffers,
     WriteHandler&& handler) ->
         typename async_completion<
@@ -184,10 +184,10 @@ async_write_some(ConstBufferSequence const& buffers,
         std::forward<WriteHandler>(handler));
 }
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class MutableBufferSequence>
 std::size_t
-streambuf_readstream<Stream, Streambuf>::
+dynabuf_readstream<Stream, DynamicBuffer>::
 read_some(
     MutableBufferSequence const& buffers)
 {
@@ -203,10 +203,10 @@ read_some(
     return n;
 }
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class MutableBufferSequence>
 std::size_t
-streambuf_readstream<Stream, Streambuf>::
+dynabuf_readstream<Stream, DynamicBuffer>::
 read_some(MutableBufferSequence const& buffers,
     error_code& ec)
 {
@@ -232,10 +232,10 @@ read_some(MutableBufferSequence const& buffers,
     return bytes_transferred;
 }
 
-template<class Stream, class Streambuf>
+template<class Stream, class DynamicBuffer>
 template<class MutableBufferSequence, class ReadHandler>
 auto
-streambuf_readstream<Stream, Streambuf>::
+dynabuf_readstream<Stream, DynamicBuffer>::
 async_read_some(
     MutableBufferSequence const& buffers,
         ReadHandler&& handler) ->

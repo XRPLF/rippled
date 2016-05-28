@@ -18,7 +18,7 @@
 #include <beast/core/handler_alloc.hpp>
 #include <beast/core/stream_concepts.hpp>
 #include <beast/core/streambuf.hpp>
-#include <beast/core/write_streambuf.hpp>
+#include <beast/core/write_dynabuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/logic/tribool.hpp>
 #include <condition_variable>
@@ -32,51 +32,51 @@ namespace http {
 
 namespace detail {
 
-template<class Streambuf, class Body, class Headers>
+template<class DynamicBuffer, class Body, class Headers>
 void
-write_firstline(Streambuf& streambuf,
+write_firstline(DynamicBuffer& dynabuf,
     message_v1<true, Body, Headers> const& msg)
 {
-    write(streambuf, msg.method);
-    write(streambuf, " ");
-    write(streambuf, msg.url);
-    write(streambuf, " HTTP/");
-    write(streambuf, msg.version / 10);
-    write(streambuf, ".");
-    write(streambuf, msg.version % 10);
-    write(streambuf, "\r\n");
+    write(dynabuf, msg.method);
+    write(dynabuf, " ");
+    write(dynabuf, msg.url);
+    write(dynabuf, " HTTP/");
+    write(dynabuf, msg.version / 10);
+    write(dynabuf, ".");
+    write(dynabuf, msg.version % 10);
+    write(dynabuf, "\r\n");
 }
 
-template<class Streambuf, class Body, class Headers>
+template<class DynamicBuffer, class Body, class Headers>
 void
-write_firstline(Streambuf& streambuf,
+write_firstline(DynamicBuffer& dynabuf,
     message_v1<false, Body, Headers> const& msg)
 {
-    write(streambuf, "HTTP/");
-    write(streambuf, msg.version / 10);
-    write(streambuf, ".");
-    write(streambuf, msg.version % 10);
-    write(streambuf, " ");
-    write(streambuf, msg.status);
-    write(streambuf, " ");
-    write(streambuf, msg.reason);
-    write(streambuf, "\r\n");
+    write(dynabuf, "HTTP/");
+    write(dynabuf, msg.version / 10);
+    write(dynabuf, ".");
+    write(dynabuf, msg.version % 10);
+    write(dynabuf, " ");
+    write(dynabuf, msg.status);
+    write(dynabuf, " ");
+    write(dynabuf, msg.reason);
+    write(dynabuf, "\r\n");
 }
 
-template<class Streambuf, class FieldSequence>
+template<class DynamicBuffer, class FieldSequence>
 void
-write_fields(Streambuf& streambuf, FieldSequence const& fields)
+write_fields(DynamicBuffer& dynabuf, FieldSequence const& fields)
 {
-    static_assert(is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
+    static_assert(is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     //static_assert(is_FieldSequence<FieldSequence>::value,
     //    "FieldSequence requirements not met");
     for(auto const& field : fields)
     {
-        write(streambuf, field.name());
-        write(streambuf, ": ");
-        write(streambuf, field.value());
-        write(streambuf, "\r\n");
+        write(dynabuf, field.name());
+        write(dynabuf, ": ");
+        write(dynabuf, field.value());
+        write(dynabuf, "\r\n");
     }
 }
 
@@ -378,17 +378,17 @@ operator()(error_code ec, std::size_t, bool again)
     d.copy = {};
 }
 
-template<class SyncWriteStream, class Streambuf>
+template<class SyncWriteStream, class DynamicBuffer>
 class writef0_lambda
 {
-    Streambuf const& sb_;
+    DynamicBuffer const& sb_;
     SyncWriteStream& stream_;
     bool chunked_;
     error_code& ec_;
 
 public:
     writef0_lambda(SyncWriteStream& stream,
-            Streambuf const& sb, bool chunked, error_code& ec)
+            DynamicBuffer const& sb, bool chunked, error_code& ec)
         : sb_(sb)
         , stream_(stream)
         , chunked_(chunked)
@@ -548,9 +548,8 @@ async_write(AsyncWriteStream& stream,
     message_v1<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler)
 {
-    static_assert(
-        is_AsyncWriteStream<AsyncWriteStream>::value,
-            "AsyncWriteStream requirements not met");
+    static_assert(is_AsyncWriteStream<AsyncWriteStream>::value,
+        "AsyncWriteStream requirements not met");
     static_assert(is_WritableBody<Body>::value,
         "WritableBody requirements not met");
     beast::async_completion<WriteHandler,

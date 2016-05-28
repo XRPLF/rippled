@@ -29,9 +29,9 @@
         <entry valign="top">
           <bridgehead renderas="sect3">Classes</bridgehead>
           <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.http__basic_dynabuf_body">basic_dynabuf_body</link></member>
             <member><link linkend="beast.ref.http__basic_headers">basic_headers</link></member>
             <member><link linkend="beast.ref.http__basic_parser_v1">basic_parser_v1</link></member>
-            <member><link linkend="beast.ref.http__basic_streambuf_body">basic_streambuf_body</link></member>
             <member><link linkend="beast.ref.http__empty_body">empty_body</link></member>
             <member><link linkend="beast.ref.http__headers">headers</link></member>
             <member><link linkend="beast.ref.http__message">message</link></member>
@@ -130,6 +130,7 @@
             <member><link linkend="beast.ref.basic_streambuf">basic_streambuf</link></member>
             <member><link linkend="beast.ref.buffers_adapter">buffers_adapter</link></member>
             <member><link linkend="beast.ref.consuming_buffers">consuming_buffers</link></member>
+            <member><link linkend="beast.ref.dynabuf_readstream">dynabuf_readstream</link></member>
             <member><link linkend="beast.ref.error_code">error_code</link></member>
             <member><link linkend="beast.ref.handler_alloc">handler_alloc</link></member>
             <member><link linkend="beast.ref.prepared_buffers">prepared_buffers</link></member>
@@ -137,7 +138,6 @@
             <member><link linkend="beast.ref.static_streambuf_n">static_streambuf_n</link></member>
             <member><link linkend="beast.ref.static_string">static_string</link></member>
             <member><link linkend="beast.ref.streambuf">streambuf</link></member>
-            <member><link linkend="beast.ref.streambuf_readstream">streambuf_readstream</link></member>
             <member><link linkend="beast.ref.system_error">system_error</link></member>
           </simplelist>
         </entry>
@@ -164,8 +164,8 @@
             <member><link linkend="beast.ref.is_BufferSequence">is_BufferSequence</link></member>
             <member><link linkend="beast.ref.is_CompletionHandler">is_CompletionHandler</link></member>
             <member><link linkend="beast.ref.is_ConstBufferSequence">is_ConstBufferSequence</link></member>
+            <member><link linkend="beast.ref.is_DynamicBuffer">is_DynamicBuffer</link></member>
             <member><link linkend="beast.ref.is_MutableBufferSequence">is_MutableBufferSequence</link></member>
-            <member><link linkend="beast.ref.is_Streambuf">is_Streambuf</link></member>
             <member><link linkend="beast.ref.is_SyncReadStream">is_SyncReadStream</link></member>
             <member><link linkend="beast.ref.is_SyncStream">is_SyncStream</link></member>
             <member><link linkend="beast.ref.is_SyncWriteStream">is_SyncWriteStream</link></member>
@@ -174,10 +174,10 @@
         <entry valign="top">
           <bridgehead renderas="sect3">Concepts</bridgehead>
           <simplelist type="vert" columns="1">
-            <member><link linkend="beast.types.BufferSequence">BufferSequence</link></member>
             <member><link linkend="beast.types.streams.AsyncStream">AsyncStream</link></member>
+            <member><link linkend="beast.types.BufferSequence">BufferSequence</link></member>
+            <member><link linkend="beast.types.DynamicBuffer">DynamicBuffer</link></member>
             <member><link linkend="beast.types.streams.Stream">Stream</link></member>
-            <member><link linkend="beast.types.Streambuf">Streambuf</link></member>
             <member><link linkend="beast.types.streams.SyncStream">SyncStream</link></member>
           </simplelist>
         </entry>

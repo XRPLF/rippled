@@ -29,7 +29,6 @@
 #include <beast/core/prepare_buffers.hpp>
 #include <beast/core/static_streambuf.hpp>
 #include <beast/core/stream_concepts.hpp>
-#include <beast/core/streambuf.hpp>
 #include <boost/endian/buffers.hpp>
 #include <algorithm>
 #include <cassert>
@@ -94,10 +93,10 @@ stream_base::prepare_fh(close_code::value& code)
     }
 }
 
-template<class Streambuf>
+template<class DynamicBuffer>
 void
 stream_base::write_close(
-    Streambuf& sb, close_reason const& cr)
+    DynamicBuffer& db, close_reason const& cr)
 {
     using namespace boost::endian;
     frame_header fh;
@@ -111,7 +110,7 @@ stream_base::write_close(
     fh.mask = role_ == detail::role_type::client;
     if(fh.mask)
         fh.key = maskgen_();
-    detail::write(sb, fh);
+    detail::write(db, fh);
     if(cr.code != close_code::none)
     {
         detail::prepared_key_type key;
@@ -121,29 +120,29 @@ stream_base::write_close(
             std::uint8_t b[2];
             ::new(&b[0]) big_uint16_buf_t{
                 (std::uint16_t)cr.code};
-            auto d = sb.prepare(2);
+            auto d = db.prepare(2);
             boost::asio::buffer_copy(d,
                 boost::asio::buffer(b));
             if(fh.mask)
                 detail::mask_inplace(d, key);
-            sb.commit(2);
+            db.commit(2);
         }
         if(! cr.reason.empty())
         {
-            auto d = sb.prepare(cr.reason.size());
+            auto d = db.prepare(cr.reason.size());
             boost::asio::buffer_copy(d,
                 boost::asio::const_buffer(
                     cr.reason.data(), cr.reason.size()));
             if(fh.mask)
                 detail::mask_inplace(d, key);
-            sb.commit(cr.reason.size());
+            db.commit(cr.reason.size());
         }
     }
 }
 
-template<class Streambuf>
+template<class DynamicBuffer>
 void
-stream_base::write_ping(Streambuf& sb,
+stream_base::write_ping(DynamicBuffer& db,
     opcode op, ping_data const& data)
 {
     frame_header fh;
@@ -156,19 +155,19 @@ stream_base::write_ping(Streambuf& sb,
     fh.mask = role_ == role_type::client;
     if(fh.mask)
         fh.key = maskgen_();
-    detail::write(sb, fh);
+    detail::write(db, fh);
     if(data.empty())
         return;
     detail::prepared_key_type key;
     if(fh.mask)
         detail::prepare_key(key, fh.key);
-    auto d = sb.prepare(data.size());
+    auto d = db.prepare(data.size());
     boost::asio::buffer_copy(d,
         boost::asio::const_buffers_1(
             data.data(), data.size()));
     if(fh.mask)
         detail::mask_inplace(d, key);
-    sb.commit(data.size());
+    db.commit(data.size());
 }
 
 } // detail
@@ -453,10 +452,10 @@ void
 stream<NextLayer>::
 ping(ping_data const& payload, error_code& ec)
 {
-    detail::frame_streambuf sb;
+    detail::frame_streambuf db;
     write_ping<static_streambuf>(
-        sb, opcode::ping, payload);
-    boost::asio::write(stream_, sb.data(), ec);
+        db, opcode::ping, payload);
+    boost::asio::write(stream_, db.data(), ec);
 }
 
 template<class NextLayer>
@@ -477,31 +476,35 @@ async_ping(ping_data const& payload, PingHandler&& handler)
 }
 
 template<class NextLayer>
-template<class Streambuf>
+template<class DynamicBuffer>
 void
 stream<NextLayer>::
-read(opcode& op, Streambuf& streambuf)
+read(opcode& op, DynamicBuffer& dynabuf)
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
+    static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     error_code ec;
-    read(op, streambuf, ec);
+    read(op, dynabuf, ec);
     if(ec)
         throw system_error{ec};
 }
 
 template<class NextLayer>
-template<class Streambuf>
+template<class DynamicBuffer>
 void
 stream<NextLayer>::
-read(opcode& op, Streambuf& streambuf, error_code& ec)
+read(opcode& op, DynamicBuffer& dynabuf, error_code& ec)
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
+    static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     frame_info fi;
     for(;;)
     {
-        read_frame(fi, streambuf, ec);
+        read_frame(fi, dynabuf, ec);
         if(ec)
             break;
         op = fi.op;
@@ -511,47 +514,51 @@ read(opcode& op, Streambuf& streambuf, error_code& ec)
 }
 
 template<class NextLayer>
-template<class Streambuf, class ReadHandler>
+template<class DynamicBuffer, class ReadHandler>
 typename async_completion<
     ReadHandler, void(error_code)>::result_type
 stream<NextLayer>::
 async_read(opcode& op,
-    Streambuf& streambuf, ReadHandler&& handler)
+    DynamicBuffer& dynabuf, ReadHandler&& handler)
 {
     static_assert(is_AsyncStream<next_layer_type>::value,
         "AsyncStream requirements requirements not met");
-    static_assert(beast::is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
+    static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     beast::async_completion<
         ReadHandler, void(error_code)
             > completion(handler);
-    read_op<Streambuf, decltype(completion.handler)>{
-        completion.handler, *this, op, streambuf};
+    read_op<DynamicBuffer, decltype(completion.handler)>{
+        completion.handler, *this, op, dynabuf};
     return completion.result.get();
 }
 
 template<class NextLayer>
-template<class Streambuf>
+template<class DynamicBuffer>
 void
 stream<NextLayer>::
-read_frame(frame_info& fi, Streambuf& streambuf)
+read_frame(frame_info& fi, DynamicBuffer& dynabuf)
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
+    static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     error_code ec;
-    read_frame(fi, streambuf, ec);
+    read_frame(fi, dynabuf, ec);
     if(ec)
         throw system_error{ec};
 }
 
 template<class NextLayer>
-template<class Streambuf>
+template<class DynamicBuffer>
 void
 stream<NextLayer>::
-read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
+read_frame(frame_info& fi, DynamicBuffer& dynabuf, error_code& ec)
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
+    static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     close_code::value code{};
     for(;;)
     {
@@ -630,7 +637,7 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
             }
         }
         // read payload
-        auto smb = streambuf.prepare(
+        auto smb = dynabuf.prepare(
             detail::clamp(rd_need_));
         auto const bytes_transferred =
             stream_.read_some(smb, ec);
@@ -652,7 +659,7 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
                 break;
             }
         }
-        streambuf.commit(bytes_transferred);
+        dynabuf.commit(bytes_transferred);
         fi.op = rd_opcode_;
         fi.fin = rd_fh_.fin && rd_need_ == 0;
         return;
@@ -686,21 +693,21 @@ read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec)
 }
 
 template<class NextLayer>
-template<class Streambuf, class ReadHandler>
+template<class DynamicBuffer, class ReadHandler>
 typename async_completion<
     ReadHandler, void(error_code)>::result_type
 stream<NextLayer>::
 async_read_frame(frame_info& fi,
-    Streambuf& streambuf, ReadHandler&& handler)
+    DynamicBuffer& dynabuf, ReadHandler&& handler)
 {
     static_assert(is_AsyncStream<next_layer_type>::value,
         "AsyncStream requirements requirements not met");
-    static_assert(beast::is_Streambuf<Streambuf>::value,
-        "Streambuf requirements not met");
+    static_assert(beast::is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
     beast::async_completion<
         ReadHandler, void(error_code)> completion(handler);
-    read_frame_op<Streambuf, decltype(completion.handler)>{
-        completion.handler, *this, fi, streambuf};
+    read_frame_op<DynamicBuffer, decltype(completion.handler)>{
+        completion.handler, *this, fi, dynabuf};
     return completion.result.get();
 }
 
@@ -712,6 +719,9 @@ write(ConstBufferSequence const& buffers)
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
+    static_assert(beast::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
+            "ConstBufferSequence requirements not met");
     error_code ec;
     write(buffers, ec);
     if(ec)
@@ -774,6 +784,9 @@ write_frame(bool fin, ConstBufferSequence const& buffers)
 {
     static_assert(is_SyncStream<next_layer_type>::value,
         "SyncStream requirements not met");
+    static_assert(beast::is_ConstBufferSequence<
+        ConstBufferSequence>::value,
+            "ConstBufferSequence requirements not met");
     error_code ec;
     write_frame(fin, buffers, ec);
     if(ec)

@@ -24,8 +24,8 @@
 #include <beast/core/static_string.hpp>
 #include <beast/core/stream_concepts.hpp>
 #include <beast/core/streambuf.hpp>
-#include <beast/core/streambuf_readstream.hpp>
+#include <beast/core/dynabuf_readstream.hpp>
 #include <beast/core/to_string.hpp>
-#include <beast/core/write_streambuf.hpp>
+#include <beast/core/write_dynabuf.hpp>
 
 #endif

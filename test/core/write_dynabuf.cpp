@@ -6,14 +6,14 @@
 //
 
 // Test that header file is self-contained.
-#include <beast/core/write_streambuf.hpp>
+#include <beast/core/write_dynabuf.hpp>
 
 #include <beast/core/streambuf.hpp>
 #include <beast/unit_test/suite.hpp>
 
 namespace beast {
 
-class write_streambuf_test : public beast::unit_test::suite
+class write_dynabuf_test : public beast::unit_test::suite
 {
 public:
     void run() override
@@ -31,6 +31,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(write_streambuf,core,beast);
+BEAST_DEFINE_TESTSUITE(write_dynabuf,core,beast);
 
 } // beast
