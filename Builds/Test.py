@@ -50,39 +50,33 @@ import platform
 import re
 import shutil
 import subprocess
-import sys
 
 
 def powerset(iterable):
-    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+    """powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"""
     s = list(iterable)
-    return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s)+1))
+    return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1))
+
 
 IS_WINDOWS = platform.system().lower() == 'windows'
 
 if IS_WINDOWS:
-    BINARY_RE = re.compile(r'build\\([^\\]+)\\rippled.exe')
-
+    ALL_TARGETS = [('debug',), ('release',)]
 else:
-    BINARY_RE = re.compile(r'build/([^/]+)/rippled')
-
-if IS_WINDOWS:
-    ALL_TARGETS = ['debug', 'release']
-else:
-    ALL_TARGETS = [cc + "." + target
-      for cc in ['gcc', 'clang']
-        for target in ['debug', 'release', 'coverage', 'profile',
-                       'debug.nounity', 'release.nounity', 'coverage.nounity', 'profile.nounity']]
+    ALL_TARGETS = [(cc + "." + target,)
+                   for cc in ['gcc', 'clang']
+                   for target in ['debug', 'release', 'coverage', 'profile',
+                                  'debug.nounity', 'release.nounity', 'coverage.nounity', 'profile.nounity']]
 
 # list of tuples of all possible options
 ALL_OPTIONS = list(set(
     [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=address'])] +
     [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=thread'])]))
 
-# list of lists of all possible options + all possible targets
-ALL_BUILDS = [list(options) + [target]
-               for target in ALL_TARGETS
-                 for options in ALL_OPTIONS]
+# list of tuples of all possible options + all possible targets
+ALL_BUILDS = [options + target
+              for target in ALL_TARGETS
+              for options in ALL_OPTIONS]
 
 parser = argparse.ArgumentParser(
     description='Test.py - run ripple tests'
@@ -98,56 +92,56 @@ parser.add_argument(
     '--keep_going', '-k',
     action='store_true',
     help='Keep going after one configuration has failed.',
- )
+)
 
 parser.add_argument(
     '--silent', '-s',
     action='store_true',
     help='Silence all messages except errors',
- )
+)
 
 parser.add_argument(
     '--verbose', '-v',
     action='store_true',
     help=('Report more information about which commands are executed and the '
           'results.'),
- )
+)
 
 parser.add_argument(
     '--test', '-t',
     default='',
     help='Add a prefix for unit tests',
- )
+)
 
 parser.add_argument(
     '--nonpm', '-n',
     action='store_true',
     help='Do not run npm tests',
- )
+)
 
 parser.add_argument(
     '--clean', '-c',
     action='store_true',
     help='delete all build artifacts after testing',
- )
+)
 
 parser.add_argument(
     'scons_args',
     default=(),
     nargs='*'
-    )
+)
 
 ARGS = parser.parse_args()
 
 
-def shell(cmd, args=[], silent=False):
-    "Execute a shell command and return the output."
+def shell(cmd, args=(), silent=False):
+    """"Execute a shell command and return the output."""
     silent = ARGS.silent or silent
     verbose = not silent and ARGS.verbose
     if verbose:
-        print('$' + cmd + ' ' + ' '.join(args))
+        print('$' + cmd, *args)
 
-    command = [cmd] + args
+    command = (cmd,) + args
 
     process = subprocess.Popen(
         command,
@@ -177,9 +171,13 @@ def shell(cmd, args=[], silent=False):
 
 def run_tests(args):
     failed = []
-    _, lines = shell('scons', ['-n', '--tree=derived'] + args, silent=True)
+    if IS_WINDOWS:
+        binary_re = re.compile(r'build\\([^\\]+)\\rippled.exe')
+    else:
+        binary_re = re.compile(r'build/([^/]+)/rippled')
+    _, lines = shell('scons', ('-n', '--tree=derived',) + args, silent=True)
     for line in lines:
-        match = BINARY_RE.search(line.decode())
+        match = binary_re.search(line.decode())
         if match:
             executable, target = match.group(0, 1)
 
@@ -187,8 +185,8 @@ def run_tests(args):
             testflag = '--unittest'
             if ARGS.test:
                 testflag += ('=' + ARGS.test)
+            resultcode, lines = shell(executable, (testflag,))
 
-            resultcode, lines = shell(executable, [testflag])
             if resultcode:
                 print('ERROR:', *lines, sep='')
                 failed.append([target, 'unittest'])
@@ -198,7 +196,7 @@ def run_tests(args):
 
             if not ARGS.nonpm:
                 print('npm tests for', target)
-                resultcode, lines = shell('npm', ['test', '--rippled=' + executable])
+                resultcode, lines = shell('npm', ('test', '--rippled=' + executable,))
                 if resultcode:
                     print('ERROR:\n', *lines, sep='')
                     failed.append([target, 'npm'])
@@ -209,34 +207,42 @@ def run_tests(args):
     return failed
 
 
-def build_and_test_all():
-    for build in ALL_BUILDS:
-        args = []
-        # additional arguments come first
-        for arg in list(ARGS.scons_args):
-            if arg not in build:
-                args.append(arg)
-        args += build
-        print('Building:', *(args or '(default)'))
-        resultcode, lines = shell('scons', args)
+def run_build(args=None):
+    print('Building:', *args or ('(default)',))
+    resultcode, lines = shell('scons', args)
+
+    if resultcode:
+        print('Build FAILED:')
+        if not ARGS.verbose:
+            print(*lines, sep='')
+        exit(1)
+    if '--ninja' in args:
+        resultcode, lines = shell('ninja')
 
         if resultcode:
-            print('Build FAILED:')
+            print('Ninja build FAILED:')
             if not ARGS.verbose:
                 print(*lines, sep='')
             exit(1)
-        ninja = False
-        if '--ninja' in build:
-            ninja = True
-            resultcode, lines = shell('ninja')
 
-            if resultcode:
-                print('Ninja build FAILED:')
-                if not ARGS.verbose:
-                    print(*lines, sep='')
-                exit(1)
 
+def main():
+    if ARGS.all:
+        to_build = ALL_BUILDS
+    else:
+        to_build = [tuple(ARGS.scons_args)]
+
+    for build in to_build:
+        args = ()
+        # additional arguments come first
+        for arg in list(ARGS.scons_args):
+            if arg not in build:
+                args += (arg,)
+        args += build
+
+        run_build(args)
         failed = run_tests(args)
+
         if failed:
             print('FAILED:', *(':'.join(f) for f in failed))
             if not ARGS.keep_going:
@@ -246,36 +252,10 @@ def build_and_test_all():
 
         if ARGS.clean:
             shutil.rmtree('build')
-            if ninja:
+            if '--ninja' in args:
                 os.remove('build.ninja')
                 os.remove('.ninja_deps')
                 os.remove('.ninja_log')
-
-
-def main():
-    if ARGS.all:
-        build_and_test_all()
-
-    else:
-        args = list(ARGS.scons_args)
-        print('Building:', *(args or ['(default)']))
-
-        # Build everything.
-        resultcode, lines = shell('scons', args)
-        if resultcode:
-            print('Build FAILED:')
-            if not ARGS.verbose:
-                print(*lines, sep='')
-            exit(1)
-
-        # Now extract the executable names and corresponding targets.
-        failed = run_tests(args)
-
-        if failed:
-            print('FAILED:', *(':'.join(f) for f in failed))
-            exit(1)
-        else:
-            print('Success')
 
 
 if __name__ == '__main__':
