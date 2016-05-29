@@ -152,9 +152,9 @@ def shell(cmd, args=(), silent=False):
     lines = []
     count = 0
     for line in process.stdout:
-        lines.append(line)
+        lines.append(line.decode())
         if verbose:
-            print(line, end='')
+            print(line.decode(), end='')
         elif not silent:
             count += 1
             if count >= 80:
@@ -177,7 +177,7 @@ def run_tests(args):
         binary_re = re.compile(r'build/([^/]+)/rippled')
     _, lines = shell('scons', ('-n', '--tree=derived',) + args, silent=True)
     for line in lines:
-        match = binary_re.search(line.decode())
+        match = binary_re.search(line)
         if match:
             executable, target = match.group(0, 1)
 
