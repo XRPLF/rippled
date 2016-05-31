@@ -73,8 +73,15 @@ bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 void PeerSet::setTimer ()
 {
     mTimer.expires_from_now(mTimerInterval);
-    mTimer.async_wait (std::bind (&PeerSet::timerEntry,
-        pmDowncast (), beast::asio::placeholders::error));
+    mTimer.async_wait (
+        [wptr=pmDowncast()](boost::system::error_code const& ec)
+        {
+            if (ec == boost::asio::error::operation_aborted)
+                return;
+
+            if (auto ptr = wptr.lock ())
+                ptr->execute ();
+        });
 }
 
 void PeerSet::invokeOnTimer ()
@@ -99,17 +106,6 @@ void PeerSet::invokeOnTimer ()
 
     if (!isDone ())
         setTimer ();
-}
-
-void PeerSet::timerEntry (
-    std::weak_ptr<PeerSet> wptr,
-    const boost::system::error_code& result)
-{
-    if (result == boost::asio::error::operation_aborted)
-        return;
-
-    if (auto ptr = wptr.lock ())
-        ptr->execute ();
 }
 
 bool PeerSet::isActive ()

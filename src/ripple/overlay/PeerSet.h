@@ -111,11 +111,6 @@ public:
         return app_;
     }
 
-private:
-    static void timerEntry (
-        std::weak_ptr<PeerSet>,
-        const boost::system::error_code& result);
-
 protected:
     using ScopedLockType = std::unique_lock <std::recursive_mutex>;
 
