@@ -500,8 +500,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         s.reserve (188);
         for (auto const& line : validation_manifest.lines())
             s += beast::rfc2616::trim(line);
-        s = beast::detail::base64_decode(s);
-        if (auto mo = make_Manifest (std::move (s)))
+        if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
         {
             manifestCache_.configManifest (
                 std::move (*mo),
