@@ -35,9 +35,9 @@ static auto const signing_key =
 // Format manifest string to test trim()
 static auto const manifest =
     "    JAAAAAFxIe2FwblmJwz4pVYXHLJSzSBgIK7mpQuHNQ88CxW\n"
-    " \tjIN7q4nMhAuUTyasIhvj2KPfNRbmmIBnqNUzidgkKb244eP\n"
+    " \tjIN7q4nMhAuUTyasIhvj2KPfNRbmmIBnqNUzidgkKb244eP     \n"
     "\t794ZpMdkC+8l5n3R/CHP6SAwhYDOaqub0Cs2NjjewBnp1mf\n"
-    "\t 23rhAzdcjRuWzm0IT12eduZ0DwcF5Ng8rAelaYP1iT93ScE";
+    "\t 23rhAzdcjRuWzm0IT12eduZ0DwcF5Ng8rAelaYP1iT93ScE\t  \t";
 static auto sequence = 1;
 }
 
