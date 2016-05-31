@@ -60,7 +60,7 @@ PeerSet::~PeerSet ()
 {
 }
 
-bool PeerSet::insert (Peer::ptr const& ptr)
+bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 {
     ScopedLockType sl (mLock);
 
@@ -153,7 +153,7 @@ bool PeerSet::isActive ()
     return !isDone ();
 }
 
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ptr const& peer)
+void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, std::shared_ptr<Peer> const& peer)
 {
     if (!peer)
         sendRequest (tmGL);
@@ -173,9 +173,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 
     for (auto const& p : mPeers)
     {
-        Peer::ptr peer (app_.overlay ().findPeerByShortID (p.first));
-
-        if (peer)
+        if (auto peer = app_.overlay ().findPeerByShortID (p.first))
             peer->send (packet);
     }
 }

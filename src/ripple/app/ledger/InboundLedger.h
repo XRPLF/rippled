@@ -97,7 +97,7 @@ private:
         std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
         TriggerReason reason);
 
-    void trigger (Peer::ptr const&, TriggerReason);
+    void trigger (std::shared_ptr<Peer> const&, TriggerReason);
 
     std::vector<neededHash_t> getNeededHashes ();
 
@@ -108,7 +108,7 @@ private:
 
     void onTimer (bool progress, ScopedLockType& peerSetLock);
 
-    void newPeer (Peer::ptr const& peer)
+    void newPeer (std::shared_ptr<Peer> const& peer)
     {
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming

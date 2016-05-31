@@ -538,7 +538,7 @@ LedgerMaster::getFetchPack (LedgerHash missingHash, LedgerIndex missingIndex)
 
     // Select target Peer based on highest score.  The score is randomized
     // but biased in favor of Peers with low latency.
-    Peer::ptr target;
+    std::shared_ptr<Peer> target;
     {
         int maxScore = 0;
         auto peerList = app_.overlay ().getActivePeers();
@@ -1826,7 +1826,7 @@ LedgerMaster::makeFetchPack (
         return;
     }
 
-    Peer::ptr peer = wPeer.lock ();
+    std::shared_ptr<Peer> peer = wPeer.lock ();
 
     if (!peer)
         return;

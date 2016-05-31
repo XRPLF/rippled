@@ -48,7 +48,7 @@ public:
     }
 
     SHAMapAddNode takeNodes (const std::list<SHAMapNodeID>& IDs,
-                             const std::list< Blob >& data, Peer::ptr const&);
+                             const std::list< Blob >& data, std::shared_ptr<Peer> const&);
 
     void init (int startPeers);
 
@@ -63,7 +63,7 @@ private:
     void onTimer (bool progress, ScopedLockType& peerSetLock);
 
 
-    void newPeer (Peer::ptr const& peer)
+    void newPeer (std::shared_ptr<Peer> const& peer)
     {
         trigger (peer);
     }
@@ -73,7 +73,7 @@ private:
     // Tries to add the specified number of peers
     void addPeers (int num);
 
-    void trigger (Peer::ptr const&);
+    void trigger (std::shared_ptr<Peer> const&);
     std::weak_ptr<PeerSet> pmDowncast ();
 };
 

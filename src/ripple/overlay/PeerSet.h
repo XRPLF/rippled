@@ -97,7 +97,7 @@ public:
         This will call the derived class hook function.
         @return `true` If the peer was added
     */
-    bool insert (Peer::ptr const&);
+    bool insert (std::shared_ptr<Peer> const&);
 
     virtual bool isDone () const
     {
@@ -124,7 +124,7 @@ protected:
 
     virtual ~PeerSet() = 0;
 
-    virtual void newPeer (Peer::ptr const&) = 0;
+    virtual void newPeer (std::shared_ptr<Peer> const&) = 0;
 
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
 
@@ -148,7 +148,7 @@ protected:
 
     void sendRequest (const protocol::TMGetLedger& message);
 
-    void sendRequest (const protocol::TMGetLedger& message, Peer::ptr const& peer);
+    void sendRequest (const protocol::TMGetLedger& message, std::shared_ptr<Peer> const& peer);
 
     void setTimer ();
 
@@ -173,12 +173,9 @@ protected:
     // VFALCO TODO move the responsibility for the timer to a higher level
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> mTimer;
 
-    // VFALCO TODO Verify that these are used in the way that the names suggest.
-    using PeerIdentifier = Peer::id_t;
-    using ReceivedChunkCount = int;
-    using PeerSetMap = hash_map <PeerIdentifier, ReceivedChunkCount>;
-
-    PeerSetMap mPeers;
+    // Maps a peer identifier to the the number of chunks received
+    // from that peer.
+    hash_map <Peer::id_t, int> mPeers;
 };
 
 } // ripple

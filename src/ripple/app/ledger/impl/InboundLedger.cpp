@@ -371,10 +371,10 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         // otherwise, we need to trigger before we add
         // so each peer gets triggered once
         if (mReason != fcHISTORY)
-            trigger (Peer::ptr (), TriggerReason::timeout);
+            trigger (std::shared_ptr<Peer> (), TriggerReason::timeout);
         addPeers ();
         if (mReason == fcHISTORY)
-            trigger (Peer::ptr (), TriggerReason::timeout);
+            trigger (std::shared_ptr<Peer> (), TriggerReason::timeout);
     }
 }
 
@@ -436,7 +436,7 @@ void InboundLedger::done ()
 
 /** Request more nodes, perhaps from a specific peer
 */
-void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
+void InboundLedger::trigger (std::shared_ptr<Peer> const& peer, TriggerReason reason)
 {
     ScopedLockType sl (mLock);
 

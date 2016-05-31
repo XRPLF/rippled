@@ -99,7 +99,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
     }
 
     if (aggressive)
-        trigger (Peer::ptr ());
+        trigger (std::shared_ptr<Peer> ());
 
     addPeers (1);
 }
@@ -109,7 +109,7 @@ std::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
     return std::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
-void TransactionAcquire::trigger (Peer::ptr const& peer)
+void TransactionAcquire::trigger (std::shared_ptr<Peer> const& peer)
 {
     if (mComplete)
     {
@@ -173,7 +173,7 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
 }
 
 SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& nodeIDs,
-        const std::list< Blob >& data, Peer::ptr const& peer)
+        const std::list< Blob >& data, std::shared_ptr<Peer> const& peer)
 {
     ScopedLockType sl (mLock);
 
