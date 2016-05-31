@@ -1542,11 +1542,11 @@ public:
                 !RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
-                expect(result.isMember(jss::drops) &&
-                    result.isMember(jss::levels) &&
-                    result.isMember(jss::current_ledger_size) &&
-                    result.isMember(jss::current_queue_size) &&
-                    result.isMember(jss::expected_ledger_size));
+                expect(result.isMember(jss::drops));
+                expect(result.isMember(jss::levels));
+                expect(result.isMember(jss::current_ledger_size));
+                expect(result.isMember(jss::current_queue_size));
+                expect(result.isMember(jss::expected_ledger_size));
             }
         }
 

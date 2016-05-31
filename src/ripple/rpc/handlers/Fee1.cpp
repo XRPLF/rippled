@@ -31,9 +31,8 @@ namespace ripple
     {
         // Bail if fee escalation is not enabled.
         auto const view = context.app.openLedger().current();
-        if (!view || !view->rules().
-            enabled(featureFeeEscalation,
-                context.app.config().features))
+        if (!view || !view->rules().enabled(
+            featureFeeEscalation, context.app.config().features))
         {
             RPC::inject_error(rpcNOT_ENABLED, context.params);
             return context.params;
