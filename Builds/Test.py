@@ -69,9 +69,12 @@ else:
                                   'debug.nounity', 'release.nounity', 'coverage.nounity', 'profile.nounity']]
 
 # list of tuples of all possible options
-ALL_OPTIONS = list(set(
-    [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=address'])] +
-    [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=thread'])]))
+if IS_WINDOWS:
+    ALL_OPTIONS = [tuple(x) for x in powerset(['--assert'])]
+else:
+    ALL_OPTIONS = list(set(
+        [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=address'])] +
+        [tuple(x) for x in powerset(['--ninja', '--static', '--assert', '--sanitize=thread'])]))
 
 # list of tuples of all possible options + all possible targets
 ALL_BUILDS = [options + target
