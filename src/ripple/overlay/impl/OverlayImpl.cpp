@@ -57,7 +57,7 @@ struct get_peer_json
     get_peer_json ()
     { }
 
-    void operator() (Peer::ptr const& peer)
+    void operator() (std::shared_ptr<Peer> const& peer)
     {
         json.append (peer->json ());
     }
@@ -930,14 +930,14 @@ OverlayImpl::check ()
     });
 }
 
-Peer::ptr
+std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID (Peer::id_t const& id)
 {
     std::lock_guard <decltype(mutex_)> lock (mutex_);
     auto const iter = ids_.find (id);
     if (iter != ids_.end ())
         return iter->second.lock();
-    return Peer::ptr();
+    return {};
 }
 
 void

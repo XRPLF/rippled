@@ -1147,7 +1147,7 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMLedgerData> const& m)
 
     if (m->has_requestcookie ())
     {
-        Peer::ptr target = overlay_.findPeerByShortID (m->requestcookie ());
+        std::shared_ptr<Peer> target = overlay_.findPeerByShortID (m->requestcookie ());
         if (target)
         {
             m->clear_requestcookie ();

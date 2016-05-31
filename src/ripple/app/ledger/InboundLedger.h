@@ -59,6 +59,9 @@ public:
 
     ~InboundLedger ();
 
+    // Called when the PeerSet timer expires
+    void execute () override;
+
     // Called when another attempt is made to fetch this same ledger
     void update (std::uint32_t seq);
 
@@ -97,7 +100,7 @@ private:
         std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
         TriggerReason reason);
 
-    void trigger (Peer::ptr const&, TriggerReason);
+    void trigger (std::shared_ptr<Peer> const&, TriggerReason);
 
     std::vector<neededHash_t> getNeededHashes ();
 
@@ -106,9 +109,9 @@ private:
 
     void done ();
 
-    void onTimer (bool progress, ScopedLockType& peerSetLock);
+    void onTimer (bool progress, ScopedLockType& peerSetLock) override;
 
-    void newPeer (Peer::ptr const& peer)
+    void newPeer (std::shared_ptr<Peer> const& peer) override
     {
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
@@ -116,7 +119,7 @@ private:
             trigger (peer, TriggerReason::added);
     }
 
-    std::weak_ptr <PeerSet> pmDowncast ();
+    std::weak_ptr <PeerSet> pmDowncast () override;
 
     int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
@@ -163,7 +166,7 @@ private:
     SHAMapAddNode      mStats;
 
     // Data we have received from peers
-    std::recursive_mutex mReceivedDataLock;
+    std::mutex mReceivedDataLock;
     std::vector <PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
 };

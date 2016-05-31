@@ -73,7 +73,7 @@ public:
         int ipLimit = 0;
     };
 
-    using PeerSequence = std::vector <Peer::ptr>;
+    using PeerSequence = std::vector <std::shared_ptr<Peer>>;
 
     virtual ~Overlay() = default;
 
@@ -139,7 +139,7 @@ public:
 
     /** Returns the peer with the matching short id, or null. */
     virtual
-    Peer::ptr
+    std::shared_ptr<Peer>
     findPeerByShortID (Peer::id_t const& id) = 0;
 
     /** Broadcast a proposal. */
@@ -176,7 +176,7 @@ public:
     /** Visit every active peer and return a value
         The functor must:
         - Be callable as:
-            void operator()(Peer::ptr const& peer);
+            void operator()(std::shared_ptr<Peer> const& peer);
          - Must have the following type alias:
             using return_type = void;
          - Be callable as:
@@ -193,16 +193,15 @@ public:
                 typename UnaryFunc::return_type>
     foreach (UnaryFunc f)
     {
-        PeerSequence peers (getActivePeers());
-        for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
-            f (*i);
+        for (auto const& p : getActivePeers())
+            f (p);
         return f();
     }
 
     /** Visit every active peer
         The visitor functor must:
          - Be callable as:
-            void operator()(Peer::ptr const& peer);
+            void operator()(std::shared_ptr<Peer> const& peer);
          - Must have the following type alias:
             using return_type = void;
 
@@ -215,10 +214,8 @@ public:
     >
     foreach(Function f)
     {
-        PeerSequence peers (getActivePeers());
-
-        for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
-            f (*i);
+        for (auto const& p : getActivePeers())
+            f (p);
     }
 
     /** Select from active peers

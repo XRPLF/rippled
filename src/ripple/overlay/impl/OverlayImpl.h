@@ -178,7 +178,7 @@ public:
     void
     checkSanity (std::uint32_t) override;
 
-    Peer::ptr
+    std::shared_ptr<Peer>
     findPeerByShortID (Peer::id_t const& id) override;
 
     void

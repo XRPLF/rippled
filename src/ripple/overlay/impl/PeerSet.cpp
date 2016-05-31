@@ -38,8 +38,8 @@ class InboundLedger;
 //             function pure virtual?
 //
 PeerSet::PeerSet (Application& app, uint256 const& hash,
-    std::chrono::milliseconds interval, bool txnData,
-    clock_type& clock, beast::Journal journal)
+    std::chrono::milliseconds interval, clock_type& clock,
+    beast::Journal journal)
     : app_ (app)
     , m_journal (journal)
     , m_clock (clock)
@@ -48,7 +48,6 @@ PeerSet::PeerSet (Application& app, uint256 const& hash,
     , mTimeouts (0)
     , mComplete (false)
     , mFailed (false)
-    , mTxnData (txnData)
     , mProgress (false)
     , mTimer (app_.getIOService ())
 {
@@ -60,11 +59,11 @@ PeerSet::~PeerSet ()
 {
 }
 
-bool PeerSet::insert (Peer::ptr const& ptr)
+bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 {
     ScopedLockType sl (mLock);
 
-    if (!mPeers.insert (std::make_pair (ptr->id (), 0)).second)
+    if (!mPeers.insert (ptr->id ()).second)
         return false;
 
     newPeer (ptr);
@@ -74,8 +73,15 @@ bool PeerSet::insert (Peer::ptr const& ptr)
 void PeerSet::setTimer ()
 {
     mTimer.expires_from_now(mTimerInterval);
-    mTimer.async_wait (std::bind (&PeerSet::timerEntry, pmDowncast (),
-                                  beast::asio::placeholders::error, m_journal));
+    mTimer.async_wait (
+        [wptr=pmDowncast()](boost::system::error_code const& ec)
+        {
+            if (ec == boost::asio::error::operation_aborted)
+                return;
+
+            if (auto ptr = wptr.lock ())
+                ptr->execute ();
+        });
 }
 
 void PeerSet::invokeOnTimer ()
@@ -102,58 +108,13 @@ void PeerSet::invokeOnTimer ()
         setTimer ();
 }
 
-void PeerSet::timerEntry (
-    std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result,
-    beast::Journal j)
-{
-    if (result == boost::asio::error::operation_aborted)
-        return;
-
-    std::shared_ptr<PeerSet> ptr = wptr.lock ();
-
-    if (ptr)
-    {
-        // VFALCO NOTE So this function is really two different functions depending on
-        //             the value of mTxnData, which is directly tied to whether we are
-        //             a base class of IncomingLedger or TransactionAcquire
-        //
-        if (ptr->mTxnData)
-        {
-            ptr->app_.getJobQueue ().addJob (
-                jtTXN_DATA, "timerEntryTxn", [ptr] (Job&) {
-                    timerJobEntry(ptr);
-                });
-        }
-        else
-        {
-            int jc = ptr->app_.getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
-
-            if (jc > 4)
-            {
-                JLOG (j.debug()) << "Deferring PeerSet timer due to load";
-                ptr->setTimer ();
-            }
-            else
-                ptr->app_.getJobQueue ().addJob (
-                    jtLEDGER_DATA, "timerEntryLgr", [ptr] (Job&) {
-                        timerJobEntry(ptr);
-                    });
-        }
-    }
-}
-
-void PeerSet::timerJobEntry (std::shared_ptr<PeerSet> ptr)
-{
-    ptr->invokeOnTimer ();
-}
-
 bool PeerSet::isActive ()
 {
     ScopedLockType sl (mLock);
     return !isDone ();
 }
 
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ptr const& peer)
+void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, std::shared_ptr<Peer> const& peer)
 {
     if (!peer)
         sendRequest (tmGL);
@@ -171,11 +132,9 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
     Message::pointer packet (
         std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
 
-    for (auto const& p : mPeers)
+    for (auto id : mPeers)
     {
-        Peer::ptr peer (app_.overlay ().findPeerByShortID (p.first));
-
-        if (peer)
+        if (auto peer = app_.overlay ().findPeerByShortID (id))
             peer->send (packet);
     }
 }
@@ -184,9 +143,9 @@ std::size_t PeerSet::getPeerCount () const
 {
     std::size_t ret (0);
 
-    for (auto const& p : mPeers)
+    for (auto id : mPeers)
     {
-        if (app_.overlay ().findPeerByShortID (p.first))
+        if (app_.overlay ().findPeerByShortID (id))
             ++ret;
     }
 

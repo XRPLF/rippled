@@ -68,7 +68,7 @@ auto constexpr ledgerAcquireTimeout = 2500ms;
 
 InboundLedger::InboundLedger (
     Application& app, uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
-    : PeerSet (app, hash, ledgerAcquireTimeout, false, clock,
+    : PeerSet (app, hash, ledgerAcquireTimeout, clock,
         app.journal("InboundLedger"))
     , mHaveHeader (false)
     , mHaveState (false)
@@ -112,6 +112,23 @@ void InboundLedger::init (ScopedLockType& collectionLock)
     }
 }
 
+void InboundLedger::execute ()
+{
+    if (app_.getJobQueue ().getJobCountTotal (jtLEDGER_DATA) > 4)
+    {
+        JLOG (m_journal.debug()) <<
+            "Deferring InboundLedger timer due to load";
+        setTimer ();
+        return;
+    }
+
+    app_.getJobQueue ().addJob (
+        jtLEDGER_DATA, "InboundLedger",
+        [ptr = shared_from_this()] (Job&)
+        {
+            ptr->invokeOnTimer ();
+        });
+}
 void InboundLedger::update (std::uint32_t seq)
 {
     ScopedLockType sl (mLock);
@@ -371,10 +388,10 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         // otherwise, we need to trigger before we add
         // so each peer gets triggered once
         if (mReason != fcHISTORY)
-            trigger (Peer::ptr (), TriggerReason::timeout);
+            trigger (nullptr, TriggerReason::timeout);
         addPeers ();
         if (mReason == fcHISTORY)
-            trigger (Peer::ptr (), TriggerReason::timeout);
+            trigger (nullptr, TriggerReason::timeout);
     }
 }
 
@@ -436,7 +453,7 @@ void InboundLedger::done ()
 
 /** Request more nodes, perhaps from a specific peer
 */
-void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
+void InboundLedger::trigger (std::shared_ptr<Peer> const& peer, TriggerReason reason)
 {
     ScopedLockType sl (mLock);
 
@@ -518,9 +535,9 @@ void InboundLedger::trigger (Peer::ptr const& peer, TriggerReason reason)
                 auto packet = std::make_shared <Message> (
                     tmBH, protocol::mtGET_OBJECTS);
 
-                for (auto const& it : mPeers)
+                for (auto id : mPeers)
                 {
-                    if (auto p = app_.overlay ().findPeerByShortID (it.first))
+                    if (auto p = app_.overlay ().findPeerByShortID (id))
                     {
                         mByHash = false;
                         p->send (packet);
@@ -1035,7 +1052,7 @@ InboundLedger::getNeededHashes ()
 bool InboundLedger::gotData (std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> data)
 {
-    std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
+    std::lock_guard<std::mutex> sl (mReceivedDataLock);
 
     if (isDone ())
         return false;
@@ -1177,11 +1194,12 @@ void InboundLedger::runData ()
     int chosenPeerCount = -1;
 
     std::vector <PeerDataPairType> data;
-    do
+
+    for (;;)
     {
         data.clear();
         {
-            std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
+            std::lock_guard<std::mutex> sl (mReceivedDataLock);
 
             if (mReceivedData.empty ())
             {
@@ -1206,8 +1224,7 @@ void InboundLedger::runData ()
                 }
             }
         }
-
-    } while (1);
+    }
 
     if (chosenPeer)
         trigger (chosenPeer, TriggerReason::reply);

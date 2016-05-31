@@ -48,7 +48,7 @@ public:
     }
 
     SHAMapAddNode takeNodes (const std::list<SHAMapNodeID>& IDs,
-                             const std::list< Blob >& data, Peer::ptr const&);
+                             const std::list< Blob >& data, std::shared_ptr<Peer> const&);
 
     void init (int startPeers);
 
@@ -60,10 +60,12 @@ private:
     bool                    mHaveRoot;
     beast::Journal          j_;
 
-    void onTimer (bool progress, ScopedLockType& peerSetLock);
+    void execute () override;
+
+    void onTimer (bool progress, ScopedLockType& peerSetLock) override;
 
 
-    void newPeer (Peer::ptr const& peer)
+    void newPeer (std::shared_ptr<Peer> const& peer) override
     {
         trigger (peer);
     }
@@ -73,8 +75,8 @@ private:
     // Tries to add the specified number of peers
     void addPeers (int num);
 
-    void trigger (Peer::ptr const&);
-    std::weak_ptr<PeerSet> pmDowncast ();
+    void trigger (std::shared_ptr<Peer> const&);
+    std::weak_ptr<PeerSet> pmDowncast () override;
 };
 
 } // ripple
