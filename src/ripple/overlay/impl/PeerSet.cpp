@@ -64,7 +64,7 @@ bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 {
     ScopedLockType sl (mLock);
 
-    if (!mPeers.insert (std::make_pair (ptr->id (), 0)).second)
+    if (!mPeers.insert (ptr->id ()).second)
         return false;
 
     newPeer (ptr);
@@ -171,9 +171,9 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
     Message::pointer packet (
         std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
 
-    for (auto const& p : mPeers)
+    for (auto id : mPeers)
     {
-        if (auto peer = app_.overlay ().findPeerByShortID (p.first))
+        if (auto peer = app_.overlay ().findPeerByShortID (id))
             peer->send (packet);
     }
 }
@@ -182,9 +182,9 @@ std::size_t PeerSet::getPeerCount () const
 {
     std::size_t ret (0);
 
-    for (auto const& p : mPeers)
+    for (auto id : mPeers)
     {
-        if (app_.overlay ().findPeerByShortID (p.first))
+        if (app_.overlay ().findPeerByShortID (id))
             ++ret;
     }
 

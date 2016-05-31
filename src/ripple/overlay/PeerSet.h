@@ -28,6 +28,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <mutex>
+#include <set>
 
 namespace ripple {
 
@@ -173,9 +174,8 @@ protected:
     // VFALCO TODO move the responsibility for the timer to a higher level
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> mTimer;
 
-    // Maps a peer identifier to the the number of chunks received
-    // from that peer.
-    hash_map <Peer::id_t, int> mPeers;
+    // The identifiers of the peers we are tracking.
+    std::set <Peer::id_t> mPeers;
 };
 
 } // ripple

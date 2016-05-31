@@ -518,9 +518,9 @@ void InboundLedger::trigger (std::shared_ptr<Peer> const& peer, TriggerReason re
                 auto packet = std::make_shared <Message> (
                     tmBH, protocol::mtGET_OBJECTS);
 
-                for (auto const& it : mPeers)
+                for (auto id : mPeers)
                 {
-                    if (auto p = app_.overlay ().findPeerByShortID (it.first))
+                    if (auto p = app_.overlay ().findPeerByShortID (id))
                     {
                         mByHash = false;
                         p->send (packet);
