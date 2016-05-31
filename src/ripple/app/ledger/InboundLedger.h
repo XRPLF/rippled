@@ -163,7 +163,7 @@ private:
     SHAMapAddNode      mStats;
 
     // Data we have received from peers
-    std::recursive_mutex mReceivedDataLock;
+    std::mutex mReceivedDataLock;
     std::vector <PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
 };

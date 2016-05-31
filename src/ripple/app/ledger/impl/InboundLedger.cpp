@@ -1035,7 +1035,7 @@ InboundLedger::getNeededHashes ()
 bool InboundLedger::gotData (std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> data)
 {
-    std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
+    std::lock_guard<std::mutex> sl (mReceivedDataLock);
 
     if (isDone ())
         return false;
@@ -1177,11 +1177,12 @@ void InboundLedger::runData ()
     int chosenPeerCount = -1;
 
     std::vector <PeerDataPairType> data;
-    do
+
+    for (;;)
     {
         data.clear();
         {
-            std::lock_guard<std::recursive_mutex> sl (mReceivedDataLock);
+            std::lock_guard<std::mutex> sl (mReceivedDataLock);
 
             if (mReceivedData.empty ())
             {
@@ -1206,8 +1207,7 @@ void InboundLedger::runData ()
                 }
             }
         }
-
-    } while (1);
+    }
 
     if (chosenPeer)
         trigger (chosenPeer, TriggerReason::reply);
