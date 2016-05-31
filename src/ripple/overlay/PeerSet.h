@@ -113,21 +113,22 @@ public:
 
 private:
     static void timerEntry (
-        std::weak_ptr<PeerSet>, const boost::system::error_code& result,
-        beast::Journal j);
-    static void timerJobEntry (std::shared_ptr<PeerSet>);
+        std::weak_ptr<PeerSet>,
+        const boost::system::error_code& result);
 
 protected:
     using ScopedLockType = std::unique_lock <std::recursive_mutex>;
 
     PeerSet (Application& app, uint256 const& hash, std::chrono::milliseconds interval,
-        bool txnData, clock_type& clock, beast::Journal journal);
+        clock_type& clock, beast::Journal journal);
 
     virtual ~PeerSet() = 0;
 
     virtual void newPeer (std::shared_ptr<Peer> const&) = 0;
 
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
+
+    virtual void execute () = 0;
 
     virtual std::weak_ptr<PeerSet> pmDowncast () = 0;
 
@@ -167,7 +168,6 @@ protected:
     int mTimeouts;
     bool mComplete;
     bool mFailed;
-    bool mTxnData;
     clock_type::time_point mLastAction;
     bool mProgress;
 

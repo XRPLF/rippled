@@ -38,8 +38,8 @@ class InboundLedger;
 //             function pure virtual?
 //
 PeerSet::PeerSet (Application& app, uint256 const& hash,
-    std::chrono::milliseconds interval, bool txnData,
-    clock_type& clock, beast::Journal journal)
+    std::chrono::milliseconds interval, clock_type& clock,
+    beast::Journal journal)
     : app_ (app)
     , m_journal (journal)
     , m_clock (clock)
@@ -48,7 +48,6 @@ PeerSet::PeerSet (Application& app, uint256 const& hash,
     , mTimeouts (0)
     , mComplete (false)
     , mFailed (false)
-    , mTxnData (txnData)
     , mProgress (false)
     , mTimer (app_.getIOService ())
 {
@@ -74,8 +73,8 @@ bool PeerSet::insert (std::shared_ptr<Peer> const& ptr)
 void PeerSet::setTimer ()
 {
     mTimer.expires_from_now(mTimerInterval);
-    mTimer.async_wait (std::bind (&PeerSet::timerEntry, pmDowncast (),
-                                  beast::asio::placeholders::error, m_journal));
+    mTimer.async_wait (std::bind (&PeerSet::timerEntry,
+        pmDowncast (), beast::asio::placeholders::error));
 }
 
 void PeerSet::invokeOnTimer ()
@@ -103,48 +102,14 @@ void PeerSet::invokeOnTimer ()
 }
 
 void PeerSet::timerEntry (
-    std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result,
-    beast::Journal j)
+    std::weak_ptr<PeerSet> wptr,
+    const boost::system::error_code& result)
 {
     if (result == boost::asio::error::operation_aborted)
         return;
 
-    std::shared_ptr<PeerSet> ptr = wptr.lock ();
-
-    if (ptr)
-    {
-        // VFALCO NOTE So this function is really two different functions depending on
-        //             the value of mTxnData, which is directly tied to whether we are
-        //             a base class of IncomingLedger or TransactionAcquire
-        //
-        if (ptr->mTxnData)
-        {
-            ptr->app_.getJobQueue ().addJob (
-                jtTXN_DATA, "timerEntryTxn", [ptr] (Job&) {
-                    timerJobEntry(ptr);
-                });
-        }
-        else
-        {
-            int jc = ptr->app_.getJobQueue ().getJobCountTotal (jtLEDGER_DATA);
-
-            if (jc > 4)
-            {
-                JLOG (j.debug()) << "Deferring PeerSet timer due to load";
-                ptr->setTimer ();
-            }
-            else
-                ptr->app_.getJobQueue ().addJob (
-                    jtLEDGER_DATA, "timerEntryLgr", [ptr] (Job&) {
-                        timerJobEntry(ptr);
-                    });
-        }
-    }
-}
-
-void PeerSet::timerJobEntry (std::shared_ptr<PeerSet> ptr)
-{
-    ptr->invokeOnTimer ();
+    if (auto ptr = wptr.lock ())
+        ptr->execute ();
 }
 
 bool PeerSet::isActive ()

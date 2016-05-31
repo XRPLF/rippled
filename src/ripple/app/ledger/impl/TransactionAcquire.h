@@ -60,6 +60,8 @@ private:
     bool                    mHaveRoot;
     beast::Journal          j_;
 
+    void execute () override;
+
     void onTimer (bool progress, ScopedLockType& peerSetLock);
 
 

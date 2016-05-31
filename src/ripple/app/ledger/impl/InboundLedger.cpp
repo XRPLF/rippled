@@ -68,7 +68,7 @@ auto constexpr ledgerAcquireTimeout = 2500ms;
 
 InboundLedger::InboundLedger (
     Application& app, uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock)
-    : PeerSet (app, hash, ledgerAcquireTimeout, false, clock,
+    : PeerSet (app, hash, ledgerAcquireTimeout, clock,
         app.journal("InboundLedger"))
     , mHaveHeader (false)
     , mHaveState (false)
@@ -112,6 +112,23 @@ void InboundLedger::init (ScopedLockType& collectionLock)
     }
 }
 
+void InboundLedger::execute ()
+{
+    if (app_.getJobQueue ().getJobCountTotal (jtLEDGER_DATA) > 4)
+    {
+        JLOG (m_journal.debug()) <<
+            "Deferring InboundLedger timer due to load";
+        setTimer ();
+        return;
+    }
+
+    app_.getJobQueue ().addJob (
+        jtLEDGER_DATA, "InboundLedger",
+        [ptr = shared_from_this()] (Job&)
+        {
+            ptr->invokeOnTimer ();
+        });
+}
 void InboundLedger::update (std::uint32_t seq)
 {
     ScopedLockType sl (mLock);

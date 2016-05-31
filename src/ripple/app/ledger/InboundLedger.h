@@ -59,6 +59,9 @@ public:
 
     ~InboundLedger ();
 
+    // Called when the PeerSet timer expires
+    void execute () override;
+
     // Called when another attempt is made to fetch this same ledger
     void update (std::uint32_t seq);
 
