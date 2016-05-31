@@ -32,11 +32,12 @@ static auto const master_key =
     "nHU4LxxrSQsRTKy5uZbX95eYowoamUEPCcWraxoiCNbtDaUr1V34";
 static auto const signing_key =
     "n9LHPLA36SBky1YjbaVEApQQ3s9XcpazCgfAG7jsqBb1ugDAosbm";
-static auto const manifest =
-    "JAAAAAFxIe2FwblmJwz4pVYXHLJSzSBgIK7mpQuHNQ88CxW"
-    "jIN7q4nMhAuUTyasIhvj2KPfNRbmmIBnqNUzidgkKb244eP"
-    "794ZpMdkC+8l5n3R/CHP6SAwhYDOaqub0Cs2NjjewBnp1mf"
-    "23rhAzdcjRuWzm0IT12eduZ0DwcF5Ng8rAelaYP1iT93ScE";
+static auto const manifest (R"manifest(
+JAAAAAFxIe2FwblmJwz4pVYXHLJSzSBgIK7mpQuHNQ88CxW
+jIN7q4nMhAuUTyasIhvj2KPfNRbmmIBnqNUzidgkKb244eP
+794ZpMdkC+8l5n3R/CHP6SAwhYDOaqub0Cs2NjjewBnp1mf
+23rhAzdcjRuWzm0IT12eduZ0DwcF5Ng8rAelaYP1iT93ScE
+)manifest");
 static auto sequence = 1;
 }
 

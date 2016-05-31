@@ -491,15 +491,17 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
         Throw<std::runtime_error> (
             "Unable to load keys from [" SECTION_VALIDATOR_KEYS "]");
 
-    auto const validation_manifest =
+    auto const& validation_manifest =
         config.section (SECTION_VALIDATION_MANIFEST);
 
     if (! validation_manifest.lines().empty())
     {
         std::string s;
+        s.reserve (188);
         for (auto const& line : validation_manifest.lines())
             s += beast::rfc2616::trim(line);
-        if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
+        s = beast::detail::base64_decode(s);
+        if (auto mo = make_Manifest (std::move (s)))
         {
             manifestCache_.configManifest (
                 std::move (*mo),

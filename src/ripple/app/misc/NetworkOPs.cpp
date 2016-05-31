@@ -2023,15 +2023,17 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     {
         if (app_.config().VALIDATION_PUB.size ())
         {
-            auto const validation_manifest =
+            auto const& validation_manifest =
                 app_.config().section (SECTION_VALIDATION_MANIFEST);
 
             if (! validation_manifest.lines().empty())
             {
                 std::string s;
+                s.reserve (188);
                 for (auto const& line : validation_manifest.lines())
                     s += beast::rfc2616::trim(line);
-                if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
+                s = beast::detail::base64_decode(s);
+                if (auto mo = make_Manifest (std::move (s)))
                 {
                     Json::Value valManifest = Json::objectValue;
                     valManifest [jss::master_key] = toBase58 (
