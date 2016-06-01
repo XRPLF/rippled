@@ -109,9 +109,9 @@ private:
 
     void done ();
 
-    void onTimer (bool progress, ScopedLockType& peerSetLock);
+    void onTimer (bool progress, ScopedLockType& peerSetLock) override;
 
-    void newPeer (std::shared_ptr<Peer> const& peer)
+    void newPeer (std::shared_ptr<Peer> const& peer) override
     {
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
@@ -119,7 +119,7 @@ private:
             trigger (peer, TriggerReason::added);
     }
 
-    std::weak_ptr <PeerSet> pmDowncast ();
+    std::weak_ptr <PeerSet> pmDowncast () override;
 
     int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 

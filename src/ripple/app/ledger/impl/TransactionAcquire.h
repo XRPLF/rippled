@@ -62,10 +62,10 @@ private:
 
     void execute () override;
 
-    void onTimer (bool progress, ScopedLockType& peerSetLock);
+    void onTimer (bool progress, ScopedLockType& peerSetLock) override;
 
 
-    void newPeer (std::shared_ptr<Peer> const& peer)
+    void newPeer (std::shared_ptr<Peer> const& peer) override
     {
         trigger (peer);
     }
@@ -76,7 +76,7 @@ private:
     void addPeers (int num);
 
     void trigger (std::shared_ptr<Peer> const&);
-    std::weak_ptr<PeerSet> pmDowncast ();
+    std::weak_ptr<PeerSet> pmDowncast () override;
 };
 
 } // ripple
