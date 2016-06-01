@@ -132,38 +132,6 @@ std::string strCopy (Blob const& vucSrc)
 
 }
 
-//
-// IP Port parsing
-//
-// <-- iPort: "" = -1
-// VFALCO TODO Make this not require boost... and especially boost::asio
-bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort)
-{
-    boost::smatch   smMatch;
-    bool            bValid  = false;
-
-    static boost::regex reEndpoint ("\\`\\s*(\\S+)(?:\\s+(\\d+))?\\s*\\'");
-
-    if (boost::regex_match (strSource, smMatch, reEndpoint))
-    {
-        boost::system::error_code   err;
-        std::string                 strIPRaw    = smMatch[1];
-        std::string                 strPortRaw  = smMatch[2];
-
-        boost::asio::ip::address    addrIP      = boost::asio::ip::address::from_string (strIPRaw, err);
-
-        bValid  = !err;
-
-        if (bValid)
-        {
-            strIP   = addrIP.to_string ();
-            iPort   = strPortRaw.empty () ? -1 : beast::lexicalCastThrow <int> (strPortRaw);
-        }
-    }
-
-    return bValid;
-}
-
 // TODO Callers should be using beast::URL and beast::parse_URL instead.
 bool parseUrl (std::string const& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
 {
