@@ -67,6 +67,11 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/types.h>
+#include <ripple/resource/Charge.h>
+#include <ripple/resource/Consumer.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/RPCHandler.h>
 #include <ripple/shamap/Family.h>
 #include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>
@@ -527,7 +532,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void setup() override;
+    bool setup() override;
     void doStart() override;
     void run() override;
     bool isShutdown() override;
@@ -861,14 +866,6 @@ public:
 
     //------------------------------------------------------------------------------
 
-    void exitWithCode(int code)
-    {
-        StopSustain();
-        // VFALCO This breaks invariants: automatic objects
-        //        will not have destructors called.
-        std::exit(code);
-    }
-
     void onDeadlineTimer (DeadlineTimer& timer) override
     {
         if (timer == m_entropyTimer)
@@ -925,7 +922,7 @@ public:
 private:
     void addTxnSeqField();
     void addValidationSeqFields();
-    void updateTables ();
+    bool updateTables ();
     void startGenesisLedger ();
 
     std::shared_ptr<Ledger>
@@ -947,7 +944,7 @@ private:
 //             Or better yet refactor these initializations into RAII classes
 //             which are members of the Application object.
 //
-void ApplicationImp::setup()
+bool ApplicationImp::setup()
 {
     // VFALCO NOTE: 0 means use heuristics to determine the thread count.
     m_jobQueue->setThreadCount (0, config_->standalone());
@@ -983,7 +980,7 @@ void ApplicationImp::setup()
     if (!initSqliteDbs ())
     {
         JLOG(m_journal.fatal()) << "Cannot create database connections!";
-        exitWithCode(3);
+        return false;
     }
 
     getLedgerDB ().getSession ()
@@ -997,7 +994,8 @@ void ApplicationImp::setup()
     mTxnDB->setupCheckpointing (m_jobQueue.get(), logs());
     mLedgerDB->setupCheckpointing (m_jobQueue.get(), logs());
 
-    updateTables ();
+    if (!updateTables ())
+        return false;
 
     // Configure the amendments the server supports
     {
@@ -1041,7 +1039,7 @@ void ApplicationImp::setup()
         {
             JLOG(m_journal.error()) <<
                 "The specified ledger could not be loaded.";
-            exitWithCode(-1);
+            return false;
         }
     }
     else if (startUp == Config::NETWORK)
@@ -1064,13 +1062,13 @@ void ApplicationImp::setup()
     if (!cluster_->load (config().section(SECTION_CLUSTER_NODES)))
     {
         JLOG(m_journal.fatal()) << "Invalid entry in cluster configuration.";
-        Throw<std::exception>();
+        return false;
     }
 
     if (!validators_->load (config().section (SECTION_VALIDATORS)))
     {
         JLOG(m_journal.fatal()) << "Invalid entry in validator configuration.";
-        Throw<std::exception>();
+        return false;
     }
 
     if (validators_->size () == 0 && !config_->standalone())
@@ -1102,7 +1100,8 @@ void ApplicationImp::setup()
     // start first consensus round
     if (! m_networkOPs->beginConsensus(m_ledgerMaster->getClosedLedger()->info().hash))
     {
-        LogicError ("Unable to start consensus");
+        JLOG(m_journal.fatal()) << "Unable to start consensus";
+        return false;
     }
 
     m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
@@ -1125,7 +1124,7 @@ void ApplicationImp::setup()
         {
             JLOG(m_journal.fatal()) << "Could not create Websocket for [" <<
                 port.name << "]";
-            Throw<std::exception> ();
+            return false;
         }
         websocketServers_.emplace_back (std::move (server));
     }
@@ -1153,6 +1152,42 @@ void ApplicationImp::setup()
 
         m_networkOPs->setStandAlone ();
     }
+
+    //
+    // Execute start up rpc commands.
+    //
+    for (auto cmd : config_->section(SECTION_RPC_STARTUP).lines())
+    {
+        Json::Reader jrReader;
+        Json::Value jvCommand;
+
+        if (! jrReader.parse (cmd, jvCommand))
+        {
+            JLOG(m_journal.fatal()) <<
+                "Couldn't parse entry in [" << SECTION_RPC_STARTUP <<
+                "]: '" << cmd;
+        }
+
+        if (!config_->quiet())
+        {
+            JLOG(m_journal.fatal()) << "Startup RPC: " << jvCommand << std::endl;
+        }
+
+        Resource::Charge loadType = Resource::feeReferenceRPC;
+        Resource::Consumer c;
+        RPC::Context context { journal ("RPCHandler"), jvCommand, *this,
+            loadType, getOPs (), getLedgerMaster(), c, Role::ADMIN };
+
+        Json::Value jvResult;
+        RPC::doCommand (context, jvResult);
+
+        if (!config_->quiet())
+        {
+            JLOG(m_journal.fatal()) << "Result: " << jvResult << std::endl;
+        }
+    }
+
+    return true;
 }
 
 void
@@ -1812,12 +1847,12 @@ void ApplicationImp::addValidationSeqFields ()
     tr.commit();
 }
 
-void ApplicationImp::updateTables ()
+bool ApplicationImp::updateTables ()
 {
     if (config_->section (ConfigSection::nodeDatabase ()).empty ())
     {
         JLOG (m_journal.fatal()) << "The [node_db] configuration setting has been updated and must be set";
-        exitWithCode(1);
+        return false;
     }
 
     // perform any needed table updates
@@ -1828,7 +1863,7 @@ void ApplicationImp::updateTables ()
     if (schemaHas (getTxnDB (), "AccountTransactions", 0, "PRIMARY", m_journal))
     {
         JLOG (m_journal.fatal()) << "AccountTransactions database should not have a primary key";
-        exitWithCode(1);
+        return false;
     }
 
     addValidationSeqFields ();
@@ -1848,6 +1883,8 @@ void ApplicationImp::updateTables ()
 
         getNodeStore().import (*source);
     }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
