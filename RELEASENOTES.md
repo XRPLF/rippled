@@ -6,6 +6,23 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.31.2
+
+The `rippled` 0.31.2 release corrects issues with the fee escalation algorithm. We advise `rippled` operators to upgrade immediately.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- A defect in the fee escalation algorithm that caused network fees to escalate more rapidly than intended has been corrected. (RIPD-1177)
+- The minimum local fee advertised by validators will no longer be adjusted upwards.
+
+
+
 ## Version 0.31.1
 
 The `rippled` 0.31.1 release contains one important bug fix. We advise `rippled` operators to upgrade immediately.
@@ -14,7 +31,7 @@ You can [update to the new version](https://ripple.com/build/rippled-setup/#upda
 
 **New and Updated Features**
 
-This release has no new features. However, the "MultiSign" amendment is expected to be enabled by the network very soon, on June 1, 2016.
+This release has no new features.
 
 **Bug Fixes**
 
