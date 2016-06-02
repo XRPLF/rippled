@@ -43,8 +43,7 @@ Json::Value doSign (RPC::Context& context)
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
-        context.app,
-        context.ledgerMaster.getCurrentLedger());
+        context.app);
 }
 
 } // ripple

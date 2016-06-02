@@ -20,8 +20,10 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/tx/apply.h>              // Validity::Valid
 #include <ripple/basics/Log.h>
@@ -31,6 +33,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
@@ -339,7 +342,7 @@ transactionPreProcessImpl (
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> const& ledger)
+    std::shared_ptr<OpenView const> const& ledger)
 {
     auto j = app.journal ("RPCHandler");
 
@@ -387,12 +390,13 @@ transactionPreProcessImpl (
     }
 
     {
-        Json::Value err = checkFee (
+        Json::Value err = checkFee(
             params,
             role,
             verify && signingArgs.editFields(),
             app.config(),
             app.getFeeTrack(),
+            app.getTxQ(),
             ledger);
 
         if (RPC::contains_error (err))
@@ -621,13 +625,14 @@ static Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
 
 //------------------------------------------------------------------------------
 
-Json::Value checkFee (
+Json::Value checkFee(
     Json::Value& request,
     Role const role,
     bool doAutoFill,
     Config const& config,
     LoadFeeTrack const& feeTrack,
-    std::shared_ptr<ReadView const> const& ledger)
+    TxQ const& txQ,
+    std::shared_ptr<OpenView const> const& ledger)
 {
     Json::Value& tx (request[jss::tx_json]);
     if (tx.isMember (jss::Fee))
@@ -670,14 +675,38 @@ Json::Value checkFee (
     std::uint64_t const feeDefault = config.TRANSACTION_FEE_BASE;
 
     // Administrative and identified endpoints are exempt from local fees.
-    std::uint64_t const fee =
+    std::uint64_t const loadFee =
         feeTrack.scaleFeeLoad (feeDefault,
             ledger->fees().base, ledger->fees().units, isUnlimited (role));
+    std::uint64_t fee = loadFee;
+    if (ledger->rules().enabled(featureFeeEscalation,
+        config.features))
+    {
+        auto const assumeTx = request.isMember("x-assume-tx") &&
+            request["x-assume-tx"].isConvertibleTo (Json::uintValue) ?
+                request["x-assume-tx"].asUInt() : 0;
+        auto const metrics = txQ.getMetrics(*ledger, assumeTx);
+        auto const baseFee = ledger->fees().base;
+        auto escalatedFee = mulDiv(
+            metrics.expFeeLevel, baseFee,
+                metrics.referenceFeeLevel).second;
+        if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
+                baseFee).second < metrics.expFeeLevel)
+            ++escalatedFee;
+        fee = std::max(fee, escalatedFee);
+    }
 
     auto const limit = mulDivThrow(feeTrack.scaleFeeBase (
         feeDefault, ledger->fees().base, ledger->fees().units),
         mult, div);
 
+    if (fee > limit && fee != loadFee &&
+        request.isMember("x-queue-okay") &&
+            request["x-queue-okay"].isBool() &&
+                request["x-queue-okay"].asBool())
+    {
+        fee = loadFee;
+    }
     if (fee > limit)
     {
         std::stringstream ss;
@@ -698,11 +727,11 @@ Json::Value transactionSign (
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
-    Application& app,
-    std::shared_ptr<ReadView const> const& ledger)
+    Application& app)
 {
     using namespace detail;
 
+    auto const& ledger = app.openLedger().current();
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSign: " << jvRequest;
 
@@ -733,11 +762,11 @@ Json::Value transactionSubmit (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> const& ledger,
     ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
 
+    auto const& ledger = app.openLedger().current();
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSubmit: " << jvRequest;
 
@@ -860,9 +889,9 @@ Json::Value transactionSignFor (
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
-    Application& app,
-    std::shared_ptr<ReadView const> const& ledger)
+    Application& app)
 {
+    auto const& ledger = app.openLedger().current();
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug) << "transactionSignFor: " << jvRequest;
 
@@ -975,9 +1004,9 @@ Json::Value transactionSubmitMultiSigned (
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    std::shared_ptr<ReadView const> const& ledger,
     ProcessTransactionFn const& processTransaction)
 {
+    auto const& ledger = app.openLedger().current();
     auto j = app.journal ("RPCHandler");
     JLOG (j.debug)
         << "transactionSubmitMultiSigned: " << jvRequest;
@@ -1018,7 +1047,8 @@ Json::Value transactionSubmitMultiSigned (
 
     {
         Json::Value err = checkFee (
-            jvRequest, role, false, app.config(), app.getFeeTrack(), ledger);
+            jvRequest, role, false, app.config(), app.getFeeTrack(),
+                app.getTxQ(), ledger);
 
         if (RPC::contains_error(err))
             return err;

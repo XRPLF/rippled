@@ -66,7 +66,7 @@ public:
         : targetTxnCount_(50)
         , minimumTxnCount_(standAlone ? 1000 : 5)
         , txnsExpected_(minimumTxnCount_)
-        , minimumMultiplier_(500)
+        , minimumMultiplier_(baseLevel * 500)
         , escalationMultiplier_(minimumMultiplier_)
         , j_(j)
     {
@@ -114,7 +114,7 @@ public:
     }
 
     std::uint64_t
-    scaleFeeLevel(OpenView const& view) const;
+    scaleFeeLevel(OpenView const& view, std::uint32_t txCountPadding = 0) const;
 };
 
 }
@@ -242,7 +242,7 @@ public:
     /** Returns fee metrics in reference fee (level) units.
     */
     struct Metrics
-    getMetrics(OpenView const& view) const;
+    getMetrics(OpenView const& view, std::uint32_t txCountPadding = 0) const;
 
     /** Packages up fee metrics for the `fee` RPC command.
     */

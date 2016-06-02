@@ -34,6 +34,8 @@ namespace test {
 
 class TxQ_test : public beast::unit_test::suite
 {
+    static auto constexpr defaultMedianLevel = 256 * 500;
+
     void
     checkMetrics(
         jtx::Env& env,
@@ -53,10 +55,9 @@ class TxQ_test : public beast::unit_test::suite
         expect(metrics.minFeeLevel == expectedMinFeeLevel, "minFeeLevel");
         expect(metrics.medFeeLevel == expectedMedFeeLevel, "medFeeLevel");
         auto expectedCurFeeLevel = expectedInLedger > expectedPerLedger ?
-            metrics.referenceFeeLevel * expectedMedFeeLevel *
-                expectedInLedger * expectedInLedger /
-                    (expectedPerLedger * expectedPerLedger) :
-                        metrics.referenceFeeLevel;
+            expectedMedFeeLevel * expectedInLedger * expectedInLedger /
+                (expectedPerLedger * expectedPerLedger) :
+                    metrics.referenceFeeLevel;
         expect(metrics.expFeeLevel == expectedCurFeeLevel, "expFeeLevel");
     }
 
@@ -98,15 +99,15 @@ public:
 
         expect(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 3, 256, 500);
+        checkMetrics(env, 0, boost::none, 0, 3, 256, defaultMedianLevel);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice, bob, charlie, daria));
-        checkMetrics(env, 0, boost::none, 4, 3, 256, 500);
+        checkMetrics(env, 0, boost::none, 4, 3, 256, defaultMedianLevel);
 
         // Alice - price starts exploding: held
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 4, 3, 256, 500);
+        checkMetrics(env, 1, boost::none, 4, 3, 256, defaultMedianLevel);
 
         auto openLedgerFee =
             [&]()
@@ -116,26 +117,25 @@ public:
 
         // Bob with really high fee - applies
         env(noop(bob), openLedgerFee());
-        checkMetrics(env, 1, boost::none, 5, 3, 256, 500);
+        checkMetrics(env, 1, boost::none, 5, 3, 256, defaultMedianLevel);
 
         // Daria with low fee: hold
         env(noop(daria), fee(1000), queued);
-        checkMetrics(env, 2, boost::none, 5, 3, 256, 500);
+        checkMetrics(env, 2, boost::none, 5, 3, 256, defaultMedianLevel);
 
         env.close();
         // Verify that the held transactions got applied
-        auto lastMedian = 500;
-        checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);
+        checkMetrics(env, 0, 10, 2, 5, 256, defaultMedianLevel);
 
         //////////////////////////////////////////////////////////////
 
         // Make some more accounts. We'll need them later to abuse the queue.
         env.fund(XRP(50000), noripple(elmo, fred, gwen, hank));
-        checkMetrics(env, 0, 10, 6, 5, 256, lastMedian);
+        checkMetrics(env, 0, 10, 6, 5, 256, defaultMedianLevel);
 
         // Now get a bunch of transactions held.
         env(noop(alice), fee(12), queued);
-        checkMetrics(env, 1, 10, 6, 5, 256, lastMedian);
+        checkMetrics(env, 1, 10, 6, 5, 256, defaultMedianLevel);
 
         env(noop(bob), fee(10), queued); // won't clear the queue
         env(noop(charlie), fee(20), queued);
@@ -144,12 +144,11 @@ public:
         env(noop(fred), fee(19), queued);
         env(noop(gwen), fee(16), queued);
         env(noop(hank), fee(18), queued);
-        checkMetrics(env, 8, 10, 6, 5, 256, lastMedian);
+        checkMetrics(env, 8, 10, 6, 5, 256, defaultMedianLevel);
 
         env.close();
         // Verify that the held transactions got applied
-        lastMedian = 500;
-        checkMetrics(env, 1, 12, 7, 6, 256, lastMedian);
+        checkMetrics(env, 1, 12, 7, 6, 256, defaultMedianLevel);
 
         // Bob's transaction is still stuck in the queue.
 
@@ -158,59 +157,56 @@ public:
         // Hank sends another txn
         env(noop(hank), fee(10), queued);
         // But he's not going to leave it in the queue
-        checkMetrics(env, 2, 12, 7, 6, 256, lastMedian);
+        checkMetrics(env, 2, 12, 7, 6, 256, defaultMedianLevel);
 
         // Hank sees his txn  got held and bumps the fee,
         // but doesn't even bump it enough to requeue
         env(noop(hank), fee(11), ter(telINSUF_FEE_P));
-        checkMetrics(env, 2, 12, 7, 6, 256, lastMedian);
+        checkMetrics(env, 2, 12, 7, 6, 256, defaultMedianLevel);
 
         // Hank sees his txn got held and bumps the fee,
         // enough to requeue, but doesn't bump it enough to
         // apply to the ledger
         env(noop(hank), fee(6000), queued);
         // But he's not going to leave it in the queue
-        checkMetrics(env, 2, 12, 7, 6, 256, lastMedian);
+        checkMetrics(env, 2, 12, 7, 6, 256, defaultMedianLevel);
 
         // Hank sees his txn got held and bumps the fee,
         // high enough to get into the open ledger, because
         // he doesn't want to wait.
         env(noop(hank), openLedgerFee());
-        checkMetrics(env, 1, 12, 8, 6, 256, lastMedian);
+        checkMetrics(env, 1, 12, 8, 6, 256, defaultMedianLevel);
 
         // Hank then sends another, less important txn
         // (In addition to the metrics, this will verify that
         //  the original txn got removed.)
         env(noop(hank), fee(6000), queued);
-        checkMetrics(env, 2, 12, 8, 6, 256, lastMedian);
+        checkMetrics(env, 2, 12, 8, 6, 256, defaultMedianLevel);
 
         env.close();
 
         // Verify that bob and hank's txns were applied
-        lastMedian = 500;
-        checkMetrics(env, 0, 16, 2, 8, 256, lastMedian);
+        checkMetrics(env, 0, 16, 2, 8, 256, defaultMedianLevel);
 
         // Close again with a simulated time leap to
         // reset the escalation limit down to minimum
-        lastMedian = 76928;
         env.close(env.now() + 5s, 10000ms);
-        checkMetrics(env, 0, 16, 0, 3, 256, lastMedian);
+        checkMetrics(env, 0, 16, 0, 3, 256, defaultMedianLevel);
         // Then close once more without the time leap
         // to reset the queue maxsize down to minimum
-        lastMedian = 500;
         env.close();
-        checkMetrics(env, 0, 6, 0, 3, 256, lastMedian);
+        checkMetrics(env, 0, 6, 0, 3, 256, defaultMedianLevel);
 
         //////////////////////////////////////////////////////////////
 
         // At this point, the queue should have a limit of 6.
         // Stuff the ledger and queue so we can verify that
         // stuff gets kicked out.
-        env(noop(hank));
-        env(noop(gwen));
-        env(noop(fred));
-        env(noop(elmo));
-        checkMetrics(env, 0, 6, 4, 3, 256, lastMedian);
+        env(noop(hank), fee(7000));
+        env(noop(gwen), fee(7000));
+        env(noop(fred), fee(7000));
+        env(noop(elmo), fee(7000));
+        checkMetrics(env, 0, 6, 4, 3, 256, defaultMedianLevel);
 
         // Use explicit fees so we can control which txn
         // will get dropped
@@ -224,7 +220,7 @@ public:
         env(noop(daria), fee(15), queued);
 
         // Queue is full now.
-        checkMetrics(env, 6, 6, 4, 3, 385, lastMedian);
+        checkMetrics(env, 6, 6, 4, 3, 385, defaultMedianLevel);
 
         // Try to add another transaction with the default (low) fee,
         // it should fail because the queue is full.
@@ -236,19 +232,17 @@ public:
         env(noop(charlie), fee(100), queued);
 
         // Queue is still full, of course, but the min fee has gone up
-        checkMetrics(env, 6, 6, 4, 3, 410, lastMedian);
+        checkMetrics(env, 6, 6, 4, 3, 410, defaultMedianLevel);
 
         // Close out the ledger, the transactions are accepted, the
         // queue is cleared, then the localTxs are retried. At this
         // point, daria's transaction that was dropped from the queue
         // is put back in. Neat.
         env.close();
-        lastMedian = 500;
-        checkMetrics(env, 2, 8, 5, 4, 256, lastMedian);
+        checkMetrics(env, 2, 8, 5, 4, 256, 256 * 700);
 
-        lastMedian = 500;
         env.close();
-        checkMetrics(env, 0, 10, 2, 5, 256, lastMedian);
+        checkMetrics(env, 0, 10, 2, 5, 256, defaultMedianLevel);
 
         //////////////////////////////////////////////////////////////
         // Cleanup:
@@ -274,7 +268,7 @@ public:
         checkMetrics(env, metrics.txCount,
             metrics.txQMaxSize, metrics.txPerLedger + 1,
             metrics.txPerLedger,
-            256, lastMedian);
+            256, defaultMedianLevel);
     }
 
     void testLocalTxRetry()
@@ -295,20 +289,20 @@ public:
 
         expect(env.current()->fees().base == 10);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 0, 2, 256, defaultMedianLevel);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(XRP(50000), noripple(alice, bob, charlie));
-        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Alice - price starts exploding: held
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Alice - Alice is already in the queue, so can't hold.
         env(noop(alice), seq(env.seq(alice) + 1),
             ter(telINSUF_FEE_P));
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, defaultMedianLevel);
 
         auto openLedgerFee =
             [&]()
@@ -319,23 +313,22 @@ public:
         // fails because the item in the TxQ hasn't applied.
         env(noop(alice), openLedgerFee(),
             seq(env.seq(alice) + 1), ter(terPRE_SEQ));
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Bob with really high fee - applies
         env(noop(bob), openLedgerFee());
-        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 4, 2, 256, defaultMedianLevel);
 
         // Daria with low fee: hold
         env(noop(charlie), fee(1000), queued);
-        checkMetrics(env, 2, boost::none, 4, 2, 256, 500);
+        checkMetrics(env, 2, boost::none, 4, 2, 256, defaultMedianLevel);
 
         env.close();
         // Verify that the held transactions got applied
-        auto lastMedian = 500;
         // One of alice's bad transactions applied from the
         // Local Txs. Since they both have the same seq,
         // one succeeds, one fails. We don't care which.
-        checkMetrics(env, 0, 8, 3, 4, 256, lastMedian);
+        checkMetrics(env, 0, 8, 3, 4, 256, defaultMedianLevel);
     }
 
     void testLastLedgerSeq()
@@ -357,7 +350,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 0, 2, 256, defaultMedianLevel);
 
         // Fund across several ledgers so the TxQ metrics stay restricted.
         env.fund(XRP(1000), noripple(alice, bob));
@@ -367,25 +360,25 @@ public:
         env.fund(XRP(1000), noripple(edgar, felicia));
         env.close(env.now() + 5s, 10000ms);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 0, 2, 256, defaultMedianLevel);
         env(noop(bob));
         env(noop(charlie));
         env(noop(daria));
-        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Queue an item with a LastLedgerSeq.
         env(noop(alice), json(R"({"LastLedgerSequence":7})"),
             queued);
         // Queue items with higher fees to force the previous
         // txn to wait.
-        env(noop(bob), fee(20), queued);
-        env(noop(charlie), fee(20), queued);
-        env(noop(daria), fee(20), queued);
-        env(noop(edgar), fee(20), queued);
-        checkMetrics(env, 5, boost::none, 3, 2, 256, 500);
+        env(noop(bob), fee(7000), queued);
+        env(noop(charlie), fee(7000), queued);
+        env(noop(daria), fee(7000), queued);
+        env(noop(edgar), fee(7000), queued);
+        checkMetrics(env, 5, boost::none, 3, 2, 256, defaultMedianLevel);
 
         env.close();
-        checkMetrics(env, 1, 6, 4, 3, 256, 500);
+        checkMetrics(env, 1, 6, 4, 3, 256, defaultMedianLevel);
 
         // Keep alice's transaction waiting.
         env(noop(bob), fee(20), queued);
@@ -393,12 +386,12 @@ public:
         env(noop(daria), fee(20), queued);
         env(noop(edgar), fee(20), queued);
         env(noop(felicia), fee(20), queued);
-        checkMetrics(env, 6, 6, 4, 3, 257, 500);
+        checkMetrics(env, 6, 6, 4, 3, 257, defaultMedianLevel);
 
         env.close();
         // alice's transaction expired without getting
         // into the ledger, so the queue is now empty.
-        checkMetrics(env, 0, 8, 5, 4, 256, 512);
+        checkMetrics(env, 0, 8, 5, 4, 256, 179200);
         expect(env.seq(alice) == 1);
     }
 
@@ -417,7 +410,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 0, 2, 256, defaultMedianLevel);
 
         // Fund these accounts and close the ledger without
         // involving the queue, so that stats aren't affected.
@@ -428,17 +421,17 @@ public:
         env(noop(alice));
         env(noop(alice));
         env(noop(alice));
-        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 3, 2, 256, defaultMedianLevel);
 
         env(noop(bob), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Even though this transaction has a 0 fee,
         // SetRegularKey::calculateBaseFee indicates this is
         // a "free" transaction, so it has an "infinite" fee
         // level and goes into the open ledger.
         env(regkey(alice, bob), fee(0));
-        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 4, 2, 256, defaultMedianLevel);
 
         // This transaction also has an "infinite" fee level,
         // but since bob has a txn in the queue, and multiple
@@ -448,7 +441,7 @@ public:
         // canBeHeld failing under the hood.
         env(regkey(bob, alice), fee(0),
             seq(env.seq(bob) + 1), ter(terPRE_SEQ));
-        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 4, 2, 256, defaultMedianLevel);
 
     }
 
@@ -490,19 +483,19 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        checkMetrics(env, 0, boost::none, 0, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 0, 2, 256, defaultMedianLevel);
 
         env.fund(XRP(1000), noripple(alice, bob));
 
-        checkMetrics(env, 0, boost::none, 2, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 2, 2, 256, defaultMedianLevel);
 
         // Fill the ledger
         env(noop(alice));
-        checkMetrics(env, 0, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 0, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Put a transaction in the queue
         env(noop(alice), queued);
-        checkMetrics(env, 1, boost::none, 3, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 3, 2, 256, defaultMedianLevel);
 
         // Now cheat, and bypass the queue.
         {
@@ -524,12 +517,12 @@ public:
                 );
             env.postconditions(jt, ter, didApply);
         }
-        checkMetrics(env, 1, boost::none, 4, 2, 256, 500);
+        checkMetrics(env, 1, boost::none, 4, 2, 256, defaultMedianLevel);
 
         env.close();
         // Alice's queued transaction failed in TxQ::accept
         // with tefPAST_SEQ
-        checkMetrics(env, 0, 8, 0, 4, 256, 500);
+        checkMetrics(env, 0, 8, 0, 4, 256, defaultMedianLevel);
 
     }
 

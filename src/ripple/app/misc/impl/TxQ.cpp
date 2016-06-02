@@ -149,12 +149,10 @@ FeeMetrics::updateFeeMetrics(Application& app,
 }
 
 std::uint64_t
-FeeMetrics::scaleFeeLevel(OpenView const& view) const
+FeeMetrics::scaleFeeLevel(OpenView const& view, std::uint32_t txCountPadding) const
 {
-    auto fee = baseLevel;
-
     // Transactions in the open ledger so far
-    auto const current = view.txCount();
+    auto const current = view.txCount() + txCountPadding;
 
     std::size_t target;
     std::uint32_t multiplier;
@@ -172,11 +170,10 @@ FeeMetrics::scaleFeeLevel(OpenView const& view) const
     {
         // Compute escalated fee level
         // Don't care about the overflow flag
-        fee = mulDiv(fee, current * current *
-            multiplier, target * target).second;
+        return mulDiv(multiplier, current * current,
+            target * target).second;
     }
-
-    return fee;
+    return baseLevel;
 }
 
 } // detail
@@ -652,7 +649,7 @@ TxQ::accept(Application& app,
 }
 
 TxQ::Metrics
-TxQ::getMetrics(OpenView const& view) const
+TxQ::getMetrics(OpenView const& view, std::uint32_t txCountPadding) const
 {
     Metrics result;
 
@@ -666,7 +663,7 @@ TxQ::getMetrics(OpenView const& view) const
     result.minFeeLevel = isFull() ? byFee_.rbegin()->feeLevel + 1 :
         feeMetrics_.baseLevel;
     result.medFeeLevel = feeMetrics_.getEscalationMultiplier();
-    result.expFeeLevel = feeMetrics_.scaleFeeLevel(view);
+    result.expFeeLevel = feeMetrics_.scaleFeeLevel(view, txCountPadding);
 
     return result;
 }
@@ -707,9 +704,14 @@ TxQ::doRPC(Application& app) const
     drops[jss::median_fee] = to_string(mulDiv(
         metrics.medFeeLevel, baseFee,
             metrics.referenceFeeLevel).second);
-    drops[jss::open_ledger_fee] = to_string(mulDiv(
+    auto escalatedFee = mulDiv(
         metrics.expFeeLevel, baseFee,
-            metrics.referenceFeeLevel).second);
+            metrics.referenceFeeLevel).second;
+    if (mulDiv(escalatedFee, metrics.referenceFeeLevel,
+            baseFee).second < metrics.expFeeLevel)
+        ++escalatedFee;
+
+    drops[jss::open_ledger_fee] = to_string(escalatedFee);
 
     return ret;
 }
