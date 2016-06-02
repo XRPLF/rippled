@@ -468,7 +468,8 @@ flow (PaymentSandbox const& baseView,
 
             activeStrands.push (strand);
 
-            if (!best || q > best->quality)
+            if (!best || best->quality < q ||
+                (best->quality == q && best->out < f.out))
                 best.emplace (f.in, f.out, std::move (*f.sandbox), *strand, q);
         }
 
