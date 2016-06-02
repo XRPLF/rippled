@@ -174,7 +174,7 @@ make_DH(std::string const& params)
     auto const* p (
         reinterpret_cast <std::uint8_t const*>(&params [0]));
     DH* const dh = d2i_DHparams (nullptr, &p, params.size ());
-    if (p == nullptr)
+    if (dh == nullptr)
         beast::FatalError ("d2i_DHparams returned nullptr.",
             __FILE__, __LINE__);
     return dh_ptr(dh);
@@ -366,29 +366,9 @@ error_message (std::string const& what,
 
 static
 void
-initCommon (boost::asio::ssl::context& context)
-{
-    context.set_options (
-        boost::asio::ssl::context::default_workarounds |
-        boost::asio::ssl::context::no_sslv2 |
-        boost::asio::ssl::context::no_sslv3 |
-        boost::asio::ssl::context::single_dh_use);
-
-    SSL_CTX_set_tmp_dh_callback (
-        context.native_handle (),
-        tmp_dh_handler);
-
-    SSL_CTX_set_info_callback (
-        context.native_handle (),
-        info_handler);
-}
-
-static
-void
 initAnonymous (
     boost::asio::ssl::context& context, std::string const& cipherList)
 {
-    initCommon(context);
     int const result = SSL_CTX_set_cipher_list (
         context.native_handle (),
         cipherList.c_str ());
@@ -414,8 +394,6 @@ void
 initAuthenticated (boost::asio::ssl::context& context,
     std::string key_file, std::string cert_file, std::string chain_file)
 {
-    initCommon (context);
-
     SSL_CTX* const ssl = context.native_handle ();
 
     bool cert_set = false;
@@ -507,6 +485,26 @@ initAuthenticated (boost::asio::ssl::context& context,
     }
 }
 
+std::shared_ptr<boost::asio::ssl::context>
+get_context ()
+{
+    auto c = std::make_shared<boost::asio::ssl::context> (
+        boost::asio::ssl::context::sslv23);
+
+    c->set_options (
+        boost::asio::ssl::context::default_workarounds |
+        boost::asio::ssl::context::no_sslv2 |
+        boost::asio::ssl::context::no_sslv3 |
+        boost::asio::ssl::context::single_dh_use);
+
+    SSL_CTX_set_tmp_dh_callback (
+        c->native_handle (), tmp_dh_handler);
+    SSL_CTX_set_info_callback (
+        c->native_handle (), info_handler);
+
+    return c;
+}
+
 } // detail
 } // openssl
 
@@ -517,9 +515,7 @@ make_SSLContext()
     static auto const context =
         []()
         {
-            auto const context = std::make_shared<
-                boost::asio::ssl::context>(
-                    boost::asio::ssl::context::sslv23);
+            auto const context = openssl::detail::get_context();
             // By default, allow anonymous DH.
             openssl::detail::initAnonymous(
                 *context, "ALL:!LOW:!EXP:!MD5:@STRENGTH");
@@ -535,9 +531,7 @@ std::shared_ptr<boost::asio::ssl::context>
 make_SSLContextAuthed (std::string const& key_file,
     std::string const& cert_file, std::string const& chain_file)
 {
-    std::shared_ptr<boost::asio::ssl::context> context =
-        std::make_shared<boost::asio::ssl::context> (
-            boost::asio::ssl::context::sslv23);
+    auto const context = openssl::detail::get_context();
     openssl::detail::initAuthenticated(*context,
         key_file, cert_file, chain_file);
     return context;
