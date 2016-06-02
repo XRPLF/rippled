@@ -155,9 +155,14 @@ def shell(cmd, args=(), silent=False):
     lines = []
     count = 0
     for line in process.stdout:
-        lines.append(line.decode())
+        # Python 2 vs. Python 3
+        if isinstance(line, str):
+            decoded = line
+        else:
+            decoded = line.decode()
+        lines.append(decoded)
         if verbose:
-            print(line.decode(), end='')
+            print(decoded, end='')
         elif not silent:
             count += 1
             if count >= 80:
