@@ -2040,12 +2040,6 @@
     <ClCompile Include="..\..\src\ripple\beast\core\core.unity.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\beast\core\FatalError.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\FatalError.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\HeapBlock.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>

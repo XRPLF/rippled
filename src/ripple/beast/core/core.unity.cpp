@@ -51,7 +51,6 @@
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
-#include <ripple/beast/core/FatalError.h>
 #include <ripple/beast/core/LexicalCast.h>
 
 #include <ripple/beast/core/SystemStats.h>
@@ -193,7 +192,6 @@
 
 #endif
 
-#include <ripple/beast/core/FatalError.cpp>
 #include <ripple/beast/core/SemanticVersion.cpp>
 #include <ripple/beast/core/SystemStats.cpp>
 #include <ripple/beast/core/RelativeTime.cpp>
