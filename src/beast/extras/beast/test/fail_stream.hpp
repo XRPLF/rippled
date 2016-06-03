@@ -14,6 +14,7 @@
 #include <beast/core/detail/get_lowest_layer.hpp>
 #include <beast/websocket/teardown.hpp>
 #include <beast/test/fail_counter.hpp>
+#include <boost/optional.hpp>
 
 namespace beast {
 namespace test {
@@ -26,8 +27,8 @@ namespace test {
 template<class NextLayer>
 class fail_stream
 {
+    boost::optional<fail_counter> fc_;
     fail_counter* pfc_;
-    fail_counter fc_;
     NextLayer next_layer_;
 
 public:
@@ -46,8 +47,8 @@ public:
     template<class... Args>
     explicit
     fail_stream(std::size_t n, Args&&... args)
-        : pfc_(&fc_)
-        , fc_(n)
+        : fc_(n)
+        , pfc_(&*fc_)
         , next_layer_(std::forward<Args>(args)...)
     {
     }

@@ -8,6 +8,8 @@
 // Test that header file is self-contained.
 #include <beast/http/read.hpp>
 
+#include "fail_parser.hpp"
+
 #include <beast/http/headers.hpp>
 #include <beast/http/streambuf_body.hpp>
 #include <beast/test/fail_stream.hpp>
@@ -24,77 +26,6 @@ class read_test
     , public test::enable_yield_to
 {
 public:
-    template<bool isRequest>
-    class fail_parser
-        : public basic_parser_v1<isRequest, fail_parser<isRequest>>
-    {
-        test::fail_counter& fc_;
-
-    public:
-        template<class... Args>
-        explicit
-        fail_parser(test::fail_counter& fc, Args&&... args)
-            : fc_(fc)
-        {
-        }
-
-        void on_start(error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_method(boost::string_ref const&, error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_uri(boost::string_ref const&, error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_reason(boost::string_ref const&, error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_request(error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_response(error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_field(boost::string_ref const&, error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_value(boost::string_ref const&, error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        int on_headers(error_code& ec)
-        {
-            fc_.fail(ec);
-            return 0;
-        }
-
-        void on_body(boost::string_ref const&, error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-
-        void on_complete(error_code& ec)
-        {
-            fc_.fail(ec);
-        }
-    };
-
     template<bool isRequest>
     void failMatrix(const char* s, yield_context do_yield)
     {

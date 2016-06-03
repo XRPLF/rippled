@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_DETAIL_WRITE_STREAMBUF_HPP
-#define BEAST_DETAIL_WRITE_STREAMBUF_HPP
+#ifndef BEAST_DETAIL_WRITE_DYNABUF_HPP
+#define BEAST_DETAIL_WRITE_DYNABUF_HPP
 
 #include <beast/core/buffer_concepts.hpp>
 #include <boost/asio/buffer.hpp>
@@ -42,73 +42,73 @@ public:
         ! is_string_literal<T>::value;
 };
 
-template<class Streambuf>
+template<class DynamicBuffer>
 void
-write_streambuf(Streambuf& streambuf,
+write_dynabuf(DynamicBuffer& dynabuf,
     boost::asio::const_buffer const& buffer)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(buffer_size(buffer)),
+    dynabuf.commit(buffer_copy(
+        dynabuf.prepare(buffer_size(buffer)),
             buffer));
 }
 
-template<class Streambuf>
+template<class DynamicBuffer>
 void
-write_streambuf(Streambuf& streambuf,
+write_dynabuf(DynamicBuffer& dynabuf,
     boost::asio::mutable_buffer const& buffer)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(buffer_size(buffer)),
+    dynabuf.commit(buffer_copy(
+        dynabuf.prepare(buffer_size(buffer)),
             buffer));
 }
 
-template<class Streambuf, class T>
+template<class DynamicBuffer, class T>
 typename std::enable_if<
     is_BufferConvertible<T>::value &&
     ! std::is_convertible<T, boost::asio::const_buffer>::value &&
     ! std::is_convertible<T, boost::asio::mutable_buffer>::value
 >::type
-write_streambuf(Streambuf& streambuf, T const& t)
+write_dynabuf(DynamicBuffer& dynabuf, T const& t)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
     auto const buffers = boost::asio::buffer(t);
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(buffer_size(buffers)),
+    dynabuf.commit(buffer_copy(
+        dynabuf.prepare(buffer_size(buffers)),
             buffers));
 }
 
-template<class Streambuf, class Buffers>
+template<class DynamicBuffer, class Buffers>
 typename std::enable_if<
     is_ConstBufferSequence<Buffers>::value &&
     ! is_BufferConvertible<Buffers>::value &&
     ! std::is_convertible<Buffers, boost::asio::const_buffer>::value &&
     ! std::is_convertible<Buffers, boost::asio::mutable_buffer>::value
 >::type
-write_streambuf(Streambuf& streambuf, Buffers const& buffers)
+write_dynabuf(DynamicBuffer& dynabuf, Buffers const& buffers)
 {
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(buffer_size(buffers)),
+    dynabuf.commit(buffer_copy(
+        dynabuf.prepare(buffer_size(buffers)),
             buffers));
 }
 
-template<class Streambuf, std::size_t N>
+template<class DynamicBuffer, std::size_t N>
 void
-write_streambuf(Streambuf& streambuf, const char (&s)[N])
+write_dynabuf(DynamicBuffer& dynabuf, const char (&s)[N])
 {
     using boost::asio::buffer_copy;
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(N - 1),
+    dynabuf.commit(buffer_copy(
+        dynabuf.prepare(N - 1),
             boost::asio::buffer(s, N - 1)));
 }
 
-template<class Streambuf, class T>
+template<class DynamicBuffer, class T>
 typename std::enable_if<
     ! is_string_literal<T>::value &&
     ! is_ConstBufferSequence<T>::value &&
@@ -116,22 +116,22 @@ typename std::enable_if<
     ! std::is_convertible<T, boost::asio::const_buffer>::value &&
     ! std::is_convertible<T, boost::asio::mutable_buffer>::value
 >::type
-write_streambuf(Streambuf& streambuf, T const& t)
+write_dynabuf(DynamicBuffer& dynabuf, T const& t)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
     auto const s = boost::lexical_cast<std::string>(t);
-    streambuf.commit(buffer_copy(
-        streambuf.prepare(s.size()), buffer(s)));
+    dynabuf.commit(buffer_copy(
+        dynabuf.prepare(s.size()), buffer(s)));
 }
 
-template<class Streambuf, class T0, class T1, class... TN>
+template<class DynamicBuffer, class T0, class T1, class... TN>
 void
-write_streambuf(Streambuf& streambuf,
+write_dynabuf(DynamicBuffer& dynabuf,
     T0 const& t0, T1 const& t1, TN const&... tn)
 {
-    write_streambuf(streambuf, t0);
-    write_streambuf(streambuf, t1, tn...);
+    write_dynabuf(dynabuf, t0);
+    write_dynabuf(dynabuf, t1, tn...);
 }
 
 } // detail

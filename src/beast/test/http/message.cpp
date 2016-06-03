@@ -9,6 +9,7 @@
 #include <beast/http/message.hpp>
 
 #include <beast/http/headers.hpp>
+#include <beast/http/string_body.hpp>
 #include <beast/unit_test/suite.hpp>
 #include <type_traits>
 
@@ -126,9 +127,30 @@ public:
         }
     }
 
+    void testSwap()
+    {
+        message<true, string_body, headers> m1;
+        message<true, string_body, headers> m2;
+        m1.url = "u";
+        m1.body = "1";
+        m1.headers.insert("h", "v");
+        m2.method = "G";
+        m2.body = "2";
+        swap(m1, m2);
+        expect(m1.method == "G");
+        expect(m2.method.empty());
+        expect(m1.url.empty());
+        expect(m2.url == "u");
+        expect(m1.body == "2");
+        expect(m2.body == "1");
+        expect(! m1.headers.exists("h"));
+        expect(m2.headers.exists("h"));
+    }
+
     void run() override
     {
         testConstruction();
+        testSwap();
     }
 };
 

@@ -15,6 +15,7 @@ add_executable (core-tests
     buffer_concepts.cpp
     buffers_adapter.cpp
     consuming_buffers.cpp
+    dynabuf_readstream.cpp
     error.cpp
     handler_alloc.cpp
     handler_concepts.cpp
@@ -24,9 +25,8 @@ add_executable (core-tests
     static_string.cpp
     stream_concepts.cpp
     streambuf.cpp
-    streambuf_readstream.cpp
     to_string.cpp
-    write_streambuf.cpp
+    write_dynabuf.cpp
     detail/base64.cpp
     detail/empty_base_optimization.cpp
     detail/get_lowest_layer.cpp

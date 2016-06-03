@@ -1,7 +1,7 @@
-#!/bin/bash -u
+#!/usr/bin/env bash
 # Assumptions:
 # 1) VALGRIND_ROOT is already defined, and contains a valid values
-set -e
+set -eu
 if [ ! -d "$VALGRIND_ROOT/bin" ]
 then
   # These are specified in the addons/apt section of .travis.yml

@@ -321,12 +321,12 @@ public:
     */
     template<bool isRequest, class Body, class Headers,
         class ReadHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_read(message_v1<isRequest, Body, Headers>& msg,
         ReadHandler&& handler);
 
@@ -416,12 +416,12 @@ public:
     */
     template<bool isRequest, class Body, class Headers,
         class WriteHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_write(message_v1<isRequest, Body, Headers> const& msg,
         WriteHandler&& handler);
 

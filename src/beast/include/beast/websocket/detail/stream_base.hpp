@@ -18,7 +18,6 @@
 #include <beast/http/empty_body.hpp>
 #include <beast/http/message.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/core/streambuf.hpp>
 #include <boost/asio/error.hpp>
 #include <cassert>
 #include <cstdint>
@@ -107,15 +106,13 @@ protected:
     void
     prepare_fh(close_code::value& code);
 
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    write_close(Streambuf& sb,
-        close_reason const& rc);
+    write_close(DynamicBuffer& db, close_reason const& rc);
 
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    write_ping(Streambuf& sb, opcode op,
-        ping_data const& data);
+    write_ping(DynamicBuffer& db, opcode op, ping_data const& data);
 };
 
 } // detail

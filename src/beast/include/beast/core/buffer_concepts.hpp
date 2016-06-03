@@ -35,6 +35,16 @@ struct is_ConstBufferSequence :
 {
 };
 
+/// Determine if `T` meets the requirements of @b `DynamicBuffer`.
+template<class T>
+#if GENERATING_DOCS
+struct is_DynamicBuffer : std::integral_constant<bool, ...>
+#else
+struct is_DynamicBuffer : detail::is_DynamicBuffer<T>::type
+#endif
+{
+};
+
 /// Determine if `T` meets the requirements of @b `MutableBufferSequence`.
 template<class T>
 #if GENERATING_DOCS
@@ -42,16 +52,6 @@ struct is_MutableBufferSequence : std::integral_constant<bool, ...>
 #else
 struct is_MutableBufferSequence :
     is_BufferSequence<T, boost::asio::mutable_buffer>
-#endif
-{
-};
-
-/// Determine if `T` meets the requirements of @b `Streambuf`.
-template<class T>
-#if GENERATING_DOCS
-struct is_Streambuf : std::integral_constant<bool, ...>
-#else
-struct is_Streambuf : detail::is_Streambuf<T>::type
 #endif
 {
 };

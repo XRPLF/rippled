@@ -23,8 +23,8 @@ enum class parse_error
     bad_crlf,
     bad_request,
 
-    bad_status_code,
     bad_status,
+    bad_reason,
 
     bad_field,
     bad_value,
@@ -33,7 +33,11 @@ enum class parse_error
     bad_on_headers_rv,
 
     invalid_chunk_size,
+    invalid_ext_name,
+    invalid_ext_val,
 
+    headers_too_big,
+    body_too_big,
     short_read,
 
     general
@@ -60,7 +64,7 @@ public:
             return "bad method";
 
         case parse_error::bad_uri:
-            return "bad Request-URI";
+            return "bad request-target";
 
         case parse_error::bad_version:
             return "bad HTTP-Version";
@@ -69,13 +73,13 @@ public:
             return "missing CRLF";
 
         case parse_error::bad_request:
-            return "bad Request-Line";
-
-        case parse_error::bad_status_code:
-            return "bad Status-Code";
+            return "bad reason-phrase";
 
         case parse_error::bad_status:
-            return "bad Status-Line";
+            return "bad status-code";
+
+        case parse_error::bad_reason:
+            return "bad reason-phrase";
 
         case parse_error::bad_field:
             return "bad field token";
@@ -94,6 +98,18 @@ public:
 
         case parse_error::invalid_chunk_size:
             return "invalid chunk size";
+
+        case parse_error::invalid_ext_name:
+            return "invalid ext name";
+
+        case parse_error::invalid_ext_val:
+            return "invalid ext val";
+
+        case parse_error::headers_too_big:
+            return "headers size limit exceeded";
+
+        case parse_error::body_too_big:
+            return "body size limit exceeded";
 
         case parse_error::short_read:
             return "unexpected end of data";

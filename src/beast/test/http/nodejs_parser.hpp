@@ -11,7 +11,7 @@
 #include "nodejs-parser/http_parser.h"
 
 #include <beast/http/message_v1.hpp>
-#include <beast/http/rfc2616.hpp>
+#include <beast/http/rfc7230.hpp>
 #include <beast/core/buffer_concepts.hpp>
 #include <beast/core/error.hpp>
 #include <boost/asio/buffer.hpp>
@@ -611,7 +611,7 @@ nodejs_basic_parser<Derived>::check_header()
 {
     if (! value_.empty())
     {
-        rfc2616::trim_right_in_place(value_);
+        //detail::trim(value_);
         call_on_field(field_, value_,
             has_on_field<Derived>{});
         field_.clear();

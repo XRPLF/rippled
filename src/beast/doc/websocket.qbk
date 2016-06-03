@@ -358,7 +358,7 @@ handler of the corresponding read function.]
 
 Because calls to read data may return a variable amount of bytes, the
 interface to calls that read data require an object that meets the requirements
-of [link beast.types.Streambuf [*`Streambuf`]]. This concept is modeled on
+of [link beast.types.DynamicBuffer [*`DynamicBuffer`]]. This concept is modeled on
 [@http://www.boost.org/doc/libs/1_61_0/doc/html/boost_asio/reference/basic_streambuf.html `boost::asio::basic_streambuf`].
 
 The implementation does not perform queueing or buffering of messages. If

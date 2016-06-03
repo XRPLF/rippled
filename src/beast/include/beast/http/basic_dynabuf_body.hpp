@@ -5,25 +5,24 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_HTTP_STRING_BODY_HPP
-#define BEAST_HTTP_STRING_BODY_HPP
+#ifndef BEAST_HTTP_BASIC_DYNABUF_BODY_HPP
+#define BEAST_HTTP_BASIC_DYNABUF_BODY_HPP
 
 #include <beast/http/body_type.hpp>
 #include <boost/asio/buffer.hpp>
-#include <memory>
-#include <string>
 
 namespace beast {
 namespace http {
 
-/** A Body represented by a std::string.
+/** A message body represented by a @b `DynamicBuffer`
 
     Meets the requirements of @b `Body`.
 */
-struct string_body
+template<class DynamicBuffer>
+struct basic_dynabuf_body
 {
     /// The type of the `message::body` member
-    using value_type = std::string;
+    using value_type = DynamicBuffer;
 
 #if GENERATING_DOCS
 private:
@@ -31,14 +30,14 @@ private:
 
     class reader
     {
-        value_type& s_;
+        value_type& sb_;
 
     public:
         template<bool isRequest, class Headers>
         explicit
         reader(message<isRequest,
-                string_body, Headers>& m) noexcept
-            : s_(m.body)
+                basic_dynabuf_body, Headers>& m) noexcept
+            : sb_(m.body)
         {
         }
 
@@ -46,15 +45,16 @@ private:
         write(void const* data,
             std::size_t size, error_code&) noexcept
         {
-            auto const n = s_.size();
-            s_.resize(n + size);
-            std::memcpy(&s_[n], data, size);
+            using boost::asio::buffer;
+            using boost::asio::buffer_copy;
+            sb_.commit(buffer_copy(
+                sb_.prepare(size), buffer(data, size)));
         }
     };
 
     class writer
     {
-        value_type const& body_;
+        DynamicBuffer const& body_;
 
     public:
         writer(writer const&) = delete;
@@ -63,8 +63,8 @@ private:
         template<bool isRequest, class Headers>
         explicit
         writer(message<
-                isRequest, string_body, Headers> const& msg)
-            : body_(msg.body)
+                isRequest, basic_dynabuf_body, Headers> const& m)
+            : body_(m.body)
         {
         }
 
@@ -83,7 +83,7 @@ private:
         boost::tribool
         operator()(resume_context&&, error_code&, Write&& write)
         {
-            write(boost::asio::buffer(body_));
+            write(body_.data());
             return true;
         }
     };

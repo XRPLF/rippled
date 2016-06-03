@@ -1,7 +1,9 @@
 # Beast
 
-[![Build Status](https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast) [![codecov]
-(https://codecov.io/gh/vinniefalco/Beast/branch/master/graph/badge.svg)](https://codecov.io/gh/vinniefalco/Beast) [![Documentation]
+[![Join the chat at https://gitter.im/vinniefalco/Beast](https://badges.gitter.im/vinniefalco/Beast.svg)](https://gitter.im/vinniefalco/Beast?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status]
+(https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast) [![codecov]
+(https://codecov.io/gh/vinniefalco/Beast/branch/master/graph/badge.svg)](https://codecov.io/gh/vinniefalco/Beast) [![coveralls]
+(https://coveralls.io/repos/github/vinniefalco/Beast/badge.svg?branch=master)](https://coveralls.io/github/vinniefalco/Beast?branch=master) [![Documentation]
 (https://img.shields.io/badge/documentation-master-brightgreen.svg)](http://vinniefalco.github.io/beast/) [![License]
 (https://img.shields.io/badge/license-boost-brightgreen.svg)](LICENSE_1_0.txt)
 
@@ -13,6 +15,11 @@ Requirements:
 * Boost
 * C++11 or greater
 * OpenSSL (optional)
+
+This software is currently in beta: interfaces are subject to change. For
+recent changes see [CHANGELOG](CHANGELOG).
+The library has been submitted to the
+[Boost Library Incubator](http://rrsd.com/blincubator.com/bi_library/beast-2/?gform_post_id=1579)
 
 Example WebSocket program:
 ```C++

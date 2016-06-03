@@ -117,11 +117,11 @@ is_valid(close_code::value code)
 
 //------------------------------------------------------------------------------
 
-// Write frame header to streambuf
+// Write frame header to dynamic buffer
 //
-template<class Streambuf>
+template<class DynamicBuffer>
 void
-write(Streambuf& sb, frame_header const& fh)
+write(DynamicBuffer& db, frame_header const& fh)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
@@ -159,24 +159,24 @@ write(Streambuf& sb, frame_header const& fh)
         native_to_little_uint32(fh.key, &b[n]);
         n += 4;
     }
-    sb.commit(buffer_copy(
-        sb.prepare(n), buffer(b)));
+    db.commit(buffer_copy(
+        db.prepare(n), buffer(b)));
 }
 
 // Read fixed frame header
 // Requires at least 2 bytes
 //
-template<class Streambuf>
+template<class DynamicBuffer>
 std::size_t
-read_fh1(frame_header& fh, Streambuf& sb,
+read_fh1(frame_header& fh, DynamicBuffer& db,
     role_type role, close_code::value& code)
 {
     using boost::asio::buffer;
     using boost::asio::buffer_copy;
     using boost::asio::buffer_size;
     std::uint8_t b[2];
-    assert(buffer_size(sb.data()) >= sizeof(b));
-    sb.consume(buffer_copy(buffer(b), sb.data()));
+    assert(buffer_size(db.data()) >= sizeof(b));
+    db.consume(buffer_copy(buffer(b), db.data()));
     std::size_t need;
     fh.len = b[1] & 0x7f;
     switch(fh.len)
@@ -236,9 +236,9 @@ read_fh1(frame_header& fh, Streambuf& sb,
 
 // Decode variable frame header from stream
 //
-template<class Streambuf>
+template<class DynamicBuffer>
 void
-read_fh2(frame_header& fh, Streambuf& sb,
+read_fh2(frame_header& fh, DynamicBuffer& db,
     role_type role, close_code::value& code)
 {
     using boost::asio::buffer;
@@ -250,8 +250,8 @@ read_fh2(frame_header& fh, Streambuf& sb,
     case 126:
     {
         std::uint8_t b[2];
-        assert(buffer_size(sb.data()) >= sizeof(b));
-        sb.consume(buffer_copy(buffer(b), sb.data()));
+        assert(buffer_size(db.data()) >= sizeof(b));
+        db.consume(buffer_copy(buffer(b), db.data()));
         fh.len = big_uint16_to_native(&b[0]);
         // length not canonical
         if(fh.len < 126)
@@ -264,8 +264,8 @@ read_fh2(frame_header& fh, Streambuf& sb,
     case 127:
     {
         std::uint8_t b[8];
-        assert(buffer_size(sb.data()) >= sizeof(b));
-        sb.consume(buffer_copy(buffer(b), sb.data()));
+        assert(buffer_size(db.data()) >= sizeof(b));
+        db.consume(buffer_copy(buffer(b), db.data()));
         fh.len = big_uint64_to_native(&b[0]);
         // length not canonical
         if(fh.len < 65536)
@@ -279,8 +279,8 @@ read_fh2(frame_header& fh, Streambuf& sb,
     if(fh.mask)
     {
         std::uint8_t b[4];
-        assert(buffer_size(sb.data()) >= sizeof(b));
-        sb.consume(buffer_copy(buffer(b), sb.data()));
+        assert(buffer_size(db.data()) >= sizeof(b));
+        db.consume(buffer_copy(buffer(b), db.data()));
         fh.key = little_uint32_to_native(&b[0]);
     }
     else

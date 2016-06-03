@@ -12,7 +12,7 @@
 #include <beast/websocket/detail/stream_base.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/string_body.hpp>
-#include <beast/core/streambuf_readstream.hpp>
+#include <beast/core/dynabuf_readstream.hpp>
 #include <beast/core/async_completion.hpp>
 #include <beast/core/detail/get_lowest_layer.hpp>
 #include <boost/asio.hpp>
@@ -78,7 +78,7 @@ struct frame_info
     @par Concepts
         @b `AsyncStream`,
         @b `Decorator`,
-        @b `Streambuf`,
+        @b `DynamicBuffer`,
         @b `SyncStream`
 */
 template<class NextLayer>
@@ -86,7 +86,7 @@ class stream : public detail::stream_base
 {
     friend class stream_test;
 
-    streambuf_readstream<NextLayer, streambuf> stream_;
+    dynabuf_readstream<NextLayer, streambuf> stream_;
 
 public:
     /// The type of the next layer.
@@ -95,12 +95,12 @@ public:
 
     /// The type of the lowest layer.
     using lowest_layer_type =
-#if GENERATING_DOCS
+    #if GENERATING_DOCS
         implementation_defined;
-#else
+    #else
         typename beast::detail::get_lowest_layer<
             next_layer_type>::type;
-#endif
+    #endif
 
     /** Move-construct a stream.
 
@@ -404,12 +404,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class AcceptHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_accept(AcceptHandler&& handler);
 
     /** Read and respond to a WebSocket HTTP Upgrade request.
@@ -530,12 +530,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class ConstBufferSequence, class AcceptHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_accept(ConstBufferSequence const& buffers,
         AcceptHandler&& handler);
 
@@ -567,7 +567,7 @@ public:
 
         @throws boost::system::system_error Thrown on failure.
     */
-    // VFALCO TODO This should also take a streambuf with any leftover bytes.
+    // VFALCO TODO This should also take a DynamicBuffer with any leftover bytes.
     template<class Body, class Headers>
     void
     accept(http::request_v1<Body, Headers> const& request);
@@ -647,12 +647,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class Body, class Headers, class AcceptHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         AcceptHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_accept(http::request_v1<Body, Headers> const& request,
         AcceptHandler&& handler);
 
@@ -784,12 +784,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class HandshakeHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         HandshakeHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_handshake(boost::string_ref const& host,
         boost::string_ref const& resource, HandshakeHandler&& h);
 
@@ -895,12 +895,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class CloseHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         CloseHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_close(close_reason const& cr, CloseHandler&& handler);
 
     /** Send a WebSocket ping frame.
@@ -973,12 +973,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class PingHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         PingHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_ping(ping_data const& payload, PingHandler&& handler);
 
     /** Read a message from the stream.
@@ -1007,14 +1007,14 @@ public:
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
 
-        @param streambuf A stream buffer to hold the message data.
-        This object must remain valid until the handler is called.
+        @param dynabuf A dynamic buffer to hold the message data after
+        any masking or decompression has been applied.
 
         @throws boost::system::system_error Thrown on failure.
     */
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    read(opcode& op, Streambuf& streambuf);
+    read(opcode& op, DynamicBuffer& dynabuf);
 
     /** Read a message from the stream.
 
@@ -1042,15 +1042,14 @@ public:
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
 
-        @param streambuf A stream buffer to hold the message data.
-        This object must remain valid until the handler is called.
+        @param dynabuf A dynamic buffer to hold the message data after
+        any masking or decompression has been applied.
 
         @param ec Set to indicate what error occurred, if any.
     */
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    read(opcode& op,
-        Streambuf& streambuf, error_code& ec);
+    read(opcode& op, DynamicBuffer& dynabuf, error_code& ec);
 
     /** Start an asynchronous operation to read a message from the stream.
 
@@ -1086,8 +1085,9 @@ public:
         @param op A value to receive the message type.
         This object must remain valid until the handler is called.
 
-        @param streambuf A stream buffer to hold the message data.
-        This object must remain valid until the handler is called.
+        @param dynabuf A dynamic buffer to hold the message data after
+        any masking or decompression has been applied. This object must
+        remain valid until the handler is called.
 
         @param handler The handler to be called when the read operation
         completes. Copies will be made of the handler as required. The
@@ -1102,15 +1102,14 @@ public:
         this function. Invocation of the handler will be performed in a
         manner equivalent to using `boost::asio::io_service::post`.
     */
-    template<class Streambuf, class ReadHandler>
-    #if GENERATING_DOCS
+    template<class DynamicBuffer, class ReadHandler>
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
-    #endif
-    async_read(opcode& op,
-        Streambuf& streambuf, ReadHandler&& handler);
+#endif
+    async_read(opcode& op, DynamicBuffer& dynabuf, ReadHandler&& handler);
 
     /** Read a message frame from the stream.
 
@@ -1141,13 +1140,14 @@ public:
 
         @param fi An object to store metadata about the message.
 
-        @param streambuf A stream buffer to hold the message data.
+        @param dynabuf A dynamic buffer to hold the message data after
+        any masking or decompression has been applied.
 
         @throws boost::system::system_error Thrown on failure.
     */
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    read_frame(frame_info& fi, Streambuf& streambuf);
+    read_frame(frame_info& fi, DynamicBuffer& dynabuf);
 
     /** Read a message frame from the stream.
 
@@ -1178,13 +1178,14 @@ public:
 
         @param fi An object to store metadata about the message.
 
-        @param streambuf A stream buffer to hold the message data.
+        @param dynabuf A dynamic buffer to hold the message data after
+        any masking or decompression has been applied.
 
         @param ec Set to indicate what error occurred, if any.
     */
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    read_frame(frame_info& fi, Streambuf& streambuf, error_code& ec);
+    read_frame(frame_info& fi, DynamicBuffer& dynabuf, error_code& ec);
 
     /** Start an asynchronous operation to read a message frame from the stream.
 
@@ -1225,7 +1226,7 @@ public:
         @param fi An object to store metadata about the message.
         This object must remain valid until the handler is called.
 
-        @param streambuf A stream buffer to hold the message data after
+        @param dynabuf A dynamic buffer to hold the message data after
         any masking or decompression has been applied. This object must
         remain valid until the handler is called.
 
@@ -1242,15 +1243,15 @@ public:
         this function. Invocation of the handler will be performed in a
         manner equivalent to using boost::asio::io_service::post().
     */
-    template<class Streambuf, class ReadHandler>
-    #if GENERATING_DOCS
+    template<class DynamicBuffer, class ReadHandler>
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         ReadHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_read_frame(frame_info& fi,
-        Streambuf& streambuf, ReadHandler&& handler);
+        DynamicBuffer& dynabuf, ReadHandler&& handler);
 
     /** Write a message to the stream.
 
@@ -1369,12 +1370,12 @@ public:
         manner equivalent to using `boost::asio::io_service::post`.
     */
     template<class ConstBufferSequence, class WriteHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_write(ConstBufferSequence const& buffers,
         WriteHandler&& handler);
 
@@ -1478,12 +1479,12 @@ public:
         ); @endcode
     */
     template<class ConstBufferSequence, class WriteHandler>
-    #if GENERATING_DOCS
+#if GENERATING_DOCS
     void_or_deduced
-    #else
+#else
     typename async_completion<
         WriteHandler, void(error_code)>::result_type
-    #endif
+#endif
     async_write_frame(bool fin,
         ConstBufferSequence const& buffers, WriteHandler&& handler);
 
@@ -1495,8 +1496,8 @@ private:
     template<class Handler> class response_op;
     template<class Buffers, class Handler> class write_op;
     template<class Buffers, class Handler> class write_frame_op;
-    template<class Streambuf, class Handler> class read_op;
-    template<class Streambuf, class Handler> class read_frame_op;
+    template<class DynamicBuffer, class Handler> class read_op;
+    template<class DynamicBuffer, class Handler> class read_frame_op;
 
     void
     reset();

@@ -38,8 +38,8 @@ public:
         check("http", parse_error::bad_version);
         check("http", parse_error::bad_crlf);
         check("http", parse_error::bad_request);
-        check("http", parse_error::bad_status_code);
         check("http", parse_error::bad_status);
+        check("http", parse_error::bad_reason);
         check("http", parse_error::bad_field);
         check("http", parse_error::bad_value);
         check("http", parse_error::bad_content_length);

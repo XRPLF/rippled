@@ -246,8 +246,7 @@ public:
     Field names are stored as-is, but comparison are case-insensitive.
     The container preserves the order of insertion of fields with
     different names. For fields with the same name, the implementation
-    concatenates values inserted with duplicate names as per the
-    rules in rfc2616 section 4.2.
+    concatenates values inserted with duplicate names as per rfc7230.
 
     @note Meets the requirements of @b `FieldSequence`.
 */
@@ -393,18 +392,16 @@ public:
     */
     // VFALCO TODO Consider allowing rvalue references for std::move?
     void
-    insert(boost::string_ref const& name,
-        boost::string_ref const& value);
+    insert(boost::string_ref const& name, boost::string_ref value);
 
     /** Insert a field value.
 
         If a field value already exists the new value will be
         extended as per RFC2616 Section 4.2.
     */
-    template<class T,
-        class = typename std::enable_if<
-            ! std::is_constructible<boost::string_ref, T>::value>::type>
-    void
+    template<class T>
+    typename std::enable_if<
+        ! std::is_constructible<boost::string_ref, T>::value>::type
     insert(boost::string_ref name, T const& value)
     {
         insert(name,
@@ -414,21 +411,19 @@ public:
     /** Replace a field value.
 
         The current field value, if any, is removed. Then the
-        specified value is inserted as if by insert(field, value).
+        specified value is inserted as if by `insert(field, value)`.
     */
     void
-    replace(boost::string_ref const& name,
-        boost::string_ref const& value);
+    replace(boost::string_ref const& name, boost::string_ref value);
 
     /** Replace a field value.
 
         The current field value, if any, is removed. Then the
-        specified value is inserted as if by insert(field, value).
+        specified value is inserted as if by `insert(field, value)`.
     */
-    template<class T,
-        class = typename std::enable_if<
-            ! std::is_constructible<boost::string_ref, T>::value>::type>
-    void
+    template<class T>
+    typename std::enable_if<
+        ! std::is_constructible<boost::string_ref, T>::value>::type
     replace(boost::string_ref const& name, T const& value)
     {
         replace(name,

@@ -15,7 +15,7 @@
 
 namespace beast {
 
-/** A @b `Streambuf` with a fixed size internal buffer.
+/** A @b `DynamicBuffer` with a fixed size internal buffer.
 
     Ownership of the underlying storage belongs to the derived class.
 

@@ -1,6 +1,9 @@
-#!/bin/bash -u
+#!/usr/bin/env bash
 # Exit if anything fails.
-set -e
+set -eux
+
+HERE=$PWD
+
 # Override gcc version to $GCC_VER.
 # Put an appropriate symlink at the front of the path.
 mkdir -v $HOME/bin
@@ -44,3 +47,8 @@ tar xfvz lcov-1.12.tar.gz -C $HOME
 # Set install path
 mkdir -p $LCOV_ROOT
 cd $HOME/lcov-1.12 && make install PREFIX=$LCOV_ROOT
+
+# Install coveralls reporter
+cd $HERE
+mkdir -p node_modules
+npm install coveralls

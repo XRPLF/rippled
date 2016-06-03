@@ -296,7 +296,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\detail\stream_concepts.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\detail\write_streambuf.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\detail\write_dynabuf.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\core\dynabuf_readstream.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\error.hpp">
     </ClInclude>
@@ -308,11 +310,11 @@
     </None>
     <None Include="..\..\src\beast\include\beast\core\impl\consuming_buffers.ipp">
     </None>
+    <None Include="..\..\src\beast\include\beast\core\impl\dynabuf_readstream.ipp">
+    </None>
     <None Include="..\..\src\beast\include\beast\core\impl\prepare_buffers.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\core\impl\static_streambuf.ipp">
-    </None>
-    <None Include="..\..\src\beast\include\beast\core\impl\streambuf_readstream.ipp">
     </None>
     <ClInclude Include="..\..\src\beast\include\beast\core\placeholders.hpp">
     </ClInclude>
@@ -324,15 +326,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\streambuf.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\streambuf_readstream.hpp">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\stream_concepts.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\core\to_string.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\core\write_streambuf.hpp">
+    <ClInclude Include="..\..\src\beast\include\beast\core\write_dynabuf.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\basic_dynabuf_body.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\basic_headers.hpp">
     </ClInclude>
@@ -348,6 +350,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\detail\has_content_length.hpp">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\include\beast\http\detail\rfc7230.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\empty_body.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\headers.hpp">
@@ -359,6 +363,8 @@
     <None Include="..\..\src\beast\include\beast\http\impl\message_v1.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\read.ipp">
+    </None>
+    <None Include="..\..\src\beast\include\beast\http\impl\rfc7230.ipp">
     </None>
     <None Include="..\..\src\beast\include\beast\http\impl\write.ipp">
     </None>
@@ -375,8 +381,6 @@
     <ClInclude Include="..\..\src\beast\include\beast\http\reason.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\resume_context.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\include\beast\http\rfc2616.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\include\beast\http\rfc7230.hpp">
     </ClInclude>

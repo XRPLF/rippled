@@ -124,8 +124,6 @@ private:
     {
         if(! value_.empty())
         {
-            rfc2616::trim_right_in_place(value_);
-            // VFALCO could std::move
             m_.headers.insert(field_, value_);
             field_.clear();
             value_.clear();
@@ -174,7 +172,7 @@ private:
         m_.reason = std::move(this->reason_);
     }
 
-    int on_headers(error_code&)
+    int on_headers(std::uint64_t, error_code&)
     {
         flush();
         m_.version = 10 * this->http_major() + this->http_minor();

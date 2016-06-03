@@ -25,15 +25,16 @@ namespace beast {
     @return A string representing the contents of the input area.
 
     @note This function participates in overload resolution only if
-    the streambuf parameter meets the requirements of @b `Streambuf`.
+    the buffers parameter meets the requirements of @b `ConstBufferSequence`.
 */
-template<class ConstBufferSequence
-#if ! GENERATING_DOCS
-    ,class = std::enable_if<is_ConstBufferSequence<
-        ConstBufferSequence>::value>
-#endif
->
+template<class ConstBufferSequence>
+#if GENERATING_DOCS
 std::string
+#else
+typename std::enable_if<
+    is_ConstBufferSequence<ConstBufferSequence>::value,
+        std::string>::type
+#endif
 to_string(ConstBufferSequence const& buffers)
 {
     using boost::asio::buffer_cast;

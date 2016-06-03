@@ -24,3 +24,7 @@ contents.xcworkspacedata
 .svn
 profile
 bin/
+node_modules/
+cov-int/
+nohup.out
+venv/

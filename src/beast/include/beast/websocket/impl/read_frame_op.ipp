@@ -23,7 +23,7 @@ namespace websocket {
 // processes any received control frames.
 //
 template<class NextLayer>
-template<class Streambuf, class Handler>
+template<class DynamicBuffer, class Handler>
 class stream<NextLayer>::read_frame_op
 {
     using alloc_type =
@@ -35,27 +35,27 @@ class stream<NextLayer>::read_frame_op
     using fmb_type =
         typename fb_type::mutable_buffers_type;
 
-    using smb_type =
-        typename Streambuf::mutable_buffers_type;
+    using dmb_type =
+        typename DynamicBuffer::mutable_buffers_type;
 
     struct data : op
     {
         stream<NextLayer>& ws;
         frame_info& fi;
-        Streambuf& sb;
+        DynamicBuffer& db;
         Handler h;
         fb_type fb;
-        boost::optional<smb_type> smb;
+        boost::optional<dmb_type> dmb;
         boost::optional<fmb_type> fmb;
         bool cont;
         int state = 0;
 
         template<class DeducedHandler>
         data(DeducedHandler&& h_, stream<NextLayer>& ws_,
-                frame_info& fi_, Streambuf& sb_)
+                frame_info& fi_, DynamicBuffer& sb_)
             : ws(ws_)
             , fi(fi_)
-            , sb(sb_)
+            , db(sb_)
             , h(std::forward<DeducedHandler>(h_))
             , cont(boost_asio_handler_cont_helpers::
                 is_continuation(h))
@@ -127,9 +127,9 @@ public:
 };
 
 template<class NextLayer>
-template<class Buffers, class Handler>
+template<class DynamicBuffer, class Handler>
 void
-stream<NextLayer>::read_frame_op<Buffers, Handler>::
+stream<NextLayer>::read_frame_op<DynamicBuffer, Handler>::
 operator()(error_code ec, std::size_t bytes_transferred)
 {
     auto& d = *d_;
@@ -139,9 +139,9 @@ operator()(error_code ec, std::size_t bytes_transferred)
 }
 
 template<class NextLayer>
-template<class Buffers, class Handler>
+template<class DynamicBuffer, class Handler>
 void
-stream<NextLayer>::read_frame_op<Buffers, Handler>::
+stream<NextLayer>::read_frame_op<DynamicBuffer, Handler>::
 operator()(error_code ec,std::size_t bytes_transferred, bool again)
 {
     enum
@@ -187,18 +187,18 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
 
             case do_read_payload:
                 d.state = do_read_payload + 1;
-                d.smb = d.sb.prepare(
+                d.dmb = d.db.prepare(
                     detail::clamp(d.ws.rd_need_));
                 // receive payload data
                 d.ws.stream_.async_read_some(
-                    *d.smb, std::move(*this));
+                    *d.dmb, std::move(*this));
                 return;
 
             case do_read_payload + 1:
             {
                 d.ws.rd_need_ -= bytes_transferred;
                 auto const pb = prepare_buffers(
-                    bytes_transferred, *d.smb);
+                    bytes_transferred, *d.dmb);
                 if(d.ws.rd_fh_.mask)
                     detail::mask_inplace(pb, d.ws.rd_key_);
                 if(d.ws.rd_opcode_ == opcode::text)
@@ -213,7 +213,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                         break;
                     }
                 }
-                d.sb.commit(bytes_transferred);
+                d.db.commit(bytes_transferred);
                 if(d.ws.rd_need_ > 0)
                 {
                     d.state = do_read_payload;
