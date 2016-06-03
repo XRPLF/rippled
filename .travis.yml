@@ -25,7 +25,7 @@ packages: &gcc5_pkgs
   - gdb
 
 packages: &clang36_pkgs
-  - clang-3.6
+  - clang-3.5
   - g++-5
   - python-software-properties
   - protobuf-compiler
@@ -50,14 +50,14 @@ matrix:
       addons: *ao_gcc5
 
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug CLANG_VER=3.6
+      env: GCC_VER=5 TARGET=debug CLANG_VER=3.5
       addons: &ao_clang36
         apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
+          sources: ['ubuntu-toolchain-r-test']
           packages: *clang36_pkgs
 
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.6
+      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.5
       addons: *ao_clang36
 
 cache:
