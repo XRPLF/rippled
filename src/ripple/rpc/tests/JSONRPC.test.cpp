@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_reader.h>
@@ -1841,10 +1842,8 @@ public:
     void testAutoFillFees ()
     {
         test::jtx::Env env(*this);
-        std::shared_ptr<const ReadView> ledger =
-            std::make_shared<Ledger>(create_genesis,
-                env.app().config(), env.app().family());
-        LoadFeeTrack const feeTrack;
+        auto ledger = env.current();
+        LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
 
         {
             Json::Value req;
@@ -1852,9 +1851,12 @@ public:
                 "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
             Json::Value result =
                 checkFee (req, Role::ADMIN, true,
-                    env.app().config(), feeTrack, ledger);
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), ledger);
 
             expect (! RPC::contains_error (result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
         }
 
         {
@@ -1864,9 +1866,12 @@ public:
                     "\"tx_json\" : { } } ", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack, ledger);
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), ledger);
 
             expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
         }
 
         {
@@ -1875,9 +1880,11 @@ public:
                 "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
             Json::Value result =
                 checkFee (req, Role::ADMIN, true,
-                    env.app().config(), feeTrack, ledger);
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), ledger);
 
             expect (RPC::contains_error (result), "Invalid checkFee");
+            expect(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -1889,9 +1896,11 @@ public:
                     "\"tx_json\" : { } } ", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack, ledger);
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), ledger);
 
             expect(RPC::contains_error(result), "Invalid checkFee");
+            expect(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -1901,9 +1910,11 @@ public:
                     "\"tx_json\" : { } } ", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack, ledger);
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), ledger);
 
             expect(RPC::contains_error(result), "Invalid checkFee");
+            expect(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -1913,10 +1924,151 @@ public:
                     "\"tx_json\" : { } } ", req);
             Json::Value result =
                 checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack, ledger);
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), ledger);
 
             expect(RPC::contains_error(result), "Divide by 0");
+            expect(!req[jss::tx_json].isMember(jss::Fee));
         }
+    }
+
+    static
+    std::unique_ptr<Config>
+    makeConfig()
+    {
+        auto p = std::make_unique<Config>();
+        test::setupConfigForUnitTests(*p);
+        auto& section = p->section("transaction_queue");
+        section.set("minimum_txn_in_ledger_standalone", "3");
+        return p;
+    }
+
+    void testAutoFillEscalatedFees ()
+    {
+        test::jtx::Env env(*this, makeConfig(),
+            test::jtx::features(featureFeeEscalation));
+        LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
+
+        {
+            // 1: high mult, no queue, no pad
+            Json::Value req;
+            Json::Reader ().parse (
+                "{ \"fee_mult_max\" : 1000, \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee (req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), env.current());
+
+            expect (! RPC::contains_error (result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
+        }
+
+        {
+            // 2: high mult, can queue, no pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 1000, \"x-queue-okay\" : true \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), env.current());
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
+        }
+
+        {
+            // 3: high mult, no queue, 4 pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 1000, \"x-assume-tx\" : 4, \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), env.current());
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 8889);
+        }
+
+        {
+            // 4: high mult, can queue, 4 pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 1000, \"x-assume-tx\" : 4, \"x-queue-okay\" : true \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), env.current());
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 8889);
+        }
+
+        ///////////////////
+        {
+            // 5: low mult, no queue, no pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 5, \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), env.current());
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
+        }
+
+        {
+            // 6: low mult, can queue, no pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 5, \"x-queue-okay\" : true \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                      env.app().getTxQ(), env.current());
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
+        }
+
+        {
+            // 7: low mult, no queue, 4 pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 5, \"x-assume-tx\" : 4, \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                      env.app().getTxQ(), env.current());
+
+            expect(RPC::contains_error(result), "Invalid checkFee");
+            expect(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            // 8: : low mult, can queue, 4 pad
+            Json::Value req;
+            Json::Reader().parse(
+                "{ \"fee_mult_max\" : 5, \"x-assume-tx\" : 4, \"x-queue-okay\" : true \"tx_json\" : { } } ", req);
+            Json::Value result =
+                checkFee(req, Role::ADMIN, true,
+                    env.app().config(), feeTrack,
+                        env.app().getTxQ(), env.current());
+
+            expect(!RPC::contains_error(result), "Legal checkFee");
+            expect(req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 10);
+        }
+
     }
 
     // A function that can be called as though it would process a transaction.
@@ -1951,8 +2103,6 @@ public:
         env(pay(g, env.master, USD(50)));
         env.close();
 
-        auto const ledger = env.current();
-
         ProcessTransactionFn processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
@@ -1961,8 +2111,7 @@ public:
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
-            Application& app,
-            std::shared_ptr<ReadView const> const& ledger);
+            Application& app);
 
         using submitFunc = Json::Value (*) (
             Json::Value params,
@@ -1970,7 +2119,6 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            std::shared_ptr<ReadView const> const& ledger,
             ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
@@ -2010,8 +2158,7 @@ public:
                             NetworkOPs::FailHard::yes,
                             testRole,
                             1s,
-                            env.app(),
-                            ledger);
+                            env.app());
                     }
                     else
                     {
@@ -2023,7 +2170,6 @@ public:
                             testRole,
                             1s,
                             env.app(),
-                            ledger,
                             processTxn);
                     }
 
@@ -2044,6 +2190,7 @@ public:
     void run ()
     {
         testAutoFillFees ();
+        testAutoFillEscalatedFees ();
         testTransactionRPC ();
     }
 };

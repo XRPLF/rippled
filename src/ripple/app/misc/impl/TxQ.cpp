@@ -154,12 +154,11 @@ TxQ::FeeMetrics::update(Application& app,
 }
 
 std::uint64_t
-TxQ::FeeMetrics::scaleFeeLevel(OpenView const& view) const
+TxQ::FeeMetrics::scaleFeeLevel(OpenView const& view,
+    std::uint32_t txCountPadding) const
 {
-    auto fee = baseLevel;
-
     // Transactions in the open ledger so far
-    auto const current = view.txCount();
+    auto const current = view.txCount() + txCountPadding;
 
     std::size_t target;
     std::uint32_t multiplier;
@@ -177,11 +176,11 @@ TxQ::FeeMetrics::scaleFeeLevel(OpenView const& view) const
     {
         // Compute escalated fee level
         // Don't care about the overflow flag
-        fee = mulDiv(fee, current * current *
-            multiplier, target * target).second;
+        return mulDiv(multiplier, current * current,
+            target * target).second;
     }
 
-    return fee;
+    return baseLevel;
 }
 
 TxQ::MaybeTx::MaybeTx(
@@ -481,7 +480,7 @@ TxQ::apply(Application& app, OpenView& view,
     //   preclaim?
     auto const baseFee = calculateBaseFee(app, view, *tx, j);
     auto const feeLevelPaid = getFeeLevelPaid(*tx,
-        feeMetrics_.baseLevel, baseFee, setup_);
+        baseLevel, baseFee, setup_);
     auto const requiredFeeLevel = feeMetrics_.scaleFeeLevel(view);
 
     auto accountIter = byAccount_.find(account);
@@ -758,7 +757,7 @@ TxQ::apply(Application& app, OpenView& view,
         return{ pcresult.ter, false };
 
     // Too low of a fee should get caught by preclaim
-    assert(feeLevelPaid >= feeMetrics_.baseLevel);
+    assert(feeLevelPaid >= baseLevel);
 
     JLOG(j_.trace()) << "Transaction " <<
         transactionID <<
@@ -1118,12 +1117,13 @@ TxQ::accept(Application& app,
 }
 
 auto
-TxQ::getMetrics(Application& app, OpenView const& view) const
-    -> boost::optional<Metrics>
+TxQ::getMetrics(Config const& config, OpenView const& view,
+    std::uint32_t txCountPadding) const
+        -> boost::optional<Metrics>
 {
     auto const allowEscalation =
         (view.rules().enabled(featureFeeEscalation,
-            app.config().features));
+            config.features));
     if (!allowEscalation)
         return boost::none;
 
@@ -1135,11 +1135,11 @@ TxQ::getMetrics(Application& app, OpenView const& view) const
     result.txQMaxSize = maxSize_;
     result.txInLedger = view.txCount();
     result.txPerLedger = feeMetrics_.getTxnsExpected();
-    result.referenceFeeLevel = feeMetrics_.baseLevel;
+    result.referenceFeeLevel = baseLevel;
     result.minFeeLevel = isFull() ? byFee_.rbegin()->feeLevel + 1 :
-        feeMetrics_.baseLevel;
+        baseLevel;
     result.medFeeLevel = feeMetrics_.getEscalationMultiplier();
-    result.expFeeLevel = feeMetrics_.scaleFeeLevel(view);
+    result.expFeeLevel = feeMetrics_.scaleFeeLevel(view, txCountPadding);
 
     return result;
 }
@@ -1150,8 +1150,8 @@ TxQ::doRPC(Application& app) const
     using std::to_string;
 
     auto const view = app.openLedger().current();
-    auto const metrics = getMetrics(app, *view);
-    assert(metrics);
+    auto const metrics = getMetrics(app.config(), *view);
+
     if (!metrics)
         return{};
 
@@ -1183,9 +1183,14 @@ TxQ::doRPC(Application& app) const
     drops[jss::median_fee] = to_string(mulDiv(
         metrics->medFeeLevel, baseFee,
             metrics->referenceFeeLevel).second);
-    drops[jss::open_ledger_fee] = to_string(mulDiv(
+    auto escalatedFee = mulDiv(
         metrics->expFeeLevel, baseFee,
-            metrics->referenceFeeLevel).second);
+            metrics->referenceFeeLevel).second;
+    if (mulDiv(escalatedFee, metrics->referenceFeeLevel,
+            baseFee).second < metrics->expFeeLevel)
+        ++escalatedFee;
+
+    drops[jss::open_ledger_fee] = to_string(escalatedFee);
 
     return ret;
 }

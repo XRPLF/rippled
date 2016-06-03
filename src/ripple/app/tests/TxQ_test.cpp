@@ -45,10 +45,10 @@ class TxQ_test : public beast::unit_test::suite
         std::size_t expectedInLedger,
         std::size_t expectedPerLedger,
         std::uint64_t expectedMinFeeLevel,
-        std::uint64_t expectedMedFeeLevel = 500)
+        std::uint64_t expectedMedFeeLevel = 256 * 500)
     {
-        auto optMetrics = env.app().getTxQ().getMetrics(env.app(),
-            *env.current());
+        auto optMetrics = env.app().getTxQ().getMetrics(
+            env.app().config(), *env.current());
         if (!expect(optMetrics))
             return;
         auto& metrics = *optMetrics;
@@ -60,10 +60,9 @@ class TxQ_test : public beast::unit_test::suite
         expect(metrics.minFeeLevel == expectedMinFeeLevel, "minFeeLevel");
         expect(metrics.medFeeLevel == expectedMedFeeLevel, "medFeeLevel");
         auto expectedCurFeeLevel = expectedInLedger > expectedPerLedger ?
-            metrics.referenceFeeLevel * expectedMedFeeLevel *
-                expectedInLedger * expectedInLedger /
-                    (expectedPerLedger * expectedPerLedger) :
-                        metrics.referenceFeeLevel;
+            expectedMedFeeLevel * expectedInLedger * expectedInLedger /
+                (expectedPerLedger * expectedPerLedger) :
+                    metrics.referenceFeeLevel;
         expect(metrics.expFeeLevel == expectedCurFeeLevel, "expFeeLevel");
     }
 
@@ -72,7 +71,7 @@ class TxQ_test : public beast::unit_test::suite
         jtx::Env& env,
         jtx::Account const& account)
     {
-        auto metrics = env.app().getTxQ().getMetrics(env.app(),
+        auto metrics = env.app().getTxQ().getMetrics(env.app().config(),
             *env.current());
         if (!expect(metrics))
             return;
@@ -86,7 +85,7 @@ class TxQ_test : public beast::unit_test::suite
         using namespace jtx;
 
         auto const& view = *env.current();
-        auto metrics = env.app().getTxQ().getMetrics(env.app(),
+        auto metrics = env.app().getTxQ().getMetrics(env.app().config(),
             view);
         if (!expect(metrics))
             return fee(none);
@@ -222,7 +221,7 @@ public:
         // Close again with a simulated time leap to
         // reset the escalation limit down to minimum
         env.close(env.now() + 5s, 10000ms);
-        checkMetrics(env, 0, 16, 0, 3, 256, 76928);
+        checkMetrics(env, 0, 16, 0, 3, 256);
         // Then close once more without the time leap
         // to reset the queue maxsize down to minimum
         env.close();
@@ -232,10 +231,10 @@ public:
 
         // Stuff the ledger and queue so we can verify that
         // stuff gets kicked out.
-        env(noop(hank));
-        env(noop(gwen));
-        env(noop(fred));
-        env(noop(elmo));
+        env(noop(hank), fee(7000));
+        env(noop(gwen), fee(7000));
+        env(noop(fred), fee(7000));
+        env(noop(elmo), fee(7000));
         checkMetrics(env, 0, 6, 4, 3, 256);
 
         // Use explicit fees so we can control which txn
@@ -270,7 +269,7 @@ public:
         // point, daria's transaction that was dropped from the queue
         // is put back in. Neat.
         env.close();
-        checkMetrics(env, 2, 8, 5, 4, 256);
+        checkMetrics(env, 2, 8, 5, 4, 256, 256 * 700);
 
         env.close();
         checkMetrics(env, 0, 10, 2, 5, 256);
@@ -282,7 +281,7 @@ public:
         // we can be sure that there's one in the queue when the
         // test ends and the TxQ is destructed.
 
-        auto metrics = txq.getMetrics(env.app(), *env.current());
+        auto metrics = txq.getMetrics(env.app().config(), *env.current());
         expect(metrics->txCount == 0, "txCount");
 
         // Stuff the ledger.
@@ -399,50 +398,50 @@ public:
             queued);
         // Queue items with higher fees to force the previous
         // txn to wait.
-        env(noop(bob), fee(20), queued);
-        env(noop(charlie), fee(20), queued);
-        env(noop(daria), fee(20), queued);
-        env(noop(edgar), fee(20), queued);
+        env(noop(bob), fee(7000), queued);
+        env(noop(charlie), fee(7000), queued);
+        env(noop(daria), fee(7000), queued);
+        env(noop(edgar), fee(7000), queued);
         checkMetrics(env, 5, boost::none, 3, 2, 256);
 
         env.close();
         checkMetrics(env, 1, 6, 4, 3, 256);
 
         // Keep alice's transaction waiting.
-        env(noop(bob), fee(20), queued);
-        env(noop(charlie), fee(20), queued);
-        env(noop(daria), fee(20), queued);
-        env(noop(edgar), fee(20), queued);
-        env(noop(felicia), fee(20), queued);
+        env(noop(bob), fee(7000), queued);
+        env(noop(charlie), fee(7000), queued);
+        env(noop(daria), fee(7000), queued);
+        env(noop(edgar), fee(7000), queued);
+        env(noop(felicia), fee(7000), queued);
         checkMetrics(env, 6, 6, 4, 3, 257);
 
         env.close();
         // alice's transaction is still hanging around
-        checkMetrics(env, 1, 8, 5, 4, 256, 512);
+        checkMetrics(env, 1, 8, 5, 4, 256, 700 * 256);
         expect(env.seq(alice) == 1);
 
         // Keep alice's transaction waiting.
-        env(noop(bob), fee(20), queued);
-        env(noop(charlie), fee(20), queued);
-        env(noop(daria), fee(20), queued);
-        env(noop(daria), fee(20), seq(env.seq(daria) + 1),
+        env(noop(bob), fee(8000), queued);
+        env(noop(charlie), fee(8000), queued);
+        env(noop(daria), fee(8000), queued);
+        env(noop(daria), fee(8000), seq(env.seq(daria) + 1),
             queued);
-        env(noop(edgar), fee(20), queued);
-        env(noop(felicia), fee(20), queued);
-        env(noop(felicia), fee(20), seq(env.seq(felicia) + 1),
+        env(noop(edgar), fee(8000), queued);
+        env(noop(felicia), fee(8000), queued);
+        env(noop(felicia), fee(8000), seq(env.seq(felicia) + 1),
             queued);
-        checkMetrics(env, 8, 8, 5, 4, 257, 512);
+        checkMetrics(env, 8, 8, 5, 4, 257, 700 * 256);
 
         env.close();
         // alice's transaction expired without getting
         // into the ledger, so her transaction is gone,
         // though one of felicia's is still in the queue.
-        checkMetrics(env, 1, 10, 6, 5, 256, 512);
+        checkMetrics(env, 1, 10, 6, 5, 256, 700 * 256);
         expect(env.seq(alice) == 1);
 
         env.close();
         // And now the queue is empty
-        checkMetrics(env, 0, 12, 1, 6, 256, 512);
+        checkMetrics(env, 0, 12, 1, 6, 256, 800 * 256);
         expect(env.seq(alice) == 1);
     }
 
@@ -544,12 +543,12 @@ public:
 
 
         env.close();
-        checkMetrics(env, 0, 12, 4, 6, 256, 1600);
+        checkMetrics(env, 0, 12, 4, 6, 256);
         expect(env.seq(bob) == seqBob + 1);
         expect(env.seq(carol) == seqCarol + 1);
 
         env.close();
-        checkMetrics(env, 0, 12, 0, 6, 256, 2739);
+        checkMetrics(env, 0, 12, 0, 6, 256);
         expect(env.seq(bob) == seqBob + 1);
         expect(env.seq(carol) == seqCarol + 1);
     }
@@ -824,10 +823,10 @@ public:
 
         env.close();
         // All of Alice's transactions applied.
-        checkMetrics(env, 0, 12, 4, 6, 256, 640);
+        checkMetrics(env, 0, 12, 4, 6, 256);
 
         env.close();
-        checkMetrics(env, 0, 12, 0, 6, 256, 1203);
+        checkMetrics(env, 0, 12, 0, 6, 256);
 
         // Alice is broke
         env.require(balance(alice, XRP(0)));
@@ -980,7 +979,7 @@ public:
 
         auto alice = Account("alice");
 
-        expect(!env.app().getTxQ().getMetrics(env.app(),
+        expect(!env.app().getTxQ().getMetrics(env.app().config(),
             *env.current()));
 
         env.fund(XRP(50000), noripple(alice));
@@ -992,7 +991,7 @@ public:
             env(noop(alice), fee(30));
 
         env.close();
-        expect(!env.app().getTxQ().getMetrics(env.app(),
+        expect(!env.app().getTxQ().getMetrics(env.app().config(),
             *env.current()));
     }
 

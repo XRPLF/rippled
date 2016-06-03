@@ -2093,7 +2093,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         info[jss::load] = m_job_queue.getJson ();
 
     auto const escalationMetrics = app_.getTxQ().getMetrics(
-        app_, *app_.openLedger().current());
+        app_.config(), *app_.openLedger().current());
     if (!human)
     {
         info[jss::load_base] = app_.getFeeTrack ().getLoadBase ();

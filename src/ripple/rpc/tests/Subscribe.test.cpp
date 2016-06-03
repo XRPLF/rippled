@@ -313,7 +313,7 @@ public:
                         jv[jss::flags] ==
                             (vfFullyCanonicalSig | STValidation::kFullFlag) &&
                         jv[jss::full] == true &&
-                        jv[jss::load_fee] == 256000 &&
+                        !jv.isMember(jss::load_fee) &&
                         jv[jss::signature] &&
                         jv[jss::signing_time];
                 }));
