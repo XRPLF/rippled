@@ -50,7 +50,6 @@ Json::Value doSubmitMultiSigned (RPC::Context& context)
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app,
-        context.ledgerMaster.getCurrentLedger(),
         RPC::getProcessTxnFn (context.netOps));
 }
 

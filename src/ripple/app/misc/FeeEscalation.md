@@ -35,30 +35,30 @@ consensus process, but will be at least [5](#other-constants).
   or the number of transactions in the validated ledger.
 3. Once there are more transactions in the open ledger than indicated
 by the limit, the required fee level jumps drastically.
-  * The formula is `( baseFeeLevel * lastLedgerMedianFeeLevel *
+  * The formula is `( lastLedgerMedianFeeLevel *
   TransactionsInOpenLedger^2 / limit^2 )`,
   and returns a [fee level](#fee-level).
 4. That may still be pretty small, but as more transactions get
 into the ledger, the fee level increases exponentially.
   * For example, if the limit is 6, and the median fee is minimal,
   and assuming all [reference transactions](#reference-transaction),
-  the 7th transaction only requires a [level](#fee-level) of about 174,000
+  the 8th transaction only requires a [level](#fee-level) of about 174,000
   or about 6800 drops,
   but the 20th transaction requires a [level](#fee-level) of about
-  1,422,000 or about 56,000 drops.
+  1,283,000 or about 50,000 drops.
 5. Finally, as each ledger closes, the median fee level of that ledger is
 computed and used as `lastLedgerMedianFeeLevel` (with a
-[minimum value of 500](#other-constants))
+[minimum value of 128,000](#other-constants))
 in the fee escalation formula for the next open ledger.
   * Continuing the example above, if ledger consensus completes with
   only those 20 transactions, and all of those transactions paid the
   minimum required fee at each step, the limit will be adjusted from
-  6 to 20, and the `lastLedgerMedianFeeLevel` will be about 393,000,
-  which is 15,000 drops for a
+  6 to 20, and the `lastLedgerMedianFeeLevel` will be about 322,000,
+  which is 12,600 drops for a
   [reference transaction](#reference-transaction).
   * This will cause the first 21 transactions only require 10
   drops, but the 22nd transaction will require
-  a level of about 110,000,000 or about 4.3 million drops (4.3XRP).
+  a level of about 355,000 or about 13,800 drops.
 
 * This example assumes a cold-start scenario, with a single, possibly
 malicious, user willing to pay arbitrary amounts to get transactions
@@ -80,13 +80,14 @@ allows legitimate users to continue submitting transactions during high
 traffic periods, and give those transactions a much better chance to
 succeed.
 
-1. If an incoming transaction meets the base [fee level](#fee-level),
-but does not have a high enough [fee level](#fee-level) to immediately
-go into the open ledger, it is instead put into the queue and broadcast
-to peers. Each peer will then make an independent decision about whether
-to put the transaction into its open ledger or the queue. In principle,
-peers with identical open ledgers will come to identical decisions. Any
-discrepancies will be resolved as usual during consensus.
+1. If an incoming transaction meets both the base [fee
+level](#fee-level) and the load fee minimum, but does not have a high
+enough [fee level](#fee-level) to immediately go into the open ledger,
+it is instead put into the queue and broadcast to peers. Each peer will
+then make an independent decision about whether to put the transaction
+into its open ledger or the queue. In principle, peers with identical
+open ledgers will come to identical decisions. Any discrepancies will be
+resolved as usual during consensus.
 2. When consensus completes, the open ledger limit is adjusted, and
 the required [fee level](#fee-level) drops back to the base
 [fee level](#fee-level). Before the ledger is made available to
@@ -105,10 +106,11 @@ but in practice, either
   times](#other-constants),
   * its last ledger sequence number will expire,
   * the user will replace it by submitting another transaction with the same
-  sequence number and at least a 25% higher fee, or
+  sequence number and at least a [25% higher fee](#other-constants), or
   * it will get dropped when the queue fills up with more valuable transactions.
   The size limit is computed dynamically, and can hold transactions for
-  the next [20 ledgers](#other-constants).
+  the next [20 ledgers](#other-constants). The lower the transaction's
+  fee, the more likely that it will get dropped if the network is busy.
 
 If a transaction is submitted for an account with one or more transactions
 already in the queue, and a sequence number that is sequential with the other
@@ -222,6 +224,13 @@ the lifespan of the transaction, and giving a queued transaction a
 chance to get processed out of the queue before getting discarded,
 particularly since it may have dependent transactions also in the queue,
 which will never succeed if this one is discarded.
+* *Replaced transaction fee increase*. Any transaction in the queue can be
+replaced by another transaction with the same sequence number and at
+least a 25% higher fee level. The 25% increase is intended to cover the
+resource cost incurred by broadcasting the original transaction to the
+network. This value was chosen experimentally, and can easily change in
+the future.
+
 ### `fee` command
 
 **The `fee` RPC and WebSocket command is still experimental, and may
@@ -250,13 +259,13 @@ Result format:
          "reference_level" : "256", // level of a reference transaction. Always 256.
          "minimum_level" : "256", // minimum fee level to get into the queue. If >256, indicates the queue is full.
          "median_level" : "281600", // lastLedgerMedianFeeLevel used in escalation calculations.
-         "open_ledger_level" : "82021944" // minimum fee level to get into the open ledger immediately.
+         "open_ledger_level" : "320398" // minimum fee level to get into the open ledger immediately.
       },
       "drops" : {
          "base_fee" : "10", // base fee of a reference transaction in drops.
          "minimum_fee" : "10", // minimum drops to get a reference transaction into the queue. If >base_fee, indicates the queue is full.
          "median_fee" : "11000", // drop equivalent of "median_level" for a reference transaction.
-         "open_ledger_fee" : "3203982" // minimum drops to get a reference transaction into the open ledger immediately.
+         "open_ledger_fee" : "12516" // minimum drops to get a reference transaction into the open ledger immediately.
       }
    }
 }

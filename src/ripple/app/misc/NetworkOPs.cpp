@@ -1627,10 +1627,8 @@ void NetworkOPsImp::pubValidation (STValidation::ref val)
         jvObj [jss::flags]                 = val->getFlags();
         jvObj [jss::signing_time]          = *(*val)[~sfSigningTime];
 
-        auto const seq = *(*val)[~sfLedgerSequence];
-
-        if (seq != 0)
-            jvObj [jss::ledger_index]      = to_string (seq);
+        if (auto const seq = (*val)[~sfLedgerSequence])
+            jvObj [jss::ledger_index] = to_string (*seq);
 
         if (val->isFieldPresent (sfAmendments))
         {
@@ -2071,7 +2069,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         info[jss::load] = m_job_queue.getJson ();
 
     auto const escalationMetrics = app_.getTxQ().getMetrics(
-        app_, *app_.openLedger().current());
+        app_.config(), *app_.openLedger().current());
     if (!human)
     {
         info[jss::load_base] = app_.getFeeTrack ().getLoadBase ();

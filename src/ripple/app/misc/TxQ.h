@@ -51,13 +51,15 @@ class Application;
 class TxQ
 {
 public:
+    static constexpr std::uint64_t baseLevel = 256;
+
     struct Setup
     {
         std::size_t ledgersInQueue = 20;
         std::uint32_t retrySequencePercent = 25;
         // TODO: eahennis. Can we remove the multi tx factor?
         std::int32_t multiTxnPercent = -90;
-        std::uint32_t minimumEscalationMultiplier = 500;
+        std::uint32_t minimumEscalationMultiplier = baseLevel * 500;
         std::uint32_t minimumTxnInLedger = 5;
         std::uint32_t minimumTxnInLedgerSA = 1000;
         std::uint32_t targetTxnInLedger = 50;
@@ -128,7 +130,8 @@ public:
     /** Returns fee metrics in reference fee level units.
     */
     boost::optional<Metrics>
-    getMetrics(Application& app, OpenView const& view) const;
+    getMetrics(Config const& config, OpenView const& view,
+        std::uint32_t txCountPadding = 0) const;
 
     /** Packages up fee metrics for the `fee` RPC command.
     */
@@ -160,9 +163,6 @@ private:
         beast::Journal j_;
 
         std::mutex mutable lock_;
-
-    public:
-        static constexpr std::uint64_t baseLevel = 256;
 
     public:
         FeeMetrics(Setup const& setup, beast::Journal j)
@@ -212,7 +212,7 @@ private:
         }
 
         std::uint64_t
-        scaleFeeLevel(OpenView const& view) const;
+        scaleFeeLevel(OpenView const& view, std::uint32_t txCountPadding = 0) const;
     };
 
     // Alternate name: MaybeTx
