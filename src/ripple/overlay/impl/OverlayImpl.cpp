@@ -937,7 +937,7 @@ OverlayImpl::findPeerByShortID (Peer::id_t const& id)
     auto const iter = ids_.find (id);
     if (iter != ids_.end ())
         return iter->second.lock();
-    return std::shared_ptr<Peer>();
+    return {};
 }
 
 void

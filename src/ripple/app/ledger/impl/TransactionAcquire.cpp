@@ -109,7 +109,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
     }
 
     if (aggressive)
-        trigger (std::shared_ptr<Peer> ());
+        trigger (nullptr);
 
     addPeers (1);
 }

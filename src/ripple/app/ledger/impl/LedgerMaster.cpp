@@ -1826,7 +1826,7 @@ LedgerMaster::makeFetchPack (
         return;
     }
 
-    std::shared_ptr<Peer> peer = wPeer.lock ();
+    auto peer = wPeer.lock ();
 
     if (!peer)
         return;

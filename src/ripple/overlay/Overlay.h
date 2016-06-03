@@ -193,9 +193,8 @@ public:
                 typename UnaryFunc::return_type>
     foreach (UnaryFunc f)
     {
-        PeerSequence peers (getActivePeers());
-        for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
-            f (*i);
+        for (auto const& p : getActivePeers())
+            f (p);
         return f();
     }
 
@@ -215,10 +214,8 @@ public:
     >
     foreach(Function f)
     {
-        PeerSequence peers (getActivePeers());
-
-        for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
-            f (*i);
+        for (auto const& p : getActivePeers())
+            f (p);
     }
 
     /** Select from active peers
