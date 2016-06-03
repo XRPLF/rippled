@@ -25,6 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/TestSuite.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/STTx.h>
@@ -1529,6 +1530,42 @@ public:
         }
     }
 
+    void testRPC()
+    {
+        using namespace jtx;
+        {
+            Env env(*this, features(featureFeeEscalation));
+
+            auto fee = env.rpc("fee");
+
+            if (expect(fee.isMember(jss::result) &&
+                !RPC::contains_error(fee[jss::result])))
+            {
+                auto const& result = fee[jss::result];
+                expect(result.isMember(jss::drops));
+                expect(result.isMember(jss::levels));
+                expect(result.isMember(jss::current_ledger_size));
+                expect(result.isMember(jss::current_queue_size));
+                expect(result.isMember(jss::expected_ledger_size));
+            }
+        }
+
+        {
+            Env env(*this);
+
+            auto fee = env.rpc("fee");
+
+            if(expect(fee.isMember(jss::result) &&
+                RPC::contains_error(fee[jss::result])))
+            {
+                auto const& result = fee[jss::result];
+                expect(result.isMember(jss::error) &&
+                    result[jss::error] ==
+                        RPC::get_error_info(rpcNOT_ENABLED).token);
+            }
+        }
+    }
+
     void run()
     {
         testQueue();
@@ -1546,6 +1583,7 @@ public:
         testBlockers();
         testInFlightBalance();
         testConsequences();
+        testRPC();
     }
 };
 
