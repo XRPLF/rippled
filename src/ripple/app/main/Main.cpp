@@ -27,6 +27,7 @@
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
