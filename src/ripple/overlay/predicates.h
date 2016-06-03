@@ -38,7 +38,7 @@ struct send_always
         : msg(m)
     { }
 
-    void operator()(Peer::ptr const& peer) const
+    void operator()(std::shared_ptr<Peer> const& peer) const
     {
         peer->send (msg);
     }
@@ -59,7 +59,7 @@ struct send_if_pred
     : msg(m), predicate(p)
     { }
 
-    void operator()(Peer::ptr const& peer) const
+    void operator()(std::shared_ptr<Peer> const& peer) const
     {
         if (predicate (peer))
             peer->send (msg);
@@ -90,7 +90,7 @@ struct send_if_not_pred
         : msg(m), predicate(p)
     { }
 
-    void operator()(Peer::ptr const& peer) const
+    void operator()(std::shared_ptr<Peer> const& peer) const
     {
         if (!predicate (peer))
             peer->send (msg);
@@ -117,7 +117,7 @@ struct match_peer
         : matchPeer (match)
     { }
 
-    bool operator() (Peer::ptr const& peer) const
+    bool operator() (std::shared_ptr<Peer> const& peer) const
     {
         if(matchPeer && (peer.get () == matchPeer))
             return true;
@@ -137,7 +137,7 @@ struct peer_in_cluster
         : skipPeer (skip)
     { }
 
-    bool operator() (Peer::ptr const& peer) const
+    bool operator() (std::shared_ptr<Peer> const& peer) const
     {
         if (skipPeer (peer))
             return false;
@@ -160,7 +160,7 @@ struct peer_in_set
         : peerSet (peers)
     { }
 
-    bool operator() (Peer::ptr const& peer) const
+    bool operator() (std::shared_ptr<Peer> const& peer) const
     {
         if (peerSet.count (peer->id ()) == 0)
             return false;

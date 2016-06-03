@@ -35,7 +35,6 @@ using ValidationSet = hash_map<NodeID, STValidation::pointer>;
 
 using ValidationCounter = std::pair<int, NodeID>;
 using LedgerToValidationCounter = hash_map<uint256, ValidationCounter>;
-using ValidationVector = std::vector<STValidation::pointer>;
 
 class Validations
 {
@@ -47,12 +46,6 @@ public:
     virtual bool current (STValidation::ref) = 0;
 
     virtual ValidationSet getValidations (uint256 const& ledger) = 0;
-
-    virtual void getValidationCount (
-        uint256 const& ledger, bool currentOnly, int& trusted,
-        int& untrusted) = 0;
-    virtual void getValidationTypes (
-        uint256 const& ledger, int& full, int& partial) = 0;
 
     virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
@@ -75,8 +68,6 @@ public:
 
     virtual std::list <STValidation::pointer>
     getCurrentTrustedValidations () = 0;
-
-    virtual void tune (int size, int age) = 0;
 
     virtual void flush () = 0;
 

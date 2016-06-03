@@ -1517,10 +1517,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->info().parentHash;
 
-    // Why do we make a copy of the peer list here?
-    std::vector <Peer::ptr> peerList = app_.overlay ().getActivePeers ();
-
-    for (auto const& it : peerList)
+    for (auto const& it : app_.overlay ().getActivePeers ())
     {
         if (it && (it->getClosedLedgerHash () == deadLedger))
         {

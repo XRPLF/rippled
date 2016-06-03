@@ -25,7 +25,6 @@
 #include <ripple/protocol/SystemParameters.h> // VFALCO Breaks levelization
 #include <ripple/protocol/PublicKey.h> // NIKB Breaks levelization (TEMP)
 #include <ripple/protocol/SecretKey.h> // NIKB Breaks levelization (TEMP)
-#include <ripple/json/json_value.h>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/Journal.h>
@@ -147,9 +146,6 @@ public:
     int                         PEERS_MAX = 0;
 
     std::chrono::seconds        WEBSOCKET_PING_FREQ = 5min;
-
-    // RPC parameters
-    Json::Value                     RPC_STARTUP;
 
     // Path searching
     int                         PATH_SEARCH_OLD = 7;

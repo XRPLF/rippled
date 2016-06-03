@@ -302,25 +302,6 @@ void Config::loadFromString (std::string const& fileContents)
     if (auto s = getIniFileSection (secConfig, SECTION_SNTP))
         SNTP_SERVERS = *s;
 
-    if (auto s = getIniFileSection (secConfig, SECTION_RPC_STARTUP))
-    {
-        RPC_STARTUP = Json::arrayValue;
-
-        for (auto const& strJson : *s)
-        {
-            Json::Reader    jrReader;
-            Json::Value     jvCommand;
-
-            if (! jrReader.parse (strJson, jvCommand))
-                Throw<std::runtime_error> (
-                    boost::str (boost::format (
-                        "Couldn't parse [" SECTION_RPC_STARTUP "] command: %s")
-                            % strJson));
-
-            RPC_STARTUP.append (jvCommand);
-        }
-    }
-
     {
         std::string dbPath;
         if (getSingleSection (secConfig, "database_path", dbPath, j_))

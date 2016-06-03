@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/protocol/BuildInfo.h>
+#include <ripple/basics/contract.h>
 #include <ripple/beast/unit_test.h>
-#include <ripple/beast/core/FatalError.h>
 #include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/protocol/BuildInfo.h>
 
 namespace ripple {
 
@@ -107,40 +107,20 @@ getMinimumProtocol ()
 std::string const&
 getVersionString ()
 {
-    struct SanityChecker
-    {
-        SanityChecker ()
-        {
-            beast::SemanticVersion v;
-
-            char const* const rawText = getRawVersionString ();
-
-            if (! v.parse (rawText) || v.print () != rawText)
-                beast::FatalError ("Bad server version string", __FILE__, __LINE__);
-
-            versionString = rawText;
-        }
-
-        std::string versionString;
-    };
-
-    static SanityChecker const value;
-
-    return value.versionString;
+    static std::string const value = [] {
+        std::string const versionString = getRawVersionString ();
+        beast::SemanticVersion v;
+        if (!v.parse (versionString) || v.print () != versionString)
+            LogicError (versionString + ": Bad server version string");
+        return versionString;
+    }();
+    return value;
 }
 
 std::string const& getFullVersionString ()
 {
-    struct PrettyPrinter
-    {
-        PrettyPrinter () : fullVersionString ("rippled-" + getVersionString ()){}
-
-        std::string fullVersionString;
-    };
-
-    static PrettyPrinter const value;
-
-    return value.fullVersionString;
+    static std::string const value = "rippled-" + getVersionString ();
+    return value;
 }
 
 ProtocolVersion

@@ -48,7 +48,7 @@ private:
 
     TaggedCache<uint256, ValidationSet> mValidations;
     ValidationSet mCurrentValidations;
-    ValidationVector mStaleValidations;
+    std::vector<STValidation::pointer> mStaleValidations;
 
     bool mWriting;
     beast::Journal j_;
@@ -156,12 +156,6 @@ private:
         return false;
     }
 
-    void tune (int size, int age) override
-    {
-        mValidations.setTargetSize (size);
-        mValidations.setTargetAge (age);
-    }
-
     ValidationSet getValidations (uint256 const& ledger) override
     {
         {
@@ -189,58 +183,6 @@ private:
             (signTime < (now + VALIDATION_VALID_WALL)) &&
             ((val->getSeenTime() == NetClock::time_point{}) ||
                 (val->getSeenTime() < (now + VALIDATION_VALID_LOCAL)));
-    }
-
-    void getValidationCount (uint256 const& ledger, bool currentOnly,
-                             int& trusted, int& untrusted) override
-    {
-        trusted = untrusted = 0;
-        ScopedLockType sl (mLock);
-        auto set = findSet (ledger);
-
-        if (set)
-        {
-            for (auto& it: *set)
-            {
-                bool isTrusted = it.second->isTrusted ();
-
-                if (isTrusted && currentOnly && ! current (it.second))
-                {
-                    JLOG (j_.trace()) << "VC: Untrusted due to time " << ledger;
-                    isTrusted = false;
-                }
-
-                if (isTrusted)
-                    ++trusted;
-                else
-                    ++untrusted;
-            }
-        }
-
-        JLOG (j_.trace()) << "VC: " << ledger << "t:" << trusted << " u:" << untrusted;
-    }
-
-    void getValidationTypes (uint256 const& ledger, int& full, int& partial) override
-    {
-        full = partial = 0;
-        ScopedLockType sl (mLock);
-        auto set = findSet (ledger);
-
-        if (set)
-        {
-            for (auto& it:*set)
-            {
-                if (it.second->isTrusted ())
-                {
-                    if (it.second->isFull ())
-                        ++full;
-                    else
-                        ++partial;
-                }
-            }
-        }
-
-        JLOG (j_.trace()) << "VC: " << ledger << "f:" << full << " p:" << partial;
     }
 
     int getTrustedValidationCount (uint256 const& ledger) override
@@ -470,7 +412,7 @@ private:
 
         while (!mStaleValidations.empty ())
         {
-            ValidationVector vector;
+            std::vector<STValidation::pointer> vector;
             vector.reserve (512);
             mStaleValidations.swap (vector);
 

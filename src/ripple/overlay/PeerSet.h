@@ -28,6 +28,7 @@
 #include <ripple/beast/utility/Journal.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <mutex>
+#include <set>
 
 namespace ripple {
 
@@ -97,7 +98,7 @@ public:
         This will call the derived class hook function.
         @return `true` If the peer was added
     */
-    bool insert (Peer::ptr const&);
+    bool insert (std::shared_ptr<Peer> const&);
 
     virtual bool isDone () const
     {
@@ -110,23 +111,19 @@ public:
         return app_;
     }
 
-private:
-    static void timerEntry (
-        std::weak_ptr<PeerSet>, const boost::system::error_code& result,
-        beast::Journal j);
-    static void timerJobEntry (std::shared_ptr<PeerSet>);
-
 protected:
     using ScopedLockType = std::unique_lock <std::recursive_mutex>;
 
     PeerSet (Application& app, uint256 const& hash, std::chrono::milliseconds interval,
-        bool txnData, clock_type& clock, beast::Journal journal);
+        clock_type& clock, beast::Journal journal);
 
     virtual ~PeerSet() = 0;
 
-    virtual void newPeer (Peer::ptr const&) = 0;
+    virtual void newPeer (std::shared_ptr<Peer> const&) = 0;
 
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
+
+    virtual void execute () = 0;
 
     virtual std::weak_ptr<PeerSet> pmDowncast () = 0;
 
@@ -148,7 +145,7 @@ protected:
 
     void sendRequest (const protocol::TMGetLedger& message);
 
-    void sendRequest (const protocol::TMGetLedger& message, Peer::ptr const& peer);
+    void sendRequest (const protocol::TMGetLedger& message, std::shared_ptr<Peer> const& peer);
 
     void setTimer ();
 
@@ -166,19 +163,14 @@ protected:
     int mTimeouts;
     bool mComplete;
     bool mFailed;
-    bool mTxnData;
     clock_type::time_point mLastAction;
     bool mProgress;
 
     // VFALCO TODO move the responsibility for the timer to a higher level
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> mTimer;
 
-    // VFALCO TODO Verify that these are used in the way that the names suggest.
-    using PeerIdentifier = Peer::id_t;
-    using ReceivedChunkCount = int;
-    using PeerSetMap = hash_map <PeerIdentifier, ReceivedChunkCount>;
-
-    PeerSetMap mPeers;
+    // The identifiers of the peers we are tracking.
+    std::set <Peer::id_t> mPeers;
 };
 
 } // ripple

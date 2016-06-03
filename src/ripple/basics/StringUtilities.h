@@ -88,8 +88,6 @@ std::pair<Blob, bool> strUnHex (std::string const& strSrc);
 Blob strCopy (std::string const& strSrc);
 std::string strCopy (Blob const& vucSrc);
 
-bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort);
-
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
 

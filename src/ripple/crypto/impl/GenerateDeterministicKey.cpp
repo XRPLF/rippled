@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/contract.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/impl/ec_key.h>
 #include <ripple/crypto/impl/openssl.h>
 #include <ripple/protocol/digest.h>
-#include <ripple/beast/core/FatalError.h>
 #include <array>
 #include <string>
 #include <openssl/pem.h>
@@ -42,7 +42,7 @@ struct secp256k1_data
         group = EC_GROUP_new_by_curve_name (NID_secp256k1);
 
         if (!group)
-            beast::FatalError ("The OpenSSL library on this system lacks elliptic curve support.");
+            LogicError ("The OpenSSL library on this system lacks elliptic curve support.");
 
         bn_ctx ctx;
         order = get_order (group, ctx);
