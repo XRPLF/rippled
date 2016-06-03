@@ -8,10 +8,9 @@
 // Test that header file is self-contained.
 #include <beast/http/basic_parser_v1.hpp>
 
-#include "message_fuzz.hpp"
+#include "fail_parser.hpp"
 
-#include <beast/core/streambuf.hpp>
-#include <beast/core/write_dynabuf.hpp>
+#include <beast/core/buffer_cat.hpp>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/unit_test/suite.hpp>
@@ -91,7 +90,7 @@ public:
         {
             value = true;
         }
-        int on_headers(error_code&)
+        int on_headers(std::uint64_t, error_code&)
         {
             headers = true;
             return 0;
@@ -106,201 +105,7 @@ public:
         }
     };
 
-    //--------------------------------------------------------------------------
-
-    static
-    std::string
-    escaped_string(boost::string_ref const& s)
-    {
-        std::string out;
-        out.reserve(s.size());
-        char const* p = s.data();
-        while(p != s.end())
-        {
-            if(*p == '\r')
-                out.append("\\r");
-            else if(*p == '\n')
-                out.append("\\n");
-            else if (*p == '\t')
-                out.append("\\t");
-            else
-                out.append(p, 1);
-            ++p;
-        }
-        return out;
-    }
-
-    template<bool isRequest>
-    struct null_parser : basic_parser_v1<isRequest, null_parser<isRequest>>
-    {
-    };
-
-    static
-    std::string
-    str(boost::string_ref const& s)
-    {
-        return std::string{s.data(), s.size()};
-    }
-
-    template<bool isRequest>
-    class test_parser :
-        public basic_parser_v1<isRequest, test_parser<isRequest>>
-    {
-        std::string field_;
-        std::string value_;
-
-        void check()
-        {
-            if(! value_.empty())
-            {
-                fields.emplace(field_, str(detail::trim(value_)));
-                field_.clear();
-                value_.clear();
-            }
-        }
-
-    public:
-        std::map<std::string, std::string,
-            beast::detail::ci_less> fields;
-        std::string body;
-
-        void on_field(boost::string_ref const& s, error_code&)
-        {
-            check();
-            field_.append(s.data(), s.size());
-        }
-
-        void on_value(boost::string_ref const& s, error_code&)
-        {
-            value_.append(s.data(), s.size());
-        }
-
-        int on_headers(error_code&)
-        {
-            check();
-            return 0;
-        }
-
-        void on_body(boost::string_ref const& s, error_code&)
-        {
-            body.append(s.data(), s.size());
-        }
-    };
-
-    // Parse the entire input buffer as a valid message,
-    // then parse in two pieces of all possible lengths.
-    //
-    template<class Parser, class F>
-    void
-    parse(boost::string_ref const& m, F&& f)
-    {
-        using boost::asio::buffer;
-        for(;;)
-        {
-            error_code ec;
-            Parser p;
-            p.write(buffer(m.data(), m.size()), ec);
-            if(! expect(! ec, ec.message()))
-                break;
-            if(p.needs_eof())
-            {
-                p.write_eof(ec);
-                if(! expect(! ec, ec.message()))
-                    break;
-            }
-            if(expect(p.complete()))
-                f(p);
-            break;
-        }
-        for(std::size_t i = 1; i < m.size() - 1; ++i)
-        {
-            error_code ec;
-            Parser p;
-            p.write(buffer(&m[0], i), ec);
-            if(! expect(! ec, ec.message()))
-                continue;
-            if(! p.complete())
-            {
-                p.write(buffer(&m[i], m.size() - i), ec);
-                if(! expect(! ec, ec.message()))
-                    continue;
-            }
-            if(! p.complete() && p.needs_eof())
-            {
-                p.write_eof(ec);
-                if(! expect(! ec, ec.message()))
-                    continue;
-            }
-            if(! expect(p.complete()))
-                continue;
-            f(p);
-        }
-    }
-
-    // Parse with an expected error code
-    //
-    template<bool isRequest>
-    void
-    parse_ev(boost::string_ref const& m, parse_error ev)
-    {
-        using boost::asio::buffer;
-        {
-            error_code ec;
-            null_parser<isRequest> p;
-            p.write(buffer(m.data(), m.size()), ec);
-            if(expect(! p.complete()))
-                expect(ec == ev, ec.message());
-        }
-        for(std::size_t i = 1; i < m.size() - 1; ++i)
-        {
-            error_code ec;
-            null_parser<isRequest> p;
-            p.write(buffer(&m[0], i), ec);
-            if(! expect(! p.complete()))
-                continue;
-            if(ec)
-            {
-                expect(ec == ev, ec.message());
-                continue;
-            }
-            p.write(buffer(&m[i], m.size() - i), ec);
-            if(! expect(! p.complete()))
-                continue;
-            if(! expect(ec == ev, ec.message()))
-                continue;
-        }
-    }
-
-    // Parse a valid message with expected version
-    //
-    template<bool isRequest>
-    void
-    version(boost::string_ref const& m,
-        unsigned major, unsigned minor)
-    {
-        parse<null_parser<isRequest>>(m,
-            [&](null_parser<isRequest> const& p)
-            {
-                expect(p.http_major() == major);
-                expect(p.http_minor() == minor);
-            });
-    }
-
-    // Parse a valid message with expected flags mask
-    //
-    void
-    checkf(boost::string_ref const& m, std::uint8_t mask)
-    {
-        parse<null_parser<true>>(m,
-            [&](null_parser<true> const& p)
-            {
-                expect(p.flags() & mask);
-            });
-    }
-
-    //--------------------------------------------------------------------------
-
-    // Check all callbacks invoked
+    // Check that all callbacks are invoked
     void
     testCallbacks()
     {
@@ -352,439 +157,1012 @@ public:
         }
     }
 
+    //--------------------------------------------------------------------------
+
+    template<class F>
+    static
     void
-    testVersion()
-    {
-        version <true>("GET / HTTP/0.0\r\n\r\n", 0, 0);
-        version <true>("GET / HTTP/0.1\r\n\r\n", 0, 1);
-        version <true>("GET / HTTP/0.9\r\n\r\n", 0, 9);
-        version <true>("GET / HTTP/1.0\r\n\r\n", 1, 0);
-        version <true>("GET / HTTP/1.1\r\n\r\n", 1, 1);
-        version <true>("GET / HTTP/9.9\r\n\r\n", 9, 9);
-        version <true>("GET / HTTP/999.999\r\n\r\n", 999, 999);
-        parse_ev<true>("GET / HTTP/1000.0\r\n\r\n", parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/0.1000\r\n\r\n", parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/99999999999999999999.0\r\n\r\n", parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/0.99999999999999999999\r\n\r\n", parse_error::bad_version);
-
-        version <false>("HTTP/0.0 200 OK\r\n\r\n", 0, 0);
-        version <false>("HTTP/0.1 200 OK\r\n\r\n", 0, 1);
-        version <false>("HTTP/0.9 200 OK\r\n\r\n", 0, 9);
-        version <false>("HTTP/1.0 200 OK\r\n\r\n", 1, 0);
-        version <false>("HTTP/1.1 200 OK\r\n\r\n", 1, 1);
-        version <false>("HTTP/9.9 200 OK\r\n\r\n", 9, 9);
-        version <false>("HTTP/999.999 200 OK\r\n\r\n", 999, 999);
-        parse_ev<false>("HTTP/1000.0 200 OK\r\n\r\n", parse_error::bad_version);
-        parse_ev<false>("HTTP/0.1000 200 OK\r\n\r\n", parse_error::bad_version);
-        parse_ev<false>("HTTP/99999999999999999999.0 200 OK\r\n\r\n", parse_error::bad_version);
-        parse_ev<false>("HTTP/0.99999999999999999999 200 OK\r\n\r\n", parse_error::bad_version);
-    }
-
-    void testConnection(std::string const& token,
-        std::uint8_t flag)
-    {
-        checkf("GET / HTTP/1.1\r\nConnection:" + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: " + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection:\t" + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: \t" + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: " + token + " \r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: " + token + "\t\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: " + token + " \t\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: " + token + "\t \r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: \r\n" " " + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection:\t\r\n" " " + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: \r\n" "\t" + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection:\t\r\n" "\t" + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: X," + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: X, " + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: X,\t" + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: X,\t " + token + "\r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: X," + token + " \r\n\r\n", flag);
-        checkf("GET / HTTP/1.1\r\nConnection: X," + token + "\t\r\n\r\n", flag);
-    }
-
-    void testContentLength()
-    {
-        std::size_t const length = 0;
-        std::string const length_s =
-            std::to_string(length);
-
-        checkf("GET / HTTP/1.1\r\nContent-Length:"+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: "+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length:\t"+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: \t"+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: "+ length_s + " \r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: "+ length_s + "\t\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: "+ length_s + " \t\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: "+ length_s + "\t \r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: \r\n" " "+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length:\t\r\n" " "+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length: \r\n" "\t"+ length_s + "\r\n\r\n", parse_flag::contentlength);
-        checkf("GET / HTTP/1.1\r\nContent-Length:\t\r\n" "\t"+ length_s + "\r\n\r\n", parse_flag::contentlength);
-    }
-
-    void testTransferEncoding()
-    {
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding:chunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding:\tchunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: \tchunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: chunked \r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\t\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: chunked \t\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: chunked\t \r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: \r\n" " chunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding:\t\r\n" " chunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding: \r\n" "\tchunked\r\n\r\n0\r\n\r\n", parse_flag::chunked);
-        checkf("GET / HTTP/1.1\r\nTransfer-Encoding:\t\r\n" "\tchunked\r\n\r\n0\r\n\r\n", parse_flag::chunked );
-    }
-
-    void testFlags()
-    {
-        testConnection("keep-alive", parse_flag::connection_keep_alive);
-        testConnection("close", parse_flag::connection_close);
-        testConnection("upgrade", parse_flag::connection_upgrade);
-
-        checkf("GET / HTTP/1.1\r\nConnection: close, win\r\n\r\n", parse_flag::connection_close);
-        checkf("GET / HTTP/1.1\r\nConnection: keep-alive, win\r\n\r\n", parse_flag::connection_keep_alive);
-        checkf("GET / HTTP/1.1\r\nConnection: upgrade, win\r\n\r\n", parse_flag::connection_upgrade);
-
-        testContentLength();
-
-        testTransferEncoding();
-
-        checkf(
-            "GET / HTTP/1.1\r\n"
-            "Upgrade: x\r\n"
-            "\r\n",
-            parse_flag::upgrade
-        );
-
-        parse_ev<true>(
-            "GET / HTTP/1.1\r\n"
-            "Transfer-Encoding:chunked\r\n"
-            "Content-Length: 0\r\n"
-            "Proxy-Connection: close\r\n"
-            "\r\n", parse_error::illegal_content_length);
-    }
-
-    void testHeaders()
-    {
-        parse<null_parser<true>>(
-            "GET / HTTP/1.0\r\n"
-            "Conniving: yes\r\n"
-            "Content-Lengthening: yes\r\n"
-            "Transfer-Encoding: deflate\r\n"
-            "Connection: sweep\r\n"
-            "\r\n",
-            [](null_parser<true> const&)
-            {
-            });
-
-        parse_ev<true>(
-            "GET / HTTP/1.0\r\n"
-            "Content-Length: 1\r\n"
-            "Content-Length: 2\r\n"
-            "\r\n",
-                parse_error::bad_content_length);
-
-        parse_ev<true>(
-            "GET / HTTP/1.0\r\n"
-            "Transfer-Encoding: chunked\r\n"
-            "\r\n"
-            "fffffffffffffffff\r\n"
-            "0\r\n\r\n",
-                parse_error::bad_content_length);
-
-        parse_ev<true>("GET / HTTP/1.0\r\nContent-Length: 1e9\r\n\r\n",
-            parse_error::bad_content_length);
-
-        parse_ev<true>("GET / HTTP/1.0\r\nContent-Length: 99999999999999999999999\r\n\r\n",
-            parse_error::bad_content_length);
-    }
-
-    void testUpgrade()
-    {
-        using boost::asio::buffer;
-        null_parser<true> p;
-        boost::string_ref s =
-            "GET / HTTP/1.1\r\nConnection: upgrade\r\nUpgrade: WebSocket\r\n\r\n";
-        error_code ec;
-        p.write(buffer(s.data(), s.size()), ec);
-        if(! expect(! ec, ec.message()))
-            return;
-        expect(p.complete());
-        expect(p.upgrade());
-    }
-
-    void testBad()
-    {
-        parse_ev<true>(" ",                     parse_error::bad_method);
-        parse_ev<true>(" G",                    parse_error::bad_method);
-        parse_ev<true>("G:",                    parse_error::bad_request);
-        parse_ev<true>("GET  /",                parse_error::bad_uri);
-        parse_ev<true>("GET / X",               parse_error::bad_version);
-        parse_ev<true>("GET / HX",              parse_error::bad_version);
-        parse_ev<true>("GET / HTTX",            parse_error::bad_version);
-        parse_ev<true>("GET / HTTPX",           parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/.",          parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/1000",       parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/1. ",        parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/1.1000",     parse_error::bad_version);
-        parse_ev<true>("GET / HTTP/1.1\r ",     parse_error::bad_crlf);
-        parse_ev<true>("GET / HTTP/1.1\r\nf :", parse_error::bad_field);
-    }
-
-    void testInvalidMatrix()
+    for_split(boost::string_ref const& s, F const& f)
     {
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
-        std::string s;
-
-        for(std::size_t n = 0;; ++n)
+        for(std::size_t i = 0; i < s.size(); ++i)
         {
-            // Create a request and set one octet to an invalid char
-            s =
-                "GET / HTTP/1.1\r\n"
-                "Host: localhost\r\n"
-                "User-Agent: test\r\n"
-                "Content-Length: 00\r\n"
-                "\r\n";
-            auto const len = s.size();
-            if(n < len)
-            {
-                s[n] = 0;
-                for(std::size_t m = 1; m < len - 1; ++m)
-                {
-                    // Use separately allocated buffers so
-                    // address sanitizer has something to chew on.
-                    //
-                    std::unique_ptr<char[]> p1(new char[m]);
-                    std::unique_ptr<char[]> p2(new char[len - m]);
-                    auto const b1 = buffer(p1.get(), m);
-                    auto const b2 = buffer(p2.get(), len - m);
-                    buffer_copy(b1, buffer(s.data(), m));
-                    buffer_copy(b2, buffer(s.data() + m, len - m));
-                    null_parser<true> p;
-                    error_code ec;
-                    p.write(b1, ec);
-                    if(ec)
-                    {
-                        pass();
-                        continue;
-                    }
-                    p.write(b2, ec);
-                    expect(ec);
-                }
-            }
-            else
-            {
-                null_parser<true> p;
-                error_code ec;
-                p.write(buffer(s.data(), s.size()), ec);
-                expect(! ec, ec.message());
-                break;
-            }
-        }
-
-        for(std::size_t n = 0;; ++n)
-        {
-            // Create a response and set one octet to an invalid char
-            s =
-                "HTTP/1.1 200 OK\r\n"
-                "Server: test\r\n"
-                "Transfer-Encoding: chunked\r\n"
-                "\r\n"
-                "0\r\n\r\n";
-            auto const len = s.size();
-            if(n < len)
-            {
-                s[n] = 0;
-                for(std::size_t m = 1; m < len - 1; ++m)
-                {
-                    null_parser<false> p;
-                    error_code ec;
-                    p.write(buffer(s.data(), m), ec);
-                    if(ec)
-                    {
-                        pass();
-                        continue;
-                    }
-                    p.write(buffer(s.data() + m, len - m), ec);
-                    expect(ec);
-                }
-            }
-            else
-            {
-                null_parser<false> p;
-                error_code ec;
-                p.write(buffer(s.data(), s.size()), ec);
-                expect(! ec, ec.message());
-                break;
-            }
+            // Use separately allocated buffers so
+            // address sanitizer has something to chew on.
+            //
+            auto const n1 = s.size() - i;
+            auto const n2 = i;
+            std::unique_ptr<char[]> p1(new char[n1]);
+            std::unique_ptr<char[]> p2(new char[n2]);
+            buffer_copy(buffer(p1.get(), n1), buffer(s.data(), n1));
+            buffer_copy(buffer(p2.get(), n2), buffer(s.data() + n1, n2));
+            f(
+                boost::string_ref{p1.get(), n1},
+                boost::string_ref{p2.get(), n2});
         }
     }
 
+    struct none
+    {
+        template<class Parser>
+        void
+        operator()(Parser const&) const
+        {
+        }
+    };
+
+    template<bool isRequest, class F>
     void
-    testRandomReq(std::size_t N)
+    good(int onBodyRv, std::string const& s, F const& f)
     {
         using boost::asio::buffer;
-        using boost::asio::buffer_cast;
-        using boost::asio::buffer_size;
-        message_fuzz mg;
-        for(std::size_t i = 0; i < N; ++i)
-        {
-            std::string s;
+        for_split(s,
+            [&](boost::string_ref const& s1, boost::string_ref const& s2)
             {
-                streambuf sb;
-                mg.request(sb);
-                s.reserve(buffer_size(sb.data()));
-                for(auto const& b : sb.data())
-                    s.append(buffer_cast<char const*>(b),
-                        buffer_size(b));
-            }
-            null_parser<true> p;
-            for(std::size_t j = 1; j < s.size() - 1; ++j)
-            {
-                error_code ec;
-                p.write(buffer(&s[0], j), ec);
-                if(! expect(! ec, ec.message()))
+                static std::size_t constexpr Limit = 200;
+                std::size_t n;
+                for(n = 0; n < Limit; ++n)
                 {
-                    log << escaped_string(s);
+                    test::fail_counter fc(n);
+                    fail_parser<isRequest> p(fc);
+                    p.on_body_rv(onBodyRv);
+                    error_code ec;
+                    p.write(buffer(s1.data(), s1.size()), ec);
+                    if(ec == test::fail_error)
+                        continue;
+                    if(! expect(! ec))
+                        break;
+                    if(! expect(s2.empty() || ! p.complete()))
+                        break;
+                    p.write(buffer(s2.data(), s2.size()), ec);
+                    if(ec == test::fail_error)
+                        continue;
+                    if(! expect(! ec))
+                        break;
+                    p.write_eof(ec);
+                    if(ec == test::fail_error)
+                        continue;
+                    if(! expect(! ec))
+                        break;
+                    expect(p.complete());
+                    f(p);
                     break;
                 }
-                if(! p.complete())
+                expect(n < Limit);
+            });
+    }
+
+    template<bool isRequest, class F = none>
+    void
+    good(std::string const& s, F const& f = {})
+    {
+        return good<isRequest>(0, s, f);
+    }
+
+    template<bool isRequest>
+    void
+    bad(int onBodyRv, std::string const& s, error_code ev)
+    {
+        using boost::asio::buffer;
+        for_split(s,
+            [&](boost::string_ref const& s1, boost::string_ref const& s2)
+            {
+                static std::size_t constexpr Limit = 200;
+                std::size_t n;
+                for(n = 0; n < Limit; ++n)
                 {
-                    p.write(buffer(&s[j], s.size() - j), ec);
-                    if(! expect(! ec, ec.message()))
+                    test::fail_counter fc(n);
+                    fail_parser<isRequest> p(fc);
+                    p.on_body_rv(onBodyRv);
+                    error_code ec;
+                    p.write(buffer(s1.data(), s1.size()), ec);
+                    if(ec == test::fail_error)
+                        continue;
+                    if(ec)
                     {
-                        log << escaped_string(s);
+                        expect((ec && ! ev) || ec == ev);
                         break;
                     }
-                }
-                if(! expect(p.complete()))
+                    if(! expect(! p.complete()))
+                        break;
+                    if(! s2.empty())
+                    {
+                        p.write(buffer(s2.data(), s2.size()), ec);
+                        if(ec == test::fail_error)
+                            continue;
+                        if(ec)
+                        {
+                            expect((ec && ! ev) || ec == ev);
+                            break;
+                        }
+                        if(! expect(! p.complete()))
+                            break;
+                    }
+                    p.write_eof(ec);
+                    if(ec == test::fail_error)
+                        continue;
+                    expect(! p.complete());
+                    expect((ec && ! ev) || ec == ev);
                     break;
-                if(! p.keep_alive())
-                {
-                    p.~null_parser();
-                    new(&p) null_parser<true>{};
                 }
-            }
+                expect(n < Limit);
+            });
+    }
+
+    template<bool isRequest>
+    void
+    bad(std::string const& s, error_code ev = {})
+    {
+        return bad<isRequest>(0, s, ev);
+    }
+
+    //--------------------------------------------------------------------------
+
+    class version
+    {
+        suite& s_;
+        unsigned major_;
+        unsigned minor_;
+
+    public:
+        version(suite& s, unsigned major, unsigned minor)
+            : s_(s)
+            , major_(major)
+            , minor_(minor)
+        {
+        }
+
+        template<class Parser>
+        void
+        operator()(Parser const& p) const
+        {
+            s_.expect(p.http_major() == major_);
+            s_.expect(p.http_minor() == minor_);
+        }
+    };
+
+    class status
+    {
+        suite& s_;
+        unsigned code_;
+    public:
+        status(suite& s, int code)
+            : s_(s)
+            , code_(code)
+        {
+        }
+
+        template<class Parser>
+        void
+        operator()(Parser const& p) const
+        {
+            s_.expect(p.status_code() == code_);
+        }
+    };
+
+    void testRequestLine()
+    {
+    /*
+        request-line    = method SP request-target SP HTTP-version CRLF
+        method          = token
+        request-target  = origin-form / absolute-form / authority-form / asterisk-form
+        HTTP-version    = "HTTP/" DIGIT "." DIGIT
+    */
+        good<true>("GET /x HTTP/1.0\r\n\r\n");
+        good<true>("!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz / HTTP/1.0\r\n\r\n");
+        good<true>("GET / HTTP/1.0\r\n\r\n",            version{*this, 1, 0});
+        good<true>("G / HTTP/1.1\r\n\r\n",              version{*this, 1, 1});
+        // VFALCO TODO various forms of good request-target (uri)
+        good<true>("GET / HTTP/0.1\r\n\r\n",            version{*this, 0, 1});
+        good<true>("GET / HTTP/2.3\r\n\r\n",            version{*this, 2, 3});
+        good<true>("GET / HTTP/4.5\r\n\r\n",            version{*this, 4, 5});
+        good<true>("GET / HTTP/6.7\r\n\r\n",            version{*this, 6, 7});
+        good<true>("GET / HTTP/8.9\r\n\r\n",            version{*this, 8, 9});
+
+        bad<true>("\tGET / HTTP/1.0\r\n"    "\r\n",     parse_error::bad_method);
+        bad<true>("GET\x01 / HTTP/1.0\r\n"  "\r\n",     parse_error::bad_method);
+        bad<true>("GET  / HTTP/1.0\r\n"     "\r\n",     parse_error::bad_uri);
+        bad<true>("GET \x01 HTTP/1.0\r\n"   "\r\n",     parse_error::bad_uri);
+        bad<true>("GET /\x01 HTTP/1.0\r\n"  "\r\n",     parse_error::bad_uri);
+        // VFALCO TODO various forms of bad request-target (uri)
+        bad<true>("GET /  HTTP/1.0\r\n"     "\r\n",     parse_error::bad_version);
+        bad<true>("GET / _TTP/1.0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / H_TP/1.0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HT_P/1.0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTT_/1.0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP_1.0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/01.2\r\n"     "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/3.45\r\n"     "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/67.89\r\n"    "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/x.0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/1.x\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/1.0 \r\n"     "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/1_0\r\n"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/1.0\n"        "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/1.0\n\r"      "\r\n",     parse_error::bad_version);
+        bad<true>("GET / HTTP/1.0\r\r\n"    "\r\n",     parse_error::bad_crlf);
+
+        // write a bad request line in 2 pieces
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.write(buffer_cat(
+                buf("GET / "), buf("_TTP/1.1\r\n"),
+                buf("\r\n")
+                ), ec);
+            expect(ec == parse_error::bad_version);
         }
     }
 
-    void
-    testRandomResp(std::size_t N)
+    void testStatusLine()
     {
-        using boost::asio::buffer;
-        using boost::asio::buffer_cast;
-        using boost::asio::buffer_size;
-        message_fuzz mg;
-        for(std::size_t i = 0; i < N; ++i)
+    /*
+        status-line     = HTTP-version SP status-code SP reason-phrase CRLF
+        HTTP-version    = "HTTP/" DIGIT "." DIGIT
+        status-code     = 3DIGIT
+        reason-phrase   = *( HTAB / SP / VCHAR / obs-text )
+    */
+        good<false>("HTTP/0.1 200 OK\r\n"   "\r\n",     version{*this, 0, 1});
+        good<false>("HTTP/2.3 200 OK\r\n"   "\r\n",     version{*this, 2, 3});
+        good<false>("HTTP/4.5 200 OK\r\n"   "\r\n",     version{*this, 4, 5});
+        good<false>("HTTP/6.7 200 OK\r\n"   "\r\n",     version{*this, 6, 7});
+        good<false>("HTTP/8.9 200 OK\r\n"   "\r\n",     version{*this, 8, 9});
+        good<false>("HTTP/1.0 000 OK\r\n"   "\r\n",     status{*this, 0});
+        good<false>("HTTP/1.1 012 OK\r\n"   "\r\n",     status{*this, 12});
+        good<false>("HTTP/1.0 345 OK\r\n"   "\r\n",     status{*this, 345});
+        good<false>("HTTP/1.0 678 OK\r\n"   "\r\n",     status{*this, 678});
+        good<false>("HTTP/1.0 999 OK\r\n"   "\r\n",     status{*this, 999});
+        good<false>("HTTP/1.0 200 \tX\r\n"  "\r\n",     version{*this, 1, 0});
+        good<false>("HTTP/1.1 200  X\r\n"   "\r\n",     version{*this, 1, 1});
+        good<false>("HTTP/1.0 200 \r\n"     "\r\n");
+        good<false>("HTTP/1.1 200 X \r\n"   "\r\n");
+        good<false>("HTTP/1.1 200 X\t\r\n"  "\r\n");
+        good<false>("HTTP/1.1 200 \x80\x81...\xfe\xff\r\n\r\n");
+        good<false>("HTTP/1.1 200 !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\r\n\r\n");
+
+        bad<false>("\rHTTP/1.0 200 OK\r\n"  "\r\n",     parse_error::bad_version);
+        bad<false>("\nHTTP/1.0 200 OK\r\n"  "\r\n",     parse_error::bad_version);
+        bad<false>(" HTTP/1.0 200 OK\r\n"   "\r\n",     parse_error::bad_version);
+        bad<false>("_TTP/1.0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("H_TP/1.0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HT_P/1.0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HTT_/1.0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP_1.0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/01.2 200 OK\r\n"   "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/3.45 200 OK\r\n"   "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/67.89 200 OK\r\n"  "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/x.0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/1.x 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/1_0 200 OK\r\n"    "\r\n",     parse_error::bad_version);
+        bad<false>("HTTP/1.0  200 OK\r\n"   "\r\n",     parse_error::bad_status);
+        bad<false>("HTTP/1.0 0 OK\r\n"      "\r\n",     parse_error::bad_status);
+        bad<false>("HTTP/1.0 12 OK\r\n"     "\r\n",     parse_error::bad_status);
+        bad<false>("HTTP/1.0 3456 OK\r\n"   "\r\n",     parse_error::bad_status);
+        bad<false>("HTTP/1.0 200\r\n"       "\r\n",     parse_error::bad_status);
+        bad<false>("HTTP/1.0 200 \n"        "\r\n",     parse_error::bad_reason);
+        bad<false>("HTTP/1.0 200 \x01\r\n"  "\r\n",     parse_error::bad_reason);
+        bad<false>("HTTP/1.0 200 \x7f\r\n"  "\r\n",     parse_error::bad_reason);
+        bad<false>("HTTP/1.0 200 OK\n"      "\r\n",     parse_error::bad_reason);
+        bad<false>("HTTP/1.0 200 OK\r\r\n"  "\r\n",     parse_error::bad_crlf);
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testHeaders()
+    {
+    /*
+        header-field   = field-name ":" OWS field-value OWS
+        field-name     = token
+        field-value    = *( field-content / obs-fold )
+        field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+        field-vchar    = VCHAR / obs-text
+        obs-fold       = CRLF 1*( SP / HTAB )
+                       ; obsolete line folding
+    */
+        auto const m =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\n" + s + "\r\n";
+            };
+        good<true>(m("f:\r\n"));
+        good<true>(m("f: \r\n"));
+        good<true>(m("f:\t\r\n"));
+        good<true>(m("f: \t\r\n"));
+        good<true>(m("f: v\r\n"));
+        good<true>(m("f:\tv\r\n"));
+        good<true>(m("f:\tv \r\n"));
+        good<true>(m("f:\tv\t\r\n"));
+        good<true>(m("f:\tv\t \r\n"));
+        good<true>(m("f:\r\n \r\n"));
+        good<true>(m("f:v\r\n"));
+        good<true>(m("f: v\r\n u\r\n"));
+        good<true>(m("!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: v\r\n"));
+        good<true>(m("f: !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x80\x81...\xfe\xff\r\n"));
+
+        bad<true>(m(" f: v\r\n"),                   parse_error::bad_field);
+        bad<true>(m("\tf: v\r\n"),                  parse_error::bad_field);
+        bad<true>(m("f : v\r\n"),                   parse_error::bad_field);
+        bad<true>(m("f\t: v\r\n"),                  parse_error::bad_field);
+        bad<true>(m("f: \n\r\n"),                   parse_error::bad_value);
+        bad<true>(m("f: v\r \r\n"),                 parse_error::bad_crlf);
+        bad<true>(m("f: \r v\r\n"),                 parse_error::bad_crlf);
+        bad<true>("GET / HTTP/1.1\r\n\r \n",        parse_error::bad_crlf);
+    }
+
+    //--------------------------------------------------------------------------
+
+    class flags
+    {
+        suite& s_;
+        std::size_t value_;
+
+    public:
+        flags(suite& s, std::size_t value)
+            : s_(s)
+            , value_(value)
         {
-            std::string s;
-            {
-                streambuf sb;
-                mg.response(sb);
-                s.reserve(buffer_size(sb.data()));
-                for(auto const& b : sb.data())
-                    s.append(buffer_cast<char const*>(b),
-                        buffer_size(b));
-            }
-            null_parser<false> p;
-            for(std::size_t j = 1; j < s.size() - 1; ++j)
-            {
-                error_code ec;
-                p.write(buffer(&s[0], j), ec);
-                if(! expect(! ec, ec.message()))
-                {
-                    log << escaped_string(s);
-                    break;
-                }
-                if(! p.complete())
-                {
-                    p.write(buffer(&s[j], s.size() - j), ec);
-                    if(! expect(! ec, ec.message()))
-                    {
-                        log << escaped_string(s);
-                        break;
-                    }
-                }
-                if(! expect(p.complete()))
-                    break;
-                if(! p.keep_alive())
-                {
-                    p.~null_parser();
-                    new(&p) null_parser<false>{};
-                }
-            }
         }
+
+        template<class Parser>
+        void
+        operator()(Parser const& p) const
+        {
+            s_.expect(p.flags() == value_);
+        }
+    };
+
+    class keepalive_f
+    {
+        suite& s_;
+        bool value_;
+
+    public:
+        keepalive_f(suite& s, bool value)
+            : s_(s)
+            , value_(value)
+        {
+        }
+
+        template<class Parser>
+        void
+        operator()(Parser const& p) const
+        {
+            s_.expect(p.keep_alive() == value_);
+        }
+    };
+
+    void testConnectionHeader()
+    {
+        auto const m =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\n" + s + "\r\n";
+            };
+        auto const cn =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\nConnection: " + s + "\r\n";
+            };
+        auto const keepalive =
+            [&](bool v)
+            {
+                return keepalive_f{*this, v};
+            };
+
+        good<true>(cn("close\r\n"),                         flags{*this, parse_flag::connection_close});
+        good<true>(cn(",close\r\n"),                        flags{*this, parse_flag::connection_close});
+        good<true>(cn(" close\r\n"),                        flags{*this, parse_flag::connection_close});
+        good<true>(cn("\tclose\r\n"),                       flags{*this, parse_flag::connection_close});
+        good<true>(cn("close,\r\n"),                        flags{*this, parse_flag::connection_close});
+        good<true>(cn("close\t\r\n"),                       flags{*this, parse_flag::connection_close});
+        good<true>(cn("close\r\n"),                         flags{*this, parse_flag::connection_close});
+        good<true>(cn(" ,\t,,close,, ,\t,,\r\n"),           flags{*this, parse_flag::connection_close});
+        good<true>(cn("\r\n close\r\n"),                    flags{*this, parse_flag::connection_close});
+        good<true>(cn("close\r\n \r\n"),                    flags{*this, parse_flag::connection_close});
+        good<true>(cn("any,close\r\n"),                     flags{*this, parse_flag::connection_close});
+        good<true>(cn("close,any\r\n"),                     flags{*this, parse_flag::connection_close});
+        good<true>(cn("any\r\n ,close\r\n"),                flags{*this, parse_flag::connection_close});
+        good<true>(cn("close\r\n ,any\r\n"),                flags{*this, parse_flag::connection_close});
+        good<true>(cn("close,close\r\n"),                   flags{*this, parse_flag::connection_close}); // weird but allowed
+
+        good<true>(cn("keep-alive\r\n"),                    flags{*this, parse_flag::connection_keep_alive});
+        good<true>(cn("keep-alive \r\n"),                   flags{*this, parse_flag::connection_keep_alive});
+        good<true>(cn("keep-alive\t \r\n"),                 flags{*this, parse_flag::connection_keep_alive});
+        good<true>(cn("keep-alive\t ,x\r\n"),               flags{*this, parse_flag::connection_keep_alive});
+        good<true>(cn("\r\n keep-alive \t\r\n"),            flags{*this, parse_flag::connection_keep_alive});
+        good<true>(cn("keep-alive \r\n \t \r\n"),           flags{*this, parse_flag::connection_keep_alive});
+        good<true>(cn("keep-alive\r\n \r\n"),               flags{*this, parse_flag::connection_keep_alive});
+
+        good<true>(cn("upgrade\r\n"),                       flags{*this, parse_flag::connection_upgrade});
+        good<true>(cn("upgrade \r\n"),                      flags{*this, parse_flag::connection_upgrade});
+        good<true>(cn("upgrade\t \r\n"),                    flags{*this, parse_flag::connection_upgrade});
+        good<true>(cn("upgrade\t ,x\r\n"),                  flags{*this, parse_flag::connection_upgrade});
+        good<true>(cn("\r\n upgrade \t\r\n"),               flags{*this, parse_flag::connection_upgrade});
+        good<true>(cn("upgrade \r\n \t \r\n"),              flags{*this, parse_flag::connection_upgrade});
+        good<true>(cn("upgrade\r\n \r\n"),                  flags{*this, parse_flag::connection_upgrade});
+
+        good<true>(cn("close,keep-alive\r\n"),              flags{*this, parse_flag::connection_close | parse_flag::connection_keep_alive});
+        good<true>(cn("upgrade,keep-alive\r\n"),            flags{*this, parse_flag::connection_upgrade | parse_flag::connection_keep_alive});
+        good<true>(cn("upgrade,\r\n keep-alive\r\n"),       flags{*this, parse_flag::connection_upgrade | parse_flag::connection_keep_alive});
+        good<true>(cn("close,keep-alive,upgrade\r\n"),      flags{*this, parse_flag::connection_close | parse_flag::connection_keep_alive | parse_flag::connection_upgrade});
+
+        good<true>("GET / HTTP/1.1\r\n\r\n",                keepalive(true));
+        good<true>("GET / HTTP/1.0\r\n\r\n",                keepalive(false));
+        good<true>("GET / HTTP/1.0\r\n"
+                   "Connection: keep-alive\r\n\r\n",        keepalive(true));
+        good<true>("GET / HTTP/1.1\r\n"
+                   "Connection: close\r\n\r\n",             keepalive(false));
+
+        good<true>(cn("x\r\n"),                             flags{*this, 0});
+        good<true>(cn("x,y\r\n"),                           flags{*this, 0});
+        good<true>(cn("x ,y\r\n"),                          flags{*this, 0});
+        good<true>(cn("x\t,y\r\n"),                         flags{*this, 0});
+        good<true>(cn("keep\r\n"),                          flags{*this, 0});
+        good<true>(cn(",keep\r\n"),                         flags{*this, 0});
+        good<true>(cn(" keep\r\n"),                         flags{*this, 0});
+        good<true>(cn("\tnone\r\n"),                        flags{*this, 0});
+        good<true>(cn("keep,\r\n"),                         flags{*this, 0});
+        good<true>(cn("keep\t\r\n"),                        flags{*this, 0});
+        good<true>(cn("keep\r\n"),                          flags{*this, 0});
+        good<true>(cn(" ,\t,,keep,, ,\t,,\r\n"),            flags{*this, 0});
+        good<true>(cn("\r\n keep\r\n"),                     flags{*this, 0});
+        good<true>(cn("keep\r\n \r\n"),                     flags{*this, 0});
+        good<true>(cn("closet\r\n"),                        flags{*this, 0});
+        good<true>(cn(",closet\r\n"),                       flags{*this, 0});
+        good<true>(cn(" closet\r\n"),                       flags{*this, 0});
+        good<true>(cn("\tcloset\r\n"),                      flags{*this, 0});
+        good<true>(cn("closet,\r\n"),                       flags{*this, 0});
+        good<true>(cn("closet\t\r\n"),                      flags{*this, 0});
+        good<true>(cn("closet\r\n"),                        flags{*this, 0});
+        good<true>(cn(" ,\t,,closet,, ,\t,,\r\n"),          flags{*this, 0});
+        good<true>(cn("\r\n closet\r\n"),                   flags{*this, 0});
+        good<true>(cn("closet\r\n \r\n"),                   flags{*this, 0});
+        good<true>(cn("clog\r\n"),                          flags{*this, 0});
+        good<true>(cn("key\r\n"),                           flags{*this, 0});
+        good<true>(cn("uptown\r\n"),                        flags{*this, 0});
+        good<true>(cn("keeper\r\n \r\n"),                   flags{*this, 0});
+        good<true>(cn("keep-alively\r\n \r\n"),             flags{*this, 0});
+        good<true>(cn("up\r\n \r\n"),                       flags{*this, 0});
+        good<true>(cn("upgrader\r\n \r\n"),                 flags{*this, 0});
+        good<true>(cn("none\r\n"),                          flags{*this, 0});
+        good<true>(cn("\r\n none\r\n"),                     flags{*this, 0});
+
+        good<true>(m("ConnectioX: close\r\n"),              flags{*this, 0});
+        good<true>(m("Condor: close\r\n"),                  flags{*this, 0});
+        good<true>(m("Connect: close\r\n"),                 flags{*this, 0});
+        good<true>(m("Connections: close\r\n"),             flags{*this, 0});
+
+        good<true>(m("Proxy-Connection: close\r\n"),        flags{*this, parse_flag::connection_close});
+        good<true>(m("Proxy-Connection: keep-alive\r\n"),   flags{*this, parse_flag::connection_keep_alive});
+        good<true>(m("Proxy-Connection: upgrade\r\n"),      flags{*this, parse_flag::connection_upgrade});
+        good<true>(m("Proxy-ConnectioX: none\r\n"),         flags{*this, 0});
+        good<true>(m("Proxy-Connections: 1\r\n"),           flags{*this, 0});
+        good<true>(m("Proxy-Connotes: see-also\r\n"),       flags{*this, 0});
+
+        bad<true>(cn("["),                                  parse_error::bad_value);
+        bad<true>(cn("\"\r\n"),                             parse_error::bad_value);
+        bad<true>(cn("close[\r\n"),                         parse_error::bad_value);
+        bad<true>(cn("close [\r\n"),                        parse_error::bad_value);
+        bad<true>(cn("close, upgrade [\r\n"),               parse_error::bad_value);
+        bad<true>(cn("upgrade[]\r\n"),                      parse_error::bad_value);
+        bad<true>(cn("keep\r\n -alive\r\n"),                parse_error::bad_value);
+        bad<true>(cn("keep-alive[\r\n"),                    parse_error::bad_value);
+        bad<true>(cn("keep-alive []\r\n"),                  parse_error::bad_value);
+        bad<true>(cn("no[ne]\r\n"),                         parse_error::bad_value);
+    }
+
+    void testContentLengthHeader()
+    {
+        auto const length =
+            [&](std::string const& s, std::uint64_t v)
+            {
+                good<true>(1, s,
+                    [&](fail_parser<true> const& p)
+                    {
+                        expect(p.content_length() == v);
+                        if(v != no_content_length)
+                            expect(p.flags() & parse_flag::contentlength);
+                    });
+            };
+        auto const c =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\nContent-Length: " + s + "\r\n";
+            };
+        auto const m =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\n" + s + "\r\n";
+            };
+
+        length(c("0\r\n"),                                  0);
+        length(c("00\r\n"),                                 0);
+        length(c("1\r\n"),                                  1);
+        length(c("01\r\n"),                                 1);
+        length(c("9\r\n"),                                  9);
+        length(c("123456789\r\n"),                          123456789);
+        length(c("42 \r\n"),                                42);
+        length(c("42\t\r\n"),                               42);
+        length(c("42 \t \r\n"),                             42);
+        length(c("42\r\n \t \r\n"),                         42);
+
+        good<true>(m("Content-LengtX: 0\r\n"),              flags{*this, 0});
+        good<true>(m("Content-Lengths: many\r\n"),          flags{*this, 0});
+        good<true>(m("Content: full\r\n"),                  flags{*this, 0});
+
+        bad<true>(c("\r\n"),                                parse_error::bad_content_length);
+        bad<true>(c("18446744073709551616\r\n"),            parse_error::bad_content_length);
+        bad<true>(c("0 0\r\n"),                             parse_error::bad_content_length);
+        bad<true>(c("0 1\r\n"),                             parse_error::bad_content_length);
+        bad<true>(c(",\r\n"),                               parse_error::bad_content_length);
+        bad<true>(c("0,\r\n"),                              parse_error::bad_content_length);
+        bad<true>(m(
+            "Content-Length: 0\r\nContent-Length: 0\r\n"),  parse_error::bad_content_length);
+    }
+
+    void testTransferEncodingHeader()
+    {
+        auto const m =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\n" + s + "\r\n";
+            };
+        auto const ce =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\nTransfer-Encoding: " + s + "\r\n0\r\n\r\n";
+            };
+        auto const te =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\nTransfer-Encoding: " + s + "\r\n";
+            };
+        good<true>(ce("chunked\r\n"),                       flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked \r\n"),                      flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked\t\r\n"),                     flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked \t\r\n"),                    flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce(" chunked\r\n"),                      flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("\tchunked\r\n"),                     flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked,\r\n"),                      flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked ,\r\n"),                     flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked, \r\n"),                     flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce(",chunked\r\n"),                      flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce(", chunked\r\n"),                     flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce(" ,chunked\r\n"),                     flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("chunked\r\n \r\n"),                  flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("\r\n chunked\r\n"),                  flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce(",\r\n chunked\r\n"),                 flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("\r\n ,chunked\r\n"),                 flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce(",\r\n chunked\r\n"),                 flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("gzip, chunked\r\n"),                 flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("gzip, chunked \r\n"),                flags{*this, parse_flag::chunked | parse_flag::trailing});
+        good<true>(ce("gzip, \r\n chunked\r\n"),            flags{*this, parse_flag::chunked | parse_flag::trailing});
+
+        // Technically invalid but beyond the parser's scope to detect
+        good<true>(ce("custom;key=\",chunked\r\n"),         flags{*this, parse_flag::chunked  | parse_flag::trailing});
+
+        good<true>(te("gzip\r\n"),                          flags{*this, 0});
+        good<true>(te("chunked, gzip\r\n"),                 flags{*this, 0});
+        good<true>(te("chunked\r\n , gzip\r\n"),            flags{*this, 0});
+        good<true>(te("chunked,\r\n gzip\r\n"),             flags{*this, 0});
+        good<true>(te("chunked,\r\n ,gzip\r\n"),            flags{*this, 0});
+        good<true>(te("bigchunked\r\n"),                    flags{*this, 0});
+        good<true>(te("chunk\r\n ked\r\n"),                 flags{*this, 0});
+        good<true>(te("bar\r\n ley chunked\r\n"),           flags{*this, 0});
+        good<true>(te("barley\r\n chunked\r\n"),            flags{*this, 0});
+
+        good<true>(m("Transfer-EncodinX: none\r\n"),        flags{*this, 0});
+        good<true>(m("Transfer-Encodings: 2\r\n"),          flags{*this, 0});
+        good<true>(m("Transfer-Encoded: false\r\n"),        flags{*this, 0});
+
+        bad<false>(1,
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Length: 1\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "\r\n",                                         parse_error::illegal_content_length);
+    }
+
+    void testUpgradeHeader()
+    {
+        auto const m =
+            [](std::string const& s)
+            {
+                return "GET / HTTP/1.1\r\n" + s + "\r\n";
+            };
+        good<true>(m("Upgrade:\r\n"),                       flags{*this, parse_flag::upgrade});
+        good<true>(m("Upgrade: \r\n"),                      flags{*this, parse_flag::upgrade});
+        good<true>(m("Upgrade: yes\r\n"),                   flags{*this, parse_flag::upgrade});
+
+        good<true>(m("Up: yes\r\n"),                        flags{*this, 0});
+        good<true>(m("UpgradX: none\r\n"),                  flags{*this, 0});
+        good<true>(m("Upgrades: 2\r\n"),                    flags{*this, 0});
+        good<true>(m("Upsample: 4x\r\n"),                   flags{*this, 0});
+
+        good<true>(
+            "GET / HTTP/1.1\r\n"
+            "Connection: upgrade\r\n"
+            "Upgrade: WebSocket\r\n"
+            "\r\n",
+            [&](fail_parser<true> const& p)
+            {
+                expect(p.upgrade());
+            });
+    }
+
+    //--------------------------------------------------------------------------
+
+    class body_f
+    {
+        suite& s_;
+        std::string const& body_;
+
+    public:
+        body_f(body_f&&) = default;
+
+        body_f(suite& s, std::string const& v)
+            : s_(s)
+            , body_(v)
+        {
+        }
+
+        template<class Parser>
+        void
+        operator()(Parser const& p) const
+        {
+            s_.expect(p.body == body_);
+        }
+    };
+
+    template<std::size_t N>
+    static
+    boost::asio::const_buffers_1
+    buf(char const (&s)[N])
+    {
+        return { s, N-1 };
     }
 
     void testBody()
     {
-        auto match =
-            [&](std::string const& body)
+        using boost::asio::buffer;
+        auto const body =
+            [&](std::string const& s)
+            {
+                return body_f{*this, s};
+            };
+        good<true>(
+            "GET / HTTP/1.1\r\n"
+            "Content-Length: 1\r\n"
+            "\r\n"
+            "1",
+            body("1"));
+
+        good<false>(
+            "HTTP/1.0 200 OK\r\n"
+            "\r\n"
+            "hello",
+            body("hello"));
+
+        // on_body returns 2, meaning upgrade
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.on_body_rv(2);
+            p.write(buf(
+                "GET / HTTP/1.1\r\n"
+                "Content-Length: 1\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(p.complete());
+        }
+
+        // write the body in 3 pieces
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.write(buffer_cat(
+                buf("GET / HTTP/1.1\r\n"
+                    "Content-Length: 10\r\n"
+                    "\r\n"),
+                buf("12"),
+                buf("345"),
+                buf("67890")), ec);
+            expect(! ec);
+            expect(p.complete());
+            expect(! p.needs_eof());
+            p.write_eof(ec);
+            expect(! ec);
+            p.write_eof(ec);
+            expect(! ec);
+            p.write(buf("GET / HTTP/1.1\r\n\r\n"), ec);
+            expect(ec == parse_error::connection_closed);
+        }
+
+        // request without Content-Length or
+        // Transfer-Encoding: chunked has no body.
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.write(buf(
+                "GET / HTTP/1.0\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(! p.needs_eof());
+            expect(p.complete());
+        }
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.write(buf(
+                "GET / HTTP/1.1\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(! p.needs_eof());
+            expect(p.complete());
+        }
+
+        // response without Content-Length or
+        // Transfer-Encoding: chunked requires eof.
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<false> p(fc);
+            p.write(buf(
+                "HTTP/1.0 200 OK\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(! p.complete());
+            expect(p.needs_eof());
+            p.write(buf(
+                "hello"
+                ), ec);
+            expect(! ec);
+            expect(! p.complete());
+            expect(p.needs_eof());
+            p.write_eof(ec);
+            expect(! ec);
+            expect(p.complete());
+            p.write(buf("GET / HTTP/1.1\r\n\r\n"), ec);
+            expect(ec == parse_error::connection_closed);
+        }
+
+        // 304 "Not Modified" response does not require eof
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<false> p(fc);
+            p.write(buf(
+                "HTTP/1.0 304 Not Modified\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(! p.needs_eof());
+            expect(p.complete());
+        }
+
+        // Chunked response does not require eof
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<false> p(fc);
+            p.write(buf(
+                "HTTP/1.1 200 OK\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(! p.needs_eof());
+            expect(! p.complete());
+            p.write(buf(
+                "0\r\n\r\n"
+                ), ec);
+            expect(! ec);
+            expect(! p.needs_eof());
+            expect(p.complete());
+        }
+
+        // restart: 1.0 assumes Connection: close
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.write(buf(
+                "GET / HTTP/1.0\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(p.complete());
+            p.write(buf(
+                "GET / HTTP/1.0\r\n"
+                "\r\n"
+                ), ec);
+            expect(ec == parse_error::connection_closed);
+        }
+
+        // restart: 1.1 assumes Connection: keep-alive
+        {
+            error_code ec;
+            test::fail_counter fc(1000);
+            fail_parser<true> p(fc);
+            p.write(buf(
+                "GET / HTTP/1.1\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(p.complete());
+            p.write(buf(
+                "GET / HTTP/1.0\r\n"
+                "\r\n"
+                ), ec);
+            expect(! ec);
+            expect(p.complete());
+        }
+
+        bad<false>(3,
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Length: 1\r\n"
+            "\r\n*", parse_error::bad_on_headers_rv);
+
+        bad<true>(0,
+            "GET / HTTP/1.1\r\n"
+            "Content-Length: 1\r\n"
+            "\r\n",
+            parse_error::short_read);
+    }
+
+    void testChunkedBody()
+    {
+        auto const body =
+            [&](std::string const& s)
+            {
+                return body_f{*this, s};
+            };
+        auto const ce =
+            [](std::string const& s)
             {
                 return
-                    [&](test_parser<true> const& p)
-                    {
-                        expect(p.body == body);
-                    };
+                    "GET / HTTP/1.1\r\n"
+                    "Transfer-Encoding: chunked\r\n"
+                    "\r\n" + s;
             };
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nContent-Length: 1\r\n\r\n123", match("1"));
+    /*
+        chunked-body    = *chunk
+                          last-chunk
+                          trailer-part
+                          CRLF
+        chunk           = chunk-size [ chunk-ext ] CRLF
+                          chunk-data CRLF
+        chunk-size      = 1*HEXDIG
+        last-chunk      = 1*("0") [ chunk-ext ] CRLF
+        chunk-data      = 1*OCTET ; a sequence of chunk-size octets
+        chunk-ext       = *( ";" chunk-ext-name [ "=" chunk-ext-val ] )
+        chunk-ext-name  = token
+        chunk-ext-val   = token / quoted-string
+        trailer-part    = *( header-field CRLF )
+    */
+        good<true>(ce(
+            "1;xy\r\n*\r\n" "0\r\n\r\n"
+            ), body("*"));
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nContent-Length: 3\r\n\r\n123", match("123"));
+        good<true>(ce(
+            "1;x\r\n*\r\n" "0\r\n\r\n"
+            ), body("*"));
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nContent-Length: 0\r\n\r\n", match(""));
+        good<true>(ce(
+            "1;x;y\r\n*\r\n" "0\r\n\r\n"
+            ), body("*"));
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
-            "1\r\n"
-            "a\r\n"
-            "0\r\n"
-            "\r\n", match("a"));
+        good<true>(ce(
+            "1;i;j=2;k=\"3\"\r\n*\r\n" "0\r\n\r\n"
+            ), body("*"));
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
-            "2\r\n"
-            "ab\r\n"
-            "0\r\n"
-            "\r\n", match("ab"));
+        good<true>(ce(
+            "1\r\n" "a\r\n" "0\r\n" "\r\n"
+            ), body("a"));
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
-            "2\r\n"
-            "ab\r\n"
-            "1\r\n"
-            "c\r\n"
-            "0\r\n"
-            "\r\n", match("abc"));
+        good<true>(ce(
+            "2\r\n" "ab\r\n" "0\r\n" "\r\n"
+            ), body("ab"));
 
-        parse<test_parser<true>>(
-            "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n"
-            "10\r\n"
-            "1234567890123456\r\n"
-            "0\r\n"
-            "\r\n", match("1234567890123456"));
+        good<true>(ce(
+            "2\r\n" "ab\r\n" "1\r\n" "c\r\n" "0\r\n" "\r\n"
+            ), body("abc"));
+
+        good<true>(ce(
+            "10\r\n" "1234567890123456\r\n" "0\r\n" "\r\n"
+            ), body("1234567890123456"));
+
+        bad<true>(ce("ffffffffffffffff0\r\n0\r\n\r\n"), parse_error::bad_content_length);
+        bad<true>(ce("g\r\n0\r\n\r\n"),                 parse_error::invalid_chunk_size);
+        bad<true>(ce("0g\r\n0\r\n\r\n"),                parse_error::invalid_chunk_size);
+        bad<true>(ce("0\r_\n"),                         parse_error::bad_crlf);
+        bad<true>(ce("1\r\n*_\r\n"),                    parse_error::bad_crlf);
+        bad<true>(ce("1\r\n*\r_\n"),                    parse_error::bad_crlf);
+        bad<true>(ce("1;,x\r\n*\r\n" "0\r\n\r\n"),      parse_error::invalid_ext_name);
+        bad<true>(ce("1;x,\r\n*\r\n" "0\r\n\r\n"),      parse_error::invalid_ext_name);
+    }
+
+    void testLimits()
+    {
+        std::size_t n;
+        static std::size_t constexpr Limit = 100;
+        {
+            for(n = 1; n < Limit; ++n)
+            {
+                test::fail_counter fc(1000);
+                fail_parser<true> p(fc);
+                p.set_option(headers_max_size{n});
+                error_code ec;
+                p.write(buf(
+                    "GET / HTTP/1.1\r\n"
+                    "User-Agent: beast\r\n"
+                    "\r\n"
+                    ), ec);
+                if(! ec)
+                    break;
+                expect(ec == parse_error::headers_too_big);
+            }
+            expect(n < Limit);
+        }
+        {
+            for(n = 1; n < Limit; ++n)
+            {
+                test::fail_counter fc(1000);
+                fail_parser<false> p(fc);
+                p.set_option(headers_max_size{n});
+                error_code ec;
+                p.write(buf(
+                    "HTTP/1.1 200 OK\r\n"
+                    "Server: beast\r\n"
+                    "Content-Length: 4\r\n"
+                    "\r\n"
+                    "****"
+                    ), ec);
+                if(! ec)
+                    break;
+                expect(ec == parse_error::headers_too_big);
+            }
+            expect(n < Limit);
+        }
+        {
+            test::fail_counter fc(1000);
+            fail_parser<false> p(fc);
+            p.set_option(body_max_size{2});
+            error_code ec;
+            p.write(buf(
+                    "HTTP/1.1 200 OK\r\n"
+                    "Server: beast\r\n"
+                    "Content-Length: 4\r\n"
+                    "\r\n"
+                    "****"
+                ), ec);
+            expect(ec == parse_error::body_too_big);
+        }
     }
 
     void run() override
     {
         testCallbacks();
-        testVersion();
-        testFlags();
+        testRequestLine();
+        testStatusLine();
         testHeaders();
-        testUpgrade();
-        testBad();
-        testInvalidMatrix();
-        testRandomReq(100);
-        testRandomResp(100);
+        testConnectionHeader();
+        testContentLengthHeader();
+        testTransferEncodingHeader();
+        testUpgradeHeader();
         testBody();
+        testChunkedBody();
+        testLimits();
     }
 };
 

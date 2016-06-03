@@ -6,6 +6,8 @@
 * Remove obsolete RFC2616 functions
 * Add message swap members and free functions
 * Add HTTP field value parser containers: ext_list, param_list, token_list
+* Fixes for some corner cases in basic_parser_v1
+* Configurable limits on headers and body sizes in basic_parser_v1
 
 API Changes:
 
@@ -13,5 +15,7 @@ API Changes:
 
 * "DynamicBuffer","dynabuf" renamed from "Streambuf", "streambuf". See:
   http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4478.html#requirements.dynamic_buffers
+
+* basic_parser_v1 adheres to rfc7230 as strictly as possible
 
 --------------------------------------------------------------------------------

@@ -6,6 +6,8 @@ GroupSources(test/http "/")
 
 add_executable (http-tests
     ${BEAST_INCLUDES}
+    message_fuzz.hpp
+    fail_parser.hpp
     ../../extras/beast/unit_test/main.cpp
     basic_dynabuf_body.cpp
     basic_headers.cpp
@@ -35,6 +37,7 @@ endif()
 
 add_executable (bench-tests
     ${BEAST_INCLUDES}
+    nodejs_parser.hpp
     ../../extras/beast/unit_test/main.cpp
     nodejs_parser.cpp
     parser_bench.cpp

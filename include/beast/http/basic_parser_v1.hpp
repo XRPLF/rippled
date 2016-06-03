@@ -25,16 +25,64 @@ namespace http {
 namespace parse_flag {
 enum values
 {
-    chunked               = 1 << 0,
-    connection_keep_alive = 1 << 1,
-    connection_close      = 1 << 2,
-    connection_upgrade    = 1 << 3,
-    trailing              = 1 << 4,
-    upgrade               = 1 << 5,
-    skipbody              = 1 << 6,
-    contentlength         = 1 << 7
+    chunked               =   1,
+    connection_keep_alive =   2,
+    connection_close      =   4,
+    connection_upgrade    =   8,
+    trailing              =  16,
+    upgrade               =  32,
+    skipbody              =  64,
+    contentlength         = 128
 };
 } // parse_flag
+
+/** Headers maximum size option.
+
+    Sets the maximum number of cumulative bytes allowed
+    including all header octets. A value of zero indicates
+    no limit on the number of header octets
+
+    The default headers maximum size is 16KB (16,384 bytes).
+
+    @note Objects of this type are passed to @ref set_option.
+*/
+struct headers_max_size
+{
+    std::size_t value;
+
+    explicit
+    headers_max_size(std::size_t v)
+        : value(v)
+    {
+    }
+};
+
+/** Body maximum size option.
+
+    Sets the maximum number of cumulative bytes allowed including
+    all body octets. Octets in chunk-encoded bodies are counted
+    after decoding. A value of zero indicates no limit on
+    the number of body octets.
+
+    The default body maximum size for requests is 4MB (four
+    megabytes or 4,194,304 bytes) and unlimited for responses.
+
+    @note Objects of this type are passed to @ref set_option.
+*/
+struct body_max_size
+{
+    std::size_t value;
+
+    explicit
+    body_max_size(std::size_t v)
+        : value(v)
+    {
+    }
+};
+
+/// The value returned when no content length is known or applicable.
+static std::uint64_t constexpr no_content_length =
+    std::numeric_limits<std::uint64_t>::max();
 
 /** A parser for decoding HTTP/1 wire format messages.
 
@@ -85,7 +133,7 @@ enum values
 
         Called for each piece of the current header value.
 
-    @li `int on_headers(error_code&)`
+    @li `int on_headers(std::uint64_t content_length, error_code&)`
 
         Called when all the headers have been parsed successfully.
 
@@ -126,89 +174,11 @@ enum values
     presented with request or response message.
 */
 template<bool isRequest, class Derived>
-class basic_parser_v1
+class basic_parser_v1 : public detail::parser_base
 {
 private:
     using self = basic_parser_v1;
     typedef void(self::*pmf_t)(error_code&, boost::string_ref const&);
-
-    static std::uint64_t constexpr no_content_length =
-        std::numeric_limits<std::uint64_t>::max();
-
-    enum state : std::uint8_t
-    {
-        s_closed = 1,
-
-        s_req_start,
-        s_req_method_start,
-        s_req_method,
-        s_req_space_before_url,
-        s_req_url_start,
-        s_req_url,
-        s_req_http_start,
-        s_req_http_H,
-        s_req_http_HT,
-        s_req_http_HTT,
-        s_req_http_HTTP,
-        s_req_major_start,
-        s_req_major,
-        s_req_minor_start,
-        s_req_minor,
-        s_req_line_end,
-
-        s_res_start,
-        s_res_H,
-        s_res_HT,
-        s_res_HTT,
-        s_res_HTTP,
-        s_res_major_start,
-        s_res_major,
-        s_res_minor_start,
-        s_res_minor,
-        s_res_status_code_start,
-        s_res_status_code,
-        s_res_status_start,
-        s_res_status,
-        s_res_line_almost_done,
-        s_res_line_done,
-
-        s_header_field_start,
-        s_header_field,
-        s_header_value_start,
-        s_header_value_discard_lWs0,
-        s_header_value_discard_ws0,
-        s_header_value_almost_done0,
-        s_header_value_text_start,
-        s_header_value_discard_lWs,
-        s_header_value_discard_ws,
-        s_header_value_text,
-        s_header_value_almost_done,
-
-        s_headers_almost_done,
-        s_headers_done,
-
-        s_chunk_size_start,
-        s_chunk_size,
-        s_chunk_parameters,
-        s_chunk_size_almost_done,
-
-        // states below do not count towards
-        // the limit on the size of the message
-
-        s_body_identity0,
-        s_body_identity,
-        s_body_identity_eof0,
-        s_body_identity_eof,
-
-        s_chunk_data_start,
-        s_chunk_data,
-        s_chunk_data_almost_done,
-        s_chunk_data_done,
-
-        s_complete,
-        s_restart,
-        s_closed_complete
-    };
 
     enum field_state : std::uint8_t
     {
@@ -224,25 +194,36 @@ private:
         h_matching_upgrade,
 
         h_connection,
+        h_content_length0,
         h_content_length,
+        h_content_length_ows,
         h_transfer_encoding,
         h_upgrade,
 
         h_matching_transfer_encoding_chunked,
-        h_matching_connection_token_start,
+        h_matching_transfer_encoding_general,
         h_matching_connection_keep_alive,
         h_matching_connection_close,
         h_matching_connection_upgrade,
-        h_matching_connection_token,
 
         h_transfer_encoding_chunked,
+        h_transfer_encoding_chunked_ows,
+
         h_connection_keep_alive,
+        h_connection_keep_alive_ows,
         h_connection_close,
+        h_connection_close_ows,
         h_connection_upgrade,
+        h_connection_upgrade_ows,
+        h_connection_token,
+        h_connection_token_ows
     };
 
+    std::size_t h_max_;
+    std::size_t h_left_;
+    std::size_t b_max_;
+    std::size_t b_left_;
     std::uint64_t content_length_;
-    std::uint64_t nread_;
     pmf_t cb_;
     state s_              : 8;
     unsigned flags_       : 8;
@@ -260,10 +241,42 @@ public:
     /// Copy assignment.
     basic_parser_v1& operator=(basic_parser_v1 const&) = default;
 
-    /// Constructor
-    basic_parser_v1()
+    /// Default constructor
+    basic_parser_v1();
+
+    /** Set options on the parser.
+
+        @param args One or more parser options to set.
+    */
+#if GENERATING_DOCS
+    template<class... Args>
+    void
+    set_option(Args&&... args)
+#else
+    template<class A1, class A2, class... An>
+    void
+    set_option(A1&& a1, A2&& a2, An&&... an)
+#endif
     {
-        init(std::integral_constant<bool, isRequest>{});
+        set_option(std::forward<A1>(a1));
+        set_option(std::forward<A2>(a2),
+            std::forward<An>(an)...);
+    }
+
+    /// Set the headers maximum size option
+    void
+    set_option(headers_max_size const& o)
+    {
+        h_max_ = o.value;
+        h_left_ = h_max_;
+    }
+
+    /// Set the body maximum size option
+    void
+    set_option(body_max_size const& o)
+    {
+        b_max_ = o.value;
+        b_left_ = b_max_;
     }
 
     /// Returns internal flags associated with the parser.
@@ -413,15 +426,46 @@ private:
     }
 
     void
-    init(std::true_type)
+    reset(std::true_type)
     {
         s_ = s_req_start;
     }
 
     void
-    init(std::false_type)
+    reset(std::false_type)
     {
         s_ = s_res_start;
+    }
+
+    void
+    reset()
+    {
+        h_left_ = h_max_;
+        b_left_ = b_max_;
+        reset(std::integral_constant<bool, isRequest>{});
+    }
+
+    void
+    init(std::true_type)
+    {
+        // 16KB max headers, 4MB max body
+        h_max_ = 16 * 1024;
+        b_max_ = 4 * 1024 * 1024;
+    }
+
+    void
+    init(std::false_type)
+    {
+        // 16KB max headers, unlimited body
+        h_max_ = 16 * 1024;
+        b_max_ = 0;
+    }
+
+    void
+    init()
+    {
+        init(std::integral_constant<bool, isRequest>{});
+        reset();
     }
 
     bool
@@ -584,7 +628,7 @@ private:
     {
         template<class T, class R = std::is_same<int,
             decltype(std::declval<T>().on_headers(
-                std::declval<error_code&>()))>>
+                std::declval<std::uint64_t>(), std::declval<error_code&>()))>>
         static R check(int);
         template <class>
         static std::false_type check(...);
@@ -661,8 +705,16 @@ private:
     void call_on_method(error_code& ec,
         boost::string_ref const& s)
     {
-        call_on_method(ec, s, std::integral_constant<bool,
-            isRequest && has_on_method<Derived>::value>{});
+        if(! h_max_ || s.size() <= h_left_)
+        {
+            h_left_ -= s.size();
+            call_on_method(ec, s, std::integral_constant<bool,
+                isRequest && has_on_method<Derived>::value>{});
+        }
+        else
+        {
+            ec = parse_error::headers_too_big;
+        }
     }
 
     void call_on_uri(error_code& ec,
@@ -678,8 +730,16 @@ private:
 
     void call_on_uri(error_code& ec, boost::string_ref const& s)
     {
-        call_on_uri(ec, s, std::integral_constant<bool,
-            isRequest && has_on_uri<Derived>::value>{});
+        if(! h_max_ || s.size() <= h_left_)
+        {
+            h_left_ -= s.size();
+            call_on_uri(ec, s, std::integral_constant<bool,
+                isRequest && has_on_uri<Derived>::value>{});
+        }
+        else
+        {
+            ec = parse_error::headers_too_big;
+        }
     }
 
     void call_on_reason(error_code& ec,
@@ -695,8 +755,16 @@ private:
 
     void call_on_reason(error_code& ec, boost::string_ref const& s)
     {
-        call_on_reason(ec, s, std::integral_constant<bool,
-            ! isRequest && has_on_reason<Derived>::value>{});
+        if(! h_max_ || s.size() <= h_left_)
+        {
+            h_left_ -= s.size();
+            call_on_reason(ec, s, std::integral_constant<bool,
+                ! isRequest && has_on_reason<Derived>::value>{});
+        }
+        else
+        {
+            ec = parse_error::headers_too_big;
+        }
     }
 
     void call_on_request(error_code& ec, std::true_type)
@@ -742,7 +810,15 @@ private:
 
     void call_on_field(error_code& ec, boost::string_ref const& s)
     {
-        call_on_field(ec, s, has_on_field<Derived>{});
+        if(! h_max_ || s.size() <= h_left_)
+        {
+            h_left_ -= s.size();
+            call_on_field(ec, s, has_on_field<Derived>{});
+        }
+        else
+        {
+            ec = parse_error::headers_too_big;
+        }
     }
 
     void call_on_value(error_code& ec,
@@ -758,22 +834,32 @@ private:
 
     void call_on_value(error_code& ec, boost::string_ref const& s)
     {
-        call_on_value(ec, s, has_on_value<Derived>{});
+        if(! h_max_ || s.size() <= h_left_)
+        {
+            h_left_ -= s.size();
+            call_on_value(ec, s, has_on_value<Derived>{});
+        }
+        else
+        {
+            ec = parse_error::headers_too_big;
+        }
     }
 
-    int call_on_headers(error_code& ec, std::true_type)
+    int call_on_headers(error_code& ec,
+        std::uint64_t content_length, std::true_type)
     {
-        return impl().on_headers(ec);
+        return impl().on_headers(content_length, ec);
     }
 
-    int call_on_headers(error_code& ec, std::false_type)
+    int call_on_headers(error_code& ec, std::uint64_t, std::false_type)
     {
         return 0;
     }
 
     int call_on_headers(error_code& ec)
     {
-        return call_on_headers(ec, has_on_headers<Derived>{});
+        return call_on_headers(ec, content_length_,
+            has_on_headers<Derived>{});
     }
 
     void call_on_body(error_code& ec,
@@ -789,7 +875,15 @@ private:
 
     void call_on_body(error_code& ec, boost::string_ref const& s)
     {
-        call_on_body(ec, s, has_on_body<Derived>{});
+        if(! b_max_ || s.size() <= b_left_)
+        {
+            b_left_ -= s.size();
+            call_on_body(ec, s, has_on_body<Derived>{});
+        }
+        else
+        {
+            ec = parse_error::body_too_big;
+        }
     }
 
     void call_on_complete(error_code& ec, std::true_type)

@@ -39,6 +39,11 @@
             <member><link linkend="beast.ref.http__streambuf_body">streambuf_body</link></member>
             <member><link linkend="beast.ref.http__string_body">string_body</link></member>
           </simplelist>
+          <bridgehead renderas="sect3">Options</bridgehead>
+          <simplelist type="vert" columns="1">
+            <member><link linkend="beast.ref.http__body_max_size">body_max_size</link></member>
+            <member><link linkend="beast.ref.http__headers_max_size">headers_max_size</link></member>
+          </simplelist>
           <bridgehead renderas="sect3">Type Traits</bridgehead>
           <simplelist type="vert" columns="1">
            <member><link linkend="beast.ref.http__is_Body">is_Body</link></member>
