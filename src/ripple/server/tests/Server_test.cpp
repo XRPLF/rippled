@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <ripple/server/Handler.h>
-#include <ripple/server/make_Server.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <ripple/beast/unit_test.h>
@@ -95,11 +93,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    struct TestHandler : Handler
+    struct TestHandler
     {
         bool
         onAccept (Session& session,
-            boost::asio::ip::tcp::endpoint endpoint) override
+            boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
@@ -108,7 +106,7 @@ public:
         onHandoff (Session& session,
             std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
                 http_request_type&& request,
-                    boost::asio::ip::tcp::endpoint remote_address) override
+                    boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
@@ -116,13 +114,13 @@ public:
         Handoff
         onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
             http_request_type&& request,
-                boost::asio::ip::tcp::endpoint remote_address) override
+                boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
         void
-        onRequest (Session& session) override
+        onRequest (Session& session)
         {
             session.write (std::string ("Hello, world!\n"));
             if (is_keep_alive(session.request()))
@@ -133,18 +131,18 @@ public:
 
         void
         onWSMessage(std::shared_ptr<WSSession> session,
-            std::vector<boost::asio::const_buffer> const&) override
+            std::vector<boost::asio::const_buffer> const&)
         {
         }
 
         void
         onClose (Session& session,
-            boost::system::error_code const&) override
+            boost::system::error_code const&)
         {
         }
 
         void
-        onStopped (Server& server) override
+        onStopped (Server& server)
         {
         }
     };
@@ -303,11 +301,11 @@ public:
 
     void stressTest()
     {
-        struct NullHandler : Handler
+        struct NullHandler
         {
             bool
             onAccept (Session& session,
-                boost::asio::ip::tcp::endpoint endpoint) override
+                boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
@@ -316,7 +314,7 @@ public:
             onHandoff (Session& session,
                 std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
                     http_request_type&& request,
-                        boost::asio::ip::tcp::endpoint remote_address) override
+                        boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
@@ -324,30 +322,30 @@ public:
             Handoff
             onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
                 http_request_type&& request,
-                    boost::asio::ip::tcp::endpoint remote_address) override
+                    boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
 
             void
-            onRequest (Session& session) override
+            onRequest (Session& session)
             {
             }
 
             void
             onWSMessage(std::shared_ptr<WSSession> session,
-                std::vector<boost::asio::const_buffer> const& buffers) override
+                std::vector<boost::asio::const_buffer> const& buffers)
             {
             }
 
             void
             onClose (Session& session,
-                boost::system::error_code const&) override
+                boost::system::error_code const&)
             {
             }
 
             void
-            onStopped (Server& server) override
+            onStopped (Server& server)
             {
             }
         };

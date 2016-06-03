@@ -3753,6 +3753,9 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\LegacyPathFind.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Role.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCHandler.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
@@ -3760,6 +3763,12 @@
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\RPCHelpers.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\ServerHandlerImp.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\ServerHandlerImp.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
@@ -3774,13 +3783,25 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\WSInfoSub.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
+      <Filter>ripple\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\json_body.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Role.h">
+      <Filter>ripple\rpc</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
+      <Filter>ripple\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\ServerHandler.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
@@ -3816,9 +3837,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
       <Filter>ripple\rpc\tests</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\Handler.h">
-      <Filter>ripple\server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handoff.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
@@ -3831,9 +3849,6 @@
     <ClInclude Include="..\..\src\ripple\server\impl\BaseWSPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
-      <Filter>ripple\server\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\impl\Door.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
@@ -3855,18 +3870,6 @@
     <ClCompile Include="..\..\src\ripple\server\impl\Port.cpp">
       <Filter>ripple\server\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\server\impl\Role.cpp">
-      <Filter>ripple\server\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\server\impl\ServerHandlerImp.cpp">
-      <Filter>ripple\server\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\server\impl\ServerHandlerImp.h">
-      <Filter>ripple\server\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\server\impl\ServerImpl.cpp">
-      <Filter>ripple\server\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
@@ -3876,28 +3879,10 @@
     <ClInclude Include="..\..\src\ripple\server\impl\SSLWSPeer.h">
       <Filter>ripple\server\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\json_body.h">
-      <Filter>ripple\server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\make_Server.h">
-      <Filter>ripple\server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\make_ServerHandler.h">
-      <Filter>ripple\server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Port.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
-    <None Include="..\..\src\ripple\server\README.md">
-      <Filter>ripple\server</Filter>
-    </None>
-    <ClInclude Include="..\..\src\ripple\server\Role.h">
-      <Filter>ripple\server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Server.h">
-      <Filter>ripple\server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\server\ServerHandler.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Session.h">

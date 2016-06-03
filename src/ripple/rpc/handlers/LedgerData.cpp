@@ -25,7 +25,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 
 namespace ripple {
 

@@ -34,10 +34,10 @@
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Port.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/json/to_string.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/websocket/WebSocket.h>
 
 #include <boost/asio.hpp>

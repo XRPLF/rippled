@@ -24,7 +24,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/TransactionSign.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 
 namespace ripple {
 

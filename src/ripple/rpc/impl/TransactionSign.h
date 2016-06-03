@@ -21,7 +21,7 @@
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/server/Role.h>
+#include <ripple/rpc/Role.h>
 #include <ripple/ledger/ApplyView.h>
 
 namespace ripple {

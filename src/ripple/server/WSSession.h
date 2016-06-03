@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SERVER_WSSESSION_H_INCLUDED
 #define RIPPLE_SERVER_WSSESSION_H_INCLUDED
 
+#include <ripple/server/Handoff.h>
 #include <ripple/server/Port.h>
 #include <ripple/server/Writer.h>
 #include <beast/core/prepare_buffers.hpp>

@@ -39,7 +39,7 @@
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/rpc/ServerHandler.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
 #include <ripple/protocol/BuildInfo.h>

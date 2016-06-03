@@ -25,13 +25,14 @@
 
 namespace ripple {
 
+template<class Handler>
 class PlainWSPeer
-    : public BaseWSPeer<PlainWSPeer>
-    , public std::enable_shared_from_this<PlainWSPeer>
+    : public BaseWSPeer<Handler, PlainWSPeer<Handler>>
+    , public std::enable_shared_from_this<PlainWSPeer<Handler>>
 {
 private:
-    friend class BasePeer<PlainWSPeer>;
-    friend class BaseWSPeer<PlainWSPeer>;
+    friend class BasePeer<Handler, PlainWSPeer>;
+    friend class BaseWSPeer<Handler, PlainWSPeer>;
 
     using clock_type = std::chrono::system_clock;
     using error_code = boost::system::error_code;
@@ -58,28 +59,32 @@ private:
 
 //------------------------------------------------------------------------------
 
+template<class Handler>
 template<class Body, class Headers>
-PlainWSPeer::PlainWSPeer(
+PlainWSPeer<Handler>::
+PlainWSPeer(
     Port const& port,
     Handler& handler,
     endpoint_type remote_address,
     beast::http::request_v1<Body, Headers>&& request,
     socket_type&& socket,
     beast::Journal journal)
-    : BaseWSPeer(port, handler, remote_address, std::move(request),
-        socket.get_io_service(), journal)
+    : BaseWSPeer<Handler, PlainWSPeer>(port, handler, remote_address,
+        std::move(request), socket.get_io_service(), journal)
     , ws_(std::move(socket))
 {
 }
 
+template<class Handler>
 void
-PlainWSPeer::do_close()
+PlainWSPeer<Handler>::
+do_close()
 {
     error_code ec;
     auto& sock = ws_.next_layer();
     sock.shutdown(socket_type::shutdown_both, ec);
     if(ec)
-        return fail(ec, "do_close");
+        return this->fail(ec, "do_close");
 }
 
 } // ripple
