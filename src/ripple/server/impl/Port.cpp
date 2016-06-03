@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/server/Port.h>
-#include <beast/http/rfc2616.hpp>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
 
 namespace ripple {

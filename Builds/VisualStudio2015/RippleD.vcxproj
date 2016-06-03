@@ -1847,6 +1847,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\nudb\win32_file.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\rfc2616.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\type_name.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\unity\beast_clock_unity.cpp">

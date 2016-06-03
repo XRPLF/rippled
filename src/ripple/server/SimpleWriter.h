@@ -22,7 +22,7 @@
 
 #include <ripple/server/Writer.h>
 #include <beast/core/streambuf.hpp>
-#include <beast/core/write_streambuf.hpp>
+#include <beast/core/write_dynabuf.hpp>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/write.hpp>
 #include <utility>

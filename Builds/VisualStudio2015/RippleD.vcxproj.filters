@@ -2415,6 +2415,9 @@
     <ClInclude Include="..\..\src\ripple\beast\nudb\win32_file.h">
       <Filter>ripple\beast\nudb</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\beast\rfc2616.h">
+      <Filter>ripple\beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\type_name.h">
       <Filter>ripple\beast</Filter>
     </ClInclude>

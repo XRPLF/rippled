@@ -22,7 +22,8 @@
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
-#include <beast/http/rfc2616.hpp>
+#include <ripple/beast/rfc2616.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/nudb/create.h>
 #include <ripple/beast/nudb/detail/format.h>
 #include <ripple/beast/unit_test.h>

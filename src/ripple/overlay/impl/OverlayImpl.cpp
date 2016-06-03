@@ -25,6 +25,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/server/json_body.h>
 #include <ripple/server/SimpleWriter.h>
@@ -39,7 +40,6 @@
 #include <beast/core/detail/base64.hpp>
 #include <ripple/beast/core/LexicalCast.h>
 #include <beast/http.hpp>
-#include <beast/http/rfc2616.hpp>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <ripple/beast/utility/WrappedSink.h>
 

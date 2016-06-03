@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/server/json_body.h>
@@ -40,7 +41,6 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <beast/core/detail/base64.hpp>
 #include <beast/http/headers.hpp>
-#include <beast/http/rfc2616.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
