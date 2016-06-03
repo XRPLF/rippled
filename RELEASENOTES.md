@@ -1,15 +1,78 @@
-rippled Version 0.30.1
-============================
+![Ripple](/images/ripple.png)
+
+This document contains the release notes for `rippled`, the reference server
+implementation of the Ripple protocol. To learn more about how to build and
+run a `rippled` server, visit https://ripple.com/build/rippled-setup/
+
+# Releases
+
+## Version 0.31.0
+
+`rippled` 0.31.0 has been released.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum.
+
+For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions). Use the `git log` command to confirm you have the correct source tree. The first log entry should be the change setting the version:
+
+
+     commit a5d58566386fd86ae4c816c82085fe242b255d2c
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Sun Apr 17 18:02:02 2016 -0700
+
+         Set version to 0.31.0
+
+
+**Warnings**
+
+Please expect a one-time delay when starting 0.31.0 while certain database indices are being built or rebuilt. The delay can be up to five minutes, during which CPU will spike and the server will appear unresponsive (no response to RPC, etc.).
+
+Additionally, `rippled` 0.31.0 now checks at start-up time that it has sufficient open file descriptors available, and shuts down with an error message if it does not. Previous versions of `rippled` could run out of file descriptors unexpectedly during operation. If you get a file-descriptor error message, increase the number of file descriptors available to `rippled` (for example, editing `/etc/security/limits.conf`) and restart.
+
+**New and Updated Features**
+
+`rippled` 0.31.0 has the following new or updated features:
+
+- (New) [**Amendments**](https://ripple.com/build/amendments/) - A consensus-based system for introducing changes to transaction processing.
+- (New) [**Multi-Signing**](https://ripple.com/build/transactions/#multi-signing) - (To be enabled as an amendment) Allow transactions to be authorized by a list of signatures. (RIPD-182)
+- (New) **Transaction queue and FeeEscalation** - (To be enabled as an amendment) Include or defer transactions based on the [transaction cost](https://ripple.com/build/transaction-cost/) offered, for better behavior in DDoS conditions. (RIPD-598)
+- (Updated) Validations subscription stream now includes `ledger_index` field. (DEC-564)
+- (Updated) You can request SignerList information in the `account_info` command (RIPD-1061)
+
+**Closed Issues**
+
+`rippled` 0.31.0 has the following fixes and improvements:
+
+- Improve held transaction submission
+- Update SQLite from 3.8.11.1 to 3.11.0
+- Allow random seed with specified wallet_propose key_type (RIPD-1030)
+- Limit pathfinding source currency limits (RIPD-1062)
+- Speed up out of order transaction processing (RIPD-239)
+- Pathfinding optimizations
+- Streamlined UNL/validator list: The new code removes the ability to specify domain names in the [validators] configuration block, and no longer supports the [validators_site] option.
+- Add websocket client
+- Add description of rpcSENDMAX_MALFORMED error
+- Convert PathRequest to use std::chrono (RIPD-1069)
+- Improve compile-time OpenSSL version check
+- Clear old Validations during online delete (RIPD-870)
+- Return correct error code during unfunded offer cross (RIPD-1082)
+- Report delivered_amount for legacy account_tx queries.
+- Improve error message when signing fails (RIPD-1066)
+- Fix websocket deadlock
+
+
+
+
+## Version 0.30.1
 
 rippled 0.30.1 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.30.1>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit c717006c44126aa0edb3a36ca29ee30e7a72c1d3
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Wed Feb 3 14:49:07 2016 -0800
+     commit c717006c44126aa0edb3a36ca29ee30e7a72c1d3
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Wed Feb 3 14:49:07 2016 -0800
 
-       Set version to 0.30.1
+       Set version to 0.30.1
 
 This release incorporates a number of important features, bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.30.1) for more detailed information.
 
@@ -72,18 +135,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.30.0
-============================
+## Version 0.30.0
 
 rippled 0.30.0 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.30.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit a8859b495b552fe1eb140771f0f2cb32d11d2ac2
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Wed Oct 21 18:26:02 2015 -0700
+     commit a8859b495b552fe1eb140771f0f2cb32d11d2ac2
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Wed Oct 21 18:26:02 2015 -0700
 
-        Set version to 0.30.0
+        Set version to 0.30.0
 
 This release incorporates a number of important features, bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.30.0) for more detailed information.
 
@@ -140,18 +202,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.29.0
-============================
+## Version 0.29.0
 
 rippled 0.29.0 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/commits/0.29.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 5964710f736e258c7892e8b848c48952a4c7856c
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Tue Aug 4 13:22:45 2015 -0700
+     commit 5964710f736e258c7892e8b848c48952a4c7856c
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Tue Aug 4 13:22:45 2015 -0700
 
-        Set version to 0.29.0
+        Set version to 0.29.0
 
 This release incorporates a number of important features, bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.29.0) for more detailed information.
 
@@ -208,18 +269,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.28.2
-============================
+## Version 0.28.2
 
 rippled 0.28.2 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/commits/release>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 6374aad9bc94595e051a04e23580617bc1aaf300
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Tue Jul 7 09:21:44 2015 -0700
+     commit 6374aad9bc94595e051a04e23580617bc1aaf300
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Tue Jul 7 09:21:44 2015 -0700
 
-        Set version to 0.28.2
+        Set version to 0.28.2
 
 This release incorporates a number of important features, bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/release) for more detailed information.
 
@@ -276,18 +336,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.28.1
-============================
+## Version 0.28.1
 
 rippled 0.28.1 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.28.1>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 399c43cae6e90a428e9ce6a988123972b0f03c99
-     Author: Miguel Portilla <miguelportilla@pobros.com>
-     Date:   Wed May 20 13:30:54 2015 -0400
+     commit 399c43cae6e90a428e9ce6a988123972b0f03c99
+     Author: Miguel Portilla <miguelportilla@pobros.com>
+     Date:   Wed May 20 13:30:54 2015 -0400
 
-        Set version to 0.28.1
+        Set version to 0.28.1
 
 This release incorporates a number of important features, bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.28.1) for more detailed information.
 
@@ -343,18 +402,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.28.0
-============================
+## Version 0.28.0
 
 rippled 0.28.0 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.28.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 7efd0ab0d6ef017331a0e214a3053893c88f38a9
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Fri Apr 24 18:57:36 2015 -0700
+     commit 7efd0ab0d6ef017331a0e214a3053893c88f38a9
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Fri Apr 24 18:57:36 2015 -0700
 
-        Set version to 0.28.0
+        Set version to 0.28.0
 
 This release incorporates a number of important features, bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.28.0) for more detailed information.
 
@@ -455,18 +513,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.4
-============================
+## Version 0.27.4
 
 rippled 0.27.4 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.4>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 92812fe7239ffa3ba91649b2ece1e892b866ec2a
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Wed Mar 11 11:26:44 2015 -0700
+     commit 92812fe7239ffa3ba91649b2ece1e892b866ec2a
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Wed Mar 11 11:26:44 2015 -0700
 
-        Set version to 0.27.4
+        Set version to 0.27.4
 
 This release includes one new feature. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.4) for more detailed information.
 
@@ -498,18 +555,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.3-sp2
-============================
+## Version 0.27.3-sp2
 
 rippled 0.27.3-sp2 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.3-sp2>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit f999839e599e131ed624330ad0ce85bb995f02d3
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Thu Mar 12 13:37:47 2015 -0700
+     commit f999839e599e131ed624330ad0ce85bb995f02d3
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Thu Mar 12 13:37:47 2015 -0700
 
-        Set version to 0.27.3-sp2
+        Set version to 0.27.3-sp2
 
 This release includes one new feature. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.3-sp2) for more detailed information.
 
@@ -541,18 +597,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.3-sp1
-============================
+## Version 0.27.3-sp1
 
 rippled 0.27.3-sp1 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.3-sp1>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 232693419a2c9a8276a0fae991f688f6f01a3add
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Wed Mar 11 10:26:39 2015 -0700
+     commit 232693419a2c9a8276a0fae991f688f6f01a3add
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Wed Mar 11 10:26:39 2015 -0700
 
-       Set version to 0.27.3-sp1
+       Set version to 0.27.3-sp1
 
 This release includes one new feature. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.3-sp1) for more detailed information.
 
@@ -582,18 +637,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.3
-============================
+## Version 0.27.3
 
 rippled 0.27.3 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.3>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 70c2854f7c8a28801a7ebc81dd62bf0d068188f0
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Tue Mar 10 14:06:33 2015 -0700
+     commit 70c2854f7c8a28801a7ebc81dd62bf0d068188f0
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Tue Mar 10 14:06:33 2015 -0700
 
-        Set version to 0.27.3
+        Set version to 0.27.3
 
 This release includes one new feature. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.3) for more detailed information.
 
@@ -623,18 +677,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.2
-============================
+## Version 0.27.2
 
 rippled 0.27.2 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.2>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 9cc8eec773e8afc9c12a6aab4982deda80495cf1
-     Author: Nik Bougalis <nikb@bougalis.net>
-     Date:   Sun Mar 1 14:56:44 2015 -0800
+     commit 9cc8eec773e8afc9c12a6aab4982deda80495cf1
+     Author: Nik Bougalis <nikb@bougalis.net>
+     Date:   Sun Mar 1 14:56:44 2015 -0800
 
-       Set version to 0.27.2
+       Set version to 0.27.2
 
 This release incorporates a number of important bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.2) for more detailed information.
 
@@ -652,7 +705,7 @@ The minimum supported version of Boost is v1.57.0. You **must** upgrade to this 
     -   Either import RockdDB to NuDB using import tool, or
     -   Start fresh with NuDB but delete SQLite databases if rippled ran previously with RocksDB:
 
-     rm [database_path]/transaction.* [database_path]/ledger.*
+     rm [database_path]/transaction.* [database_path]/ledger.*
 
 **Bug Fixes**
 
@@ -676,18 +729,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.1
-============================
+## Version 0.27.1
 
 rippled 0.27.1 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.1>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 95973ba3e8b0bd28eeaa034da8b806faaf498d8a
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Tue Feb 24 13:31:13 2015 -0800
+     commit 95973ba3e8b0bd28eeaa034da8b806faaf498d8a
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Tue Feb 24 13:31:13 2015 -0800
 
-       Set version to 0.27.1
+       Set version to 0.27.1
 
 This release incorporates a number of important bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.1) for more detailed information.
 
@@ -732,18 +784,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.27.0
-============================
+## Version 0.27.0
 
 rippled 0.27.0 has been released. The commit can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.27.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit c6c8e5d70c6fbde02cd946135a061aa77744396f
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Mon Jan 26 10:56:11 2015 -0800
+     commit c6c8e5d70c6fbde02cd946135a061aa77744396f
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Mon Jan 26 10:56:11 2015 -0800
 
-         Set version to 0.27.0
+         Set version to 0.27.0
 
 This release incorporates a number of important bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.27.0) for more detailed information.
 
@@ -807,41 +858,41 @@ With rippled version 0.27.0, the rippled.cfg file must be changed according to t
 
 -   Add new stanza - `[server]`. This section will contain a list of port names and key/value pairs. A port name must start with a letter and contain only letters and numbers. The name is not case-sensitive. For each name in this list, rippled will look for a configuration file section with the same name and use it to create a listening port. To simplify migration, you can use port names from your previous version of rippled.cfg (see Section 1. Server for detailed explanation in doc/rippled-example.cfg). For example:
 
-     [server]
-     rpc_port
-     peer_port
-     websocket_port
-     ssl_key = <set value to your current [rpc_ssl_key] or [websocket_ssl_key] setting>
-     ssl_cert = <set value to your current [rpc_ssl_cert] or [websocket_ssl_cert] setting>
-     ssl_chain = <set value to your current [rpc_ssl_chain] or [websocket_ssl_chain] setting>
+         [server]
+         rpc_port
+         peer_port
+         websocket_port
+         ssl_key = <set value to your current [rpc_ssl_key] or [websocket_ssl_key] setting>
+         ssl_cert = <set value to your current [rpc_ssl_cert] or [websocket_ssl_cert] setting>
+         ssl_chain = <set value to your current [rpc_ssl_chain] or [websocket_ssl_chain] setting>
 
 -   For each port name in `[server]` stanza, add separate stanzas. For example:
 
-     [rpc_port]
-     port = <set value to your current [rpc_port] setting, usually 5005>
-     ip = <set value to your current [rpc_ip] setting, usually 127.0.0.1>
-     admin = allow
-     protocol = https
+         [rpc_port]
+         port = <set value to your current [rpc_port] setting, usually 5005>
+         ip = <set value to your current [rpc_ip] setting, usually 127.0.0.1>
+         admin = allow
+         protocol = https
 
-     [peer_port]
-     port = <set value to your current [peer_port], usually 51235>
-     ip = <set value to your current [peer_ip], usually 0.0.0.0>
-     protocol = peer
+         [peer_port]
+         port = <set value to your current [peer_port], usually 51235>
+         ip = <set value to your current [peer_ip], usually 0.0.0.0>
+         protocol = peer
 
-     [websocket_port]
-     port = <your current [websocket_port], usually 6006>
-     ip = <your current [websocket_ip], usually 127.0.0.1>
-     admin = allow
-     protocol = wss
+         [websocket_port]
+         port = <your current [websocket_port], usually 6006>
+         ip = <your current [websocket_ip], usually 127.0.0.1>
+         admin = allow
+         protocol = wss
 
 -   Remove current `[rpc_port],` `[rpc_ip],` `[rpc_allow_remote],` `[rpc_ssl_key],` `[rpc_ssl_cert],` `and` `[rpc_ssl_chain],` `[peer_port],` `[peer_ip],` `[websocket_port],` `[websocket_ip]` settings from rippled.cfg
 
 -   If you allow untrusted websocket connections to your rippled, add `[websocket_public_port]` stanza under `[server]` section and replace websocket public settings with `[websocket_public_port]` section:
 
-     [websocket_public_port]
-     port = <your current [websocket_public_port], usually 5005>
-     ip = <your current [websocket_public_ip], usually 127.0.0.1>
-     protocol = ws ← make sure this is ws, not wss`
+         [websocket_public_port]
+         port = <your current [websocket_public_port], usually 5005>
+         ip = <your current [websocket_public_ip], usually 127.0.0.1>
+         protocol = ws ← make sure this is ws, not wss`
 
 -   Remove `[websocket_public_port],` `[websocket_public_ip],` `[websocket_ssl_key],` `[websocket_ssl_cert],` `[websocket_ssl_chain]` settings from rippled.cfg
 -   Disable `[ssl_verify]` section by setting it to 0
@@ -851,7 +902,7 @@ With rippled version 0.27.0, the rippled.cfg file must be changed according to t
 
 With this release, integrators should deprecate the "DeliveredAmount" field in favor of "delivered\_amount."
 
-### For Transactions That Occurred Before January 20, 2014: ###
+**For Transactions That Occurred Before January 20, 2014:**
 
 -   If amount actually delivered is different than the transactions “Amount” field
     -   "delivered\_amount" will show as unavailable indicating a developer should use caution when processing this payment.
@@ -859,7 +910,7 @@ With this release, integrators should deprecate the "DeliveredAmount" field in f
 -   Otherwise
     -   "delivered\_amount" will show the correct destination balance change.
 
-### For Transactions That Occur After January 20, 2014: ###
+**For Transactions That Occur After January 20, 2014:**
 
 -   If amount actually delivered is different than the transactions “Amount” field
     -   A "delivered\_amount" field will determine the destination amount change
@@ -881,18 +932,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.26.4
-============================
+## Version 0.26.4
 
 rippled 0.26.4 has been released. The repository tag is *0.26.4* and can be found on GitHub at: <https://github.com/ripple/rippled/commits/0.26.4>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 05a04aa80192452475888479c84ff4b9b54e6ae7
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Mon Nov 3 16:53:37 2014 -0800
+     commit 05a04aa80192452475888479c84ff4b9b54e6ae7
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Mon Nov 3 16:53:37 2014 -0800
 
-         Set version to 0.26.4
+         Set version to 0.26.4
 
 This release incorporates a number of important bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.26.4) for more detailed information.
 
@@ -964,18 +1014,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.26.3-sp1
-============================
+## Version 0.26.3-sp1
 
 rippled 0.26.3-sp1 has been released. The repository tag is *0.26.3-sp1* and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.26.3-sp1>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 2ad6f0a65e248b4f614d38d199a9d5d02f5aaed8
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Fri Sep 12 15:22:54 2014 -0700
+     commit 2ad6f0a65e248b4f614d38d199a9d5d02f5aaed8
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Fri Sep 12 15:22:54 2014 -0700
 
-         Set version to 0.26.3-sp1
+         Set version to 0.26.3-sp1
 
 This release incorporates a number of important bugfixes and functional improvements. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.26.3-sp1) for more detailed information.
 
@@ -1034,18 +1083,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.26.2
-============================
+## Version 0.26.2
 
 rippled 0.26.2 has been released. The repository tag is *0.26.2* and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.26.2>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit b9454e0f0ca8dbc23844a0520d49394e10d445b1
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Mon Aug 11 15:25:44 2014 -0400
+     commit b9454e0f0ca8dbc23844a0520d49394e10d445b1
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Mon Aug 11 15:25:44 2014 -0400
 
-        Set version to 0.26.2
+        Set version to 0.26.2
 
 This release incorporates a small number of important bugfixes. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.26.2) for more detailed information.
 
@@ -1084,18 +1132,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.26.1
-============================
+## Version 0.26.1
 
 rippled v0.26.1 has been released. The repository tag is **0.26.1** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.26.1>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 9a0e806f78300374e20070e2573755fbafdbfd03
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Mon Jul 28 11:27:31 2014 -0700
+     commit 9a0e806f78300374e20070e2573755fbafdbfd03
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Mon Jul 28 11:27:31 2014 -0700
 
-         Set version to 0.26.1
+         Set version to 0.26.1
 
 This release incorporates a small number of important bugfixes. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/0.26.1) for more detailed information.
 
@@ -1122,18 +1169,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.26.0
-============================
+## Version 0.26.0
 
 rippled v0.26.0 has been released. The repository tag is **0.26.0** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.26.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 9fa5e3987260e39dba322f218d39ac228a5b361b
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Tue Jul 22 09:59:45 2014 -0700
+     commit 9fa5e3987260e39dba322f218d39ac228a5b361b
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Tue Jul 22 09:59:45 2014 -0700
 
-         Set version to 0.26.0
+         Set version to 0.26.0
 
 This release incorporates a significant number of improvements and important bugfixes. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/develop) for more detailed information.
 
@@ -1176,18 +1222,17 @@ For more information or assistance, the following resources will be of use:
 
 -----------------------------------------------------------
 
-rippled Version 0.25.2
-============================
+## Version 0.25.2
 
 rippled v0.25.2 has been released. The repository tag is **0.25.2** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.25.2>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit ddf68d464d74e1c76a0cfd100a08bc8e65b91fec
-     Author: Mark Travis <mtravis@ripple.com>
-     Date:   Mon Jul 7 11:46:15 2014 -0700
+     commit ddf68d464d74e1c76a0cfd100a08bc8e65b91fec
+     Author: Mark Travis <mtravis@ripple.com>
+     Date:   Mon Jul 7 11:46:15 2014 -0700
 
-         Set version to 0.25.2
+         Set version to 0.25.2
 
 This release incorporates significant improvements which may not warrant separate entries but are incorporated into the feature changes as summary lines. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/develop) for more information.
 
@@ -1214,8 +1259,7 @@ The minimum supported version of Boost is v1.55. You **must** upgrade to this re
 
 -----------------------------------------------------------
 
-rippled Version 0.25.1
-============================
+## Version 0.25.1
 
 `rippled` v0.25.1 has been released. The repository tag is `0.25.1` and can be found on GitHub at: https://github.com/ripple/rippled/tree/0.25.1
 
@@ -1262,18 +1306,17 @@ The minimum supported version of Boost is v1.55.  You **must** upgrade to this r
 
 -----------------------------------------------------------
 
-rippled Version 0.25.0
-============================
+## Version 0.25.0
 
 rippled version 0.25.0 has been released. The repository tag is **0.25.0** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.25.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 29d1d5f06261a93c5e94b4011c7675ff42443b7f
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Wed May 14 09:01:44 2014 -0700
+     commit 29d1d5f06261a93c5e94b4011c7675ff42443b7f
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Wed May 14 09:01:44 2014 -0700
 
-         Set version to 0.25.0
+         Set version to 0.25.0
 
 This release incorporates significant improvements which may not warrant separate entries but are incorporated into the feature changes as summary lines. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/develop) for more information.
 
@@ -1308,18 +1351,17 @@ The minimum supported version of Boost is v1.55. You **must** upgrade to this re
 
 -----------------------------------------------------------
 
-rippled Version 0.24.0
-============================
+## Version 0.24.0
 
 rippled version 0.24.0 has been released. The repository tag is **0.24.0** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.24.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 3eb1c7bd6f93e5d874192197f76571184338f702
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Mon May 5 10:20:46 2014 -0700
+     commit 3eb1c7bd6f93e5d874192197f76571184338f702
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Mon May 5 10:20:46 2014 -0700
 
-         Set version to 0.24.0
+         Set version to 0.24.0
 
 This release incorporates significant improvements which may not warrant separate entries but are incorporated into the feature changes as summary lines. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/develop) for more information.
 
@@ -1349,18 +1391,17 @@ The minimum supported version of Boost is v1.55. You **must** upgrade to this re
 
 -----------------------------------------------------------
 
-rippled Version 0.23.0
-============================
+## Version 0.23.0
 
 rippled version 0.23.0 has been released. The repository tag is **0.23.0** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.23.0>
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-     commit 29a4f61551236f70865d46d6653da2e62de1c701
-     Author: Vinnie Falco <vinnie.falco@gmail.com>
-     Date:   Fri Mar 14 13:01:23 2014 -0700
+     commit 29a4f61551236f70865d46d6653da2e62de1c701
+     Author: Vinnie Falco <vinnie.falco@gmail.com>
+     Date:   Fri Mar 14 13:01:23 2014 -0700
 
-         Set version to 0.23.0
+         Set version to 0.23.0
 
 This release incorporates significant improvements which may not warrant separate entries but are incorporated into the feature changes as summary lines. Please refer to the [Git commit history](https://github.com/ripple/rippled/commits/develop) for more information.
 
@@ -1401,8 +1442,7 @@ The minimum supported version of Boost is v1.55. You **must** upgrade to this re
 
 -----------------------------------------------------------
 
-rippled Version 0.22.0
-============================
+## Version 0.22.0
 
 rippled version 0.22.0 has been released. This release is currently the tip of the **develop/** branch and can be found on GitHub at: <https://github.com/ripple/rippled/tree/develop> The tag is **0.22.0** and can be found on GitHub at: <https://github.com/ripple/rippled/tree/0.22.0>
 
@@ -1422,38 +1462,38 @@ The minimum supported version of libBOOST is v1.55. You **must** upgrade to this
 
 **Key release features**
 
-#### PeerFinder
+- **PeerFinder**
 
--   Actively guides network topology.
--   Scrubs listening advertisements based on connectivity checks.
--   Redirection for new nodes when existing nodes are full.
+    -   Actively guides network topology.
+    -   Scrubs listening advertisements based on connectivity checks.
+    -   Redirection for new nodes when existing nodes are full.
 
-#### Memos
+- **Memos**
 
--   Transactions can optionally include a short text message, which optionally can be encrypted.
+    -   Transactions can optionally include a short text message, which optionally can be encrypted.
 
-#### Database
+- **Database**
 
--   Improved management of I/O resources.
--   Better performance accessing historical data.
+    -   Improved management of I/O resources.
+    -   Better performance accessing historical data.
 
-#### PathFinding
+- **PathFinding**
 
--   More efficient search algorithm when computing paths
+    -   More efficient search algorithm when computing paths
 
 **Major Partner Issues Fixed**
 
-#### Transactions
+- **Transactions**
 
--   Malleability: Ability to ensure that signatures are fully canonical.
+    -   Malleability: Ability to ensure that signatures are fully canonical.
 
-#### PathFinding
+- **PathFinding**
 
--   Less time needed to get the first path result!
+    -   Less time needed to get the first path result!
 
-#### Database
+- **Database**
 
--   Eliminated "meltdowns" caused when fetching historical ledger data.
+    -   Eliminated "meltdowns" caused when fetching historical ledger data.
 
 **Significant Changes**
 
@@ -1467,8 +1507,7 @@ The minimum supported version of libBOOST is v1.55. You **must** upgrade to this
 
 -----------------------------------------------------------
 
-rippled Version 0.21.0
-============================
+## Version 0.21.0
 
 rippled version 0.21.0 has been released. This release is currently the tip of the **develop/** branch and can be found on GitHub at [1](https://github.com/ripple/rippled/tree/develop). The tag is **0.21.0-rc2** and can be found on GitHub at [2](https://github.com/ripple/rippled/tree/0.21.0-rc2).
 
@@ -1520,16 +1559,16 @@ RC2 fixed a bug that caused crashes in order processing and a bug in parsing ord
 
 If you are upgrading from version 0.12 or earlier of rippled, these next sections apply to you because the format of the *rippled.cfg* file changed around that time. If you have upgraded since that time and you have applied the configuration file fixes, you can safely ignore them.
 
-### Validators
+**Validators**
 
 Ripple Labs is now running five validators. You can use this template for your *validators.txt* file (or place this in your config file):
 
      [validators]
-     n9KPnVLn7ewVzHvn218DcEYsnWLzKerTDwhpofhk4Ym1RUq4TeGw    RIP1
-     n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V    RIP2
-     n94rSdgTyBNGvYg8pZXGuNt59Y5bGAZGxbxyvjDaqD9ceRAgD85P    RIP3
-     n9LeQeDcLDMZKjx1TZtrXoLBLo5q1bR1sUQrWG7tEADFU6R27UBp    RIP4
-     n9KF6RpvktjNs2MDBkmxpJbup4BKrKeMKDXPhaXkq7cKTwLmWkFr    RIP5
+     n9KPnVLn7ewVzHvn218DcEYsnWLzKerTDwhpofhk4Ym1RUq4TeGw    RIP1
+     n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V    RIP2
+     n94rSdgTyBNGvYg8pZXGuNt59Y5bGAZGxbxyvjDaqD9ceRAgD85P    RIP3
+     n9LeQeDcLDMZKjx1TZtrXoLBLo5q1bR1sUQrWG7tEADFU6R27UBp    RIP4
+     n9KF6RpvktjNs2MDBkmxpJbup4BKrKeMKDXPhaXkq7cKTwLmWkFr    RIP5
 
 You should also raise your quorum to at least three by putting the following in your *rippled.cfg* file:
 
@@ -1538,19 +1577,19 @@ You should also raise your quorum to at least three by putting the following in 
 
 If you are a validator, you should set your quorum to at least four.
 
-### IPs
+**IPs**
 
 A list of Ripple Labs server IP addresses can be found by resolving **r.ripple.com**. You can also add this to your *rippled.cfg* file to ensure you always have several peer connections to Ripple Labs servers:
 
      [ips]
-     184.73.226.101 51235
-     23.23.201.55   51235
-     54.200.43.173  51235
-     184.73.57.84   51235
-     54.234.249.55  51235
-     54.200.86.110  51235
+     184.73.226.101 51235
+     23.23.201.55   51235
+     54.200.43.173  51235
+     184.73.57.84   51235
+     54.234.249.55  51235
+     54.200.86.110  51235
 
-### RocksDB back end
+**RocksDB back end**
 
 RocksDB is based on LevelDB with improvements from Facebook and the community. Preliminary tests show that it stalls less often than HyperLevelDB for our use cases.
 
@@ -1571,7 +1610,7 @@ The recommended RocksDB configuration is:
      file_size_mb=8
      file_size_mult=2
 
-### Configuring your Node DB
+**Configuring your Node DB**
 
 You need to configure the [NodeBackEnd](https://wiki.ripple.com/NodeBackEnd) that you want the server to use. See above for an example RocksDB configuration.
 
@@ -1580,8 +1619,7 @@ You need to configure the [NodeBackEnd](https://wiki.ripple.com/NodeBackEnd) tha
 
 -----------------------------------------------------------
 
-rippled Version 0.20.1
-============================
+## Version 0.20.1
 
 rippled version 0.20.1 has been released. This release is currently the tip of the [develop](https://github.com/ripple/rippled/tree/develop) branch and the tag is [0.20.1](https://github.com/ripple/rippled/tree/0.20.1).
 
@@ -1589,11 +1627,11 @@ rippled version 0.20.1 has been released. This release is currently the tip of t
 
 Prior to building, please confirm you have the correct source tree with the **git log** command. The first log entry should be the change setting the version:
 
-    commit 95a573b755219d7e1e078d53b8e11a8f0d7cade1
-    Author: Vinnie Falco <vinnie.falco@gmail.com>
-    Date:   Wed Jan 8 17:08:27 2014 -0800
+    commit 95a573b755219d7e1e078d53b8e11a8f0d7cade1
+    Author: Vinnie Falco <vinnie.falco@gmail.com>
+    Date:   Wed Jan 8 17:08:27 2014 -0800
 
-       Set version to 0.20.1
+       Set version to 0.20.1
 
 **Major Partner Issues Fixed**
 
@@ -1645,16 +1683,16 @@ Starting with this release, the minimum supported version of GCC used to compile
 
 If you are upgrading from version 0.12 or earlier of rippled, these next sections apply to you because the format of the *rippled.cfg* file changed around that time. If you have upgraded since that time and you have applied the configuration file fixes, you can safely ignore them.
 
-### Validators
+**Validators**
 
 Ripple Labs is now running five validators. You can use this template for your *validators.txt* file (or place this in your config file):
 
     [validators]
-    n9KPnVLn7ewVzHvn218DcEYsnWLzKerTDwhpofhk4Ym1RUq4TeGw    RIP1
-    n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V    RIP2
-    n94rSdgTyBNGvYg8pZXGuNt59Y5bGAZGxbxyvjDaqD9ceRAgD85P    RIP3
-    n9LeQeDcLDMZKjx1TZtrXoLBLo5q1bR1sUQrWG7tEADFU6R27UBp    RIP4
-    n9KF6RpvktjNs2MDBkmxpJbup4BKrKeMKDXPhaXkq7cKTwLmWkFr    RIP5
+    n9KPnVLn7ewVzHvn218DcEYsnWLzKerTDwhpofhk4Ym1RUq4TeGw    RIP1
+    n9LFzWuhKNvXStHAuemfRKFVECLApowncMAM5chSCL9R5ECHGN4V    RIP2
+    n94rSdgTyBNGvYg8pZXGuNt59Y5bGAZGxbxyvjDaqD9ceRAgD85P    RIP3
+    n9LeQeDcLDMZKjx1TZtrXoLBLo5q1bR1sUQrWG7tEADFU6R27UBp    RIP4
+    n9KF6RpvktjNs2MDBkmxpJbup4BKrKeMKDXPhaXkq7cKTwLmWkFr    RIP5
 
 You should also raise your quorum to at least three by putting the following in your *rippled.cfg* file:
 
@@ -1663,19 +1701,19 @@ You should also raise your quorum to at least three by putting the following in 
 
 If you are a validator, you should set your quorum to at least four.
 
-### IPs
+**IPs**
 
 A list of Ripple Labs server IP addresses can be found by resolving **r.ripple.com**. You can also add this to your *rippled.cfg* file to ensure you always have several peer connections to Ripple Labs servers:
 
     [ips]
-    54.225.112.220 51235
-    54.225.123.13  51235
-    54.227.239.106 51235
-    107.21.251.218 51235
-    184.73.226.101 51235
-    23.23.201.55   51235
+    54.225.112.220 51235
+    54.225.123.13  51235
+    54.227.239.106 51235
+    107.21.251.218 51235
+    184.73.226.101 51235
+    23.23.201.55   51235
 
-### New RocksDB back end
+**New RocksDB back end**
 
 RocksDB is based on LevelDB with improvements from Facebook and the community. Preliminary tests show that it stalls less often than HyperLevelDB for our use cases.
 
@@ -1696,7 +1734,7 @@ The recommended RocksDB configuration is:
     file_size_mb=8
     file_size_mult=2
 
-### Configuring your Node DB
+**Configuring your Node DB**
 
 You need to configure the [NodeBackEnd](https://wiki.ripple.com/NodeBackEnd) that you want the server to use. See above for an example RocksDB configuration.
 
@@ -1705,8 +1743,7 @@ You need to configure the [NodeBackEnd](https://wiki.ripple.com/NodeBackEnd) tha
 
 -----------------------------------------------------------
 
-rippled Version 0.19
-============================
+## Version 0.19
 
 rippled version 0.19 has now been released. This release is currently the tip of the [release](https://github.com/ripple/rippled/tree/release) branch and the tag is [0.19.0](https://github.com/ripple/rippled/tree/0.19.0).
 
@@ -1786,8 +1823,7 @@ You need to configure the [NodeBackEnd](https://wiki.ripple.com/NodeBackEnd) tha
 
 -----------------------------------------------------------
 
-rippled Version 0.16
-============================
+## Version 0.16
 
 rippled version 0.16 has now been released. This release is currently the tip of the [master](https://github.com/ripple/rippled/tree/master) branch and the tag is [v0.16.0](https://github.com/ripple/rippled/tree/v0.16.0).
 
@@ -1859,8 +1895,7 @@ None known
 
 -----------------------------------------------------------
 
-rippled Version 0.14
-============================
+## Version 0.14
 
 rippled version 0.14 has now been released. This release is currently the tip of the [master](https://github.com/ripple/rippled/tree/master) branch and the tag is [v0.12.0](https://github.com/ripple/rippled/tree/v0.14.0).
 
@@ -1932,8 +1967,7 @@ None known
 
 -----------------------------------------------------------
 
-rippled Version 0.12
-============================
+## Version 0.12
 
 rippled version 0.12 has now been released. This release is currently the tip of the [master branch](https://github.com/ripple/rippled/tree/master) and can be found on GitHub. The tag is [v0.12.0](https://github.com/ripple/rippled/tree/v0.12.0).
 
