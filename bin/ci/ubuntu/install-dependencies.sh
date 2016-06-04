@@ -1,6 +1,6 @@
 #!/bin/bash -u
 # Exit if anything fails.
-set -e
+set -ev
 # Override gcc version to $GCC_VER.
 # Put an appropriate symlink at the front of the path.
 mkdir -v $HOME/bin
@@ -9,19 +9,22 @@ do
   test -x $( type -p ${g}-$GCC_VER )
   ln -sv $(type -p ${g}-$GCC_VER) $HOME/bin/${g}
 done
-for c in clang clang++
-do
+if [ -n "${CLANG_VER:-}" ]
+then
+  for c in clang clang++
+  do
     test -x $( type -p ${c}-$CLANG_VER )
     ln -sv $(type -p ${c}-$CLANG_VER) $HOME/bin/${c}
-done
-export PATH=$PWD/bin:$PATH
+  done
+fi
+export PATH=$HOME/bin:$PATH
 
 # What versions are we ACTUALLY running?
 if [ -x $HOME/bin/g++ ]; then
     $HOME/bin/g++ -v
 fi
-if [ -x $HOME/bin/clang ]; then
-    $HOME/bin/clang -v
+if [ -x "$(type -p clang)" ]; then
+    clang -v
 fi
 # Avoid `spurious errors` caused by ~/.npm permission issues
 # Does it already exist? Who owns? What permissions?
