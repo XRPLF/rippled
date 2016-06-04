@@ -1,6 +1,6 @@
 #!/bin/bash -u
 # Exit if anything fails.
-set -e
+set -ev
 # Override gcc version to $GCC_VER.
 # Put an appropriate symlink at the front of the path.
 mkdir -v $HOME/bin
