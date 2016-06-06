@@ -183,6 +183,15 @@ toAmountSpec (STAmount const& amt)
 }
 
 inline
+EitherAmount
+toEitherAmount (STAmount const& amt)
+{
+    if (isXRP (amt))
+        return EitherAmount{amt.xrp()};
+    return EitherAmount{amt.iou()};
+}
+
+inline
 AmountSpec
 toAmountSpec (
     EitherAmount const& ea,

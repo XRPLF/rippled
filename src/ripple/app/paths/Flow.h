@@ -27,6 +27,12 @@
 namespace ripple
 {
 
+namespace path {
+namespace detail{
+struct FlowDebugInfo;
+}
+}
+
 /**
   Make a payment from the src account to the dst account
 
@@ -54,7 +60,8 @@ flow (PaymentSandbox& view,
     bool ownerPaysTransferFee,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMax,
-    beast::Journal j);
+    beast::Journal j,
+    path::detail::FlowDebugInfo* flowDebugInfo=nullptr);
 
 }  // ripple
 

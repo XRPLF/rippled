@@ -65,7 +65,8 @@ flow (
     bool ownerPaysTransferFee,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMax,
-    beast::Journal j)
+    beast::Journal j,
+    path::detail::FlowDebugInfo* flowDebugInfo)
 {
     Issue const srcIssue = [&] {
         if (sendMax)
@@ -123,7 +124,7 @@ flow (
         return finishFlow (sb, srcIssue, dstIssue,
             flow<XRPAmount, XRPAmount> (
                 sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
-                limitQuality, sendMax, j));
+                limitQuality, sendMax, j, flowDebugInfo));
     }
 
     if (srcIsXRP && !dstIsXRP)
@@ -131,7 +132,7 @@ flow (
         return finishFlow (sb, srcIssue, dstIssue,
             flow<XRPAmount, IOUAmount> (
                 sb, strands, asDeliver.iou, defaultPaths, partialPayment,
-                limitQuality, sendMax, j));
+                limitQuality, sendMax, j, flowDebugInfo));
     }
 
     if (!srcIsXRP && dstIsXRP)
@@ -139,14 +140,14 @@ flow (
         return finishFlow (sb, srcIssue, dstIssue,
             flow<IOUAmount, XRPAmount> (
                 sb, strands, asDeliver.xrp, defaultPaths, partialPayment,
-                limitQuality, sendMax, j));
+                limitQuality, sendMax, j, flowDebugInfo));
     }
 
     assert (!srcIsXRP && !dstIsXRP);
     return finishFlow (sb, srcIssue, dstIssue,
         flow<IOUAmount, IOUAmount> (
             sb, strands, asDeliver.iou, defaultPaths, partialPayment,
-            limitQuality, sendMax, j));
+            limitQuality, sendMax, j, flowDebugInfo));
 
 }
 

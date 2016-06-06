@@ -22,6 +22,7 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/cursor/PathCursor.h>
+#include <ripple/app/paths/impl/FlowDebugInfo.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
@@ -70,19 +71,25 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     Config const& config,
     Input const* const pInputs)
 {
+    // call flow v1 and v2 so results may be compared
+    bool const compareFlowV1V2 =
+        view.rules ().enabled (featureCompareFlowV1V2, config.features);
+
     bool const useFlowV1Output =
         !flowV2Switchover (view.info ().parentCloseTime) &&
         !view.rules ().enabled (featureFlowV2, config.features);
-    // When flowV2 is enabled via rules, call old flow so results may be
-    // compared
-    bool const callFlowV1 = useFlowV1Output ||
-        view.rules ().enabled (featureFlowV2, config.features);
-    bool const callFlowV2 = !useFlowV1Output;
+    bool const callFlowV1 = useFlowV1Output || compareFlowV1V2;
+    bool const callFlowV2 = !useFlowV1Output || compareFlowV1V2;
 
     Output flowV1Out;
     PaymentSandbox flowV1SB (&view);
+
+    auto const inNative = saMaxAmountReq.native();
+    auto const outNative = saDstAmountReq.native();
+    detail::FlowDebugInfo flowV1FlowDebugInfo (inNative, outNative);
     if (callFlowV1)
     {
+        auto const timeIt = flowV1FlowDebugInfo.timeBlock ("main");
         RippleCalc rc (
             flowV1SB,
             saMaxAmountReq,
@@ -96,7 +103,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
             rc.inputFlags = *pInputs;
         }
 
-        auto result = rc.rippleCalculate ();
+        auto result = rc.rippleCalculate (compareFlowV1V2 ? &flowV1FlowDebugInfo : nullptr);
         flowV1Out.setResult (result);
         flowV1Out.actualAmountIn = rc.actualAmountIn_;
         flowV1Out.actualAmountOut = rc.actualAmountOut_;
@@ -106,6 +113,8 @@ RippleCalc::Output RippleCalc::rippleCalculate (
 
     Output flowV2Out;
     PaymentSandbox flowV2SB (&view);
+    detail::FlowDebugInfo flowV2FlowDebugInfo (inNative, outNative);
+    auto j = l.journal ("Flow");
     if (callFlowV2)
     {
         bool defaultPaths = true;
@@ -129,15 +138,15 @@ RippleCalc::Output RippleCalc::rippleCalculate (
             sendMax.emplace (saMaxAmountReq);
         }
 
-        auto j = l.journal ("Flow");
-
         try
         {
             bool const ownerPaysTransferFee =
                     view.rules ().enabled (featureOwnerPaysFee, config.features);
+            auto const timeIt = flowV2FlowDebugInfo.timeBlock ("main");
             flowV2Out = flow (flowV2SB, saDstAmountReq, uSrcAccountID,
                 uDstAccountID, spsPaths, defaultPaths, partialPayment,
-                ownerPaysTransferFee, limitQuality, sendMax, j);
+                ownerPaysTransferFee, limitQuality, sendMax, j,
+                compareFlowV1V2 ? &flowV2FlowDebugInfo : nullptr);
         }
         catch (std::exception& e)
         {
@@ -145,31 +154,62 @@ RippleCalc::Output RippleCalc::rippleCalculate (
             if (!useFlowV1Output)
                 Rethrow();
         }
+    }
 
-        if (j.debug())
+    if (j.debug())
+    {
+        using BalanceDiffs = detail::BalanceDiffs;
+        auto logResult = [&](std::string const& algoName,
+            Output const& result,
+            detail::FlowDebugInfo const& flowDebugInfo,
+            boost::optional<BalanceDiffs> const& balanceDiffs,
+            bool outputPassInfo,
+            bool outputBalanceDiffs) {
+                j.debug () << "RippleCalc Result> " <<
+                " actualIn: " << result.actualAmountIn <<
+                ", actualOut: " << result.actualAmountOut <<
+                ", result: " << result.result () <<
+                ", dstAmtReq: " << saDstAmountReq <<
+                ", sendMax: " << saMaxAmountReq <<
+                (compareFlowV1V2 ? ", " + flowDebugInfo.to_string (outputPassInfo): "") <<
+                (outputBalanceDiffs && balanceDiffs
+                 ? ", " + detail::balanceDiffsToString(balanceDiffs)  : "") <<
+                ", algo: " << algoName;
+        };
+        bool outputPassInfo = false;
+        bool outputBalanceDiffs = false;
+        boost::optional<BalanceDiffs> bdV1, bdV2;
+        if (compareFlowV1V2)
         {
-            auto logResult = [&] (std::string const& algoName, Output const& result)
+            auto const v1r = flowV1Out.result ();
+            auto const v2r = flowV2Out.result ();
+            if (v1r != v2r ||
+                (((v1r == tesSUCCESS) || (v1r == tecPATH_PARTIAL)) &&
+                    ((flowV1Out.actualAmountIn !=
+                         flowV2Out.actualAmountIn) ||
+                        (flowV1Out.actualAmountOut !=
+                            flowV2Out.actualAmountOut))))
             {
-                j.debug() << "RippleCalc Result> " <<
-                    " actualIn: " << result.actualAmountIn <<
-                    ", actualOut: " << result.actualAmountOut <<
-                    ", result: " << result.result () <<
-                    ", dstAmtReq: " << saDstAmountReq <<
-                    ", sendMax: " << saMaxAmountReq <<
-                    ", algo: " << algoName;
-            };
-            if (callFlowV1)
-            {
-                logResult ("V1", flowV1Out);
+                outputPassInfo = true;
             }
-            if (callFlowV2)
-            {
-                logResult ("V2", flowV2Out);
-            }
+            bdV1 = detail::balanceDiffs (flowV1SB, view);
+            bdV2 = detail::balanceDiffs (flowV2SB, view);
+            outputBalanceDiffs = bdV1 != bdV2;
         }
 
-        JLOG (j.trace()) << "Using old flow: " << useFlowV1Output;
+        if (callFlowV1)
+        {
+            logResult ("V1", flowV1Out, flowV1FlowDebugInfo, bdV1,
+                outputPassInfo, outputBalanceDiffs);
+        }
+        if (callFlowV2)
+        {
+            logResult ("V2", flowV2Out, flowV2FlowDebugInfo, bdV2,
+                outputPassInfo, outputBalanceDiffs);
+        }
     }
+
+    JLOG (j.trace()) << "Using old flow: " << useFlowV1Output;
 
     if (!useFlowV1Output)
     {
@@ -232,7 +272,7 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
 // liquidity. No need to revisit path in the future if all liquidity is used.
 
 // <-- TER: Only returns tepPATH_PARTIAL if partialPaymentAllowed.
-TER RippleCalc::rippleCalculate ()
+TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
 {
     JLOG (j_.trace())
         << "rippleCalc>"
@@ -301,6 +341,7 @@ TER RippleCalc::rippleCalculate ()
         // True, if ever computed multi-quality.
         bool multiQuality = false;
 
+        if (flowDebugInfo) flowDebugInfo->newLiquidityPass();
         // Find the best path.
         for (auto pathState : pathStateList_)
         {
@@ -327,6 +368,11 @@ TER RippleCalc::rippleCalculate ()
                     << " mIndex=" << pathState->index()
                     << " uQuality=" << pathState->quality()
                     << " rate=" << amountFromRate (pathState->quality());
+
+                if (flowDebugInfo)
+                    flowDebugInfo->pushLiquiditySrc (
+                        toEitherAmount (pathState->inPass ()),
+                        toEitherAmount (pathState->outPass ()));
 
                 if (!pathState->quality())
                 {
@@ -418,13 +464,16 @@ TER RippleCalc::rippleCalculate ()
             // Apply best path.
             auto pathState = pathStateList_[iBest];
 
-            JLOG (j_.debug())
+            if (flowDebugInfo)
+                flowDebugInfo->pushPass (toEitherAmount (pathState->inPass ()),
+                    toEitherAmount (pathState->outPass ()),
+                    pathStateList_.size () - iDry);
+
+            JLOG (j_.debug ())
                 << "rippleCalc: best:"
-                << " uQuality="
-                << amountFromRate (pathState->quality())
-                << " inPass()=" << pathState->inPass()
-                << " saOutPass=" << pathState->outPass()
-                << " iBest=" << iBest;
+                << " uQuality=" << amountFromRate (pathState->quality ())
+                << " inPass()=" << pathState->inPass ()
+                << " saOutPass=" << pathState->outPass () << " iBest=" << iBest;
 
             // Record best pass' offers that became unfunded for deletion on
             // success.

@@ -32,6 +32,10 @@ namespace ripple {
 class Config;
 namespace path {
 
+namespace detail {
+struct FlowDebugInfo;
+}
+
 /** RippleCalc calculates the quality of a payment path.
 
     Quality is the amount of input required to produce a given output along a
@@ -145,7 +149,7 @@ private:
     }
 
     /** Compute liquidity through these path sets. */
-    TER rippleCalculate ();
+    TER rippleCalculate (detail::FlowDebugInfo* flowDebugInfo=nullptr);
 
     /** Add a single PathState.  Returns true on success.*/
     bool addPathState(STPath const&, TER&);

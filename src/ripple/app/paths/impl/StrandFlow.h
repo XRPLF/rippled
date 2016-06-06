@@ -24,6 +24,7 @@
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
+#include <ripple/app/paths/impl/FlowDebugInfo.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/IOUAmount.h>
@@ -330,6 +331,11 @@ public:
     {
         return cur_.end ();
     }
+
+    auto size () const
+    {
+        return cur_.size ();
+    }
 };
 
 /*
@@ -355,7 +361,8 @@ flow (PaymentSandbox const& baseView,
     bool partialPayment,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMaxST,
-    beast::Journal j)
+    beast::Journal j,
+    path::detail::FlowDebugInfo* flowDebugInfo=nullptr)
 {
     using Result = FlowResult<TInAmt, TOutAmt>;
 
@@ -434,6 +441,7 @@ flow (PaymentSandbox const& baseView,
 
         boost::container::flat_set<uint256> ofrsToRm;
         boost::optional<BestStrand> best;
+        if (flowDebugInfo) flowDebugInfo->newLiquidityPass();
         for (auto strand : activeStrands)
         {
             auto f = flow<TInAmt, TOutAmt> (
@@ -445,6 +453,9 @@ flow (PaymentSandbox const& baseView,
 
             if (f.ter != tesSUCCESS || f.out == beast::zero)
                 continue;
+
+            if (flowDebugInfo)
+                flowDebugInfo->pushLiquiditySrc(EitherAmount(f.in), EitherAmount(f.out));
 
             assert (f.out <= remainingOut && f.sandbox &&
                 (!remainingIn || f.in <= *remainingIn));
@@ -482,6 +493,10 @@ flow (PaymentSandbox const& baseView,
             remainingOut = outReq - sum (savedOuts);
             if (sendMax)
                 remainingIn = *sendMax - sum (savedIns);
+
+            if (flowDebugInfo)
+                flowDebugInfo->pushPass (EitherAmount (best->in),
+                    EitherAmount (best->out), activeStrands.size ());
 
             JLOG (j.trace())
                 << "Best path: in: " << to_string (best->in)
