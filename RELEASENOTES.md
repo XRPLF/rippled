@@ -6,6 +6,41 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.31.2
+
+The `rippled` 0.31.2 release corrects issues with the fee escalation algorithm. We advise `rippled` operators to upgrade immediately.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+- A defect in the fee escalation algorithm that caused network fees to escalate more rapidly than intended has been corrected. (RIPD-1177)
+- The minimum local fee advertised by validators will no longer be adjusted upwards.
+
+
+
+## Version 0.31.1
+
+The `rippled` 0.31.1 release contains one important bug fix. We advise `rippled` operators to upgrade immediately.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug Fixes**
+
+`rippled` 0.31.1 contains the following fix:
+
+- Correctly handle ledger validations with no `LedgerSequence` field. Previous versions of `rippled` incorrectly assumed that the optional validation field would always be included. Current versions of the software always include the field, and gracefully handle its absence.
+
+
+
 ## Version 0.31.0
 
 `rippled` 0.31.0 has been released.
