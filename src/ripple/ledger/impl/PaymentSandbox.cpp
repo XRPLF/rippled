@@ -179,7 +179,7 @@ PaymentSandbox::balanceHook (AccountID const& account,
     */
 
     auto const currency = amount.getCurrency ();
-    auto const switchover = flowV2Switchover (info ().parentCloseTime);
+    auto const switchover = amendmentRIPD1141 (info ().parentCloseTime);
 
     auto adjustedAmt = amount;
     if (switchover)

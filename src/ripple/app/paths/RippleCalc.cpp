@@ -76,7 +76,6 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         view.rules ().enabled (featureCompareFlowV1V2, config.features);
 
     bool const useFlowV1Output =
-        !flowV2Switchover (view.info ().parentCloseTime) &&
         !view.rules ().enabled (featureFlowV2, config.features);
     bool const callFlowV1 = useFlowV1Output || compareFlowV1V2;
     bool const callFlowV2 = !useFlowV1Output || compareFlowV1V2;
@@ -331,7 +330,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
     boost::container::flat_set<uint256> unfundedOffersFromBestPaths;
 
     int iPass = 0;
-    auto const dcSwitch = dcSwitchover(view.info().parentCloseTime);
+    auto const dcSwitch = amendmentRIPD1141(view.info().parentCloseTime);
 
     while (resultCode == temUNCERTAIN)
     {

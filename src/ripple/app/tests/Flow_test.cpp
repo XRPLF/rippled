@@ -913,7 +913,7 @@ struct Flow_test : public beast::unit_test::suite
         Account const bob ("bob");
         Account const carol ("carol");
 
-        auto const closeTime = dcSoTime() +
+        auto const closeTime = amendmentRIPD1141SoTime() +
                 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
 
@@ -977,30 +977,27 @@ struct Flow_test : public beast::unit_test::suite
 
         auto const timeDelta = Env{*this}.closed ()->info ().closeTimeResolution;
 
-        for(auto const& t :{dcSoTime(), flowV2SoTime()}){
-            for(auto const& d: {-timeDelta*100, +timeDelta*100}){
-                auto const closeTime = t+d;
-                Env env (*this);
-                env.close (closeTime);
+        for(auto const& d: {-timeDelta*100, +timeDelta*100}){
+            auto const closeTime = amendmentRIPD1141SoTime () + d;
+            Env env (*this);
+            env.close (closeTime);
 
-                env.fund (XRP(10000), alice, bob, carol, gw);
+            env.fund (XRP(10000), alice, bob, carol, gw);
 
-                env.trust (USD(100), alice, bob, carol);
-                env (pay (gw, bob, USD (100)));
-                env (offer (bob, XRP (50), USD (50)));
-                env (offer (bob, XRP (100), USD (50)));
+            env.trust (USD(100), alice, bob, carol);
+            env (pay (gw, bob, USD (100)));
+            env (offer (bob, XRP (50), USD (50)));
+            env (offer (bob, XRP (100), USD (50)));
 
-                auto expectedResult =
-                    closeTime < dcSoTime () ? tecPATH_DRY : tesSUCCESS;
-                env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
-                    txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
-                    ter (expectedResult));
+            auto expectedResult =
+                closeTime < amendmentRIPD1141SoTime () ? tecPATH_DRY : tesSUCCESS;
+            env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
+                txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
+                ter (expectedResult));
 
-                if (expectedResult == tesSUCCESS)
-                    env.require (balance (carol, USD (50)));
-            }
+            if (expectedResult == tesSUCCESS)
+                env.require (balance (carol, USD (50)));
         }
-
     }
 
     // Helper function that returns the reserve on an account based on
@@ -1045,7 +1042,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env (*this, features (featureFlowV2));
 
         auto const closeTime =
-            flowV2SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
+            amendmentRIPD1141SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
 
         env.fund (XRP (1000000), gw1, gw2);
@@ -1119,7 +1116,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env (*this, features (featureFlowV2));
 
         auto const closeTime =
-            flowV2SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
+            amendmentRIPD1141SoTime () + 100 * env.closed ()->info ().closeTimeResolution;
         env.close (closeTime);
 
         env.fund (XRP (1000000), gw1, gw2);

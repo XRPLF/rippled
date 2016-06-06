@@ -255,7 +255,7 @@ TER PathCursor::deliverNodeReverseImpl (
                 saInPassAct,
                 saOutAct > zero);
 
-            if (dcSwitchover(view().info().parentCloseTime))
+            if (amendmentRIPD1141(view().info().parentCloseTime))
             {
                 // The recursive call is dry this time, but we have liquidity
                 // from previous calls

@@ -31,7 +31,7 @@
 
 namespace ripple {
 
-NetClock::time_point const& flowV2SoTime ()
+NetClock::time_point const& amendmentRIPD1141SoTime ()
 {
     using namespace std::chrono_literals;
     // Wed May 26, 2016 07:00:00am PDT
@@ -39,22 +39,9 @@ NetClock::time_point const& flowV2SoTime ()
     return soTime;
 }
 
-bool flowV2Switchover (NetClock::time_point const closeTime)
+bool amendmentRIPD1141 (NetClock::time_point const closeTime)
 {
-    return closeTime > flowV2SoTime();
-}
-
-NetClock::time_point const& dcSoTime ()
-{
-    using namespace std::chrono_literals;
-    // Mon May 23, 2016 10:00:00am PDT
-    static NetClock::time_point const soTime{517338000s};
-    return soTime;
-}
-
-bool dcSwitchover (NetClock::time_point const closeTime)
-{
-    return closeTime > dcSoTime();
+    return closeTime > amendmentRIPD1141SoTime();
 }
 
 // VFALCO NOTE A copy of the other one for now
@@ -134,7 +121,7 @@ accountHolds (ReadView const& view,
     if (isXRP(currency))
     {
         // XRP: return balance minus reserve
-        if (dcSwitchover (view.info ().parentCloseTime))
+        if (amendmentRIPD1141 (view.info ().parentCloseTime))
         {
             auto const sle = view.read(
                 keylet::account(account));
@@ -1429,7 +1416,7 @@ rippleSend (ApplyView& view,
 
     // Calculate the amount to transfer accounting
     // for any transfer fees:
-    if (!flowV2Switchover (view.info ().parentCloseTime))
+    if (!amendmentRIPD1141 (view.info ().parentCloseTime))
     {
         STAmount const saTransitFee = rippleTransferFee (
             view, uSenderID, uReceiverID, issuer, saAmount, j);
@@ -1485,7 +1472,7 @@ accountSend (ApplyView& view,
         return rippleSend (view, uSenderID, uReceiverID, saAmount, saActual, j);
     }
 
-    auto const fv2Switch = flowV2Switchover (view.info ().parentCloseTime);
+    auto const fv2Switch = amendmentRIPD1141 (view.info ().parentCloseTime);
     if (!fv2Switch)
     {
         auto const dummyBalance = saAmount.zeroed();

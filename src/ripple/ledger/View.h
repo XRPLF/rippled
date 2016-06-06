@@ -340,11 +340,11 @@ transferXRP (ApplyView& view,
             STAmount const& amount,
                 beast::Journal j);
 
-NetClock::time_point const& flowV2SoTime ();
-bool flowV2Switchover (NetClock::time_point const closeTime);
+NetClock::time_point const& amendmentRIPD1141SoTime ();
+bool amendmentRIPD1141 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& dcSoTime ();
-bool dcSwitchover (NetClock::time_point const closeTime);
+NetClock::time_point const& amendmentRIPD1141SoTime ();
+bool amendmentRIPD1141 (NetClock::time_point const closeTime);
 
 
 } // ripple
