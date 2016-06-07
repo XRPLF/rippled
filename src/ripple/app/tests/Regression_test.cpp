@@ -19,6 +19,8 @@
 #include <ripple/test/jtx.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 namespace test {
@@ -157,11 +159,53 @@ struct Regression_test : public beast::unit_test::suite
         test256r1key (becky);
     }
 
+    void testFeeEscalationAutofill()
+    {
+        testcase("Autofilled fee should use the escalated fee");
+        using namespace jtx;
+        Env env(*this, []()
+            {
+                auto p = std::make_unique<Config>();
+                setupConfigForUnitTests(*p);
+                auto& section = p->section("transaction_queue");
+                section.set("minimum_txn_in_ledger_standalone", "3");
+                return p;
+            }(),
+            features(featureFeeEscalation));
+        Env_ss envs(env);
+
+        auto const alice = Account("alice");
+        env.fund(XRP(100000), alice);
+
+        auto params = Json::Value(Json::objectValue);
+        // Max fee = 50k drops
+        params[jss::fee_mult_max] = 5000;
+        std::vector<int> const
+            expectedFees({ 10, 10, 8889, 13889, 20000 });
+
+        // We should be able to submit 5 transactions within
+        // our fee limit.
+        for (int i = 0; i < 5; ++i)
+        {
+            envs(noop(alice), fee(none), seq(none))(params);
+
+            auto tx = env.tx();
+            if (expect(tx))
+            {
+                expect(tx->getAccountID(sfAccount) == alice.id());
+                expect(tx->getTxnType() == ttACCOUNT_SET);
+                auto const fee = tx->getFieldAmount(sfFee);
+                expect(fee == drops(expectedFees[i]));
+            }
+        }
+    }
+
     void run() override
     {
         testOffer1();
         testLowBalanceDestroy();
         testSecp256r1key();
+        testFeeEscalationAutofill();
     }
 };
 
