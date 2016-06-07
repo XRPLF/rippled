@@ -176,7 +176,9 @@ toStrand (
         STPathElement::typeAll, src, curIssue.currency, curIssue.account);
 
     boost::optional<STPathElement> sendMaxPE;
-    if (sendMaxIssue && sendMaxIssue->account != src)
+    if (sendMaxIssue && sendMaxIssue->account != src &&
+        (path.empty () || !path[0].isAccount () ||
+            path[0].getAccountID () != sendMaxIssue->account))
         sendMaxPE.emplace (sendMaxIssue->account, boost::none, boost::none);
 
     STPathElement const lastNode (dst, boost::none, boost::none);

@@ -363,6 +363,17 @@ struct Flow_test : public beast::unit_test::suite
             expect (r.first == tesSUCCESS);
             expect (equal (r.second, D{alice, gw, usdC}));
         }
+        {
+            // Check path with sendMax and node with correct sendMax already set
+            Env env (*this, features(featureFlowV2), features(featureOwnerPaysFee));
+            env.fund (XRP (10000), alice, bob, gw);
+            env.trust (USD (1000), alice, bob);
+            env.trust (EUR (1000), alice, bob);
+            env (pay (gw, alice, EUR (100)));
+            auto const path = STPath ({STPathElement (STPathElement::typeAll,
+                EUR.account, EUR.currency, EUR.account)});
+            test (env, USD, EUR.issue(), path, tesSUCCESS);
+        }
     }
     void testDirectStep ()
     {
