@@ -345,6 +345,20 @@ Env::trust (STAmount const& amount,
     test.expect(balance(account) == start);
 }
 
+std::pair<TER, bool>
+Env::parseResult(Json::Value const& jr)
+{
+    TER ter;
+    if (jr.isObject() && jr.isMember(jss::result) &&
+        jr[jss::result].isMember(jss::engine_result_code))
+        ter = static_cast<TER>(
+            jr[jss::result][jss::engine_result_code].asInt());
+    else
+        ter = temINVALID;
+    return std::make_pair(ter,
+        isTesSuccess(ter) || isTecClaim(ter));
+}
+
 void
 Env::submit (JTx const& jt)
 {
@@ -355,12 +369,8 @@ Env::submit (JTx const& jt)
         Serializer s;
         jt.stx->add(s);
         auto const jr = rpc("submit", strHex(s.slice()));
-        if (jr["result"].isMember("engine_result_code"))
-            ter_ = static_cast<TER>(
-                jr["result"]["engine_result_code"].asInt());
-        else
-            ter_ = temINVALID;
-        didApply = isTesSuccess(ter_) || isTecClaim(ter_);
+
+        std::tie(ter_, didApply) = parseResult(jr);
     }
     else
     {
@@ -369,6 +379,46 @@ Env::submit (JTx const& jt)
         ter_ = temMALFORMED;
         didApply = false;
     }
+    return postconditions(jt, ter_, didApply);
+}
+
+void
+Env::sign_and_submit(JTx const& jt, Json::Value params)
+{
+    bool didApply;
+
+    auto const account =
+        lookup(jt.jv[jss::Account].asString());
+    auto const& passphrase = account.name();
+
+    Json::Value jr;
+    if (params.isNull())
+    {
+        // Use the command line interface
+        auto const jv = boost::lexical_cast<std::string>(jt.jv);
+        jr = rpc("submit", passphrase, jv);
+    }
+    else
+    {
+        // Use the provided parameters, and go straight
+        // to the (RPC) client.
+        assert(params.isObject());
+        if (!params.isMember(jss::secret) &&
+            !params.isMember(jss::key_type) &&
+            !params.isMember(jss::seed) &&
+            !params.isMember(jss::seed_hex) &&
+            !params.isMember(jss::passphrase))
+        {
+            params[jss::secret] = passphrase;
+        }
+        params[jss::tx_json] = jt.jv;
+        jr = client().invoke("submit", params);
+    }
+    txid_.SetHex(
+        jr[jss::result][jss::tx_json][jss::hash].asString());
+
+    std::tie(ter_, didApply) = parseResult(jr);
+
     return postconditions(jt, ter_, didApply);
 }
 
@@ -402,6 +452,12 @@ Env::meta()
     close();
     auto const item = closed()->txRead(txid_);
     return item.second;
+}
+
+std::shared_ptr<STTx const>
+Env::tx() const
+{
+    return current()->txRead(txid_).first;
 }
 
 void

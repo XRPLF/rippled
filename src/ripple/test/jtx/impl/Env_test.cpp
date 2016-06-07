@@ -22,6 +22,7 @@
 #include <ripple/test/jtx.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/unit_test.h>
@@ -578,6 +579,54 @@ public:
         env (jt);
     }
 
+    void testSignAndSubmit()
+    {
+        using namespace jtx;
+        Env env(*this);
+        Env_ss envs(env);
+
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+
+        {
+            envs(noop(alice), fee(none), seq(none))();
+
+            // Make sure we get the right account back.
+            auto tx = env.tx();
+            if (expect(tx))
+            {
+                expect(tx->getAccountID(sfAccount) == alice.id());
+                expect(tx->getTxnType() == ttACCOUNT_SET);
+            }
+        }
+
+        {
+            auto params = Json::Value(Json::nullValue);
+            envs(noop(alice), fee(none), seq(none))(params);
+
+            // Make sure we get the right account back.
+            auto tx = env.tx();
+            if (expect(tx))
+            {
+                expect(tx->getAccountID(sfAccount) == alice.id());
+                expect(tx->getTxnType() == ttACCOUNT_SET);
+            }
+        }
+
+        {
+            auto params = Json::Value(Json::objectValue);
+            // Force the factor low enough to fail
+            params[jss::fee_mult_max] = 1;
+            params[jss::fee_div_max] = 2;
+            // RPC errors result in temINVALID
+            envs(noop(alice), fee(none),
+                seq(none), ter(temINVALID))(params);
+
+            auto tx = env.tx();
+            expect(!tx);
+        }
+    }
+
     void
     run()
     {
@@ -598,6 +647,7 @@ public:
         testClose();
         testPath();
         testResignSigned();
+        testSignAndSubmit();
     }
 };
 

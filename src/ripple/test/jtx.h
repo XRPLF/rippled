@@ -28,6 +28,7 @@
 #include <ripple/test/jtx/balance.h>
 #include <ripple/test/jtx/delivermin.h>
 #include <ripple/test/jtx/Env.h>
+#include <ripple/test/jtx/Env_ss.h>
 #include <ripple/test/jtx/fee.h>
 #include <ripple/test/jtx/flags.h>
 #include <ripple/test/jtx/jtx_json.h>

@@ -3531,6 +3531,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\Env.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\Env_ss.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\fee.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\flags.h">

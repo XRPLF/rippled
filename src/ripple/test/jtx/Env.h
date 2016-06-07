@@ -381,12 +381,24 @@ public:
         jtx::required(args...)(*this);
     }
 
+    /** Gets the TER result and `didApply` flag from a RPC Json result object.
+    */
+    static
+    std::pair<TER, bool>
+    parseResult(Json::Value const& jr);
+
     /** Submit an existing JTx.
         This calls postconditions.
     */
     virtual
     void
     submit (JTx const& jt);
+
+    /** Use the submit RPC command with a provided JTx object.
+        This calls postconditions.
+    */
+    void
+    sign_and_submit(JTx const& jt, Json::Value params = Json::nullValue);
 
     /** Check expected postconditions
         of JTx submission.
@@ -407,8 +419,7 @@ public:
     template <class JsonValue,
         class... FN>
     void
-    operator()(JsonValue&& jv,
-        FN const&... fN)
+    operator()(JsonValue&& jv, FN const&... fN)
     {
         apply(std::forward<
             JsonValue>(jv), fN...);
@@ -432,6 +443,20 @@ public:
     */
     std::shared_ptr<STObject const>
     meta();
+
+    /** Return the tx data for the last JTx.
+
+        Effects:
+
+            The tx data for the last transaction
+            ID, if any, is returned. No side
+            effects.
+
+        @note Only necessary for JTx submitted
+            with via sign-and-submit method.
+    */
+    std::shared_ptr<STTx const>
+    tx() const;
 
 private:
     void
