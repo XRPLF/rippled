@@ -46,6 +46,7 @@ struct JTx
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;
+    Json::Value sign_and_submit;
     std::shared_ptr<STTx const> stx;
     std::function<void(Env&, JTx&)> signer;
 
