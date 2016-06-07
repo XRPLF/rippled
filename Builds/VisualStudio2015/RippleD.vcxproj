@@ -3615,6 +3615,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\test\jtx\impl\signandsubmit.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\test\jtx\impl\tag.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -3668,6 +3672,8 @@
     <ClInclude Include="..\..\src\ripple\test\jtx\seq.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\sig.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\test\jtx\signandsubmit.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\test\jtx\tag.h">
     </ClInclude>

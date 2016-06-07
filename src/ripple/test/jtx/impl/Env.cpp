@@ -349,12 +349,48 @@ void
 Env::submit (JTx const& jt)
 {
     bool didApply;
-    if (jt.stx)
+    if (jt.sign_and_submit || jt.stx)
     {
-        txid_ = jt.stx->getTransactionID();
-        Serializer s;
-        jt.stx->add(s);
-        auto const jr = rpc("submit", strHex(s.slice()));
+        Json::Value jr;
+        if (jt.sign_and_submit)
+        {
+            auto const account =
+                lookup(jt.jv[jss::Account].asString());
+
+            auto const& passphrase = account.name();
+
+            if (jt.sign_and_submit.isObject())
+            {
+                // Use the provided parameters, and go straight
+                // to the (RPC) client.
+                auto params = jt.sign_and_submit;
+                if (!params.isMember(jss::secret) &&
+                    !params.isMember(jss::key_type) &&
+                        !params.isMember(jss::seed) &&
+                            !params.isMember(jss::seed_hex) &&
+                                !params.isMember(jss::passphrase))
+                {
+                    params[jss::secret] = passphrase;
+                }
+                params[jss::tx_json] = jt.jv;
+                jr = client().invoke("submit", params);
+            }
+            else
+            {
+                // Use the command line interface
+                auto const jv = to_string(jt.jv);
+                jr = rpc("submit", passphrase, jv);
+            }
+            txid_.SetHex(
+                jr[jss::result][jss::tx_json][jss::hash].asString());
+        }
+        else
+        {
+            txid_ = jt.stx->getTransactionID();
+            Serializer s;
+            jt.stx->add(s);
+            jr = rpc("submit", strHex(s.slice()));
+        }
         if (jr["result"].isMember("engine_result_code"))
             ter_ = static_cast<TER>(
                 jr["result"]["engine_result_code"].asInt());
@@ -402,6 +438,13 @@ Env::meta()
     close();
     auto const item = closed()->txRead(txid_);
     return item.second;
+}
+
+std::shared_ptr<STTx const>
+Env::tx()
+{
+    auto const item = current()->txRead(txid_);
+    return item.first;
 }
 
 void

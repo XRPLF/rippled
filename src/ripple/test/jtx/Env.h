@@ -351,7 +351,12 @@ public:
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
         autofill(jt);
-        jt.stx = st(jt);
+        /* If the JTx is using sign_and_submit, chances are
+        it is not complete, and the STTx will fail anyway,
+        so save the effort.
+        */
+        if (!jt.sign_and_submit)
+            jt.stx = st(jt);
         return jt;
     }
 
@@ -432,6 +437,20 @@ public:
     */
     std::shared_ptr<STObject const>
     meta();
+
+    /** Return the tx data for the last JTx.
+
+        Effects:
+
+            The tx data for the last transaction
+            ID, if any, is returned. No side
+            effects.
+
+        @note Only necessary for JTx submitted
+            with the signandsubmit() funclet.
+    */
+    std::shared_ptr<STTx const>
+    tx();
 
 private:
     void
