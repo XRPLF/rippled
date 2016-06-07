@@ -129,7 +129,7 @@ void reportUncaughtException (
     {
         logUncaughtException (ex.what());
     }
-    catch (boost::coroutines::detail::forced_unwind const& ex)
+    catch (boost::coroutines::detail::forced_unwind const&)
     {
         logUncaughtException ("forced_unwind");
     }
