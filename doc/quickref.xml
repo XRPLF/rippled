@@ -85,6 +85,7 @@
             <member><link linkend="beast.ref.websocket__ping_data">ping_data</link></member>
             <member><link linkend="beast.ref.websocket__stream">stream</link></member>
             <member><link linkend="beast.ref.websocket__reason_string">reason_string</link></member>
+            <member><link linkend="beast.ref.websocket__teardown_tag">teardown_tag</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Options</bridgehead>
           <simplelist type="vert" columns="1">

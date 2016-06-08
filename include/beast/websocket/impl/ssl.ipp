@@ -129,7 +129,7 @@ operator()(error_code ec, bool again)
 
 template<class AsyncStream>
 void
-teardown(
+teardown(teardown_tag,
     boost::asio::ssl::stream<AsyncStream>& stream,
         error_code& ec)
 {
@@ -138,7 +138,7 @@ teardown(
 
 template<class AsyncStream, class TeardownHandler>
 void
-async_teardown(
+async_teardown(teardown_tag,
     boost::asio::ssl::stream<AsyncStream>& stream,
         TeardownHandler&& handler)
 {
