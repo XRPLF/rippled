@@ -49,8 +49,8 @@ TER PathCursor::reverseLiquidityForAccount () const
     auto const isFinalNode = (nodeIndex_ == lastNodeIndex);
 
     // 0 quality means none has yet been determined.
-    std::uint64_t uRateMax = 0
-;
+    std::uint64_t uRateMax = 0;
+
     // Current is allowed to redeem to next.
     const bool previousNodeIsAccount = !nodeIndex_ ||
             previousNode().isAccount();
@@ -208,7 +208,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                     << " (available) previousNode.saRevRedeem="
                     << previousNode().saRevRedeem
                     << " uRateMax="
-                    << amountFromRate (uRateMax).getText ();
+                    << amountFromQuality (uRateMax).getText ();
             }
             else
             {

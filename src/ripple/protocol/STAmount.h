@@ -295,7 +295,7 @@ public:
 //------------------------------------------------------------------------------
 
 STAmount
-amountFromRate (std::uint64_t uRate);
+amountFromRate (std::uint32_t uRate);
 
 // VFALCO TODO The parameter type should be Quality not uint64_t
 STAmount

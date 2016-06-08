@@ -722,7 +722,7 @@ void STAmount::set (std::int64_t v)
 //------------------------------------------------------------------------------
 
 STAmount
-amountFromRate (std::uint64_t uRate)
+amountFromRate (std::uint32_t uRate)
 {
     return { noIssue(), uRate, -9, false };
 }
