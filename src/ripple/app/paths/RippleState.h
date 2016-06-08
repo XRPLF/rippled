@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <cstdint>
@@ -58,7 +59,7 @@ public:
     uint256
     key() const
     {
-        return mLedgerEntry->getIndex();
+        return sle_->getIndex();
     }
 
     // VFALCO Take off the "get" from each function name
@@ -121,20 +122,22 @@ public:
         return !mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    std::uint32_t getQualityIn () const
+    Rate const&
+    getQualityIn () const
     {
-        return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
+        return mViewLowest ? lowQualityIn_ : highQualityIn_;
     }
 
-    std::uint32_t getQualityOut () const
+    Rate const&
+    getQualityOut () const
     {
-        return ((std::uint32_t) (mViewLowest ? mLowQualityOut : mHighQualityOut));
+        return mViewLowest ? lowQualityOut_ : highQualityOut_;
     }
 
     Json::Value getJson (int);
 
 private:
-    std::shared_ptr<SLE const> mLedgerEntry;
+    std::shared_ptr<SLE const> sle_;
 
     bool                            mViewLowest;
 
@@ -146,10 +149,10 @@ private:
     AccountID const&                  mLowID;
     AccountID const&                  mHighID;
 
-    std::uint64_t                   mLowQualityIn;
-    std::uint64_t                   mLowQualityOut;
-    std::uint64_t                   mHighQualityIn;
-    std::uint64_t                   mHighQualityOut;
+    Rate lowQualityIn_;
+    Rate lowQualityOut_;
+    Rate highQualityIn_;
+    Rate highQualityOut_;
 
     STAmount                        mBalance;
 };

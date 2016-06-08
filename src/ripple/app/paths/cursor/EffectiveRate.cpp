@@ -17,43 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_CURSOR_RIPPLELIQUIDITY_H_INCLUDED
-#define RIPPLE_APP_PATHS_CURSOR_RIPPLELIQUIDITY_H_INCLUDED
-
-#include <ripple/app/paths/cursor/PathCursor.h>
-#include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/Tuning.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Rate.h>
+#include <BeastConfig.h>
+#include <ripple/app/paths/cursor/EffectiveRate.h>
+#include <ripple/basics/contract.h>
 
 namespace ripple {
 namespace path {
 
-void rippleLiquidity (
-    RippleCalc&,
-    Rate const& qualityIn,
-    Rate const& qualityOut,
-    STAmount const& saPrvReq,
-    STAmount const& saCurReq,
-    STAmount& saPrvAct,
-    STAmount& saCurAct,
-    std::uint64_t& uRateMax);
-
 Rate
-quality_in (
-    ReadView const& view,
-    AccountID const& uToAccountID,
-    AccountID const& uFromAccountID,
-    Currency const& currency);
+effectiveRate(
+    Issue const& issue,
+    AccountID const& account1,
+    AccountID const& account2,
+    boost::optional<Rate> const& rate)
+{
+    // 1:1 transfer rate for XRP
+    if (isXRP (issue))
+        return parityRate;
 
-Rate
-quality_out (
-    ReadView const& view,
-    AccountID const& uToAccountID,
-    AccountID const& uFromAccountID,
-    Currency const& currency);
+    if (!rate)
+        LogicError ("No transfer rate set for node.");
+
+    // 1:1 transfer rate if either of the accounts is the issuer
+    if (issue.account == account1 || issue.account == account2)
+        return parityRate;
+
+    return rate.get();
+}
 
 } // path
 } // ripple
-
-#endif

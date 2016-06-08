@@ -65,6 +65,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/ResourceManager.h>
@@ -2851,7 +2852,7 @@ void NetworkOPsImp::getBookPage (
     unsigned int    uBookEntry;
     STAmount        saDirRate;
 
-    auto uTransferRate = rippleTransferRate(view, book.out.account);
+    auto const rate = transferRate(view, book.out.account);
     auto viewJ = app_.journal ("View");
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
@@ -2948,12 +2949,11 @@ void NetworkOPsImp::getBookPage (
 
                 Json::Value jvOffer = sleOffer->getJson (0);
 
-                STAmount    saTakerGetsFunded;
-                STAmount    saOwnerFundsLimit;
-                std::uint32_t uOfferRate;
+                STAmount saTakerGetsFunded;
+                STAmount saOwnerFundsLimit = saOwnerFunds;
+                Rate offerRate = parityRate;
 
-
-                if (uTransferRate != QUALITY_ONE
+                if (rate != parityRate
                     // Have a tranfer fee.
                     && uTakerID != book.out.account
                     // Not taking offers of own IOUs.
@@ -2961,16 +2961,9 @@ void NetworkOPsImp::getBookPage (
                     // Offer owner not issuing ownfunds
                 {
                     // Need to charge a transfer fee to offer owner.
-                    uOfferRate          = uTransferRate;
-                    saOwnerFundsLimit   = divide (
-                        saOwnerFunds,
-                        amountFromRate (uOfferRate),
-                        saOwnerFunds.issue ());
-                }
-                else
-                {
-                    uOfferRate          = QUALITY_ONE;
-                    saOwnerFundsLimit   = saOwnerFunds;
+                    offerRate = rate;
+                    saOwnerFundsLimit = divide (
+                        saOwnerFunds, offerRate);
                 }
 
                 if (saOwnerFundsLimit >= saTakerGets)
@@ -2982,7 +2975,7 @@ void NetworkOPsImp::getBookPage (
                 {
                     // Only provide, if not fully funded.
 
-                    saTakerGetsFunded   = saOwnerFundsLimit;
+                    saTakerGetsFunded = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
                     std::min (
@@ -2991,14 +2984,11 @@ void NetworkOPsImp::getBookPage (
                             (jvOffer[jss::taker_pays_funded]);
                 }
 
-                STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
+                STAmount saOwnerPays = (parityRate == offerRate)
                     ? saTakerGetsFunded
                     : std::min (
                         saOwnerFunds,
-                        multiply (
-                            saTakerGetsFunded,
-                            amountFromRate (uOfferRate),
-                            saTakerGetsFunded.issue ()));
+                        multiply (saTakerGetsFunded, offerRate));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
@@ -3055,7 +3045,7 @@ void NetworkOPsImp::getBookPage (
     MetaView  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);
 
-    auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
+    auto const rate = transferRate(lesActive, book.out.account);
 
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);
@@ -3115,12 +3105,11 @@ void NetworkOPsImp::getBookPage (
 
             Json::Value jvOffer = sleOffer->getJson (0);
 
-            STAmount    saTakerGetsFunded;
-            STAmount    saOwnerFundsLimit;
-            std::uint32_t uOfferRate;
+            STAmount saTakerGetsFunded;
+            STAmount saOwnerFundsLimit = saOwnerFunds;
+            Rate offerRate = parityRate;
 
-
-            if (uTransferRate != QUALITY_ONE
+            if (rate != parityRate
                 // Have a tranfer fee.
                 && uTakerID != book.out.account
                 // Not taking offers of own IOUs.
@@ -3128,14 +3117,8 @@ void NetworkOPsImp::getBookPage (
                 // Offer owner not issuing ownfunds
             {
                 // Need to charge a transfer fee to offer owner.
-                uOfferRate = uTransferRate;
-                saOwnerFundsLimit = divide (saOwnerFunds,
-                    amountFromRate (uOfferRate));
-            }
-            else
-            {
-                uOfferRate          = QUALITY_ONE;
-                saOwnerFundsLimit   = saOwnerFunds;
+                offerRate = rate;
+                saOwnerFundsLimit = divide (saOwnerFunds, offerRate);
             }
 
             if (saOwnerFundsLimit >= saTakerGets)
@@ -3157,11 +3140,11 @@ void NetworkOPsImp::getBookPage (
                         jvOffer[jss::taker_pays_funded]);
             }
 
-            STAmount saOwnerPays = (uOfferRate == QUALITY_ONE)
+            STAmount saOwnerPays = (parityRate == offerRate)
                 ? saTakerGetsFunded
                 : std::min (
                     saOwnerFunds,
-                    multiply (saTakerGetsFunded, amountFromRate (uOfferRate)));
+                    multiply (saTakerGetsFunded, offerRate));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 

@@ -366,7 +366,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
                     << "rippleCalc: AFTER:"
                     << " mIndex=" << pathState->index()
                     << " uQuality=" << pathState->quality()
-                    << " rate=" << amountFromRate (pathState->quality());
+                    << " rate=" << amountFromQuality (pathState->quality());
 
                 if (flowDebugInfo)
                     flowDebugInfo->pushLiquiditySrc (
@@ -399,7 +399,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
                         JLOG (j_.debug())
                             << "rippleCalc: better:"
                             << " uQuality="
-                            << amountFromRate (pathState->quality())
+                            << amountFromQuality (pathState->quality())
                             << " inPass()=" << pathState->inPass()
                             << " saOutPass=" << pathState->outPass();
                     }
@@ -427,7 +427,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
                             << " mIndex=" << pathState->index()
                             << " uQuality=" << pathState->quality()
                             << " rate="
-                            << amountFromRate (pathState->quality())
+                            << amountFromQuality (pathState->quality())
                             << " inPass()=" << pathState->inPass()
                             << " saOutPass=" << pathState->outPass();
 
@@ -452,7 +452,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
                     << "rippleCalc: "
                     << "Summary: " << pathState->index()
                     << " rate: "
-                    << amountFromRate (pathState->quality())
+                    << amountFromQuality (pathState->quality())
                     << " quality:" << pathState->quality()
                     << " best: " << (iBest == pathState->index ());
             }
@@ -470,7 +470,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
 
             JLOG (j_.debug ())
                 << "rippleCalc: best:"
-                << " uQuality=" << amountFromRate (pathState->quality ())
+                << " uQuality=" << amountFromQuality (pathState->quality ())
                 << " inPass()=" << pathState->inPass ()
                 << " saOutPass=" << pathState->outPass () << " iBest=" << iBest;
 
@@ -490,7 +490,7 @@ TER RippleCalc::rippleCalculate (detail::FlowDebugInfo* flowDebugInfo)
             JLOG (j_.trace())
                     << "rippleCalc: best:"
                     << " uQuality="
-                    << amountFromRate (pathState->quality())
+                    << amountFromQuality (pathState->quality())
                     << " inPass()=" << pathState->inPass()
                     << " saOutPass=" << pathState->outPass()
                     << " actualIn=" << actualAmountIn_

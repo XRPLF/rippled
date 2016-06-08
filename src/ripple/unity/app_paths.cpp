@@ -38,6 +38,7 @@
 #include <ripple/app/paths/cursor/AdvanceNode.cpp>
 #include <ripple/app/paths/cursor/DeliverNodeForward.cpp>
 #include <ripple/app/paths/cursor/DeliverNodeReverse.cpp>
+#include <ripple/app/paths/cursor/EffectiveRate.cpp>
 #include <ripple/app/paths/cursor/ForwardLiquidity.cpp>
 #include <ripple/app/paths/cursor/ForwardLiquidityForAccount.cpp>
 #include <ripple/app/paths/cursor/Liquidity.cpp>
