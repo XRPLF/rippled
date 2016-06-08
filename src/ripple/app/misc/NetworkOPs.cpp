@@ -65,6 +65,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/Gossip.h>
 #include <ripple/resource/ResourceManager.h>
@@ -2963,9 +2964,7 @@ void NetworkOPsImp::getBookPage (
                     // Need to charge a transfer fee to offer owner.
                     uOfferRate          = uTransferRate;
                     saOwnerFundsLimit   = divide (
-                        saOwnerFunds,
-                        amountFromRate (uOfferRate),
-                        saOwnerFunds.issue ());
+                        saOwnerFunds, Rate(uOfferRate));
                 }
                 else
                 {
@@ -2995,10 +2994,7 @@ void NetworkOPsImp::getBookPage (
                     ? saTakerGetsFunded
                     : std::min (
                         saOwnerFunds,
-                        multiply (
-                            saTakerGetsFunded,
-                            amountFromRate (uOfferRate),
-                            saTakerGetsFunded.issue ()));
+                        multiply (saTakerGetsFunded, Rate(uOfferRate)));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
@@ -3129,8 +3125,8 @@ void NetworkOPsImp::getBookPage (
             {
                 // Need to charge a transfer fee to offer owner.
                 uOfferRate = uTransferRate;
-                saOwnerFundsLimit = divide (saOwnerFunds,
-                    amountFromRate (uOfferRate));
+                saOwnerFundsLimit = divide (
+                    saOwnerFunds, Rate(uOfferRate));
             }
             else
             {
@@ -3157,11 +3153,11 @@ void NetworkOPsImp::getBookPage (
                         jvOffer[jss::taker_pays_funded]);
             }
 
-            STAmount saOwnerPays = (uOfferRate == QUALITY_ONE)
+            STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
                 ? saTakerGetsFunded
                 : std::min (
                     saOwnerFunds,
-                    multiply (saTakerGetsFunded, amountFromRate (uOfferRate)));
+                    multiply (saTakerGetsFunded, Rate(uOfferRate)));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 

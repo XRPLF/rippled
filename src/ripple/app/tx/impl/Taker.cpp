@@ -34,24 +34,6 @@ format_amount (STAmount const& amount)
     return txt;
 }
 
-STAmount
-BasicTaker::Rate::divide (STAmount const& amount) const
-{
-    if (quality_ == QUALITY_ONE)
-        return amount;
-
-    return ripple::divide (amount, rate_, amount.issue ());
-}
-
-STAmount
-BasicTaker::Rate::multiply (STAmount const& amount) const
-{
-    if (quality_ == QUALITY_ONE)
-        return amount;
-
-    return ripple::multiply (amount, rate_, amount.issue ());
-}
-
 BasicTaker::BasicTaker (
         CrossType cross_type, AccountID const& account, Amounts const& amount,
         Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
@@ -72,8 +54,8 @@ BasicTaker::BasicTaker (
     assert (remaining_.in > zero);
     assert (remaining_.out > zero);
 
-    assert (m_rate_in != 0);
-    assert (m_rate_out != 0);
+    assert (m_rate_in.value != 0);
+    assert (m_rate_out.value != 0);
 
     // If we are dealing with a particular flavor, make sure that it's the
     // flavor we expect:
@@ -92,13 +74,11 @@ BasicTaker::BasicTaker (
         ++threshold_;
 }
 
-BasicTaker::Rate
+Rate
 BasicTaker::effective_rate (
-    std::uint32_t rate, Issue const &issue,
+    Rate const& rate, Issue const &issue,
     AccountID const& from, AccountID const& to)
 {
-    assert (rate != 0);
-
     if (rate != QUALITY_ONE)
     {
         // We ignore the transfer if the sender is also the recipient since no
@@ -106,10 +86,10 @@ BasicTaker::effective_rate (
         // the sender or the receiver is the issuer.
 
         if (from != to && from != issue.account && to != issue.account)
-            return Rate (rate);
+            return rate;
     }
 
-    return Rate (QUALITY_ONE);
+    return parityRate;
 }
 
 bool
@@ -232,7 +212,7 @@ BasicTaker::flow_xrp_to_iou (
 {
     Flow f;
     f.order = order;
-    f.issuers.out = rate_out.multiply (f.order.out);
+    f.issuers.out = multiply (f.order.out, rate_out);
 
     log_flow ("flow_xrp_to_iou", f);
 
@@ -240,7 +220,7 @@ BasicTaker::flow_xrp_to_iou (
     if (owner_funds < f.issuers.out)
     {
         f.issuers.out = owner_funds;
-        f.order.out = rate_out.divide (f.issuers.out);
+        f.order.out = divide (f.issuers.out, rate_out);
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
         log_flow ("(clamped on owner balance)", f);
     }
@@ -250,7 +230,7 @@ BasicTaker::flow_xrp_to_iou (
     {
         f.order.out = remaining_.out;
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
-        f.issuers.out = rate_out.multiply (f.order.out);
+        f.issuers.out = multiply (f.order.out, rate_out);
         log_flow ("(clamped on taker output)", f);
     }
 
@@ -259,7 +239,7 @@ BasicTaker::flow_xrp_to_iou (
     {
         f.order.in = taker_funds;
         f.order.out = qual_div (f.order.in, quality, f.order.out);
-        f.issuers.out = rate_out.multiply (f.order.out);
+        f.issuers.out = multiply (f.order.out, rate_out);
         log_flow ("(clamped on taker funds)", f);
     }
 
@@ -269,7 +249,7 @@ BasicTaker::flow_xrp_to_iou (
     {
         f.order.in = remaining_.in;
         f.order.out = qual_div (f.order.in, quality, f.order.out);
-        f.issuers.out = rate_out.multiply (f.order.out);
+        f.issuers.out = multiply (f.order.out, rate_out);
         log_flow ("(clamped on taker input)", f);
     }
 
@@ -284,7 +264,7 @@ BasicTaker::flow_iou_to_xrp (
 {
     Flow f;
     f.order = order;
-    f.issuers.in = rate_in.multiply (f.order.in);
+    f.issuers.in = multiply (f.order.in, rate_in);
 
     log_flow ("flow_iou_to_xrp", f);
 
@@ -293,7 +273,7 @@ BasicTaker::flow_iou_to_xrp (
     {
         f.order.out = owner_funds;
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
-        f.issuers.in = rate_in.multiply (f.order.in);
+        f.issuers.in = multiply (f.order.in, rate_in);
         log_flow ("(clamped on owner funds)", f);
     }
 
@@ -305,7 +285,7 @@ BasicTaker::flow_iou_to_xrp (
         {
             f.order.out = remaining_.out;
             f.order.in = qual_mul (f.order.out, quality, f.order.in);
-            f.issuers.in = rate_in.multiply (f.order.in);
+            f.issuers.in = multiply (f.order.in, rate_in);
             log_flow ("(clamped on taker output)", f);
         }
     }
@@ -314,7 +294,7 @@ BasicTaker::flow_iou_to_xrp (
     if (remaining_.in < f.order.in)
     {
         f.order.in = remaining_.in;
-        f.issuers.in = rate_in.multiply (f.order.in);
+        f.issuers.in = multiply (f.order.in, rate_in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
         log_flow ("(clamped on taker input)", f);
     }
@@ -323,7 +303,7 @@ BasicTaker::flow_iou_to_xrp (
     if (taker_funds < f.issuers.in)
     {
         f.issuers.in = taker_funds;
-        f.order.in = rate_in.divide (f.issuers.in);
+        f.order.in = divide (f.issuers.in, rate_in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
         log_flow ("(clamped on taker funds)", f);
     }
@@ -339,8 +319,8 @@ BasicTaker::flow_iou_to_iou (
 {
     Flow f;
     f.order = order;
-    f.issuers.in = rate_in.multiply (f.order.in);
-    f.issuers.out = rate_out.multiply (f.order.out);
+    f.issuers.in = multiply (f.order.in, rate_in);
+    f.issuers.out = multiply (f.order.out, rate_out);
 
     log_flow ("flow_iou_to_iou", f);
 
@@ -348,9 +328,9 @@ BasicTaker::flow_iou_to_iou (
     if (owner_funds < f.issuers.out)
     {
         f.issuers.out = owner_funds;
-        f.order.out = rate_out.divide (f.issuers.out);
+        f.order.out = divide (f.issuers.out, rate_out);
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
-        f.issuers.in = rate_in.multiply (f.order.in);
+        f.issuers.in = multiply (f.order.in, rate_in);
         log_flow ("(clamped on owner funds)", f);
     }
 
@@ -359,8 +339,8 @@ BasicTaker::flow_iou_to_iou (
     {
         f.order.out = remaining_.out;
         f.order.in = qual_mul (f.order.out, quality, f.order.in);
-        f.issuers.out = rate_out.multiply (f.order.out);
-        f.issuers.in = rate_in.multiply (f.order.in);
+        f.issuers.out = multiply (f.order.out, rate_out);
+        f.issuers.in = multiply (f.order.in, rate_in);
         log_flow ("(clamped on taker output)", f);
     }
 
@@ -368,9 +348,9 @@ BasicTaker::flow_iou_to_iou (
     if (remaining_.in < f.order.in)
     {
         f.order.in = remaining_.in;
-        f.issuers.in = rate_in.multiply (f.order.in);
+        f.issuers.in = multiply (f.order.in, rate_in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
-        f.issuers.out = rate_out.multiply (f.order.out);
+        f.issuers.out = multiply (f.order.out, rate_out);
         log_flow ("(clamped on taker input)", f);
     }
 
@@ -378,9 +358,9 @@ BasicTaker::flow_iou_to_iou (
     if (taker_funds < f.issuers.in)
     {
         f.issuers.in = taker_funds;
-        f.order.in = rate_in.divide (f.issuers.in);
+        f.order.in = divide (f.issuers.in, rate_in);
         f.order.out = qual_div (f.order.in, quality, f.order.out);
-        f.issuers.out = rate_out.multiply (f.order.out);
+        f.issuers.out = multiply (f.order.out, rate_out);
         log_flow ("(clamped on taker funds)", f);
     }
 
@@ -503,7 +483,7 @@ BasicTaker::do_cross (
         // Adjust the second leg of the offer down:
         flow2.order.in = flow1.order.out;
         flow2.order.out = qual_div (flow2.order.in, quality2, flow2.order.out);
-        flow2.issuers.out = leg2_rate.multiply (flow2.order.out);
+        flow2.issuers.out = multiply (flow2.order.out, leg2_rate);
         log_flow ("Balancing: adjusted second leg down", flow2);
     }
     else if (flow1.order.out > flow2.order.in)
@@ -511,7 +491,7 @@ BasicTaker::do_cross (
         // Adjust the first leg of the offer down:
         flow1.order.out = flow2.order.in;
         flow1.order.in = qual_mul (flow1.order.out, quality1, flow1.order.in);
-        flow1.issuers.in = leg1_rate.multiply (flow1.order.in);
+        flow1.issuers.in = multiply (flow1.order.in, leg1_rate);
         log_flow ("Balancing: adjusted first leg down", flow2);
     }
 

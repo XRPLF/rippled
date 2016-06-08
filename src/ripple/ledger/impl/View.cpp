@@ -26,6 +26,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rate.h>
 #include <boost/algorithm/string.hpp>
 #include <cassert>
 
@@ -1377,7 +1378,7 @@ rippleTransferFee (ReadView const& view,
         if (QUALITY_ONE != uTransitRate)
         {
             STAmount saTransferTotal = multiply (
-                saAmount, amountFromRate (uTransitRate), saAmount.issue ());
+                saAmount, Rate (uTransitRate));
             STAmount saTransferFee = saTransferTotal - saAmount;
 
             JLOG (j.debug()) << "rippleTransferFee:" <<
@@ -1430,8 +1431,7 @@ rippleSend (ApplyView& view,
         if (QUALITY_ONE == rate)
             saActual = saAmount;
         else
-            saActual =
-                multiply (saAmount, amountFromRate (rate), saAmount.issue ());
+            saActual = multiply (saAmount, Rate(rate));
     }
 
     JLOG (j.debug()) << "rippleSend> " <<

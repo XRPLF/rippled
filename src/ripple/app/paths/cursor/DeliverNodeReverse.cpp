@@ -85,8 +85,8 @@ TER PathCursor::deliverNodeReverseImpl (
             || uOutAccountID == node().issue_.account;
         // Issuer sending or receiving.
 
-        const STAmount saOutFeeRate = hasFee
-            ? STAmount::saOne         // No fee.
+        auto const xferRate = hasFee
+            ? parityRate              // No fee.
             : node().transferRate_;   // Transfer rate of issuer.
 
         JLOG (j_.trace())
@@ -98,49 +98,47 @@ TER PathCursor::deliverNodeReverseImpl (
             << " node().issue_.account="
             << node().issue_.account
             << " node().transferRate_=" << node().transferRate_
-            << " saOutFeeRate=" << saOutFeeRate;
+            << " xferRate=" << xferRate;
 
         if (multiQuality_)
         {
             // In multi-quality mode, ignore rate.
         }
-        else if (!node().saRateMax)
+        else if (!node().rateMax.value)
         {
             // Set initial rate.
-            node().saRateMax = saOutFeeRate;
-
             JLOG (j_.trace())
-                << "deliverNodeReverse: Set initial rate:"
-                << " node().saRateMax=" << node().saRateMax
-                << " saOutFeeRate=" << saOutFeeRate;
+                << "deliverNodeReverse: Set initial rate: "
+                << " xferRate=" << xferRate;
+
+            node().rateMax = xferRate;
         }
-        else if (saOutFeeRate > node().saRateMax)
+        else if (xferRate > node().rateMax)
         {
             // Offer exceeds initial rate.
             JLOG (j_.trace())
-                << "deliverNodeReverse: Offer exceeds initial rate:"
-                << " node().saRateMax=" << node().saRateMax
-                << " saOutFeeRate=" << saOutFeeRate;
+                << "deliverNodeReverse: Offer exceeds initial rate: "
+                << " xferRate=" << xferRate;
 
             break;  // Done. Don't bother looking for smaller transferRates.
         }
-        else if (saOutFeeRate < node().saRateMax)
+        else if (xferRate < node().rateMax)
         {
             // Reducing rate. Additional offers will only considered for this
             // increment if they are at least this good.
             //
             // At this point, the overall rate is reducing, while the overall
-            // rate is not saOutFeeRate, it would be wrong to add anything with
-            // a rate above saOutFeeRate.
+            // rate is not xferRate, it would be wrong to add anything with
+            // a rate above xferRate.
             //
             // The rate would be reduced if the current offer was from the
             // issuer and the previous offer wasn't.
 
-            node().saRateMax   = saOutFeeRate;
-
             JLOG (j_.trace())
-                << "deliverNodeReverse: Reducing rate:"
-                << " node().saRateMax=" << node().saRateMax;
+                << "deliverNodeReverse: Reducing rate: "
+                << "xferRate=" << xferRate;
+
+            node().rateMax = xferRate;
         }
 
         // Amount that goes to the taker.
@@ -157,8 +155,8 @@ TER PathCursor::deliverNodeReverseImpl (
         // as a cost to taker.
         //
         // Round down: prefer liquidity rather than microscopic fees.
-        STAmount saOutPlusFees   = mulRound (
-            saOutPassAct, saOutFeeRate, saOutPassAct.issue (), false);
+        STAmount saOutPlusFees   = multiplyRound (
+            saOutPassAct, xferRate, false);
 
 
         // Offer out with fees.
@@ -180,8 +178,7 @@ TER PathCursor::deliverNodeReverseImpl (
 
             // Round up: prefer liquidity rather than microscopic fees. But,
             // limit by requested.
-            auto fee = divRound (saOutPlusFees, saOutFeeRate,
-                saOutPlusFees.issue (), true);
+            auto fee = divideRound (saOutPlusFees, xferRate, true);
             saOutPassAct = std::min (saOutPassReq, fee);
 
             JLOG (j_.trace())
@@ -280,8 +277,7 @@ TER PathCursor::deliverNodeReverseImpl (
             auto outputRequirements = divRound (saInPassAct, node ().saOfrRate,
                 node ().saTakerGets.issue (), true);
             saOutPassAct = std::min (saOutPassReq, outputRequirements);
-            auto outputFees = mulRound (saOutPassAct, saOutFeeRate,
-                saOutPassAct.issue (), true);
+            auto outputFees = multiplyRound (saOutPassAct, xferRate, true);
             saOutPlusFees   = std::min (node().saOfferFunds, outputFees);
 
             JLOG (j_.trace())

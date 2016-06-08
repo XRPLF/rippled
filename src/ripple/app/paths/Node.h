@@ -22,6 +22,7 @@
 
 #include <ripple/app/paths/NodeDirectory.h>
 #include <ripple/app/paths/Types.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
@@ -47,7 +48,7 @@ struct Node
     Issue issue_;               // --> Accounts: Receive and send, Offers: send.
                                 // --- For offer's next has currency out.
 
-    STAmount transferRate_;    // Transfer rate for issuer.
+    Rate transferRate_;        // Transfer rate for issuer.
 
     // Computed by Reverse.
     STAmount saRevRedeem;        // <-- Amount to redeem to next.
@@ -65,8 +66,7 @@ struct Node
                                  // fee.
 
     // For offers:
-
-    STAmount saRateMax;
+    Rate rateMax;
 
     // The nodes are partitioned into a buckets called "directories".
     //

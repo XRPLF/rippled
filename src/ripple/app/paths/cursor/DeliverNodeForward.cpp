@@ -88,7 +88,9 @@ TER PathCursor::deliverNodeForward (
             bool noFee = isXRP (previousNode().issue_)
                 || uInAccountID == previousNode().issue_.account
                 || node().offerOwnerAccount_ == previousNode().issue_.account;
-            const STAmount saInFeeRate = noFee ? STAmount::saOne
+
+            auto const xferRate = noFee
+                ? parityRate
                 : previousNode().transferRate_;  // Transfer rate of issuer.
 
             // First calculate assuming no output fees: saInPassAct,
@@ -111,8 +113,8 @@ TER PathCursor::deliverNodeForward (
                 true);
 
             // Offer maximum in with fees.
-            auto saInTotal = mulRound (saInFunded, saInFeeRate,
-                saInFunded.issue (), true);
+            auto saInTotal = multiplyRound (
+                saInFunded, xferRate, true);
             auto saInRemaining = saInReq - saInAct - saInFees;
 
             if (saInRemaining < zero)
@@ -123,8 +125,8 @@ TER PathCursor::deliverNodeForward (
 
             // In without fees.
             auto saInPassAct = std::min (
-                node().saTakerPays, divRound (
-                    saInSum, saInFeeRate, saInSum.issue (), true));
+                node().saTakerPays,
+                divideRound (saInSum, xferRate, true));
 
             // Out limited by in remaining.
             auto outPass = divRound (
@@ -247,8 +249,8 @@ TER PathCursor::deliverNodeForward (
                     auto inPassAct = mulRound (
                         saOutPassAct, node().saOfrRate, saInReq.issue (), true);
                     saInPassAct = std::min (node().saTakerPays, inPassAct);
-                    auto inPassFees = mulRound (
-                        saInPassAct, saInFeeRate, saInPassAct.issue (), true);
+                    auto inPassFees = multiplyRound (
+                        saInPassAct, xferRate, true);
                     saInPassFees    = std::min (saInPassFeesMax, inPassFees);
                 }
 
