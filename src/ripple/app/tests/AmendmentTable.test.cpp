@@ -24,6 +24,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
@@ -32,6 +33,12 @@
 
 namespace ripple
 {
+
+namespace detail {
+extern
+std::vector<std::string>
+supportedAmendments ();
+}
 
 class AmendmentTable_test final : public beast::unit_test::suite
 {
@@ -731,6 +738,14 @@ public:
         }
     }
 
+    void
+    testSupportedAmendments ()
+    {
+        for (auto const& amend : detail::supportedAmendments ())
+            expect (amend.substr (0, 64) ==
+                to_string (feature (amend.substr (65))));
+    }
+
     void run ()
     {
         testConstruct();
@@ -742,6 +757,7 @@ public:
         testVoteEnable ();
         testDetectMajority ();
         testLostMajority ();
+        testSupportedAmendments ();
     }
 };
 
