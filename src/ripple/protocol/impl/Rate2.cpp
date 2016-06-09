@@ -39,6 +39,8 @@ multiply (
     STAmount const& amount,
     Rate const& rate)
 {
+    assert (rate.value != 0);
+
     if (rate == parityRate)
         return amount;
 
@@ -54,6 +56,8 @@ multiplyRound (
     Rate const& rate,
     bool roundUp)
 {
+    assert (rate.value != 0);
+
     if (rate == parityRate)
         return amount;
 
@@ -69,6 +73,8 @@ divide (
     STAmount const& amount,
     Rate const& rate)
 {
+    assert (rate.value != 0);
+
     if (rate == parityRate)
         return amount;
 
@@ -84,6 +90,8 @@ divideRound (
     Rate const& rate,
     bool roundUp)
 {
+    assert (rate.value != 0);
+
     if (rate == parityRate)
         return amount;
 

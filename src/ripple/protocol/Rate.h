@@ -32,7 +32,7 @@ namespace ripple {
 
     Transfer rates are specified as fractions of 1 billion.
     For example, a transfer rate of 1% is represented as
-    1010000000.
+    1,010,000,000.
 */
 struct Rate
     : private boost::totally_ordered <Rate>
