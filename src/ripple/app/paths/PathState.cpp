@@ -366,7 +366,6 @@ TER PathState::pushNode (
         else
             node.issue_.account = backNode.issue_.account;
 
-        node.rateMax = 0;
         node.saRevDeliver = STAmount (node.issue_);
         node.saFwdDeliver = node.saRevDeliver;
 

@@ -24,6 +24,7 @@
 #include <ripple/app/paths/Types.h>
 #include <ripple/protocol/Rate.h>
 #include <ripple/protocol/UintTypes.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace path {
@@ -66,7 +67,7 @@ struct Node
                                  // fee.
 
     // For offers:
-    Rate rateMax;
+    boost::optional<Rate> rateMax;
 
     // The nodes are partitioned into a buckets called "directories".
     //
