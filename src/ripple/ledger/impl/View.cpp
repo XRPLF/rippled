@@ -26,7 +26,6 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Rate.h>
 #include <boost/algorithm/string.hpp>
 #include <cassert>
 
@@ -329,20 +328,19 @@ forEachItemAfter (ReadView const& view, AccountID const& id,
     }
 }
 
-std::uint32_t
+Rate
 rippleTransferRate (ReadView const& view,
     AccountID const& issuer)
 {
     auto const sle = view.read(keylet::account(issuer));
-    std::uint32_t quality;
+
     if (sle && sle->isFieldPresent (sfTransferRate))
-        quality = sle->getFieldU32 (sfTransferRate);
-    else
-        quality = QUALITY_ONE;
-    return quality;
+        return { sle->getFieldU32 (sfTransferRate) };
+
+    return parityRate;
 }
 
-std::uint32_t
+Rate
 rippleTransferRate (ReadView const& view,
     AccountID const& uSenderID,
         AccountID const& uReceiverID,
@@ -352,8 +350,8 @@ rippleTransferRate (ReadView const& view,
     // or to the issuer of the currency no
     // fees are assessed.
     return (uSenderID == issuer || uReceiverID == issuer)
-           ? QUALITY_ONE
-           : rippleTransferRate(view, issuer);
+       ? parityRate
+       : rippleTransferRate(view, issuer);
 }
 
 bool

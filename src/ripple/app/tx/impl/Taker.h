@@ -134,8 +134,8 @@ public:
 
     BasicTaker (
         CrossType cross_type, AccountID const& account, Amounts const& amount,
-        Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
-        std::uint32_t rate_out, beast::Journal journal = beast::Journal ());
+        Quality const& quality, std::uint32_t flags, Rate const& rate_in,
+        Rate const& rate_out, beast::Journal journal = beast::Journal ());
 
     virtual ~BasicTaker () = default;
 
@@ -270,7 +270,7 @@ public:
 
 private:
     static
-    std::uint32_t
+    Rate
     calculateRate (ApplyView const& view,
         AccountID const& issuer,
             AccountID const& account);

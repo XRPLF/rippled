@@ -3050,7 +3050,7 @@ void NetworkOPsImp::getBookPage (
     MetaView  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);
 
-    auto transferRate = rippleTransferRate (lesActive, book.out.account);
+    auto transferRate = rippleTransferRate(lesActive, book.out.account);
 
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);

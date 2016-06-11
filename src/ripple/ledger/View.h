@@ -25,6 +25,7 @@
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STObject.h>
@@ -90,11 +91,11 @@ forEachItemAfter (ReadView const& view, AccountID const& id,
         unsigned int limit, std::function<
             bool (std::shared_ptr<SLE const> const&)> f);
 
-std::uint32_t
+Rate
 rippleTransferRate (ReadView const& view,
     AccountID const& issuer);
 
-std::uint32_t
+Rate
 rippleTransferRate (ReadView const& view,
     AccountID const& uSenderID,
         AccountID const& uReceiverID,

@@ -36,8 +36,8 @@ format_amount (STAmount const& amount)
 
 BasicTaker::BasicTaker (
         CrossType cross_type, AccountID const& account, Amounts const& amount,
-        Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
-        std::uint32_t rate_out, beast::Journal journal)
+        Quality const& quality, std::uint32_t flags, Rate const& rate_in,
+        Rate const& rate_out, beast::Journal journal)
     : account_ (account)
     , quality_ (quality)
     , threshold_ (quality_)
@@ -759,15 +759,15 @@ Taker::cross (Offer& leg1, Offer& leg2)
     return fill (ret.first, leg1, ret.second, leg2);
 }
 
-std::uint32_t
+Rate
 Taker::calculateRate (
     ApplyView const& view,
         AccountID const& issuer,
             AccountID const& account)
 {
     return isXRP (issuer) || (account == issuer)
-        ? QUALITY_ONE
-        : rippleTransferRate (view, issuer);
+        ? parityRate
+        : Rate{rippleTransferRate (view, issuer)};
 }
 
 } // ripple

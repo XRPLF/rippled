@@ -260,7 +260,7 @@ forEachOffer (
     {
         if (isXRP (id) || id == dst)
             return QUALITY_ONE;
-        return rippleTransferRate (sb, id);
+        return rippleTransferRate (sb, id).value;
     };
 
     std::uint32_t const trIn =
