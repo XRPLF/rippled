@@ -2852,7 +2852,7 @@ void NetworkOPsImp::getBookPage (
     unsigned int    uBookEntry;
     STAmount        saDirRate;
 
-    auto uTransferRate = rippleTransferRate(view, book.out.account);
+    auto transferRate = rippleTransferRate(view, book.out.account);
     auto viewJ = app_.journal ("View");
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
@@ -2953,7 +2953,7 @@ void NetworkOPsImp::getBookPage (
                 STAmount saOwnerFundsLimit;
                 Rate offerRate;
 
-                if (uTransferRate != QUALITY_ONE
+                if (transferRate != parityRate
                     // Have a tranfer fee.
                     && uTakerID != book.out.account
                     // Not taking offers of own IOUs.
@@ -2961,7 +2961,7 @@ void NetworkOPsImp::getBookPage (
                     // Offer owner not issuing ownfunds
                 {
                     // Need to charge a transfer fee to offer owner.
-                    offerRate = uTransferRate;
+                    offerRate = transferRate;
                     saOwnerFundsLimit = divide (
                         saOwnerFunds, offerRate);
                 }
@@ -3050,7 +3050,7 @@ void NetworkOPsImp::getBookPage (
     MetaView  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);
 
-    auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
+    auto transferRate = rippleTransferRate (lesActive, book.out.account);
 
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);
@@ -3112,10 +3112,10 @@ void NetworkOPsImp::getBookPage (
 
             STAmount    saTakerGetsFunded;
             STAmount    saOwnerFundsLimit;
-            std::uint32_t uOfferRate;
+            Rate offerRate;
 
 
-            if (uTransferRate != QUALITY_ONE
+            if (transferRate != parityRate
                 // Have a tranfer fee.
                 && uTakerID != book.out.account
                 // Not taking offers of own IOUs.
@@ -3123,13 +3123,12 @@ void NetworkOPsImp::getBookPage (
                 // Offer owner not issuing ownfunds
             {
                 // Need to charge a transfer fee to offer owner.
-                uOfferRate = uTransferRate;
-                saOwnerFundsLimit = divide (
-                    saOwnerFunds, Rate(uOfferRate));
+                offerRate = transferRate;
+                saOwnerFundsLimit = divide (saOwnerFunds, offerRate);
             }
             else
             {
-                uOfferRate          = QUALITY_ONE;
+                offerRate          = parityRate;
                 saOwnerFundsLimit   = saOwnerFunds;
             }
 
@@ -3152,11 +3151,11 @@ void NetworkOPsImp::getBookPage (
                         jvOffer[jss::taker_pays_funded]);
             }
 
-            STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
+            STAmount saOwnerPays = (parityRate == offerRate)
                 ? saTakerGetsFunded
                 : std::min (
                     saOwnerFunds,
-                    multiply (saTakerGetsFunded, Rate(uOfferRate)));
+                    multiply (saTakerGetsFunded, offerRate));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 

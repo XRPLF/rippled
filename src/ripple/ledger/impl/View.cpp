@@ -1426,11 +1426,8 @@ rippleSend (ApplyView& view,
     }
     else
     {
-        auto const rate = rippleTransferRate (view, issuer);
-        if (QUALITY_ONE == rate)
-            saActual = saAmount;
-        else
-            saActual = multiply (saAmount, Rate(rate));
+        saActual = multiply (saAmount,
+            rippleTransferRate (view, issuer));
     }
 
     JLOG (j.debug()) << "rippleSend> " <<
