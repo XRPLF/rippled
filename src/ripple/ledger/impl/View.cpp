@@ -1368,27 +1368,26 @@ rippleTransferFee (ReadView const& view,
     AccountID const& from,
     AccountID const& to,
     AccountID const& issuer,
-    STAmount const& saAmount,
+    STAmount const& amount,
     beast::Journal j)
 {
     if (from != issuer && to != issuer)
     {
-        std::uint32_t uTransitRate = rippleTransferRate (view, issuer);
+        Rate const rate = rippleTransferRate (view, issuer);
 
-        if (QUALITY_ONE != uTransitRate)
+        if (parityRate != rate)
         {
-            STAmount saTransferTotal = multiply (
-                saAmount, Rate (uTransitRate));
-            STAmount saTransferFee = saTransferTotal - saAmount;
+            auto const fee = multiply (amount, rate) - amount;
 
             JLOG (j.debug()) << "rippleTransferFee:" <<
-                " saTransferFee=" << saTransferFee.getFullText ();
+                " amount=" << amount.getFullText () <<
+                " fee=" << fee.getFullText ();
 
-            return saTransferFee;
+            return fee;
         }
     }
 
-    return saAmount.zeroed();
+    return amount.zeroed();
 }
 
 // Send regardless of limits.
