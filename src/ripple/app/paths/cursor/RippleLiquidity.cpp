@@ -49,8 +49,8 @@ namespace path {
 
 void rippleLiquidity (
     RippleCalc& rippleCalc,
-    std::uint32_t const uQualityIn,
-    std::uint32_t const uQualityOut,
+    Rate const& qualityIn,
+    Rate const& qualityOut,
     STAmount const& saPrvReq,   // --> in limit including fees, <0 = unlimited
     STAmount const& saCurReq,   // --> out limit
     STAmount& saPrvAct,  // <-> in limit including achieved so far: <-- <= -->
@@ -59,8 +59,8 @@ void rippleLiquidity (
 {
     JLOG (rippleCalc.j_.trace())
         << "rippleLiquidity>"
-        << " uQualityIn=" << uQualityIn
-        << " uQualityOut=" << uQualityOut
+        << " qualityIn=" << qualityIn
+        << " qualityOut=" << qualityOut
         << " saPrvReq=" << saPrvReq
         << " saCurReq=" << saCurReq
         << " saPrvAct=" << saPrvAct
@@ -94,7 +94,7 @@ void rippleLiquidity (
     if (saPrv == zero || saCur == zero)
         return;
 
-    if (uQualityIn >= uQualityOut)
+    if (qualityIn >= qualityOut)
     {
         // You're getting better quality than you asked for, so no fee.
         JLOG (rippleCalc.j_.trace()) << "rippleLiquidity: No fees";
@@ -129,22 +129,18 @@ void rippleLiquidity (
         // If the quality is worse than the previous
         JLOG (rippleCalc.j_.trace()) << "rippleLiquidity: Fee";
 
-        std::uint64_t uRate = getRate (
-            STAmount (uQualityOut), STAmount (uQualityIn));
+        std::uint64_t const uRate = getRate (
+            STAmount (qualityOut.value),
+            STAmount (qualityIn.value));
 
         // If the next rate is at least as good as the current rate, process.
         if (!uRateMax || uRate <= uRateMax)
         {
-            auto currency = saCur.getCurrency ();
-            auto uCurIssuerID = saCur.getIssuer ();
-
             // current actual = current request * (quality out / quality in).
-            auto numerator = mulRound (
-                saCur, uQualityOut, {currency, uCurIssuerID}, true);
+            auto numerator = multiplyRound (saCur, qualityOut, true);
             // True means "round up" to get best flow.
 
-            STAmount saCurIn = divRound (
-                numerator, uQualityIn, {currency, uCurIssuerID}, true);
+            STAmount saCurIn = divideRound (numerator, qualityIn, true);
 
             JLOG (rippleCalc.j_.trace())
                 << "rippleLiquidity:"
@@ -170,13 +166,12 @@ void rippleLiquidity (
                 //                  * (quality in / quality out).
                 // This is inverted compared to the code above because we're
                 // going the other way
-
-                Issue issue{currency, uCurIssuerID};
-                auto numerator = mulRound (saPrv, uQualityIn, issue, true);
+                auto numerator = multiplyRound (saPrv,
+                    qualityIn, saCur.issue(), true);
                 // A part of current. All of previous. (Cur is the driver
                 // variable.)
-                STAmount saCurOut = divRound (
-                    numerator, uQualityOut, issue, true);
+                STAmount saCurOut = divideRound (numerator,
+                    qualityOut, saCur.issue(), true);
 
                 JLOG (rippleCalc.j_.trace())
                     << "rippleLiquidity:4: saCurReq=" << saCurReq;
@@ -191,8 +186,8 @@ void rippleLiquidity (
 
     JLOG (rippleCalc.j_.trace())
         << "rippleLiquidity<"
-        << " uQualityIn=" << uQualityIn
-        << " uQualityOut=" << uQualityOut
+        << " qualityIn=" << qualityIn
+        << " qualityOut=" << qualityOut
         << " saPrvReq=" << saPrvReq
         << " saCurReq=" << saCurReq
         << " saPrvAct=" << saPrvAct

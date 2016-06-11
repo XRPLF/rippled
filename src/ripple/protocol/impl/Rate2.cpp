@@ -69,6 +69,27 @@ multiplyRound (
 }
 
 STAmount
+multiplyRound (
+    STAmount const& amount,
+    Rate const& rate,
+    Issue const& issue,
+    bool roundUp)
+{
+    assert (rate.value != 0);
+
+    if (rate == parityRate)
+    {
+        return amount;
+    }
+
+    return mulRound (
+        amount,
+        detail::as_amount(rate),
+        issue,
+        roundUp);
+}
+
+STAmount
 divide (
     STAmount const& amount,
     Rate const& rate)
@@ -99,6 +120,25 @@ divideRound (
         amount,
         detail::as_amount(rate),
         amount.issue(),
+        roundUp);
+}
+
+STAmount
+divideRound (
+    STAmount const& amount,
+    Rate const& rate,
+    Issue const& issue,
+    bool roundUp)
+{
+    assert (rate.value != 0);
+
+    if (rate == parityRate)
+        return amount;
+
+    return divRound (
+        amount,
+        detail::as_amount(rate),
+        issue,
         roundUp);
 }
 

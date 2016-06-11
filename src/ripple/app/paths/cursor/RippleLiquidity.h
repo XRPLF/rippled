@@ -24,14 +24,15 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/Tuning.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Rate.h>
 
 namespace ripple {
 namespace path {
 
 void rippleLiquidity (
     RippleCalc&,
-    const std::uint32_t uQualityIn,
-    const std::uint32_t uQualityOut,
+    Rate const& qualityIn,
+    Rate const& qualityOut,
     STAmount const& saPrvReq,
     STAmount const& saCurReq,
     STAmount& saPrvAct,

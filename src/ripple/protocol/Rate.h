@@ -88,6 +88,13 @@ multiplyRound (
     bool roundUp);
 
 STAmount
+multiplyRound (
+    STAmount const& amount,
+    Rate const& rate,
+    Issue const& issue,
+    bool roundUp);
+
+STAmount
 divide (
     STAmount const& amount,
     Rate const& rate);
@@ -96,6 +103,13 @@ STAmount
 divideRound (
     STAmount const& amount,
     Rate const& rate,
+    bool roundUp);
+
+STAmount
+divideRound (
+    STAmount const& amount,
+    Rate const& rate,
+    Issue const& issue,
     bool roundUp);
 
 /** A transfer rate signifying a 1:1 exchange */

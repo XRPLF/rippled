@@ -55,13 +55,13 @@ TER PathCursor::forwardLiquidityForAccount () const
     AccountID const& nextAccountID =
             nextNode().isAccount() ? nextNode().account_ : node().account_;
 
-    std::uint32_t uQualityIn = nodeIndex_
+    Rate const qualityIn = nodeIndex_
         ? quality_in (view(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
         : QUALITY_ONE;
-    std::uint32_t  uQualityOut = (nodeIndex_ == lastNodeIndex)
+    Rate const qualityOut = (nodeIndex_ == lastNodeIndex)
         ? quality_out (view(),
             node().account_,
             nextAccountID,
@@ -153,11 +153,11 @@ TER PathCursor::forwardLiquidityForAccount () const
             // Last node. Accept all funds. Calculate amount actually to credit.
 
             auto& saCurReceive = pathState_.outPass();
-            STAmount saIssueCrd = uQualityIn >= QUALITY_ONE
+            STAmount saIssueCrd = qualityIn >= parityRate
                     ? previousNode().saFwdIssue  // No fee.
                     : multiplyRound (
                           previousNode().saFwdIssue,
-                          Rate (uQualityIn),
+                          qualityIn,
                           true); // Amount to credit.
 
             // Amount to credit. Credit for less than received as a surcharge.
@@ -195,8 +195,8 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate : 1.0 : quality out
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
-                    uQualityOut,
+                    parityRate,
+                    qualityOut,
                     previousNode().saFwdRedeem,
                     node().saRevRedeem,
                     saPrvRedeemAct,
@@ -213,8 +213,8 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate: quality in : quality out
                 rippleLiquidity (
                     rippleCalc_,
-                    uQualityIn,
-                    uQualityOut,
+                    qualityIn,
+                    qualityOut,
                     previousNode().saFwdIssue,
                     node().saRevRedeem,
                     saPrvIssueAct,
@@ -233,7 +233,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate : 1.0 : transfer_rate
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
+                    parityRate,
                     rippleTransferRate (view(), node().account_),
                     previousNode().saFwdRedeem,
                     node().saRevIssue,
@@ -253,8 +253,8 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate: quality in : 1.0
                 rippleLiquidity (
                     rippleCalc_,
-                    uQualityIn,
-                    QUALITY_ONE,
+                    qualityIn,
+                    parityRate,
                     previousNode().saFwdIssue,
                     node().saRevIssue,
                     saPrvIssueAct,
@@ -302,7 +302,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // XXX Is having the transfer rate here correct?
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
+                    parityRate,
                     rippleTransferRate (view(), node().account_),
                     previousNode().saFwdRedeem,
                     node().saRevDeliver,
@@ -320,8 +320,8 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate: quality in : 1.0
                 rippleLiquidity (
                     rippleCalc_,
-                    uQualityIn,
-                    QUALITY_ONE,
+                    qualityIn,
+                    parityRate,
                     previousNode().saFwdIssue,
                     node().saRevDeliver,
                     saPrvIssueAct,
@@ -427,8 +427,8 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate : 1.0 : quality out
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
-                    uQualityOut,
+                    parityRate,
+                    qualityOut,
                     previousNode().saFwdDeliver,
                     node().saRevRedeem,
                     saPrvDeliverAct,
@@ -448,7 +448,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 // Rate : 1.0 : transfer_rate
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
+                    parityRate,
                     rippleTransferRate (view(), node().account_),
                     previousNode().saFwdDeliver,
                     node().saRevIssue,
@@ -479,7 +479,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             // Rate : 1.0 : transfer_rate
             rippleLiquidity (
                 rippleCalc_,
-                QUALITY_ONE,
+                parityRate,
                 rippleTransferRate (view(), node().account_),
                 previousNode().saFwdDeliver,
                 node().saRevDeliver,
