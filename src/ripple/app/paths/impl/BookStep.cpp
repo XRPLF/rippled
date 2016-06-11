@@ -256,18 +256,20 @@ forEachOffer (
     // Charge a fee even if the owner is the same as the issuer
     // (the old code does not charge a fee)
     // Calculate amount that goes to the taker and the amount charged the offer owner
-    auto transferRate = [&](AccountID const& id)->std::uint32_t
+    auto rate = [&](AccountID const& id)->std::uint32_t
     {
         if (isXRP (id) || id == dst)
             return QUALITY_ONE;
-        return rippleTransferRate (sb, id).value;
+        return transferRate (sb, id).value;
     };
 
-    std::uint32_t const trIn =
-            prevStepRedeems ? transferRate (book.in.account) : QUALITY_ONE;
+    std::uint32_t const trIn = prevStepRedeems
+        ? rate (book.in.account)
+        : QUALITY_ONE;
     // Always charge the transfer fee, even if the owner is the issuer
-    std::uint32_t const trOut =
-        ownerPaysTransferFee ? transferRate (book.out.account) : QUALITY_ONE;
+    std::uint32_t const trOut = ownerPaysTransferFee
+        ? rate (book.out.account)
+        : QUALITY_ONE;
 
     typename FlowOfferStream<TAmtIn, TAmtOut>::StepCounter counter (limit, j);
     FlowOfferStream<TAmtIn, TAmtOut> offers (

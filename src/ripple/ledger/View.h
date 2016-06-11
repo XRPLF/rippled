@@ -92,14 +92,8 @@ forEachItemAfter (ReadView const& view, AccountID const& id,
             bool (std::shared_ptr<SLE const> const&)> f);
 
 Rate
-rippleTransferRate (ReadView const& view,
+transferRate (ReadView const& view,
     AccountID const& issuer);
-
-Rate
-rippleTransferRate (ReadView const& view,
-    AccountID const& uSenderID,
-        AccountID const& uReceiverID,
-            AccountID const& issuer);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory

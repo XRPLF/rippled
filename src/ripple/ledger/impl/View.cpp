@@ -329,29 +329,15 @@ forEachItemAfter (ReadView const& view, AccountID const& id,
 }
 
 Rate
-rippleTransferRate (ReadView const& view,
+transferRate (ReadView const& view,
     AccountID const& issuer)
 {
     auto const sle = view.read(keylet::account(issuer));
 
     if (sle && sle->isFieldPresent (sfTransferRate))
-        return { sle->getFieldU32 (sfTransferRate) };
+        return Rate{ sle->getFieldU32 (sfTransferRate) };
 
     return parityRate;
-}
-
-Rate
-rippleTransferRate (ReadView const& view,
-    AccountID const& uSenderID,
-        AccountID const& uReceiverID,
-            AccountID const& issuer)
-{
-    // If calculating the transfer rate from
-    // or to the issuer of the currency no
-    // fees are assessed.
-    return (uSenderID == issuer || uReceiverID == issuer)
-       ? parityRate
-       : rippleTransferRate(view, issuer);
 }
 
 bool
@@ -1371,7 +1357,7 @@ rippleTransferFee (ReadView const& view,
 {
     if (from != issuer && to != issuer)
     {
-        Rate const rate = rippleTransferRate (view, issuer);
+        Rate const rate = transferRate (view, issuer);
 
         if (parityRate != rate)
         {
@@ -1425,7 +1411,7 @@ rippleSend (ApplyView& view,
     else
     {
         saActual = multiply (saAmount,
-            rippleTransferRate (view, issuer));
+            transferRate (view, issuer));
     }
 
     JLOG (j.debug()) << "rippleSend> " <<

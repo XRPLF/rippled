@@ -768,7 +768,7 @@ Taker::calculateRate (
 {
     return isXRP (issuer) || (account == issuer)
         ? parityRate
-        : Rate{rippleTransferRate (view, issuer)};
+        : transferRate (view, issuer);
 }
 
 } // ripple

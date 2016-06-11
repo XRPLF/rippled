@@ -2852,7 +2852,7 @@ void NetworkOPsImp::getBookPage (
     unsigned int    uBookEntry;
     STAmount        saDirRate;
 
-    auto transferRate = rippleTransferRate(view, book.out.account);
+    auto const rate = transferRate(view, book.out.account);
     auto viewJ = app_.journal ("View");
 
     unsigned int left (iLimit == 0 ? 300 : iLimit);
@@ -2953,7 +2953,7 @@ void NetworkOPsImp::getBookPage (
                 STAmount saOwnerFundsLimit;
                 Rate offerRate;
 
-                if (transferRate != parityRate
+                if (rate != parityRate
                     // Have a tranfer fee.
                     && uTakerID != book.out.account
                     // Not taking offers of own IOUs.
@@ -2961,7 +2961,7 @@ void NetworkOPsImp::getBookPage (
                     // Offer owner not issuing ownfunds
                 {
                     // Need to charge a transfer fee to offer owner.
-                    offerRate = transferRate;
+                    offerRate = rate;
                     saOwnerFundsLimit = divide (
                         saOwnerFunds, offerRate);
                 }
@@ -3050,7 +3050,7 @@ void NetworkOPsImp::getBookPage (
     MetaView  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);
 
-    auto transferRate = rippleTransferRate(lesActive, book.out.account);
+    auto const rate = transferRate(lesActive, book.out.account);
 
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);
@@ -3115,7 +3115,7 @@ void NetworkOPsImp::getBookPage (
             Rate offerRate;
 
 
-            if (transferRate != parityRate
+            if (rate != parityRate
                 // Have a tranfer fee.
                 && uTakerID != book.out.account
                 // Not taking offers of own IOUs.
@@ -3123,7 +3123,7 @@ void NetworkOPsImp::getBookPage (
                 // Offer owner not issuing ownfunds
             {
                 // Need to charge a transfer fee to offer owner.
-                offerRate = transferRate;
+                offerRate = rate;
                 saOwnerFundsLimit = divide (saOwnerFunds, offerRate);
             }
             else

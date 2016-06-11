@@ -235,7 +235,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     parityRate,
-                    rippleTransferRate (view(), node().account_),
+                    transferRate (view(), node().account_),
                     previousNode().saFwdRedeem,
                     node().saRevIssue,
                     saPrvRedeemAct,
@@ -304,7 +304,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     parityRate,
-                    rippleTransferRate (view(), node().account_),
+                    transferRate (view(), node().account_),
                     previousNode().saFwdRedeem,
                     node().saRevDeliver,
                     saPrvRedeemAct,
@@ -450,7 +450,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     parityRate,
-                    rippleTransferRate (view(), node().account_),
+                    transferRate (view(), node().account_),
                     previousNode().saFwdDeliver,
                     node().saRevIssue,
                     saPrvDeliverAct,
@@ -481,7 +481,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             rippleLiquidity (
                 rippleCalc_,
                 parityRate,
-                rippleTransferRate (view(), node().account_),
+                transferRate (view(), node().account_),
                 previousNode().saFwdDeliver,
                 node().saRevDeliver,
                 saPrvDeliverAct,

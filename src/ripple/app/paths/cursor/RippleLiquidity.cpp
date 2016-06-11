@@ -223,7 +223,7 @@ rippleQuality (
             if (quality == 0)
                 quality = 1;
 
-            return { quality };
+            return Rate{ quality };
         }
     }
 

@@ -547,7 +547,7 @@ DirectStepI::qualities (
         // Charge a transfer rate when issuing and previous step redeems
         auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, fwd);
         std::uint32_t const srcQOut = prevStepRedeems
-            ? rippleTransferRate (sb, src_).value
+            ? transferRate (sb, src_).value
             : QUALITY_ONE;
         return std::make_pair(
             srcQOut,

@@ -41,16 +41,10 @@ struct Rate
 
     Rate () = default;
 
+    explicit
     Rate (std::uint32_t rate)
         : value (rate)
     {
-    }
-
-    Rate&
-    operator=(std::uint32_t rate)
-    {
-        value = rate;
-        return *this;
     }
 };
 
