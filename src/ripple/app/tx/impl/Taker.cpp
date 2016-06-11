@@ -79,14 +79,15 @@ BasicTaker::effective_rate (
     Rate const& rate, Issue const &issue,
     AccountID const& from, AccountID const& to)
 {
-    if (rate != QUALITY_ONE)
+    // If there's a transfer rate, the issuer is not involved
+    // and the sender isn't the same as the recipient, return
+    // the actual transfer rate.
+    if (rate != parityRate &&
+        from != to &&
+        from != issue.account &&
+        to != issue.account)
     {
-        // We ignore the transfer if the sender is also the recipient since no
-        // actual transfer takes place in that case. We also ignore if either
-        // the sender or the receiver is the issuer.
-
-        if (from != to && from != issue.account && to != issue.account)
-            return rate;
+        return rate;
     }
 
     return parityRate;
