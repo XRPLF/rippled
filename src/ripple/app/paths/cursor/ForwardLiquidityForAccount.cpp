@@ -55,18 +55,19 @@ TER PathCursor::forwardLiquidityForAccount () const
     AccountID const& nextAccountID =
             nextNode().isAccount() ? nextNode().account_ : node().account_;
 
-    Rate const qualityIn = nodeIndex_
+    auto const qualityIn = nodeIndex_
         ? quality_in (view(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
-        : QUALITY_ONE;
-    Rate const qualityOut = (nodeIndex_ == lastNodeIndex)
+        : parityRate;
+
+    auto const qualityOut = (nodeIndex_ == lastNodeIndex)
         ? quality_out (view(),
             node().account_,
             nextAccountID,
             node().issue_.currency)
-        : QUALITY_ONE;
+        : parityRate;
 
     // When looking backward (prv) for req we care about what we just
     // calculated: use fwd.

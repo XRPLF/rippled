@@ -39,14 +39,14 @@ void rippleLiquidity (
     STAmount& saCurAct,
     std::uint64_t& uRateMax);
 
-std::uint32_t
+Rate
 quality_in (
     ReadView const& view,
     AccountID const& uToAccountID,
     AccountID const& uFromAccountID,
     Currency const& currency);
 
-std::uint32_t
+Rate
 quality_out (
     ReadView const& view,
     AccountID const& uToAccountID,

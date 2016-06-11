@@ -195,7 +195,7 @@ void rippleLiquidity (
 }
 
 static
-std::uint32_t
+Rate
 rippleQuality (
     ReadView const& view,
     AccountID const& destination,
@@ -204,32 +204,33 @@ rippleQuality (
     SField const& sfLow,
     SField const& sfHigh)
 {
-    std::uint32_t uQuality (QUALITY_ONE);
+    if (destination == source)
+        return parityRate;
 
-    if (destination != source)
+    auto const sle = view.read(
+        keylet::line(destination, source, currency));
+
+    if (sle)
     {
-        auto const sleRippleState = view.read(
-            keylet::line(destination, source, currency));
+        auto const& sfField = destination < source ? sfLow : sfHigh;
 
-        // we should be able to assert(sleRippleState) here
-
-        if (sleRippleState)
+        if (sle->isFieldPresent (sfField))
         {
-            auto const& sfField = destination < source ? sfLow : sfHigh;
+            auto quality = sle->getFieldU32 (sfField);
 
-            uQuality = sleRippleState->isFieldPresent (sfField)
-                ? sleRippleState->getFieldU32 (sfField)
-                : QUALITY_ONE;
+            // Avoid divide by zero. NIKB CHECKME: if we
+            // allow zero qualities now, then we shouldn't.
+            if (quality == 0)
+                quality = 1;
 
-            if (!uQuality)
-                uQuality = 1; // Avoid divide by zero.
+            return { quality };
         }
     }
 
-    return uQuality;
+    return parityRate;
 }
 
-std::uint32_t
+Rate
 quality_in (
     ReadView const& view,
     AccountID const& uToAccountID,
@@ -240,7 +241,7 @@ quality_in (
         sfLowQualityIn, sfHighQualityIn);
 }
 
-std::uint32_t
+Rate
 quality_out (
     ReadView const& view,
     AccountID const& uToAccountID,
