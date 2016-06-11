@@ -2949,10 +2949,9 @@ void NetworkOPsImp::getBookPage (
 
                 Json::Value jvOffer = sleOffer->getJson (0);
 
-                STAmount    saTakerGetsFunded;
-                STAmount    saOwnerFundsLimit;
-                std::uint32_t uOfferRate;
-
+                STAmount saTakerGetsFunded;
+                STAmount saOwnerFundsLimit;
+                Rate offerRate;
 
                 if (uTransferRate != QUALITY_ONE
                     // Have a tranfer fee.
@@ -2962,13 +2961,13 @@ void NetworkOPsImp::getBookPage (
                     // Offer owner not issuing ownfunds
                 {
                     // Need to charge a transfer fee to offer owner.
-                    uOfferRate          = uTransferRate;
-                    saOwnerFundsLimit   = divide (
-                        saOwnerFunds, Rate(uOfferRate));
+                    offerRate = uTransferRate;
+                    saOwnerFundsLimit = divide (
+                        saOwnerFunds, offerRate);
                 }
                 else
                 {
-                    uOfferRate          = QUALITY_ONE;
+                    offerRate = parityRate;
                     saOwnerFundsLimit   = saOwnerFunds;
                 }
 
@@ -2981,7 +2980,7 @@ void NetworkOPsImp::getBookPage (
                 {
                     // Only provide, if not fully funded.
 
-                    saTakerGetsFunded   = saOwnerFundsLimit;
+                    saTakerGetsFunded = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
                     std::min (
@@ -2990,11 +2989,11 @@ void NetworkOPsImp::getBookPage (
                             (jvOffer[jss::taker_pays_funded]);
                 }
 
-                STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
+                STAmount saOwnerPays = (parityRate == offerRate)
                     ? saTakerGetsFunded
                     : std::min (
                         saOwnerFunds,
-                        multiply (saTakerGetsFunded, Rate(uOfferRate)));
+                        multiply (saTakerGetsFunded, offerRate));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
