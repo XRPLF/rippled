@@ -56,7 +56,6 @@ unit-test http-tests :
     http/reason.cpp
     http/resume_context.cpp
     http/rfc7230.cpp
-    http/status.cpp
     http/streambuf_body.cpp
     http/string_body.cpp
     http/write.cpp
