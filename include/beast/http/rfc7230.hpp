@@ -30,6 +30,16 @@ namespace http {
     the behavior of the container will be as if a string containing
     only characters up to but excluding the first invalid character
     was used to construct the list.
+
+    @code
+    for(auto const& param : param_list{";level=9;no_context_takeover;bits=15"})
+    {
+        std::cout << ";" << param.first;
+        if(! param.second.empty())
+            std::cout << "=" << param.second;
+        std::cout << "\n";
+    }
+    @endcode
 */
 class param_list
 {
@@ -98,6 +108,24 @@ public:
     the behavior of the container will be as if a string containing
     only characters up to but excluding the first invalid character
     was used to construct the list.
+
+    To use this class, construct with the string to be parsed and
+    then use @ref begin and @end, or range-for to iterate each
+    item:
+
+    @code
+    for(auto const& ext : ext_list{"none, 7z;level=9, zip;no_context_takeover;bits=15"})
+    {
+        std::cout << ext.first << "\n";
+        for(auto const& param : ext.second)
+        {
+            std::cout << ";" << param.first;
+            if(! param.second.empty())
+                std::cout << "=" << param.second;
+            std::cout << "\n";
+        }
+    }
+    @endcode
 */
 class ext_list
 {
@@ -181,6 +209,15 @@ public:
     the behavior of the container will be as if a string containing
     only characters up to but excluding the first invalid character
     was used to construct the list.
+
+    To use this class, construct with the string to be parsed and
+    then use @ref begin and @end, or range-for to iterate each
+    item:
+
+    @code
+    for(auto const& token : token_list{"apple, pear, banana"})
+        std::cout << token << "\n";
+    @endcode
 */
 class token_list
 {
