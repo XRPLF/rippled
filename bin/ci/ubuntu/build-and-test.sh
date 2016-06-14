@@ -13,7 +13,9 @@ git diff --exit-code
 # $CC will be either `clang` or `gcc`
 # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
 #   indicates that 2 cores are available to containers.
-scons -j${NUM_PROCESSORS:-2} $CC.$TARGET
+# gcc can get an internal compile error if two cores are used (likely runs out of memory),
+# so only use one core.
+scons -j${NUM_PROCESSORS:-1} $CC.$TARGET
 # We can be sure we're using the build/$CC.$TARGET variant
 # (-f so never err)
 rm -f build/rippled
