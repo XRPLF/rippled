@@ -207,27 +207,22 @@ rippleQuality (
     if (destination == source)
         return parityRate;
 
+    auto const& sfField = destination < source ? sfLow : sfHigh;
+
     auto const sle = view.read(
         keylet::line(destination, source, currency));
 
-    if (sle)
-    {
-        auto const& sfField = destination < source ? sfLow : sfHigh;
+    if (!sle || !sle->isFieldPresent (sfField))
+        return parityRate;
 
-        if (sle->isFieldPresent (sfField))
-        {
-            auto quality = sle->getFieldU32 (sfField);
+    auto quality = sle->getFieldU32 (sfField);
 
-            // Avoid divide by zero. NIKB CHECKME: if we
-            // allow zero qualities now, then we shouldn't.
-            if (quality == 0)
-                quality = 1;
+    // Avoid divide by zero. NIKB CHECKME: if we
+    // allow zero qualities now, then we shouldn't.
+    if (quality == 0)
+        quality = 1;
 
-            return Rate{ quality };
-        }
-    }
-
-    return parityRate;
+    return Rate{ quality };
 }
 
 Rate
