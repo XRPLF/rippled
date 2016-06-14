@@ -81,7 +81,8 @@ TER PathCursor::deliverNodeReverseImpl (
             // Error or out of offers.
             break;
 
-        auto const hasFee = node().offerOwnerAccount_ == node().issue_.account
+        auto const hasFee = isXRP (node().issue_)
+            || node().offerOwnerAccount_ == node().issue_.account
             || uOutAccountID == node().issue_.account;
         // Issuer sending or receiving.
 
