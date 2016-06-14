@@ -1,3 +1,4 @@
+# DOES APPVEYOR BUILD ON NEW PRS?
 # Set environment variables.
 environment:
   PYTHON: C:/Python27-x64
