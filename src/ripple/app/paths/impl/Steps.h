@@ -22,6 +22,7 @@
 
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Quality.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
 
@@ -130,6 +131,14 @@ public:
     redeems (ReadView const& sb, bool fwd) const
     {
         return false;
+    }
+
+    /** If this step is a DirectStepI, return the quality in of the dst account.
+     */
+    virtual std::uint32_t
+    lineQualityIn (ReadView const&) const
+    {
+        return QUALITY_ONE;
     }
 
     /**

@@ -512,6 +512,82 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
+    void testLineQuality ()
+    {
+        testcase ("Line Quality");
+
+        using namespace jtx;
+        auto const alice = Account ("alice");
+        auto const bob = Account ("bob");
+        auto const carol = Account ("carol");
+        auto const dan = Account ("dan");
+        auto const USDA = alice["USD"];
+        auto const USDB = bob["USD"];
+        auto const USDC = carol["USD"];
+        auto const USDD = dan["USD"];
+
+        //   Dan -> Bob -> Alice -> Carol; vary bobDanQIn and bobAliceQOut
+        for (auto bobDanQIn : {80, 100, 120})
+            for (auto bobAliceQOut : {80, 100, 120})
+                for (auto const& f : {feature ("nullFeature"), featureFlowV2})
+                {
+                    if (f != featureFlowV2 && bobDanQIn < 100 && bobAliceQOut < 100)
+                        continue;  // Bug in flow v1
+                    Env env (*this, features (f));
+                    env.fund (XRP (10000), alice, bob, carol, dan);
+                    env (trust (bob, USDD (100)), qualityInPercent (bobDanQIn));
+                    env (trust (bob, USDA (100)),
+                        qualityOutPercent (bobAliceQOut));
+                    env (trust (carol, USDA (100)));
+
+                    env (pay (alice, bob, USDA (100)));
+                    env.require (balance (bob, USDA (100)));
+                    env (pay (dan, carol, USDA (10)), path (bob),
+                        sendmax (USDD (100)), txflags (tfNoRippleDirect));
+                    env.require (balance (bob, USDA (90)));
+                    if (bobAliceQOut > bobDanQIn)
+                        env.require (
+                            balance (bob, USDD (10.0 * double(bobAliceQOut) /
+                                              double(bobDanQIn))));
+                    else
+                        env.require (balance (bob, USDD (10)));
+                    env.require (balance (carol, USDA (10)));
+                }
+
+        // bob -> alice -> carol; vary carolAliceQIn
+        for (auto carolAliceQIn : {80, 100, 120})
+            for (auto const& f : {feature ("nullFeature"), featureFlowV2})
+            {
+                Env env (*this, features (f));
+                env.fund (XRP (10000), alice, bob, carol);
+                env (trust (bob, USDA (10)));
+                env (trust (carol, USDA (10)), qualityInPercent (carolAliceQIn));
+
+                env (pay (alice, bob, USDA (10)));
+                env.require (balance (bob, USDA (10)));
+                env (pay (bob, carol, USDA (5)), sendmax (USDA (10)));
+                auto const effectiveQ =
+                    carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
+                env.require (balance (bob, USDA (10.0 - 5.0 / effectiveQ)));
+            }
+
+        // bob -> alice -> carol; bobAliceQOut varies.
+        for (auto bobAliceQOut : {80, 100, 120})
+            for (auto const& f : {feature ("nullFeature"), featureFlowV2})
+            {
+                Env env (*this, features (f));
+                env.fund (XRP (10000), alice, bob, carol);
+                env (trust (bob, USDA (10)), qualityOutPercent (bobAliceQOut));
+                env (trust (carol, USDA (10)));
+
+                env (pay (alice, bob, USDA (10)));
+                env.require (balance (bob, USDA (10)));
+                env (pay (bob, carol, USDA (5)), sendmax (USDA (5)));
+                env.require (balance (carol, USDA (5)));
+                env.require (balance (bob, USDA (10-5)));
+            }
+    }
+
     void testBookStep ()
     {
         testcase ("Book Step");
@@ -1185,6 +1261,7 @@ struct Flow_test : public beast::unit_test::suite
     void run() override
     {
         testDirectStep ();
+        testLineQuality();
         testBookStep ();
         testTransferRate ();
         testToStrand ();
