@@ -61,6 +61,19 @@ public:
             expect(m.headers["Server"] == "test");
             expect(m.body == "*");
         }
+        // skip body
+        {
+            error_code ec;
+            parser_v1<false, string_body, headers> p;
+            std::string const s =
+                "HTTP/1.1 200 Connection Established\r\n"
+                "Proxy-Agent: Zscaler/5.1\r\n"
+                "\r\n";
+            p.set_option(skip_body{true});
+            p.write(buffer(s), ec);
+            expect(! ec);
+            expect(p.complete());
+        }
     }
 };
 

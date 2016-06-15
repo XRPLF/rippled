@@ -35,6 +35,37 @@ struct parser_response
 
 } // detail
 
+/** Skip body option.
+
+    The options controls whether or not the parser expects to see a
+    HTTP body, regardless of the presence or absence of certain fields
+    such as Content-Length.
+
+    Depending on the request, some responses do not carry a body.
+    For example, a 200 response to a CONNECT request from a tunneling
+    proxy. In these cases, callers use the @ref skip_body option to
+    inform the parser that no body is expected. The parser will consider
+    the message complete after the all headers have been received.
+
+    Example:
+    @code
+        parser_v1<true, empty_body, headers> p;
+        p.set_option(skip_body{true});
+    @endcode
+
+    @note Objects of this type are passed to @ref basic_parser_v1::set_option.
+*/
+struct skip_body
+{
+    bool value;
+
+    explicit
+    skip_body(bool v)
+        : value(v)
+    {
+    }
+};
+
 /** A parser for producing HTTP/1 messages.
 
     This class uses the basic HTTP/1 wire format parser to convert
@@ -62,6 +93,7 @@ private:
     std::string value_;
     message_type m_;
     typename message_type::body_type::reader r_;
+    std::uint8_t skip_body_ = 0;
 
 public:
     parser_v1(parser_v1&&) = default;
@@ -79,6 +111,13 @@ public:
         : m_(std::forward<Args>(args)...)
         , r_(m_)
     {
+    }
+
+    /// Set the expect body option.
+    void
+    set_option(skip_body const& o)
+    {
+        skip_body_ = o.value ? 1 : 0;
     }
 
     /** Returns the parsed message.
@@ -176,7 +215,7 @@ private:
     {
         flush();
         m_.version = 10 * this->http_major() + this->http_minor();
-        return 0;
+        return skip_body_;
     }
 
     void on_request(error_code& ec)

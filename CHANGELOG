@@ -9,6 +9,7 @@
 * Fixes and documentation for teardown and use with SSL:
 * Add example code to rfc7230 javadocs
 * Remove extraneous header file <beast/http/status.hpp>
+* Add skip_body parser option
 
 --------------------------------------------------------------------------------
 

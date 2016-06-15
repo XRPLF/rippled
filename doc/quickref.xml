@@ -43,6 +43,7 @@
           <simplelist type="vert" columns="1">
             <member><link linkend="beast.ref.http__body_max_size">body_max_size</link></member>
             <member><link linkend="beast.ref.http__headers_max_size">headers_max_size</link></member>
+            <member><link linkend="beast.ref.http__skip_body">skip_body</link></member>
           </simplelist>
           <bridgehead renderas="sect3">Type Traits</bridgehead>
           <simplelist type="vert" columns="1">
