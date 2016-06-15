@@ -831,6 +831,22 @@ public:
         // Alice is broke
         env.require(balance(alice, XRP(0)));
         env(noop(alice), ter(terINSUF_FEE_B));
+
+        // Bob tries to queue up more than the single
+        // account limit (10) txs.
+        fillQueue(env, bob);
+        bobSeq = env.seq(bob);
+        checkMetrics(env, 0, 12, 7, 6, 256);
+        for (int i = 0; i < 10; ++i)
+            env(noop(bob), seq(bobSeq + i), queued);
+        checkMetrics(env, 10, 12, 7, 6, 256);
+        // Bob hit the single account limit
+        env(noop(bob), seq(bobSeq + 10), ter(terPRE_SEQ));
+        checkMetrics(env, 10, 12, 7, 6, 256);
+        // Bob can replace one of the earlier txs regardless
+        // of the limit
+        env(noop(bob), seq(bobSeq + 5), fee(20), queued);
+        checkMetrics(env, 10, 12, 7, 6, 256);
     }
 
     void testTieBreaking()
@@ -1565,6 +1581,93 @@ public:
         }
     }
 
+    void testExpirationReplacement()
+    {
+        /* This test is based on a reported regression where a
+            replacement candidate transaction found it's replacee
+            did not have `consequences` set
+
+            Hypothesis: The queue had '22 through '25. At some point(s),
+            both the original '22 and '23 expired and were removed from
+            the queue. A second '22 was submitted, and the multi-tx logic
+            did not kick in, because it matched the account's sequence
+            number (a_seq == t_seq). The third '22 was submitted and found
+            the '22 in the queue did not have consequences.
+        */
+        using namespace jtx;
+
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "1" },
+            {"ledgers_in_queue", "10"}, {"maximum_txn_per_account", "20"} }),
+                features(featureFeeEscalation));
+
+        // Alice will recreate the scenario. Bob will block.
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        env.fund(XRP(500000), noripple(alice, bob));
+        checkMetrics(env, 0, boost::none, 2, 1, 256);
+
+        auto const aliceSeq = env.seq(alice);
+        expect(env.current()->info().seq == 3);
+        env(noop(alice), seq(aliceSeq), json(R"({"LastLedgerSequence":5})"), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 1), json(R"({"LastLedgerSequence":5})"), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 2), json(R"({"LastLedgerSequence":10})"), ter(terQUEUED));
+        env(noop(alice), seq(aliceSeq + 3), json(R"({"LastLedgerSequence":11})"), ter(terQUEUED));
+        checkMetrics(env, 4, boost::none, 2, 1, 256);
+        auto const bobSeq = env.seq(bob);
+        // Ledger 4 gets 3,
+        // Ledger 5 gets 4,
+        // Ledger 6 gets 5.
+        for (int i = 0; i < 3 + 4 + 5; ++i)
+        {
+            env(noop(bob), seq(bobSeq + i), fee(200), ter(terQUEUED));
+        }
+        checkMetrics(env, 4 + 3 + 4 + 5, boost::none, 2, 1, 256);
+        // Close ledger 3
+        env.close();
+        checkMetrics(env, 4 + 4 + 5, 20, 3, 2, 256);
+        // Close ledger 4
+        env.close();
+        checkMetrics(env, 4 + 5, 30, 4, 3, 256);
+        // Close ledger 5
+        env.close();
+        // Alice's first two txs expired.
+        checkMetrics(env, 2, 40, 5, 4, 256);
+
+        // Because aliceSeq is missing, aliceSeq + 1 fails
+        env(noop(alice), seq(aliceSeq + 1), ter(terPRE_SEQ));
+
+        // Queue up a new aliceSeq tx.
+        // This will only do some of the multiTx validation to
+        // improve the chances that the orphaned txs can be
+        // recovered. Because the cost of relaying the later txs
+        // has already been paid, this tx could potentially be a
+        // blocker.
+        env(fset(alice, asfAccountTxnID), seq(aliceSeq), ter(terQUEUED));
+        checkMetrics(env, 3, 40, 5, 4, 256);
+
+        // Even though consequences were not computed, we can replace it.
+        env(noop(alice), seq(aliceSeq), fee(20), ter(terQUEUED));
+        checkMetrics(env, 3, 40, 5, 4, 256);
+
+        // Queue up a new aliceSeq + 1 tx.
+        // This tx will also only do some of the multiTx validation.
+        env(fset(alice, asfAccountTxnID), seq(aliceSeq + 1), ter(terQUEUED));
+        checkMetrics(env, 4, 40, 5, 4, 256);
+
+        // Even though consequences were not computed, we can replace it,
+        // too.
+        env(noop(alice), seq(aliceSeq +1), fee(20), ter(terQUEUED));
+        checkMetrics(env, 4, 40, 5, 4, 256);
+
+        // Close ledger 6
+        env.close();
+        // We expect that all of alice's queued tx's got into
+        // the open ledger.
+        checkMetrics(env, 0, 50, 4, 5, 256);
+        expect(env.seq(alice) == aliceSeq + 4);
+    }
+
     void run()
     {
         testQueue();
@@ -1583,6 +1686,7 @@ public:
         testInFlightBalance();
         testConsequences();
         testRPC();
+        testExpirationReplacement();
     }
 };
 

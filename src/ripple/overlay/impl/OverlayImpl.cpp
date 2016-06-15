@@ -747,8 +747,7 @@ OverlayImpl::onManifests (
             {
                 // Historical manifests are sent on initial peer connections.
                 // They do not need to be forwarded to other peers.
-                std::set<Peer::id_t> peers;
-                hashRouter.swapSet (hash, peers, SF_RELAYED);
+                hashRouter.shouldRelay (hash);
                 continue;
             }
 
@@ -757,11 +756,11 @@ OverlayImpl::onManifests (
                 protocol::TMManifests o;
                 o.add_list ()->set_stobject (s);
 
-                std::set<Peer::id_t> peers;
-                hashRouter.swapSet (hash, peers, SF_RELAYED);
-                foreach (send_if_not (
-                    std::make_shared<Message>(o, protocol::mtMANIFESTS),
-                    peer_in_set (peers)));
+                auto const toSkip = hashRouter.shouldRelay (hash);
+                if(toSkip)
+                    foreach (send_if_not (
+                        std::make_shared<Message>(o, protocol::mtMANIFESTS),
+                            peer_in_set (*toSkip)));
             }
             else
             {
@@ -978,15 +977,14 @@ OverlayImpl::relay (protocol::TMProposeSet& m,
 {
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
-    std::set<Peer::id_t> skip;
-    if (! app_.getHashRouter().swapSet (
-            uid, skip, SF_RELAYED))
+    auto const toSkip = app_.getHashRouter().shouldRelay(uid);
+    if (!toSkip)
         return;
     auto const sm = std::make_shared<Message>(
         m, protocol::mtPROPOSE_LEDGER);
     for_each([&](std::shared_ptr<PeerImp>&& p)
     {
-        if (skip.find(p->id()) != skip.end())
+        if (toSkip->find(p->id()) != toSkip->end())
             return;
         if (! m.has_hops() || p->hopsAware())
             p->send(sm);
@@ -999,15 +997,14 @@ OverlayImpl::relay (protocol::TMValidation& m,
 {
     if (m.has_hops() && m.hops() >= maxTTL)
         return;
-    std::set<Peer::id_t> skip;
-    if (! app_.getHashRouter().swapSet (
-            uid, skip, SF_RELAYED))
+    auto const toSkip = app_.getHashRouter().shouldRelay(uid);
+    if (! toSkip)
         return;
     auto const sm = std::make_shared<Message>(
         m, protocol::mtVALIDATION);
     for_each([&](std::shared_ptr<PeerImp>&& p)
     {
-        if (skip.find(p->id()) != skip.end())
+        if (toSkip->find(p->id()) != toSkip->end())
             return;
         if (! m.has_hops() || p->hopsAware())
             p->send(sm);

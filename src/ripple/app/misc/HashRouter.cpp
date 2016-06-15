@@ -26,35 +26,34 @@ auto
 HashRouter::emplace (uint256 const& key)
     -> std::pair<Entry&, bool>
 {
-    auto iter = mSuppressionMap.find (key);
+    auto iter = suppressionMap_.find (key);
 
-    if (iter != mSuppressionMap.end ())
+    if (iter != suppressionMap_.end ())
     {
-        mSuppressionMap.touch(iter);
+        suppressionMap_.touch(iter);
         return std::make_pair(
             std::ref(iter->second), false);
     }
 
     // See if any supressions need to be expired
-    expire(mSuppressionMap,
-        mHoldTime);
+    expire(suppressionMap_, holdTime_);
 
     return std::make_pair(std::ref(
-        mSuppressionMap.emplace (
+        suppressionMap_.emplace (
             key, Entry ()).first->second),
                 true);
 }
 
 void HashRouter::addSuppression (uint256 const& key)
 {
-    std::lock_guard <std::mutex> lock (mMutex);
+    std::lock_guard <std::mutex> lock (mutex_);
 
     emplace (key);
 }
 
 bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer)
 {
-    std::lock_guard <std::mutex> lock (mMutex);
+    std::lock_guard <std::mutex> lock (mutex_);
 
     auto result = emplace(key);
     result.first.addPeer(peer);
@@ -63,7 +62,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer)
 
 bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& flags)
 {
-    std::lock_guard <std::mutex> lock (mMutex);
+    std::lock_guard <std::mutex> lock (mutex_);
 
     auto result = emplace(key);
     auto& s = result.first;
@@ -74,7 +73,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& key, PeerShortID peer, int& 
 
 int HashRouter::getFlags (uint256 const& key)
 {
-    std::lock_guard <std::mutex> lock (mMutex);
+    std::lock_guard <std::mutex> lock (mutex_);
 
     return emplace(key).first.getFlags ();
 }
@@ -83,7 +82,7 @@ bool HashRouter::setFlags (uint256 const& key, int flags)
 {
     assert (flags != 0);
 
-    std::lock_guard <std::mutex> lock (mMutex);
+    std::lock_guard <std::mutex> lock (mutex_);
 
     auto& s = emplace(key).first;
 
@@ -94,19 +93,18 @@ bool HashRouter::setFlags (uint256 const& key, int flags)
     return true;
 }
 
-bool HashRouter::swapSet (uint256 const& key, std::set<PeerShortID>& peers, int flag)
+auto
+HashRouter::shouldRelay (uint256 const& key)
+    -> boost::optional<std::set<PeerShortID>>
 {
-    std::lock_guard <std::mutex> lock (mMutex);
+    std::lock_guard <std::mutex> lock (mutex_);
 
     auto& s = emplace(key).first;
 
-    if ((s.getFlags () & flag) == flag)
-        return false;
+    if (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))
+        return boost::none;
 
-    s.swapSet (peers);
-    s.setFlags (flag);
-
-    return true;
+    return std::move(s.peekPeers());
 }
 
 } // ripple

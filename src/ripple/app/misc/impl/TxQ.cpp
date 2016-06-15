@@ -308,7 +308,7 @@ TxQ::canBeHeld(STTx const& tx, OpenView const& view,
             an early one fail or get dropped.
         */
         canBeHeld = accountIter == byAccount_.end() ||
-            !replacementIter ||
+            replacementIter ||
                 accountIter->second.getTxnCount() <
                     setup_.maximumTxnPerAccount;
     }
@@ -521,9 +521,10 @@ TxQ::apply(Application& app, OpenView& view,
                 */
                 if (std::next(existingIter) != txQAcct.transactions.end())
                 {
-                    // Only the last tx in the queue should have
-                    // !consequences, and this can't be the last tx.
-                    assert(existingIter->second.consequences);
+                    // Normally, only the last tx in the queue will have
+                    // !consequences, but an expired transaction can be
+                    // replaced, and that replacement won't have it set,
+                    // and that's ok.
                     if (!existingIter->second.consequences)
                         existingIter->second.consequences.emplace(
                             calculateConsequences(

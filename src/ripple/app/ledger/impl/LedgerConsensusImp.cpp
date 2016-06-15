@@ -1300,8 +1300,8 @@ void LedgerConsensusImp::addDisputedTransaction (
         }
     }
 
-    // If we didn't relay this transaction recently, relay it
-    if (app_.getHashRouter ().setFlags (txID, SF_RELAYED))
+    // If we didn't relay this transaction recently, relay it to all peers
+    if (app_.getHashRouter ().shouldRelay (txID))
     {
         protocol::TMTransaction msg;
         msg.set_rawtransaction (& (tx.front ()), tx.size ());
