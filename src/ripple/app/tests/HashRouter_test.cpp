@@ -30,8 +30,9 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testNonExpiration()
     {
+        using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, std::chrono::seconds(2));
+        HashRouter router(stopwatch, 2s);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -66,8 +67,9 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testExpiration()
     {
+        using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, std::chrono::seconds(2));
+        HashRouter router(stopwatch, 2s);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -144,8 +146,9 @@ class HashRouter_test : public beast::unit_test::suite
     void testSuppression()
     {
         // Normal HashRouter
+        using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, std::chrono::seconds(2));
+        HashRouter router(stopwatch, 2s);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -173,8 +176,9 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testSetFlags()
     {
+        using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, std::chrono::seconds(2));
+        HashRouter router(stopwatch, 2s);
 
         uint256 const key1(1);
         expect(router.setFlags(key1, 10));
@@ -183,33 +187,46 @@ class HashRouter_test : public beast::unit_test::suite
     }
 
     void
-    testSwapSet()
+    testRelay()
     {
+        using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, std::chrono::seconds(2));
+        HashRouter router(stopwatch, 1s);
 
         uint256 const key1(1);
 
-        std::set<HashRouter::PeerShortID> peers1;
-        std::set<HashRouter::PeerShortID> peers2;
+        boost::optional<std::set<HashRouter::PeerShortID>> peers;
 
-        peers1.emplace(1);
-        peers1.emplace(3);
-        peers1.emplace(5);
-        peers2.emplace(2);
-        peers2.emplace(4);
-
-        expect(router.swapSet(key1, peers1, 135));
-        expect(peers1.empty());
-        expect(router.getFlags(key1) == 135);
-        // No action, because flag matches
-        expect(!router.swapSet(key1, peers2, 135));
-        expect(peers2.size() == 2);
-        expect(router.getFlags(key1) == 135);
-        // Do a swap
-        expect(router.swapSet(key1, peers2, 24));
-        expect(peers2.size() == 3);
-        expect(router.getFlags(key1) == (135 | 24));
+        peers = router.shouldRelay(key1);
+        expect(peers && peers->empty());
+        router.addSuppressionPeer(key1, 1);
+        router.addSuppressionPeer(key1, 3);
+        router.addSuppressionPeer(key1, 5);
+        // No action, because relayed
+        expect(!router.shouldRelay(key1));
+        // Expire, but since the next search will
+        // be for this entry, it will get refreshed
+        // instead. However, the relay won't.
+        ++stopwatch;
+        // Get those peers we added earlier
+        peers = router.shouldRelay(key1);
+        expect(peers && peers->size() == 3);
+        router.addSuppressionPeer(key1, 2);
+        router.addSuppressionPeer(key1, 4);
+        // No action, because relayed
+        expect(!router.shouldRelay(key1));
+        // Expire, but since the next search will
+        // be for this entry, it will get refreshed
+        // instead. However, the relay won't.
+        ++stopwatch;
+        // Relay again
+        peers = router.shouldRelay(key1);
+        expect(peers && peers->size() == 2);
+        // Expire again
+        ++stopwatch;
+        // Confirm that peers list is empty.
+        peers = router.shouldRelay(key1);
+        expect(peers && peers->size() == 0);
     }
 
 public:
@@ -221,7 +238,7 @@ public:
         testExpiration();
         testSuppression();
         testSetFlags();
-        testSwapSet();
+        testRelay();
     }
 };
 

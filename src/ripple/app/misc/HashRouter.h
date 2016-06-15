@@ -25,12 +25,12 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/beast/container/aged_unordered_map.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
 // VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?
 // VFALCO TODO convert these macros to int constants
-#define SF_RELAYED      0x01    // Has already been relayed to other nodes
 // VFALCO NOTE How can both bad and good be set on a hash?
 #define SF_BAD          0x02    // Temporarily bad
 #define SF_SAVED        0x04
@@ -68,20 +68,10 @@ private:
         {
         }
 
-        std::set <PeerShortID> const& peekPeers () const
-        {
-            return peers_;
-        }
-
         void addPeer (PeerShortID peer)
         {
             if (peer != 0)
                 peers_.insert (peer);
-        }
-
-        bool hasPeer (PeerShortID peer) const
-        {
-            return peers_.count (peer) > 0;
         }
 
         int getFlags (void) const
@@ -89,29 +79,37 @@ private:
             return flags_;
         }
 
-        bool hasFlag (int mask) const
-        {
-            return (flags_ & mask) != 0;
-        }
-
         void setFlags (int flagsToSet)
         {
             flags_ |= flagsToSet;
         }
 
-        void clearFlag (int flagsToClear)
+        std::set <PeerShortID>& peekPeers()
         {
-            flags_ &= ~flagsToClear;
+            return peers_;
         }
 
-        void swapSet (std::set <PeerShortID>& other)
+        /** Determines if this item should be relayed.
+
+            Checks whether the item has been recently relayed.
+            If it has, return false. If it has not, update the
+            last relay timestamp and return true.
+        */
+        bool shouldRelay (Stopwatch::time_point const& now,
+            std::chrono::seconds holdTime)
         {
-            peers_.swap (other);
+            if (relayed_ && *relayed_ + holdTime > now)
+                return false;
+            relayed_.emplace(now);
+            return true;
         }
 
     private:
         int flags_;
         std::set <PeerShortID> peers_;
+        // This could be generalized to a map, if more
+        // than one flag needs to expire independently.
+        boost::optional<Stopwatch::time_point> relayed_;
     };
 
 public:
@@ -123,8 +121,8 @@ public:
     }
 
     HashRouter (Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
-        : mSuppressionMap(clock)
-        , mHoldTime (entryHoldTimeInSeconds)
+        : suppressionMap_(clock)
+        , holdTime_ (entryHoldTimeInSeconds)
     {
     }
 
@@ -149,19 +147,31 @@ public:
 
     int getFlags (uint256 const& key);
 
-    bool swapSet (uint256 const& key, std::set<PeerShortID>& peers, int flag);
+    /** Determines whether the hashed item should be relayed.
+
+        Effects:
+
+            If the item should be relayed, this function will not
+            return `true` again until the hold time has expired.
+            The internal set of peers will also be reset.
+
+        @return A `boost::optional` set of peers which do not need to be
+            relayed to. If the result is uninitialized, the item should
+            _not_ be relayed.
+    */
+    boost::optional<std::set<PeerShortID>> shouldRelay(uint256 const& key);
 
 private:
     // pair.second indicates whether the entry was created
     std::pair<Entry&, bool> emplace (uint256 const&);
 
-    std::mutex mutable mMutex;
+    std::mutex mutable mutex_;
 
     // Stores all suppressed hashes and their expiration time
     beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type,
-        hardened_hash<strong_hash>> mSuppressionMap;
+        hardened_hash<strong_hash>> suppressionMap_;
 
-    std::chrono::seconds const mHoldTime;
+    std::chrono::seconds const holdTime_;
 };
 
 } // ripple

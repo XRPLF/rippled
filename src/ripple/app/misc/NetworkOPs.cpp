@@ -1059,10 +1059,10 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                 (e.failType != FailHard::yes) && e.local) ||
                     (e.result == terQUEUED))
             {
-                std::set<Peer::id_t> peers;
+                auto const toSkip = app_.getHashRouter().shouldRelay(
+                    e.transaction->getID());
 
-                if (app_.getHashRouter().swapSet (
-                        e.transaction->getID(), peers, SF_RELAYED))
+                if (toSkip)
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -1075,7 +1075,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                     // FIXME: This should be when we received it
                     app_.overlay().foreach (send_if_not (
                         std::make_shared<Message> (tx, protocol::mtTRANSACTION),
-                        peer_in_set(peers)));
+                        peer_in_set(*toSkip)));
                 }
             }
         }
