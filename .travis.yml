@@ -3,6 +3,7 @@ language: cpp
 
 env:
   global:
+    - LLVM_VERSION=3.8.0
     # Maintenance note: to move to a new version
     # of boost, update both BOOST_ROOT and BOOST_URL.
     # Note that for simplicity, BOOST_ROOT's final
@@ -14,18 +15,6 @@ env:
 
 packages: &gcc5_pkgs
   - gcc-5
-  - g++-5
-  - python-software-properties
-  - protobuf-compiler
-  - libprotobuf-dev
-  - libssl-dev
-  - libstdc++6
-  - binutils-gold
-  # Provides a backtrace if the unittests crash
-  - gdb
-
-packages: &clang36_pkgs
-  - clang-3.6
   - g++-5
   - python-software-properties
   - protobuf-compiler
@@ -50,25 +39,17 @@ matrix:
       addons: *ao_gcc5
 
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug CLANG_VER=3.6
-      addons: &ao_clang36
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.6']
-          packages: *clang36_pkgs
+      env: GCC_VER=5 TARGET=debug CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons: *ao_gcc5
 
     - compiler: clang
-      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.6
-      addons: *ao_clang36
-
-  # Temporary workaround while the llvm apt repository is down.
-  # TODO: REMOVE THIS if/when clang builds become reliable again.
-  allow_failures:
-    - env: GCC_VER=5 TARGET=debug CLANG_VER=3.6
-    - env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.6
+      env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons: *ao_gcc5
 
 cache:
   directories:
   - $BOOST_ROOT
+  - llvm-$LLVM_VERSION
 
 before_install:
   - bin/ci/ubuntu/install-dependencies.sh
