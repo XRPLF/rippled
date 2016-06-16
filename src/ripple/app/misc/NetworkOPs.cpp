@@ -2950,8 +2950,8 @@ void NetworkOPsImp::getBookPage (
                 Json::Value jvOffer = sleOffer->getJson (0);
 
                 STAmount saTakerGetsFunded;
-                STAmount saOwnerFundsLimit;
-                Rate offerRate;
+                STAmount saOwnerFundsLimit = saOwnerFunds;
+                Rate offerRate = parityRate;
 
                 if (rate != parityRate
                     // Have a tranfer fee.
@@ -2964,11 +2964,6 @@ void NetworkOPsImp::getBookPage (
                     offerRate = rate;
                     saOwnerFundsLimit = divide (
                         saOwnerFunds, offerRate);
-                }
-                else
-                {
-                    offerRate = parityRate;
-                    saOwnerFundsLimit   = saOwnerFunds;
                 }
 
                 if (saOwnerFundsLimit >= saTakerGets)
@@ -3110,10 +3105,9 @@ void NetworkOPsImp::getBookPage (
 
             Json::Value jvOffer = sleOffer->getJson (0);
 
-            STAmount    saTakerGetsFunded;
-            STAmount    saOwnerFundsLimit;
-            Rate offerRate;
-
+            STAmount saTakerGetsFunded;
+            STAmount saOwnerFundsLimit = saOwnerFunds;
+            Rate offerRate = parityRate;
 
             if (rate != parityRate
                 // Have a tranfer fee.
@@ -3125,11 +3119,6 @@ void NetworkOPsImp::getBookPage (
                 // Need to charge a transfer fee to offer owner.
                 offerRate = rate;
                 saOwnerFundsLimit = divide (saOwnerFunds, offerRate);
-            }
-            else
-            {
-                offerRate          = parityRate;
-                saOwnerFundsLimit   = saOwnerFunds;
             }
 
             if (saOwnerFundsLimit >= saTakerGets)

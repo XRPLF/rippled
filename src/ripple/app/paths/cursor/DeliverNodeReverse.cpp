@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/cursor/EffectiveRate.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
 
@@ -81,21 +82,17 @@ TER PathCursor::deliverNodeReverseImpl (
             // Error or out of offers.
             break;
 
-        auto const hasFee = isXRP (node().issue_)
-            || node().offerOwnerAccount_ == node().issue_.account
-            || uOutAccountID == node().issue_.account;
-        // Issuer sending or receiving.
-
-        auto const xferRate = hasFee
-            ? parityRate              // No fee.
-            : node().transferRate_;   // Transfer rate of issuer.
+        auto const xferRate = effectiveRate (
+            node().issue_,
+            uOutAccountID,
+            node().offerOwnerAccount_,
+            node().transferRate_);
 
         JLOG (j_.trace())
             << "deliverNodeReverse:"
             << " offerOwnerAccount_=" << node().offerOwnerAccount_
             << " uOutAccountID=" << uOutAccountID
             << " node().issue_.account=" << node().issue_.account
-            << " node().transferRate_=" << node().transferRate_
             << " xferRate=" << xferRate;
 
         // Only use rate when not in multi-quality mode

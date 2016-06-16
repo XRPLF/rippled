@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/cursor/EffectiveRate.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
 
@@ -82,16 +83,11 @@ TER PathCursor::deliverNodeForward (
         }
         else if (resultCode == tesSUCCESS)
         {
-            // Doesn't charge input. Input funds are in limbo.
-            // There's no fee if we're transferring XRP, if the sender is the
-            // issuer, or if the receiver is the issuer.
-            bool noFee = isXRP (previousNode().issue_)
-                || uInAccountID == previousNode().issue_.account
-                || node().offerOwnerAccount_ == previousNode().issue_.account;
-
-            auto const xferRate = noFee
-                ? parityRate
-                : previousNode().transferRate_;  // Transfer rate of issuer.
+            auto const xferRate = effectiveRate (
+                previousNode().issue_,
+                uInAccountID,
+                node().offerOwnerAccount_,
+                previousNode().transferRate_);
 
             // First calculate assuming no output fees: saInPassAct,
             // saInPassFees, saOutPassAct.

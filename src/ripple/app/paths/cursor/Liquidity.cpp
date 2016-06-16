@@ -45,7 +45,7 @@ TER PathCursor::liquidity () const
             << "reverseLiquidity< "
             << "nodeIndex=" << pc.nodeIndex_
             << " resultCode=" << transToken (resultCode)
-            << " transferRate_=" << pc.node().transferRate_
+            << " transferRate_=" << *pc.node().transferRate_
             << "/" << resultCode;
 
         if (resultCode != tesSUCCESS)

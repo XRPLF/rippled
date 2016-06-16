@@ -39,7 +39,7 @@ struct Rate
 {
     std::uint32_t value;
 
-    Rate () = default;
+    Rate () = delete;
 
     explicit
     Rate (std::uint32_t rate)

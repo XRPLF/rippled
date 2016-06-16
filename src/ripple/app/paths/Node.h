@@ -44,12 +44,12 @@ struct Node
 
     std::uint16_t uFlags;       // --> From path.
 
-    AccountID account_;           // --> Accounts: Receiving/sending account.
+    AccountID account_;         // --> Accounts: Receiving/sending account.
 
     Issue issue_;               // --> Accounts: Receive and send, Offers: send.
                                 // --- For offer's next has currency out.
 
-    Rate transferRate_;        // Transfer rate for issuer.
+    boost::optional<Rate> transferRate_;         // Transfer rate for issuer.
 
     // Computed by Reverse.
     STAmount saRevRedeem;        // <-- Amount to redeem to next.
