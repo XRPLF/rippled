@@ -21,7 +21,7 @@ add_executable (websocket-tests
 )
 
 if (NOT WIN32)
-    target_link_libraries(websocket-tests ${Boost_LIBRARIES})
+    target_link_libraries(websocket-tests ${Boost_LIBRARIES} Threads::Threads)
 endif()
 
 add_executable (websocket-echo
@@ -32,5 +32,5 @@ add_executable (websocket-echo
 )
 
 if (NOT WIN32)
-    target_link_libraries(websocket-echo ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(websocket-echo ${Boost_LIBRARIES} Threads::Threads)
 endif()
