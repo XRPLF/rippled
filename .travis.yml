@@ -2,6 +2,7 @@ language: cpp
 
 env:
   global:
+    - LLVM_VERSION=3.8.0
     # Maintenance note: to move to a new version
     # of boost, update both BOOST_ROOT and BOOST_URL.
     # Note that for simplicity, BOOST_ROOT's final
@@ -27,22 +28,6 @@ packages: &gcc5_pkgs
   - autotools-dev
   - libc6-dbg
 
-packages: &clang38_pkgs
-  - clang-3.8
-  - g++-5
-  - python-software-properties
-  - libssl-dev
-  - libffi-dev
-  - libstdc++6
-  - binutils-gold
-  # Provides a backtrace if the unittests crash
-  - gdb
-  # Needed for installing valgrind
-  - subversion
-  - automake
-  - autotools-dev
-  - libc6-dbg
-
 matrix:
   include:
     # GCC/Coverage
@@ -52,6 +37,16 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: *gcc5_pkgs
+
+    # GCC/Debug/CMake
+    - compiler: gcc
+      env:
+        - GCC_VER=5
+        - VARIANT=debug
+        - ADDRESS_MODEL=64
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+      addons: *ao_gcc5
 
     # # GCC/Debug
     # - compiler: gcc
@@ -63,21 +58,31 @@ matrix:
 
     # Clang/UndefinedBehaviourSanitizer
     - compiler: clang
-      env: GCC_VER=5 VARIANT=usan CLANG_VER=3.8 ADDRESS_MODEL=64 UBSAN_OPTIONS='print_stacktrace=1'
-      addons: &ao_clang38
-        apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
-          packages: *clang38_pkgs
+      env:
+        - GCC_VER=5
+        - VARIANT=usan
+        - CLANG_VER=3.8
+        - ADDRESS_MODEL=64
+        - UBSAN_OPTIONS='print_stacktrace=1' 
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons: *ao_gcc5
 
     # Clang/AddressSanitizer
     - compiler: clang
-      env: GCC_VER=5 VARIANT=asan CLANG_VER=3.8 ADDRESS_MODEL=64
-      addons: *ao_clang38
+      env:
+        - GCC_VER=5
+        - VARIANT=asan
+        - CLANG_VER=3.8
+        - ADDRESS_MODEL=64
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons: *ao_gcc5
 
 cache:
   directories:
   - $BOOST_ROOT
   - $VALGRIND_ROOT
+  - llvm-$LLVM_VERSION
+  - cmake
 
 before_install:
   - scripts/install-dependencies.sh

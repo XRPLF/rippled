@@ -12,11 +12,32 @@ do
   test -x $( type -p ${g}-$GCC_VER )
   ln -sv $(type -p ${g}-$GCC_VER) $HOME/bin/${g}
 done
-for c in clang clang++ llvm-symbolizer
-do
-    test -x $( type -p ${c}-$CLANG_VER )
-    ln -sv $(type -p ${c}-$CLANG_VER) $HOME/bin/${c}
-done
+
+if [[ -n ${CLANG_VER:-} ]]; then
+    # There are cases where the directory exists, but the exe is not available.
+    # Use this workaround for now.
+    if [[ ! -x llvm-${LLVM_VERSION}/bin/llvm-config ]] && [[ -d llvm-${LLVM_VERSION} ]]; then
+        rm -fr llvm-${LLVM_VERSION}
+    fi
+    if [[ ! -d llvm-${LLVM_VERSION} ]]; then
+        mkdir llvm-${LLVM_VERSION}
+        LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/clang+llvm-${LLVM_VERSION}-x86_64-linux-gnu-ubuntu-14.04.tar.xz"
+        wget -O - ${LLVM_URL} | tar -Jxvf - --strip 1 -C llvm-${LLVM_VERSION}
+    fi
+    llvm-${LLVM_VERSION}/bin/llvm-config --version;
+    export LLVM_CONFIG="llvm-${LLVM_VERSION}/bin/llvm-config";
+fi
+
+# There are cases where the directory exists, but the exe is not available.
+# Use this workaround for now.
+if [[ ! -x cmake/bin/cmake && -d cmake ]]; then
+    rm -fr cmake
+fi
+if [[ ! -d cmake && ${BUILD_SYSTEM:-} == cmake ]]; then
+  CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
+  mkdir cmake && wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+fi
+
 # NOTE, changed from PWD -> HOME
 export PATH=$HOME/bin:$PATH
 
