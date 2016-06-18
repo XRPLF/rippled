@@ -39,14 +39,17 @@ TER PathCursor::liquidity () const
             << " nodeIndex=" << pc.nodeIndex_
             << ".issue_.account=" << to_string (pc.node().issue_.account);
 
-        resultCode  = pc.reverseLiquidity();
+        resultCode = pc.reverseLiquidity();
+
+        if (!pc.node().transferRate_)
+            return tefINTERNAL;
 
         JLOG (j_.trace())
             << "reverseLiquidity< "
             << "nodeIndex=" << pc.nodeIndex_
             << " resultCode=" << transToken (resultCode)
             << " transferRate_=" << *pc.node().transferRate_
-            << "/" << resultCode;
+            << ": " << resultCode;
 
         if (resultCode != tesSUCCESS)
             break;
