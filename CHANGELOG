@@ -1,6 +1,11 @@
 1.0.0-b7
 
+* Fix prepare by calling init. prepare() can throw depending on the
+  implementation of Writer. Publicly provided beast::http writers never throw.
+* Fixes to example HTTP server
 * Fully qualify ambiguous calls to read and parse
+* Remove deprecated http::stream wrapper
+* Example HTTP server now calculates the MIME-type
 
 --------------------------------------------------------------------------------
 
