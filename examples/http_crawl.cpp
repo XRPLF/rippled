@@ -5,9 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "http_stream.hpp"
 #include "urls_large_data.hpp"
 
+#include <beast/core/streambuf.hpp>
+#include <beast/http.hpp>
 #include <boost/asio.hpp>
 #include <iostream>
 
@@ -31,9 +32,9 @@ int main(int, char const*[])
             ip::tcp::resolver r(ios);
             auto it = r.resolve(
                 ip::tcp::resolver::query{host, "http"});
-            stream<ip::tcp::socket> hs(ios);
-            connect(hs.lowest_layer(), it);
-            auto ep = hs.lowest_layer().remote_endpoint();
+            ip::tcp::socket sock(ios);
+            connect(sock, it);
+            auto ep = sock.remote_endpoint();
             request_v1<empty_body> req;
             req.method = "GET";
             req.url = "/";
@@ -42,10 +43,11 @@ int main(int, char const*[])
                 std::string(":") + std::to_string(ep.port()));
             req.headers.insert("User-Agent", "beast/http");
             prepare(req);
-            hs.write(req);
-            response_v1<string_body> resp;
-            hs.read(resp);
-            std::cout << resp;
+            write(sock, req);
+            response_v1<string_body> res;
+            streambuf sb;
+            beast::http::read(sock, sb, res);
+            std::cout << res;
         }
         catch(boost::system::system_error const& ec)
         {
