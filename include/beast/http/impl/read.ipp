@@ -412,7 +412,7 @@ read(SyncReadStream& stream, DynamicBuffer& dynabuf,
     static_assert(is_ReadableBody<Body>::value,
         "ReadableBody requirements not met");
     error_code ec;
-    read(stream, dynabuf, msg, ec);
+    beast::http::read(stream, dynabuf, msg, ec);
     if(ec)
         throw system_error{ec};
 }
@@ -431,7 +431,7 @@ read(SyncReadStream& stream, DynamicBuffer& dynabuf,
     static_assert(is_ReadableBody<Body>::value,
         "ReadableBody requirements not met");
     parser_v1<isRequest, Body, Headers> p;
-    parse(stream, dynabuf, p, ec);
+    beast::http::parse(stream, dynabuf, p, ec);
     if(ec)
         return;
     assert(p.complete());

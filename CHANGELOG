@@ -1,3 +1,9 @@
+1.0.0-b7
+
+* Fully qualify ambiguous calls to read and parse
+
+--------------------------------------------------------------------------------
+
 1.0.0-b6
 
 * Use SFINAE on return values
