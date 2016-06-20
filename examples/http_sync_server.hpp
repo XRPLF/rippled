@@ -9,8 +9,9 @@
 #define BEAST_EXAMPLE_HTTP_SYNC_SERVER_H_INCLUDED
 
 #include "file_body.hpp"
-#include "http_stream.hpp"
+#include "mime_type.hpp"
 
+#include <beast/core/streambuf.hpp>
 #include <boost/asio.hpp>
 #include <cstdint>
 #include <cstdio>
@@ -34,6 +35,8 @@ class http_sync_server
     using req_type = request_v1<string_body>;
     using resp_type = response_v1<file_body>;
 
+    bool log_ = true;
+    std::mutex m_;
     boost::asio::io_service ios_;
     socket_type sock_;
     boost::asio::ip::tcp::acceptor acceptor_;
@@ -65,21 +68,43 @@ public:
         thread_.join();
     }
 
+    template<class... Args>
     void
-    fail(error_code ec, std::string what)
+    log(Args const&... args)
     {
-        std::cerr <<
-            what << ": " << ec.message() << std::endl;
+        if(log_)
+        {
+            std::lock_guard<std::mutex> lock(m_);
+            log_args(args...);
+        }
+    }
+
+private:
+    void
+    log_args()
+    {
+    }
+
+    template<class Arg, class... Args>
+    void
+    log_args(Arg const& arg, Args const&... args)
+    {
+        std::cerr << arg;
+        log_args(args...);
     }
 
     void
-    maybe_throw(error_code ec, std::string what)
+    fail(error_code ec, std::string what)
     {
-        if(ec)
-        {
-            fail(ec, what);
-            throw ec;
-        }
+        log(what, ": ", ec.message(), "\n");
+    }
+
+    void
+    fail(int id, error_code const& ec)
+    {
+        if(ec != boost::asio::error::operation_aborted &&
+                ec != boost::asio::error::eof)
+            log("#", id, " ", ec.message(), "\n");
     }
 
     struct lambda
@@ -109,7 +134,8 @@ public:
     {
         if(! acceptor_.is_open())
             return;
-        maybe_throw(ec, "accept");
+        if(ec)
+            return fail(ec, "accept");
         static int id_ = 0;
         std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
         acceptor_.async_accept(sock_,
@@ -118,23 +144,15 @@ public:
     }
 
     void
-    fail(int id, error_code const& ec)
+    do_peer(int id, socket_type&& sock0)
     {
-        if(ec != boost::asio::error::operation_aborted &&
-                ec != boost::asio::error::eof)
-            std::cerr <<
-                "#" << std::to_string(id) << " " << std::endl;
-    }
-
-    void
-    do_peer(int id, socket_type&& sock)
-    {
-        http::stream<socket_type> hs(std::move(sock));
+        socket_type sock(std::move(sock0));
+        streambuf sb;
         error_code ec;
         for(;;)
         {
             req_type req;
-            hs.read(req, ec);
+            http::read(sock, sb, req, ec);
             if(ec)
                 break;
             auto path = req.url;
@@ -143,26 +161,42 @@ public:
             path = root_ + path;
             if(! boost::filesystem::exists(path))
             {
-                response_v1<string_body> resp;
-                resp.status = 404;
-                resp.reason = "Not Found";
-                resp.version = req.version;
-                resp.headers.replace("Server", "http_sync_server");
-                resp.body = "The file '" + path + "' was not found";
-                prepare(resp);
-                hs.write(resp, ec);
+                response_v1<string_body> res;
+                res.status = 404;
+                res.reason = "Not Found";
+                res.version = req.version;
+                res.headers.insert("Server", "http_sync_server");
+                res.headers.insert("Content-Type", "text/html");
+                res.body = "The file '" + path + "' was not found";
+                prepare(res);
+                write(sock, res, ec);
                 if(ec)
                     break;
             }
-            resp_type resp;
-            resp.status = 200;
-            resp.reason = "OK";
-            resp.version = req.version;
-            resp.headers.replace("Server", "http_sync_server");
-            resp.headers.replace("Content-Type", "text/html");
-            resp.body = path;
-            prepare(resp);
-            hs.write(resp, ec);
+            resp_type res;
+            res.status = 200;
+            res.reason = "OK";
+            res.version = req.version;
+            res.headers.insert("Server", "http_sync_server");
+            res.headers.insert("Content-Type", mime_type(path));
+            res.body = path;
+            try
+            {
+                prepare(res);
+            }
+            catch(std::exception const& e)
+            {
+                res = {};
+                res.status = 500;
+                res.reason = "Internal Error";
+                res.version = req.version;
+                res.headers.insert("Server", "http_sync_server");
+                res.headers.insert("Content-Type", "text/html");
+                res.body =
+                    std::string{"An internal error occurred"} + e.what();
+                prepare(res);
+            }
+            write(sock, res, ec);
             if(ec)
                 break;
         }

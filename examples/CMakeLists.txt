@@ -19,9 +19,8 @@ endif()
 add_executable (http-server
     ${BEAST_INCLUDES}
     file_body.hpp
+    mime_type.hpp
     http_async_server.hpp
-    http_stream.hpp
-    http_stream.ipp
     http_sync_server.hpp
     http_server.cpp
 )

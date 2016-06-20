@@ -57,8 +57,13 @@ int main(int ac, char const* av[])
     endpoint_type ep{address_type::from_string(ip), port};
 
     if(sync)
+    {
         http_sync_server server(ep, root);
+        beast::test::sig_wait();
+    }
     else
+    {
         http_async_server server(ep, threads, root);
-    beast::test::sig_wait();
+        beast::test::sig_wait();
+    }
 }
