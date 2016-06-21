@@ -365,6 +365,7 @@ def config_base(env):
         ,{'SOCI_CXX_C11' : '1'}
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
         ,'BOOST_NO_AUTO_PTR'
+        ,'NO_LOG_UNHANDLED_EXCEPTIONS'
         ])
 
     if Beast.system.windows:

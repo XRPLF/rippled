@@ -25,8 +25,8 @@
 
 namespace ripple {
 
-// reportUncaughtException is disabled if __APPLE__ is defined.
-#ifndef __APPLE__
+// reportUncaughtException is disabled if NO_LOG_UNHANDLED_EXCEPTIONS is defined.
+#ifndef NO_LOG_UNHANDLED_EXCEPTIONS
 
 class ReportUncaughtException_test : public TestSuite
 {
@@ -164,6 +164,6 @@ public:
 
 BEAST_DEFINE_TESTSUITE (ReportUncaughtException, core, ripple);
 
-#endif // __APPLE__
+#endif // NO_LOG_UNHANDLED_EXCEPTIONS
 
 }  // ripple
