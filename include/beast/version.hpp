@@ -14,8 +14,8 @@
 //  BEAST_VERSION / 100 % 1000 is the minor version
 //  BEAST_VERSION / 100000 is the major version
 //
-#define BEAST_VERSION 100006
+#define BEAST_VERSION 100000
 
-#define BEAST_VERSION_STRING "1.0.0-b6"
+#define BEAST_VERSION_STRING "1.0.0-b7"
 
 #endif
