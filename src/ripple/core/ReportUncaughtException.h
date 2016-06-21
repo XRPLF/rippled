@@ -99,7 +99,7 @@ void reportUncaughtException (
         "Last argument must be a lamdba taking no arguments "
         "and returning std::string.");
 
-#ifdef __APPLE__
+#ifdef NO_LOG_UNHANDLED_EXCEPTIONS
     // Don't use a try block so we can get a good call stack.
     ((t)->*(threadTop)) ();
 #else
@@ -137,7 +137,7 @@ void reportUncaughtException (
     {
         logUncaughtException ("unknown exception type");
     }
-#endif // __APPLE__ else
+#endif // NO_LOG_UNHANDLED_EXCEPTIONS else
 }
 
 // Handle the common case where there is no additional local information.
