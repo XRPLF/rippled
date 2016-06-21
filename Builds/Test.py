@@ -49,6 +49,7 @@ import os
 import platform
 import re
 import shutil
+import sys
 import subprocess
 
 
@@ -196,22 +197,21 @@ def run_tests(args):
             resultcode, lines = shell(executable, (testflag,))
 
             if resultcode:
-                print('ERROR:', *lines, sep='')
+                if not ARGS.verbose:
+                    print('ERROR:', *lines, sep='')
                 failed.append([target, 'unittest'])
                 if not ARGS.keep_going:
                     break
-            ARGS.verbose and print(*lines, sep='')
 
             if not ARGS.nonpm:
                 print('npm tests for', target)
                 resultcode, lines = shell('npm', ('test', '--rippled=' + executable,))
                 if resultcode:
-                    print('ERROR:\n', *lines, sep='')
+                    if not ARGS.verbose:
+                        print('ERROR:\n', *lines, sep='')
                     failed.append([target, 'npm'])
                     if not ARGS.keep_going:
                         break
-                else:
-                    ARGS.verbose and print(*lines, sep='')
     return failed
 
 
@@ -223,7 +223,7 @@ def run_build(args=None):
         print('Build FAILED:')
         if not ARGS.verbose:
             print(*lines, sep='')
-        exit(1)
+        sys.exit(1)
     if '--ninja' in args:
         resultcode, lines = shell('ninja')
 
@@ -231,7 +231,7 @@ def run_build(args=None):
             print('Ninja build FAILED:')
             if not ARGS.verbose:
                 print(*lines, sep='')
-            exit(1)
+            sys.exit(1)
 
 
 def main():
@@ -239,6 +239,8 @@ def main():
         to_build = ALL_BUILDS
     else:
         to_build = [tuple(ARGS.scons_args)]
+
+    all_failed = []
 
     for build in to_build:
         args = ()
@@ -254,7 +256,10 @@ def main():
         if failed:
             print('FAILED:', *(':'.join(f) for f in failed))
             if not ARGS.keep_going:
-                exit(1)
+                sys.exit(1)
+            else:
+                all_failed.extend([','.join(build), ':'.join(f)]
+                    for f in failed)
         else:
             print('Success')
 
@@ -265,7 +270,12 @@ def main():
                 os.remove('.ninja_deps')
                 os.remove('.ninja_log')
 
+    if all_failed:
+        if len(to_build) > 1:
+            print()
+            print('FAILED:', *(':'.join(f) for f in all_failed))
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
-    exit(0)
+    sys.exit(0)
