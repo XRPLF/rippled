@@ -85,7 +85,7 @@ function build_beast {
 function build_beast_cmake {
     mkdir -p build
     pushd build > /dev/null
-    cmake -DCMAKE_BUILD_TYPE=${VARIANT^} ..
+    cmake -DVARIANT=${VARIANT} ..
     make -j${num_jobs}
     mkdir -p ../bin/$VARIANT
     find . -executable -type f -exec cp {} ../bin/$VARIANT/. \;
@@ -137,6 +137,7 @@ if [[ $VARIANT == "coverage" ]]; then
     run_tests_with_valgrind
     run_autobahn_test_suite
   else
+    echo "skipping autobahn tests for feature branch build"
     run_tests
   fi
 

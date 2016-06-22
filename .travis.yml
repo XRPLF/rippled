@@ -30,31 +30,18 @@ packages: &gcc5_pkgs
 
 matrix:
   include:
-    # GCC/Coverage
+    # GCC/Coverage/Autobahn
     - compiler: gcc
-      env: GCC_VER=5 VARIANT=coverage ADDRESS_MODEL=64
+      env:
+        - GCC_VER=5
+        - VARIANT=coverage
+        - ADDRESS_MODEL=64
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
       addons: &ao_gcc5
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: *gcc5_pkgs
-
-    # GCC/Debug/CMake
-    - compiler: gcc
-      env:
-        - GCC_VER=5
-        - VARIANT=debug
-        - ADDRESS_MODEL=64
-        - BUILD_SYSTEM=cmake
-        - PATH=$PWD/cmake/bin:$PATH
-      addons: *ao_gcc5
-
-    # # GCC/Debug
-    # - compiler: gcc
-    #   env: GCC_VER=5 VARIANT=debug ADDRESS_MODEL=64
-    #   addons: *ao_gcc5
-    #   branches: # NOTE: this does NOT work, though it SHOULD
-    #     - master
-    #     - develop
 
     # Clang/UndefinedBehaviourSanitizer
     - compiler: clang
@@ -63,7 +50,9 @@ matrix:
         - VARIANT=usan
         - CLANG_VER=3.8
         - ADDRESS_MODEL=64
-        - UBSAN_OPTIONS='print_stacktrace=1' 
+        - UBSAN_OPTIONS='print_stacktrace=1'
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
         - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
       addons: *ao_gcc5
 
