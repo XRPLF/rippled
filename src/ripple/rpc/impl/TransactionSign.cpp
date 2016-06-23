@@ -679,14 +679,11 @@ Json::Value checkFee (
         feeTrack.scaleFeeLoad (feeDefault,
             ledger->fees().base, ledger->fees().units, isUnlimited (role));
     std::uint64_t fee = loadFee;
-    if (ledger->rules().enabled(featureFeeEscalation,
-        config.features))
     {
         auto const assumeTx = request.isMember("x-assume-tx") &&
             request["x-assume-tx"].isConvertibleTo(Json::uintValue) ?
                 request["x-assume-tx"].asUInt() : 0;
         auto const metrics = txQ.getMetrics(config, *ledger, assumeTx);
-        assert(metrics);
         if(metrics)
         {
             auto const baseFee = ledger->fees().base;
@@ -709,7 +706,7 @@ Json::Value checkFee (
             request["x-queue-okay"].isBool() &&
                 request["x-queue-okay"].asBool())
     {
-        fee = loadFee;
+        fee = std::max(loadFee, limit);
     }
     if (fee > limit)
     {
@@ -719,7 +716,7 @@ Json::Value checkFee (
         return RPC::make_error (rpcHIGH_FEE, ss.str());
     }
 
-    tx [jss::Fee] = static_cast<int>(fee);
+    tx [jss::Fee] = static_cast<unsigned int>(fee);
     return Json::Value();
 }
 
