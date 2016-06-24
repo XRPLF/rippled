@@ -6,6 +6,59 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.32.0
+
+The `rippled` 0.32.0 release improves transaction queue which now supports batching and can hold up to 10 transactions per account, allowing users to queue multiple transactions for processing when the network load is high. Additionally, the `server_info` and `server_state` commands now include information on transaction cost multipliers and the fee command is available to unprivileged users. We advise rippled operators to upgrade immediately.
+
+You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please compile the new version from source.
+
+**New and Updated Features**
+
+- Allow multiple transactions per account in transaction queue (RIPD-1048). This also introduces a new transaction engine code, `telCAN_NOT_QUEUE`.
+- Charge pathfinding consumers per source currency (RIPD-1019): The IP address used to perform pathfinding operations is now charged an additional resource increment for each source currency in the path set.
+- New implementation of payment processing engine. This implementation is not yet enabled by default.
+- Include amendments in validations subscription
+- Add C++17 compatibility
+- New WebSocket server implementation with Beast.WebSocket library. The new library offers a stable, high-performance websocket server implementation. To take advantage of this implementation, change websocket protocol under rippled.cfg from wss and ws to wss2 and ws2 under `[port_wss_admin]` and `[port_ws_public]` stanzas:
+```
+     [port_wss_admin]
+     port = 51237
+     ip = 127.0.0.1
+     admin = 127.0.0.1
+     protocol = wss2
+
+     [port_ws_public]
+     port = 51233
+     ip = 0.0.0.0
+     protocol = wss2, ws2
+```
+- The fee command is now public (RIPD-1113)
+- The fee command checks open ledger rules (RIPD-1183)
+- Log when number of available file descriptors is insufficient (RIPD-1125)
+- Publish all validation fields for signature verification
+- Get quorum and trusted master validator keys from validators.txt
+- Standalone mode uses temp DB files by default (RIPD-1129): If a [database_path] is configured, it will always be used, and tables will be upgraded on startup.
+- Include config manifest in server_info admin response (RIPD-1172)
+
+**Bug fixes**
+
+- Fix history acquire check (RIPD-1112) 
+- Correctly handle connections that fail security checks (RIPD-1114)
+- Fix secured Websocket closing
+- Reject invalid MessageKey in SetAccount handler (RIPD-308, RIPD-990)
+- Fix advisory delete effect on history acquisition (RIPD-1112)
+- Improve websocket send performance (RIPD-1158)
+- Fix XRP bridge payment bug (RIPD-1141)
+- Improve error reporting for wallet_propose command. Also include a warning if the key used may be an insecure, low-entropy key. (RIPD-1110)
+
+**Deprecated features**
+
+- Remove obsolete sendGetPeers support (RIPD-164)
+- Remove obsolete internal command (RIPD-888)
+
+
+
+
 ## Version 0.31.2
 
 The `rippled` 0.31.2 release corrects issues with the fee escalation algorithm. We advise `rippled` operators to upgrade immediately.
