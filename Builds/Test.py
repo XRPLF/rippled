@@ -57,10 +57,10 @@ def powerset(iterable):
     s = list(iterable)
     return itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(len(s) + 1))
 
-
 IS_WINDOWS = platform.system().lower() == 'windows'
+IS_OS_X = platform.system().lower() == 'darwin'
 
-if IS_WINDOWS:
+if IS_WINDOWS or IS_OS_X:
     ALL_TARGETS = [('debug',), ('release',)]
 else:
     ALL_TARGETS = [(cc + "." + target,)
@@ -69,7 +69,7 @@ else:
                                   'debug.nounity', 'release.nounity', 'coverage.nounity', 'profile.nounity']]
 
 # list of tuples of all possible options
-if IS_WINDOWS:
+if IS_WINDOWS or IS_OS_X:
     ALL_OPTIONS = [tuple(x) for x in powerset(['--assert'])]
 else:
     ALL_OPTIONS = list(set(
