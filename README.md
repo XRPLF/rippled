@@ -23,7 +23,7 @@ The library has been submitted to the
 
 Example WebSocket program:
 ```C++
-#include <beast/to_string.hpp>
+#include <beast/core/to_string.hpp>
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
 #include <iostream>
