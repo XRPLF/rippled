@@ -131,7 +131,7 @@ int main()
 
 Establish a WebSocket connection, send a message and receive the reply:
 ```
-#include <beast/to_string.hpp>
+#include <beast/core/to_string.hpp>
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
 #include <iostream>
