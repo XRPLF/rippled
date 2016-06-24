@@ -37,10 +37,21 @@ class Taker_test : public beast::unit_test::suite
 
     public:
         TestTaker (
-                CrossType cross_type, Amounts const& amount, Quality const& quality,
-                STAmount const& funds, std::uint32_t flags, std::uint32_t rate_in,
-                std::uint32_t rate_out)
-            : BasicTaker (cross_type, AccountID(0x4701), amount, quality, flags, rate_in, rate_out)
+                CrossType cross_type,
+                Amounts const& amount,
+                Quality const& quality,
+                STAmount const& funds,
+                std::uint32_t flags,
+                Rate const& rate_in,
+                Rate const& rate_out)
+            : BasicTaker (
+                cross_type,
+                AccountID(0x4701),
+                amount,
+                quality,
+                flags,
+                rate_in,
+                rate_out)
             , funds_ (funds)
         {
         }
@@ -178,8 +189,8 @@ private:
         cross_attempt_offer const flow,
         Issue const& issue_in,
         Issue const& issue_out,
-        std::uint32_t rate_in = QUALITY_ONE,
-        std::uint32_t rate_out = QUALITY_ONE)
+        Rate rate_in = parityRate,
+        Rate rate_out = parityRate)
     {
         Amounts taker_offer (parse_amounts (
             offer.in, issue_in,
@@ -333,7 +344,7 @@ public:
         Quality q1 = get_quality ("1", "1");
 
         // Highly exaggerated 50% transfer rate for the input and output:
-        std::uint32_t rate = QUALITY_ONE + (QUALITY_ONE / 2);
+        Rate const rate { parityRate.value + (parityRate.value / 2) };
 
         //                             TAKER                    OWNER
         //                     QUAL    OFFER     FUNDS  QUAL    OFFER     FUNDS     EXPECTED

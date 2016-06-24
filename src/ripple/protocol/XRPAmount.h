@@ -149,8 +149,6 @@ mulRatio (
     if (!den)
         Throw<std::runtime_error> ("division by zero");
 
-    int128_t const den128 (den);
-    int128_t const num128 (num);
     int128_t const amt128 (amt.drops ());
     auto const neg = amt.drops () < 0;
     auto const m = amt128 * num;

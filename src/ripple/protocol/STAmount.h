@@ -75,9 +75,6 @@ public:
 
     static std::uint64_t const uRateOne;
 
-    static STAmount const saZero;
-    static STAmount const saOne;
-
     //--------------------------------------------------------------------------
     STAmount(SerialIter& sit, SField const& name);
 
@@ -293,9 +290,6 @@ public:
 // Creation
 //
 //------------------------------------------------------------------------------
-
-STAmount
-amountFromRate (std::uint64_t uRate);
 
 // VFALCO TODO The parameter type should be Quality not uint64_t
 STAmount

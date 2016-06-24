@@ -41,21 +41,18 @@ RippleState::makeItem (
 RippleState::RippleState (
     std::shared_ptr<SLE const>&& sle,
         AccountID const& viewAccount)
-    : mLedgerEntry (std::move(sle))
-    , mLowLimit (mLedgerEntry->getFieldAmount (sfLowLimit))
-    , mHighLimit (mLedgerEntry->getFieldAmount (sfHighLimit))
+    : sle_ (std::move(sle))
+    , mFlags (sle_->getFieldU32 (sfFlags))
+    , mLowLimit (sle_->getFieldAmount (sfLowLimit))
+    , mHighLimit (sle_->getFieldAmount (sfHighLimit))
     , mLowID (mLowLimit.getIssuer ())
     , mHighID (mHighLimit.getIssuer ())
-    , mBalance (mLedgerEntry->getFieldAmount (sfBalance))
+    , lowQualityIn_ (sle_->getFieldU32 (sfLowQualityIn))
+    , lowQualityOut_ (sle_->getFieldU32 (sfLowQualityOut))
+    , highQualityIn_ (sle_->getFieldU32 (sfHighQualityIn))
+    , highQualityOut_ (sle_->getFieldU32 (sfHighQualityOut))
+    , mBalance (sle_->getFieldAmount (sfBalance))
 {
-    mFlags          = mLedgerEntry->getFieldU32 (sfFlags);
-
-    mLowQualityIn   = mLedgerEntry->getFieldU32 (sfLowQualityIn);
-    mLowQualityOut  = mLedgerEntry->getFieldU32 (sfLowQualityOut);
-
-    mHighQualityIn  = mLedgerEntry->getFieldU32 (sfHighQualityIn);
-    mHighQualityOut = mLedgerEntry->getFieldU32 (sfHighQualityOut);
-
     mViewLowest = (mLowID == viewAccount);
 
     if (!mViewLowest)
