@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/paths/cursor/EffectiveRate.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 #include <ripple/basics/Log.h>
 
@@ -81,66 +82,58 @@ TER PathCursor::deliverNodeReverseImpl (
             // Error or out of offers.
             break;
 
-        auto const hasFee = node().offerOwnerAccount_ == node().issue_.account
-            || uOutAccountID == node().issue_.account;
-        // Issuer sending or receiving.
-
-        const STAmount saOutFeeRate = hasFee
-            ? STAmount::saOne         // No fee.
-            : node().transferRate_;   // Transfer rate of issuer.
+        auto const xferRate = effectiveRate (
+            node().issue_,
+            uOutAccountID,
+            node().offerOwnerAccount_,
+            node().transferRate_);
 
         JLOG (j_.trace())
             << "deliverNodeReverse:"
-            << " offerOwnerAccount_="
-            << node().offerOwnerAccount_
-            << " uOutAccountID="
-            << uOutAccountID
-            << " node().issue_.account="
-            << node().issue_.account
-            << " node().transferRate_=" << node().transferRate_
-            << " saOutFeeRate=" << saOutFeeRate;
+            << " offerOwnerAccount_=" << node().offerOwnerAccount_
+            << " uOutAccountID=" << uOutAccountID
+            << " node().issue_.account=" << node().issue_.account
+            << " xferRate=" << xferRate;
 
-        if (multiQuality_)
+        // Only use rate when not in multi-quality mode
+        if (!multiQuality_)
         {
-            // In multi-quality mode, ignore rate.
-        }
-        else if (!node().saRateMax)
-        {
-            // Set initial rate.
-            node().saRateMax = saOutFeeRate;
+            if (!node().rateMax)
+            {
+                // Set initial rate.
+                JLOG (j_.trace())
+                    << "Set initial rate";
 
-            JLOG (j_.trace())
-                << "deliverNodeReverse: Set initial rate:"
-                << " node().saRateMax=" << node().saRateMax
-                << " saOutFeeRate=" << saOutFeeRate;
-        }
-        else if (saOutFeeRate > node().saRateMax)
-        {
-            // Offer exceeds initial rate.
-            JLOG (j_.trace())
-                << "deliverNodeReverse: Offer exceeds initial rate:"
-                << " node().saRateMax=" << node().saRateMax
-                << " saOutFeeRate=" << saOutFeeRate;
+                node().rateMax = xferRate;
+            }
+            else if (xferRate > node().rateMax)
+            {
+                // Offer exceeds initial rate.
+                JLOG (j_.trace())
+                    << "Offer exceeds initial rate: " << *node().rateMax;
 
-            break;  // Done. Don't bother looking for smaller transferRates.
-        }
-        else if (saOutFeeRate < node().saRateMax)
-        {
-            // Reducing rate. Additional offers will only considered for this
-            // increment if they are at least this good.
-            //
-            // At this point, the overall rate is reducing, while the overall
-            // rate is not saOutFeeRate, it would be wrong to add anything with
-            // a rate above saOutFeeRate.
-            //
-            // The rate would be reduced if the current offer was from the
-            // issuer and the previous offer wasn't.
+                break;  // Done. Don't bother looking for smaller transferRates.
+            }
+            else if (xferRate < node().rateMax)
+            {
+                // Reducing rate. Additional offers will only
+                // be considered for this increment if they
+                // are at least this good.
+                //
+                // At this point, the overall rate is reducing,
+                // while the overall rate is not xferRate, it
+                // would be wrong to add anything with a rate
+                // above xferRate.
+                //
+                // The rate would be reduced if the current
+                // offer was from the issuer and the previous
+                // offer wasn't.
 
-            node().saRateMax   = saOutFeeRate;
+                JLOG (j_.trace())
+                    << "Reducing rate: " << *node().rateMax;
 
-            JLOG (j_.trace())
-                << "deliverNodeReverse: Reducing rate:"
-                << " node().saRateMax=" << node().saRateMax;
+                node().rateMax = xferRate;
+            }
         }
 
         // Amount that goes to the taker.
@@ -157,8 +150,8 @@ TER PathCursor::deliverNodeReverseImpl (
         // as a cost to taker.
         //
         // Round down: prefer liquidity rather than microscopic fees.
-        STAmount saOutPlusFees   = mulRound (
-            saOutPassAct, saOutFeeRate, saOutPassAct.issue (), false);
+        STAmount saOutPlusFees   = multiplyRound (
+            saOutPassAct, xferRate, false);
 
 
         // Offer out with fees.
@@ -180,8 +173,7 @@ TER PathCursor::deliverNodeReverseImpl (
 
             // Round up: prefer liquidity rather than microscopic fees. But,
             // limit by requested.
-            auto fee = divRound (saOutPlusFees, saOutFeeRate,
-                saOutPlusFees.issue (), true);
+            auto fee = divideRound (saOutPlusFees, xferRate, true);
             saOutPassAct = std::min (saOutPassReq, fee);
 
             JLOG (j_.trace())
@@ -280,8 +272,7 @@ TER PathCursor::deliverNodeReverseImpl (
             auto outputRequirements = divRound (saInPassAct, node ().saOfrRate,
                 node ().saTakerGets.issue (), true);
             saOutPassAct = std::min (saOutPassReq, outputRequirements);
-            auto outputFees = mulRound (saOutPassAct, saOutFeeRate,
-                saOutPassAct.issue (), true);
+            auto outputFees = multiplyRound (saOutPassAct, xferRate, true);
             saOutPlusFees   = std::min (node().saOfferFunds, outputFees);
 
             JLOG (j_.trace())

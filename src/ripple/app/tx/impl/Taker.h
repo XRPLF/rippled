@@ -24,6 +24,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/beast/utility/Journal.h>
@@ -43,28 +44,6 @@ enum class CrossType
 class BasicTaker
 {
 private:
-    class Rate
-    {
-    private:
-        std::uint32_t quality_;
-        STAmount rate_;
-
-    public:
-        Rate (std::uint32_t quality)
-            : quality_ (quality)
-        {
-            assert (quality_ != 0);
-            rate_ = amountFromRate (quality_);
-        }
-
-        STAmount
-        divide (STAmount const& amount) const;
-
-        STAmount
-        multiply (STAmount const& amount) const;
-    };
-
-private:
     AccountID account_;
     Quality quality_;
     Quality threshold_;
@@ -82,9 +61,9 @@ private:
     Issue const& issue_out_;
 
     // The rates that will be paid when the input and output currencies are
-    // transfer when the currency issuer isn't involved:
-    std::uint32_t const m_rate_in;
-    std::uint32_t const m_rate_out;
+    // transfered and the currency issuer isn't involved:
+    Rate const m_rate_in;
+    Rate const m_rate_out;
 
     // The type of crossing that we are performing
     CrossType cross_type_;
@@ -132,7 +111,7 @@ private:
     // flows for a particular issue between two accounts.
     static
     Rate
-    effective_rate (std::uint32_t rate, Issue const &issue,
+    effective_rate (Rate const& rate, Issue const &issue,
         AccountID const& from, AccountID const& to);
 
     // The transfer rate for the input currency between the given accounts
@@ -155,8 +134,8 @@ public:
 
     BasicTaker (
         CrossType cross_type, AccountID const& account, Amounts const& amount,
-        Quality const& quality, std::uint32_t flags, std::uint32_t rate_in,
-        std::uint32_t rate_out, beast::Journal journal = beast::Journal ());
+        Quality const& quality, std::uint32_t flags, Rate const& rate_in,
+        Rate const& rate_out, beast::Journal journal = beast::Journal ());
 
     virtual ~BasicTaker () = default;
 
@@ -291,7 +270,7 @@ public:
 
 private:
     static
-    std::uint32_t
+    Rate
     calculateRate (ApplyView const& view,
         AccountID const& issuer,
             AccountID const& account);

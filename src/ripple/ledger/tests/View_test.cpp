@@ -646,27 +646,20 @@ class View_test
         using namespace jtx;
         Env env(*this);
 
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
         auto const gw1 = Account("gw1");
 
-        env.fund(XRP(10000), alice, bob, gw1);
+        env.fund(XRP(10000), gw1);
         env.close();
 
         auto rdView = env.closed();
         // Test with no rate set on gw1.
-        expect (rippleTransferRate (*rdView, alice, bob, gw1) == 1000000000);
-        expect (rippleTransferRate (*rdView, gw1, alice, gw1) == 1000000000);
-        expect (rippleTransferRate (*rdView, alice, gw1, gw1) == 1000000000);
+        expect (transferRate (*rdView, gw1) == parityRate);
 
         env(rate(gw1, 1.02));
         env.close();
 
         rdView = env.closed();
-        // Test with a non-unity rate set on gw1.
-        expect (rippleTransferRate (*rdView, alice, bob, gw1) == 1020000000);
-        expect (rippleTransferRate (*rdView, gw1, alice, gw1) == 1000000000);
-        expect (rippleTransferRate (*rdView, alice, gw1, gw1) == 1000000000);
+        expect (transferRate (*rdView, gw1) == Rate{ 1020000000 });
     }
 
     void

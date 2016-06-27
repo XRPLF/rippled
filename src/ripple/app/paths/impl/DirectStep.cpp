@@ -39,6 +39,7 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
     AccountID src_;
     AccountID dst_;
     Currency currency_;
+    bool isLast_ = false;
 
     // Charge transfer fees when the prev step redeems
     Step const* const prevStep_ = nullptr;
@@ -72,18 +73,22 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
         PaymentSandbox& sb,
         bool srcRedeems,
         bool fwd) const;
+
   public:
     DirectStepI (
         AccountID const& src,
         AccountID const& dst,
         Currency const& c,
         Step const* prevStep,
+        bool isLast,
         beast::Journal j)
             :src_(src)
             , dst_(dst)
             , currency_ (c)
+            , isLast_ (isLast)
             , prevStep_ (prevStep)
-            , j_ (j) {}
+            , j_ (j)
+    {}
 
     AccountID const& src () const
     {
@@ -121,6 +126,9 @@ class DirectStepI : public StepImp<IOUAmount, IOUAmount, DirectStepI>
 
     bool
     redeems (ReadView const& sb, bool fwd) const override;
+
+    std::uint32_t
+    lineQualityIn (ReadView const& v) const override;
 
     std::pair<IOUAmount, IOUAmount>
     revImp (
@@ -484,11 +492,11 @@ DirectStepI::validFwd (
 static
 std::uint32_t
 quality (
-    PaymentSandbox const& sb,
+    ReadView const& sb,
     AccountID const& src,
     AccountID const& dst,
     Currency const& currency,
-    // set true for quality in, false for quality out
+    // set true for dst quality in, false for src quality out
     bool qin)
 {
     if (src == dst)
@@ -502,17 +510,19 @@ quality (
 
     auto const& field = [&]() -> SF_U32 const&
     {
-        if (dst < src)
+        if (qin)
         {
-            if (qin)
+            // compute dst quality in
+            if (dst < src)
                 return sfLowQualityIn;
             else
-                return sfLowQualityOut;
+                return sfHighQualityIn;
         }
         else
         {
-            if (qin)
-                return sfHighQualityIn;
+            // compute src quality out
+            if (src < dst)
+                return sfLowQualityOut;
             else
                 return sfHighQualityOut;
         }
@@ -536,24 +546,33 @@ DirectStepI::qualities (
 {
     if (srcRedeems)
     {
-        return std::make_pair(
-            quality (
-                sb, src_, dst_, currency_,
-                false),
-            QUALITY_ONE);
+        if (!prevStep_)
+            return {QUALITY_ONE, QUALITY_ONE};
+
+        auto const prevStepQIn = prevStep_->lineQualityIn (sb);
+        auto srcQOut = quality (sb, src_, dst_, currency_, false);
+        if (prevStepQIn > srcQOut)
+            srcQOut = prevStepQIn;
+        return {srcQOut, QUALITY_ONE};
     }
     else
     {
         // Charge a transfer rate when issuing and previous step redeems
         auto const prevStepRedeems = prevStep_ && prevStep_->redeems (sb, fwd);
         std::uint32_t const srcQOut =
-            prevStepRedeems ? rippleTransferRate (sb, src_) : QUALITY_ONE;
-        return std::make_pair(
-            srcQOut,
-            quality ( // dst quality in
-                sb, src_, dst_, currency_,
-                true));
+            prevStepRedeems ? transferRate (sb, src_).value : QUALITY_ONE;
+        auto dstQIn = quality (sb, src_, dst_, currency_, true);
+        if (isLast_ && dstQIn > QUALITY_ONE)
+            dstQIn = QUALITY_ONE;
+        return {srcQOut, dstQIn};
     }
+}
+
+std::uint32_t
+DirectStepI::lineQualityIn (ReadView const& v) const
+{
+    // dst quality in
+    return quality (v, src_, dst_, currency_, true);
 }
 
 TER DirectStepI::check (StrandContext const& ctx) const
@@ -561,6 +580,12 @@ TER DirectStepI::check (StrandContext const& ctx) const
     if (!src_ || !dst_)
     {
         JLOG (j_.debug()) << "DirectStepI: specified bad account.";
+        return temBAD_PATH;
+    }
+
+    if (src_ == dst_)
+    {
+        JLOG (j_.debug()) << "DirectStepI: same src and dst.";
         return temBAD_PATH;
     }
 
@@ -691,7 +716,7 @@ make_DirectStepI (
 {
     // Only charge a transfer fee if the previous step redeems
     auto r = std::make_unique<DirectStepI> (
-        src, dst, c, ctx.prevStep, ctx.j);
+        src, dst, c, ctx.prevStep, ctx.isLast, ctx.j);
     auto ter = r->check (ctx);
     if (ter != tesSUCCESS)
         return {ter, nullptr};

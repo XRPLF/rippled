@@ -22,7 +22,9 @@
 
 #include <ripple/app/paths/NodeDirectory.h>
 #include <ripple/app/paths/Types.h>
+#include <ripple/protocol/Rate.h>
 #include <ripple/protocol/UintTypes.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace path {
@@ -42,12 +44,12 @@ struct Node
 
     std::uint16_t uFlags;       // --> From path.
 
-    AccountID account_;           // --> Accounts: Receiving/sending account.
+    AccountID account_;         // --> Accounts: Receiving/sending account.
 
     Issue issue_;               // --> Accounts: Receive and send, Offers: send.
                                 // --- For offer's next has currency out.
 
-    STAmount transferRate_;    // Transfer rate for issuer.
+    boost::optional<Rate> transferRate_;         // Transfer rate for issuer.
 
     // Computed by Reverse.
     STAmount saRevRedeem;        // <-- Amount to redeem to next.
@@ -65,8 +67,7 @@ struct Node
                                  // fee.
 
     // For offers:
-
-    STAmount saRateMax;
+    boost::optional<Rate> rateMax;
 
     // The nodes are partitioned into a buckets called "directories".
     //

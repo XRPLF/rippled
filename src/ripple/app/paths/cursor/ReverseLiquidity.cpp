@@ -55,9 +55,8 @@ TER PathCursor::reverseLiquidity () const
     // TOMOVE: The account charges
     // a fee when third parties transfer that account's own issuances.
 
-    // node.transferRate_ caches the output transfer rate for this node.
-    node().transferRate_ = amountFromRate (
-        rippleTransferRate (view(), node().issue_.account));
+    // Cache the output transfer rate for this node.
+    node().transferRate_ = transferRate (view(), node().issue_.account);
 
     if (node().isAccount ())
         return reverseLiquidityForAccount ();

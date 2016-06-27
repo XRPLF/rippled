@@ -34,6 +34,7 @@
 #include <ripple/test/jtx/impl/owners.cpp>
 #include <ripple/test/jtx/impl/paths.cpp>
 #include <ripple/test/jtx/impl/pay.cpp>
+#include <ripple/test/jtx/impl/quality.cpp>
 #include <ripple/test/jtx/impl/rate.cpp>
 #include <ripple/test/jtx/impl/regkey.cpp>
 #include <ripple/test/jtx/impl/sendmax.cpp>

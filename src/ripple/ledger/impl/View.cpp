@@ -328,31 +328,16 @@ forEachItemAfter (ReadView const& view, AccountID const& id,
     }
 }
 
-std::uint32_t
-rippleTransferRate (ReadView const& view,
+Rate
+transferRate (ReadView const& view,
     AccountID const& issuer)
 {
     auto const sle = view.read(keylet::account(issuer));
-    std::uint32_t quality;
-    if (sle && sle->isFieldPresent (sfTransferRate))
-        quality = sle->getFieldU32 (sfTransferRate);
-    else
-        quality = QUALITY_ONE;
-    return quality;
-}
 
-std::uint32_t
-rippleTransferRate (ReadView const& view,
-    AccountID const& uSenderID,
-        AccountID const& uReceiverID,
-            AccountID const& issuer)
-{
-    // If calculating the transfer rate from
-    // or to the issuer of the currency no
-    // fees are assessed.
-    return (uSenderID == issuer || uReceiverID == issuer)
-           ? QUALITY_ONE
-           : rippleTransferRate(view, issuer);
+    if (sle && sle->isFieldPresent (sfTransferRate))
+        return Rate{ sle->getFieldU32 (sfTransferRate) };
+
+    return parityRate;
 }
 
 bool
@@ -1367,27 +1352,26 @@ rippleTransferFee (ReadView const& view,
     AccountID const& from,
     AccountID const& to,
     AccountID const& issuer,
-    STAmount const& saAmount,
+    STAmount const& amount,
     beast::Journal j)
 {
     if (from != issuer && to != issuer)
     {
-        std::uint32_t uTransitRate = rippleTransferRate (view, issuer);
+        Rate const rate = transferRate (view, issuer);
 
-        if (QUALITY_ONE != uTransitRate)
+        if (parityRate != rate)
         {
-            STAmount saTransferTotal = multiply (
-                saAmount, amountFromRate (uTransitRate), saAmount.issue ());
-            STAmount saTransferFee = saTransferTotal - saAmount;
+            auto const fee = multiply (amount, rate) - amount;
 
             JLOG (j.debug()) << "rippleTransferFee:" <<
-                " saTransferFee=" << saTransferFee.getFullText ();
+                " amount=" << amount.getFullText () <<
+                " fee=" << fee.getFullText ();
 
-            return saTransferFee;
+            return fee;
         }
     }
 
-    return saAmount.zeroed();
+    return amount.zeroed();
 }
 
 // Send regardless of limits.
@@ -1426,12 +1410,8 @@ rippleSend (ApplyView& view,
     }
     else
     {
-        auto const rate = rippleTransferRate (view, issuer);
-        if (QUALITY_ONE == rate)
-            saActual = saAmount;
-        else
-            saActual =
-                multiply (saAmount, amountFromRate (rate), saAmount.issue ());
+        saActual = multiply (saAmount,
+            transferRate (view, issuer));
     }
 
     JLOG (j.debug()) << "rippleSend> " <<

@@ -56,10 +56,8 @@ void addLine (Json::Value& jsonLines, RippleState const& line)
     jPeer[jss::currency] = to_string (saBalance.issue ().currency);
     jPeer[jss::limit] = saLimit.getText ();
     jPeer[jss::limit_peer] = saLimitPeer.getText ();
-    jPeer[jss::quality_in]
-        = static_cast<Json::UInt> (line.getQualityIn ());
-    jPeer[jss::quality_out]
-        = static_cast<Json::UInt> (line.getQualityOut ());
+    jPeer[jss::quality_in] = line.getQualityIn ().value;
+    jPeer[jss::quality_out] = line.getQualityOut ().value;
     if (line.getAuth ())
         jPeer[jss::authorized] = true;
     if (line.getAuthPeer ())

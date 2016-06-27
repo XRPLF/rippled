@@ -30,20 +30,21 @@ namespace ripple {
 
 /** Represents a transfer rate
 
-    Transfer rates are specified as fractions of 1 billion. For example, a
-    transfer rate of 1% is represented as 1010000000.
+    Transfer rates are specified as fractions of 1 billion.
+    For example, a transfer rate of 1% is represented as
+    1,010,000,000.
 */
 struct Rate
     : private boost::totally_ordered <Rate>
 {
     std::uint32_t value;
 
-    Rate () = default;
+    Rate () = delete;
 
+    explicit
     Rate (std::uint32_t rate)
         : value (rate)
     {
-        assert (rate != 0);
     }
 };
 
@@ -68,6 +69,42 @@ operator<< (std::ostream& os, Rate const& rate)
     os << rate.value;
     return os;
 }
+
+STAmount
+multiply (
+    STAmount const& amount,
+    Rate const& rate);
+
+STAmount
+multiplyRound (
+    STAmount const& amount,
+    Rate const& rate,
+    bool roundUp);
+
+STAmount
+multiplyRound (
+    STAmount const& amount,
+    Rate const& rate,
+    Issue const& issue,
+    bool roundUp);
+
+STAmount
+divide (
+    STAmount const& amount,
+    Rate const& rate);
+
+STAmount
+divideRound (
+    STAmount const& amount,
+    Rate const& rate,
+    bool roundUp);
+
+STAmount
+divideRound (
+    STAmount const& amount,
+    Rate const& rate,
+    Issue const& issue,
+    bool roundUp);
 
 /** A transfer rate signifying a 1:1 exchange */
 extern Rate const parityRate;

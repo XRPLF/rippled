@@ -49,8 +49,8 @@ TER PathCursor::reverseLiquidityForAccount () const
     auto const isFinalNode = (nodeIndex_ == lastNodeIndex);
 
     // 0 quality means none has yet been determined.
-    std::uint64_t uRateMax = 0
-;
+    std::uint64_t uRateMax = 0;
+
     // Current is allowed to redeem to next.
     const bool previousNodeIsAccount = !nodeIndex_ ||
             previousNode().isAccount();
@@ -63,22 +63,22 @@ TER PathCursor::reverseLiquidityForAccount () const
         : node().account_;   // Offers are always issue.
 
     // This is the quality from from the previous node to this one.
-    const std::uint32_t uQualityIn
+    auto const qualityIn
          = (nodeIndex_ != 0)
             ? quality_in (view(),
                 node().account_,
                 previousAccountID,
                 node().issue_.currency)
-            : QUALITY_ONE;
+            : parityRate;
 
     // And this is the quality from the next one to this one.
-    const std::uint32_t uQualityOut
+    auto const qualityOut
         = (nodeIndex_ != lastNodeIndex)
             ? quality_out (view(),
                 node().account_,
                 nextAccountID,
                 node().issue_.currency)
-            : QUALITY_ONE;
+            : parityRate;
 
     // For previousNodeIsAccount:
     // Previous account is already owed.
@@ -112,8 +112,8 @@ TER PathCursor::reverseLiquidityForAccount () const
         << " node.account_=" << node().account_
         << " nextAccountID=" << nextAccountID
         << " currency=" << node().issue_.currency
-        << " uQualityIn=" << uQualityIn
-        << " uQualityOut=" << uQualityOut
+        << " qualityIn=" << qualityIn
+        << " qualityOut=" << qualityOut
         << " saPrvOwed=" << saPrvOwed
         << " saPrvLimit=" << saPrvLimit;
 
@@ -208,7 +208,7 @@ TER PathCursor::reverseLiquidityForAccount () const
                     << " (available) previousNode.saRevRedeem="
                     << previousNode().saRevRedeem
                     << " uRateMax="
-                    << amountFromRate (uRateMax).getText ();
+                    << amountFromQuality (uRateMax).getText ();
             }
             else
             {
@@ -227,8 +227,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // won't be included the current increment.
                 rippleLiquidity (
                     rippleCalc_,
-                    uQualityIn,
-                    QUALITY_ONE,
+                    qualityIn,
+                    parityRate,
                     saPrvIssueReq,
                     saCurWantedReq,
                     previousNode().saRevIssue,
@@ -266,8 +266,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // as 1:1.
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
-                    uQualityOut,
+                    parityRate,
+                    qualityOut,
                     saPrvRedeemReq,
                     node().saRevRedeem,
                     previousNode().saRevRedeem,
@@ -290,8 +290,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // Rate: quality in : quality out
                 rippleLiquidity (
                     rippleCalc_,
-                    uQualityIn,
-                    uQualityOut,
+                    qualityIn,
+                    qualityOut,
                     saPrvIssueReq,
                     node().saRevRedeem,
                     previousNode().saRevIssue,
@@ -316,8 +316,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // Rate : 1.0 : transfer_rate
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
-                    rippleTransferRate (view(), node().account_),
+                    parityRate,
+                    transferRate (view(), node().account_),
                     saPrvRedeemReq,
                     node().saRevIssue,
                     previousNode().saRevRedeem,
@@ -344,8 +344,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // Rate: quality in : 1.0
                 rippleLiquidity (
                     rippleCalc_,
-                    uQualityIn,
-                    QUALITY_ONE,
+                    qualityIn,
+                    parityRate,
                     saPrvIssueReq,
                     node().saRevIssue,
                     previousNode().saRevIssue,
@@ -402,8 +402,8 @@ TER PathCursor::reverseLiquidityForAccount () const
             // Rate : 1.0 : transfer_rate
             rippleLiquidity (
                 rippleCalc_,
-                QUALITY_ONE,
-                rippleTransferRate (view(), node().account_),
+                parityRate,
+                transferRate (view(), node().account_),
                 saPrvRedeemReq,
                 node().saRevDeliver,
                 previousNode().saRevRedeem,
@@ -419,8 +419,8 @@ TER PathCursor::reverseLiquidityForAccount () const
             // Rate: quality in : 1.0
             rippleLiquidity (
                 rippleCalc_,
-                uQualityIn,
-                QUALITY_ONE,
+                qualityIn,
+                parityRate,
                 saPrvIssueReq,
                 node().saRevDeliver,
                 previousNode().saRevIssue,
@@ -483,8 +483,8 @@ TER PathCursor::reverseLiquidityForAccount () const
             // Rate: quality in : 1.0
             rippleLiquidity (
                 rippleCalc_,
-                uQualityIn,
-                QUALITY_ONE,
+                qualityIn,
+                parityRate,
                 saPrvDeliverReq,
                 saCurWantedReq,
                 previousNode().saRevDeliver,
@@ -527,8 +527,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // Rate : 1.0 : quality out
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
-                    uQualityOut,
+                    parityRate,
+                    qualityOut,
                     saPrvDeliverReq,
                     node().saRevRedeem,
                     previousNode().saRevDeliver,
@@ -545,8 +545,8 @@ TER PathCursor::reverseLiquidityForAccount () const
                 // Rate : 1.0 : transfer_rate
                 rippleLiquidity (
                     rippleCalc_,
-                    QUALITY_ONE,
-                    rippleTransferRate (view(), node().account_),
+                    parityRate,
+                    transferRate (view(), node().account_),
                     saPrvDeliverReq,
                     node().saRevIssue,
                     previousNode().saRevDeliver,
@@ -578,8 +578,8 @@ TER PathCursor::reverseLiquidityForAccount () const
         // Rate : 1.0 : transfer_rate
         rippleLiquidity (
             rippleCalc_,
-            QUALITY_ONE,
-            rippleTransferRate (view(), node().account_),
+            parityRate,
+            transferRate (view(), node().account_),
             saPrvDeliverReq,
             node().saRevDeliver,
             previousNode().saRevDeliver,
