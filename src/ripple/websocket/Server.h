@@ -71,7 +71,17 @@ private:
         JLOG (j_.warn())
             << "Websocket: listening on " << desc_.port;
 
-        listen();
+        try
+        {
+            listen();
+        }
+        catch (std::exception const& e)
+        {
+            JLOG (j_.warn()) <<
+                "Websocket: failed to listen on " <<
+                desc_.port << ": " << e.what();
+        }
+
         {
             std::lock_guard<std::recursive_mutex> lock (endpointMutex_);
             endpoint_.reset();
