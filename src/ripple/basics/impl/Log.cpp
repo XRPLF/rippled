@@ -403,10 +403,10 @@ setDebugLogSink(
     return debugSink().set(std::move(sink));
 }
 
-beast::Journal::Stream
+beast::Journal
 debugLog()
 {
-    return { debugSink().get() };
+    return beast::Journal (debugSink().get());
 }
 
 } // ripple

@@ -43,14 +43,14 @@ accessViolation() noexcept
 void
 LogThrow (std::string const& title)
 {
-    JLOG(debugLog()) << title;
+    JLOG(debugLog().warn()) << title;
 }
 
 [[noreturn]]
 void
 LogicError (std::string const& s) noexcept
 {
-    JLOG(debugLog()) << s;
+    JLOG(debugLog().fatal()) << s;
     std::cerr << "Logic error: " << s << std::endl;
     detail::accessViolation();
 }
