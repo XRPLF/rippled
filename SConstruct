@@ -684,6 +684,7 @@ def config_env(toolchain, variant, env):
             '/wd"4244"',
             '/wd"4267"',
             '/wd"4800"',            # Disable C4800 (int to bool performance)
+            '/wd"4503"',            # Disable C4503 (Decorated name length exceeded)
             ])
         env.Append(CPPDEFINES={
             '_WIN32_WINNT' : '0x6000',
