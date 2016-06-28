@@ -175,17 +175,12 @@ public:
     {
     public:
         /** Create a stream which produces no output. */
-        Stream ()
+        explicit Stream ()
             : m_sink (getNullSink())
             , m_level (severities::kDisabled)
         { }
 
-        Stream (Sink& sink)
-            : m_sink (sink)
-            , m_level (sink.threshold())
-        { }
-
-        /** Create stream that writes at the given level.
+        /** Create a stream that writes at the given level.
 
             Constructor is inlined so checking active() very inexpensive.
         */
