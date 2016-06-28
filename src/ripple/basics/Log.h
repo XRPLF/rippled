@@ -263,7 +263,7 @@ setDebugLogSink(
     may never be seen. Never use it for critical
     information.
 */
-beast::Journal::Stream
+beast::Journal
 debugLog();
 
 } // ripple

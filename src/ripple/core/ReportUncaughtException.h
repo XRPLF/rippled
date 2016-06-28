@@ -115,7 +115,7 @@ void reportUncaughtException (
             if (! extra.empty())
                 ss << "; " << extra;
 
-            JLOG(debugLog()) << ss.str();
+            JLOG(debugLog().fatal()) << ss.str();
             std::cerr << ss.str() << std::endl;
             throw;
         };

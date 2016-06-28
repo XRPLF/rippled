@@ -113,7 +113,7 @@ bool STObject::setType (const SOTemplate& type)
         {
             if ((e->flags == SOE_DEFAULT) && iter->get().isDefault())
             {
-                JLOG (debugLog())
+                JLOG (debugLog().error())
                     << "setType(" << getFName().getName()
                     << "): explicit default " << e->e_field.fieldName;
                 valid = false;
@@ -125,7 +125,7 @@ bool STObject::setType (const SOTemplate& type)
         {
             if (e->flags == SOE_REQUIRED)
             {
-                JLOG (debugLog())
+                JLOG (debugLog().error())
                     << "setType(" << getFName().getName()
                     << "): missing " << e->e_field.fieldName;
                 valid = false;
@@ -138,7 +138,7 @@ bool STObject::setType (const SOTemplate& type)
         // Anything left over in the object must be discardable
         if (! e->getFName().isDiscardable())
         {
-            JLOG (debugLog())
+            JLOG (debugLog().error())
                 << "setType(" << getFName().getName()
                 << "): non-discardable leftover " << e->getFName().getName ();
             valid = false;
@@ -208,7 +208,7 @@ bool STObject::set (SerialIter& sit, int depth)
 
         if ((type == STI_ARRAY) && (field == 1))
         {
-            JLOG (debugLog())
+            JLOG (debugLog().error())
                 << "Encountered object with end of array marker";
             Throw<std::runtime_error> ("Illegal terminator in object");
         }
@@ -221,7 +221,7 @@ bool STObject::set (SerialIter& sit, int depth)
 
             if (fn.isInvalid ())
             {
-                JLOG (debugLog())
+                JLOG (debugLog().error())
                     << "Unknown field: field_type=" << type
                     << ", field_name=" << field;
                 Throw<std::runtime_error> ("Unknown field");
