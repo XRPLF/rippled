@@ -684,6 +684,7 @@ def config_env(toolchain, variant, env):
             '/wd"4244"',
             '/wd"4267"',
             '/wd"4800"',            # Disable C4800 (int to bool performance)
+            '/wd"4503"',            # Disable C4503 (Decorated name length exceeded)
             ])
         env.Append(CPPDEFINES={
             '_WIN32_WINNT' : '0x6000',
@@ -1093,18 +1094,6 @@ for tu_style in ['classic', 'unity']:
                 sources = get_unity_sources(toolchain)
             for s, k in sources:
                 object_builder.add_source_files(*s, **k)
-
-            git_commit_tag = {}
-            if toolchain != 'msvc':
-                git = Beast.Git(env)
-                if git.exists:
-                    id = '%s+%s.%s' % (git.tags, git.user, git.branch)
-                    git_commit_tag = {'CPPDEFINES':
-                                      {'GIT_COMMIT_ID' : '\'"%s"\'' % id }}
-
-            object_builder.add_source_files(
-                'src/ripple/unity/git_id.cpp',
-                **git_commit_tag)
 
             if use_shp(toolchain):
                 cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}

@@ -73,7 +73,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/shamap/Family.h>
-#include <ripple/unity/git_id.h>
 #include <ripple/websocket/MakeServer.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/beast/asio/io_latency_probe.h>
@@ -807,7 +806,7 @@ public:
     void onStart () override
     {
         JLOG(m_journal.info())
-            << "Application starting. Build is " << gitCommitID();
+            << "Application starting. Version is " << BuildInfo::getVersionString();
 
         m_sweepTimer.setExpiration (10);
         m_entropyTimer.setRecurringExpiration (300);
