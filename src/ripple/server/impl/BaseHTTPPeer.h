@@ -423,7 +423,7 @@ write(
             return wq_.size() == 1 && wq2_.size() == 0;
         }())
     {
-        if(strand_.running_in_this_thread())
+        if(! strand_.running_in_this_thread())
             return strand_.post(std::bind(
                 &BaseHTTPPeer::on_write,
                     impl().shared_from_this(),
