@@ -74,12 +74,16 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withoutSigners);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(! info[jss::result][jss::account_data].
                 isMember (jss::signer_lists));
         }
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withSigners);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -95,12 +99,16 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withoutSigners);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(! info[jss::result][jss::account_data].
                 isMember (jss::signer_lists));
         }
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withSigners);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -131,6 +139,8 @@ public:
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withSigners);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];

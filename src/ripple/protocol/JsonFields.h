@@ -83,6 +83,8 @@ JSS ( amendments );                 // in: AccountObjects, out: NetworkOPs
 JSS ( asks );                       // out: Subscribe
 JSS ( assets );                     // out: GatewayBalances
 JSS ( authorized );                 // out: AccountLines
+JSS ( auth_change );                // out: AccountInfo
+JSS ( auth_change_queued );         // out: AccountInfo
 JSS ( balance );                    // out: AccountLines
 JSS ( balances );                   // out: GatewayBalances
 JSS ( base );                       // out: LogLevel
@@ -162,6 +164,7 @@ JSS ( features );                   // out: Feature
 JSS ( fee );                        // out: NetworkOPs, Peers
 JSS ( fee_base );                   // out: NetworkOPs
 JSS ( fee_div_max );                // in: TransactionSign
+JSS ( fee_level );                  // out: AccountInfo
 JSS ( fee_mult_max );               // in: TransactionSign
 JSS ( fee_ref );                    // out: NetworkOPs
 JSS ( fetch_pack );                 // out: NetworkOPs
@@ -183,6 +186,7 @@ JSS ( hashes );                     // in: AccountObjects
 JSS ( have_header );                // out: InboundLedger
 JSS ( have_state );                 // out: InboundLedger
 JSS ( have_transactions );          // out: InboundLedger
+JSS ( highest_sequence );           // out: AccountInfo
 JSS ( hostid );                     // out: NetworkOPs
 JSS ( id );                         // websocket.
 JSS ( ident );                      // in: AccountCurrencies, AccountInfo,
@@ -241,6 +245,7 @@ JSS ( load_factor_net );            // out: NetworkOPs
 JSS ( load_fee );                   // out: LoadFeeTrackImp, NetworkOPs
 JSS ( local );                      // out: resource/Logic.h
 JSS ( local_txs );                  // out: GetCounts
+JSS ( lowest_sequence );            // out: AccountInfo
 JSS ( majority );                   // out: RPC feature
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
@@ -251,6 +256,8 @@ JSS ( master_seed );                // out: WalletPropose
 JSS ( master_seed_hex );            // out: WalletPropose
 JSS ( max_ledger );                 // in/out: LedgerCleaner
 JSS ( max_queue_size );             // out: TxQ
+JSS ( max_spend_drops );            // out: AccountInfo
+JSS ( max_spend_drops_total );      // out: AccountInfo
 JSS ( median_fee );                 // out: TxQ
 JSS ( median_level );               // out: TxQ
 JSS ( message );                    // error.
@@ -315,6 +322,8 @@ JSS ( published_ledger );           // out: NetworkOPs
 JSS ( quality );                    // out: NetworkOPs
 JSS ( quality_in );                 // out: AccountLines
 JSS ( quality_out );                // out: AccountLines
+JSS ( queue );                      // in: AccountInfo
+JSS ( queue_data );                 // out: AccountInfo
 JSS ( random );                     // out: Random
 JSS ( raw_meta );                   // out: AcceptedLedgerTx
 JSS ( receive_currencies );         // out: AccountCurrencies
