@@ -865,9 +865,8 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                     });
             }
             // Update fee computations.
-            app_.getTxQ().processValidatedLedger(app_, accum,
+            app_.getTxQ().processClosedLedger(app_, accum,
                 roundTime_ > 5s);
-
             accum.apply(*buildLCL);
         }
 

@@ -356,9 +356,11 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
             the latter case, continue through the fee queue anyway
             to head off potential ordering manipulation problems.
     */
+    auto feeNextIter = std::next(candidateIter);
     bool useAccountNext = accountNextIter != txQAccount.transactions.end() &&
         accountNextIter->first == candidateIter->sequence + 1 &&
-            accountNextIter->second.feeLevel > candidateIter->feeLevel;
+            (feeNextIter == byFee_.end() ||
+                accountNextIter->second.feeLevel > feeNextIter->feeLevel);
     auto candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
     return useAccountNext ?
@@ -917,7 +919,7 @@ TxQ::apply(Application& app, OpenView& view,
 
 */
 void
-TxQ::processValidatedLedger(Application& app,
+TxQ::processClosedLedger(Application& app,
     OpenView const& view, bool timeLeap)
 {
     auto const allowEscalation =
@@ -1142,6 +1144,38 @@ TxQ::getMetrics(Config const& config, OpenView const& view,
     result.medFeeLevel = feeMetrics_.getEscalationMultiplier();
     result.expFeeLevel = feeMetrics_.scaleFeeLevel(view, txCountPadding);
 
+    return result;
+}
+
+auto
+TxQ::getAccountTxs(AccountID const& account, Config const& config,
+    ReadView const& view) const
+        -> boost::optional<std::map<TxSeq, AccountTxDetails>>
+{
+    auto const allowEscalation =
+        (view.rules().enabled(featureFeeEscalation,
+            config.features));
+    if (!allowEscalation)
+        return boost::none;
+
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto accountIter = byAccount_.find(account);
+    if (accountIter == byAccount_.end() ||
+        accountIter->second.transactions.empty())
+        return boost::none;
+
+    std::map<TxSeq, AccountTxDetails> result;
+
+    for (auto const& tx : accountIter->second.transactions)
+    {
+        auto& resultTx = result[tx.first];
+        resultTx.feeLevel = tx.second.feeLevel;
+        if(tx.second.lastValid)
+            resultTx.lastValid.emplace(*tx.second.lastValid);
+        if(tx.second.consequences)
+            resultTx.consequences.emplace(*tx.second.consequences);
+    }
     return result;
 }
 

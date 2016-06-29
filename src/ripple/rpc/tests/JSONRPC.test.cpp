@@ -1950,7 +1950,7 @@ public:
             Json::Value req;
             Json::Reader ().parse (R"({
                 "fee_mult_max" : 1000,
-                "x-queue-okay" : false,
+                "x_queue_okay" : false,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -1968,7 +1968,7 @@ public:
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 1000,
-                "x-queue-okay" : true,
+                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -1986,7 +1986,7 @@ public:
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 1000,
-                "x-assume-tx" : 4,
+                "x_assume_tx" : 4,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2004,8 +2004,8 @@ public:
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 1000,
-                "x-assume-tx" : 4,
-                "x-queue-okay" : true,
+                "x_assume_tx" : 4,
+                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2041,7 +2041,7 @@ public:
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 5,
-                "x-queue-okay" : true,
+                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2059,8 +2059,8 @@ public:
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 5,
-                "x-assume-tx" : 4,
-                "x-queue-okay" : false,
+                "x_assume_tx" : 4,
+                "x_queue_okay" : false,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2077,8 +2077,8 @@ public:
             Json::Value req;
             Json::Reader().parse(R"({
                 "fee_mult_max" : 5,
-                "x-assume-tx" : 4,
-                "x-queue-okay" : true,
+                "x_assume_tx" : 4,
+                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
@@ -2097,8 +2097,8 @@ public:
             Json::Reader().parse(R"({
                 "fee_mult_max" : 1000,
                 "fee_div_max" : 3,
-                "x-assume-tx" : 4,
-                "x-queue-okay" : true,
+                "x_assume_tx" : 4,
+                "x_queue_okay" : true,
                 "tx_json" : { }
             })", req);
             Json::Value result =
