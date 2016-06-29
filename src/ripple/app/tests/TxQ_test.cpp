@@ -403,6 +403,33 @@ public:
         env(noop(daria), fee(7000), queued);
         env(noop(edgar), fee(7000), queued);
         checkMetrics(env, 5, boost::none, 3, 2, 256);
+        {
+            auto& txQ = env.app().getTxQ();
+            auto aliceStat = txQ.getAccountTxs(alice.id(),
+                env.app().config(), *env.current());
+            if (BEAST_EXPECT(aliceStat))
+            {
+                BEAST_EXPECT(aliceStat->size() == 1);
+                BEAST_EXPECT(aliceStat->begin()->second.feeLevel == 256);
+                BEAST_EXPECT(aliceStat->begin()->second.lastValid &&
+                    *aliceStat->begin()->second.lastValid == 8);
+                BEAST_EXPECT(!aliceStat->begin()->second.consequences);
+            }
+
+            auto bobStat = txQ.getAccountTxs(bob.id(),
+                env.app().config(), *env.current());
+            if (BEAST_EXPECT(bobStat))
+            {
+                BEAST_EXPECT(bobStat->size() == 1);
+                BEAST_EXPECT(bobStat->begin()->second.feeLevel = 7000 * 256 / 10);
+                BEAST_EXPECT(!bobStat->begin()->second.lastValid);
+                BEAST_EXPECT(!bobStat->begin()->second.consequences);
+            }
+
+            auto noStat = txQ.getAccountTxs(Account::master.id(),
+                env.app().config(), *env.current());
+            BEAST_EXPECT(!noStat);
+        }
 
         env.close();
         checkMetrics(env, 1, 6, 4, 3, 256);
@@ -719,6 +746,30 @@ public:
             ++aliceSeq;
         }
         checkMetrics(env, 8, 8, 5, 4, 257);
+        {
+            auto& txQ = env.app().getTxQ();
+            auto aliceStat = txQ.getAccountTxs(alice.id(),
+                env.app().config(), *env.current());
+            std::int64_t fee = 10;
+            auto seq = env.seq(alice);
+            if (BEAST_EXPECT(aliceStat))
+            {
+                BEAST_EXPECT(aliceStat->size() == 7);
+                for (auto const& tx : *aliceStat)
+                {
+                    BEAST_EXPECT(tx.first == seq);
+                    BEAST_EXPECT(tx.second.feeLevel == mulDiv(fee, 256, 10).second);
+                    BEAST_EXPECT(tx.second.lastValid);
+                    BEAST_EXPECT((tx.second.consequences &&
+                        tx.second.consequences->fee == drops(fee) &&
+                        tx.second.consequences->potentialSpend == drops(0) &&
+                        tx.second.consequences->category == TxConsequences::normal) ||
+                        tx.first == env.seq(alice) + 6);
+                    ++seq;
+                    fee = (fee + 1) * 125 / 100;
+                }
+            }
+        }
 
         // Alice attempts to add another item to the queue,
         // but you can't force your own earlier txn off the
@@ -1557,11 +1608,47 @@ public:
                 !RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
-                BEAST_EXPECT(result.isMember(jss::drops));
-                BEAST_EXPECT(result.isMember(jss::levels));
                 BEAST_EXPECT(result.isMember(jss::current_ledger_size));
                 BEAST_EXPECT(result.isMember(jss::current_queue_size));
                 BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
+                BEAST_EXPECT(!result.isMember(jss::max_queue_size));
+                BEAST_EXPECT(result.isMember(jss::drops));
+                auto const& drops = result[jss::drops];
+                BEAST_EXPECT(drops.isMember(jss::base_fee));
+                BEAST_EXPECT(drops.isMember(jss::median_fee));
+                BEAST_EXPECT(drops.isMember(jss::minimum_fee));
+                BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
+                BEAST_EXPECT(result.isMember(jss::levels));
+                auto const& levels = result[jss::levels];
+                BEAST_EXPECT(levels.isMember(jss::median_level));
+                BEAST_EXPECT(levels.isMember(jss::minimum_level));
+                BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
+                BEAST_EXPECT(levels.isMember(jss::reference_level));
+            }
+
+            env.close();
+
+            fee = env.rpc("fee");
+
+            if (BEAST_EXPECT(fee.isMember(jss::result) &&
+                !RPC::contains_error(fee[jss::result])))
+            {
+                auto const& result = fee[jss::result];
+                BEAST_EXPECT(result.isMember(jss::current_ledger_size));
+                BEAST_EXPECT(result.isMember(jss::current_queue_size));
+                BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
+                BEAST_EXPECT(result.isMember(jss::max_queue_size));
+                auto const& drops = result[jss::drops];
+                BEAST_EXPECT(drops.isMember(jss::base_fee));
+                BEAST_EXPECT(drops.isMember(jss::median_fee));
+                BEAST_EXPECT(drops.isMember(jss::minimum_fee));
+                BEAST_EXPECT(drops.isMember(jss::open_ledger_fee));
+                BEAST_EXPECT(result.isMember(jss::levels));
+                auto const& levels = result[jss::levels];
+                BEAST_EXPECT(levels.isMember(jss::median_level));
+                BEAST_EXPECT(levels.isMember(jss::minimum_level));
+                BEAST_EXPECT(levels.isMember(jss::open_ledger_level));
+                BEAST_EXPECT(levels.isMember(jss::reference_level));
             }
         }
 
@@ -1668,6 +1755,422 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 4);
     }
 
+    void testSignAndSubmitSequence()
+    {
+        testcase("Autofilled sequence should account for TxQ");
+        using namespace jtx;
+        Env env(*this, makeConfig({ {"minimum_txn_in_ledger_standalone", "6"} }),
+            features(featureFeeEscalation));
+        Env_ss envs(env);
+        auto const& txQ = env.app().getTxQ();
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(100000), alice, bob);
+
+        auto params = Json::Value(Json::objectValue);
+        // Max fee = 50k drops
+        params[jss::fee_mult_max] = 100;
+        params["x_queue_okay"] = true;
+
+        fillQueue(env, alice);
+        checkMetrics(env, 0, boost::none, 7, 6, 256);
+
+        // Queue up several transactions for alice sign-and-submit
+        auto const aliceSeq = env.seq(alice);
+        auto const lastLedgerSeq = env.current()->info().seq + 2;
+
+        for (int i = 0; i < 5; ++i)
+        {
+            if (i == 2)
+                envs(noop(alice), fee(none), seq(none),
+                    json(jss::LastLedgerSequence, lastLedgerSeq),
+                        ter(terQUEUED))(params);
+            else
+                envs(noop(alice), fee(none), seq(none),
+                    ter(terQUEUED))(params);
+        }
+        checkMetrics(env, 5, boost::none, 7, 6, 256);
+        {
+            auto aliceStat = txQ.getAccountTxs(alice.id(),
+                env.app().config(), *env.current());
+            if (BEAST_EXPECT(aliceStat))
+            {
+                auto seq = aliceSeq;
+                BEAST_EXPECT(aliceStat->size() == 5);
+                for (auto const& tx : *aliceStat)
+                {
+                    BEAST_EXPECT(tx.first == seq);
+                    BEAST_EXPECT(tx.second.feeLevel == 25600);
+                    if(seq == aliceSeq + 2)
+                    {
+                        BEAST_EXPECT(tx.second.lastValid &&
+                            *tx.second.lastValid == lastLedgerSeq);
+                    }
+                    else
+                    {
+                        BEAST_EXPECT(!tx.second.lastValid);
+                    }
+                    ++seq;
+                }
+            }
+        }
+        // Put some txs in the queue for bob.
+        // Give them a higher fee so they'll beat alice's.
+        for (int i = 0; i < 8; ++i)
+            envs(noop(bob), fee(2000), seq(none), ter(terQUEUED))();
+        checkMetrics(env, 13, boost::none, 7, 6, 256);
+
+        env.close();
+        checkMetrics(env, 5, 14, 8, 7, 256);
+        // Put some more txs in the queue for bob.
+        // Give them a higher fee so they'll beat alice's.
+        fillQueue(env, bob);
+        for(int i = 0; i < 9; ++i)
+            envs(noop(bob), fee(2000), seq(none), ter(terQUEUED))();
+        checkMetrics(env, 14, 14, 8, 7, 25601);
+        env.close();
+        // Put some more txs in the queue for bob.
+        // Give them a higher fee so they'll beat alice's.
+        fillQueue(env, bob);
+        for (int i = 0; i < 10; ++i)
+            envs(noop(bob), fee(2000), seq(none), ter(terQUEUED))();
+        checkMetrics(env, 15, 16, 9, 8, 256);
+        env.close();
+        checkMetrics(env, 4, 18, 10, 9, 256);
+        {
+            // Bob has nothing left in the queue.
+            auto bobStat = txQ.getAccountTxs(bob.id(),
+                env.app().config(), *env.current());
+            BEAST_EXPECT(!bobStat);
+        }
+        // Verify alice's tx got dropped as we BEAST_EXPECT, and that there's
+        // a gap in her queued txs.
+        {
+            auto aliceStat = txQ.getAccountTxs(alice.id(),
+                env.app().config(), *env.current());
+            if (BEAST_EXPECT(aliceStat))
+            {
+                auto seq = aliceSeq;
+                BEAST_EXPECT(aliceStat->size() == 4);
+                for (auto const& tx : *aliceStat)
+                {
+                    // Skip over the missing one.
+                    if (seq == aliceSeq + 2)
+                        ++seq;
+
+                    BEAST_EXPECT(tx.first == seq);
+                    BEAST_EXPECT(tx.second.feeLevel == 25600);
+                    BEAST_EXPECT(!tx.second.lastValid);
+                    ++seq;
+                }
+            }
+        }
+        // Now, fill the gap.
+        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(params);
+        checkMetrics(env, 5, 18, 10, 9, 256);
+        {
+            auto aliceStat = txQ.getAccountTxs(alice.id(),
+                env.app().config(), *env.current());
+            if (BEAST_EXPECT(aliceStat))
+            {
+                auto seq = aliceSeq;
+                BEAST_EXPECT(aliceStat->size() == 5);
+                for (auto const& tx : *aliceStat)
+                {
+                    BEAST_EXPECT(tx.first == seq);
+                    BEAST_EXPECT(tx.second.feeLevel == 25600);
+                    BEAST_EXPECT(!tx.second.lastValid);
+                    ++seq;
+                }
+            }
+        }
+
+        env.close();
+        checkMetrics(env, 0, 20, 5, 10, 256);
+        {
+            // Bob's data has been cleaned up.
+            auto bobStat = txQ.getAccountTxs(bob.id(),
+                env.app().config(), *env.current());
+            BEAST_EXPECT(!bobStat);
+        }
+        {
+            auto aliceStat = txQ.getAccountTxs(alice.id(),
+                env.app().config(), *env.current());
+            BEAST_EXPECT(!aliceStat);
+        }
+    }
+
+    void testAccountInfo()
+    {
+        using namespace jtx;
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation));
+        Env_ss envs(env);
+
+        Account const alice{ "alice" };
+        env.fund(XRP(1000000), alice);
+        env.close();
+
+        auto const withQueue =
+            R"({ "account": ")" + alice.human() +
+            R"(", "queue": true })";
+        auto const withoutQueue =
+            R"({ "account": ")" + alice.human() +
+            R"("})";
+        auto const prevLedgerWithQueue =
+            R"({ "account": ")" + alice.human() +
+            R"(", "queue": true, "ledger_index": 3 })";
+        BEAST_EXPECT(env.current()->info().seq > 3);
+
+        auto submitParams = Json::Value(Json::objectValue);
+        // Max fee = 100 drops
+        submitParams[jss::fee_mult_max] = 10;
+        submitParams["x_queue_okay"] = true;
+
+        {
+            // account_info without the "queue" argument.
+            auto const info = env.rpc("json", "account_info", withoutQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(!info[jss::result].isMember(jss::queue_data));
+        }
+        {
+            // account_info with the "queue" argument.
+            auto const info = env.rpc("json", "account_info", withQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            auto const& result = info[jss::result];
+            BEAST_EXPECT(result.isMember(jss::queue_data));
+            auto const& queue_data = result[jss::queue_data];
+            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
+            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
+            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
+            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+        }
+        checkMetrics(env, 0, 6, 0, 3, 256);
+
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 6, 4, 3, 256);
+
+        {
+            auto const info = env.rpc("json", "account_info", withQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            auto const& result = info[jss::result];
+            BEAST_EXPECT(result.isMember(jss::queue_data));
+            auto const& queue_data = result[jss::queue_data];
+            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
+            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
+            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
+            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+        }
+
+        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
+        envs(noop(alice), fee(none), seq(none), ter(terQUEUED))(submitParams);
+        checkMetrics(env, 4, 6, 4, 3, 256);
+
+        {
+            auto const info = env.rpc("json", "account_info", withQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            auto const& result = info[jss::result];
+            auto const& data = result[jss::account_data];
+            BEAST_EXPECT(result.isMember(jss::queue_data));
+            auto const& queue_data = result[jss::queue_data];
+            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
+            BEAST_EXPECT(queue_data[jss::txn_count] == 4);
+            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+            BEAST_EXPECT(queue_data[jss::highest_sequence] ==
+                data[jss::Sequence].asUInt() +
+                    queue_data[jss::txn_count].asUInt() - 1);
+            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(queue_data.isMember(jss::transactions));
+            auto const& queued = queue_data[jss::transactions];
+            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+            for (unsigned i = 0; i < queued.size(); ++i)
+            {
+                auto const& item = queued[i];
+                BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
+                BEAST_EXPECT(item[jss::fee_level] == "2560");
+                BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
+
+                if (i == queued.size() - 1)
+                {
+                    BEAST_EXPECT(!item.isMember(jss::fee));
+                    BEAST_EXPECT(!item.isMember(jss::max_spend_drops));
+                    BEAST_EXPECT(!item.isMember(jss::auth_change));
+                }
+                else
+                {
+                    BEAST_EXPECT(item.isMember(jss::fee));
+                    BEAST_EXPECT(item[jss::fee] == "100");
+                    BEAST_EXPECT(item.isMember(jss::max_spend_drops));
+                    BEAST_EXPECT(item[jss::max_spend_drops] == "100");
+                    BEAST_EXPECT(item.isMember(jss::auth_change));
+                    BEAST_EXPECT(!item[jss::auth_change].asBool());
+                }
+
+            }
+        }
+
+        // Queue up a blocker
+        envs(fset(alice, asfAccountTxnID), fee(none), seq(none),
+            json(jss::LastLedgerSequence, 10),
+                ter(terQUEUED))(submitParams);
+        checkMetrics(env, 5, 6, 4, 3, 256);
+
+        {
+            auto const info = env.rpc("json", "account_info", withQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            auto const& result = info[jss::result];
+            auto const& data = result[jss::account_data];
+            BEAST_EXPECT(result.isMember(jss::queue_data));
+            auto const& queue_data = result[jss::queue_data];
+            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
+            BEAST_EXPECT(queue_data[jss::txn_count] == 5);
+            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+            BEAST_EXPECT(queue_data[jss::highest_sequence] ==
+                data[jss::Sequence].asUInt() +
+                    queue_data[jss::txn_count].asUInt() - 1);
+            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(queue_data.isMember(jss::transactions));
+            auto const& queued = queue_data[jss::transactions];
+            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+            for (unsigned i = 0; i < queued.size(); ++i)
+            {
+                auto const& item = queued[i];
+                BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
+                BEAST_EXPECT(item[jss::fee_level] == "2560");
+
+                if (i == queued.size() - 1)
+                {
+                    BEAST_EXPECT(!item.isMember(jss::fee));
+                    BEAST_EXPECT(!item.isMember(jss::max_spend_drops));
+                    BEAST_EXPECT(!item.isMember(jss::auth_change));
+                    BEAST_EXPECT(item.isMember(jss::LastLedgerSequence));
+                    BEAST_EXPECT(item[jss::LastLedgerSequence] == 10);
+                }
+                else
+                {
+                    BEAST_EXPECT(item.isMember(jss::fee));
+                    BEAST_EXPECT(item[jss::fee] == "100");
+                    BEAST_EXPECT(item.isMember(jss::max_spend_drops));
+                    BEAST_EXPECT(item[jss::max_spend_drops] == "100");
+                    BEAST_EXPECT(item.isMember(jss::auth_change));
+                    BEAST_EXPECT(!item[jss::auth_change].asBool());
+                    BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
+                }
+
+            }
+        }
+
+        envs(noop(alice), fee(none), seq(none), ter(telCAN_NOT_QUEUE))(submitParams);
+        checkMetrics(env, 5, 6, 4, 3, 256);
+
+        {
+            auto const info = env.rpc("json", "account_info", withQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            auto const& result = info[jss::result];
+            auto const& data = result[jss::account_data];
+            BEAST_EXPECT(result.isMember(jss::queue_data));
+            auto const& queue_data = result[jss::queue_data];
+            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
+            BEAST_EXPECT(queue_data[jss::txn_count] == 5);
+            BEAST_EXPECT(queue_data.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(queue_data[jss::lowest_sequence] == data[jss::Sequence]);
+            BEAST_EXPECT(queue_data.isMember(jss::highest_sequence));
+            BEAST_EXPECT(queue_data[jss::highest_sequence] ==
+                data[jss::Sequence].asUInt() +
+                    queue_data[jss::txn_count].asUInt() - 1);
+            BEAST_EXPECT(queue_data.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(queue_data[jss::auth_change_queued].asBool());
+            BEAST_EXPECT(queue_data.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(queue_data[jss::max_spend_drops_total] == "500");
+            BEAST_EXPECT(queue_data.isMember(jss::transactions));
+            auto const& queued = queue_data[jss::transactions];
+            BEAST_EXPECT(queued.size() == queue_data[jss::txn_count]);
+            for (unsigned i = 0; i < queued.size(); ++i)
+            {
+                auto const& item = queued[i];
+                BEAST_EXPECT(item[jss::seq] == data[jss::Sequence].asInt() + i);
+                BEAST_EXPECT(item[jss::fee_level] == "2560");
+
+                if (i == queued.size() - 1)
+                {
+                    BEAST_EXPECT(item.isMember(jss::fee));
+                    BEAST_EXPECT(item[jss::fee] == "100");
+                    BEAST_EXPECT(item.isMember(jss::max_spend_drops));
+                    BEAST_EXPECT(item[jss::max_spend_drops] == "100");
+                    BEAST_EXPECT(item.isMember(jss::auth_change));
+                    BEAST_EXPECT(item[jss::auth_change].asBool());
+                    BEAST_EXPECT(item.isMember(jss::LastLedgerSequence));
+                    BEAST_EXPECT(item[jss::LastLedgerSequence] == 10);
+                }
+                else
+                {
+                    BEAST_EXPECT(item.isMember(jss::fee));
+                    BEAST_EXPECT(item[jss::fee] == "100");
+                    BEAST_EXPECT(item.isMember(jss::max_spend_drops));
+                    BEAST_EXPECT(item[jss::max_spend_drops] == "100");
+                    BEAST_EXPECT(item.isMember(jss::auth_change));
+                    BEAST_EXPECT(!item[jss::auth_change].asBool());
+                    BEAST_EXPECT(!item.isMember(jss::LastLedgerSequence));
+                }
+
+            }
+        }
+
+        {
+            auto const info = env.rpc("json", "account_info", prevLedgerWithQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                RPC::contains_error(info[jss::result]));
+        }
+
+        env.close();
+        checkMetrics(env, 1, 8, 5, 4, 256);
+        env.close();
+        checkMetrics(env, 0, 10, 1, 5, 256);
+
+        {
+            auto const info = env.rpc("json", "account_info", withQueue);
+            BEAST_EXPECT(info.isMember(jss::result) &&
+                info[jss::result].isMember(jss::account_data));
+            auto const& result = info[jss::result];
+            BEAST_EXPECT(result.isMember(jss::queue_data));
+            auto const& queue_data = result[jss::queue_data];
+            BEAST_EXPECT(queue_data.isObject());
+            BEAST_EXPECT(queue_data.isMember(jss::txn_count));
+            BEAST_EXPECT(queue_data[jss::txn_count] == 0);
+            BEAST_EXPECT(!queue_data.isMember(jss::lowest_sequence));
+            BEAST_EXPECT(!queue_data.isMember(jss::highest_sequence));
+            BEAST_EXPECT(!queue_data.isMember(jss::auth_change_queued));
+            BEAST_EXPECT(!queue_data.isMember(jss::max_spend_drops_total));
+            BEAST_EXPECT(!queue_data.isMember(jss::transactions));
+        }
+    }
+
     void run()
     {
         testQueue();
@@ -1687,6 +2190,8 @@ public:
         testConsequences();
         testRPC();
         testExpirationReplacement();
+        testSignAndSubmitSequence();
+        testAccountInfo();
     }
 };
 
