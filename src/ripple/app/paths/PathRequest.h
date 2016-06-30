@@ -141,7 +141,7 @@ private:
     LedgerIndex mLastIndex;
     bool mInProgress;
 
-    int iLastLevel;
+    int iLevel;
     bool bLastSuccess;
 
     int iIdentifier;

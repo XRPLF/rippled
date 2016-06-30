@@ -52,7 +52,7 @@ PathRequest::PathRequest (
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
-        , iLastLevel (0)
+        , iLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
         , created_ (std::chrono::steady_clock::now())
@@ -76,7 +76,7 @@ PathRequest::PathRequest (
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
-        , iLastLevel (0)
+        , iLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
         , created_ (std::chrono::steady_clock::now())
@@ -651,7 +651,6 @@ Json::Value PathRequest::doUpdate(
     if (jvId)
         newStatus["id"] = jvId;
 
-    int iLevel = iLastLevel;
     bool loaded = app_.getFeeTrack().isLoadedLocal();
 
     if (iLevel == 0)
@@ -688,12 +687,17 @@ Json::Value PathRequest::doUpdate(
     JLOG(m_journal.debug()) << iIdentifier
         << " processing at level " << iLevel;
 
-    Json::Value& jvArray = (newStatus[jss::alternatives] = Json::arrayValue);
-    if (! findPaths(cache, iLevel, jvArray))
+    Json::Value jvArray = Json::arrayValue;
+    if (findPaths(cache, iLevel, jvArray))
+    {
+        bLastSuccess = jvArray.size() != 0;
+        newStatus[jss::alternatives] = std::move (jvArray);
+    }
+    else
+    {
+        bLastSuccess = false;
         newStatus = rpcError(rpcINTERNAL);
-
-    bLastSuccess = jvArray.size();
-    iLastLevel = iLevel;
+    }
 
     if (fast && quick_reply_ == steady_clock::time_point{})
     {
