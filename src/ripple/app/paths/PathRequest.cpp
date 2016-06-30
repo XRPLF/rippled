@@ -687,14 +687,17 @@ Json::Value PathRequest::doUpdate(
     JLOG(m_journal.debug()) << iIdentifier
         << " processing at level " << iLevel;
 
-    Json::Value& jvArray = (newStatus[jss::alternatives] = Json::arrayValue);
-    if (! findPaths(cache, iLevel, jvArray))
+    Json::Value jvArray = Json::arrayValue;
+    if (findPaths(cache, iLevel, jvArray))
+    {
+        bLastSuccess = jvArray.size() != 0;
+        newStatus[jss::alternatives] = std::move (jvArray);
+    }
+    else
     {
         bLastSuccess = false;
         newStatus = rpcError(rpcINTERNAL);
     }
-    else
-        bLastSuccess = jvArray.size() != 0;
 
     if (fast && quick_reply_ == steady_clock::time_point{})
     {
