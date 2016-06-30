@@ -52,7 +52,7 @@ PathRequest::PathRequest (
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
-        , iLastLevel (0)
+        , iLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
         , created_ (std::chrono::steady_clock::now())
@@ -76,7 +76,7 @@ PathRequest::PathRequest (
         , jvStatus (Json::objectValue)
         , mLastIndex (0)
         , mInProgress (false)
-        , iLastLevel (0)
+        , iLevel (0)
         , bLastSuccess (false)
         , iIdentifier (id)
         , created_ (std::chrono::steady_clock::now())
@@ -651,7 +651,6 @@ Json::Value PathRequest::doUpdate(
     if (jvId)
         newStatus["id"] = jvId;
 
-    int iLevel = iLastLevel;
     bool loaded = app_.getFeeTrack().isLoadedLocal();
 
     if (iLevel == 0)
@@ -690,10 +689,12 @@ Json::Value PathRequest::doUpdate(
 
     Json::Value& jvArray = (newStatus[jss::alternatives] = Json::arrayValue);
     if (! findPaths(cache, iLevel, jvArray))
+    {
+        bLastSuccess = false;
         newStatus = rpcError(rpcINTERNAL);
-
-    bLastSuccess = jvArray.size();
-    iLastLevel = iLevel;
+    }
+    else
+        bLastSuccess = jvArray.size() != 0;
 
     if (fast && quick_reply_ == steady_clock::time_point{})
     {
