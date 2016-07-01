@@ -440,7 +440,7 @@ void Config::loadFromString (std::string const& fileContents)
             Throw<std::runtime_error> (
                 "Invalid path specified in [" SECTION_VALIDATORS_FILE "]");
 
-        if (!validatorsFile.is_absolute())
+        if (!validatorsFile.is_absolute() && !CONFIG_DIR.empty())
             validatorsFile = CONFIG_DIR / validatorsFile;
 
         if (!boost::filesystem::exists (validatorsFile))
@@ -454,7 +454,7 @@ void Config::loadFromString (std::string const& fileContents)
                 "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " +
                 validatorsFile.string());
     }
-    else
+    else if (!CONFIG_DIR.empty())
     {
         validatorsFile = CONFIG_DIR / validatorsFileName;
 
