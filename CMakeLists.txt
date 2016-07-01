@@ -691,7 +691,7 @@ if (WIN32 OR is_xcode OR NOT unity)
   add_with_props("${nodestore_srcs}"
     -I${CMAKE_SOURCE_DIR}/src/rocksdb2/include
     -I${CMAKE_SOURCE_DIR}/src/snappy/snappy
-    -I${CMAKE_SOURCE_DIR}/src/snappy/config,
+    -I${CMAKE_SOURCE_DIR}/src/snappy/config
     ${rocks_db_system_header})
 
   list(APPEND non_unity_srcs "${nodestore_srcs}")
