@@ -141,7 +141,7 @@ protected:
             remove (toRm);
         else
             test_.log << "Expected " << toRm.string ()
-                      << " to be an empty existing directory.";
+                      << " to be an empty existing directory." << std::endl;
     };
 
 public:
@@ -176,12 +176,13 @@ public:
             if (rmSubDir_)
                 rmDir (subDir_);
             else
-                test_.log << "Skipping rm dir: " << subDir_.string ();
+                test_.log << "Skipping rm dir: "
+                          << subDir_.string () << std::endl;
         }
         catch (std::exception& e)
         {
             // if we throw here, just let it die.
-            test_.log << "Error in ~ConfigGuard: " << e.what ();
+            test_.log << "Error in ~ConfigGuard: " << e.what () << std::endl;
         };
     }
 };
@@ -249,19 +250,21 @@ public:
             using namespace boost::filesystem;
             if (!boost::filesystem::exists (configFile_))
                 test_.log << "Expected " << configFile_.string ()
-                          << " to be an existing file.";
+                          << " to be an existing file." << std::endl;
             else
                 remove (configFile_.string ());
 
             if (rmDataDir_)
                 rmDir (dataDir_);
             else
-                test_.log << "Skipping rm dir: " << dataDir_.string ();
+                test_.log << "Skipping rm dir: "
+                          << dataDir_.string () << std::endl;
         }
         catch (std::exception& e)
         {
             // if we throw here, just let it die.
-            test_.log << "Error in ~RippledCfgGuard: " << e.what ();
+            test_.log << "Error in ~RippledCfgGuard: "
+                      << e.what () << std::endl;
         };
     }
 };
@@ -337,14 +340,15 @@ public:
             using namespace boost::filesystem;
             if (!boost::filesystem::exists (validatorsFile_))
                 test_.log << "Expected " << validatorsFile_.string ()
-                          << " to be an existing file.";
+                          << " to be an existing file." << std::endl;
             else
                 remove (validatorsFile_.string ());
         }
         catch (std::exception& e)
         {
             // if we throw here, just let it die.
-            test_.log << "Error in ~ValidatorsTxtGuard: " << e.what ();
+            test_.log << "Error in ~ValidatorsTxtGuard: "
+                      << e.what () << std::endl;
         };
     }
 };
