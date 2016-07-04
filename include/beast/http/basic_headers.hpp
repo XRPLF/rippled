@@ -105,7 +105,7 @@ protected:
     using list_t = typename boost::intrusive::make_list<
         element, boost::intrusive::constant_time_size<false>>::type;
 
-    using set_t = typename boost::intrusive::make_set<
+    using set_t = typename boost::intrusive::make_multiset<
         element, boost::intrusive::constant_time_size<true>,
             boost::intrusive::compare<less>>::type;
 
@@ -117,7 +117,6 @@ protected:
         : set_(std::move(set))
         , list_(std::move(list))
     {
-
     }
 
 public:
@@ -244,9 +243,10 @@ public:
     value.
 
     Field names are stored as-is, but comparison are case-insensitive.
-    The container preserves the order of insertion of fields with
-    different names. For fields with the same name, the implementation
-    concatenates values inserted with duplicate names as per rfc7230.
+    When the container is iterated, the fields are presented in the order
+    of insertion. For fields with the same name, the container behaves
+    as a std::multiset; there will be a separate value for each occurrence
+    of the field name.
 
     @note Meets the requirements of @b `FieldSequence`.
 */
@@ -359,26 +359,43 @@ public:
         return set_.size();
     }
 
-    /** Returns `true` if the specified field exists. */
+    /// Returns `true` if the specified field exists.
     bool
     exists(boost::string_ref const& name) const
     {
         return set_.find(name, less{}) != set_.end();
     }
 
-    /** Returns an iterator to the case-insensitive matching header. */
+    /// Returns the number of values for the specified field.
+    std::size_t
+    count(boost::string_ref const& name) const;
+
+    /** Returns an iterator to the case-insensitive matching field name.
+
+        If more than one field with the specified name exists, the
+        first field defined by insertion order is returned.
+    */
     iterator
     find(boost::string_ref const& name) const;
 
-    /** Returns the value for a case-insensitive matching header, or "" */
+    /** Returns the value for a case-insensitive matching header, or `""`.
+
+        If more than one field with the specified name exists, the
+        first field defined by insertion order is returned.
+    */
     boost::string_ref
     operator[](boost::string_ref const& name) const;
 
-    /** Clear the contents of the basic_headers. */
+    /// Clear the contents of the basic_headers.
     void
     clear() noexcept;
 
     /** Remove a field.
+
+        If more than one field with the specified name exists, all
+        matching fields will be removed.
+
+        @param name The name of the field(s) to remove.
 
         @return The number of fields removed.
     */
@@ -387,39 +404,57 @@ public:
 
     /** Insert a field value.
 
-        If a field value already exists the new value will be
-        extended as per RFC2616 Section 4.2.
+        If a field with the same name already exists, the
+        existing field is untouched and a new field value pair
+        is inserted into the container.
+
+        @param name The name of the field.
+
+        @param value A string holding the value of the field.
     */
-    // VFALCO TODO Consider allowing rvalue references for std::move?
     void
     insert(boost::string_ref const& name, boost::string_ref value);
 
     /** Insert a field value.
 
-        If a field value already exists the new value will be
-        extended as per RFC2616 Section 4.2.
+        If a field with the same name already exists, the
+        existing field is untouched and a new field value pair
+        is inserted into the container.
+
+        @param name The name of the field
+
+        @param value The value of the field. The object will be
+        converted to a string using `boost::lexical_cast`.
     */
     template<class T>
     typename std::enable_if<
         ! std::is_constructible<boost::string_ref, T>::value>::type
     insert(boost::string_ref name, T const& value)
     {
-        insert(name,
-            boost::lexical_cast<std::string>(value));
+        insert(name, boost::lexical_cast<std::string>(value));
     }
 
     /** Replace a field value.
 
-        The current field value, if any, is removed. Then the
-        specified value is inserted as if by `insert(field, value)`.
+        First removes any values with matching field names, then
+        inserts the new field value.
+
+        @param name The name of the field.
+
+        @param value A string holding the value of the field.
     */
     void
     replace(boost::string_ref const& name, boost::string_ref value);
 
     /** Replace a field value.
 
-        The current field value, if any, is removed. Then the
-        specified value is inserted as if by `insert(field, value)`.
+        First removes any values with matching field names, then
+        inserts the new field value.
+
+        @param name The name of the field
+
+        @param value The value of the field. The object will be
+        converted to a string using `boost::lexical_cast`.
     */
     template<class T>
     typename std::enable_if<

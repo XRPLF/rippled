@@ -63,9 +63,23 @@ public:
     void testRFC2616()
     {
         bh h;
+        h.insert("a", "w");
         h.insert("a", "x");
-        h.insert("a", "y");
-        expect(h["a"] == "x,y");
+        h.insert("aa", "y");
+        h.insert("b", "z");
+        expect(h.count("a") == 2);
+    }
+
+    void testErase()
+    {
+        bh h;
+        h.insert("a", "w");
+        h.insert("a", "x");
+        h.insert("aa", "y");
+        h.insert("b", "z");
+        expect(h.size() == 4);
+        h.erase("a");
+        expect(h.size() == 2);
     }
 
     void run() override
