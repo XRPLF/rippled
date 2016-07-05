@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_REPORT_UNCAUGHT_EXCEPTION_H_INCLUDED
-#define RIPPLE_CORE_REPORT_UNCAUGHT_EXCEPTION_H_INCLUDED
+#ifndef RIPPLE_CORE_THREAD_ENTRY_H_INCLUDED
+#define RIPPLE_CORE_THREAD_ENTRY_H_INCLUDED
 
 #include <ripple/basics/Log.h>
 #include <boost/coroutine/exceptions.hpp> // forced_unwind exception
@@ -52,7 +52,7 @@ uncaught exception.  The lambda is only called in the error case.
 
 Usage example
 
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <chrono>
 #include <exception>
 #include <thread>
@@ -62,7 +62,7 @@ class ThreadedHandler
 public:
     void operator() ()
     {
-        reportUncaughtException (
+        threadEntry (
             this, &ThreadedHandler::runImpl, "ThreadedHandler::operator()");
     }
 
@@ -90,7 +90,7 @@ int main ()
 @param lamdba Optional lambda that returns additional text for the log.
 */
 template <typename T, typename R, typename L>
-void reportUncaughtException (
+void threadEntry (
     T* t, R (T::*threadTop) (), char const* name, L&& lambda)
 {
     // Enforce that lambda takes no parameters and returns std::string.
@@ -142,10 +142,10 @@ void reportUncaughtException (
 
 // Handle the common case where there is no additional local information.
 template <typename T, typename R>
-inline void reportUncaughtException (
+inline void threadEntry (
     T* t, R (T::*threadTop) (), char const* name)
 {
-    reportUncaughtException (t, threadTop, name, []{ return std::string(); });
+    threadEntry (t, threadTop, name, []{ return std::string(); });
 }
 
 } // namespace ripple

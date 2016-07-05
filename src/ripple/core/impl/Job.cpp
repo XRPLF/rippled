@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/Job.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <cassert>
 
 namespace ripple {
@@ -77,7 +77,7 @@ bool Job::shouldCancel () const
 
 void Job::doJob ()
 {
-    reportUncaughtException (this, &Job::doJobImpl, "Job::doJob()",
+    threadEntry (this, &Job::doJobImpl, "Job::doJob()",
         [this] ()
         {
             std::stringstream ss;

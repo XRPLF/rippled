@@ -2050,8 +2050,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\ReportUncaughtException.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Stoppable.h">
@@ -2092,6 +2090,8 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\core\ThreadEntry.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\csprng.h">

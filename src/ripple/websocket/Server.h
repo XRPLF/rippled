@@ -21,7 +21,7 @@
 #define RIPPLE_WEBSOCKET_SERVER_H_INCLUDED
 
 #include <ripple/basics/Log.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <ripple/websocket/WebSocket.h>
 #include <ripple/beast/core/Thread.h>
 #include <condition_variable>
@@ -60,7 +60,7 @@ public:
 private:
     void run ()
     {
-        reportUncaughtException (
+        threadEntry (
             this, &Server::runImpl, "Server<WebSocket>::run()");
     }
 

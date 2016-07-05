@@ -26,7 +26,7 @@
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
@@ -337,7 +337,7 @@ public:
     // Uncaught exception handling for async read threads
     void threadEntry ()
     {
-        reportUncaughtException (
+        ::ripple::threadEntry (
             this, &DatabaseImp::threadEntryImpl, "DatabaseImp::threadEntry()");
     }
 
