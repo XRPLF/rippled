@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/main/BasicApp.h>
 #include <ripple/beast/core/Thread.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {
@@ -34,7 +34,7 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
                     std::string("io_service #") +
                         std::to_string(numberOfThreads));
 
-                ripple::reportUncaughtException (&io_service_,
+                ripple::threadEntry (&io_service_,
                     &boost::asio::io_service::run,
                         "io_service::run");
             });

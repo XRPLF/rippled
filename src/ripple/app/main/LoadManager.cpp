@@ -23,7 +23,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/LoadFeeTrack.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <ripple/json/to_string.h>
 #include <ripple/beast/core/Thread.h>
 #include <memory>
@@ -108,7 +108,7 @@ void LoadManager::onStop ()
 
 void LoadManager::run ()
 {
-    reportUncaughtException (this, &LoadManager::runImpl, "LoadManager::run()");
+    threadEntry (this, &LoadManager::runImpl, "LoadManager::run()");
 }
 
 void LoadManager::runImpl ()

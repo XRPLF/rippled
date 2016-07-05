@@ -25,7 +25,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <boost/format.hpp>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
@@ -298,7 +298,7 @@ SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
 void
 SHAMapStoreImp::run()
 {
-    reportUncaughtException (
+    threadEntry (
         this, &SHAMapStoreImp::runImpl, "SHAMapStoreImp::run()");
 }
 

@@ -21,11 +21,11 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/TestSuite.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 
 namespace ripple {
 
-// reportUncaughtException is disabled if NO_LOG_UNHANDLED_EXCEPTIONS is defined.
+// threadEntry is disabled if NO_LOG_UNHANDLED_EXCEPTIONS is defined.
 #ifndef NO_LOG_UNHANDLED_EXCEPTIONS
 
 class ReportUncaughtException_test : public TestSuite
@@ -96,11 +96,11 @@ public:
         ExceptionGen exGen;
 
         // Make sure nothing gets logged if there's no exception.
-        reportUncaughtException (&exGen, &ExceptionGen::dontThrow, "noThrow");
+        threadEntry (&exGen, &ExceptionGen::dontThrow, "noThrow");
         expect (sinkRef.getText() == "");
         sinkRef.reset();
 
-        reportUncaughtException (&exGen, &ExceptionGen::dontThrow, "noThrow",
+        threadEntry (&exGen, &ExceptionGen::dontThrow, "noThrow",
             [] { return "Just noise"; });
 
         expect (sinkRef.getText() == "");
@@ -117,7 +117,7 @@ public:
                 bool gotException = false;
                 try
                 {
-                    reportUncaughtException (&exGen, call, "testFn");
+                    threadEntry (&exGen, call, "testFn");
                 }
                 catch (...)
                 {
@@ -131,7 +131,7 @@ public:
                 gotException = false;
                 try
                 {
-                    reportUncaughtException (&exGen, call, "testFn",
+                    threadEntry (&exGen, call, "testFn",
                         []{ return "extra info"; });
                 }
                 catch (...)

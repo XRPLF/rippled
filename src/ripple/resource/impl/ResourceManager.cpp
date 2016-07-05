@@ -22,7 +22,7 @@
 #include <ripple/resource/impl/Logic.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <ripple/beast/core/Thread.h>
 #include <condition_variable>
 #include <memory>
@@ -114,7 +114,7 @@ public:
 private:
     void run ()
     {
-        reportUncaughtException (
+        threadEntry (
             this, &ManagerImp::runImpl, "Resource::Manager::run()");
     }
 

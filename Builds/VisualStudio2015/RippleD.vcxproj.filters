@@ -2592,9 +2592,6 @@
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\ReportUncaughtException.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SociDB.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
@@ -2619,6 +2616,9 @@
     <ClCompile Include="..\..\src\ripple\core\tests\Stoppable.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\core\ThreadEntry.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
       <Filter>ripple\core</Filter>
     </ClInclude>

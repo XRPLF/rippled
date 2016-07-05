@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/DeadlineTimer.h>
-#include <ripple/core/ReportUncaughtException.h>
+#include <ripple/core/ThreadEntry.h>
 #include <ripple/beast/core/Thread.h>
 #include <algorithm>
 #include <cassert>
@@ -100,7 +100,7 @@ public:
 
     void run () override
     {
-        reportUncaughtException (
+        threadEntry (
             this, &Manager::runImpl, "DeadlineTimer::Manager::run()");
     }
 
