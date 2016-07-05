@@ -365,7 +365,6 @@ def config_base(env):
         ,{'SOCI_CXX_C11' : '1'}
         ,'_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS'
         ,'BOOST_NO_AUTO_PTR'
-        ,'NO_LOG_UNHANDLED_EXCEPTIONS'
         ])
 
     if Beast.system.windows:
@@ -385,6 +384,7 @@ def config_base(env):
         openssl = os.path.join(OSX_OPENSSL_ROOT, most_recent)
         env.Prepend(CPPPATH='%s/include' % openssl)
         env.Prepend(LIBPATH=['%s/lib' % openssl])
+        env.Append(CPPDEFINES=['NO_LOG_UNHANDLED_EXCEPTIONS'])
 
     # handle command-line arguments
     profile_jemalloc = ARGUMENTS.get('profile-jemalloc')

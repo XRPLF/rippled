@@ -160,10 +160,7 @@ void Workers::Worker::run ()
 {
     // Call runImpl() and report if any exceptions escape runImpl.
     threadEntry (this, &Workers::Worker::runImpl,
-        "Workers::Worker::run()", [this] ()
-            {
-                return "Thread: " + Thread::getThreadName();
-            });
+                 "Workers::Worker::run(); Thread: " + Thread::getThreadName());
 }
 
 void Workers::Worker::runImpl ()

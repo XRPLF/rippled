@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_CONTRACT_H_INCLUDED
 #define RIPPLE_BASICS_CONTRACT_H_INCLUDED
 
+#include <ripple/beast/type_name.h>
 #include <exception>
 #include <string>
 #include <typeinfo>
@@ -62,7 +63,8 @@ Throw (Args&&... args)
         "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    LogThrow (std::string("Throwing exception: ") + e.what());
+    LogThrow (std::string("Throwing exception of type " +
+                          beast::type_name<E>() +": ") + e.what());
     throw e;
 }
 
