@@ -2553,6 +2553,9 @@
     <ClCompile Include="..\..\src\ripple\core\impl\Stoppable.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\ThreadEntry.cpp">
+      <Filter>ripple\core\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\TimeKeeper.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
@@ -2605,9 +2608,6 @@
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\LoadFeeTrack.test.cpp">
-      <Filter>ripple\core\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\tests\ReportUncaughtException.test.cpp">
       <Filter>ripple\core\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\tests\SociDB.test.cpp">

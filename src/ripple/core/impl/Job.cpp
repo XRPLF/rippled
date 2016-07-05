@@ -77,15 +77,12 @@ bool Job::shouldCancel () const
 
 void Job::doJob ()
 {
-    threadEntry (this, &Job::doJobImpl, "Job::doJob()",
-        [this] ()
-        {
-            std::stringstream ss;
-            ss << "Job name: " << this->mName
-                << "; Job type: " << this->mType
-                << "; Job info: " << this->mJob.target_type().name();
-            return ss.str();
-        });
+    std::stringstream ss;
+    ss << "Job::doJob(); Job name: "
+        << mName << "; Job type: " << mType
+        << "; Job info: " << mJob.target_type ().name ();
+
+    threadEntry (this, &Job::doJobImpl, ss.str());
 }
 
 void Job::rename (std::string const& newName)

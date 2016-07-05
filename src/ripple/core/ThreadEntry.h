@@ -20,35 +20,35 @@
 #ifndef RIPPLE_CORE_THREAD_ENTRY_H_INCLUDED
 #define RIPPLE_CORE_THREAD_ENTRY_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <boost/coroutine/exceptions.hpp> // forced_unwind exception
-#include <exception>
-#include <iostream>
-#include <sstream>
 #include <string>
-#include <type_traits>
 
 namespace ripple
 {
+
+#ifndef NO_LOG_UNHANDLED_EXCEPTIONS
+namespace detail
+{
+void setThreadName(std::string name);
+}
+
+void terminateHandler();
+#endif
+
 /**
 Report uncaught exceptions to DebugLog and cerr
 
-Catch all exceptions that escape the called function.  Report as much
-information as can be extracted from the exception to both the DebugLog
-and cerr.
+The actual reporting occurs in a terminate handler.  This function
+stores information about which thread is running in thread local
+storage.  That way the terminate handler can report not just the
+exception, but also the thread the exception was thrown in.
 
 The idea is to use this routine at the top of a thread, since on
 many platforms the stack trace for an uncaught exception on a thread
 is almost useless.
 
 For those platforms where the stack trace from an uncaught exception is
-useful (e.g., OS X) this routine is a no-op.  That way a catch will not
-interfere with the stack trace showing the real source of the uncaught
-exception.
-
-Note that any extra information is passed using a lambda because we only
-want to do the work of building the string in the unlikely event of an
-uncaught exception.  The lambda is only called in the error case.
+useful (e.g., OS X) this routine is turned into a no-op (because the
+preprocessor symbol NO_LOG_UNHANDLED_EXCEPTIONS is defined).
 
 Usage example
 
@@ -87,65 +87,15 @@ int main ()
 @param t Pointer to object to call.
 @param threadTop Pointer to member function of t to call.
 @param name Name of function to log.
-@param lamdba Optional lambda that returns additional text for the log.
 */
-template <typename T, typename R, typename L>
-void threadEntry (
-    T* t, R (T::*threadTop) (), char const* name, L&& lambda)
-{
-    // Enforce that lambda takes no parameters and returns std::string.
-    static_assert (
-        std::is_convertible<decltype (lambda()), std::string const>::value,
-        "Last argument must be a lamdba taking no arguments "
-        "and returning std::string.");
-
-#ifdef NO_LOG_UNHANDLED_EXCEPTIONS
-    // Don't use a try block so we can get a good call stack.
-    ((t)->*(threadTop)) ();
-#else
-    // Local lambda for string formatting and re-throwing.
-    auto logUncaughtException =
-        [name, &lambda] (char const* exName)
-        {
-            std::stringstream ss;
-            ss << "Unhandled exception in " << name
-                << "; Exception: " << exName;
-
-            std::string extra = lambda();
-            if (! extra.empty())
-                ss << "; " << extra;
-
-            JLOG(debugLog().fatal()) << ss.str();
-            std::cerr << ss.str() << std::endl;
-            throw;
-        };
-
-    try
-    {
-        // Call passed in member function.
-        ((t)->*(threadTop)) ();
-    }
-    catch (std::exception const& ex)
-    {
-        logUncaughtException (ex.what());
-    }
-    catch (boost::coroutines::detail::forced_unwind const&)
-    {
-        logUncaughtException ("forced_unwind");
-    }
-    catch (...)
-    {
-        logUncaughtException ("unknown exception type");
-    }
-#endif // NO_LOG_UNHANDLED_EXCEPTIONS else
-}
-
-// Handle the common case where there is no additional local information.
 template <typename T, typename R>
-inline void threadEntry (
-    T* t, R (T::*threadTop) (), char const* name)
+void threadEntry (
+    T* t, R (T::*threadTop) (), std::string name)
 {
-    threadEntry (t, threadTop, name, []{ return std::string(); });
+#ifndef NO_LOG_UNHANDLED_EXCEPTIONS
+    detail::setThreadName (std::move(name));
+#endif
+    ((t)->*(threadTop)) ();
 }
 
 } // namespace ripple

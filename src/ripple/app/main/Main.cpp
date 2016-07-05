@@ -28,6 +28,7 @@
 #include <ripple/basics/ThreadName.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/ThreadEntry.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
@@ -44,6 +45,7 @@
 #include <boost/program_options.hpp>
 #include <cstdlib>
 #include <utility>
+
 
 #if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
 #include <sys/resource.h>
@@ -452,7 +454,8 @@ int run (int argc, char** argv)
         app->doStart();
 
         // Block until we get a stop RPC.
-        app->run();
+        ripple::threadEntry (
+            app.get(), &Application::run, "Main::run()");
 
         // Try to write out some entropy to use the next time we start.
         auto entropy = getEntropyFile (app->config());
@@ -517,6 +520,9 @@ int main (int argc, char** argv)
 #endif
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
+#ifndef NO_LOG_UNHANDLED_EXCEPTIONS
+    std::set_terminate(ripple::terminateHandler);
+#endif
 
     auto const result (ripple::run (argc, argv));
 
