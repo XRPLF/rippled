@@ -84,7 +84,7 @@ private:
     std::uint32_t                   seq_;
     std::uint32_t                   ledgerSeq_ = 0; // sequence number of ledger this is part of
     std::shared_ptr<SHAMapAbstractNode> root_;
-    SHAMapState                     state_;
+    mutable SHAMapState             state_;
     SHAMapType                      type_;
     bool                            backed_ = true; // Map is backed by the database
 
@@ -372,6 +372,7 @@ inline
 bool
 SHAMap::is_v2() const
 {
+    assert (root_);
     return std::dynamic_pointer_cast<SHAMapInnerNodeV2>(root_) != nullptr;
 }
 

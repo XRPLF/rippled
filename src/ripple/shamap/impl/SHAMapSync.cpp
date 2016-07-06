@@ -183,6 +183,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
                         {
                             if (!pending)
                             { // node is not in the database
+                                missingHashes.insert (childHash);
                                 ret.emplace_back (
                                     childID,
                                     childHash.as_uint256());
@@ -262,7 +263,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             auto const& nodeHash = parent->getChildHash (branch);
 
             auto nodePtr = fetchNodeNT(nodeHash, filter);
-            if (nodePtr && !isInconsistentNode(nodePtr))
+            if (nodePtr)
             {
                 ++hits;
                 if (backed_)
@@ -498,18 +499,6 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
         if (iNode == nullptr)
         {
-            if ((std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && !iNodeID.has_common_prefix(node)) ||
-               (!std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && iNodeID != node))
-            {
-                // Either this node is broken or we didn't request it (yet)
-                JLOG(journal_.warn()) << "unable to hook node " << node;
-                JLOG(journal_.info()) << " stuck at " << iNodeID;
-                JLOG(journal_.info()) <<
-                    "got depth=" << node.getDepth () <<
-                        ", walked to= " << iNodeID.getDepth ();
-                return SHAMapAddNode::invalid ();
-            }
-
             if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
             {
                 JLOG(journal_.warn()) << "Corrupt node received";
@@ -525,16 +514,25 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
             if (newNode && isInconsistentNode(newNode))
             {
-                return SHAMapAddNode::invalid();
+                state_ = SHAMapState::Invalid;
+                return SHAMapAddNode::useful();
+            }
+
+            if ((std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && !iNodeID.has_common_prefix(node)) ||
+               (!std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && iNodeID != node))
+            {
+                // Either this node is broken or we didn't request it (yet)
+                JLOG(journal_.warn()) << "unable to hook node " << node;
+                JLOG(journal_.info()) << " stuck at " << iNodeID;
+                JLOG(journal_.info()) <<
+                    "got depth=" << node.getDepth () <<
+                        ", walked to= " << iNodeID.getDepth ();
+                return SHAMapAddNode::useful ();
             }
 
             if (backed_)
-            {
-                auto temp = newNode;
                 canonicalize (childHash, newNode);
-                if (isInconsistentNode(newNode))
-                    newNode = temp;
-            }
+
             newNode = prevNode->canonicalizeChild (branch, std::move(newNode));
 
             if (filter)

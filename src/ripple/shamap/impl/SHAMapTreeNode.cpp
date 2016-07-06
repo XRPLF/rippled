@@ -202,7 +202,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         }
         else if (type == 5)
         {
-            // full inner
+            // full v2 inner
             if (len != 512)
                 Throw<std::runtime_error> ("invalid FI node");
 
@@ -224,7 +224,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         else if (type == 6)
         {
             auto ret = std::make_shared<SHAMapInnerNodeV2>(seq);
-            // compressed inner
+            // compressed v2 inner
             for (int i = 0; i < (len / 33); ++i)
             {
                 int pos;
@@ -296,7 +296,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             auto len = s.getLength();
             bool isV2 = (prefix == HashPrefix::innerNodeV2);
 
-            if ((len < 512) || (!isV2 && (len != 512)))
+            if ((len < 512) || (!isV2 && (len != 512)) || (isV2 && (len == 512)))
                 Throw<std::runtime_error> ("invalid PIN node");
 
             std::shared_ptr<SHAMapInnerNode> ret;
@@ -496,6 +496,24 @@ SHAMapInnerNodeV2::addRaw(Serializer& s, SHANodeFormat format) const
             data.back() += 3;
         }
     }
+}
+
+bool
+SHAMapInnerNodeV2::updateHash()
+{
+    uint256 nh;
+
+    if (mIsBranch != 0)
+    {
+        Serializer s(580);
+        addRaw (s, snfPREFIX);
+        nh = s.getSHA512Half();
+    }
+
+    if (nh == mHash.as_uint256())
+        return false;
+    mHash = SHAMapHash{nh};
+    return true;
 }
 
 void
