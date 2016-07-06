@@ -94,9 +94,9 @@ public:
     void run(SHAMap::version v)
     {
         beast::Journal const j; // debug journal
-        TestFamily f(j);
+        TestFamily f(j), f2(j);
         SHAMap source (SHAMapType::FREE, f, v);
-        SHAMap destination (SHAMapType::FREE, f, v);
+        SHAMap destination (SHAMapType::FREE, f2, v);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
@@ -133,21 +133,21 @@ public:
         destination.setSynching ();
 
         {
-            std::vector<SHAMapNodeID> gotNodeIDs;
-            std::vector<Blob> gotNodes;
+            std::vector<SHAMapNodeID> gotNodeIDs_a;
+            std::vector<Blob> gotNodes_a;
 
             BEAST_EXPECT(source.getNodeFat (
                 SHAMapNodeID (),
-                gotNodeIDs,
-                gotNodes,
+                gotNodeIDs_a,
+                gotNodes_a,
                 rand_bool(),
                 rand_int(2)));
 
-            unexpected (gotNodes.size () < 1, "NodeSize");
+            unexpected (gotNodes_a.size () < 1, "NodeSize");
 
             BEAST_EXPECT(destination.addRootNode (
                 source.getHash(),
-                *gotNodes.begin (),
+                *gotNodes_a.begin (),
                 snfWIRE,
                 nullptr).isGood());
         }
@@ -163,29 +163,29 @@ public:
                 break;
 
             // get as many nodes as possible based on this information
-            std::vector<SHAMapNodeID> gotNodeIDs;
-            std::vector<Blob> gotNodes;
+            std::vector<SHAMapNodeID> gotNodeIDs_b;
+            std::vector<Blob> gotNodes_b;
 
             for (auto& it : nodesMissing)
             {
                 BEAST_EXPECT(source.getNodeFat (
                     it.first,
-                    gotNodeIDs,
-                    gotNodes,
+                    gotNodeIDs_b,
+                    gotNodes_b,
                     rand_bool(),
                     rand_int(2)));
             }
 
-            BEAST_EXPECT(gotNodeIDs.size () == gotNodes.size ());
-            BEAST_EXPECT(!gotNodeIDs.empty ());
+            BEAST_EXPECT(gotNodeIDs_b.size () == gotNodes_b.size ());
+            BEAST_EXPECT(!gotNodeIDs_b.empty ());
 
-            for (std::size_t i = 0; i < gotNodeIDs.size(); ++i)
+            for (std::size_t i = 0; i < gotNodeIDs_b.size(); ++i)
             {
                 BEAST_EXPECT(
                     destination.addKnownNode (
-                        gotNodeIDs[i],
-                        gotNodes[i],
-                        nullptr).isGood ());
+                        gotNodeIDs_b[i],
+                        gotNodes_b[i],
+                        nullptr).isUseful ());
             }
         }
         while (true);
