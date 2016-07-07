@@ -22,19 +22,25 @@
 #include <ripple/basics/Log.h>
 
 #include <boost/coroutine/exceptions.hpp>
+#include <boost/thread/tss.hpp>
 #include <exception>
 #include <iostream>
 
 namespace ripple {
 
 #ifndef NO_LOG_UNHANDLED_EXCEPTIONS
-namespace detail {
-thread_local
-std::string threadName;
+static boost::thread_specific_ptr<std::string> threadName;
 
+namespace detail {
 void setThreadName(std::string name)
 {
-    threadName = std::move(name);
+    try
+    {
+        threadName.reset(new std::string{std::move(name)});
+    }
+    catch(...)
+    {
+    }
 }
 }
 
@@ -42,27 +48,28 @@ void terminateHandler()
 {
     if (std::current_exception())
     {
+        std::string const name = threadName.get() ? *threadName.get() : "Unknown";
         try
         {
             throw;
         }
         catch (const std::exception& e)
         {
-            std::cerr << detail::threadName << ": " << e.what () << '\n';
+            std::cerr << name << ": " << e.what () << '\n';
             JLOG(debugLog().fatal())
-                << detail::threadName << ": " << e.what () << '\n';
+                << name << ": " << e.what () << '\n';
         }
         catch (boost::coroutines::detail::forced_unwind const&)
         {
-            std::cerr << detail::threadName << ": forced_unwind\n";
+            std::cerr << name << ": forced_unwind\n";
             JLOG(debugLog().fatal())
-                << detail::threadName << ": forced_unwind\n";
+                << name << ": forced_unwind\n";
         }
         catch (...)
         {
-            std::cerr << detail::threadName << ": unknown exception\n";
+            std::cerr << name << ": unknown exception\n";
             JLOG (debugLog ().fatal ())
-                << detail::threadName << ": unknown exception\n";
+                << name << ": unknown exception\n";
         }
     }
 }
