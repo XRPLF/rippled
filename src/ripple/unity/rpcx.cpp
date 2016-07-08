@@ -95,6 +95,7 @@
 #include <ripple/rpc/impl/TransactionSign.cpp>
 
 #include <ripple/rpc/tests/AccountInfo_test.cpp>
+#include <ripple/rpc/tests/AccountObjects_test.cpp>
 #include <ripple/rpc/tests/AccountLinesRPC.test.cpp>
 #include <ripple/rpc/tests/AccountOffers.test.cpp>
 #include <ripple/rpc/tests/Book.test.cpp>
