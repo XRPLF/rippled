@@ -609,9 +609,9 @@ else()
 endif()
 
 set(soci_extra_includes
-  -I${CMAKE_SOURCE_DIR}/src/soci/src/core
-  -I${CMAKE_SOURCE_DIR}/src/soci/include/private
-  -I${CMAKE_SOURCE_DIR}/src/sqlite)
+  -I/"${CMAKE_SOURCE_DIR}/"/src/soci/src/core
+  -I/"${CMAKE_SOURCE_DIR}/"/src/soci/include/private
+  -I/"${CMAKE_SOURCE_DIR}/"/src/sqlite)
 
 if (WIN32 OR is_xcode OR unity)
   prepend(beast_unity_srcs
@@ -648,9 +648,9 @@ if (WIN32 OR is_xcode OR unity)
   list(APPEND src ${beast_unity_srcs} ${ripple_unity_srcs})
 
   add_with_props(src/ripple/unity/nodestore.cpp
-    -I${CMAKE_SOURCE_DIR}/src/rocksdb2/include
-    -I${CMAKE_SOURCE_DIR}/src/snappy/snappy
-    -I${CMAKE_SOURCE_DIR}/src/snappy/config
+    -I/"${CMAKE_SOURCE_DIR}/"/src/rocksdb2/include
+    -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/snappy
+    -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/config
     ${rocks_db_system_header})
 
   add_with_props(src/ripple/unity/soci_ripple.cpp ${soci_extra_includes})
@@ -672,8 +672,8 @@ endif ()
 if (WIN32 OR is_xcode OR NOT unity)
   file(GLOB_RECURSE core_srcs src/ripple/core/*.cpp)
   add_with_props("${core_srcs}"
-    -I${CMAKE_SOURCE_DIR}/src/soci/src/core
-    -I${CMAKE_SOURCE_DIR}/src/sqlite)
+    -I/"${CMAKE_SOURCE_DIR}/"/src/soci/src/core
+    -I/"${CMAKE_SOURCE_DIR}/"/src/sqlite)
 
   set(non_unity_srcs ${core_srcs})
 
@@ -689,9 +689,9 @@ if (WIN32 OR is_xcode OR NOT unity)
   file(GLOB_RECURSE nodestore_srcs src/ripple/nodestore/*.cpp)
 
   add_with_props("${nodestore_srcs}"
-    -I${CMAKE_SOURCE_DIR}/src/rocksdb2/include
-    -I${CMAKE_SOURCE_DIR}/src/snappy/snappy
-    -I${CMAKE_SOURCE_DIR}/src/snappy/config
+    -I/"${CMAKE_SOURCE_DIR}/"/src/rocksdb2/include
+    -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/snappy
+    -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/config
     ${rocks_db_system_header})
 
   list(APPEND non_unity_srcs "${nodestore_srcs}")
@@ -717,7 +717,7 @@ else()
 endif()
 
 add_with_props(src/ripple/unity/secp256k1.cpp
-  -I${CMAKE_SOURCE_DIR}/src/secp256k1
+  -I/"${CMAKE_SOURCE_DIR}/"/src/secp256k1
   ${no_unused_w}
   )
 
@@ -771,7 +771,7 @@ if (NOT is_msvc)
 endif()
 
 add_with_props(src/ripple/unity/ed25519.c
-  -I${CMAKE_SOURCE_DIR}/src/ed25519-donna)
+  -I/"${CMAKE_SOURCE_DIR}/"/src/ed25519-donna)
 
 if (is_gcc)
   set(no_init_w -Wno-maybe-uninitialized)
@@ -780,10 +780,10 @@ else()
 endif()
 
 add_with_props(src/ripple/unity/rocksdb.cpp
-  -I${CMAKE_SOURCE_DIR}/src/rocksdb2
-  -I${CMAKE_SOURCE_DIR}/src/rocksdb2/include
-  -I${CMAKE_SOURCE_DIR}/src/snappy/snappy
-  -I${CMAKE_SOURCE_DIR}/src/snappy/config
+  -I/"${CMAKE_SOURCE_DIR}/"/src/rocksdb2
+  -I/"${CMAKE_SOURCE_DIR}/"/src/rocksdb2/include
+  -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/snappy
+  -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/config
   ${no_init_w} ${rocks_db_system_header})
 
 if (NOT is_msvc)
@@ -791,8 +791,8 @@ if (NOT is_msvc)
 endif()
 
 add_with_props(src/ripple/unity/snappy.cpp
-  -I${CMAKE_SOURCE_DIR}/src/snappy/snappy
-  -I${CMAKE_SOURCE_DIR}/src/snappy/config
+  -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/snappy
+  -I/"${CMAKE_SOURCE_DIR}/"/src/snappy/config
   ${no_unused_w})
 
 if (APPLE AND is_clang)
