@@ -107,10 +107,6 @@ public:
         return signature_;
     }
 
-    bool isPrevLedger (uint256 const& pl) const
-    {
-        return mPreviousLedger == pl;
-    }
     bool isInitial () const
     {
         return mProposeSeq == seqJoin;

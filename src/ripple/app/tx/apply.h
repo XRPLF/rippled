@@ -95,6 +95,25 @@ apply (Application& app, OpenView& view,
     STTx const& tx, ApplyFlags flags,
         beast::Journal journal);
 
+
+/** Class for return value from applyTransaction */
+enum class ApplyResult
+{
+    Success,    // Applied to this ledger
+    Fail,       // Should not be retried in this ledger
+    Retry       // Should be retried in this ledger
+};
+
+/** Transaction application helper
+
+    Provides more detailed logging and decodes the
+    correct behavior based on the TER type
+*/
+ApplyResult
+applyTransaction(Application& app, OpenView& view,
+    STTx const& tx, bool retryAssured, ApplyFlags flags,
+    beast::Journal journal);
+
 } // ripple
 
 #endif

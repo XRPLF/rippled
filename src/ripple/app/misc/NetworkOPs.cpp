@@ -1514,7 +1514,7 @@ void
 NetworkOPsImp::mapComplete (uint256 const& hash,
                             std::shared_ptr<SHAMap> const& map)
 {
-    mLedgerConsensus->mapComplete (hash, map, true);
+    mLedgerConsensus->gotMap (hash, map);
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
