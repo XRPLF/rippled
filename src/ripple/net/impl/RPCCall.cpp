@@ -874,37 +874,6 @@ private:
         return jvRequest;
     }
 
-    // unl_add <domain>|<node_public> [<comment>]
-    Json::Value parseUnlAdd (Json::Value const& jvParams)
-    {
-        std::string strNode     = jvParams[0u].asString ();
-        std::string strComment  = (jvParams.size () == 2) ? jvParams[1u].asString () : "";
-
-        if (strNode.length ())
-        {
-            Json::Value jvRequest;
-
-            jvRequest[jss::node]       = strNode;
-
-            if (strComment.length ())
-                jvRequest[jss::comment]    = strComment;
-
-            return jvRequest;
-        }
-
-        return rpcError (rpcINVALID_PARAMS);
-    }
-
-    // unl_delete <domain>|<public_key>
-    Json::Value parseUnlDelete (Json::Value const& jvParams)
-    {
-        Json::Value jvRequest;
-
-        jvRequest[jss::node]       = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-
     // validation_create [<pass_phrase>|<seed>|<seed_key>]
     //
     // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
@@ -1078,8 +1047,6 @@ public:
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
-            {   "unl_add",              &RPCParser::parseUnlAdd,                1,  2   },
-            {   "unl_delete",           &RPCParser::parseUnlDelete,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
