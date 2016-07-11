@@ -3543,12 +3543,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\handlers\TxHistory.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlAdd.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlDelete.cpp">
-      <Filter>ripple\rpc\handlers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\UnlList.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
