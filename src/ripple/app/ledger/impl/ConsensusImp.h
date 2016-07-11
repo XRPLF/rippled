@@ -96,8 +96,8 @@ public:
 
     void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
 
-    void
-    visitStoredProposals (std::function<void(LedgerProposal::ref)> const&);
+    std::vector <std::shared_ptr <LedgerProposal>>
+    getStoredProposals (uint256 const& previousLedger);
 
 private:
     beast::Journal journal_;
