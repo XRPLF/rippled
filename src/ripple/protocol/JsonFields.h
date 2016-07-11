@@ -119,7 +119,7 @@ JSS ( closed_ledger );              // out: NetworkOPs
 JSS ( cluster );                    // out: UniqueNodeList, PeerImp
 JSS ( code );                       // out: errors
 JSS ( command );                    // in: RPCHandler
-JSS ( comment );                    // in: UnlAdd
+JSS ( comment );                    // out: UnlList
 JSS ( complete );                   // out: NetworkOPs, InboundLedger
 JSS ( complete_ledgers );           // out: NetworkOPs, PeerImp
 JSS ( consensus );                  // out: NetworkOPs, LedgerConsensus
@@ -288,7 +288,7 @@ JSS ( needed_transaction_hashes );  // out: InboundLedger
 JSS ( network_ledger );             // out: NetworkOPs
 JSS ( no_ripple );                  // out: AccountLines
 JSS ( no_ripple_peer );             // out: AccountLines
-JSS ( node );                       // in: UnlAdd, UnlDelete
+JSS ( node );                       // out: LedgerEntry
 JSS ( node_binary );                // out: LedgerEntry
 JSS ( node_hit_rate );              // out: GetCounts
 JSS ( node_read_bytes );            // out: GetCounts
