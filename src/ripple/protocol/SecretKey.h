@@ -43,6 +43,7 @@ public:
 
     ~SecretKey();
 
+    SecretKey (std::array<std::uint8_t, 32> const& data);
     SecretKey (Slice const& slice);
 
     std::uint8_t const*

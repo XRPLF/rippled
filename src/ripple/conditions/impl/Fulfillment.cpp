@@ -20,6 +20,7 @@
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/conditions/PreimageSha256.h>
+#include <ripple/conditions/Ed25519.h>
 #include <ripple/conditions/impl/utils.h>
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
@@ -77,6 +78,10 @@ loadFulfillment (std::uint16_t type, Slice payload)
     {
     case condition_hashlock:
         p = std::make_unique<PreimageSha256>();
+        break;
+
+    case condition_ed25519:
+        p = std::make_unique<Ed25519>();
         break;
 
     default:

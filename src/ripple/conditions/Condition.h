@@ -127,6 +127,9 @@ validate (Condition const& c)
     if (c.type == condition_hashlock)
         return (c.featureBitmask == (feature_sha256 | feature_preimage));
 
+    if (c.type == condition_ed25519)
+        return (c.featureBitmask == feature_ed25519);
+
     return false;
 }
 

@@ -36,6 +36,11 @@ SecretKey::~SecretKey()
     beast::secure_erase(buf_, sizeof(buf_));
 }
 
+SecretKey::SecretKey (std::array<std::uint8_t, 32> const& key)
+{
+    std::memcpy(buf_, key.data(), key.size());
+}
+
 SecretKey::SecretKey (Slice const& slice)
 {
     if (slice.size() != sizeof(buf_))

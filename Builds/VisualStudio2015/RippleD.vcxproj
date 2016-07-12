@@ -1782,11 +1782,17 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\Condition.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\Ed25519.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\Fulfillment.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\impl\base64.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\conditions\impl\Condition.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\Ed25519.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -4545,6 +4551,9 @@
     <ClCompile Include="..\..\src\test\beast\SemanticVersion_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\Ed25519_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

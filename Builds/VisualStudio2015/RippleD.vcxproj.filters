@@ -2421,6 +2421,9 @@
     <ClInclude Include="..\..\src\ripple\conditions\Condition.h">
       <Filter>ripple\conditions</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\Ed25519.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\Fulfillment.h">
       <Filter>ripple\conditions</Filter>
     </ClInclude>
@@ -2428,6 +2431,9 @@
       <Filter>ripple\conditions\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\conditions\impl\Condition.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\Ed25519.cpp">
       <Filter>ripple\conditions\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\conditions\impl\Fulfillment.cpp">
@@ -5327,6 +5333,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\test\beast\SemanticVersion_test.cpp">
       <Filter>test\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\Ed25519_test.cpp">
+      <Filter>test\conditions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
       <Filter>test\conditions</Filter>
