@@ -150,17 +150,23 @@ SetTrust::doApply ()
 
     std::uint32_t const uOwnerCount = sle->getFieldU32 (sfOwnerCount);
 
-    // The reserve required to create the line. Note that we allow up to
-    // two trust lines without requiring a reserve because being able to
-    // exchange currencies is a powerful Ripple feature.
+    // The reserve that is required to create the line. Note
+    // that although the reserve increases with every item
+    // an account owns, in the case of trust lines we only
+    // *enforce* a reserve if the user owns more than two
+    // items.
     //
-    // This is also a security feature: if you're a gateway and you want to
-    // be able to let someone use your services, you would otherwise have to
-    // give them enough XRP to cover the incremental reserve for their trust
-    // line. If they had no intention of using your services, they could use
-    // the XRP for their own purposes. So we make it possible for gateways
-    // to fund accounts in a way where there's no incentive to trick them
-    // into creating an account you have no intention of using.
+    // We do this because being able to exchange currencies,
+    // which needs trust lines, is a powerful Ripple feature.
+    // So we want to make it easy for a gateway to fund the
+    // accounts of its users without fear of being tricked.
+    //
+    // Without this logic, a gateway that wanted to have a
+    // new user use its services, would have to give that
+    // user enough XRP to cover not only the account reserve
+    // but the incremental reserve for the trust line as
+    // well. A person with no intention of using the gateway
+    // could use the extra XRP for their own purposes.
 
     XRPAmount const reserveCreate ((uOwnerCount < 2)
         ? XRPAmount (zero)
