@@ -21,3 +21,5 @@
 
 #include <ripple/conditions/impl/condition.cpp>
 #include <ripple/conditions/impl/fulfillment.cpp>
+
+#include <ripple/conditions/tests/hashlock_test.cpp>
