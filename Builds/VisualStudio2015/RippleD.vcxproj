@@ -1796,6 +1796,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\PreimageSha256.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\ConfigSections.h">
@@ -4543,6 +4545,9 @@
     <ClCompile Include="..\..\src\test\beast\SemanticVersion_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>

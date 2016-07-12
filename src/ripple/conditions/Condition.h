@@ -124,6 +124,9 @@ validate (Condition const& c)
     if (c.maxFulfillmentLength > maxSupportedFulfillmentLength)
         return false;
 
+    if (c.type == condition_hashlock)
+        return (c.featureBitmask == (feature_sha256 | feature_preimage));
+
     return false;
 }
 

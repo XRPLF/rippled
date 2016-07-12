@@ -454,6 +454,9 @@
     <Filter Include="test\beast">
       <UniqueIdentifier>{8B0B95AC-5386-EE34-AA85-E1C7974E6E93}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\conditions">
+      <UniqueIdentifier>{F421E9A0-BB69-E638-F7AC-A3BD9B7D4827}</UniqueIdentifier>
+    </Filter>
     <Filter Include="test\core">
       <UniqueIdentifier>{26D7F11B-5BF1-54BC-8BF5-D45F68A6A408}</UniqueIdentifier>
     </Filter>
@@ -2432,6 +2435,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
       <Filter>ripple\conditions\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\PreimageSha256.h">
+      <Filter>ripple\conditions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
       <Filter>ripple\core</Filter>
@@ -5321,6 +5327,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\test\beast\SemanticVersion_test.cpp">
       <Filter>test\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
+      <Filter>test\conditions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <Filter>test\core</Filter>

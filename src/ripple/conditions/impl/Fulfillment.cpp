@@ -19,6 +19,7 @@
 
 #include <ripple/conditions/Condition.h>
 #include <ripple/conditions/Fulfillment.h>
+#include <ripple/conditions/PreimageSha256.h>
 #include <ripple/conditions/impl/utils.h>
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
@@ -74,6 +75,10 @@ loadFulfillment (std::uint16_t type, Slice payload)
 
     switch (type)
     {
+    case condition_hashlock:
+        p = std::make_unique<PreimageSha256>();
+        break;
+
     default:
         throw std::domain_error (
             "Unknown cryptocondition type " +
