@@ -20,6 +20,7 @@
 #include <ripple/conditions/condition.h>
 #include <ripple/conditions/fulfillment.h>
 #include <ripple/conditions/hashlock.h>
+#include <ripple/conditions/ed25519.h>
 #include <ripple/conditions/impl/utils.h>
 #include <boost/regex.hpp>
 #include <boost/optional.hpp>
@@ -94,6 +95,9 @@ load_fulfillment (std::string s)
         {
         case condition_hashlock:
             return std::make_unique<hashlock_t>(payload);
+
+        case condition_ed25519:
+            return std::make_unique<ed25519_t>(payload);
         }
 
         throw std::domain_error (

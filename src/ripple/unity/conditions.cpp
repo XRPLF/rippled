@@ -23,3 +23,4 @@
 #include <ripple/conditions/impl/fulfillment.cpp>
 
 #include <ripple/conditions/tests/hashlock_test.cpp>
+#include <ripple/conditions/tests/ed25519_test.cpp>
