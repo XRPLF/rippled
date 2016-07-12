@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
 #include <ripple/basics/Slice.h>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -34,14 +35,49 @@ namespace ripple {
 class Buffer
 {
 private:
-    std::unique_ptr<
-        std::uint8_t[]> p_;
+    std::unique_ptr<std::uint8_t[]> p_;
     std::size_t size_ = 0;
 
 public:
     Buffer() = default;
-    Buffer (Buffer const&) = delete;
-    Buffer& operator= (Buffer const&) = delete;
+
+    /** Create an uninitialized buffer with the given size. */
+    explicit
+    Buffer (std::size_t size)
+        : p_ (size ? new std::uint8_t[size] : nullptr)
+        , size_ (size)
+    {
+    }
+
+    /** Create a buffer as a copy of existing memory.
+
+        @param data a pointer to the existing memory. If
+                    size is non-zero, it must not be null.
+        @param size size of the existing memory block.
+    */
+    Buffer (void const* data, std::size_t size)
+        : Buffer (size)
+    {
+        if (size)
+            std::memcpy(p_.get(), data, size);
+    }
+
+    /** Copy-construct */
+    Buffer (Buffer const& other)
+        : Buffer (other.p_.get(), other.size_)
+    {
+    }
+
+    /** Copy assign */
+    Buffer& operator= (Buffer const& other)
+    {
+        if (this != &other)
+        {
+            if (auto p = alloc (other.size_))
+                std::memcpy (p, other.p_.get(), size_);
+        }
+        return *this;
+    }
 
     /** Move-construct.
         The other buffer is reset.
@@ -58,33 +94,33 @@ public:
     */
     Buffer& operator= (Buffer&& other)
     {
-        p_ = std::move(other.p_);
-        size_ = other.size_;
-        other.size_ = 0;
+        if (this != &other)
+        {
+            p_ = std::move(other.p_);
+            size_ = other.size_;
+            other.size_ = 0;
+        }
         return *this;
     }
 
-    /** Create an uninitialized buffer with the given size. */
+    /** Construct from a slice */
     explicit
-    Buffer (std::size_t size)
-        : p_ (size ?
-            new std::uint8_t[size] : nullptr)
-        , size_ (size)
+    Buffer (Slice s)
+        : Buffer (s.data(), s.size())
     {
     }
 
-    /** Create a buffer as a copy of existing memory. */
-    Buffer (void const* data, std::size_t size)
-        : Buffer (size)
+    /** Assign from slice */
+    Buffer& operator= (Slice s)
     {
-        std::memcpy(p_.get(), data, size);
-    }
+        // Ensure the slice isn't a subset of the buffer.
+        assert (s.size() == 0 || size_ == 0 ||
+            s.data() < p_.get() ||
+            s.data() >= p_.get() + size_);
 
-    /** Create a buffer from a copy of existing memory. */
-    explicit
-    Buffer (Slice const& slice)
-        : Buffer(slice.data(), slice.size())
-    {
+        if (auto p = alloc (s.size()))
+            std::memcpy (p, s.data(), s.size());
+        return *this;
     }
 
     /** Returns the number of bytes in the buffer. */
@@ -141,14 +177,9 @@ public:
     std::uint8_t*
     alloc (std::size_t n)
     {
-        if (n == 0)
-        {
-            clear();
-            return nullptr;
-        }
         if (n != size_)
         {
-            p_.reset(new std::uint8_t[n]);
+            p_.reset(n ? new std::uint8_t[n] : nullptr);
             size_ = n;
         }
         return p_.get();
