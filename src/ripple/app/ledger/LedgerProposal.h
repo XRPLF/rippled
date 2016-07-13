@@ -55,15 +55,18 @@ public:
         std::uint32_t proposeSeq,
         uint256 const& propose,
         NetClock::time_point closeTime,
+        NetClock::time_point now,
         PublicKey const& publicKey,
         NodeID const& nodeID,
+        Slice const& signature,
         uint256 const& suppress);
 
     // Our own proposal:
     LedgerProposal (
         uint256 const& prevLedger,
         uint256 const& position,
-        NetClock::time_point closeTime);
+        NetClock::time_point closeTime,
+        NetClock::time_point now);
 
     uint256 getSigningHash () const;
     bool checkSign () const;
@@ -96,17 +99,14 @@ public:
     {
         return mCloseTime;
     }
-
-    void setSignature (Buffer&& sig)
+    NetClock::time_point getSeenTime () const
     {
-        signature_ = std::move(sig);
+        return mTime;
     }
-
-    Slice getSignature () const
+    Blob const& getSignature () const
     {
         return signature_;
     }
-
     bool isInitial () const
     {
         return mProposeSeq == seqJoin;
@@ -116,14 +116,16 @@ public:
         return mProposeSeq == seqLeave;
     }
 
-    bool isStale (std::chrono::steady_clock::time_point cutoff) const
+    bool isStale (NetClock::time_point cutoff) const
     {
         return mTime <= cutoff;
     }
 
     bool changePosition (
-        uint256 const& newPosition, NetClock::time_point newCloseTime);
-    void bowOut ();
+        uint256 const& newPosition,
+        NetClock::time_point newCloseTime,
+        NetClock::time_point now);
+    void bowOut (NetClock::time_point now);
     Json::Value getJson () const;
 
 private:
@@ -145,9 +147,9 @@ private:
 
     PublicKey publicKey_;
     NodeID mPeerID;
-    Buffer signature_;
+    Blob signature_;
 
-    std::chrono::steady_clock::time_point mTime;
+    NetClock::time_point mTime;
 };
 
 /** Calculate a unique identifier for a signed proposal.

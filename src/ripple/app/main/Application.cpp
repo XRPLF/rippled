@@ -459,8 +459,7 @@ public:
             , [this](std::shared_ptr <SHAMap> const& set,
                 bool fromAcquire)
             {
-                if (set)
-                    gotTXSet (set, fromAcquire);
+                gotTXSet (set, fromAcquire);
             }))
 
         , m_acceptedLedgerCache ("AcceptedLedger", 4, 60, stopwatch(),

@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -52,7 +52,7 @@ public:
     std::chrono::milliseconds
     getLastCloseDuration () const override;
 
-    std::shared_ptr<LedgerConsensus>
+    std::shared_ptr<LedgerConsensus<RCLCxTraits>>
     makeLedgerConsensus (
         Application& app,
         InboundTransactions& inboundTransactions,
@@ -61,7 +61,7 @@ public:
 
     void
     startRound (
-        LedgerConsensus& ledgerConsensus,
+        LedgerConsensus<RCLCxTraits>& ledgerConsensus,
         LedgerHash const& prevLCLHash,
         std::shared_ptr<Ledger const> const& previousLedger,
         NetClock::time_point closeTime) override;
@@ -94,7 +94,7 @@ public:
     NetClock::time_point
     getLastCloseTime () const;
 
-    std::vector <std::shared_ptr <LedgerProposal>>
+    std::vector <RCLCxPos>
     getStoredProposals (uint256 const& previousLedger);
 
 private:

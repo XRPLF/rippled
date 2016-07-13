@@ -703,6 +703,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPos.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTraits.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -741,10 +747,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\DisputedTx.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">

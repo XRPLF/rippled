@@ -97,6 +97,9 @@
     <Filter Include="ripple\app">
       <UniqueIdentifier>{83B96C00-A786-6597-826D-E12FA6187AA8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\consensus">
+      <UniqueIdentifier>{0E8BC18A-9853-B13E-1A9D-C55FA29DA60F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\ledger">
       <UniqueIdentifier>{CE126498-A44D-30A2-345B-0F672BCDF947}</UniqueIdentifier>
     </Filter>
@@ -1191,6 +1194,15 @@
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
       <Filter>protobuf\vsprojects</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPos.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTraits.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -1230,9 +1242,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\DisputedTx.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>

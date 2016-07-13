@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/consensus/RCLCxTraits.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/ledger/impl/DisputedTx.h>
 #include <ripple/app/ledger/impl/LedgerConsensusImp.h>
 #include <ripple/app/ledger/impl/TransactionAcquire.h>
 #include <ripple/app/main/Application.h>
@@ -45,15 +45,18 @@
 #include <ripple/json/to_string.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/basics/make_lock.h>
 #include <type_traits>
 
+
 namespace ripple {
 
-LedgerConsensusImp::LedgerConsensusImp (
+template <class Traits>
+LedgerConsensusImp<Traits>::LedgerConsensusImp (
         Application& app,
         ConsensusImp& consensus,
         InboundTransactions& inboundTransactions,
@@ -66,6 +69,7 @@ LedgerConsensusImp::LedgerConsensusImp (
     , localTX_ (localtx)
     , ledgerMaster_ (ledgerMaster)
     , feeVote_ (feeVote)
+    , ourID_ (calcNodeID (app.nodeIdentity().first))
     , state_ (State::open)
     , closeTime_ {}
     , valPublic_ (app_.config().VALIDATION_PUB)
@@ -83,7 +87,8 @@ LedgerConsensusImp::LedgerConsensusImp (
     JLOG (j_.debug()) << "Creating consensus object";
 }
 
-Json::Value LedgerConsensusImp::getJson (bool full)
+template <class Traits>
+Json::Value LedgerConsensusImp<Traits>::getJson (bool full)
 {
     Json::Value ret (Json::objectValue);
     std::lock_guard<std::recursive_mutex> _(lock_);
@@ -134,7 +139,7 @@ Json::Value LedgerConsensusImp::getJson (bool full)
         ret["current_ms"] = static_cast<Int>(roundTime_.count());
         ret["close_percent"] = closePercent_;
         ret["close_resolution"] = closeResolution_.count();
-        ret["have_timeconsensus_"] = haveCloseTimeConsensus_;
+        ret["have_time_consensus"] = haveCloseTimeConsensus_;
         ret["previous_proposers"] = previousProposers_;
         ret["previous_mseconds"] =
             static_cast<Int>(previousRoundTime_.count());
@@ -145,21 +150,17 @@ Json::Value LedgerConsensusImp::getJson (bool full)
 
             for (auto& pp : peerPositions_)
             {
-                ppj[to_string (pp.first)] = pp.second->getJson ();
+                ppj[to_string (pp.first)] = pp.second.getJson ();
             }
             ret["peer_positions"] = std::move(ppj);
         }
 
         if (! acquired_.empty ())
         {
-            // acquired
-            Json::Value acq (Json::objectValue);
+            Json::Value acq (Json::arrayValue);
             for (auto& at : acquired_)
             {
-                if (at.second)
-                    acq[to_string (at.first)] = "acquired";
-                else
-                    acq[to_string (at.first)] = "failed";
+                acq.append (to_string (at.first));
             }
             ret["acquired"] = std::move(acq);
         }
@@ -169,7 +170,7 @@ Json::Value LedgerConsensusImp::getJson (bool full)
             Json::Value dsj (Json::objectValue);
             for (auto& dt : disputes_)
             {
-                dsj[to_string (dt.first)] = dt.second->getJson ();
+                dsj[to_string (dt.first)] = dt.second.getJson ();
             }
             ret["disputes"] = std::move(dsj);
         }
@@ -198,11 +199,21 @@ Json::Value LedgerConsensusImp::getJson (bool full)
     return ret;
 }
 
-uint256 LedgerConsensusImp::getLCL ()
+template <class Traits>
+auto
+LedgerConsensusImp<Traits>::getLCL () -> LgrID_t
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
     return prevLedgerHash_;
+}
+
+template <class Traits>
+void LedgerConsensusImp<Traits>::shareSet (TxSet_t const& set)
+{
+    // Temporary until Consensus refactor is complete
+    inboundTransactions_.giveSet (set.getID(),
+        set.map(), false);
 }
 
 // Called when:
@@ -213,76 +224,33 @@ uint256 LedgerConsensusImp::getLCL ()
 // We store it, notify peers that we have it,
 // and update our tracking if any validators currently
 // propose it
-void LedgerConsensusImp::mapCompleteInternal (
-    std::shared_ptr<SHAMap> const& map,
+template <class Traits>
+void
+LedgerConsensusImp<Traits>::mapCompleteInternal (
+    TxSet_t const& map,
     bool acquired)
 {
-    auto hash = map->getHash ().as_uint256();
+    auto hash = map.getID ();
 
-    {
-        auto it = acquired_.find (hash);
-        if (it != acquired_.end ())
-        {
-            // We have already acquired (or proven invalid) this transaction set
-            if (map && ! it->second)
-            {
-                JLOG (j_.warn()) << "Map " << hash << " proven invalid then acquired";
-                assert (false);
-            }
-            else if (it->second && ! map)
-            {
-                JLOG (j_.warn()) << "Map " << hash << " acquired then proven invalid";
-                assert (false);
-                return;
-            }
-            else
-            {
-                // nothing to do
-                return;
-            }
-        }
-    }
+    if (acquired_.find (hash) != acquired_.end())
+        return;
 
     if (acquired)
     {
         JLOG (j_.trace()) << "We have acquired txs " << hash;
     }
 
-    if (!map)  // If the map was invalid
-    {
-        JLOG (j_.warn())
-            << "Tried to acquire invalid transaction map: "
-            << hash;
-        acquired_[hash] = map;
-        return;
-    }
-
-    assert (hash == map->getHash ().as_uint256());
-
     // We now have a map that we did not have before
 
     if (! acquired)
     {
-        // Put the map where others can get it
-        inboundTransactions_.giveSet (hash, map, false);
+        // If we generated this locally,
+        // put the map where others can get it
+        // If we acquired it, it's already shared
+        shareSet (map);
     }
 
-    if (ourPosition_ && (! ourPosition_->isBowOut ())
-        && (hash != ourPosition_->getCurrentHash ()))
-    {
-        // this will create disputed transactions
-        auto it = acquired_.find (ourPosition_->getCurrentHash ());
-
-        if (it == acquired_.end())
-            LogicError ("We cannot find our own position!");
-
-        assert ((it->first == ourPosition_->getCurrentHash ())
-            && it->second);
-        compares_.insert(hash);
-        // Our position is not the same as the acquired position
-        createDisputes (it->second, map);
-    }
-    else if (! ourPosition_)
+    if (! ourPosition_)
     {
         JLOG (j_.debug())
             << "Not creating disputes: no position yet.";
@@ -292,21 +260,25 @@ void LedgerConsensusImp::mapCompleteInternal (
         JLOG (j_.warn())
             << "Not creating disputes: not participating.";
     }
-    else
+    else if (hash == ourPosition_->getCurrentHash ())
     {
         JLOG (j_.debug())
             << "Not creating disputes: identical position.";
     }
-
-    acquired_[hash] = map;
+    else
+    {
+        // Our position is not the same as the acquired position
+        // create disputed txs if needed
+        createDisputes (*ourSet_, map);
+        compares_.insert(hash);
+    }
 
     // Adjust tracking for each peer that takes this position
     std::vector<NodeID> peers;
-    auto const mapHash = map->getHash ().as_uint256();
     for (auto& it : peerPositions_)
     {
-        if (it.second->getCurrentHash () == mapHash)
-            peers.push_back (it.second->getPeerID ());
+        if (it.second.getCurrentHash () == hash)
+            peers.push_back (it.second.getNodeID ());
     }
 
     if (!peers.empty ())
@@ -319,10 +291,13 @@ void LedgerConsensusImp::mapCompleteInternal (
             << "By the time we got the map " << hash
             << " no peers were proposing it";
     }
+
+    acquired_.emplace (hash, std::move (map));
 }
 
-void LedgerConsensusImp::gotMap (
-    std::shared_ptr<SHAMap> const& map)
+template <class Traits>
+void LedgerConsensusImp<Traits>::gotMap (
+    TxSet_t const& map)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
@@ -340,7 +315,8 @@ void LedgerConsensusImp::gotMap (
     }
 }
 
-void LedgerConsensusImp::checkLCL ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::checkLCL ()
 {
     uint256 netLgr = prevLedgerHash_;
     int netLgrCount = 0;
@@ -423,7 +399,8 @@ void LedgerConsensusImp::checkLCL ()
 }
 
 // Handle a change in the LCL during a consensus round
-void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
+template <class Traits>
+void LedgerConsensusImp<Traits>::handleLCL (LgrID_t const& lclHash)
 {
     assert (lclHash != prevLedgerHash_ ||
             previousLedger_->info().hash != lclHash);
@@ -436,8 +413,7 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
         if (haveCorrectLCL_ && proposing_ && ourPosition_)
         {
             JLOG (j_.info()) << "Bowing out of consensus";
-            ourPosition_->bowOut ();
-            propose ();
+            leaveConsensus();
         }
 
         // Stop proposing because we are out of sync
@@ -494,7 +470,8 @@ void LedgerConsensusImp::handleLCL (uint256 const& lclHash)
     proposing_ = false;
 }
 
-void LedgerConsensusImp::timerEntry ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::timerEntry ()
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
@@ -548,7 +525,8 @@ void LedgerConsensusImp::timerEntry ()
     }
 }
 
-void LedgerConsensusImp::statePreClose ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::statePreClose ()
 {
     // it is shortly before ledger close time
     bool anyTransactions = ! app_.openLedger().empty();
@@ -590,7 +568,8 @@ void LedgerConsensusImp::statePreClose ()
     }
 }
 
-void LedgerConsensusImp::stateEstablish ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::stateEstablish ()
 {
     // Give everyone a chance to take an initial position
     if (roundTime_ < LEDGER_MIN_CONSENSUS)
@@ -615,7 +594,8 @@ void LedgerConsensusImp::stateEstablish ()
     beginAccept (false);
 }
 
-bool LedgerConsensusImp::haveConsensus ()
+template <class Traits>
+bool LedgerConsensusImp<Traits>::haveConsensus ()
 {
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -624,26 +604,25 @@ bool LedgerConsensusImp::haveConsensus ()
     // Count number of agreements/disagreements with our position
     for (auto& it : peerPositions_)
     {
-        if (!it.second->isBowOut ())
+        if (!it.second.isBowOut ())
         {
-            if (it.second->getCurrentHash () == ourPosition)
+            if (it.second.getCurrentHash () == ourPosition)
             {
                 ++agree;
             }
             else
             {
                 JLOG (j_.debug()) << to_string (it.first)
-                    << " has " << to_string (it.second->getCurrentHash ());
+                    << " has " << to_string (it.second.getCurrentHash ());
                 ++disagree;
-                if (compares_.count(it.second->getCurrentHash()) == 0)
+                if (compares_.count(it.second.getCurrentHash()) == 0)
                 { // Make sure we have generated disputes
-                    uint256 hash = it.second->getCurrentHash();
+                    uint256 hash = it.second.getCurrentHash();
                     JLOG (j_.debug())
                         << "We have not compared to " << hash;
                     auto it1 = acquired_.find (hash);
                     auto it2 = acquired_.find(ourPosition_->getCurrentHash ());
-                    if ((it1 != acquired_.end()) && (it2 != acquired_.end())
-                        && (it1->second) && (it2->second))
+                    if ((it1 != acquired_.end()) && (it2 != acquired_.end()))
                     {
                         compares_.insert(hash);
                         createDisputes(it2->second, it1->second);
@@ -671,36 +650,26 @@ bool LedgerConsensusImp::haveConsensus ()
     // without us.
     consensusFail_ = (ret == ConsensusState::MovedOn);
 
+    if (consensusFail_)
+    {
+        JLOG (j_.error()) << "Unable to reach consensus";
+        JLOG (j_.error()) << getJson(true);
+    }
+
     return true;
 }
 
-std::shared_ptr<SHAMap> LedgerConsensusImp::getTransactionTree (
-    uint256 const& hash)
+template <class Traits>
+bool LedgerConsensusImp<Traits>::peerPosition (Pos_t const& newPosition)
 {
+    auto const peerID = newPosition.getNodeID ();
+
     std::lock_guard<std::recursive_mutex> _(lock_);
 
-    auto it = acquired_.find (hash);
-    if (it != acquired_.end() && it->second)
-        return it->second;
-
-    auto set = inboundTransactions_.getSet (hash, true);
-
-    if (set)
-        acquired_[hash] = set;
-
-    return set;
-}
-
-bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
-{
-    std::lock_guard<std::recursive_mutex> _(lock_);
-
-    auto const peerID = newPosition->getPeerID ();
-
-    if (newPosition->getPrevLedger() != prevLedgerHash_)
+    if (newPosition.getPrevLedger() != prevLedgerHash_)
     {
         JLOG (j_.debug()) << "Got proposal for "
-            << newPosition->getPrevLedger ()
+            << newPosition.getPrevLedger ()
             << " but we are on " << prevLedgerHash_;
         return false;
     }
@@ -712,62 +681,83 @@ bool LedgerConsensusImp::peerPosition (LedgerProposal::ref newPosition)
         return false;
     }
 
-    LedgerProposal::pointer& currentPosition = peerPositions_[peerID];
-
-    if (currentPosition)
     {
-        assert (peerID == currentPosition->getPeerID ());
+        // update current position
+        auto currentPosition = peerPositions_.find(peerID);
 
-        if (newPosition->getProposeSeq ()
-            <= currentPosition->getProposeSeq ())
+        if (currentPosition != peerPositions_.end())
         {
-            return false;
+            if (newPosition.getProposeSeq ()
+                <= currentPosition->second.getProposeSeq ())
+            {
+                return false;
+            }
         }
+
+        if (newPosition.isBowOut ())
+        {
+            JLOG (j_.info())
+                << "Peer bows out: " << to_string (peerID);
+
+            for (auto& it : disputes_)
+                it.second.unVote (peerID);
+            if (currentPosition != peerPositions_.end())
+                peerPositions_.erase (peerID);
+            deadNodes_.insert (peerID);
+
+            return true;
+        }
+
+        if (currentPosition != peerPositions_.end())
+            currentPosition->second = newPosition;
+        else
+            peerPositions_.emplace (peerID, newPosition);
     }
 
-    if (newPosition->isBowOut ())
-    {
-        JLOG (j_.info())
-            << "Peer bows out: " << to_string (peerID);
-        for (auto& it : disputes_)
-            it.second->unVote (peerID);
-        peerPositions_.erase (peerID);
-        deadNodes_.insert (peerID);
-        return true;
-    }
-
-    if (newPosition->isInitial ())
+    if (newPosition.isInitial ())
     {
         // Record the close time estimate
         JLOG (j_.trace())
             << "Peer reports close time as "
-            << newPosition->getCloseTime().time_since_epoch().count();
-        ++closeTimes_[newPosition->getCloseTime()];
+            << newPosition.getCloseTime().time_since_epoch().count();
+        ++closeTimes_[newPosition.getCloseTime()];
     }
 
     JLOG (j_.trace()) << "Processing peer proposal "
-        << newPosition->getProposeSeq () << "/"
-        << newPosition->getCurrentHash ();
-    currentPosition = newPosition;
+        << newPosition.getProposeSeq () << "/"
+        << newPosition.getCurrentHash ();
 
-    std::shared_ptr<SHAMap> set
-        = getTransactionTree (newPosition->getCurrentHash ());
+    {
+        auto ait = acquired_.find (newPosition.getCurrentHash());
+        if (ait == acquired_.end())
+        {
+            if (auto setPtr = inboundTransactions_.getSet (
+                newPosition.getCurrentHash(), true))
+            {
+                ait = acquired_.emplace (newPosition.getCurrentHash(),
+                    std::move(setPtr)).first;
+            }
+        }
 
-    if (set)
-    {
-        for (auto& it : disputes_)
-            it.second->setVote (peerID, set->hasItem (it.first));
-    }
-    else
-    {
-        JLOG (j_.debug())
-            << "Don't have tx set for peer";
+
+        if (ait != acquired_.end())
+        {
+            for (auto& it : disputes_)
+                it.second.setVote (peerID,
+                    ait->second.hasEntry (it.first));
+        }
+        else
+        {
+            JLOG (j_.debug())
+                << "Don't have tx set for peer";
+        }
     }
 
     return true;
 }
 
-void LedgerConsensusImp::simulate (
+template <class Traits>
+void LedgerConsensusImp<Traits>::simulate (
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
@@ -779,7 +769,8 @@ void LedgerConsensusImp::simulate (
     JLOG (j_.info()) << "Simulation complete";
 }
 
-void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
+template <class Traits>
+void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
 {
     auto closeTime = ourPosition_->getCloseTime();
     bool closeTimeCorrect;
@@ -813,12 +804,12 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         << "Report: Prev = " << prevLedgerHash_
         << ":" << previousLedger_->info().seq;
     JLOG (j_.debug())
-        << "Report: TxSt = " << set->getHash ()
+        << "Report: TxSt = " << set.getID ()
         << ", close " << closeTime.time_since_epoch().count()
         << (closeTimeCorrect ? "" : "X");
 
     // Put transactions into a deterministic, but unpredictable, order
-    CanonicalTXSet retriableTxs (set->getHash ().as_uint256());
+    CanonicalTXSet retriableTxs (set.getID());
 
     std::shared_ptr<Ledger const> sharedLCL;
     {
@@ -853,7 +844,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
             else
             {
                 // Normal case, we are not replaying a ledger close
-                retriableTxs = applyTransactions (app_, *set, accum,
+                retriableTxs = applyTransactions (app_, set, accum,
                     [&buildLCL](uint256 const& txID)
                     {
                         return ! buildLCL->txExists(txID);
@@ -970,7 +961,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
         bool anyDisputes = false;
         for (auto& it : disputes_)
         {
-            if (!it.second->getOurVote ())
+            if (!it.second.getOurVote ())
             {
                 // we voted NO
                 try
@@ -978,7 +969,9 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                     JLOG (j_.debug())
                         << "Test applying disputed transaction that did"
                         << " not get in";
-                    SerialIter sit (it.second->peekTransaction().slice());
+
+                    RCLCxTx cTxn {it.second.tx()};
+                    SerialIter sit (cTxn.txn().slice());
 
                     auto txn = std::make_shared<STTx const>(sit);
 
@@ -1071,48 +1064,42 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
     endConsensus (correct);
 }
 
-void LedgerConsensusImp::createDisputes (
-    std::shared_ptr<SHAMap> const& m1,
-    std::shared_ptr<SHAMap> const& m2)
+template <class Traits>
+void LedgerConsensusImp<Traits>::createDisputes (
+    TxSet_t const& m1,
+    TxSet_t const& m2)
 {
-    if (m1->getHash() == m2->getHash())
+    if (m1.getID() == m2.getID())
         return;
 
     JLOG (j_.debug()) << "createDisputes "
-        << m1->getHash() << " to " << m2->getHash();
-    SHAMap::Delta differences;
-    m1->compare (*m2, differences, 16384);
+        << m1.getID() << " to " << m2.getID();
+    auto differences = m1.getDifferences (m2);
 
     int dc = 0;
     // for each difference between the transactions
-    for (auto& pos : differences)
+    for (auto& id : differences)
     {
         ++dc;
         // create disputed transactions (from the ledger that has them)
-        if (pos.second.first)
-        {
-            // transaction is only in first map
-            assert (!pos.second.second);
-            addDisputedTransaction (pos.first
-                , pos.second.first->peekData ());
-        }
-        else if (pos.second.second)
-        {
-            // transaction is only in second map
-            assert (!pos.second.first);
-            addDisputedTransaction (pos.first
-                , pos.second.second->peekData ());
-        }
-        else // No other disagreement over a transaction should be possible
-            assert (false);
+        assert (
+            (id.second && m1.getEntry(id.first) && !m2.getEntry(id.first)) ||
+            (!id.second && !m1.getEntry(id.first) && m2.getEntry(id.first))
+        );
+        if (id.second)
+            addDisputedTransaction (*m1.getEntry (id.first));
+        else
+            addDisputedTransaction (*m2.getEntry (id.first));
     }
     JLOG (j_.debug()) << dc << " differences found";
 }
 
-void LedgerConsensusImp::addDisputedTransaction (
-    uint256 const& txID,
-    Blob const& tx)
+template <class Traits>
+void LedgerConsensusImp<Traits>::addDisputedTransaction (
+    Tx_t const& tx)
 {
+    auto txID = tx.getID();
+
     if (disputes_.find (txID) != disputes_.end ())
         return;
 
@@ -1122,35 +1109,28 @@ void LedgerConsensusImp::addDisputedTransaction (
     bool ourVote = false;
 
     // Update our vote on the disputed transaction
-    if (ourPosition_)
-    {
-        auto mit (acquired_.find (ourPosition_->getCurrentHash ()));
+    if (ourSet_)
+        ourVote = ourSet_->hasEntry (txID);
 
-        if (mit != acquired_.end ())
-            ourVote = mit->second->hasItem (txID);
-        else
-            assert (false); // We don't have our own position?
-    }
-
-    auto txn = std::make_shared<DisputedTx> (txID, tx, ourVote, j_);
-    disputes_[txID] = txn;
+    Dispute_t txn {tx, ourVote, j_};
 
     // Update all of the peer's votes on the disputed transaction
     for (auto& pit : peerPositions_)
     {
-        auto cit (acquired_.find (pit.second->getCurrentHash ()));
+        auto cit (acquired_.find (pit.second.getCurrentHash ()));
 
-        if ((cit != acquired_.end ()) && cit->second)
-        {
-            txn->setVote (pit.first, cit->second->hasItem (txID));
-        }
+        if (cit != acquired_.end ())
+            txn.setVote (pit.first,
+                cit->second.hasEntry (txID));
     }
 
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter ().shouldRelay (txID))
     {
+        auto const slice = tx.txn().slice();
+
         protocol::TMTransaction msg;
-        msg.set_rawtransaction (& (tx.front ()), tx.size ());
+        msg.set_rawtransaction (slice.data(), slice.size());
         msg.set_status (protocol::tsNEW);
         msg.set_receivetimestamp (
             app_.timeKeeper().now().time_since_epoch().count());
@@ -1158,33 +1138,35 @@ void LedgerConsensusImp::addDisputedTransaction (
             std::make_shared<Message> (
                 msg, protocol::mtTRANSACTION)));
     }
+
+    disputes_.emplace (txID, std::move (txn));
 }
 
-void LedgerConsensusImp::adjustCount (std::shared_ptr<SHAMap> const& map,
-                  const std::vector<NodeID>& peers)
+template <class Traits>
+void LedgerConsensusImp<Traits>::adjustCount (TxSet_t const& map,
+    std::vector<NodeID_t> const& peers)
 {
     for (auto& it : disputes_)
     {
-        bool setHas = map->hasItem (it.second->getTransactionID ());
+        bool setHas = map.hasEntry (it.first);
         for (auto const& pit : peers)
-            it.second->setVote (pit, setHas);
+            it.second.setVote (pit, setHas);
     }
 }
 
-void LedgerConsensusImp::leaveConsensus ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::leaveConsensus ()
 {
-    if (proposing_)
+    if (ourPosition_ && ! ourPosition_->isBowOut ())
     {
-        if (ourPosition_ && ! ourPosition_->isBowOut ())
-        {
-            ourPosition_->bowOut();
-            propose();
-        }
-        proposing_ = false;
+        ourPosition_->bowOut(app_.timeKeeper().closeTime());
+        propose();
     }
+    proposing_ = false;
 }
 
-void LedgerConsensusImp::propose ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::propose ()
 {
     JLOG (j_.trace()) << "We propose: " <<
         (ourPosition_->isBowOut ()
@@ -1201,19 +1183,22 @@ void LedgerConsensusImp::propose ()
 
     prop.set_nodepubkey (valPublic_.data(), valPublic_.size());
 
-    ourPosition_->setSignature (
-        signDigest (
-            valPublic_,
-            valSecret_,
-            ourPosition_->getSigningHash()));
+    auto signingHash = sha512Half(
+        HashPrefix::proposal,
+        std::uint32_t(ourPosition_->getSequence()),
+        ourPosition_->getCloseTime().time_since_epoch().count(),
+        ourPosition_->getPrevLedger(), ourPosition_->getCurrentHash());
 
-    auto sig = ourPosition_->getSignature();
+    auto sig = signDigest (
+        valPublic_, valSecret_, signingHash);
+
     prop.set_signature (sig.data(), sig.size());
 
     app_.overlay().send(prop);
 }
 
-void LedgerConsensusImp::statusChange (
+template <class Traits>
+void LedgerConsensusImp<Traits>::statusChange (
     protocol::NodeEvent event, ReadView const& ledger)
 {
     protocol::TMStatusChange s;
@@ -1251,10 +1236,10 @@ void LedgerConsensusImp::statusChange (
     JLOG (j_.trace()) << "send status change to peer";
 }
 
-// For the consensus refactor, takeInitialPosition has been split
-// into two pieces. This piece, makeInitialPosition does the
-// non-consensus parts
-std::shared_ptr<SHAMap> LedgerConsensusImp::makeInitialPosition ()
+template <class Traits>
+auto
+LedgerConsensusImp<Traits>::makeInitialPosition () ->
+    std::pair <TxSet_t, Pos_t>
 {
     // Tell the ledger master not to acquire the ledger we're probably building
     ledgerMaster_.setBuildingLedger (previousLedger_->info().seq + 1);
@@ -1274,6 +1259,7 @@ std::shared_ptr<SHAMap> LedgerConsensusImp::makeInitialPosition ()
             SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
     }
 
+    // Add pseudo-transactions to the set
     if ((app_.config().standalone() || (proposing_ && haveCorrectLCL_))
             && ((previousLedger_->info().seq % 256) == 0))
     {
@@ -1302,44 +1288,51 @@ std::shared_ptr<SHAMap> LedgerConsensusImp::makeInitialPosition ()
         }
     }
 
-    // Set should be immutable snapshot
-    return initialSet->snapShot (false);
+    // Now we need an immutable snapshot
+    initialSet = initialSet->snapShot(false);
+    auto setHash = initialSet->getHash().as_uint256();
+
+    return std::make_pair<RCLTxSet, RCLCxPos> (
+        std::move (initialSet),
+        LedgerProposal {
+            initialLedger->info().parentHash,
+            setHash,
+            closeTime_,
+            app_.timeKeeper().closeTime()});
 }
 
-void LedgerConsensusImp::takeInitialPosition()
+template <class Traits>
+void LedgerConsensusImp<Traits>::takeInitialPosition()
 {
-    auto initialSet = makeInitialPosition();
+    auto pair = makeInitialPosition();
+    auto const& initialSet = pair.first;
+    auto const& initialPos = pair.second;
+    assert (initialSet.getID() == initialPos.getCurrentHash());
 
-    mapCompleteInternal (initialSet, false);
-
-    ourPosition_ = std::make_shared<LedgerProposal> (
-        previousLedger_->info().hash,
-        initialSet->getHash().as_uint256(),
-        closeTime_);
+    ourPosition_ = initialPos;
+    ourSet_ = initialSet;
 
     for (auto& it : disputes_)
     {
-        it.second->setOurVote (initialSet->hasItem (it.first));
+        it.second.setOurVote (initialSet.hasEntry (it.first));
     }
 
-    // if any peers have taken a contrary position, process disputes
-    hash_set<uint256> found;
-
+    // When we take our initial position,
+    // we need to create any disputes required by our position
+    // and any peers who have already taken positions
+    compares_.emplace (initialSet.getID());
     for (auto& it : peerPositions_)
     {
-        uint256 const& set = it.second->getCurrentHash ();
-
-        if (found.insert (set).second)
+        auto hash = it.second.getCurrentHash();
+        auto iit (acquired_.find (hash));
+        if (iit != acquired_.end ())
         {
-            auto iit (acquired_.find (set));
-
-            if (iit != acquired_.end ())
-            {
-                compares_.insert(iit->second->getHash().as_uint256());
+            if (compares_.emplace (hash).second)
                 createDisputes (initialSet, iit->second);
-            }
         }
     }
+
+    mapCompleteInternal (initialSet, false);
 
     if (proposing_)
         propose ();
@@ -1366,8 +1359,9 @@ participantsNeeded (int participants, int percent)
     return (result == 0) ? 1 : result;
 }
 
+template <class Traits>
 NetClock::time_point
-LedgerConsensusImp::effectiveCloseTime(NetClock::time_point closeTime)
+LedgerConsensusImp<Traits>::effectiveCloseTime(NetClock::time_point closeTime)
 {
     if (closeTime == NetClock::time_point{})
         return closeTime;
@@ -1377,18 +1371,13 @@ LedgerConsensusImp::effectiveCloseTime(NetClock::time_point closeTime)
         (previousLedger_->info().closeTime + 1s));
 }
 
-void LedgerConsensusImp::updateOurPositions ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::updateOurPositions ()
 {
     // Compute a cutoff time
-    auto peerCutoff
-        = std::chrono::steady_clock::now ();
-    auto ourCutoff
-        = peerCutoff - PROPOSE_INTERVAL;
+    auto peerCutoff = app_.timeKeeper().closeTime();
+    auto ourCutoff = peerCutoff - PROPOSE_INTERVAL;
     peerCutoff -= PROPOSE_FRESHNESS;
-
-    bool changes = false;
-    std::shared_ptr<SHAMap> ourPosition;
-    //  std::vector<uint256> addedTx, removedTx;
 
     // Verify freshness of peer positions and compute close times
     std::map<NetClock::time_point, int> closeTimes;
@@ -1396,51 +1385,55 @@ void LedgerConsensusImp::updateOurPositions ()
         auto it = peerPositions_.begin ();
         while (it != peerPositions_.end ())
         {
-            if (it->second->isStale (peerCutoff))
+            if (it->second.isStale (peerCutoff))
             {
                 // peer's proposal is stale, so remove it
-                auto const& peerID = it->second->getPeerID ();
+                auto const& peerID = it->second.getNodeID ();
                 JLOG (j_.warn())
                     << "Removing stale proposal from " << peerID;
                 for (auto& dt : disputes_)
-                    dt.second->unVote (peerID);
+                    dt.second.unVote (peerID);
                 it = peerPositions_.erase (it);
             }
             else
             {
                 // proposal is still fresh
-                ++closeTimes[effectiveCloseTime(it->second->getCloseTime())];
+                ++closeTimes[effectiveCloseTime(it->second.getCloseTime())];
                 ++it;
             }
         }
     }
 
-    // Update votes on disputed transactions
-    for (auto& it : disputes_)
-    {
-        // Because the threshold for inclusion increases,
-        //  time can change our position on a dispute
-        if (it.second->updateVote (closePercent_, proposing_))
-        {
-            if (!changes)
-            {
-                ourPosition = acquired_[ourPosition_->getCurrentHash ()]
-                    ->snapShot (true);
-                assert (ourPosition);
-                changes = true;
-            }
+    // This will stay unseated unless there are any changes
+    boost::optional <TxSet_t> ourSet;
 
-            if (it.second->getOurVote ()) // now a yes
+    // Update votes on disputed transactions
+    {
+        boost::optional <typename TxSet_t::mutable_t> changedSet;
+        for (auto& it : disputes_)
+        {
+            // Because the threshold for inclusion increases,
+            //  time can change our position on a dispute
+            if (it.second.updateVote (closePercent_, proposing_))
             {
-                ourPosition->addItem (SHAMapItem (it.first
-                    , it.second->peekTransaction ()), true, false);
-                //              addedTx.push_back(it.first);
+                if (! changedSet)
+                    changedSet.emplace (*ourSet_);
+
+                if (it.second.getOurVote ())
+                {
+                    // now a yes
+                    changedSet->addEntry (it.second.tx());
+                }
+                else
+                {
+                    // now a no
+                    changedSet->removeEntry (it.first);
+                }
             }
-            else // now a no
-            {
-                ourPosition->delItem (it.first);
-                //              removedTx.push_back(it.first);
-            }
+        }
+        if (changedSet)
+        {
+            ourSet.emplace (*changedSet);
         }
     }
 
@@ -1518,38 +1511,67 @@ void LedgerConsensusImp::updateOurPositions ()
     // claimed close time. Once the new close time code is deployed
     // to the full network, this can be relaxed to force a change
     // only if the rounded close time has changed.
-    if (!changes &&
+    if (! ourSet &&
             ((closeTime != ourPosition_->getCloseTime())
             || ourPosition_->isStale (ourCutoff)))
     {
         // close time changed or our position is stale
-        ourPosition = acquired_[ourPosition_->getCurrentHash ()]
-            ->snapShot (true);
-        assert (ourPosition);
-        changes = true; // We pretend our position changed to force
-    }                   //   a new proposal
+        ourSet.emplace (*ourSet_);
+    }
 
-    if (changes)
+    if (ourSet)
     {
-        ourPosition = ourPosition->snapShot (false);
+        auto newHash = ourSet->getID();
 
-        auto newHash = ourPosition->getHash ().as_uint256();
+        // Setting ourSet_ here prevents mapCompleteInternal
+        // from checking for new disputes. But we only changed
+        // positions on existing disputes, so no need to.
+        ourSet_ = ourSet;
+
         JLOG (j_.info())
             << "Position change: CTime "
             << closeTime.time_since_epoch().count()
             << ", tx " << newHash;
 
-        if (ourPosition_->changePosition(newHash, closeTime))
+        if (ourPosition_->changePosition (newHash, closeTime,
+            app_.timeKeeper().closeTime()))
         {
             if (proposing_)
                 propose ();
 
-            mapCompleteInternal (ourPosition, false);
+            mapCompleteInternal (*ourSet, false);
         }
     }
 }
 
-void LedgerConsensusImp::playbackProposals ()
+static void
+relay (Application& app, RCLCxPos const& pos)
+{
+    auto& proposal = pos.peek();
+
+    protocol::TMProposeSet prop;
+
+    prop.set_proposeseq (
+        proposal.getProposeSeq ());
+    prop.set_closetime (
+        proposal.getCloseTime ().time_since_epoch().count());
+
+    prop.set_currenttxhash (
+        proposal.getCurrentHash().begin(), 256 / 8);
+    prop.set_previousledger (
+        proposal.getPrevLedger().begin(), 256 / 8);
+
+    auto const pk = proposal.getPublicKey().slice();
+    prop.set_nodepubkey (pk.data(), pk.size());
+
+    auto const sig = proposal.getSignature();
+    prop.set_signature (sig.data(), sig.size());
+
+    app.overlay().relay (prop, proposal.getSuppressionID ());
+}
+
+template <class Traits>
+void LedgerConsensusImp<Traits>::playbackProposals ()
 {
     auto proposals = consensus_.getStoredProposals (prevLedgerHash_);
 
@@ -1559,31 +1581,13 @@ void LedgerConsensusImp::playbackProposals ()
         {
             // Now that we know this proposal
             // is useful, relay it
-            protocol::TMProposeSet prop;
-
-            prop.set_proposeseq (
-                proposal->getProposeSeq ());
-            prop.set_closetime (
-                proposal->getCloseTime ().time_since_epoch().count());
-
-            prop.set_currenttxhash (
-                proposal->getCurrentHash().begin(), 256 / 8);
-            prop.set_previousledger (
-                proposal->getPrevLedger().begin(), 256 / 8);
-
-            auto const pk = proposal->getPublicKey().slice();
-            prop.set_nodepubkey (pk.data(), pk.size());
-
-            auto const sig = proposal->getSignature();
-            prop.set_signature (sig.data(), sig.size());
-
-            app_.overlay().relay (
-                prop, proposal->getSuppressionID ());
+            relay (app_, proposal);
         }
     }
 }
 
-void LedgerConsensusImp::closeLedger ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::closeLedger ()
 {
     checkOurValidation ();
     state_ = State::establish;
@@ -1595,7 +1599,8 @@ void LedgerConsensusImp::closeLedger ()
     takeInitialPosition ();
 }
 
-void LedgerConsensusImp::checkOurValidation ()
+template <class Traits>
+void LedgerConsensusImp<Traits>::checkOurValidation ()
 {
     // This only covers some cases - Fix for the case where we can't ever
     // acquire the consensus ledger
@@ -1624,7 +1629,7 @@ void LedgerConsensusImp::checkOurValidation ()
     addLoad(v);
     v->setTrusted ();
     auto const signingHash = v->sign (valSecret_);
-        // FIXME: wrong supression
+        // FIXME: wrong suppression
     app_.getHashRouter ().addSuppression (signingHash);
     app_.getValidations ().addValidation (v, "localMissing");
     Blob validation = v->getSigned ();
@@ -1634,11 +1639,10 @@ void LedgerConsensusImp::checkOurValidation ()
     JLOG (j_.warn()) << "Sending partial validation";
 }
 
-void LedgerConsensusImp::beginAccept (bool synchronous)
+template <class Traits>
+void LedgerConsensusImp<Traits>::beginAccept (bool synchronous)
 {
-    auto consensusSet = acquired_[ourPosition_->getCurrentHash ()];
-
-    if (!consensusSet)
+    if (! ourPosition_ || ! ourSet_)
     {
         JLOG (j_.fatal())
             << "We don't have a consensus set";
@@ -1648,24 +1652,30 @@ void LedgerConsensusImp::beginAccept (bool synchronous)
     consensus_.newLCL (peerPositions_.size (), roundTime_);
 
     if (synchronous)
-        accept (consensusSet);
+        accept (*ourSet_);
     else
     {
         app_.getJobQueue().addJob (jtACCEPT, "acceptLedger",
-            std::bind (&LedgerConsensusImp::accept, shared_from_this (),
-                       consensusSet));
+            [that = this->shared_from_this(),
+            consensusSet = *ourSet_]
+            (Job &)
+            {
+                that->accept (consensusSet);
+            });
     }
 }
 
-void LedgerConsensusImp::endConsensus (bool correctLCL)
+template <class Traits>
+void LedgerConsensusImp<Traits>::endConsensus (bool correctLCL)
 {
     app_.getOPs ().endConsensus (correctLCL);
 }
 
-void LedgerConsensusImp::startRound (
-    LedgerHash const& prevLCLHash,
+template <class Traits>
+void LedgerConsensusImp<Traits>::startRound (
+    LgrID_t const& prevLCLHash,
     std::shared_ptr<Ledger const> const& prevLedger,
-    NetClock::time_point closeTime,
+    Time_t closeTime,
     int previousProposers,
     std::chrono::milliseconds previousConvergeTime)
 {
@@ -1682,6 +1692,7 @@ void LedgerConsensusImp::startRound (
     prevLedgerHash_ = prevLCLHash;
     previousLedger_ = prevLedger;
     ourPosition_.reset();
+    ourSet_.reset();
     consensusFail_ = false;
     roundTime_ = 0ms;
     closePercent_ = 0;
@@ -1757,7 +1768,8 @@ void LedgerConsensusImp::startRound (
 
 }
 
-void LedgerConsensusImp::addLoad(STValidation::ref val)
+template <class Traits>
+void LedgerConsensusImp<Traits>::addLoad(STValidation::ref val)
 {
     auto const& feeTrack = app_.getFeeTrack();
     std::uint32_t fee = std::max(
@@ -1769,7 +1781,7 @@ void LedgerConsensusImp::addLoad(STValidation::ref val)
 }
 
 //------------------------------------------------------------------------------
-std::shared_ptr <LedgerConsensus>
+std::shared_ptr <LedgerConsensus<RCLCxTraits>>
 make_LedgerConsensus (
     Application& app,
     ConsensusImp& consensus,
@@ -1778,7 +1790,7 @@ make_LedgerConsensus (
     LedgerMaster& ledgerMaster,
     FeeVote& feeVote)
 {
-    return std::make_shared <LedgerConsensusImp> (app, consensus,
+    return std::make_shared <LedgerConsensusImp <RCLCxTraits>> (app, consensus,
         inboundTransactions, localtx, ledgerMaster, feeVote);
 }
 
@@ -1787,12 +1799,13 @@ make_LedgerConsensus (
 CanonicalTXSet
 applyTransactions (
     Application& app,
-    SHAMap const& set,
+    RCLTxSet const& cSet,
     OpenView& view,
     std::function<bool(uint256 const&)> txFilter)
 {
     auto j = app.journal ("LedgerConsensus");
 
+    auto& set = *(cSet.map());
     CanonicalTXSet retriableTxs (set.getHash().as_uint256());
 
     for (auto const& item : set)
@@ -1871,5 +1884,7 @@ applyTransactions (
     assert (retriableTxs.empty() || !certainRetry);
     return retriableTxs;
 }
+
+template class LedgerConsensusImp <RCLCxTraits>;
 
 } // ripple

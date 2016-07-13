@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
 #include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/consensus/RCLCxTraits.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
@@ -34,30 +35,37 @@
 namespace ripple {
 
 /** Manager for achieving consensus on the next ledger.
-
-    This object is created when the consensus process starts, and
-    is destroyed when the process is complete.
 */
-class LedgerConsensus
+template <class Traits>
+class LedgerConsensus : public Traits
 {
 public:
+
+    using typename Traits::Time_t;
+    using typename Traits::Pos_t;
+    using typename Traits::TxSet_t;
+    using typename Traits::Tx_t;
+    using typename Traits::LgrID_t;
+    using typename Traits::TxID_t;
+    using typename Traits::TxSetID_t;
+    using typename Traits::NodeID_t;
+
     virtual ~LedgerConsensus() = default;
 
     virtual Json::Value getJson (bool full) = 0;
 
-    virtual uint256 getLCL () = 0;
+    virtual LgrID_t getLCL () = 0;
 
-    virtual void gotMap (
-        std::shared_ptr<SHAMap> const& map) = 0;
+    virtual void gotMap (TxSet_t const& map) = 0;
 
     virtual void timerEntry () = 0;
 
-    virtual bool peerPosition (LedgerProposal::ref) = 0;
+    virtual bool peerPosition (Pos_t const& position) = 0;
 
     virtual void startRound (
-        LedgerHash const& prevLCLHash,
+        LgrID_t const& prevLCLHash,
         std::shared_ptr<Ledger const> const& prevLedger,
-        NetClock::time_point closeTime,
+        Time_t closeTime,
         int previousProposers,
         std::chrono::milliseconds previousConvergeTime) = 0;
 

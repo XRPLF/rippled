@@ -63,7 +63,7 @@ ConsensusImp::getLastCloseDuration () const
     return lastCloseConvergeTook_;
 }
 
-std::shared_ptr<LedgerConsensus>
+std::shared_ptr<LedgerConsensus<RCLCxTraits>>
 ConsensusImp::makeLedgerConsensus (
     Application& app,
     InboundTransactions& inboundTransactions,
@@ -76,7 +76,7 @@ ConsensusImp::makeLedgerConsensus (
 
 void
 ConsensusImp::startRound (
-    LedgerConsensus& consensus,
+    LedgerConsensus<RCLCxTraits>& consensus,
     LedgerHash const &prevLCLHash,
     std::shared_ptr<Ledger const> const& previousLedger,
     NetClock::time_point closeTime)
@@ -154,11 +154,11 @@ ConsensusImp::storeProposal (
     props.push_back (proposal);
 }
 
-std::vector <std::shared_ptr <LedgerProposal>>
+std::vector <RCLCxPos>
 ConsensusImp::getStoredProposals (uint256 const& prevLedger)
 {
 
-    std::vector <std::shared_ptr <LedgerProposal>> ret;
+    std::vector <RCLCxPos> ret;
 
     {
         std::lock_guard <std::mutex> _(lock_);
@@ -166,15 +166,13 @@ ConsensusImp::getStoredProposals (uint256 const& prevLedger)
         for (auto const& it : storedProposals_)
             for (auto const& prop : it.second)
                 if (prop->getPrevLedger() == prevLedger)
-                    ret.push_back (prop);
+                    ret.emplace_back (*prop);
     }
 
     return ret;
 }
 
-//==============================================================================
-
-std::unique_ptr<Consensus>
+std::unique_ptr <Consensus>
 make_Consensus (Config const& config, Logs& logs)
 {
     return std::make_unique<ConsensusImp> (

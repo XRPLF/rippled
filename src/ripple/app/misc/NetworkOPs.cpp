@@ -22,6 +22,7 @@
 #include <ripple/protocol/Quality.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/consensus/RCLCxTraits.h>
 #include <ripple/app/ledger/Consensus.h>
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
@@ -529,7 +530,7 @@ private:
     DeadlineTimer m_clusterTimer;
 
     std::unique_ptr<Consensus> mConsensus;
-    std::shared_ptr<LedgerConsensus> mLedgerConsensus;
+    std::shared_ptr<LedgerConsensus<RCLCxTraits>> mLedgerConsensus;
 
     LedgerMaster& m_ledgerMaster;
     std::shared_ptr<InboundLedger> mAcquiringLedger;
@@ -1503,14 +1504,12 @@ void NetworkOPsImp::processTrustedProposal (
     std::shared_ptr<protocol::TMProposeSet> set,
     NodeID const& node)
 {
-    {
-        mConsensus->storeProposal (proposal, node);
+    mConsensus->storeProposal (proposal, node);
 
-        if (mLedgerConsensus->peerPosition (proposal))
-            app_.overlay().relay(*set, proposal->getSuppressionID());
-        else
-            JLOG(m_journal.info()) << "Not relaying trusted proposal";
-    }
+    if (mLedgerConsensus->peerPosition (*proposal))
+        app_.overlay().relay(*set, proposal->getSuppressionID());
+    else
+        JLOG(m_journal.info()) << "Not relaying trusted proposal";
 }
 
 void
@@ -1531,7 +1530,7 @@ NetworkOPsImp::mapComplete (
 
     // We acquired it because consensus asked us to
     if (fromAcquire)
-        mLedgerConsensus->gotMap (map);
+        mLedgerConsensus->gotMap (RCLTxSet{map});
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)

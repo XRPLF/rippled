@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/consensus/RCLCxTraits.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -64,7 +65,7 @@ public:
 
     /** Called to create a LedgerConsensus instance */
     virtual
-    std::shared_ptr<LedgerConsensus>
+    std::shared_ptr<LedgerConsensus<RCLCxTraits>>
     makeLedgerConsensus (
         Application& app,
         InboundTransactions& inboundTransactions,
@@ -75,7 +76,7 @@ public:
     virtual
     void
     startRound (
-        LedgerConsensus& consensus,
+        LedgerConsensus<RCLCxTraits>& consensus,
         LedgerHash const &prevLCLHash,
         std::shared_ptr<Ledger const> const& previousLedger,
         NetClock::time_point closeTime) = 0;
