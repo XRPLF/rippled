@@ -2171,6 +2171,233 @@ public:
         }
     }
 
+    void testServerInfo()
+    {
+        using namespace jtx;
+        Env env(*this, makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation));
+        Env_ss envs(env);
+
+        Account const alice{ "alice" };
+        env.fund(XRP(1000000), alice);
+        env.close();
+
+        auto submitParams = Json::Value(Json::objectValue);
+        // Max fee = 100 drops
+        submitParams[jss::fee_mult_max] = 10;
+        submitParams["x-queue-okay"] = true;
+        submitParams["x_queue_okay"] = true;
+
+        {
+            auto const server_info = env.rpc("server_info");
+            BEAST_EXPECT(server_info.isMember(jss::result) &&
+                server_info[jss::result].isMember(jss::info));
+            auto const& info = server_info[jss::result][jss::info];
+            BEAST_EXPECT(info.isMember(jss::load_factor) &&
+                info[jss::load_factor] == 1);
+            BEAST_EXPECT(!info.isMember(jss::load_factor_server));
+            BEAST_EXPECT(!info.isMember(jss::load_factor_local));
+            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
+            BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
+        }
+        {
+            auto const server_state = env.rpc("server_state");
+            log << server_state;
+            auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) &&
+                state[jss::load_factor] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_base) &&
+                state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) &&
+                state[jss::load_factor_server] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_escalation) &&
+                state[jss::load_factor_fee_escalation] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) &&
+                state[jss::load_factor_fee_queue] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_reference) &&
+                state[jss::load_factor_fee_reference] == 256);
+        }
+
+        checkMetrics(env, 0, 6, 0, 3, 256);
+
+        fillQueue(env, alice);
+        checkMetrics(env, 0, 6, 4, 3, 256);
+
+        auto aliceSeq = env.seq(alice);
+        for (auto i = 0; i < 4; ++i)
+            envs(noop(alice), fee(none), seq(aliceSeq + i),
+                ter(terQUEUED))(submitParams);
+        checkMetrics(env, 4, 6, 4, 3, 256);
+
+        {
+            auto const server_info = env.rpc("server_info");
+            BEAST_EXPECT(server_info.isMember(jss::result) &&
+                server_info[jss::result].isMember(jss::info));
+            auto const& info = server_info[jss::result][jss::info];
+            // Avoid double rounding issues by comparing to a range.
+            BEAST_EXPECT(info.isMember(jss::load_factor) &&
+                info[jss::load_factor] > 888.88 &&
+                    info[jss::load_factor] < 888.89);
+            BEAST_EXPECT(info.isMember(jss::load_factor_server) &&
+                info[jss::load_factor_server] == 1);
+            BEAST_EXPECT(!info.isMember(jss::load_factor_local));
+            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
+            BEAST_EXPECT(info.isMember(jss::load_factor_fee_escalation) &&
+                info[jss::load_factor_fee_escalation] > 888.88 &&
+                    info[jss::load_factor_fee_escalation] < 888.89);
+        }
+        {
+            auto const server_state = env.rpc("server_state");
+            log << server_state;
+            auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) &&
+                state[jss::load_factor] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_base) &&
+                state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) &&
+                state[jss::load_factor_server] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_escalation) &&
+                state[jss::load_factor_fee_escalation] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) &&
+                state[jss::load_factor_fee_queue] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_reference) &&
+                state[jss::load_factor_fee_reference] == 256);
+        }
+
+        env.app().getFeeTrack().setRemoteFee(256000);
+
+        {
+            auto const server_info = env.rpc("server_info");
+            BEAST_EXPECT(server_info.isMember(jss::result) &&
+                server_info[jss::result].isMember(jss::info));
+            auto const& info = server_info[jss::result][jss::info];
+            // Avoid double rounding issues by comparing to a range.
+            BEAST_EXPECT(info.isMember(jss::load_factor) &&
+                info[jss::load_factor] == 1000);
+            BEAST_EXPECT(!info.isMember(jss::load_factor_server));
+            BEAST_EXPECT(!info.isMember(jss::load_factor_local));
+            BEAST_EXPECT(info.isMember(jss::load_factor_net) &&
+                info[jss::load_factor_net] == 1000);
+            BEAST_EXPECT(info.isMember(jss::load_factor_fee_escalation) &&
+                info[jss::load_factor_fee_escalation] > 888.88 &&
+                    info[jss::load_factor_fee_escalation] < 888.89);
+        }
+        {
+            auto const server_state = env.rpc("server_state");
+            log << server_state;
+            auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) &&
+                state[jss::load_factor] == 256000);
+            BEAST_EXPECT(state.isMember(jss::load_base) &&
+                state[jss::load_base] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) &&
+                state[jss::load_factor_server] == 256000);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_escalation) &&
+                state[jss::load_factor_fee_escalation] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) &&
+                state[jss::load_factor_fee_queue] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_reference) &&
+                state[jss::load_factor_fee_reference] == 256);
+        }
+
+        env.app().getFeeTrack().setRemoteFee(256);
+
+        // Increase the server load
+        for (int i = 0; i < 5; ++i)
+            env.app().getFeeTrack().raiseLocalFee();
+        BEAST_EXPECT(env.app().getFeeTrack().getLoadFactor() == 625);
+
+        {
+            auto const server_info = env.rpc("server_info");
+            BEAST_EXPECT(server_info.isMember(jss::result) &&
+                server_info[jss::result].isMember(jss::info));
+            auto const& info = server_info[jss::result][jss::info];
+            // Avoid double rounding issues by comparing to a range.
+            BEAST_EXPECT(info.isMember(jss::load_factor) &&
+                info[jss::load_factor] > 888.88 &&
+                    info[jss::load_factor] < 888.89);
+            // There can be a race between LoadManager lowering the fee,
+            // and the call to server_info, so check a wide range.
+            // The important thing is that it's not 1.
+            BEAST_EXPECT(info.isMember(jss::load_factor_server) &&
+                info[jss::load_factor_server] > 1.245 &&
+                info[jss::load_factor_server] < 2.4415);
+            BEAST_EXPECT(info.isMember(jss::load_factor_local) &&
+                info[jss::load_factor_local] > 1.245 &&
+                info[jss::load_factor_local] < 2.4415);
+            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
+            BEAST_EXPECT(info.isMember(jss::load_factor_fee_escalation) &&
+                info[jss::load_factor_fee_escalation] > 888.88 &&
+                    info[jss::load_factor_fee_escalation] < 888.89);
+        }
+        {
+            auto const server_state = env.rpc("server_state");
+            log << server_state;
+            auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) &&
+                state[jss::load_factor] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_base) &&
+                state[jss::load_base] == 256);
+            // There can be a race between LoadManager lowering the fee,
+            // and the call to server_info, so check a wide range.
+            // The important thing is that it's not 256.
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) &&
+                state[jss::load_factor_server] >= 320 &&
+                state[jss::load_factor_server] <= 625);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_escalation) &&
+                state[jss::load_factor_fee_escalation] == 227555);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) &&
+                state[jss::load_factor_fee_queue] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_reference) &&
+                state[jss::load_factor_fee_reference] == 256);
+        }
+
+        env.close();
+
+        {
+            auto const server_info = env.rpc("server_info");
+            BEAST_EXPECT(server_info.isMember(jss::result) &&
+                server_info[jss::result].isMember(jss::info));
+            auto const& info = server_info[jss::result][jss::info];
+            // Avoid double rounding issues by comparing to a range.
+
+            // There can be a race between LoadManager lowering the fee,
+            // and the call to server_info, so check a wide range.
+            // The important thing is that it's not 1.
+            BEAST_EXPECT(info.isMember(jss::load_factor) &&
+                info[jss::load_factor] > 1.245 &&
+                info[jss::load_factor] < 2.4415);
+            BEAST_EXPECT(!info.isMember(jss::load_factor_server));
+            BEAST_EXPECT(info.isMember(jss::load_factor_local) &&
+                info[jss::load_factor_local] > 1.245 &&
+                info[jss::load_factor_local] < 2.4415);
+            BEAST_EXPECT(!info.isMember(jss::load_factor_net));
+            BEAST_EXPECT(!info.isMember(jss::load_factor_fee_escalation));
+        }
+        {
+            auto const server_state = env.rpc("server_state");
+            log << server_state;
+            auto const& state = server_state[jss::result][jss::state];
+            BEAST_EXPECT(state.isMember(jss::load_factor) &&
+                state[jss::load_factor] >= 320 &&
+                state[jss::load_factor] <= 625);
+            BEAST_EXPECT(state.isMember(jss::load_base) &&
+                state[jss::load_base] == 256);
+            // There can be a race between LoadManager lowering the fee,
+            // and the call to server_info, so check a wide range.
+            // The important thing is that it's not 256.
+            BEAST_EXPECT(state.isMember(jss::load_factor_server) &&
+                state[jss::load_factor_server] >= 320 &&
+                state[jss::load_factor_server] <= 625);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_escalation) &&
+                state[jss::load_factor_fee_escalation] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_queue) &&
+                state[jss::load_factor_fee_queue] == 256);
+            BEAST_EXPECT(state.isMember(jss::load_factor_fee_reference) &&
+                state[jss::load_factor_fee_reference] == 256);
+        }
+    }
+
     void run()
     {
         testQueue();
@@ -2192,6 +2419,7 @@ public:
         testExpirationReplacement();
         testSignAndSubmitSequence();
         testAccountInfo();
+        testServerInfo();
     }
 };
 
