@@ -1095,18 +1095,6 @@ for tu_style in ['classic', 'unity']:
             for s, k in sources:
                 object_builder.add_source_files(*s, **k)
 
-            git_commit_tag = {}
-            if toolchain != 'msvc':
-                git = Beast.Git(env)
-                if git.exists:
-                    id = '%s+%s.%s' % (git.tags, git.user, git.branch)
-                    git_commit_tag = {'CPPDEFINES':
-                                      {'GIT_COMMIT_ID' : '\'"%s"\'' % id }}
-
-            object_builder.add_source_files(
-                'src/ripple/unity/git_id.cpp',
-                **git_commit_tag)
-
             if use_shp(toolchain):
                 cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
             else:

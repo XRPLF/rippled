@@ -721,25 +721,6 @@ add_with_props(src/ripple/unity/secp256k1.cpp
   ${no_unused_w}
   )
 
-set(git_commit_tag)
-if (NOT is_msvc)
-  execute_process(COMMAND git describe --tags OUTPUT_VARIABLE git_tag)
-  string(STRIP ${git_tag} git_tag)
-  execute_process(COMMAND git rev-parse --abbrev-ref HEAD OUTPUT_VARIABLE git_branch)
-  string(STRIP ${git_branch} git_branch)
-  execute_process(COMMAND git config remote.origin.url OUTPUT_VARIABLE git_remote)
-  # get the string between ':' and '/'
-  string(REGEX REPLACE "^.*:(.*)/.*$" "\\1" git_user ${git_remote})
-  set(git_commit_tag "${git_tag}+${git_user}.${git_branch}")
-endif()
-
-if (git_commit_tag)
-  add_with_props(src/ripple/unity/git_id.cpp
-    -DGIT_COMMIT_ID='"${git_commit_tag}"')
-else()
-  add_with_props(src/ripple/unity/git_id.cpp)
-endif()
-
 foreach(cursrc
     src/ripple/beast/unity/beast_hash_unity.cpp
     src/ripple/unity/beast.cpp
