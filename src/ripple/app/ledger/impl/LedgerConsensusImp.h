@@ -37,19 +37,16 @@ namespace ripple {
   Provides the implementation for LedgerConsensus.
 
   Achieves consensus on the next ledger.
-  This object is created when the consensus process starts, and
-  is destroyed when the process is complete.
-
-  Nearly everything herein is invoked with the master lock.
 
   Two things need consensus:
     1.  The set of transactions.
     2.  The close time for the ledger.
 */
+template <class Traits>
 class LedgerConsensusImp
-    : public LedgerConsensus
-    , public std::enable_shared_from_this <LedgerConsensusImp>
-    , public CountedObject <LedgerConsensusImp>
+    : public LedgerConsensus<Traits>
+    , public std::enable_shared_from_this <LedgerConsensusImp<Traits>>
+    , public CountedObject <LedgerConsensusImp<Traits>>
 {
 private:
     enum class State
@@ -70,6 +67,17 @@ private:
     };
 
 public:
+
+    using typename Traits::Time_t;
+    using typename Traits::Pos_t;
+    using typename Traits::TxSet_t;
+    using typename Traits::Tx_t;
+    using typename Traits::LgrID_t;
+    using typename Traits::TxID_t;
+    using typename Traits::TxSetID_t;
+    using typename Traits::NodeID_t;
+    using Dispute_t = DisputedTx <Traits>;
+
     /**
      * The result of applying a transaction to a ledger.
     */
@@ -81,6 +89,7 @@ public:
     LedgerConsensusImp& operator=(LedgerConsensusImp const&) = delete;
 
     ~LedgerConsensusImp () = default;
+
 
     /**
         @param localtx transactions issued by local clients
@@ -104,9 +113,9 @@ public:
         @param previousConvergeTime how long the last round took (ms)
     */
     void startRound (
-        LedgerHash const& prevLCLHash,
+        LgrID_t const& prevLCLHash,
         std::shared_ptr<Ledger const> const& prevLedger,
-        NetClock::time_point closeTime,
+        Time_t closeTime,
         int previousProposers,
         std::chrono::milliseconds previousConvergeTime) override;
 
@@ -120,23 +129,19 @@ public:
     Json::Value getJson (bool full) override;
 
     /* The hash of the last closed ledger */
-    uint256 getLCL () override;
+    LgrID_t getLCL () override;
 
     /**
       We have a complete transaction set, typically acquired from the network
 
       @param map      the transaction set.
-      @param acquired true if we have acquired the transaction set.
     */
-    void gotMap (
-        std::shared_ptr<SHAMap> const& map) override;
+    void gotMap (TxSet_t const& map) override;
 
     /**
       On timer call the correct handler for each state.
     */
     void timerEntry () override;
-
-    std::shared_ptr<SHAMap> getTransactionTree (uint256 const& hash);
 
     /**
       A server has taken a new position, adjust our tracking
@@ -145,10 +150,15 @@ public:
       @param newPosition the new position
       @return            true if we should do delayed relay of this position.
     */
-    bool peerPosition (LedgerProposal::ref newPosition) override;
+    bool peerPosition (Pos_t const& newPosition) override;
 
     void simulate(
         boost::optional<std::chrono::milliseconds> consensusDelay) override;
+
+    /**
+      Put a transaction set where peers can find it
+    */
+    void shareSet (TxSet_t const&);
 
 private:
     /**
@@ -179,7 +189,7 @@ private:
 
       @param lclHash Hash of the last closed ledger.
     */
-    void handleLCL (uint256 const& lclHash);
+    void handleLCL (LgrID_t const& lclHash);
 
     /**
       We have a complete transaction set, typically acquired from the network
@@ -188,14 +198,14 @@ private:
       @param acquired true if we have acquired the transaction set.
     */
     void mapCompleteInternal (
-        std::shared_ptr<SHAMap> const& map,
+        TxSet_t const& map,
         bool acquired);
 
     /** We have a new last closed ledger, process it. Final accept logic
 
       @param set Our consensus set
     */
-    void accept (std::shared_ptr<SHAMap> set);
+    void accept (TxSet_t const& set);
 
     /**
       Compare two proposed transaction sets and create disputed
@@ -204,17 +214,16 @@ private:
       @param m1 One transaction set
       @param m2 The other transaction set
     */
-    void createDisputes (std::shared_ptr<SHAMap> const& m1,
-                         std::shared_ptr<SHAMap> const& m2);
+    void createDisputes (TxSet_t const& m1,
+                         TxSet_t const& m2);
 
     /**
       Add a disputed transaction (one that at least one node wants
       in the consensus set and at least one node does not) to our tracking
 
-      @param txID The ID of the disputed transaction
-      @param tx   The data of the disputed transaction
+      @param tx   The disputed transaction
     */
-    void addDisputedTransaction (uint256 const& txID, Blob const& tx);
+    void addDisputedTransaction (Tx_t const& tx);
 
     /**
       Adjust the votes on all disputed transactions based
@@ -223,8 +232,8 @@ private:
       @param map   A disputed position
       @param peers peers which are taking the position map
     */
-    void adjustCount (std::shared_ptr<SHAMap> const& map,
-                      const std::vector<NodeID>& peers);
+    void adjustCount (TxSet_t const& map,
+        std::vector<NodeID_t> const& peers);
 
     /**
       Revoke our outstanding proposal, if any, and
@@ -247,7 +256,7 @@ private:
     /** Determine our initial proposed transaction set based on
         our open ledger
     */
-    std::shared_ptr<SHAMap> makeInitialPosition();
+    std::pair <TxSet_t, Pos_t> makeInitialPosition();
 
     /** Take an initial position on what we think the consensus set should be
     */
@@ -296,16 +305,18 @@ private:
     FeeVote& feeVote_;
     std::recursive_mutex lock_;
 
+    NodeID_t ourID_;
     State state_;
 
     // The wall time this ledger closed
-    NetClock::time_point closeTime_;
+    Time_t closeTime_;
 
-    uint256 prevLedgerHash_;
-    uint256 acquiringLedger_;
+    LgrID_t prevLedgerHash_;
+    LgrID_t acquiringLedger_;
 
     std::shared_ptr<Ledger const> previousLedger_;
-    LedgerProposal::pointer ourPosition_;
+    boost::optional<Pos_t> ourPosition_;
+    boost::optional<TxSet_t> ourSet_;
     PublicKey valPublic_;
     SecretKey valSecret_;
     bool proposing_, validating_, haveCorrectLCL_, consensusFail_;
@@ -328,26 +339,26 @@ private:
     std::chrono::milliseconds previousRoundTime_;
 
     // Convergence tracking, trusted peers indexed by hash of public key
-    hash_map<NodeID, LedgerProposal::pointer>  peerPositions_;
+    hash_map<NodeID_t, Pos_t>  peerPositions_;
 
     // Transaction Sets, indexed by hash of transaction tree
-    hash_map<uint256, std::shared_ptr<SHAMap>> acquired_;
+    hash_map<TxSetID_t, const TxSet_t> acquired_;
 
     // Disputed transactions
-    hash_map<uint256, std::shared_ptr <DisputedTx>> disputes_;
-    hash_set<uint256> compares_;
+    hash_map<TxID_t, Dispute_t> disputes_;
+    hash_set<TxSetID_t> compares_;
 
     // Close time estimates, keep ordered for predictable traverse
-    std::map<NetClock::time_point, int> closeTimes_;
+    std::map <Time_t, int> closeTimes_;
 
     // nodes that have bowed out of this consensus process
-    hash_set<NodeID> deadNodes_;
+    hash_set<NodeID_t> deadNodes_;
     beast::Journal j_;
 };
 
 //------------------------------------------------------------------------------
 
-std::shared_ptr <LedgerConsensus>
+std::shared_ptr <LedgerConsensus <RCLCxTraits>>
 make_LedgerConsensus (
     Application& app,
     ConsensusImp& consensus,
@@ -370,9 +381,11 @@ make_LedgerConsensus (
 CanonicalTXSet
 applyTransactions (
     Application& app,
-    SHAMap const& set,
+    RCLTxSet const& set,
     OpenView& view,
     std::function<bool(uint256 const&)> txFilter);
+
+extern template class LedgerConsensusImp <RCLCxTraits>;
 
 } // ripple
 

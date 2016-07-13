@@ -31,7 +31,6 @@
 #include <ripple/app/ledger/TransactionStateSF.cpp>
 
 #include <ripple/app/ledger/impl/ConsensusImp.cpp>
-#include <ripple/app/ledger/impl/DisputedTx.cpp>
 #include <ripple/app/ledger/impl/InboundLedger.cpp>
 #include <ripple/app/ledger/impl/InboundLedgers.cpp>
 #include <ripple/app/ledger/impl/InboundTransactions.cpp>
