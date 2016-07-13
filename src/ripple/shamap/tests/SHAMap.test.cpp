@@ -250,11 +250,11 @@ public:
                 map.setUnbacked ();
 
             expect (map.getHash() == zero, "bad initial empty map hash");
-            for (int i = 0; i < keys.size(); ++i)
+            for (int k = 0; k < keys.size(); ++k)
             {
-                SHAMapItem item (keys[i], IntToVUC (i));
+                SHAMapItem item (keys[k], IntToVUC (k));
                 expect (map.addItem (std::move(item), true, false), "unable to add item");
-                expect (map.getHash().as_uint256() == hashes[i], "bad buildup map hash");
+                expect (map.getHash().as_uint256() == hashes[k], "bad buildup map hash");
                 map.invariants();
             }
             if (v == SHAMap::version{1})
@@ -264,21 +264,21 @@ public:
                 expect(map_v2 != nullptr, "make_v2 should never return nullptr");
                 expect(map_v2->is_v2(), "map should be version 2");
                 map_v2->invariants();
-                auto i1 = map.begin();
+                auto m1 = map.begin();
                 auto e1 = map.end();
-                auto i2 = map_v2->begin();
+                auto m2 = map_v2->begin();
                 auto e2 = map_v2->end();
-                for (; i1 != e1; ++i1, ++i2)
+                for (; m1 != e1; ++m1, ++m2)
                 {
-                    expect(i2 != e2, "make_v2 size mismatch");
-                    expect(*i1 == *i2, "make_v2, item mismatch");
+                    expect(m2 != e2, "make_v2 size mismatch");
+                    expect(*m1 == *m2, "make_v2, item mismatch");
                 }
-                expect(i2 == e2, "make_v2 size mismatch");
+                expect(m2 == e2, "make_v2 size mismatch");
             }
-            for (int i = keys.size() - 1; i >= 0; --i)
+            for (int k = keys.size() - 1; k >= 0; --k)
             {
-                expect (map.getHash().as_uint256() == hashes[i], "bad teardown hash");
-                expect (map.delItem (keys[i]), "unable to remove item");
+                expect (map.getHash().as_uint256() == hashes[k], "bad teardown hash");
+                expect (map.delItem (keys[k]), "unable to remove item");
                 map.invariants();
             }
             expect (map.getHash() == zero, "bad final empty map hash");
@@ -300,8 +300,8 @@ public:
             keys[6].SetHex ("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
             keys[7].SetHex ("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
 
-            tests::TestFamily f{beast::Journal{}};
-            SHAMap map{SHAMapType::FREE, f, v};
+            tests::TestFamily tf{beast::Journal{}};
+            SHAMap map{SHAMapType::FREE, tf, v};
             if (! backed)
                 map.setUnbacked ();
             for (auto const& k : keys)
@@ -310,11 +310,11 @@ public:
                 map.invariants();
             }
 
-            int i = 7;
+            int h = 7;
             for (auto const& k : map)
             {
-                expect(k.key() == keys[i]);
-                --i;
+                expect(k.key() == keys[h]);
+                --h;
             }
         }
     }

@@ -932,7 +932,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
                 auto parent_depth = parent->depth();
                 auto depth = inner->get_common_prefix(tag);
                 auto new_inner = std::make_shared<SHAMapInnerNodeV2>(seq_);
-                auto nodeID = SHAMapNodeID{depth, prefix(depth, inner->common())};
+                nodeID = SHAMapNodeID{depth, prefix(depth, inner->common())};
                 new_inner->setChild(nodeID.selectBranch(inner->common()), inner);
                 nodeID = SHAMapNodeID{depth, prefix(depth, tag)};
                 new_inner->setChild(nodeID.selectBranch(tag),

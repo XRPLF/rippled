@@ -255,11 +255,11 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
 
         // Process all deferred reads
         int hits = 0;
-        for (auto const& node : deferredReads)
+        for (auto const& deferredNode : deferredReads)
         {
-            auto parent = std::get<0>(node);
-            auto branch = std::get<1>(node);
-            auto const& nodeID = std::get<2>(node);
+            auto parent = std::get<0>(deferredNode);
+            auto branch = std::get<1>(deferredNode);
+            auto const& deferredNodeID = std::get<2>(deferredNode);
             auto const& nodeHash = parent->getChildHash (branch);
 
             auto nodePtr = fetchNodeNT(nodeHash, filter);
@@ -274,7 +274,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             {
                 ret.push_back (
                     std::make_pair (
-                        nodeID,
+                        deferredNodeID,
                         nodeHash.as_uint256()));
 
                 --max;
@@ -402,10 +402,10 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer s;
-                            childNode->addRaw (s, snfWIRE);
+                            Serializer ns;
+                            childNode->addRaw (ns, snfWIRE);
                             nodeIDs.push_back (childID);
-                            rawNodes.push_back (std::move (s.peekData ()));
+                            rawNodes.push_back (std::move (ns.peekData ()));
                         }
                     }
                 }

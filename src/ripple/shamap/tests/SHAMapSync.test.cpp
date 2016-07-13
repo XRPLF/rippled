@@ -133,21 +133,21 @@ public:
         destination.setSynching ();
 
         {
-            std::vector<SHAMapNodeID> gotNodeIDs;
-            std::vector<Blob> gotNodes;
+            std::vector<SHAMapNodeID> gotNodeIDs_a;
+            std::vector<Blob> gotNodes_a;
 
             expect (source.getNodeFat (
                 SHAMapNodeID (),
-                gotNodeIDs,
-                gotNodes,
+                gotNodeIDs_a,
+                gotNodes_a,
                 rand_bool(),
                 rand_int(2)), "getNodeFat (1)");
 
-            unexpected (gotNodes.size () < 1, "NodeSize");
+            unexpected (gotNodes_a.size () < 1, "NodeSize");
 
             expect (destination.addRootNode (
                 source.getHash(),
-                *gotNodes.begin (),
+                *gotNodes_a.begin (),
                 snfWIRE,
                 nullptr).isGood(), "addRootNode");
         }
@@ -163,28 +163,28 @@ public:
                 break;
 
             // get as many nodes as possible based on this information
-            std::vector<SHAMapNodeID> gotNodeIDs;
-            std::vector<Blob> gotNodes;
+            std::vector<SHAMapNodeID> gotNodeIDs_b;
+            std::vector<Blob> gotNodes_b;
 
             for (auto& it : nodesMissing)
             {
                 expect (source.getNodeFat (
                     it.first,
-                    gotNodeIDs,
-                    gotNodes,
+                    gotNodeIDs_b,
+                    gotNodes_b,
                     rand_bool(),
                     rand_int(2)), "getNodeFat (2)");
             }
 
-            expect (gotNodeIDs.size () == gotNodes.size (), "Size mismatch");
-            expect (!gotNodeIDs.empty (), "Didn't get NodeID");
+            expect (gotNodeIDs_b.size () == gotNodes_b.size (), "Size mismatch");
+            expect (!gotNodeIDs_b.empty (), "Didn't get NodeID");
 
-            for (std::size_t i = 0; i < gotNodeIDs.size(); ++i)
+            for (std::size_t i = 0; i < gotNodeIDs_b.size(); ++i)
             {
                 expect (
                     destination.addKnownNode (
-                        gotNodeIDs[i],
-                        gotNodes[i],
+                        gotNodeIDs_b[i],
+                        gotNodes_b[i],
                         nullptr).isUseful (), "addKnownNode");
             }
         }
