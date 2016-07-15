@@ -208,6 +208,7 @@ public:
     bool has_common_prefix(uint256 const& key) const;
     int get_common_prefix(uint256 const& key) const;
     void set_common(int depth, uint256 const& key);
+    bool updateHash () override;
     void addRaw(Serializer& s, SHANodeFormat format) const override;
     uint256 const& key() const override;
     void setChildren(std::shared_ptr<SHAMapTreeNode> const& child1,
