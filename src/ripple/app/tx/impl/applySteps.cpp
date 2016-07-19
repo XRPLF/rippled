@@ -31,6 +31,7 @@
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/app/tx/impl/SusPay.h>
+#include <ripple/app/tx/impl/PayChan.h>
 
 namespace ripple {
 
@@ -54,6 +55,9 @@ invoke_preflight (PreflightContext const& ctx)
     case ttTRUST_SET:       return SetTrust         ::preflight(ctx);
     case ttAMENDMENT:
     case ttFEE:             return Change           ::preflight(ctx);
+    case ttPAYCHAN_CREATE:  return PayChanCreate    ::preflight(ctx);
+    case ttPAYCHAN_FUND:    return PayChanFund      ::preflight(ctx);
+    case ttPAYCHAN_CLAIM:   return PayChanClaim     ::preflight(ctx);
     default:
         assert(false);
         return temUNKNOWN;
@@ -124,6 +128,9 @@ invoke_preclaim (PreclaimContext const& ctx)
     case ttTRUST_SET:       return invoke_preclaim<SetTrust>(ctx);
     case ttAMENDMENT:
     case ttFEE:             return invoke_preclaim<Change>(ctx);
+    case ttPAYCHAN_CREATE:  return invoke_preclaim<PayChanCreate>(ctx);
+    case ttPAYCHAN_FUND:    return invoke_preclaim<PayChanFund>(ctx);
+    case ttPAYCHAN_CLAIM:   return invoke_preclaim<PayChanClaim>(ctx);
     default:
         assert(false);
         return { temUNKNOWN, 0 };
@@ -150,6 +157,9 @@ invoke_calculateBaseFee(PreclaimContext const& ctx)
     case ttTRUST_SET:       return SetTrust::calculateBaseFee(ctx);
     case ttAMENDMENT:
     case ttFEE:             return Change::calculateBaseFee(ctx);
+    case ttPAYCHAN_CREATE:  return PayChanCreate::calculateBaseFee(ctx);
+    case ttPAYCHAN_FUND:    return PayChanFund::calculateBaseFee(ctx);
+    case ttPAYCHAN_CLAIM:   return PayChanClaim::calculateBaseFee(ctx);
     default:
         assert(false);
         return 0;
@@ -187,6 +197,9 @@ invoke_calculateConsequences(STTx const& tx)
     case ttTICKET_CANCEL:   return invoke_calculateConsequences<CancelTicket>(tx);
     case ttTICKET_CREATE:   return invoke_calculateConsequences<CreateTicket>(tx);
     case ttTRUST_SET:       return invoke_calculateConsequences<SetTrust>(tx);
+    case ttPAYCHAN_CREATE:  return invoke_calculateConsequences<PayChanCreate>(tx);
+    case ttPAYCHAN_FUND:    return invoke_calculateConsequences<PayChanFund>(tx);
+    case ttPAYCHAN_CLAIM:   return invoke_calculateConsequences<PayChanClaim>(tx);
     case ttAMENDMENT:
     case ttFEE:
         // fall through to default
@@ -217,6 +230,9 @@ invoke_apply (ApplyContext& ctx)
     case ttTRUST_SET:       { SetTrust      p(ctx); return p(); }
     case ttAMENDMENT:
     case ttFEE:             { Change        p(ctx); return p(); }
+    case ttPAYCHAN_CREATE:  { PayChanCreate p(ctx); return p(); }
+    case ttPAYCHAN_FUND:    { PayChanFund   p(ctx); return p(); }
+    case ttPAYCHAN_CLAIM:   { PayChanClaim  p(ctx); return p(); }
     default:
         assert(false);
         return { temUNKNOWN, false };

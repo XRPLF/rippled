@@ -43,6 +43,7 @@ extern uint256 const featureFlowV2;
 extern uint256 const featureOwnerPaysFee;
 extern uint256 const featureCompareFlowV1V2;
 extern uint256 const featureSHAMapV2;
+extern uint256 const featurePayChan;
 
 } // ripple
 

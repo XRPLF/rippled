@@ -113,6 +113,26 @@ TxFormats::TxFormats ()
         << SOElement (sfSignerQuorum,        SOE_REQUIRED)
         << SOElement (sfSignerEntries,       SOE_OPTIONAL)
         ;
+
+    add ("PaymentChannelCreate", ttPAYCHAN_CREATE) <<
+            SOElement (sfDestination,       SOE_REQUIRED) <<
+            SOElement (sfAmount,            SOE_REQUIRED) <<
+            SOElement (sfSettleDelay,       SOE_REQUIRED) <<
+            SOElement (sfPublicKey,         SOE_REQUIRED) <<
+            SOElement (sfCancelAfter,       SOE_OPTIONAL) <<
+            SOElement (sfDestinationTag,    SOE_OPTIONAL);
+
+    add ("PaymentChannelFund", ttPAYCHAN_FUND) <<
+            SOElement (sfPayChannel,        SOE_REQUIRED) <<
+            SOElement (sfAmount,            SOE_REQUIRED) <<
+            SOElement (sfExpiration,        SOE_OPTIONAL);
+
+    add ("PaymentChannelClaim", ttPAYCHAN_CLAIM) <<
+            SOElement (sfPayChannel,        SOE_REQUIRED) <<
+            SOElement (sfAmount,            SOE_OPTIONAL) <<
+            SOElement (sfBalance,           SOE_OPTIONAL) <<
+            SOElement (sfSignature,         SOE_OPTIONAL) <<
+            SOElement (sfPublicKey,         SOE_OPTIONAL);
 }
 
 void TxFormats::addCommonFields (Item& item)

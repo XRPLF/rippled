@@ -33,6 +33,7 @@
 #include <ripple/rpc/handlers/AccountCurrenciesHandler.cpp>
 #include <ripple/rpc/handlers/AccountInfo.cpp>
 #include <ripple/rpc/handlers/AccountLines.cpp>
+#include <ripple/rpc/handlers/AccountChannels.cpp>
 #include <ripple/rpc/handlers/AccountObjects.cpp>
 #include <ripple/rpc/handlers/AccountOffers.cpp>
 #include <ripple/rpc/handlers/AccountTx.cpp>
@@ -62,6 +63,7 @@
 #include <ripple/rpc/handlers/NoRippleCheck.cpp>
 #include <ripple/rpc/handlers/OwnerInfo.cpp>
 #include <ripple/rpc/handlers/PathFind.cpp>
+#include <ripple/rpc/handlers/PayChanClaim.cpp>
 #include <ripple/rpc/handlers/Peers.cpp>
 #include <ripple/rpc/handlers/Ping.cpp>
 #include <ripple/rpc/handlers/Print.cpp>

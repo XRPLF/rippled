@@ -629,6 +629,12 @@ ApplyStateTable::threadOwners (ReadView const& base,
         threadTx (base, meta, (*sle)[sfDestination], mods, j);
         break;
     }
+    case ltPAYCHAN:
+        {
+            threadTx (base, meta, (*sle)[sfAccount], mods, j);
+            threadTx (base, meta, (*sle)[sfDestination], mods, j);
+            break;
+        }
     case ltRIPPLE_STATE:
     {
         threadTx (base, meta, (*sle)[sfLowLimit].getIssuer(), mods, j);
