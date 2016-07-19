@@ -17,40 +17,75 @@
 */
 //==============================================================================
 
-#include <string>
-#include <vector>
+#ifndef RIPPLE_TX_PAYCHAN_H_INCLUDED
+#define RIPPLE_TX_PAYCHAN_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-namespace detail {
-
-/** Amendments that this server supports and enables by default */
-std::vector<std::string>
-preEnabledAmendments ()
+class PayChanCreate
+    : public Transactor
 {
-    return
+public:
+    explicit
+    PayChanCreate (ApplyContext& ctx)
+        : Transactor(ctx)
     {
-    };
-}
+    }
 
-/** Amendments that this server supports, but doesn't enable by default */
-std::vector<std::string>
-supportedAmendments ()
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    static
+    TER
+    preclaim(PreclaimContext const &ctx);
+
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class PayChanFund
+    : public Transactor
 {
-    return
+public:
+    explicit
+    PayChanFund (ApplyContext& ctx)
+        : Transactor(ctx)
     {
-        { "4C97EBA926031A7CF7D7B36FDE3ED66DDA5421192D63DE53FFB46E43B9DC8373 MultiSign" },
-        { "C1B8D934087225F509BEB5A8EC24447854713EE447D277F69545ABFA0E0FD490 Tickets" },
-        { "DA1BD556B42D85EA9C84066D028D355B52416734D3283F85E216EA5DA6DB7E13 SusPay" },
-        { "6781F8368C4771B83E8B821D88F580202BCB4228075297B19E4FDC5233F1EFDC TrustSetAuth" },
-        { "42426C4D4F1009EE67080A9B7965B44656D7714D104A72F9B4369F97ABF044EE FeeEscalation" },
-        { "5CC22CFF2864B020BD79E0E1F048F63EF3594F95E650E43B3F837EF1DF5F4B26 FlowV2"},
-        { "9178256A980A86CF3D70D0260A7DA6402AAFE43632FDBCB88037978404188871 OwnerPaysFee"},
-        { "08DE7D96082187F6E6578530258C77FAABABE4C20474BDB82F04B021F1A68647 PayChan"}
-    };
-}
+    }
 
-}
+    static
+    TER
+    preflight (PreflightContext const& ctx);
 
-}
+    TER
+    doApply() override;
+};
 
+//------------------------------------------------------------------------------
+
+class PayChanClaim
+    : public Transactor
+{
+public:
+    explicit
+    PayChanClaim (ApplyContext& ctx)
+        : Transactor(ctx)
+    {
+    }
+
+    static
+    TER
+    preflight (PreflightContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+}  // ripple
+
+#endif

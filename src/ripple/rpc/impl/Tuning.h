@@ -35,6 +35,9 @@ struct LimitRange {
 /** Limits for the account_lines command. */
 static LimitRange const accountLines = {10, 200, 400};
 
+/** Limits for the account_channels command. */
+static LimitRange const accountChannels = {10, 200, 400};
+
 /** Limits for the account_objects command. */
 static LimitRange const accountObjects = {10, 200, 400};
 

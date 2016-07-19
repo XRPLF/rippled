@@ -47,6 +47,9 @@ enum TxType
     ttTICKET_CREATE     = 10,
     ttTICKET_CANCEL     = 11,
     ttSIGNER_LIST_SET   = 12,
+    ttPAYCHAN_CREATE    = 13,
+    ttPAYCHAN_FUND      = 14,
+    ttPAYCHAN_CLAIM     = 15,
 
     ttTRUST_SET         = 20,
 

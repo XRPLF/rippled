@@ -1647,6 +1647,9 @@
     <ClCompile Include="..\..\src\ripple\app\tests\Path_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\tests\PayChan_test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\Regression_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
@@ -1732,6 +1735,12 @@
       <Filter>ripple\app\tx\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\impl\OfferStream.h">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\tx\impl\PayChan.cpp">
+      <Filter>ripple\app\tx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\tx\impl\PayChan.h">
       <Filter>ripple\app\tx\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\tx\impl\Payment.cpp">
@@ -3351,6 +3360,9 @@
     <ClInclude Include="..\..\src\ripple\protocol\LedgerFormats.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\PayChan.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Protocol.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
@@ -3564,6 +3576,9 @@
     <ClInclude Include="..\..\src\ripple\rpc\Context.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountChannels.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\AccountCurrenciesHandler.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
@@ -3664,6 +3679,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\PathFind.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\PayChanClaim.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Peers.cpp">

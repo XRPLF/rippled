@@ -375,6 +375,7 @@ extern SF_U32 const sfSignerQuorum;
 extern SF_U32 const sfCancelAfter;
 extern SF_U32 const sfFinishAfter;
 extern SF_U32 const sfSignerListID;
+extern SF_U32 const sfSettleDelay;
 
 // 64-bit integers
 extern SF_U64 const sfIndexNext;
@@ -413,6 +414,7 @@ extern SF_U256 const sfNickname;
 extern SF_U256 const sfAmendment;
 extern SF_U256 const sfTicketID;
 extern SF_U256 const sfDigest;
+extern SF_U256 const sfPayChannel;
 
 // currency amount (common)
 extern SF_Amount const sfAmount;

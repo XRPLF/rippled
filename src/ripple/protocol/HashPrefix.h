@@ -99,6 +99,9 @@ public:
 
     /** Manifest */
     static HashPrefix const manifest;
+
+    /** Payment Channel Claim */
+    static HashPrefix const paymentChannelClaim;
 };
 
 template <class Hasher>

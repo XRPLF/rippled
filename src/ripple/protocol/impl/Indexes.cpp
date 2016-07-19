@@ -323,6 +323,18 @@ susPay (AccountID const& source, std::uint32_t seq)
     return { ltSUSPAY, static_cast<uint256>(h) };
 }
 
+Keylet
+payChan (AccountID const& source, AccountID const& dst, std::uint32_t seq)
+{
+    sha512_half_hasher h;
+    using beast::hash_append;
+    hash_append(h, spaceXRPUChannel);
+    hash_append(h, source);
+    hash_append(h, dst);
+    hash_append(h, seq);
+    return { ltPAYCHAN, static_cast<uint256>(h) };
+}
+
 } // keylet
 
 } // ripple

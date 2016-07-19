@@ -30,6 +30,7 @@
 #include <ripple/app/tests/OfferStream.test.cpp>
 #include <ripple/app/tests/Offer.test.cpp>
 #include <ripple/app/tests/Path_test.cpp>
+#include <ripple/app/tests/PayChan_test.cpp>
 #include <ripple/app/tests/Regression_test.cpp>
 #include <ripple/app/tests/SHAMapStore_test.cpp>
 #include <ripple/app/tests/SusPay_test.cpp>

@@ -27,6 +27,7 @@ namespace ripple {
 Json::Value doAccountCurrencies     (RPC::Context&);
 Json::Value doAccountInfo           (RPC::Context&);
 Json::Value doAccountLines          (RPC::Context&);
+Json::Value doAccountChannels       (RPC::Context&);
 Json::Value doAccountObjects        (RPC::Context&);
 Json::Value doAccountOffers         (RPC::Context&);
 Json::Value doAccountTx             (RPC::Context&);
@@ -35,6 +36,8 @@ Json::Value doAccountTxOld          (RPC::Context&);
 Json::Value doBookOffers            (RPC::Context&);
 Json::Value doBlackList             (RPC::Context&);
 Json::Value doCanDelete             (RPC::Context&);
+Json::Value doChannelAuthorize      (RPC::Context&);
+Json::Value doChannelVerify         (RPC::Context&);
 Json::Value doConnect               (RPC::Context&);
 Json::Value doConsensusInfo         (RPC::Context&);
 Json::Value doFeature               (RPC::Context&);

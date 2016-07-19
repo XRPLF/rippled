@@ -583,6 +583,73 @@ private:
         return parseAccountRaw2 (jvParams, "peer");
     }
 
+    // account_channels <account> <account>|"" [<ledger>]
+    Json::Value parseAccountChannels (Json::Value const& jvParams)
+    {
+        return parseAccountRaw2 (jvParams, jss::destination_account);
+    }
+
+    // channel_authorize <private_key> <channel_id> <drops>
+    Json::Value parseChannelAuthorize (Json::Value const& jvParams)
+    {
+        Json::Value jvRequest (Json::objectValue);
+
+        jvRequest[jss::secret] = jvParams[0u];
+        {
+            // verify the channel id is a valid 256 bit number
+            uint256 channelId;
+            if (!channelId.SetHexExact (jvParams[1u].asString ()))
+                return rpcError (rpcCHANNEL_MALFORMED);
+        }
+        jvRequest[jss::channel_id] = jvParams[1u].asString ();
+
+        try
+        {
+            auto const drops = std::stoul (jvParams[2u].asString ());
+            (void)drops;  // just used for error checking
+            jvRequest[jss::amount] = jvParams[2u];
+        }
+        catch (std::exception const&)
+        {
+            return rpcError (rpcCHANNEL_AMT_MALFORMED);
+        }
+
+        return jvRequest;
+    }
+
+    // channel_verify <public_key> <channel_id> <drops> <signature>
+    Json::Value parseChannelVerify (Json::Value const& jvParams)
+    {
+        std::string const strPk = jvParams[0u].asString ();
+
+        if (!parseBase58<PublicKey> (TokenType::TOKEN_ACCOUNT_PUBLIC, strPk))
+            return rpcError (rpcPUBLIC_MALFORMED);
+
+        Json::Value jvRequest (Json::objectValue);
+
+        jvRequest[jss::public_key] = strPk;
+        {
+            // verify the channel id is a valid 256 bit number
+            uint256 channelId;
+            if (!channelId.SetHexExact (jvParams[1u].asString ()))
+                return rpcError (rpcCHANNEL_MALFORMED);
+        }
+        jvRequest[jss::channel_id] = jvParams[1u].asString ();
+        try
+        {
+            auto const drops = std::stoul (jvParams[2u].asString ());
+            (void)drops;  // just used for error checking
+            jvRequest[jss::amount] = jvParams[2u];
+        }
+        catch (std::exception const&)
+        {
+            return rpcError (rpcCHANNEL_AMT_MALFORMED);
+        }
+        jvRequest[jss::signature] = jvParams[3u].asString ();
+
+        return jvRequest;
+    }
+
     Json::Value parseAccountRaw2 (Json::Value const& jvParams,
                                   char const * const acc2Field)
     {
@@ -916,11 +983,14 @@ public:
             {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  2   },
             {   "account_info",         &RPCParser::parseAccountItems,          1,  2   },
             {   "account_lines",        &RPCParser::parseAccountLines,          1,  5   },
+            {   "account_channels",     &RPCParser::parseAccountChannels,       1,  3   },
             {   "account_objects",      &RPCParser::parseAccountItems,          1,  5   },
             {   "account_offers",       &RPCParser::parseAccountItems,          1,  4   },
             {   "account_tx",           &RPCParser::parseAccountTransactions,   1,  8   },
             {   "book_offers",          &RPCParser::parseBookOffers,            2,  7   },
             {   "can_delete",           &RPCParser::parseCanDelete,             0,  1   },
+            {   "channel_authorize",    &RPCParser::parseChannelAuthorize,      3,  3   },
+            {   "channel_verify",       &RPCParser::parseChannelVerify,         4,  4   },
             {   "connect",              &RPCParser::parseConnect,               1,  2   },
             {   "consensus_info",       &RPCParser::parseAsIs,                  0,  0   },
             {   "feature",              &RPCParser::parseFeature,               0,  2   },

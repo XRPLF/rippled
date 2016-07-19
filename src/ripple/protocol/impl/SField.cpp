@@ -126,6 +126,7 @@ SF_U32 const sfSignerQuorum        = make::one<SF_U32::type>(&sfSignerQuorum,   
 SF_U32 const sfCancelAfter         = make::one<SF_U32::type>(&sfCancelAfter,         STI_UINT32, 36, "CancelAfter");
 SF_U32 const sfFinishAfter         = make::one<SF_U32::type>(&sfFinishAfter,         STI_UINT32, 37, "FinishAfter");
 SF_U32 const sfSignerListID        = make::one<SF_U32::type>(&sfSignerListID,        STI_UINT32, 38, "SignerListID");
+SF_U32 const sfSettleDelay         = make::one<SF_U32::type>(&sfSettleDelay,         STI_UINT32, 39, "SettleDelay");
 
 // 64-bit integers
 SF_U64 const sfIndexNext     = make::one<SF_U64::type>(&sfIndexNext,     STI_UINT64, 1, "IndexNext");
@@ -164,6 +165,7 @@ SF_U256 const sfNickname      = make::one<SF_U256::type>(&sfNickname,      STI_H
 SF_U256 const sfAmendment     = make::one<SF_U256::type>(&sfAmendment,     STI_HASH256, 19, "Amendment");
 SF_U256 const sfTicketID      = make::one<SF_U256::type>(&sfTicketID,      STI_HASH256, 20, "TicketID");
 SF_U256 const sfDigest        = make::one<SF_U256::type>(&sfDigest,        STI_HASH256, 21, "Digest");
+SF_U256 const sfPayChannel    = make::one<SF_U256::type>(&sfPayChannel,    STI_HASH256, 22, "Channel");
 
 // currency amount (common)
 SF_Amount const sfAmount      = make::one<SF_Amount::type>(&sfAmount,      STI_AMOUNT,  1, "Amount");

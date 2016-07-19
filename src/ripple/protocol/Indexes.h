@@ -238,6 +238,10 @@ Keylet page (uint256 const& key)
 Keylet
 susPay (AccountID const& source, std::uint32_t seq);
 
+/** A PaymentChannel */
+Keylet
+payChan (AccountID const& source, AccountID const& dst, std::uint32_t seq);
+
 } // keylet
 
 }

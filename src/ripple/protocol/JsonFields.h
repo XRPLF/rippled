@@ -50,6 +50,7 @@ JSS ( Paths );                      // in/out: TransactionSign
 JSS ( TransferRate );               // in: TransferRate
 JSS ( historical_perminute );       // historical_perminute
 JSS ( SLE_hit_rate );               // out: GetCounts
+JSS ( SettleDelay );                // in: TransactionSign
 JSS ( SendMax );                    // in: TransactionSign
 JSS ( Sequence );                   // in/out: TransactionSign; field.
 JSS ( SetFlag );                    // field.
@@ -80,6 +81,7 @@ JSS ( age );                        // out: NetworkOPs, Peers
 JSS ( alternatives );               // out: PathRequest, RipplePathFind
 JSS ( amendment_blocked );          // out: NetworkOPs
 JSS ( amendments );                 // in: AccountObjects, out: NetworkOPs
+JSS ( amount );                     // out: AccountChannels
 JSS ( asks );                       // out: Subscribe
 JSS ( assets );                     // out: GatewayBalances
 JSS ( authorized );                 // out: AccountLines
@@ -98,7 +100,10 @@ JSS ( both );                       // in: Subscribe, Unsubscribe
 JSS ( both_sides );                 // in: Subscribe, Unsubscribe
 JSS ( build_path );                 // in: TransactionSign
 JSS ( build_version );              // out: NetworkOPs
+JSS ( cancel_after );               // out: AccountChannels
 JSS ( can_delete );                 // out: CanDelete
+JSS ( channel_id );                 // out: AccountChannels
+JSS ( channels );                   // out: AccountChannels
 JSS ( check_nodes );                // in: LedgerCleaner
 JSS ( clear );                      // in/out: FetchInfo
 JSS ( close_flags );                // out: LedgerToJson
@@ -135,10 +140,12 @@ JSS ( debug_signing );              // in: TransactionSign
 JSS ( delivered_amount );           // out: addPaymentDeliveredAmount
 JSS ( deprecated );                 // out: WalletSeed
 JSS ( descending );                 // in: AccountTx*
-JSS ( destination_account );        // in: PathRequest, RipplePathFind
+JSS ( destination_account );        // in: PathRequest, RipplePathFind, account_lines
+                                    // out: AccountChannels
 JSS ( destination_amount );         // in: PathRequest, RipplePathFind
 JSS ( destination_currencies );     // in: PathRequest, RipplePathFind
 JSS ( destination_tag );            // in: PathRequest
+                                    // out: AccountChannels
 JSS ( dir_entry );                  // out: DirectoryEntryIterator
 JSS ( dir_index );                  // out: DirectoryEntryIterator
 JSS ( dir_root );                   // out: DirectoryEntryIterator
@@ -156,7 +163,7 @@ JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
 JSS ( expand );                     // in: handler/Ledger
 JSS ( expected_ledger_size );       // out: TxQ
-JSS ( expiration );                 // out: AccountOffers
+JSS ( expiration );                 // out: AccountOffers, AccountChannels
 JSS ( fail_hard );                  // in: Sign, Submit
 JSS ( failed );                     // out: InboundLedger
 JSS ( feature );                    // in: Feature
@@ -347,7 +354,8 @@ JSS ( rt_accounts );                // in: Subscribe, Unsubscribe
 JSS ( sanity );                     // out: PeerImp
 JSS ( search_depth );               // in: RipplePathFind
 JSS ( secret );                     // in: TransactionSign, WalletSeed,
-                                    //     ValidationCreate, ValidationSeed
+                                    //     ValidationCreate, ValidationSeed,
+                                    //     channel_authorize
 JSS ( seed );                       // in: WalletAccounts, out: WalletSeed
 JSS ( seed_hex );                   // in: WalletPropose, TransactionSign
 JSS ( send_currencies );            // out: AccountCurrencies
@@ -357,8 +365,10 @@ JSS ( seq );                        // in: LedgerEntry;
 JSS ( seqNum );                     // out: LedgerToJson
 JSS ( server_state );               // out: NetworkOPs
 JSS ( server_status );              // out: NetworkOPs
+JSS ( settle_delay );               // out: AccountChannels
 JSS ( severity );                   // in: LogLevel
-JSS ( signature );                  // out: NetworkOPs
+JSS ( signature );                  // out: NetworkOPs, ChannelAuthorize
+JSS ( signature_verified );         // out: ChannelVerify
 JSS ( signing_key );                // out: NetworkOPs
 JSS ( signing_time );               // out: NetworkOPs
 JSS ( signer_list );                // in: AccountObjects
@@ -367,6 +377,7 @@ JSS ( snapshot );                   // in: Subscribe
 JSS ( source_account );             // in: PathRequest, RipplePathFind
 JSS ( source_amount );              // in: PathRequest, RipplePathFind
 JSS ( source_currencies );          // in: PathRequest, RipplePathFind
+JSS ( source_tag );                 // out: AccountChannels
 JSS ( stand_alone );                // out: NetworkOPs
 JSS ( start );                      // in: TxHistory
 JSS ( state );                      // out: Logic.h, ServerState, LedgerData

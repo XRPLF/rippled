@@ -95,6 +95,10 @@ const std::uint32_t tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSet
 const std::uint32_t tfGotMajority          = 0x00010000;
 const std::uint32_t tfLostMajority         = 0x00020000;
 
+// PaymentChannel flags:
+const std::uint32_t tfRenew                = 0x00010000;
+const std::uint32_t tfClose                = 0x00020000;
+
 } // ripple
 
 #endif
