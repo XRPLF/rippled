@@ -38,6 +38,7 @@
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
+#include <array>
 #include <iostream>
 #include <type_traits>
 
@@ -568,36 +569,66 @@ private:
     // account_offers <account>|<account_public_key> [<ledger>]
     Json::Value parseAccountItems (Json::Value const& jvParams)
     {
-        return parseAccountRaw (jvParams, false);
+        return parseAccountRaw1 (jvParams);
     }
 
     Json::Value parseAccountCurrencies (Json::Value const& jvParams)
     {
-        return parseAccountRaw (jvParams, false);
+        return parseAccountRaw1 (jvParams);
     }
 
     // account_lines <account> <account>|"" [<ledger>]
     Json::Value parseAccountLines (Json::Value const& jvParams)
     {
-        return parseAccountRaw (jvParams, true);
+        return parseAccountRaw2 (jvParams, "peer");
+    }
+
+    Json::Value parseAccountRaw2 (Json::Value const& jvParams,
+                                  char const * const acc2Field)
+    {
+        std::array<char const* const, 2> accFields{{jss::account, acc2Field}};
+        auto const nParams = jvParams.size ();
+        Json::Value jvRequest (Json::objectValue);
+        for (auto i = 0; i < nParams; ++i)
+        {
+            std::string const strParam = jvParams[i].asString ();
+
+            // Parameters 0 and 1 may be accounts
+            if ((i < 2) && (parseBase58<PublicKey> (
+                                TokenType::TOKEN_ACCOUNT_PUBLIC, strParam) ||
+                               parseBase58<AccountID> (strParam) ||
+                               parseGenericSeed (strParam)))
+            {
+                jvRequest[accFields[i]] = strParam;
+                continue;
+            }
+
+            // Parameters 1 and 2 may be ledgers, but only if it's the last param
+            if (i > 0 && i == nParams - 1)
+            {
+                if (jvParseLedger (jvRequest, strParam))
+                    return jvRequest;
+            }
+            if (i == 3)
+                return rpcError (rpcLGR_IDX_MALFORMED);
+            return rpcError (rpcACT_MALFORMED);
+        }
+
+        return jvRequest;
     }
 
     // TODO: Get index from an alternate syntax: rXYZ:<index>
-    Json::Value parseAccountRaw (Json::Value const& jvParams, bool bPeer)
+    Json::Value parseAccountRaw1 (Json::Value const& jvParams)
     {
         std::string     strIdent    = jvParams[0u].asString ();
         unsigned int    iCursor     = jvParams.size ();
         bool            bStrict     = false;
-        std::string     strPeer;
 
-        if (!bPeer && iCursor >= 2 && jvParams[iCursor - 1] == jss::strict)
+        if (iCursor >= 2 && jvParams[iCursor - 1] == jss::strict)
         {
             bStrict = true;
             --iCursor;
         }
-
-        if (bPeer && iCursor >= 2)
-            strPeer = jvParams[iCursor].asString ();
 
         if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strIdent) &&
             ! parseBase58<AccountID>(strIdent) &&
@@ -612,17 +643,7 @@ private:
         if (bStrict)
             jvRequest[jss::strict]     = 1;
 
-        if (!strPeer.empty ())
-        {
-            if (! parseBase58<PublicKey>(TokenType::TOKEN_ACCOUNT_PUBLIC, strPeer) &&
-                ! parseBase58<AccountID>(strPeer) &&
-                ! parseGenericSeed (strPeer))
-                return rpcError (rpcACT_MALFORMED);
-
-            jvRequest["peer"]   = strPeer;
-        }
-
-        if (iCursor == (2 + bPeer) && !jvParseLedger (jvRequest, jvParams[1u + bPeer].asString ()))
+        if (iCursor == 2 && !jvParseLedger (jvRequest, jvParams[1u].asString ()))
             return rpcError (rpcLGR_IDX_MALFORMED);
 
         return jvRequest;
