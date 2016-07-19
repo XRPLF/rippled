@@ -25,6 +25,7 @@
 #include <ripple/app/tests/DeliverMin.test.cpp>
 #include <ripple/app/tests/Flow_test.cpp>
 #include <ripple/app/tests/HashRouter_test.cpp>
+#include <ripple/app/tests/MelleryPlaceholder.test.cpp>
 #include <ripple/app/tests/MultiSign.test.cpp>
 #include <ripple/app/tests/OfferStream.test.cpp>
 #include <ripple/app/tests/Offer.test.cpp>
