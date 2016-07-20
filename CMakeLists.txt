@@ -19,6 +19,7 @@
 # TBD:
 #  * jemalloc support
 #  * count
+#  * Windows protobuf compiler puts generated file in src directory instead of build directory.
 #
 # Notes:
 #  * Use the -G"Visual Studio 14 2015 Win64" generator on Windows. Without this
