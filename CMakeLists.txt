@@ -795,7 +795,10 @@ if (static)
 endif()
 
 if (WIN32)
-  # VS_STARTUP_PROJECT requires cmake 3.6 or later
+  if (CMAKE_VERSION VERSION_LESS 3.6)
+    message(WARNING
+      "Setting the VS startup project requires cmake 3.6 or later. Please upgrade.")
+  endif()
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT rippled)
 endif()
 
