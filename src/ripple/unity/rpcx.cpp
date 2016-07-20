@@ -98,6 +98,7 @@
 #include <ripple/rpc/tests/AccountLinesRPC.test.cpp>
 #include <ripple/rpc/tests/Book.test.cpp>
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
+#include <ripple/rpc/tests/GatewayBalances.test.cpp>
 #include <ripple/rpc/tests/LedgerRequestRPC.test.cpp>
 #include <ripple/rpc/tests/KeyGeneration.test.cpp>
 #include <ripple/rpc/tests/RobustTransaction.test.cpp>

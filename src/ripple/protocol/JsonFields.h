@@ -172,6 +172,7 @@ JSS ( flags );                      // out: paths/Node, AccountOffers,
 JSS ( forward );                    // in: AccountTx
 JSS ( freeze );                     // out: AccountLines
 JSS ( freeze_peer );                // out: AccountLines
+JSS ( frozen_balances );            // out: GatewayBalances
 JSS ( full );                       // in: LedgerClearer, handlers/Ledger
 JSS ( full_reply );                 // out: PathFind
 JSS ( fullbelow_size );             // in: GetCounts
@@ -184,6 +185,7 @@ JSS ( have_header );                // out: InboundLedger
 JSS ( have_state );                 // out: InboundLedger
 JSS ( have_transactions );          // out: InboundLedger
 JSS ( hostid );                     // out: NetworkOPs
+JSS ( hotwallet );                  // in: GatewayBalances
 JSS ( id );                         // websocket.
 JSS ( ident );                      // in: AccountCurrencies, AccountInfo,
                                     //     OwnerInfo
