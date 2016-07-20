@@ -518,7 +518,8 @@ if (NOT WIN32)
   endif()
 
   if (APPLE)
-    add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1)
+    add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1
+      -DNO_LOG_UNHANDLED_EXCEPTIONS)
     add_compile_options(
       -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function)
   endif()
