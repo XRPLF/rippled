@@ -281,7 +281,7 @@ private:
             auto const ms (ceil <std::chrono::milliseconds> (elapsed));
 
             {
-                std::unique_lock <std::mutex> lock (m_mutex);
+                std::lock_guard <std::mutex> lock (m_mutex);
                 m_lastSample = ms;
             }
 
@@ -297,7 +297,7 @@ private:
         std::chrono::milliseconds
         get () const
         {
-            std::unique_lock <std::mutex> lock (m_mutex);
+            std::lock_guard <std::mutex> lock (m_mutex);
             return m_lastSample;
         }
 
@@ -595,8 +595,6 @@ public:
 
     std::chrono::milliseconds getIOLatency () override
     {
-        std::unique_lock <std::mutex> m_IOLatencyLock;
-
         return m_io_latency_sampler.get ();
     }
 

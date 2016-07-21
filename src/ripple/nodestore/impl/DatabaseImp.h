@@ -95,7 +95,7 @@ public:
     ~DatabaseImp ()
     {
         {
-            std::unique_lock <std::mutex> lock (m_readLock);
+            std::lock_guard <std::mutex> lock (m_readLock);
             m_readShut = true;
             m_readCondVar.notify_all ();
             m_readGenCondVar.notify_all ();
@@ -132,7 +132,7 @@ public:
 
         {
             // No. Post a read
-            std::unique_lock <std::mutex> lock (m_readLock);
+            std::lock_guard <std::mutex> lock (m_readLock);
             if (m_readSet.insert (hash).second)
                 m_readCondVar.notify_one ();
         }
