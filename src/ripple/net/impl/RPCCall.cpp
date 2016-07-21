@@ -38,7 +38,6 @@
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex.hpp>
-#include <openssl/bio.h>
 #include <iostream>
 #include <type_traits>
 
@@ -864,30 +863,6 @@ public:
     RPCParser (beast::Journal j)
             :j_ (j){}
 
-    static std::string EncodeBase64 (std::string const& s)
-    {
-        // FIXME: This performs terribly
-        BIO* b64, *bmem;
-        BUF_MEM* bptr;
-
-        // VFALCO TODO What the heck is BIO and BUF_MEM!?
-        //             Surely we don't need OpenSSL or dynamic allocations
-        //             to perform a base64 encoding...
-        //
-        b64 = BIO_new (BIO_f_base64 ());
-        BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
-        bmem = BIO_new (BIO_s_mem ());
-        b64 = BIO_push (b64, bmem);
-        BIO_write (b64, s.data (), s.size ());
-        (void) BIO_flush (b64);
-        BIO_get_mem_ptr (b64, &bptr);
-
-        std::string result (bptr->data, bptr->length);
-        BIO_free_all (b64);
-
-        return result;
-    }
-
     //--------------------------------------------------------------------------
 
     // Convert a rpc method and params to a request.
@@ -1299,7 +1274,7 @@ void fromNetwork (
     }
 
     // HTTP basic authentication
-    auto const auth = RPCParser::EncodeBase64 (strUsername + ":" + strPassword);
+    auto const auth = beast::detail::base64_encode(strUsername + ":" + strPassword);
 
     std::map<std::string, std::string> mapRequestHeaders;
 
