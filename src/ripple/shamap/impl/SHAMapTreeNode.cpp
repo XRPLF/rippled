@@ -44,7 +44,7 @@ SHAMapInnerNode::clone(std::uint32_t seq) const
     p->mIsBranch = mIsBranch;
     p->mFullBelowGen = mFullBelowGen;
     p->mHashes = mHashes;
-    std::unique_lock <std::mutex> lock(childLock);
+    std::lock_guard <std::mutex> lock(childLock);
     for (int i = 0; i < 16; ++i)
     {
         p->mChildren[i] = mChildren[i];
@@ -63,7 +63,7 @@ SHAMapInnerNodeV2::clone(std::uint32_t seq) const
     p->mHashes = mHashes;
     p->common_ = common_;
     p->depth_ = depth_;
-    std::unique_lock <std::mutex> lock(childLock);
+    std::lock_guard <std::mutex> lock(childLock);
     for (int i = 0; i < 16; ++i)
     {
         p->mChildren[i] = mChildren[i];
@@ -679,7 +679,7 @@ SHAMapInnerNode::getChildPointer (int branch)
     assert (branch >= 0 && branch < 16);
     assert (isInner());
 
-    std::unique_lock <std::mutex> lock (childLock);
+    std::lock_guard <std::mutex> lock (childLock);
     return mChildren[branch].get ();
 }
 
@@ -689,7 +689,7 @@ SHAMapInnerNode::getChild (int branch)
     assert (branch >= 0 && branch < 16);
     assert (isInner());
 
-    std::unique_lock <std::mutex> lock (childLock);
+    std::lock_guard <std::mutex> lock (childLock);
     return mChildren[branch];
 }
 
@@ -701,7 +701,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractNod
     assert (node);
     assert (node->getNodeHash() == mHashes[branch]);
 
-    std::unique_lock <std::mutex> lock (childLock);
+    std::lock_guard <std::mutex> lock (childLock);
     if (mChildren[branch])
     {
         // There is already a node hooked up, return it
@@ -725,7 +725,7 @@ SHAMapInnerNodeV2::canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractN
     assert (node);
     assert (node->getNodeHash() == mHashes[branch]);
 
-    std::unique_lock <std::mutex> lock (childLock);
+    std::lock_guard <std::mutex> lock (childLock);
     if (mChildren[branch])
     {
         // There is already a node hooked up, return it
