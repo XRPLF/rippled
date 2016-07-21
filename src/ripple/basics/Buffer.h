@@ -160,6 +160,55 @@ public:
     {
         return alloc(n);
     }
+
+    /** Returns a pointer to the first element.
+
+        If the container is empty, the returned pointer
+        will be equal to end().
+    */
+    /** @{ */
+    std::uint8_t*
+    begin()
+    {
+        return p_.get();
+    }
+
+    std::uint8_t const*
+    begin() const
+    {
+        return p_.get();
+    }
+
+    std::uint8_t const*
+    cbegin() const
+    {
+        return p_.get();
+    }
+
+    /** Returns a pointer to the element after the last.
+
+        This element acts as a placeholder; attempting to
+        access it results in undefined behavior.
+    */
+    /** @{ */
+    std::uint8_t*
+    end()
+    {
+        return p_.get() + size_;
+    }
+
+    std::uint8_t const*
+    end() const
+    {
+        return p_.get() + size_;
+    }
+
+    std::uint8_t const*
+    cend() const
+    {
+        return p_.get() + size_;
+    }
+    /** @} */
 };
 
 inline bool operator==(Buffer const& lhs, Buffer const& rhs) noexcept

@@ -115,6 +115,43 @@ public:
         return temp += n;
     }
     /** @} */
+
+    /** Returns a pointer to the first element.
+
+        If the container is empty, the returned pointer
+        will be equal to end().
+    */
+    /** @{ */
+    std::uint8_t const*
+    begin() const
+    {
+        return data_;
+    }
+
+    std::uint8_t const*
+    cbegin() const
+    {
+        return data_;
+    }
+
+    /** Returns a pointer to the element after the last.
+
+        This element acts as a placeholder; attempting to
+        access it results in undefined behavior.
+    */
+    /** @{ */
+    std::uint8_t const*
+    end() const
+    {
+        return data_ + size_;
+    }
+
+    std::uint8_t const*
+    cend() const
+    {
+        return data_ + size_;
+    }
+    /** @} */
 };
 
 //------------------------------------------------------------------------------
