@@ -1297,7 +1297,7 @@ void LedgerConsensusImp::takeInitialPosition (
                 return v.second->isTrusted();
             });
 
-        if (count >= ledgerMaster_.getMinValidations())
+        if (count >= app_.validators ().quorum ())
         {
             feeVote_.doVoting (
                 previousLedger_,

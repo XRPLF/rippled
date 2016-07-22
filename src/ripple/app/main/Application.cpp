@@ -39,6 +39,7 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
+#include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/TxQ.h>
@@ -347,6 +348,7 @@ public:
     TaggedCache <uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <Cluster> cluster_;
+    std::unique_ptr <ManifestCache> manifestCache_;
     std::unique_ptr <ValidatorList> validators_;
     std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
@@ -473,8 +475,11 @@ public:
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))
 
+        , manifestCache_ (std::make_unique<ManifestCache> (
+            logs_->journal("ManifestCache")))
+
         , validators_ (std::make_unique<ValidatorList> (
-            logs_->journal("UniqueNodeList")))
+            *manifestCache_, get_io_service (), logs_->journal("ValidatorList")))
 
         , serverHandler_ (make_ServerHandler (*this, *m_networkOPs, get_io_service (),
             *m_jobQueue, *m_networkOPs, *m_resourceManager, *m_collectorManager))
@@ -690,6 +695,11 @@ public:
         return *validators_;
     }
 
+    ManifestCache& manifestCache() override
+    {
+        return *manifestCache_;
+    }
+
     Cluster& cluster () override
     {
         return *cluster_;
@@ -844,7 +854,9 @@ public:
 
         mValidations->flush ();
 
-        m_overlay->saveValidatorKeyManifests (getWalletDB ());
+        validators_->stop ();
+
+        manifestCache_->save (getWalletDB ());
 
         stopped ();
     }
@@ -1010,9 +1022,6 @@ bool ApplicationImp::setup()
 
     Pathfinder::initPathTable();
 
-    m_ledgerMaster->setMinValidations (
-        config_->VALIDATION_QUORUM, config_->LOCK_QUORUM);
-
     auto const startUp = config_->START_UP;
     if (startUp == Config::FRESH)
     {
@@ -1059,16 +1068,22 @@ bool ApplicationImp::setup()
         return false;
     }
 
-    if (!validators_->load (config().section (SECTION_VALIDATORS)))
+    // Setup trusted validators
+    if (!validators_->load (
+            config_->VALIDATION_PUB,
+            config().section (SECTION_VALIDATORS).values (),
+            config().section (SECTION_VALIDATOR_LIST_SITES).values (),
+            config().section (SECTION_VALIDATOR_LIST_KEYS).values (),
+            config().section (SECTION_VALIDATION_MANIFEST).lines()))
     {
-        JLOG(m_journal.fatal()) << "Invalid entry in validator configuration.";
+        JLOG(m_journal.fatal()) <<
+            "Invalid entry in validator configuration.";
         return false;
     }
 
-    if (validators_->size () == 0 && !config_->standalone())
-    {
-        JLOG(m_journal.warn()) << "No validators are configured.";
-    }
+    manifestCache_->load (
+        getWalletDB (),
+        *validators_);
 
     m_nodeStore->tune (config_->getSize (siNodeCacheSize), config_->getSize (siNodeCacheAge));
     m_ledgerMaster->tune (config_->getSize (siLedgerSize), config_->getSize (siLedgerAge));
@@ -1097,8 +1112,6 @@ bool ApplicationImp::setup()
         JLOG(m_journal.fatal()) << "Unable to start consensus";
         return false;
     }
-
-    m_overlay->setupValidatorKeyManifests (*config_, getWalletDB ());
 
     {
         auto setup = setup_ServerHandler(*config_, std::cerr);

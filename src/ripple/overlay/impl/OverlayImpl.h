@@ -23,7 +23,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/overlay/impl/TrafficCount.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/rpc/ServerHandler.h>
@@ -118,7 +117,6 @@ private:
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& m_resolver;
     std::atomic <Peer::id_t> next_id_;
-    ManifestCache manifestCache_;
     int timer_count_;
 
     //--------------------------------------------------------------------------
@@ -150,12 +148,6 @@ public:
     serverHandler()
     {
         return serverHandler_;
-    }
-
-    ManifestCache const&
-    manifestCache() const
-    {
-        return manifestCache_;
     }
 
     Setup const&
@@ -194,15 +186,6 @@ public:
     void
     relay (protocol::TMValidation& m,
         uint256 const& uid) override;
-
-    virtual
-    void
-    setupValidatorKeyManifests (BasicConfig const& config,
-                                DatabaseCon& db) override;
-
-    virtual
-    void
-    saveValidatorKeyManifests (DatabaseCon& db) const override;
 
     //--------------------------------------------------------------------------
     //

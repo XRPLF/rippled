@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/app/misc/Manifest.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/TestSuite.h>
-#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/protocol/SecretKey.h>
@@ -29,11 +28,12 @@
 #include <ripple/protocol/STExchange.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
 namespace tests {
 
-class manifest_test : public ripple::TestSuite
+class Manifest_test : public ripple::TestSuite
 {
 private:
     static PublicKey randomNode ()
@@ -78,8 +78,36 @@ private:
     {
         return boost::filesystem::current_path () / "manifest_test_databases";
     }
+
+    class TestThread
+    {
+    private:
+        boost::asio::io_service io_service_;
+        boost::optional<boost::asio::io_service::work> work_;
+        std::thread thread_;
+
+    public:
+        TestThread()
+            : work_(boost::in_place(std::ref(io_service_)))
+            , thread_([&]() { this->io_service_.run(); })
+        {
+        }
+
+        ~TestThread()
+        {
+            work_ = boost::none;
+            thread_.join();
+        }
+
+        boost::asio::io_service&
+        get_io_service()
+        {
+            return io_service_;
+        }
+    };
+
 public:
-    manifest_test ()
+    Manifest_test ()
     {
         try
         {
@@ -89,7 +117,7 @@ public:
         {
         }
     }
-    ~manifest_test ()
+    ~Manifest_test ()
     {
         try
         {
@@ -136,104 +164,7 @@ public:
         return Manifest (m.serialized, m.masterKey, m.signingKey, m.sequence);
     }
 
-
-    void
-    testConfigLoad ()
-    {
-        testcase ("Config Load");
-
-        ManifestCache cache;
-        beast::Journal journal;
-
-        std::vector<PublicKey> network;
-        network.reserve(8);
-
-        while (network.size () != 8)
-            network.push_back (randomMasterKey());
-
-        auto format = [](
-            PublicKey const &publicKey,
-            char const* comment = nullptr)
-        {
-            auto ret = toBase58(
-                TokenType::TOKEN_NODE_PUBLIC,
-                publicKey);
-
-            if (comment)
-                ret += comment;
-
-            return ret;
-        };
-
-        Section s1;
-
-        // Correct (empty) configuration
-        BEAST_EXPECT(cache.loadValidatorKeys (s1, journal));
-        BEAST_EXPECT(cache.size() == 0);
-
-        // Correct configuration
-        s1.append (format (network[0]));
-        s1.append (format (network[1], " Comment"));
-        s1.append (format (network[2], " Multi Word Comment"));
-        s1.append (format (network[3], "    Leading Whitespace"));
-        s1.append (format (network[4], " Trailing Whitespace    "));
-        s1.append (format (network[5], "    Leading & Trailing Whitespace    "));
-        s1.append (format (network[6], "    Leading, Trailing & Internal    Whitespace    "));
-        s1.append (format (network[7], "    "));
-
-        BEAST_EXPECT(cache.loadValidatorKeys (s1, journal));
-
-        for (auto const& n : network)
-            BEAST_EXPECT(cache.trusted (n));
-
-        // Incorrect configurations:
-        Section s2;
-        s2.append ("NotAPublicKey");
-        BEAST_EXPECT(!cache.loadValidatorKeys (s2, journal));
-
-        Section s3;
-        s3.append (format (network[0], "!"));
-        BEAST_EXPECT(!cache.loadValidatorKeys (s3, journal));
-
-        Section s4;
-        s4.append (format (network[0], "!  Comment"));
-        BEAST_EXPECT(!cache.loadValidatorKeys (s4, journal));
-
-        // Check if we properly terminate when we encounter
-        // a malformed or unparseable entry:
-        auto const masterKey1 = randomMasterKey();
-        auto const masterKey2 = randomMasterKey ();
-
-        Section s5;
-        s5.append (format (masterKey1, "XXX"));
-        s5.append (format (masterKey2));
-        BEAST_EXPECT(!cache.loadValidatorKeys (s5, journal));
-        BEAST_EXPECT(!cache.trusted (masterKey1));
-        BEAST_EXPECT(!cache.trusted (masterKey2));
-
-        // Reject secp256k1 permanent validator keys
-        auto const node1 = randomNode ();
-        auto const node2 = randomNode ();
-
-        Section s6;
-        s6.append (format (node1));
-        s6.append (format (node2, " Comment"));
-        BEAST_EXPECT(!cache.loadValidatorKeys (s6, journal));
-        BEAST_EXPECT(!cache.trusted (node1));
-        BEAST_EXPECT(!cache.trusted (node2));
-
-        // Trust our own master public key from configured manifest
-        auto unl = std::make_unique<ValidatorList> (journal);
-
-        auto const sk = randomSecretKey();
-        auto const kp = randomKeyPair(KeyType::secp256k1);
-        auto const m  = make_Manifest (KeyType::ed25519, sk, kp.first, 0);
-
-        cache.configManifest (clone (m), *unl, journal);
-        BEAST_EXPECT(cache.trusted (m.masterKey));
-    }
-
-    void testLoadStore (ManifestCache const& m, ValidatorList& unl)
+    void testLoadStore (ManifestCache& m)
     {
         testcase ("load/store");
 
@@ -245,12 +176,12 @@ public:
             setup.dataDir = getDatabasePath ();
             DatabaseCon dbCon(setup, dbName, WalletDBInit, WalletDBCount);
 
-            if (!m.size ())
-                fail ();
-
             m.save (dbCon);
 
+            TestThread thread;
             beast::Journal journal;
+            auto unl = std::make_unique<ValidatorList> (
+                m, thread.get_io_service (), journal);
 
             auto getPopulatedManifests =
                     [](ManifestCache const& cache) -> std::vector<Manifest const*>
@@ -275,19 +206,27 @@ public:
                 sort (getPopulatedManifests (m)));
             {
                 // load should not load untrusted master keys from db
-                ManifestCache loaded;
+                ManifestCache loaded (journal);
 
-                loaded.load (dbCon, unl, journal);
-                BEAST_EXPECT(loaded.size() == 0);
+                loaded.load (dbCon, *unl);
+                for (auto const& man : inManifests)
+                    BEAST_EXPECT(! loaded.getSigningKey (man->masterKey));
             }
             {
                 // load should load all trusted master keys from db
-                ManifestCache loaded;
+                ManifestCache loaded (journal);
 
+                PublicKey emptyLocalKey;
+                std::vector<std::string> s1;
+                std::vector<std::string> sites;
+                std::vector<std::string> keys;
+                std::vector<std::string> cfgManifest;
                 for (auto const& man : inManifests)
-                    loaded.addTrustedKey (man->masterKey, "");
+                    s1.push_back (toBase58(
+                        TokenType::TOKEN_NODE_PUBLIC, man->masterKey));
+                unl->load (emptyLocalKey, s1, sites, keys, cfgManifest);
 
-                loaded.load (dbCon, unl, journal);
+                loaded.load (dbCon, *unl);
 
                 std::vector<Manifest const*> const loadedManifests (
                     sort (getPopulatedManifests (loaded)));
@@ -304,20 +243,6 @@ public:
                 {
                     fail ();
                 }
-            }
-            {
-                // load should remove master key from permanent key list
-                ManifestCache loaded;
-                auto const iMan = inManifests.begin();
-
-                if (!*iMan)
-                    fail ();
-                BEAST_EXPECT(m.trusted((*iMan)->masterKey));
-                BEAST_EXPECT(unl.insertPermanentKey((*iMan)->masterKey, "trusted key"));
-                BEAST_EXPECT(unl.trusted((*iMan)->masterKey));
-                loaded.load (dbCon, unl, journal);
-                BEAST_EXPECT(!unl.trusted((*iMan)->masterKey));
-                BEAST_EXPECT(loaded.trusted((*iMan)->masterKey));
             }
         }
         boost::filesystem::remove (getDatabasePath () /
@@ -344,12 +269,92 @@ public:
         BEAST_EXPECT(strHex(sig) == strHex(m.getSignature()));
     }
 
+    void testGetKeys()
+    {
+        testcase ("getKeys");
+
+        beast::Journal journal;
+        ManifestCache cache (journal);
+        auto const sk  = randomSecretKey();
+        auto const pk  = derivePublicKey(KeyType::ed25519, sk);
+
+        TestThread thread;
+        auto unl = std::make_unique<ValidatorList> (
+            cache, thread.get_io_service (), beast::Journal ());
+        PublicKey emptyLocalKey;
+        std::vector<std::string> cfgManifest;
+        std::vector<std::string> validators;
+        std::vector<std::string> validatorSites;
+        std::vector<std::string> listKeys;
+        validators.push_back (toBase58(
+            TokenType::TOKEN_NODE_PUBLIC,
+            pk));
+
+        // getSigningKey should return boost::none for an
+        // unknown master public key
+        BEAST_EXPECT(!unl->listed(pk));
+        unl->load (
+            emptyLocalKey, validators, validatorSites, listKeys, cfgManifest);
+        BEAST_EXPECT(unl->listed(pk));
+        BEAST_EXPECT(!cache.getSigningKey(pk));
+
+        // getSigningKey should return the ephemeral public key
+        // for the listed validator master public key
+        // getMasterKey should return the listed validator master key
+        // for that ephemeral public key
+        auto const kp0 = randomKeyPair(KeyType::secp256k1);
+        auto const m0  = make_Manifest (
+            KeyType::ed25519, sk, kp0.first, 0);
+        BEAST_EXPECT(cache.applyManifest(clone (m0), *unl) ==
+                ManifestDisposition::accepted);
+        BEAST_EXPECT(cache.getSigningKey(pk) == kp0.first);
+        BEAST_EXPECT(cache.getMasterKey(kp0.first) == pk);
+
+        // getSigningKey should return the latest ephemeral public key
+        // for the listed validator master public key
+        // getMasterKey should only return a master key for the latest
+        // ephemeral public key
+        auto const kp1 = randomKeyPair(KeyType::secp256k1);
+        auto const m1  = make_Manifest (
+            KeyType::ed25519, sk, kp1.first, 1);
+        BEAST_EXPECT(cache.applyManifest(clone (m1), *unl) ==
+                ManifestDisposition::accepted);
+        BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
+        BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
+        BEAST_EXPECT(! cache.getMasterKey(kp0.first));
+
+        // getSigningKey and getMasterKey should return the same keys if
+        // a new manifest is applied with the same signing key but a higher
+        // sequence
+        auto const m2  = make_Manifest (
+            KeyType::ed25519, sk, kp1.first, 2);
+        BEAST_EXPECT(cache.applyManifest(clone (m2), *unl) ==
+                ManifestDisposition::accepted);
+        BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
+        BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
+        BEAST_EXPECT(! cache.getMasterKey(kp0.first));
+
+        // getSigningKey should return boost::none for a
+        // revoked master public key
+        // getMasterKey should return boost::none for an ephemeral public key
+        // from a revoked master public key
+        auto const kpMax = randomKeyPair(KeyType::secp256k1);
+        auto const mMax = make_Manifest (
+            KeyType::ed25519, sk, kpMax.first,
+            std::numeric_limits<std::uint32_t>::max ());
+        BEAST_EXPECT(cache.applyManifest(clone (mMax), *unl) ==
+                ManifestDisposition::accepted);
+        BEAST_EXPECT(cache.revoked(pk));
+        BEAST_EXPECT(! cache.getSigningKey(pk));
+        BEAST_EXPECT(! cache.getMasterKey(kpMax.first));
+        BEAST_EXPECT(! cache.getMasterKey(kp1.first));
+    }
+
     void
     run() override
     {
-        ManifestCache cache;
         beast::Journal journal;
-        auto unl = std::make_unique<ValidatorList> (journal);
+        ManifestCache cache (journal);
         {
             testcase ("apply");
             auto const accepted = ManifestDisposition::accepted;
@@ -360,56 +365,75 @@ public:
             auto const sk_a = randomSecretKey();
             auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
             auto const kp_a = randomKeyPair(KeyType::secp256k1);
-            auto const s_a0 = make_Manifest (KeyType::ed25519, sk_a, kp_a.first, 0);
-            auto const s_a1 = make_Manifest (KeyType::ed25519, sk_a, kp_a.first, 1);
+            auto const s_a0 = make_Manifest (
+                KeyType::ed25519, sk_a, kp_a.first, 0);
+            auto const s_a1 = make_Manifest (
+                KeyType::ed25519, sk_a, kp_a.first, 1);
+            auto const s_aMax = make_Manifest (
+                KeyType::ed25519, sk_a, kp_a.first,
+                std::numeric_limits<std::uint32_t>::max ());
 
             auto const sk_b = randomSecretKey();
             auto const pk_b = derivePublicKey(KeyType::ed25519, sk_b);
             auto const kp_b = randomKeyPair(KeyType::secp256k1);
-            auto const s_b0 = make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 0);
-            auto const s_b1 = make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 1);
+            auto const s_b0 = make_Manifest (
+                KeyType::ed25519, sk_b, kp_b.first, 0);
+            auto const s_b1 = make_Manifest (
+                KeyType::ed25519, sk_b, kp_b.first, 1);
             auto const s_b2 =
                 make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 2, true);  // broken
             auto const fake = s_b1.serialized + '\0';
 
-            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == untrusted);
+            TestThread thread;
+            auto unl = std::make_unique<ValidatorList> (
+                cache, thread.get_io_service (), journal);
 
-            cache.addTrustedKey (pk_a, "a");
-            cache.addTrustedKey (pk_b, "b");
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl) == untrusted);
 
-            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == accepted);
-            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == stale);
+            PublicKey emptyLocalKey;
+            std::vector<std::string> s;
+            std::vector<std::string> sites;
+            std::vector<std::string> keys;
+            std::vector<std::string> cfgManifest;
+            s.push_back (toBase58(
+                TokenType::TOKEN_NODE_PUBLIC, pk_a));
+            s.push_back (toBase58(
+                TokenType::TOKEN_NODE_PUBLIC, pk_b));
+            unl->load (emptyLocalKey, s, sites, keys, cfgManifest);
 
-            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl, journal) == accepted);
-            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl, journal) == stale);
-            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == stale);
+            // applyManifest should accept new manifests with
+            // higher sequence numbers
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl) == stale);
 
-            BEAST_EXPECT(cache.applyManifest (clone (s_b0), *unl, journal) == accepted);
-            BEAST_EXPECT(cache.applyManifest (clone (s_b0), *unl, journal) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl) == stale);
+
+            // applyManifest should accept manifests with max sequence numbers
+            // that revoke the master public key
+            BEAST_EXPECT(!cache.revoked (pk_a));
+            BEAST_EXPECT(s_aMax.revoked ());
+            BEAST_EXPECT(cache.applyManifest (clone (s_aMax), *unl) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_aMax), *unl) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl) == stale);
+            BEAST_EXPECT(cache.revoked (pk_a));
+
+            // applyManifest should reject manifests with invalid signatures
+            BEAST_EXPECT(cache.applyManifest (clone (s_b0), *unl) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_b0), *unl) == stale);
 
             BEAST_EXPECT(!ripple::make_Manifest(fake));
-            BEAST_EXPECT(cache.applyManifest (clone (s_b2), *unl, journal) == invalid);
-
-            // When trusted permanent key is found as manifest master key
-            // move to manifest cache
-            auto const sk_c = randomSecretKey();
-            auto const pk_c = derivePublicKey(KeyType::ed25519, sk_c);
-            auto const kp_c = randomKeyPair(KeyType::secp256k1);
-            auto const s_c0 = make_Manifest (KeyType::ed25519, sk_c, kp_c.first, 0);
-            BEAST_EXPECT(unl->insertPermanentKey(pk_c, "trusted key"));
-            BEAST_EXPECT(unl->trusted(pk_c));
-            BEAST_EXPECT(!cache.trusted(pk_c));
-            BEAST_EXPECT(cache.applyManifest(clone (s_c0), *unl, journal) == accepted);
-            BEAST_EXPECT(!unl->trusted(pk_c));
-            BEAST_EXPECT(cache.trusted(pk_c));
+            BEAST_EXPECT(cache.applyManifest (clone (s_b2), *unl) == invalid);
         }
-        testConfigLoad();
-        testLoadStore (cache, *unl);
+        testLoadStore (cache);
         testGetSignature ();
+        testGetKeys ();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(manifest,overlay,ripple);
+BEAST_DEFINE_TESTSUITE(Manifest,app,ripple);
 
 } // tests
 } // ripple

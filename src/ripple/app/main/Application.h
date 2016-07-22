@@ -50,6 +50,7 @@ class InboundTransactions;
 class AcceptedLedger;
 class LedgerMaster;
 class LoadManager;
+class ManifestCache;
 class NetworkOPs;
 class OpenLedger;
 class OrderBookDB;
@@ -120,6 +121,7 @@ public:
     virtual Overlay&                overlay () = 0;
     virtual TxQ&                    getTxQ() = 0;
     virtual ValidatorList&          validators () = 0;
+    virtual ManifestCache&          manifestCache () = 0;
     virtual Cluster&                cluster () = 0;
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;

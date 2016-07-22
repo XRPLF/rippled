@@ -268,9 +268,9 @@ public:
     }
 };
 
-std::string valFileContents (boost::optional<int> const& quorum)
+std::string valFileContents ()
 {
-    static boost::format configContentsTemplate (R"rippleConfig(
+    std::string configContents (R"rippleConfig(
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
 n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
@@ -283,15 +283,17 @@ nHUhG1PgAG8H8myUENypM35JgfqXAKNQvRVVAFDRzJrny5eZN8d5
 nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
 nHUPDdcdb2Y5DZAJne4c2iabFuAP3F34xZUgYQT2NH7qfkdapgnz
 
-%1%
+[validator_list_sites]
+recommendedripplevalidators.com
+moreripplevalidators.net
 
+[validator_list_keys]
+n94EfWDDTNYhdvGrGXLCbzFgnKK2osD2cTrL7gZWwhqvjUBcFAWd
+n9LYXb4x6A3EwtxKfR95VEiWnGKRdCg5swNrY4mE8vrDEnxCarW1
 )rippleConfig");
-
-    std::string quorumSection =
-        quorum ? "[validation_quorum]\n" + to_string(*quorum) : "";
-    return boost::str (
-        configContentsTemplate % quorumSection);
+    return configContents;
 }
+
 
 /**
    Write a validators.txt file and remove when done.
@@ -303,8 +305,7 @@ private:
 
 public:
     ValidatorsTxtGuard (beast::unit_test::suite& test,
-        std::string subDir, std::string const& validatorsFileName,
-            boost::optional<int> const& quorum)
+        std::string subDir, std::string const& validatorsFileName)
         : ConfigGuard (test, std::move (subDir))
     {
         using namespace boost::filesystem;
@@ -315,7 +316,7 @@ public:
         if (!exists (validatorsFile_))
         {
             std::ofstream o (validatorsFile_.string ());
-            o << valFileContents (quorum);
+            o << valFileContents ();
         }
         else
         {
@@ -372,9 +373,6 @@ port_wss_admin
 
 [ssl_verify]
 0
-
-[validation_quorum]
-3
 )rippleConfig");
 
         c.loadFromString (toLoad);
@@ -477,9 +475,8 @@ port_wss_admin
         }
         {
             // load should throw for invalid [validators_file]
-            int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", quorum);
+                *this, "test_cfg", "validators.cfg");
             Config c;
             path const invalidFile = current_path () / "test_cfg";
             boost::format cc ("[validators_file]\n%1%\n");
@@ -495,7 +492,7 @@ port_wss_admin
             BEAST_EXPECT(error == expectedError);
         }
         {
-            // load validators and quorum from config
+            // load validators from config into single section
             Config c;
             std::string toLoad(R"rippleConfig(
 [validators]
@@ -506,116 +503,158 @@ n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C
 [validator_keys]
 nHUhG1PgAG8H8myUENypM35JgfqXAKNQvRVVAFDRzJrny5eZN8d5
 nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
-
-[validation_quorum]
-4
 )rippleConfig");
             c.loadFromString (toLoad);
             BEAST_EXPECT(c.legacy ("validators_file").empty ());
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 3);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 2);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == 4);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+        }
+        {
+            // load validator list sites and keys from config
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
+[validator_list_keys]
+n9JkDL23X9dmE62QRYpqeR29u3rTLzBFvJqxtbAGvxLcAvAqakfY
+)rippleConfig");
+            c.loadFromString (toLoad);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ()[0] ==
+                    "ripplevalidators.com");
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ()[1] ==
+                    "trustthesevalidators.gov");
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 1);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ()[0] ==
+                    "n9JkDL23X9dmE62QRYpqeR29u3rTLzBFvJqxtbAGvxLcAvAqakfY");
+        }
+        {
+            // load should throw if [validator_list_sites] is configured but
+            // [validator_list_keys] is not
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "[validator_list_keys] config section is missing";
+            try {
+                c.loadFromString (toLoad);
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
+        }
+        {
+            // load should throw if [validator_list_keys] is configured but
+            // [validator_list_sites] is not
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_keys]
+n9JkDL23X9dmE62QRYpqeR29u3rTLzBFvJqxtbAGvxLcAvAqakfY
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "[validator_list_sites] config section is missing";
+            try {
+                c.loadFromString (toLoad);
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load from specified [validators_file] absolute path
-            int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", quorum);
+                *this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists ());
             Config c;
             boost::format cc ("[validators_file]\n%1%\n");
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
             // load from specified [validators_file] file name
             // in config directory
-            int const quorum = 3;
             std::string const valFileName = "validators.txt";
-            detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", valFileName, quorum);
+            detail::ValidatorsTxtGuard vtg (*this, "test_cfg", valFileName);
             detail::RippledCfgGuard rcg (
                 *this, "test_cfg", "", valFileName);
             BEAST_EXPECT(vtg.validatorsFileExists ());
             BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file") == valFileName);
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
             // load from specified [validators_file] relative path
             // to config directory
-            int const quorum = 3;
             std::string const valFilePath = "../test_cfg/validators.txt";
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.txt", quorum);
+                *this, "test_cfg", "validators.txt");
             detail::RippledCfgGuard rcg (
                 *this, "test_cfg", "", valFilePath);
             BEAST_EXPECT(vtg.validatorsFileExists ());
             BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file") == valFilePath);
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
             // load from validators file in default location
-            int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.txt", quorum);
+                *this, "test_cfg", "validators.txt");
             detail::RippledCfgGuard rcg (*this, "test_cfg", "", "");
             BEAST_EXPECT(vtg.validatorsFileExists ());
             BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file").empty ());
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
             // load from specified [validators_file] instead
             // of default location
-            int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", quorum);
+                *this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists ());
             detail::ValidatorsTxtGuard vtgDefault (
-                *this, "test_cfg", "validators.txt", 4);
+                *this, "test_cfg", "validators.txt");
             BEAST_EXPECT(vtgDefault.validatorsFileExists ());
             detail::RippledCfgGuard rcg (
                 *this, "test_cfg", "", vtg.validatorsFile ());
             BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
-        }
-        {
-            // do not load quorum from validators file if in config
-            boost::format cc (R"rippleConfig(
-[validators_file]
-%1%
-
-[validation_quorum]
-4
-)rippleConfig");
-            int const quorum = 3;
-            detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", quorum);
-            BEAST_EXPECT(vtg.validatorsFileExists ());
-            Config c;
-            c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
-            BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == 4);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
             // load validators from both config and validators file
@@ -634,52 +673,40 @@ n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA
 nHB1X37qrniVugfQcuBTAjswphC1drx7QjFFojJPZwKHHnt8kU7v
 nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
 
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
+[validator_list_keys]
+n9JkDL23X9dmE62QRYpqeR29u3rTLzBFvJqxtbAGvxLcAvAqakfY
 )rippleConfig");
-            int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", quorum);
+                *this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists ());
             Config c;
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
-            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 10);
-            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 5);
-            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 15);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 4);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 3);
         }
         {
-            // load should throw if [validators] and [validator_keys] are
-            // missing from rippled cfg and validators file
+            // load should throw if [validators], [validator_keys] and
+            // [validator_list_sites] are missing from rippled cfg and
+            // validators file
             Config c;
             boost::format cc ("[validators_file]\n%1%\n");
             std::string error;
             detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", boost::none);
+                *this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists ());
             auto const expectedError =
                 "The file specified in [validators_file] does not contain a "
-                "[validators] or [validator_keys] section: " +
+                "[validators], [validator_keys] or [validator_list_sites] section: " +
                 vtg.validatorsFile ();
             std::ofstream o (vtg.validatorsFile ());
-            o << "[validation_quorum]\n3\n";
-            try {
-                c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
-            } catch (std::runtime_error& e) {
-                error = e.what();
-            }
-            BEAST_EXPECT(error == expectedError);
-        }
-        {
-            // load should throw if [validation_quorum] is
-            // missing from rippled cfg and validators file
-            Config c;
-            boost::format cc ("[validators_file]\n%1%\n");
-            std::string error;
-            detail::ValidatorsTxtGuard vtg (
-                *this, "test_cfg", "validators.cfg", boost::none);
-            BEAST_EXPECT(vtg.validatorsFileExists ());
-            auto const expectedError =
-                "The file specified in [validators_file] does not contain a "
-                "[validation_quorum] section: " + vtg.validatorsFile ();
             try {
                 c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             } catch (std::runtime_error& e) {

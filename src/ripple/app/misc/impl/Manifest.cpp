@@ -20,9 +20,9 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/app/misc/Manifest.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/overlay/impl/Manifest.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
 #include <boost/regex.hpp>
@@ -127,184 +127,94 @@ Blob Manifest::getSignature () const
     return st.getFieldVL (sfSignature);
 }
 
-bool
-ManifestCache::loadValidatorKeys(
-    Section const& keys,
-    beast::Journal journal)
+boost::optional<PublicKey>
+ManifestCache::getSigningKey (PublicKey const& pk) const
 {
-    static boost::regex const re (
-        "[[:space:]]*"            // skip leading whitespace
-        "([[:alnum:]]+)"          // node identity
-        "(?:"                     // begin optional comment block
-        "[[:space:]]+"            // (skip all leading whitespace)
-        "(?:"                     // begin optional comment
-        "(.*[^[:space:]]+)"       // the comment
-        "[[:space:]]*"            // (skip all trailing whitespace)
-        ")?"                      // end optional comment
-        ")?"                      // end optional comment block
-    );
+    std::lock_guard<std::mutex> lock{read_mutex_};
+    auto const iter = map_.find (pk);
 
-    JLOG (journal.debug()) <<
-        "Loading configured validator keys";
+    if (iter != map_.end () && !iter->second.revoked ())
+        return iter->second.signingKey;
 
-    std::size_t count = 0;
-
-    for (auto const& line : keys.lines())
-    {
-        boost::smatch match;
-
-        if (!boost::regex_match (line, match, re))
-        {
-            JLOG (journal.error()) <<
-                "Malformed entry: '" << line << "'";
-            return false;
-        }
-
-        auto const key = parseBase58<PublicKey>(
-            TokenType::TOKEN_NODE_PUBLIC, match[1]);
-
-        if (!key)
-        {
-            JLOG (journal.error()) <<
-                "Error decoding validator key: " << match[1];
-            return false;
-        }
-
-        if (publicKeyType(*key) != KeyType::ed25519)
-        {
-            JLOG (journal.error()) <<
-                "Validator key not using Ed25519: " << match[1];
-            return false;
-        }
-
-        JLOG (journal.debug()) << "Loaded key: " << match[1];
-
-        addTrustedKey (*key, match[2]);
-        ++count;
-    }
-
-    JLOG (journal.debug()) <<
-        "Loaded " << count << " entries";
-
-    return true;
+    return boost::none;
 }
 
-void
-ManifestCache::configManifest (
-    Manifest m, ValidatorList& unl, beast::Journal journal)
+boost::optional<PublicKey>
+ManifestCache::getMasterKey (PublicKey const& pk) const
 {
-    if (! m.verify())
-    {
-        Throw<std::runtime_error> ("Unverifiable manifest in config");
-    }
+    std::lock_guard<std::mutex> lock{read_mutex_};
+    auto const iter = signingToMasterKeys_.find (pk);
 
-    // Trust our own master public key
-    if (!trusted(m.masterKey) && !unl.trusted (m.masterKey))
-    {
-        addTrustedKey (m.masterKey, "");
-    }
+    if (iter != signingToMasterKeys_.end ())
+        return iter->second;
 
-    auto const result = applyManifest (std::move(m), unl, journal);
-
-    if (result != ManifestDisposition::accepted)
-    {
-        Throw<std::runtime_error> ("Our own validation manifest was not accepted");
-    }
+    return boost::none;
 }
 
 bool
-ManifestCache::trusted (PublicKey const& identity) const
+ManifestCache::revoked (PublicKey const& pk) const
 {
-    return map_.count(identity);
-}
+    std::lock_guard<std::mutex> lock{read_mutex_};
+    auto const iter = map_.find (pk);
 
-void
-ManifestCache::addTrustedKey (PublicKey const& pk, std::string comment)
-{
-    std::lock_guard<std::mutex> lock (mutex_);
+    if (iter != map_.end ())
+        return iter->second.revoked ();
 
-    auto& value = map_[pk];
-
-    if (value.m)
-    {
-        Throw<std::runtime_error> (
-            "New trusted validator key already has a manifest");
-    }
-
-    value.comment = std::move(comment);
-}
-
-std::size_t
-ManifestCache::size () const
-{
-    std::lock_guard <std::mutex> lock (mutex_);
-    return map_.size ();
+    return false;
 }
 
 ManifestDisposition
-ManifestCache::canApply (PublicKey const& pk, std::uint32_t seq,
-    beast::Journal journal) const
+ManifestCache::canApply (
+    PublicKey const& pk,
+    std::uint32_t seq,
+    ValidatorList const& unl) const
 {
-    auto const iter = map_.find(pk);
-
-    if (iter == map_.end())
+    if (! unl.listed (pk) && ! unl.trustedPublisher (pk))
     {
         /*
             A manifest was received whose master key we don't trust.
             Since rippled always sends all of its current manifests,
             this will happen normally any time a peer connects.
         */
-        if (auto stream = journal.debug())
+        if (auto stream = j_.debug())
             logMftAct(stream, "Untrusted", pk, seq);
         return ManifestDisposition::untrusted;
     }
 
-    auto& old = iter->second.m;
+    auto const iter = map_.find(pk);
 
-    if (old  &&  seq <= old->sequence)
+    if (iter != map_.end() &&
+        seq <= iter->second.sequence)
     {
         /*
             A manifest was received for a validator we're tracking, but
-            its sequence number is no higher than the one already stored.
+            its sequence number is not higher than the one already stored.
             This will happen normally when a peer without the latest gossip
             connects.
         */
-        if (auto stream = journal.debug())
-            logMftAct(stream, "Stale", pk, seq, old->sequence);
+        if (auto stream = j_.debug())
+            logMftAct(stream, "Stale", pk, seq, iter->second.sequence);
         return ManifestDisposition::stale;  // not a newer manifest, ignore
     }
 
     return ManifestDisposition::accepted;
 }
 
-
 ManifestDisposition
 ManifestCache::applyManifest (
-    Manifest m, ValidatorList& unl, beast::Journal journal)
+    Manifest m, ValidatorList& unl)
 {
+    std::lock_guard<std::mutex> applyLock{apply_mutex_};
+
     /*
-        Move master public key from permanent trusted key list
-        to manifest cache.
+        before we spend time checking the signature, make sure we trust the
+        master key and the sequence number is newer than any we have.
     */
-    if (auto unlComment = unl.member (m.masterKey))
+    auto const chk = canApply(m.masterKey, m.sequence, unl);
+
+    if (chk != ManifestDisposition::accepted)
     {
-        addTrustedKey (m.masterKey, *unlComment);
-        unl.removePermanentKey (m.masterKey);
-    }
-
-    {
-        std::lock_guard<std::mutex> lock (mutex_);
-
-        /*
-            before we spend time checking the signature, make sure we trust the
-            master key and the sequence number is newer than any we have.
-        */
-        auto const chk = canApply(m.masterKey, m.sequence, journal);
-
-        if (chk != ManifestDisposition::accepted)
-        {
-            return chk;
-        }
+        return chk;
     }
 
     if (! m.verify())
@@ -313,71 +223,55 @@ ManifestCache::applyManifest (
           A manifest's signature is invalid.
           This shouldn't happen normally.
         */
-        if (auto stream = journal.warn())
+        if (auto stream = j_.warn())
             logMftAct(stream, "Invalid", m.masterKey, m.sequence);
         return ManifestDisposition::invalid;
     }
 
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard<std::mutex> readLock{read_mutex_};
 
-    /*
-        We released the lock above, so we have to check again, in case
-        another thread accepted a newer manifest.
-    */
-    auto const chk = canApply(m.masterKey, m.sequence, journal);
+    bool revoked = m.revoked();
 
-    if (chk != ManifestDisposition::accepted)
-    {
-        return chk;
-    }
+    if (revoked && unl.trustedPublisher (m.masterKey))
+        unl.removeList (m.masterKey);
 
-    auto const iter = map_.find(m.masterKey);
+    auto const iter = map_.find (m.masterKey);
 
-    auto& old = iter->second.m;
-
-    if (! old)
+    if (iter == map_.end ())
     {
         /*
             This is the first received manifest for a trusted master key
             (possibly our own).  This only happens once per validator per
-            run (and possibly not at all, if there's an obsolete entry in
-            [validator_keys] for a validator that no longer exists).
+            run.
         */
-        if (auto stream = journal.info())
+        if (auto stream = j_.info())
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
+
+        if (! revoked)
+            signingToMasterKeys_[m.signingKey] = m.masterKey;
+
+        map_.emplace (std::make_pair(m.masterKey, std::move (m)));
     }
     else
     {
-        if (m.revoked ())
-        {
-            /*
-               The MASTER key for this validator was revoked.  This is
-               expected, but should happen at most *very* rarely.
-            */
-            if (auto stream = journal.info())
-                logMftAct(stream, "Revoked",
-                    m.masterKey, m.sequence, old->sequence);
-        }
-        else
-        {
-            /*
-                An ephemeral key was revoked and superseded by a new key.
-                This is expected, but should happen infrequently.
-            */
-            if (auto stream = journal.info())
-                logMftAct(stream, "AcceptedUpdate",
-                          m.masterKey, m.sequence, old->sequence);
-        }
+        /*
+            An ephemeral key was revoked and superseded by a new key.
+            This is expected, but should happen infrequently.
+        */
+        if (auto stream = j_.info())
+            logMftAct(stream, "AcceptedUpdate",
+                      m.masterKey, m.sequence, iter->second.sequence);
 
-        unl.removeEphemeralKey (old->signingKey);
+        signingToMasterKeys_.erase (iter->second.signingKey);
+
+        if (! revoked)
+            signingToMasterKeys_[m.signingKey] = m.masterKey;
+
+        iter->second = std::move (m);
     }
 
-    if (m.revoked ())
+    if (revoked)
     {
-        // The master key is revoked -- don't insert the signing key
-        if (auto stream = journal.warn())
-            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
-
         /*
             A validator master key has been compromised, so its manifests
             are now untrustworthy.  In order to prevent us from accepting
@@ -385,20 +279,19 @@ ManifestCache::applyManifest (
             this manifest, which has the highest possible sequence number
             and therefore can't be superseded by a forged one.
         */
+        if (auto stream = j_.warn())
+            logMftAct(stream, "Revoked", m.masterKey, m.sequence);
     }
-    else
-    {
-        unl.insertEphemeralKey (m.signingKey, iter->second.comment);
-    }
-
-    old = std::move(m);
 
     return ManifestDisposition::accepted;
 }
 
-void ManifestCache::load (
-    DatabaseCon& dbCon, ValidatorList& unl, beast::Journal journal)
+void
+ManifestCache::load (
+    DatabaseCon& dbCon,
+    ValidatorList& unl)
 {
+    // Load manifests stored in database
     static const char* const sql =
         "SELECT RawData FROM ValidatorManifests;";
     auto db = dbCon.checkoutDb ();
@@ -418,19 +311,20 @@ void ManifestCache::load (
                 Throw<std::runtime_error> ("Unverifiable manifest in db");
             }
 
-            if (trusted(mo->masterKey) || unl.trusted(mo->masterKey))
+            if (unl.listed(mo->masterKey) ||
+                unl.trustedPublisher(mo->masterKey))
             {
-                applyManifest (std::move(*mo), unl, journal);
+                applyManifest (std::move(*mo), unl);
             }
             else
             {
-                JLOG(journal.info())
+                JLOG(j_.info())
                    << "Manifest in db is no longer trusted";
             }
         }
         else
         {
-            JLOG(journal.warn())
+            JLOG(j_.warn())
                 << "Malformed manifest in database";
         }
     }
@@ -448,10 +342,7 @@ void ManifestCache::save (DatabaseCon& dbCon) const
     soci::blob rawData(*db);
     for (auto const& v : map_)
     {
-        if (!v.second.m)
-            continue;
-
-        convert (v.second.m->serialized, rawData);
+        convert (v.second.serialized, rawData);
         *db << sql,
             soci::use (rawData);
     }

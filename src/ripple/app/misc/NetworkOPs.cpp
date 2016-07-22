@@ -1196,8 +1196,8 @@ public:
             if (nodesUsing > v.nodesUsing)
                 return true;
 
-            if (nodesUsing < v.nodesUsing) return
-                false;
+            if (nodesUsing < v.nodesUsing)
+                return false;
 
             return highNodeUsing > v.highNodeUsing;
         }
@@ -1480,6 +1480,9 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     assert (prevLedger->info().hash == closingInfo.parentHash);
     assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger()->info().hash);
+
+    app_.validators().update (
+        app_.getValidations().getValidations (networkClosed));
 
     mConsensus->startRound (
         *mLedgerConsensus,
@@ -2013,7 +2016,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (mNeedNetworkLedger)
         info[jss::network_ledger] = "waiting";
 
-    info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
+    info[jss::validation_quorum] = app_.validators ().quorum ();
 
     info[jss::io_latency_ms] = static_cast<Json::UInt> (
         app_.getIOLatency().count());
