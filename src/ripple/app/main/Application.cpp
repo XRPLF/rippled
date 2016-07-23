@@ -81,6 +81,7 @@
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/optional.hpp>
+#include <atomic>
 #include <fstream>
 
 namespace ripple {
@@ -250,11 +251,10 @@ private:
     class io_latency_sampler
     {
     private:
-        std::mutex mutable m_mutex;
         beast::insight::Event m_event;
         beast::Journal m_journal;
         beast::io_latency_probe <std::chrono::steady_clock> m_probe;
-        std::chrono::milliseconds m_lastSample;
+        std::atomic<std::chrono::milliseconds> lastSample_;
 
     public:
         io_latency_sampler (
@@ -265,6 +265,7 @@ private:
             : m_event (ev)
             , m_journal (journal)
             , m_probe (interval, ios)
+            , lastSample_ {}
         {
         }
 
@@ -280,10 +281,7 @@ private:
             using namespace std::chrono;
             auto const ms (ceil <std::chrono::milliseconds> (elapsed));
 
-            {
-                std::lock_guard <std::mutex> lock (m_mutex);
-                m_lastSample = ms;
-            }
+            lastSample_ = ms;
 
             if (ms.count() >= 10)
                 m_event.notify (ms);
@@ -297,8 +295,7 @@ private:
         std::chrono::milliseconds
         get () const
         {
-            std::lock_guard <std::mutex> lock (m_mutex);
-            return m_lastSample;
+            return lastSample_.load();
         }
 
         void
