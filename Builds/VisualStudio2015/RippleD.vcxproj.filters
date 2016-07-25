@@ -3837,6 +3837,9 @@
     <ClCompile Include="..\..\src\ripple\rpc\tests\AccountOffers.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\tests\AccountSet.test.cpp">
+      <Filter>ripple\rpc\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\tests\Book.test.cpp">
       <Filter>ripple\rpc\tests</Filter>
     </ClCompile>
