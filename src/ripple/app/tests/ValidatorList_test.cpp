@@ -91,8 +91,8 @@ private:
         Section s1;
 
         // Correct (empty) configuration
-        expect (validators->load (s1));
-        expect (validators->size() == 0);
+        BEAST_EXPECT(validators->load (s1));
+        BEAST_EXPECT(validators->size() == 0);
 
         // Correct configuration
         s1.append (format (network[0]));
@@ -104,23 +104,23 @@ private:
         s1.append (format (network[6], "    Leading, Trailing & Internal    Whitespace    "));
         s1.append (format (network[7], "    "));
 
-        expect (validators->load (s1));
+        BEAST_EXPECT(validators->load (s1));
 
         for (auto const& n : network)
-            expect (validators->trusted (n));
+            BEAST_EXPECT(validators->trusted (n));
 
         // Incorrect configurations:
         Section s2;
         s2.append ("NotAPublicKey");
-        expect (!validators->load (s2));
+        BEAST_EXPECT(!validators->load (s2));
 
         Section s3;
         s3.append (format (network[0], "!"));
-        expect (!validators->load (s3));
+        BEAST_EXPECT(!validators->load (s3));
 
         Section s4;
         s4.append (format (network[0], "!  Comment"));
-        expect (!validators->load (s4));
+        BEAST_EXPECT(!validators->load (s4));
 
         // Check if we properly terminate when we encounter
         // a malformed or unparseable entry:
@@ -130,9 +130,9 @@ private:
         Section s5;
         s5.append (format (node1, "XXX"));
         s5.append (format (node2));
-        expect (!validators->load (s5));
-        expect (!validators->trusted (node1));
-        expect (!validators->trusted (node2));
+        BEAST_EXPECT(!validators->load (s5));
+        BEAST_EXPECT(!validators->trusted (node1));
+        BEAST_EXPECT(!validators->trusted (node2));
 
         // Add Ed25519 master public keys to permanent validators list
         auto const masterNode1 = randomMasterKey ();
@@ -141,9 +141,9 @@ private:
         Section s6;
         s6.append (format (masterNode1));
         s6.append (format (masterNode2, " Comment"));
-        expect (validators->load (s6));
-        expect (validators->trusted (masterNode1));
-        expect (validators->trusted (masterNode2));
+        BEAST_EXPECT(validators->load (s6));
+        BEAST_EXPECT(validators->trusted (masterNode1));
+        BEAST_EXPECT(validators->trusted (masterNode2));
     }
 
     void
@@ -165,10 +165,10 @@ private:
             auto vl = std::make_unique <ValidatorList> (beast::Journal ());
 
             for (auto const& v : permanentValidators)
-                expect (!vl->trusted (v));
+                BEAST_EXPECT(!vl->trusted (v));
 
             for (auto const& v : ephemeralValidators)
-                expect (!vl->trusted (v));
+                BEAST_EXPECT(!vl->trusted (v));
         }
 
         {
@@ -197,16 +197,16 @@ private:
                 vl->insertEphemeralKey (v, "");
 
             for (auto const& v : p)
-                expect (vl->trusted (v));
+                BEAST_EXPECT(vl->trusted (v));
 
             for (auto const& v : e)
-                expect (vl->trusted (v));
+                BEAST_EXPECT(vl->trusted (v));
 
             for (auto const& v : permanentValidators)
-                expect (static_cast<bool>(vl->trusted (v)) == isPresent (p, v));
+                BEAST_EXPECT(static_cast<bool>(vl->trusted (v)) == isPresent (p, v));
 
             for (auto const& v : ephemeralValidators)
-                expect (static_cast<bool>(vl->trusted (v)) == isPresent (e, v));
+                BEAST_EXPECT(static_cast<bool>(vl->trusted (v)) == isPresent (e, v));
         }
     }
 
@@ -220,68 +220,68 @@ private:
         auto const v = randomNode ();
 
         // Inserting a new permanent key succeeds
-        expect (vl->insertPermanentKey (v, "Permanent"));
+        BEAST_EXPECT(vl->insertPermanentKey (v, "Permanent"));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Permanent") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Permanent") == 0);
         }
         // Inserting the same permanent key fails:
-        expect (!vl->insertPermanentKey (v, ""));
+        BEAST_EXPECT(!vl->insertPermanentKey (v, ""));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Permanent") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Permanent") == 0);
         }
         // Inserting the same key as ephemeral fails:
-        expect (!vl->insertEphemeralKey (v, "Ephemeral"));
+        BEAST_EXPECT(!vl->insertEphemeralKey (v, "Ephemeral"));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Permanent") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Permanent") == 0);
         }
         // Removing the key as ephemeral fails:
-        expect (!vl->removeEphemeralKey (v));
+        BEAST_EXPECT(!vl->removeEphemeralKey (v));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Permanent") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Permanent") == 0);
         }
         // Deleting the key as permanent succeeds:
-        expect (vl->removePermanentKey (v));
-        expect (!static_cast<bool>(vl->trusted (v)));
+        BEAST_EXPECT(vl->removePermanentKey (v));
+        BEAST_EXPECT(!static_cast<bool>(vl->trusted (v)));
 
         // Insert an ephemeral validator key
-        expect (vl->insertEphemeralKey (v, "Ephemeral"));
+        BEAST_EXPECT(vl->insertEphemeralKey (v, "Ephemeral"));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Ephemeral") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Ephemeral") == 0);
         }
         // Inserting the same ephemeral key fails
-        expect (!vl->insertEphemeralKey (v, ""));
+        BEAST_EXPECT(!vl->insertEphemeralKey (v, ""));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Ephemeral") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Ephemeral") == 0);
         }
         // Inserting the same key as permanent fails:
-        expect (!vl->insertPermanentKey (v, "Permanent"));
+        BEAST_EXPECT(!vl->insertPermanentKey (v, "Permanent"));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Ephemeral") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Ephemeral") == 0);
         }
         // Deleting the key as permanent fails:
-        expect (!vl->removePermanentKey (v));
+        BEAST_EXPECT(!vl->removePermanentKey (v));
         {
             auto member = vl->member (v);
-            expect (static_cast<bool>(member));
-            expect (member->compare("Ephemeral") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("Ephemeral") == 0);
         }
         // Deleting the key as ephemeral succeeds:
-        expect (vl->removeEphemeralKey (v));
-        expect (!vl->trusted(v));
+        BEAST_EXPECT(vl->removeEphemeralKey (v));
+        BEAST_EXPECT(!vl->trusted(v));
     }
 
 public:

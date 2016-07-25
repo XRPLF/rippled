@@ -44,7 +44,7 @@ private:
     check(std::string const& s, std::string const& answer)
     {
         auto const result = parse_ProtocolVersions(s);
-        expect(join(result.begin(), result.end()) == answer);
+        BEAST_EXPECT(join(result.begin(), result.end()) == answer);
     }
 
 public:

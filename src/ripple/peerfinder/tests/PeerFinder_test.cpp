@@ -90,9 +90,9 @@ public:
             auto const list = logic.autoconnect();
             if (! list.empty())
             {
-                expect (list.size() == 1);
+                BEAST_EXPECT(list.size() == 1);
                 auto const slot = logic.new_outbound_slot(list.front());
-                expect (logic.onConnected(slot,
+                BEAST_EXPECT(logic.onConnected(slot,
                     beast::IP::Endpoint::from_string("65.0.0.2:5")));
                 logic.on_closed(slot);
                 ++n;
@@ -101,7 +101,7 @@ public:
             logic.once_per_second();
         }
         // Less than 20 attempts
-        expect (n < 20, "backoff");
+        BEAST_EXPECT(n < 20);
     }
 
     // with activate
@@ -131,14 +131,14 @@ public:
             auto const list = logic.autoconnect();
             if (! list.empty())
             {
-                expect (list.size() == 1);
+                BEAST_EXPECT(list.size() == 1);
                 auto const slot = logic.new_outbound_slot(list.front());
-                if (! expect (logic.onConnected(slot,
+                if (! BEAST_EXPECT(logic.onConnected(slot,
                         beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
                 std::string s = ".";
-                if (! expect (logic.activate(slot, pk, false) ==
-                        PeerFinder::Result::success, "activate"))
+                if (! BEAST_EXPECT(logic.activate(slot, pk, false) ==
+                        PeerFinder::Result::success))
                     return;
                 logic.on_closed(slot);
                 ++n;
@@ -147,7 +147,7 @@ public:
             logic.once_per_second();
         }
         // No more often than once per minute
-        expect (n <= (seconds+59)/60, "backoff");
+        BEAST_EXPECT(n <= (seconds+59)/60);
     }
 
     void run ()

@@ -107,7 +107,7 @@ public:
         }
 
         source.invariants();
-        expect (confuseMap (source, 500), "ConfuseMap");
+        BEAST_EXPECT(confuseMap (source, 500));
         source.invariants();
 
         source.setImmutable ();
@@ -117,11 +117,11 @@ public:
             {
                 ++count;
             });
-        expect(count == items, "These must be equal");
+        BEAST_EXPECT(count == items);
 
         std::vector<SHAMapMissingNode> missingNodes;
         source.walkMap(missingNodes, 2048);
-        expect(missingNodes.empty(), "should be empty");
+        BEAST_EXPECT(missingNodes.empty());
 
         std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
         std::vector< Blob > gotNodes;
@@ -136,20 +136,20 @@ public:
             std::vector<SHAMapNodeID> gotNodeIDs;
             std::vector<Blob> gotNodes;
 
-            expect (source.getNodeFat (
+            BEAST_EXPECT(source.getNodeFat (
                 SHAMapNodeID (),
                 gotNodeIDs,
                 gotNodes,
                 rand_bool(),
-                rand_int(2)), "getNodeFat (1)");
+                rand_int(2)));
 
             unexpected (gotNodes.size () < 1, "NodeSize");
 
-            expect (destination.addRootNode (
+            BEAST_EXPECT(destination.addRootNode (
                 source.getHash(),
                 *gotNodes.begin (),
                 snfWIRE,
-                nullptr).isGood(), "addRootNode");
+                nullptr).isGood());
         }
 
         do
@@ -168,31 +168,31 @@ public:
 
             for (auto& it : nodesMissing)
             {
-                expect (source.getNodeFat (
+                BEAST_EXPECT(source.getNodeFat (
                     it.first,
                     gotNodeIDs,
                     gotNodes,
                     rand_bool(),
-                    rand_int(2)), "getNodeFat (2)");
+                    rand_int(2)));
             }
 
-            expect (gotNodeIDs.size () == gotNodes.size (), "Size mismatch");
-            expect (!gotNodeIDs.empty (), "Didn't get NodeID");
+            BEAST_EXPECT(gotNodeIDs.size () == gotNodes.size ());
+            BEAST_EXPECT(!gotNodeIDs.empty ());
 
             for (std::size_t i = 0; i < gotNodeIDs.size(); ++i)
             {
-                expect (
+                BEAST_EXPECT(
                     destination.addKnownNode (
                         gotNodeIDs[i],
                         gotNodes[i],
-                        nullptr).isGood (), "addKnownNode");
+                        nullptr).isGood ());
             }
         }
         while (true);
 
         destination.clearSynching ();
 
-        expect (source.deepCompare (destination), "Deep Compare");
+        BEAST_EXPECT(source.deepCompare (destination));
 
         std::cerr << "Checking destination invariants" << std::endl;
         destination.invariants();

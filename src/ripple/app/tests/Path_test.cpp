@@ -281,8 +281,8 @@ public:
                 RPC::doCommand(context, result);
                 g.signal();
             });
-        expect(g.wait_for(5s));
-        expect(! result.isMember(jss::error));
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(! result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
         app.getJobQueue().postCoro(jtCLIENT, "RPC-Client",
@@ -294,8 +294,8 @@ public:
                 RPC::doCommand(context, result);
                 g.signal();
             });
-        expect(g.wait_for(5s));
-        expect(result.isMember(jss::error));
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(result.isMember(jss::error));
 
         // Test RPC::Tuning::max_auto_src_cur source currencies.
         for (auto i = 0; i < (RPC::Tuning::max_auto_src_cur - 1); ++i)
@@ -308,8 +308,8 @@ public:
                 RPC::doCommand(context, result);
                 g.signal();
             });
-        expect(g.wait_for(5s));
-        expect(! result.isMember(jss::error));
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(! result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_auto_src_cur source currencies.
         env.trust(Account("alice")["AUD"](100), "bob");
@@ -321,8 +321,8 @@ public:
                 RPC::doCommand(context, result);
                 g.signal();
             });
-        expect(g.wait_for(5s));
-        expect(result.isMember(jss::error));
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(result.isMember(jss::error));
     }
 
     void
@@ -335,7 +335,7 @@ public:
 
         auto const result = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
-        expect(std::get<0>(result).empty());
+        BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
@@ -351,8 +351,8 @@ public:
         STAmount sa;
         std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
-        expect(st.empty());
-        expect(equal(sa, Account("alice")["USD"](5)));
+        BEAST_EXPECT(st.empty());
+        BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
@@ -392,8 +392,8 @@ public:
         STAmount sa;
         std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
-        expect(same(st, stpath("gateway")));
-        expect(equal(sa, Account("alice")["USD"](5)));
+        BEAST_EXPECT(same(st, stpath("gateway")));
+        BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
@@ -406,7 +406,7 @@ public:
 
         auto const result = find_paths(env,
                                        "alice", "bob", XRP(5));
-        expect(std::get<0>(result).empty());
+        BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
@@ -430,9 +430,9 @@ public:
             STAmount da;
             std::tie(st, sa, da) = find_paths(env,
                 "alice", "edward", Account("edward")["USD"](-1));
-            expect(same(st, stpath("dan"), stpath("bob", "carol")));
-            expect(equal(sa, Account("alice")["USD"](110)));
-            expect(equal(da, Account("edward")["USD"](110)));
+            BEAST_EXPECT(same(st, stpath("dan"), stpath("bob", "carol")));
+            BEAST_EXPECT(equal(sa, Account("alice")["USD"](110)));
+            BEAST_EXPECT(equal(da, Account("edward")["USD"](110)));
         }
 
         {
@@ -450,12 +450,12 @@ public:
             std::tie(st, sa, da) = find_paths(env,
                 "alice", "bob", Account("bob")["AUD"](-1),
                     boost::optional<STAmount>(XRP(100000000)));
-            expect(st.empty());
+            BEAST_EXPECT(st.empty());
             std::tie(st, sa, da) = find_paths(env,
                 "alice", "bob", Account("bob")["USD"](-1),
                     boost::optional<STAmount>(XRP(100000000)));
-            expect(sa == XRP(100));
-            expect(equal(da, Account("bob")["USD"](100)));
+            BEAST_EXPECT(sa == XRP(100));
+            BEAST_EXPECT(equal(da, Account("bob")["USD"](100)));
         }
     }
 
@@ -574,9 +574,9 @@ public:
         STAmount sa;
         std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "bob", Account("bob")["USD"](5));
-        expect(same(st, stpath("gateway"), stpath("gateway2"),
+        BEAST_EXPECT(same(st, stpath("gateway"), stpath("gateway2"),
             stpath("dan"), stpath("carol")));
-        expect(equal(sa, Account("alice")["USD"](5)));
+        BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
@@ -595,14 +595,14 @@ public:
 
         auto result = find_paths(env,
             "alice", "bob", Account("bob")["USD"](25));
-        expect(std::get<0>(result).empty());
+        BEAST_EXPECT(std::get<0>(result).empty());
 
         env(pay("alice", "bob", Account("alice")["USD"](25)),
             ter(tecPATH_DRY));
 
         result = find_paths(env,
             "alice", "bob", Account("alice")["USD"](25));
-        expect(std::get<0>(result).empty());
+        BEAST_EXPECT(std::get<0>(result).empty());
 
         env.require(balance("alice", Account("bob")["USD"](0)));
         env.require(balance("alice", Account("dan")["USD"](0)));
@@ -684,7 +684,7 @@ public:
 
         auto const result = find_paths(env,
             "alice", "bob", Account("bob")["USD"](25));
-        expect(std::get<0>(result).empty());
+        BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
@@ -701,8 +701,8 @@ public:
         STAmount sa;
         std::tie(st, sa, std::ignore) = find_paths(env,
             "alice", "carol", Account("carol")["USD"](5));
-        expect(same(st, stpath("bob")));
-        expect(equal(sa, Account("alice")["USD"](5)));
+        BEAST_EXPECT(same(st, stpath("bob")));
+        BEAST_EXPECT(equal(sa, Account("alice")["USD"](5)));
     }
 
     void
@@ -744,7 +744,7 @@ public:
         auto const jv_l = env.le(keylet::line(Account("bob").id(),
             Account("alice")["USD"].issue()))->getJson(0);
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            expect(*it == jv_l[it.memberName()]);
+            BEAST_EXPECT(*it == jv_l[it.memberName()]);
     }
 
     void
@@ -783,11 +783,11 @@ public:
         auto const jv_l = env.le(keylet::line(Account("bob").id(),
             Account("alice")["USD"].issue()))->getJson(0);
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            expect(*it == jv_l[it.memberName()]);
+            BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        expect(env.le(keylet::line(Account("bob").id(),
+        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(),
             Account("alice")["USD"].issue())) == nullptr);
     }
 
@@ -831,10 +831,10 @@ public:
         auto const jv_l = env.le(keylet::line(Account("alice").id(),
             Account("bob")["USD"].issue()))->getJson(0);
         for (auto it = jv.begin(); it != jv.end(); ++it)
-            expect(*it == jv_l[it.memberName()]);
+            BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        expect(env.le(keylet::line(Account("alice").id(),
+        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(),
             Account("bob")["USD"].issue())) == nullptr);
     }
 

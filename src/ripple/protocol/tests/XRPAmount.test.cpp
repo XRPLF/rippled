@@ -35,11 +35,11 @@ public:
             XRPAmount const x(i);
 
             if (i < 0)
-                expect (x.signum () < 0);
+                BEAST_EXPECT(x.signum () < 0);
             else if (i > 0)
-                expect (x.signum () > 0);
+                BEAST_EXPECT(x.signum () > 0);
             else
-                expect (x.signum () == 0);
+                BEAST_EXPECT(x.signum () == 0);
         }
     }
 
@@ -51,19 +51,19 @@ public:
         {
             XRPAmount const x (i);
 
-            expect ((i == 0) == (x == zero));
-            expect ((i != 0) == (x != zero));
-            expect ((i < 0) == (x < zero));
-            expect ((i > 0) == (x > zero));
-            expect ((i <= 0) == (x <= zero));
-            expect ((i >= 0) == (x >= zero));
+            BEAST_EXPECT((i == 0) == (x == zero));
+            BEAST_EXPECT((i != 0) == (x != zero));
+            BEAST_EXPECT((i < 0) == (x < zero));
+            BEAST_EXPECT((i > 0) == (x > zero));
+            BEAST_EXPECT((i <= 0) == (x <= zero));
+            BEAST_EXPECT((i >= 0) == (x >= zero));
 
-            expect ((0 == i) == (zero == x));
-            expect ((0 != i) == (zero != x));
-            expect ((0 < i) == (zero < x));
-            expect ((0 > i) == (zero > x));
-            expect ((0 <= i) == (zero <= x));
-            expect ((0 >= i) == (zero >= x));
+            BEAST_EXPECT((0 == i) == (zero == x));
+            BEAST_EXPECT((0 != i) == (zero != x));
+            BEAST_EXPECT((0 < i) == (zero < x));
+            BEAST_EXPECT((0 > i) == (zero > x));
+            BEAST_EXPECT((0 <= i) == (zero <= x));
+            BEAST_EXPECT((0 >= i) == (zero >= x));
         }
     }
 
@@ -79,12 +79,12 @@ public:
             {
                 XRPAmount const y (j);
 
-                expect ((i == j) == (x == y));
-                expect ((i != j) == (x != y));
-                expect ((i < j) == (x < y));
-                expect ((i > j) == (x > y));
-                expect ((i <= j) == (x <= y));
-                expect ((i >= j) == (x >= y));
+                BEAST_EXPECT((i == j) == (x == y));
+                BEAST_EXPECT((i != j) == (x != y));
+                BEAST_EXPECT((i < j) == (x < y));
+                BEAST_EXPECT((i > j) == (x > y));
+                BEAST_EXPECT((i <= j) == (x <= y));
+                BEAST_EXPECT((i >= j) == (x >= y));
             }
         }
     }
@@ -101,10 +101,10 @@ public:
             {
                 XRPAmount const y (j);
 
-                expect (XRPAmount(i + j) == (x + y));
-                expect (XRPAmount(i - j) == (x - y));
+                BEAST_EXPECT(XRPAmount(i + j) == (x + y));
+                BEAST_EXPECT(XRPAmount(i - j) == (x - y));
 
-                expect ((x + y) == (y + x));   // addition is commutative
+                BEAST_EXPECT((x + y) == (y + x));   // addition is commutative
             }
         }
     }
@@ -120,36 +120,36 @@ public:
             // multiply by a number that would overflow then divide by the same
             // number, and check we didn't lose any value
             XRPAmount big (maxUInt64);
-            expect (big == mulRatio (big, maxUInt32, maxUInt32, true));
+            BEAST_EXPECT(big == mulRatio (big, maxUInt32, maxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
-            expect (big == mulRatio (big, maxUInt32, maxUInt32, false));
+            BEAST_EXPECT(big == mulRatio (big, maxUInt32, maxUInt32, false));
         }
 
         {
             // Similar test as above, but for neative values
             XRPAmount big (maxUInt64);
-            expect (big == mulRatio (big, maxUInt32, maxUInt32, true));
+            BEAST_EXPECT(big == mulRatio (big, maxUInt32, maxUInt32, true));
             // rounding mode shouldn't matter as the result is exact
-            expect (big == mulRatio (big, maxUInt32, maxUInt32, false));
+            BEAST_EXPECT(big == mulRatio (big, maxUInt32, maxUInt32, false));
         }
 
         {
             // small amounts
             XRPAmount tiny (1);
             // Round up should give the smallest allowable number
-            expect (tiny == mulRatio (tiny, 1, maxUInt32, true));
+            BEAST_EXPECT(tiny == mulRatio (tiny, 1, maxUInt32, true));
             // rounding down should be zero
-            expect (beast::zero == mulRatio (tiny, 1, maxUInt32, false));
-            expect (beast::zero ==
+            BEAST_EXPECT(beast::zero == mulRatio (tiny, 1, maxUInt32, false));
+            BEAST_EXPECT(beast::zero ==
                 mulRatio (tiny, maxUInt32 - 1, maxUInt32, false));
 
             // tiny negative numbers
             XRPAmount tinyNeg (-1);
             // Round up should give zero
-            expect (zero == mulRatio (tinyNeg, 1, maxUInt32, true));
-            expect (zero == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, true));
+            BEAST_EXPECT(zero == mulRatio (tinyNeg, 1, maxUInt32, true));
+            BEAST_EXPECT(zero == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, true));
             // rounding down should be tiny
-            expect (tinyNeg == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, false));
+            BEAST_EXPECT(tinyNeg == mulRatio (tinyNeg, maxUInt32 - 1, maxUInt32, false));
         }
 
         {
@@ -158,21 +158,21 @@ public:
                 XRPAmount one (1);
                 auto const rup = mulRatio (one, maxUInt32 - 1, maxUInt32, true);
                 auto const rdown = mulRatio (one, maxUInt32 - 1, maxUInt32, false);
-                expect (rup.drops () - rdown.drops () == 1);
+                BEAST_EXPECT(rup.drops () - rdown.drops () == 1);
             }
 
             {
                 XRPAmount big (maxUInt64);
                 auto const rup = mulRatio (big, maxUInt32 - 1, maxUInt32, true);
                 auto const rdown = mulRatio (big, maxUInt32 - 1, maxUInt32, false);
-                expect (rup.drops () - rdown.drops () == 1);
+                BEAST_EXPECT(rup.drops () - rdown.drops () == 1);
             }
 
             {
                 XRPAmount negOne (-1);
                 auto const rup = mulRatio (negOne, maxUInt32 - 1, maxUInt32, true);
                 auto const rdown = mulRatio (negOne, maxUInt32 - 1, maxUInt32, false);
-                expect (rup.drops () - rdown.drops () == 1);
+                BEAST_EXPECT(rup.drops () - rdown.drops () == 1);
             }
         }
 

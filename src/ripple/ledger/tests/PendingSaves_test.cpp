@@ -29,24 +29,24 @@ struct PendingSaves_test : public beast::unit_test::suite
         PendingSaves ps;
 
         // Basic test
-        expect (!ps.pending (0));
-        expect (!ps.startWork(0));
-        expect (ps.shouldWork (0, true));
-        expect (ps.startWork (0));
-        expect (ps.pending (0));
-        expect (! ps.shouldWork (0, false));
+        BEAST_EXPECT(!ps.pending (0));
+        BEAST_EXPECT(!ps.startWork(0));
+        BEAST_EXPECT(ps.shouldWork (0, true));
+        BEAST_EXPECT(ps.startWork (0));
+        BEAST_EXPECT(ps.pending (0));
+        BEAST_EXPECT(! ps.shouldWork (0, false));
         ps.finishWork(0);
-        expect (!ps.pending (0));
+        BEAST_EXPECT(!ps.pending (0));
 
         // Test work stealing
-        expect (ps.shouldWork (0, false));
-        expect (ps.pending (0));
-        expect (ps.shouldWork (0, true));
-        expect (ps.pending (0));
-        expect (ps.startWork (0));
-        expect (!ps.startWork (0));
+        BEAST_EXPECT(ps.shouldWork (0, false));
+        BEAST_EXPECT(ps.pending (0));
+        BEAST_EXPECT(ps.shouldWork (0, true));
+        BEAST_EXPECT(ps.pending (0));
+        BEAST_EXPECT(ps.startWork (0));
+        BEAST_EXPECT(!ps.startWork (0));
         ps.finishWork(0);
-        expect (! ps.pending (0));
+        BEAST_EXPECT(! ps.pending (0));
     }
 
     void run() override

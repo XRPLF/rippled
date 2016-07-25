@@ -68,7 +68,7 @@ public:
             bool called = false;
             auto const p = std::make_shared<T>(called);
             std::bind(weak_fn(&T::fv, p))();
-            expect(called);
+            BEAST_EXPECT(called);
         }
 
         {
@@ -77,14 +77,14 @@ public:
             auto call = std::bind(weak_fn(&T::fv, p));
             p.reset();
             call();
-            expect(! called);
+            BEAST_EXPECT(! called);
         }
 
         {
             bool called = false;
             auto p = std::make_shared<T>(called);
             std::bind(weak_fn(&T::fi, p), 1)();
-            expect(called);
+            BEAST_EXPECT(called);
         }
 
         {
@@ -92,7 +92,7 @@ public:
             auto p = std::make_shared<T>(called);
             std::bind(weak_fn(&T::fi, p),
                 std::placeholders::_1)(1);
-            expect(called);
+            BEAST_EXPECT(called);
         }
 
         {
@@ -100,7 +100,7 @@ public:
             auto p = std::make_shared<T>(called);
             std::bind(weak_fn(&T::fis, p),
                 1, std::placeholders::_1)("foo");
-            expect(called);
+            BEAST_EXPECT(called);
         }
 
         {
@@ -116,15 +116,15 @@ public:
             }
             catch(std::bad_weak_ptr const&)
             {
-                expect(! called);
+                BEAST_EXPECT(! called);
             }
         }
 
         {
             bool called = false;
             auto p = std::make_shared<T>(called);
-            expect(std::bind(weak_fn(&T::fri, p))() == 2);
-            expect(called);
+            BEAST_EXPECT(std::bind(weak_fn(&T::fri, p))() == 2);
+            BEAST_EXPECT(called);
         }
 
         {
@@ -137,7 +137,7 @@ public:
                 }));
             p.reset();
             call();
-            expect(called);
+            BEAST_EXPECT(called);
         }
     }
 };

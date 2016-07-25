@@ -185,8 +185,8 @@ struct SusPay_test : public beast::unit_test::suite
             // set source and dest tags
             env(condpay(alice, "bob", XRP(1000), c.first, T(S{1})), stag(1), dtag(2));
             auto const sle = env.le(keylet::susPay(alice.id(), seq));
-            expect((*sle)[sfSourceTag] == 1);
-            expect((*sle)[sfDestinationTag] == 2);
+            BEAST_EXPECT((*sle)[sfSourceTag] == 1);
+            BEAST_EXPECT((*sle)[sfDestinationTag] == 2);
         }
     }
 
@@ -257,22 +257,22 @@ struct SusPay_test : public beast::unit_test::suite
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
             auto const seq = env.seq("alice");
-            expect((*env.le("alice"))[sfOwnerCount] == 0);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env(condpay("alice", "carol", XRP(1000), c.first, T(S{1})));
-            expect((*env.le("alice"))[sfOwnerCount] == 1);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("alice", XRP(4000) - drops(10)));
             env.require(balance("carol", XRP(5000)));
             env(cancel("bob", "alice", seq),                                ter(tecNO_PERMISSION));
-            expect((*env.le("alice"))[sfOwnerCount] == 1);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env(finish("bob", "alice", seq, c.first, c.first),              ter(temBAD_SIGNATURE));
-            expect((*env.le("alice"))[sfOwnerCount] == 1);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env(finish("bob", "alice", seq, c.first, c.second));
             // SLE removed on finish
-            expect(! env.le(keylet::susPay(Account("alice").id(), seq)));
-            expect((*env.le("alice"))[sfOwnerCount] == 0);
+            BEAST_EXPECT(! env.le(keylet::susPay(Account("alice").id(), seq)));
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env.require(balance("carol", XRP(6000)));
             env(cancel("bob", "alice", seq),                                ter(tecNO_TARGET));
-            expect((*env.le("alice"))[sfOwnerCount] == 0);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env(cancel("bob", "carol", 1),                                  ter(tecNO_TARGET));
             env.close();
         }
@@ -283,7 +283,7 @@ struct SusPay_test : public beast::unit_test::suite
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const c = cond("receipt");
             auto const seq = env.seq("alice");
-            expect((*env.le("alice"))[sfOwnerCount] == 0);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env(condpay("alice", "carol", XRP(1000), c.first, T(S{1})));
             env.close();
             env.require(balance("alice", XRP(4000) - drops(10)));
@@ -291,7 +291,7 @@ struct SusPay_test : public beast::unit_test::suite
             env(cancel("bob", "alice", seq));
             env.require(balance("alice", XRP(5000) - drops(10)));
             // SLE removed on cancel
-            expect(! env.le(keylet::susPay(Account("alice").id(), seq)));
+            BEAST_EXPECT(! env.le(keylet::susPay(Account("alice").id(), seq)));
         }
         {
             Env env(*this, features(featureSusPay));
@@ -302,14 +302,14 @@ struct SusPay_test : public beast::unit_test::suite
             auto const c = cond("receipt");
             auto const seq = env.seq("alice");
             env(condpay("alice", "carol", XRP(1000), c.first, T(S{1})));
-            expect((*env.le("alice"))[sfOwnerCount] == 1);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             // cancel fails before expiration
             env(cancel("bob", "alice", seq),                                ter(tecNO_PERMISSION));
-            expect((*env.le("alice"))[sfOwnerCount] == 1);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.close();
             // finish fails after expiration
             env(finish("bob", "alice", seq, c.first, c.second),             ter(tecNO_PERMISSION));
-            expect((*env.le("alice"))[sfOwnerCount] == 1);
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("carol", XRP(5000)));
         }
         {
@@ -351,7 +351,7 @@ struct SusPay_test : public beast::unit_test::suite
         auto const c = cond("receipt");
         env(condpay("alice", "carol", XRP(1000), c.first, T(1s)));
         auto const m = env.meta();
-        expect((*m)[sfTransactionResult] == tesSUCCESS);
+        BEAST_EXPECT((*m)[sfTransactionResult] == tesSUCCESS);
     }
 
     void testConsequences()
@@ -373,11 +373,11 @@ struct SusPay_test : public beast::unit_test::suite
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(1000));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(1000));
         }
 
         {
@@ -385,11 +385,11 @@ struct SusPay_test : public beast::unit_test::suite
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
         }
 
         {
@@ -398,11 +398,11 @@ struct SusPay_test : public beast::unit_test::suite
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
         }
     }
 

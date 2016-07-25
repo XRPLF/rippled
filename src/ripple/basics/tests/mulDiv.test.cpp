@@ -32,29 +32,29 @@ struct mulDiv_test : beast::unit_test::suite
         const std::uint64_t max32 = std::numeric_limits<std::uint32_t>::max();
 
         auto result = mulDiv(85, 20, 5);
-        expect(result.first && result.second == 340);
+        BEAST_EXPECT(result.first && result.second == 340);
         result = mulDiv(20, 85, 5);
-        expect(result.first && result.second == 340);
+        BEAST_EXPECT(result.first && result.second == 340);
 
         result = mulDiv(0, max - 1, max - 3);
-        expect(result.first && result.second == 0);
+        BEAST_EXPECT(result.first && result.second == 0);
         result = mulDiv(max - 1, 0, max - 3);
-        expect(result.first && result.second == 0);
+        BEAST_EXPECT(result.first && result.second == 0);
 
         result = mulDiv(max, 2, max / 2);
-        expect(result.first && result.second == 4);
+        BEAST_EXPECT(result.first && result.second == 4);
         result = mulDiv(max, 1000, max / 1000);
-        expect(result.first && result.second == 1000000);
+        BEAST_EXPECT(result.first && result.second == 1000000);
         result = mulDiv(max, 1000, max / 1001);
-        expect(result.first && result.second == 1001000);
+        BEAST_EXPECT(result.first && result.second == 1001000);
         // 2^64 / 5 = 3689348814741910323, but we lose some precision
         // starting in the 10th digit to avoid the overflow.
         result = mulDiv(max32 + 1, max32 + 1, 5);
-        expect(result.first && result.second == 3689348813882916864);
+        BEAST_EXPECT(result.first && result.second == 3689348813882916864);
 
         // Overflow
         result = mulDiv(max - 1, max - 2, 5);
-        expect(!result.first && result.second == max);
+        BEAST_EXPECT(!result.first && result.second == max);
 
         try
         {
@@ -63,7 +63,7 @@ struct mulDiv_test : beast::unit_test::suite
         }
         catch (std::overflow_error const& e)
         {
-            expect(e.what() == std::string("mulDiv"));
+            BEAST_EXPECT(e.what() == std::string("mulDiv"));
         }
     }
 };

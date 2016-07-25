@@ -66,7 +66,7 @@ public:
                 // Read it back in
                 Batch copy;
                 fetchCopyOfBatch (*backend, &copy, batch);
-                expect (areBatchesEqual (batch, copy), "Should be equal");
+                BEAST_EXPECT(areBatchesEqual (batch, copy));
             }
 
             {
@@ -77,7 +77,7 @@ public:
                     rng);
                 Batch copy;
                 fetchCopyOfBatch (*backend, &copy, batch);
-                expect (areBatchesEqual (batch, copy), "Should be equal");
+                BEAST_EXPECT(areBatchesEqual (batch, copy));
             }
         }
 
@@ -92,7 +92,7 @@ public:
             // Canonicalize the source and destination batches
             std::sort (batch.begin (), batch.end (), LessThan{});
             std::sort (copy.begin (), copy.end (), LessThan{});
-            expect (areBatchesEqual (batch, copy), "Should be equal");
+            BEAST_EXPECT(areBatchesEqual (batch, copy));
         }
     }
 

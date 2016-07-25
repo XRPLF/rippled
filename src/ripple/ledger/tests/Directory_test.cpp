@@ -34,8 +34,8 @@ struct Directory_test : public beast::unit_test::suite
         {
             auto dir = Dir(*env.current(),
                 keylet::ownerDir(Account("alice")));
-            expect(std::begin(dir) == std::end(dir));
-            expect(std::end(dir) == dir.find(uint256(), uint256()));
+            BEAST_EXPECT(std::begin(dir) == std::end(dir));
+            BEAST_EXPECT(std::end(dir) == dir.find(uint256(), uint256()));
         }
 
         env.fund(XRP(10000), "alice", "bob", gw);
@@ -48,7 +48,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             auto dir = Dir(*env.current(),
                 keylet::ownerDir(Account("bob")));
-            expect(std::begin(dir)->get()->
+            BEAST_EXPECT(std::begin(dir)->get()->
                 getFieldAmount(sfTakerPays) == USD(500));
         }
 
@@ -56,19 +56,19 @@ struct Directory_test : public beast::unit_test::suite
             keylet::ownerDir(Account("alice")));
         i = 0;
         for (auto const& e : dir)
-            expect(e->getFieldAmount(sfTakerPays) == USD(i += 10));
+            BEAST_EXPECT(e->getFieldAmount(sfTakerPays) == USD(i += 10));
 
-        expect(std::begin(dir) != std::end(dir));
-        expect(std::end(dir) ==
+        BEAST_EXPECT(std::begin(dir) != std::end(dir));
+        BEAST_EXPECT(std::end(dir) ==
             dir.find(std::begin(dir).page().key,
                 uint256()));
-        expect(std::begin(dir) ==
+        BEAST_EXPECT(std::begin(dir) ==
             dir.find(std::begin(dir).page().key,
                 std::begin(dir).index()));
         auto entry = std::next(std::begin(dir), 32);
         auto it = dir.find(entry.page().key, entry.index());
-        expect(it != std::end(dir));
-        expect((*it)->getFieldAmount(sfTakerPays) == USD(330));
+        BEAST_EXPECT(it != std::end(dir));
+        BEAST_EXPECT((*it)->getFieldAmount(sfTakerPays) == USD(330));
     }
 
     void run() override

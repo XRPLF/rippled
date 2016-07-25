@@ -38,36 +38,36 @@ public:
 
         env.close();
         env.close();
-        expect(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->info().seq == 5);
 
         {
             // arbitrary text is converted to 0.
             auto const result = env.rpc("ledger_request", "arbitrary_text");
-            expect(RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                 "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "-1");
-            expect(RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                 "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "0");
-            expect(RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                     "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "1");
-            expect(!RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(!RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::ledger_index] == 1 &&
                     result[jss::result].isMember(jss::ledger));
-            expect(result[jss::result][jss::ledger].
+            BEAST_EXPECT(result[jss::result][jss::ledger].
                 isMember(jss::ledger_hash) &&
                     result[jss::result][jss::ledger]
                         [jss::ledger_hash].isString());
@@ -75,10 +75,10 @@ public:
 
         {
             auto const result = env.rpc("ledger_request", "2");
-            expect(!RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(!RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::ledger_index] == 2 &&
                     result[jss::result].isMember(jss::ledger));
-            expect(result[jss::result][jss::ledger].
+            BEAST_EXPECT(result[jss::result][jss::ledger].
                 isMember(jss::ledger_hash) &&
                     result[jss::result][jss::ledger]
                         [jss::ledger_hash].isString());
@@ -86,10 +86,10 @@ public:
 
         {
             auto const result = env.rpc("ledger_request", "3");
-            expect(!RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(!RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::ledger_index] == 3 &&
                     result[jss::result].isMember(jss::ledger));
-            expect(result[jss::result][jss::ledger].
+            BEAST_EXPECT(result[jss::result][jss::ledger].
                 isMember(jss::ledger_hash) &&
                     result[jss::result][jss::ledger]
                         [jss::ledger_hash].isString());
@@ -100,10 +100,10 @@ public:
             {
                 // Intentionally shadow `result` here to avoid reuing it.
                 auto const result = env.rpc("ledger_request", ledgerHash);
-                expect(!RPC::contains_error(result[jss::result]) &&
+                BEAST_EXPECT(!RPC::contains_error(result[jss::result]) &&
                     result[jss::result][jss::ledger_index] == 3 &&
                         result[jss::result].isMember(jss::ledger));
-                expect(result[jss::result][jss::ledger].
+                BEAST_EXPECT(result[jss::result][jss::ledger].
                     isMember(jss::ledger_hash) &&
                         result[jss::result][jss::ledger]
                             [jss::ledger_hash] == ledgerHash);
@@ -115,7 +115,7 @@ public:
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
-            expect(RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                     "Invalid field 'ledger_hash'.");
         }
@@ -125,20 +125,20 @@ public:
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
-            expect(!RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(!RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::have_header] == false);
         }
 
         {
             auto const result = env.rpc("ledger_request", "4");
-            expect(RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                     "Ledger index too large");
         }
 
         {
             auto const result = env.rpc("ledger_request", "5");
-            expect(RPC::contains_error(result[jss::result]) &&
+            BEAST_EXPECT(RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
                     "Ledger index too large");
         }

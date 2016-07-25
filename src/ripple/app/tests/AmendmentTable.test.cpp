@@ -139,20 +139,20 @@ public:
 
         for (auto const& a : m_set1)
         {
-            expect (table->isSupported (amendmentId (a)));
-            expect (!table->isEnabled (amendmentId (a)));
+            BEAST_EXPECT(table->isSupported (amendmentId (a)));
+            BEAST_EXPECT(!table->isEnabled (amendmentId (a)));
         }
 
         for (auto const& a : m_set2)
         {
-            expect (table->isSupported (amendmentId (a)));
-            expect (table->isEnabled (amendmentId (a)));
+            BEAST_EXPECT(table->isSupported (amendmentId (a)));
+            BEAST_EXPECT(table->isEnabled (amendmentId (a)));
         }
 
         for (auto const& a : m_set3)
         {
-            expect (!table->isSupported (amendmentId (a)));
-            expect (!table->isEnabled (amendmentId (a)));
+            BEAST_EXPECT(!table->isSupported (amendmentId (a)));
+            BEAST_EXPECT(!table->isEnabled (amendmentId (a)));
         }
     }
 
@@ -163,14 +163,14 @@ public:
         auto table = makeTable (1);
 
         for (auto const& a : m_set1)
-            expect (table->find (a) == amendmentId (a));
+            BEAST_EXPECT(table->find (a) == amendmentId (a));
         for (auto const& a : m_set2)
-            expect (table->find (a) == amendmentId (a));
+            BEAST_EXPECT(table->find (a) == amendmentId (a));
 
         for (auto const& a : m_set3)
-            expect (!table->find (a));
+            BEAST_EXPECT(!table->find (a));
         for (auto const& a : m_set4)
-            expect (!table->find (a));
+            BEAST_EXPECT(!table->find (a));
     }
 
     void testBadConfig ()
@@ -316,14 +316,14 @@ public:
             table->enable (a);
 
         for (auto const& a : enabled)
-            expect (table->isEnabled (a));
+            BEAST_EXPECT(table->isEnabled (a));
 
         // Disable the subset and verify
         for (auto const& a : enabled)
             table->disable (a);
 
         for (auto const& a : enabled)
-            expect (!table->isEnabled (a));
+            BEAST_EXPECT(!table->isEnabled (a));
 
         // Get the state after, excluding the items we changed:
         auto const post_state = getState (table.get(), enabled);
@@ -333,8 +333,8 @@ public:
             pre_state.begin(), pre_state.end(),
             post_state.begin(), post_state.end());
 
-        expect (ret.first == pre_state.end());
-        expect (ret.second == post_state.end());
+        BEAST_EXPECT(ret.first == pre_state.end());
+        BEAST_EXPECT(ret.second == post_state.end());
     }
 
     std::vector <PublicKey> makeValidators (int num)
@@ -468,9 +468,9 @@ public:
             ourVotes,
             enabled,
             majority);
-        expect (ourVotes.empty(), "Voted with nothing to vote on");
-        expect (enabled.empty(), "Enabled amendment for no reason");
-        expect (majority.empty(), "Majority found for no reason");
+        BEAST_EXPECT(ourVotes.empty());
+        BEAST_EXPECT(enabled.empty());
+        BEAST_EXPECT(majority.empty());
 
         votes.emplace_back (testAmendment, 256);
 
@@ -480,8 +480,8 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (ourVotes.empty(), "Voted on unknown because others did");
-        expect (enabled.empty(), "Enabled amendment for no reason");
+        BEAST_EXPECT(ourVotes.empty());
+        BEAST_EXPECT(enabled.empty());
 
         majority[testAmendment] = weekTime(weeks{1});
 
@@ -493,8 +493,8 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (ourVotes.empty(), "Voted on unknown because it had majority");
-        expect (enabled.empty(), "Pseudo-transaction from nowhere");
+        BEAST_EXPECT(ourVotes.empty());
+        BEAST_EXPECT(enabled.empty());
     }
 
     // No vote on vetoed amendment
@@ -522,9 +522,9 @@ public:
             ourVotes,
             enabled,
             majority);
-        expect (ourVotes.empty(), "Voted with nothing to vote on");
-        expect (enabled.empty(), "Enabled amendment for no reason");
-        expect (majority.empty(), "Majority found for no reason");
+        BEAST_EXPECT(ourVotes.empty());
+        BEAST_EXPECT(enabled.empty());
+        BEAST_EXPECT(majority.empty());
 
         votes.emplace_back (testAmendment, 256);
 
@@ -534,8 +534,8 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (ourVotes.empty(), "Voted on vetoed amendment because others did");
-        expect (enabled.empty(), "Enabled amendment for no reason");
+        BEAST_EXPECT(ourVotes.empty());
+        BEAST_EXPECT(enabled.empty());
 
         majority[testAmendment] = weekTime(weeks{1});
 
@@ -545,8 +545,8 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (ourVotes.empty(), "Voted on vetoed because it had majority");
-        expect (enabled.empty(), "Enabled amendment for no reason");
+        BEAST_EXPECT(ourVotes.empty());
+        BEAST_EXPECT(enabled.empty());
     }
 
     // Vote on and enable known, not-enabled amendment
@@ -573,11 +573,10 @@ public:
             ourVotes,
             enabled,
             majority);
-        expect (ourVotes.size() == m_set1.size(), "Did not vote");
-        expect (enabled.empty(), "Enabled amendment for no reason");
+        BEAST_EXPECT(ourVotes.size() == m_set1.size());
+        BEAST_EXPECT(enabled.empty());
         for (auto const& i : m_set1)
-            expect(majority.find(amendmentId (i)) == majority.end(),
-                "majority detected for no reason");
+            BEAST_EXPECT(majority.find(amendmentId (i)) == majority.end());
 
         // Now, everyone votes for this feature
         for (auto const& i : m_set1)
@@ -590,12 +589,11 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (ourVotes.size() == m_set1.size(), "Did not vote");
-        expect (enabled.empty(), "Enabled amendment for no reason");
+        BEAST_EXPECT(ourVotes.size() == m_set1.size());
+        BEAST_EXPECT(enabled.empty());
 
         for (auto const& i : m_set1)
-            expect (majority[amendmentId (i)] == weekTime(weeks{2}),
-                "majority not detected");
+            BEAST_EXPECT(majority[amendmentId (i)] == weekTime(weeks{2}));
 
         // Week 5: We should enable the amendment
         doRound (*table, weeks{5},
@@ -604,7 +602,7 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (enabled.size() == m_set1.size(), "Did not enable");
+        BEAST_EXPECT(enabled.size() == m_set1.size());
 
         // Week 6: We should remove it from our votes and from having a majority
         doRound (*table, weeks{6},
@@ -613,11 +611,10 @@ public:
                 ourVotes,
                 enabled,
                 majority);
-        expect (enabled.size() == m_set1.size(), "Disabled");
-        expect (ourVotes.empty(), "Voted after enabling");
+        BEAST_EXPECT(enabled.size() == m_set1.size());
+        BEAST_EXPECT(ourVotes.empty());
         for (auto const& i : m_set1)
-            expect(majority.find(amendmentId (i)) == majority.end(),
-                "majority not removed");
+            BEAST_EXPECT(majority.find(amendmentId (i)) == majority.end());
     }
 
     // Detect majority at 80%, enable later
@@ -651,30 +648,30 @@ public:
             if (i < 13)
             {
                 // We are voting yes, not enabled, no majority
-                expect (!ourVotes.empty(), "We aren't voting");
-                expect (enabled.empty(), "Enabled too early");
-                expect (majority.empty(), "Majority too early");
+                BEAST_EXPECT(!ourVotes.empty());
+                BEAST_EXPECT(enabled.empty());
+                BEAST_EXPECT(majority.empty());
             }
             else if (i < 15)
             {
                 // We have a majority, not enabled, keep voting
-                expect (!ourVotes.empty(), "We stopped voting");
-                expect (!majority.empty(), "Failed to detect majority");
-                expect (enabled.empty(), "Enabled too early");
+                BEAST_EXPECT(!ourVotes.empty());
+                BEAST_EXPECT(!majority.empty());
+                BEAST_EXPECT(enabled.empty());
             }
             else if (i == 15)
             {
                 // enable, keep voting, remove from majority
-                expect (!ourVotes.empty(), "We stopped voting");
-                expect (majority.empty(), "Failed to remove from majority");
-                expect (!enabled.empty(), "Did not enable");
+                BEAST_EXPECT(!ourVotes.empty());
+                BEAST_EXPECT(majority.empty());
+                BEAST_EXPECT(!enabled.empty());
             }
             else
             {
                 // Done, we should be enabled and not voting
-                expect (ourVotes.empty(), "We did not stop voting");
-                expect (majority.empty(), "Failed to revove from majority");
-                expect (!enabled.empty(), "Did not enable");
+                BEAST_EXPECT(ourVotes.empty());
+                BEAST_EXPECT(majority.empty());
+                BEAST_EXPECT(!enabled.empty());
             }
         }
     }
@@ -706,8 +703,8 @@ public:
             doRound (*table, weeks{1},
                 validators, votes, ourVotes, enabled, majority);
 
-            expect (enabled.empty(), "Enabled for no reason");
-            expect (!majority.empty(), "Failed to detect majority");
+            BEAST_EXPECT(enabled.empty());
+            BEAST_EXPECT(!majority.empty());
         }
 
         for (int i = 1; i < 16; ++i)
@@ -724,16 +721,16 @@ public:
             if (i < 8)
             {
                 // We are voting yes, not enabled, majority
-                expect (!ourVotes.empty(), "We aren't voting");
-                expect (enabled.empty(), "Enabled for no reason");
-                expect (!majority.empty(), "Lost majority too early");
+                BEAST_EXPECT(!ourVotes.empty());
+                BEAST_EXPECT(enabled.empty());
+                BEAST_EXPECT(!majority.empty());
             }
             else
             {
                 // No majority, not enabled, keep voting
-                expect (!ourVotes.empty(), "We stopped voting");
-                expect (majority.empty(), "Failed to detect loss of majority");
-                expect (enabled.empty(), "Enabled errneously");
+                BEAST_EXPECT(!ourVotes.empty());
+                BEAST_EXPECT(majority.empty());
+                BEAST_EXPECT(enabled.empty());
             }
         }
     }
@@ -742,7 +739,7 @@ public:
     testSupportedAmendments ()
     {
         for (auto const& amend : detail::supportedAmendments ())
-            expect (amend.substr (0, 64) ==
+            BEAST_EXPECT(amend.substr (0, 64) ==
                 to_string (feature (amend.substr (65))));
     }
 

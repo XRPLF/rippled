@@ -267,10 +267,10 @@ public:
         TestCallback cb (threadCount);
 
         Workers w (cb, "Test", 0);
-        expect (w.getNumberOfThreads () == 0);
+        BEAST_EXPECT(w.getNumberOfThreads () == 0);
 
         w.setNumberOfThreads (threadCount);
-        expect (w.getNumberOfThreads () == threadCount);
+        BEAST_EXPECT(w.getNumberOfThreads () == threadCount);
 
         for (int i = 0; i < threadCount; ++i)
             w.addTask ();
@@ -278,12 +278,12 @@ public:
         // 10 seconds should be enough to finish on any system
         //
         bool signaled = cb.finished.wait (10 * 1000);
-        expect (signaled, "timed out");
+        BEAST_EXPECT(signaled);
 
         w.pauseAllThreadsAndWait ();
 
         // We had better finished all our work!
-        expect (cb.count.load () == 0, "Did not complete task!");
+        BEAST_EXPECT(cb.count.load () == 0);
     }
 
     void run ()
