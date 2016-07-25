@@ -19,13 +19,13 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -107,8 +107,8 @@ XRPAmount
 calculateFee(Application& app, std::uint64_t const baseFee,
     Fees const& fees, ApplyFlags flags)
 {
-    return app.getFeeTrack().scaleFeeLoad(
-        baseFee, fees.base, fees.units, flags & tapUNLIMITED);
+    return scaleFeeLoad(baseFee, app.getFeeTrack(),
+        fees, flags & tapUNLIMITED);
 }
 
 //------------------------------------------------------------------------------

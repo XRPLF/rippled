@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/basics/TestSuite.h>

@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/contract.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
@@ -1843,7 +1843,7 @@ public:
     {
         test::jtx::Env env(*this);
         auto ledger = env.current();
-        LoadFeeTrack const& feeTrack = env.app().getFeeTrack();
+        auto const& feeTrack = env.app().getFeeTrack();
 
         {
             Json::Value req;

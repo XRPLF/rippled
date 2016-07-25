@@ -24,7 +24,6 @@
 #include <ripple/ledger/OpenView.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/STTx.h>
 #include <boost/intrusive/set.hpp>

@@ -19,8 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/paths/RippleState.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -44,8 +44,8 @@ static void fillTransaction (
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops
     // scaled to represent the current fee load.
-    txArray["Fee"] = Json::UInt (context.app.getFeeTrack().scaleFeeLoad(
-        fees.units, fees.base, fees.units, false));
+    txArray["Fee"] = Json::UInt (scaleFeeLoad(fees.units,
+        context.app.getFeeTrack(), fees, false));
 }
 
 // {

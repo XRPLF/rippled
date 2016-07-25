@@ -20,6 +20,7 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>

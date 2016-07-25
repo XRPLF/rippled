@@ -22,7 +22,6 @@
 #include <ripple/core/impl/Config.cpp>
 #include <ripple/core/impl/DatabaseCon.cpp>
 #include <ripple/core/impl/DeadlineTimer.cpp>
-#include <ripple/core/impl/LoadFeeTrack.cpp>
 #include <ripple/core/impl/LoadEvent.cpp>
 #include <ripple/core/impl/LoadMonitor.cpp>
 #include <ripple/core/impl/Job.cpp>
@@ -35,6 +34,5 @@
 
 #include <ripple/core/tests/Config.test.cpp>
 #include <ripple/core/tests/Coroutine.test.cpp>
-#include <ripple/core/tests/LoadFeeTrack.test.cpp>
 #include <ripple/core/tests/Stoppable.test.cpp>
 

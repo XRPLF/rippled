@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/core/ThreadEntry.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/beast/core/Thread.h>

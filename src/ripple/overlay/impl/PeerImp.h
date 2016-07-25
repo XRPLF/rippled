@@ -29,7 +29,6 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/Job.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/LoadEvent.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>

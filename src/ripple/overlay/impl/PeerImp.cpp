@@ -26,6 +26,7 @@
 #include <ripple/app/ledger/LedgerTiming.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/Validations.h>

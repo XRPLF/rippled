@@ -18,28 +18,79 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
+#include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 
+bool
+LoadFeeTrack::raiseLocalFee ()
+{
+    std::lock_guard <std::mutex> sl (lock_);
+
+    if (++raiseCount_ < 2)
+        return false;
+
+    std::uint32_t origFee = localTxnLoadFee_;
+
+    // make sure this fee takes effect
+    if (localTxnLoadFee_ < remoteTxnLoadFee_)
+        localTxnLoadFee_ = remoteTxnLoadFee_;
+
+    // Increase slowly
+    localTxnLoadFee_ += (localTxnLoadFee_ / lftFeeIncFraction);
+
+    if (localTxnLoadFee_ > lftFeeMax)
+        localTxnLoadFee_ = lftFeeMax;
+
+    if (origFee == localTxnLoadFee_)
+        return false;
+
+    JLOG(j_.debug()) << "Local load fee raised from " <<
+        origFee << " to " << localTxnLoadFee_;
+    return true;
+}
+
+bool
+LoadFeeTrack::lowerLocalFee ()
+{
+    std::lock_guard <std::mutex> sl (lock_);
+    std::uint32_t origFee = localTxnLoadFee_;
+    raiseCount_ = 0;
+
+    // Reduce slowly
+    localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction );
+
+    if (localTxnLoadFee_ < lftNormalFee)
+        localTxnLoadFee_ = lftNormalFee;
+
+    if (origFee == localTxnLoadFee_)
+        return false;
+
+    JLOG(j_.debug()) << "Local load fee lowered from " <<
+        origFee << " to " << localTxnLoadFee_;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
 // Scale from fee units to millionths of a ripple
 std::uint64_t
-LoadFeeTrack::scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
-    std::uint32_t referenceFeeUnits) const
+scaleFeeBase(std::uint64_t fee, Fees const& fees)
 {
-    return mulDivThrow (fee, baseFee, referenceFeeUnits);
+    return mulDivThrow (fee, fees.base, fees.units);
 }
 
 // Scale using load as well as base rate
 std::uint64_t
-LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
-    std::uint32_t referenceFeeUnits, bool bUnlimited) const
+scaleFeeLoad(std::uint64_t fee, LoadFeeTrack const& feeTrack,
+    Fees const& fees, bool bUnlimited)
 {
     if (fee == 0)
         return fee;
@@ -47,25 +98,24 @@ LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
     std::uint32_t uRemFee;
     {
         // Collect the fee rates
-        std::lock_guard<std::mutex> sl(mLock);
-        feeFactor = std::max(mLocalTxnLoadFee, mRemoteTxnLoadFee);
-        uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
+        std::tie(feeFactor, uRemFee) = feeTrack.getScalingFactors();
     }
     // Let privileged users pay the normal fee until
     //   the local load exceeds four times the remote.
     if (bUnlimited && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
         feeFactor = uRemFee;
 
+    auto baseFee = fees.base;
     // Compute:
-    // fee = fee * baseFee * feeFactor / (referenceFeeUnits * lftNormalFee);
+    // fee = fee * baseFee * feeFactor / (fees.units * lftNormalFee);
     // without overflow, and as accurately as possible
 
     // The denominator of the fraction we're trying to compute.
-    // referenceFeeUnits and lftNormalFee are both 32 bit,
+    // fees.units and lftNormalFee are both 32 bit,
     //  so the multiplication can't overflow.
-    auto den = static_cast<std::uint64_t>(referenceFeeUnits)
-             * static_cast<std::uint64_t>(lftNormalFee);
-    // Reduce fee * baseFee * feeFactor / (referenceFeeUnits * lftNormalFee)
+    auto den = static_cast<std::uint64_t>(fees.units)
+        * static_cast<std::uint64_t>(feeTrack.getLoadBase());
+    // Reduce fee * baseFee * feeFactor / (fees.units * lftNormalFee)
     // to lowest terms.
     lowestTerms(fee, den);
     lowestTerms(baseFee, den);
@@ -100,55 +150,6 @@ LoadFeeTrack::scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
         fee /= den;
     }
     return fee;
-}
-
-bool
-LoadFeeTrack::raiseLocalFee ()
-{
-    ScopedLockType sl (mLock);
-
-    if (++raiseCount < 2)
-        return false;
-
-    std::uint32_t origFee = mLocalTxnLoadFee;
-
-    // make sure this fee takes effect
-    if (mLocalTxnLoadFee < mRemoteTxnLoadFee)
-        mLocalTxnLoadFee = mRemoteTxnLoadFee;
-
-    // Increase slowly
-    mLocalTxnLoadFee += (mLocalTxnLoadFee / lftFeeIncFraction);
-
-    if (mLocalTxnLoadFee > lftFeeMax)
-        mLocalTxnLoadFee = lftFeeMax;
-
-    if (origFee == mLocalTxnLoadFee)
-        return false;
-
-    JLOG(m_journal.debug()) << "Local load fee raised from " <<
-        origFee << " to " << mLocalTxnLoadFee;
-    return true;
-}
-
-bool
-LoadFeeTrack::lowerLocalFee ()
-{
-    ScopedLockType sl (mLock);
-    std::uint32_t origFee = mLocalTxnLoadFee;
-    raiseCount = 0;
-
-    // Reduce slowly
-    mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction );
-
-    if (mLocalTxnLoadFee < lftNormalFee)
-        mLocalTxnLoadFee = lftNormalFee;
-
-    if (origFee == mLocalTxnLoadFee)
-        return false;
-
-    JLOG(m_journal.debug()) << "Local load fee lowered from " <<
-        origFee << " to " << mLocalTxnLoadFee;
-    return true;
 }
 
 } // ripple

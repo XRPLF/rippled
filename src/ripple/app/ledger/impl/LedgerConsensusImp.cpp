@@ -31,6 +31,7 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
@@ -40,7 +41,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/json/to_string.h>
 #include <ripple/overlay/Overlay.h>
@@ -1765,11 +1765,12 @@ void LedgerConsensusImp::startRound (
 
 void LedgerConsensusImp::addLoad(STValidation::ref val)
 {
+    auto const& feeTrack = app_.getFeeTrack();
     std::uint32_t fee = std::max(
-        app_.getFeeTrack().getLocalFee(),
-        app_.getFeeTrack().getClusterFee());
+        feeTrack.getLocalFee(),
+        feeTrack.getClusterFee());
 
-    if (fee > app_.getFeeTrack().getLoadBase())
+    if (fee > feeTrack.getLoadBase())
         val->setFieldU32(sfLoadFee, fee);
 }
 

@@ -36,6 +36,7 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
@@ -53,7 +54,6 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DeadlineTimer.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/crypto/RFC1751.h>
@@ -1581,13 +1581,14 @@ void NetworkOPsImp::pubServer ()
     if (!mSubServer.empty ())
     {
         Json::Value jvObj (Json::objectValue);
+        auto const& feeTrack = app_.getFeeTrack();
 
         jvObj [jss::type]          = "serverStatus";
         jvObj [jss::server_status] = strOperatingMode ();
         jvObj [jss::load_base]     =
-                (mLastLoadBase = app_.getFeeTrack ().getLoadBase ());
+                (mLastLoadBase = feeTrack.getLoadBase ());
         jvObj [jss::load_factor]   =
-                (mLastLoadFactor = app_.getFeeTrack ().getLoadFactor ());
+                (mLastLoadFactor = feeTrack.getLoadFactor ());
 
         for (auto i = mSubServer.begin (); i != mSubServer.end (); )
         {
@@ -2358,8 +2359,9 @@ void NetworkOPsImp::pubLedger (
 
 void NetworkOPsImp::reportFeeChange ()
 {
-    if ((app_.getFeeTrack ().getLoadBase () == mLastLoadBase) &&
-            (app_.getFeeTrack ().getLoadFactor () == mLastLoadFactor))
+    auto const& feeTrack = app_.getFeeTrack();
+    if ((feeTrack.getLoadBase () == mLastLoadBase) &&
+            (feeTrack.getLoadFactor () == mLastLoadFactor))
         return;
 
     m_job_queue.addJob (
@@ -2724,10 +2726,11 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
         uRandom.size(),
         crypto_prng());
 
+    auto const& feeTrack = app_.getFeeTrack();
     jvResult[jss::random]          = to_string (uRandom);
     jvResult[jss::server_status]   = strOperatingMode ();
-    jvResult[jss::load_base]       = app_.getFeeTrack ().getLoadBase ();
-    jvResult[jss::load_factor]     = app_.getFeeTrack ().getLoadFactor ();
+    jvResult[jss::load_base]       = feeTrack.getLoadBase ();
+    jvResult[jss::load_factor]     = feeTrack.getLoadFactor ();
     jvResult [jss::hostid]         = getHostId (admin);
     jvResult[jss::pubkey_node]     = toBase58 (
         TokenType::TOKEN_NODE_PUBLIC,

@@ -29,14 +29,13 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/DatabaseCon.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>

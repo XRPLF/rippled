@@ -16,8 +16,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
@@ -47,8 +47,9 @@ public:
 
         {
             // Raise fee to cause an update
+            auto& feeTrack = env.app().getFeeTrack();
             for(int i = 0; i < 5; ++i)
-                env.app().getFeeTrack().raiseLocalFee();
+                feeTrack.raiseLocalFee();
             env.app().getOPs().reportFeeChange();
 
             // Check stream update
@@ -67,8 +68,9 @@ public:
 
         {
             // Raise fee to cause an update
+            auto& feeTrack = env.app().getFeeTrack();
             for (int i = 0; i < 5; ++i)
-                env.app().getFeeTrack().raiseLocalFee();
+                feeTrack.raiseLocalFee();
             env.app().getOPs().reportFeeChange();
 
             // Check stream update

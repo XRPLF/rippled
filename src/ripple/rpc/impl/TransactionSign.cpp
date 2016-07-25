@@ -22,13 +22,13 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/app/tx/apply.h>              // Validity::Valid
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/Sign.h>
@@ -690,8 +690,8 @@ Json::Value checkFee (
 
     // Administrative and identified endpoints are exempt from local fees.
     std::uint64_t const loadFee =
-        feeTrack.scaleFeeLoad (feeDefault,
-            ledger->fees().base, ledger->fees().units, isUnlimited (role));
+        scaleFeeLoad (feeDefault, feeTrack,
+            ledger->fees(), isUnlimited (role));
     std::uint64_t fee = loadFee;
     {
         auto const assumeTx = request.isMember("x_assume_tx") &&
@@ -711,9 +711,8 @@ Json::Value checkFee (
         }
     }
 
-    auto const limit = mulDivThrow(feeTrack.scaleFeeBase (
-        feeDefault, ledger->fees().base, ledger->fees().units),
-        mult, div);
+    auto const limit = mulDivThrow(scaleFeeBase (
+        feeDefault, ledger->fees()), mult, div);
 
     if (fee > limit && fee != loadFee &&
         request.isMember("x_queue_okay") &&

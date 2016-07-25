@@ -21,6 +21,7 @@
 #include <ripple/rpc/RipplePathFind.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/PathRequest.h>
@@ -28,7 +29,6 @@
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/ledger/PaymentSandbox.h>

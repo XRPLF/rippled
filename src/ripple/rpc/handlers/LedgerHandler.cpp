@@ -21,7 +21,7 @@
 #include <ripple/rpc/handlers/LedgerHandler.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/json/Object.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>

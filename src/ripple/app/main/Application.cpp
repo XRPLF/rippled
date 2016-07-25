@@ -38,6 +38,7 @@
 #include <ripple/app/main/NodeStoreScheduler.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/misc/TxQ.h>
@@ -55,7 +56,6 @@
 #include <ripple/json/to_string.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DeadlineTimer.h>
-#include <ripple/core/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/nodestore/Database.h>
