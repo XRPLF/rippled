@@ -66,10 +66,7 @@ public:
             bool parsedOK (parseJSONString(faulty, faultyJson));
             unexpected(!parsedOK, "failed to parse");
             STParsedJSONObject parsed ("test", faultyJson);
-            expect (! parsed.object,
-                "It should have thrown. "
-                  "Immediate children of STArray encoded as json must "
-                  "have one key only.");
+            BEAST_EXPECT(! parsed.object);
         }
         catch(std::runtime_error& e)
         {
@@ -91,7 +88,7 @@ public:
             STParsedJSONObject parsed ("test", jsonObject);
             std::string const& serialized (
                 to_string (parsed.object->getJson(0)));
-            expect (serialized == json, serialized + " should equal: " + json);
+            BEAST_EXPECT(serialized == json);
         }
         else
         {
@@ -204,7 +201,7 @@ public:
             auto const& uints1 = object1.getFieldV256(sfTestV256);
             auto const& uints3 = object3.getFieldV256(sfTestV256);
 
-            expect(uints1 == uints3, "STObject vector mismatch");
+            BEAST_EXPECT(uints1 == uints3);
         }
     }
 
@@ -231,18 +228,18 @@ public:
                 return st;
             }();
 
-            expect(st[sf1] == 1);
-            expect(st[sf2] == 2);
+            BEAST_EXPECT(st[sf1] == 1);
+            BEAST_EXPECT(st[sf2] == 2);
             except<missing_field_error>([&]()
                 { st[sf3]; });
-            expect(*st[~sf1] == 1);
-            expect(*st[~sf2] == 2);
-            expect(st[~sf3] == boost::none);
-            expect(!! st[~sf1]);
-            expect(!! st[~sf2]);
-            expect(! st[~sf3]);
-            expect(st[sf1] != st[sf2]);
-            expect(st[~sf1] != st[~sf2]);
+            BEAST_EXPECT(*st[~sf1] == 1);
+            BEAST_EXPECT(*st[~sf2] == 2);
+            BEAST_EXPECT(st[~sf3] == boost::none);
+            BEAST_EXPECT(!! st[~sf1]);
+            BEAST_EXPECT(!! st[~sf2]);
+            BEAST_EXPECT(! st[~sf3]);
+            BEAST_EXPECT(st[sf1] != st[sf2]);
+            BEAST_EXPECT(st[~sf1] != st[~sf2]);
         }
 
         // read templated object
@@ -267,15 +264,15 @@ public:
                 return st;
             }();
 
-            expect(st[sf1] == 1);
-            expect(st[sf2] == 2);
-            expect(st[sf3] == 0);
-            expect(*st[~sf1] == 1);
-            expect(*st[~sf2] == 2);
-            expect(*st[~sf3] == 0);
-            expect(!! st[~sf1]);
-            expect(!! st[~sf2]);
-            expect(!! st[~sf3]);
+            BEAST_EXPECT(st[sf1] == 1);
+            BEAST_EXPECT(st[sf2] == 2);
+            BEAST_EXPECT(st[sf3] == 0);
+            BEAST_EXPECT(*st[~sf1] == 1);
+            BEAST_EXPECT(*st[~sf2] == 2);
+            BEAST_EXPECT(*st[~sf3] == 0);
+            BEAST_EXPECT(!! st[~sf1]);
+            BEAST_EXPECT(!! st[~sf2]);
+            BEAST_EXPECT(!! st[~sf3]);
         }
 
         // write free object
@@ -284,92 +281,92 @@ public:
             STObject st(sfGeneric);
             unexcept([&]() { st[sf1]; });
             except([&](){ return st[sf1] == 0; });
-            expect(st[~sf1] == boost::none);
-            expect(st[~sf1] == boost::optional<std::uint32_t>{});
-            expect(st[~sf1] != boost::optional<std::uint32_t>(1));
-            expect(! st[~sf1]);
+            BEAST_EXPECT(st[~sf1] == boost::none);
+            BEAST_EXPECT(st[~sf1] == boost::optional<std::uint32_t>{});
+            BEAST_EXPECT(st[~sf1] != boost::optional<std::uint32_t>(1));
+            BEAST_EXPECT(! st[~sf1]);
             st[sf1] = 2;
-            expect(st[sf1] == 2);
-            expect(st[~sf1] != boost::none);
-            expect(st[~sf1] == boost::optional<std::uint32_t>(2));
-            expect(!! st[~sf1]);
+            BEAST_EXPECT(st[sf1] == 2);
+            BEAST_EXPECT(st[~sf1] != boost::none);
+            BEAST_EXPECT(st[~sf1] == boost::optional<std::uint32_t>(2));
+            BEAST_EXPECT(!! st[~sf1]);
             st[sf1] = 1;
-            expect(st[sf1] == 1);
-            expect(!! st[sf1]);
-            expect(!! st[~sf1]);
+            BEAST_EXPECT(st[sf1] == 1);
+            BEAST_EXPECT(!! st[sf1]);
+            BEAST_EXPECT(!! st[~sf1]);
             st[sf1] = 0;
-            expect(! st[sf1]);
-            expect(!! st[~sf1]);
+            BEAST_EXPECT(! st[sf1]);
+            BEAST_EXPECT(!! st[~sf1]);
             st[~sf1] = boost::none;
-            expect(! st[~sf1]);
-            expect(st[~sf1] == boost::none);
-            expect(st[~sf1] == boost::optional<std::uint32_t>{});
+            BEAST_EXPECT(! st[~sf1]);
+            BEAST_EXPECT(st[~sf1] == boost::none);
+            BEAST_EXPECT(st[~sf1] == boost::optional<std::uint32_t>{});
             st[~sf1] = boost::none;
-            expect(! st[~sf1]);
+            BEAST_EXPECT(! st[~sf1]);
             except([&]() { return st[sf1] == 0; });
             except([&]() { return *st[~sf1]; });
             st[sf1] = 1;
-            expect(st[sf1] == 1);
-            expect(!! st[sf1]);
-            expect(!! st[~sf1]);
+            BEAST_EXPECT(st[sf1] == 1);
+            BEAST_EXPECT(!! st[sf1]);
+            BEAST_EXPECT(!! st[~sf1]);
             st[sf1] = 3;
             st[sf2] = st[sf1];
-            expect(st[sf1] == 3);
-            expect(st[sf2] == 3);
-            expect(st[sf2] == st[sf1]);
+            BEAST_EXPECT(st[sf1] == 3);
+            BEAST_EXPECT(st[sf2] == 3);
+            BEAST_EXPECT(st[sf2] == st[sf1]);
             st[sf1] = 4;
             st[sf2] = st[sf1];
-            expect(st[sf1] == 4);
-            expect(st[sf2] == 4);
-            expect(st[sf2] == st[sf1]);
+            BEAST_EXPECT(st[sf1] == 4);
+            BEAST_EXPECT(st[sf2] == 4);
+            BEAST_EXPECT(st[sf2] == st[sf1]);
         }
 
         // Write templated object
 
         {
             STObject st(sot, sfGeneric);
-            expect(!! st[~sf1]);
-            expect(st[~sf1] != boost::none);
-            expect(st[sf1] == 0);
-            expect(*st[~sf1] == 0);
-            expect(! st[~sf2]);
-            expect(st[~sf2] == boost::none);
+            BEAST_EXPECT(!! st[~sf1]);
+            BEAST_EXPECT(st[~sf1] != boost::none);
+            BEAST_EXPECT(st[sf1] == 0);
+            BEAST_EXPECT(*st[~sf1] == 0);
+            BEAST_EXPECT(! st[~sf2]);
+            BEAST_EXPECT(st[~sf2] == boost::none);
             except([&]() { return st[sf2] == 0; });
-            expect(!! st[~sf3]);
-            expect(st[~sf3] != boost::none);
-            expect(st[sf3] == 0);
+            BEAST_EXPECT(!! st[~sf3]);
+            BEAST_EXPECT(st[~sf3] != boost::none);
+            BEAST_EXPECT(st[sf3] == 0);
             except([&]() { st[~sf1] = boost::none; });
             st[sf1] = 1;
-            expect(st[sf1] == 1);
-            expect(*st[~sf1] == 1);
-            expect(!! st[~sf1]);
+            BEAST_EXPECT(st[sf1] == 1);
+            BEAST_EXPECT(*st[~sf1] == 1);
+            BEAST_EXPECT(!! st[~sf1]);
             st[sf1] = 0;
-            expect(st[sf1] == 0);
-            expect(*st[~sf1] == 0);
-            expect(!! st[~sf1]);
+            BEAST_EXPECT(st[sf1] == 0);
+            BEAST_EXPECT(*st[~sf1] == 0);
+            BEAST_EXPECT(!! st[~sf1]);
             st[sf2] = 2;
-            expect(st[sf2] == 2);
-            expect(*st[~sf2] == 2);
-            expect(!! st[~sf2]);
+            BEAST_EXPECT(st[sf2] == 2);
+            BEAST_EXPECT(*st[~sf2] == 2);
+            BEAST_EXPECT(!! st[~sf2]);
             st[~sf2] = boost::none;
             except([&]() { return *st[~sf2]; });
-            expect(! st[~sf2]);
+            BEAST_EXPECT(! st[~sf2]);
             st[sf3] = 3;
-            expect(st[sf3] == 3);
-            expect(*st[~sf3] == 3);
-            expect(!! st[~sf3]);
+            BEAST_EXPECT(st[sf3] == 3);
+            BEAST_EXPECT(*st[~sf3] == 3);
+            BEAST_EXPECT(!! st[~sf3]);
             st[sf3] = 2;
-            expect(st[sf3] == 2);
-            expect(*st[~sf3] == 2);
-            expect(!! st[~sf3]);
+            BEAST_EXPECT(st[sf3] == 2);
+            BEAST_EXPECT(*st[~sf3] == 2);
+            BEAST_EXPECT(!! st[~sf3]);
             st[sf3] = 0;
-            expect(st[sf3] == 0);
-            expect(*st[~sf3] == 0);
-            expect(!! st[~sf3]);
+            BEAST_EXPECT(st[sf3] == 0);
+            BEAST_EXPECT(*st[~sf3] == 0);
+            BEAST_EXPECT(!! st[~sf3]);
             except([&]() { st[~sf3] = boost::none; });
-            expect(st[sf3] == 0);
-            expect(*st[~sf3] == 0);
-            expect(!! st[~sf3]);
+            BEAST_EXPECT(st[sf3] == 0);
+            BEAST_EXPECT(*st[~sf3] == 0);
+            BEAST_EXPECT(!! st[~sf3]);
         }
 
         // coercion operator to boost::optional
@@ -400,31 +397,31 @@ public:
             {
                 STObject st(sfGeneric);
                 Buffer b(1);
-                expect(! b.empty());
+                BEAST_EXPECT(! b.empty());
                 st[sf4] = std::move(b);
-                expect(b.empty());
-                expect(Slice(st[sf4]).size() == 1);
+                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(Slice(st[sf4]).size() == 1);
                 st[~sf4] = boost::none;
-                expect(! ~st[~sf4]);
+                BEAST_EXPECT(! ~st[~sf4]);
                 b = Buffer{2};
                 st[sf4] = Slice(b);
-                expect(b.size() == 2);
-                expect(Slice(st[sf4]).size() == 2);
+                BEAST_EXPECT(b.size() == 2);
+                BEAST_EXPECT(Slice(st[sf4]).size() == 2);
                 st[sf5] = st[sf4];
-                expect(Slice(st[sf4]).size() == 2);
-                expect(Slice(st[sf5]).size() == 2);
+                BEAST_EXPECT(Slice(st[sf4]).size() == 2);
+                BEAST_EXPECT(Slice(st[sf5]).size() == 2);
             }
             {
                 STObject st(sot, sfGeneric);
-                expect(st[sf5] == Slice{});
-                expect(!! st[~sf5]);
-                expect(!! ~st[~sf5]);
+                BEAST_EXPECT(st[sf5] == Slice{});
+                BEAST_EXPECT(!! st[~sf5]);
+                BEAST_EXPECT(!! ~st[~sf5]);
                 Buffer b(1);
                 st[sf5] = std::move(b);
-                expect(b.empty());
-                expect(Slice(st[sf5]).size() == 1);
+                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(Slice(st[sf5]).size() == 1);
                 st[~sf4] = boost::none;
-                expect(! ~st[~sf4]);
+                BEAST_EXPECT(! ~st[~sf4]);
             }
         }
 
@@ -432,16 +429,16 @@ public:
 
         {
             STObject st(sfGeneric);
-            expect(! st[~sf5]);
+            BEAST_EXPECT(! st[~sf5]);
             auto const kp = generateKeyPair(
                 KeyType::secp256k1,
                     generateSeed("masterpassphrase"));
             st[sf5] = kp.first;
-            expect(st[sf5] != PublicKey{});
+            BEAST_EXPECT(st[sf5] != PublicKey{});
             st[~sf5] = boost::none;
 #if 0
             pk = st[sf5];
-            expect(pk.size() == 0);
+            BEAST_EXPECT(pk.size() == 0);
 #endif
         }
 
@@ -456,10 +453,10 @@ public:
             st[sf] = v;
             st[sf] = std::move(v);
             auto const& cst = st;
-            expect(cst[sf].size() == 2);
-            expect(cst[~sf]->size() == 2);
-            expect(cst[sf][0] == 1);
-            expect(cst[sf][1] == 2);
+            BEAST_EXPECT(cst[sf].size() == 2);
+            BEAST_EXPECT(cst[~sf]->size() == 2);
+            BEAST_EXPECT(cst[sf][0] == 1);
+            BEAST_EXPECT(cst[sf][1] == 2);
             static_assert(std::is_same<decltype(cst[sfIndexes]),
                 std::vector<uint256> const&>::value, "");
         }
@@ -480,24 +477,24 @@ public:
             }();
             STObject st(sot, sfGeneric);
             auto const& cst(st);
-            expect(cst[sf1].size() == 0);
-            expect(! cst[~sf2]);
-            expect(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf1].size() == 0);
+            BEAST_EXPECT(! cst[~sf2]);
+            BEAST_EXPECT(cst[sf3].size() == 0);
             std::vector<uint256> v;
             v.emplace_back(1);
             st[sf1] = v;
-            expect(cst[sf1].size() == 1);
-            expect(cst[sf1][0] == uint256{1});
+            BEAST_EXPECT(cst[sf1].size() == 1);
+            BEAST_EXPECT(cst[sf1][0] == uint256{1});
             st[sf2] = v;
-            expect(cst[sf2].size() == 1);
-            expect(cst[sf2][0] == uint256{1});
+            BEAST_EXPECT(cst[sf2].size() == 1);
+            BEAST_EXPECT(cst[sf2][0] == uint256{1});
             st[~sf2] = boost::none;
-            expect(! st[~sf2]);
+            BEAST_EXPECT(! st[~sf2]);
             st[sf3] = v;
-            expect(cst[sf3].size() == 1);
-            expect(cst[sf3][0] == uint256{1});
+            BEAST_EXPECT(cst[sf3].size() == 1);
+            BEAST_EXPECT(cst[sf3][0] == uint256{1});
             st[sf3] = std::vector<uint256>{};
-            expect(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].size() == 0);
         }
     }
 

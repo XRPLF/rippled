@@ -32,7 +32,7 @@ namespace detail {
     @return `true` if the character matched.
 */
 template <typename InputStream>
-bool expect (InputStream& is, char v)
+bool BEAST_EXPECT(InputStream& is, char v)
 {
     char c;
     if (is.get(c) && v == c)

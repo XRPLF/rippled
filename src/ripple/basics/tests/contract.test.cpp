@@ -35,7 +35,7 @@ public:
         }
         catch (std::runtime_error const& e)
         {
-            expect(std::string(e.what()) == "Throw test");
+            BEAST_EXPECT(std::string(e.what()) == "Throw test");
 
             try
             {
@@ -43,16 +43,16 @@ public:
             }
             catch (std::runtime_error const& e)
             {
-                expect(std::string(e.what()) == "Throw test");
+                BEAST_EXPECT(std::string(e.what()) == "Throw test");
             }
             catch (...)
             {
-                expect(false);
+                BEAST_EXPECT(false);
             }
         }
         catch (...)
         {
-            expect(false);
+            BEAST_EXPECT(false);
         }
     }
 };

@@ -157,11 +157,11 @@ public:
             Status const status = backend.fetch (
                 batch [i]->getHash ().cbegin (), &object);
 
-            expect (status == ok, "Should be ok");
+            BEAST_EXPECT(status == ok);
 
             if (status == ok)
             {
-                expect (object != nullptr, "Should not be null");
+                BEAST_EXPECT(object != nullptr);
 
                 pCopy->push_back (object);
             }
@@ -177,7 +177,7 @@ public:
             Status const status = backend.fetch (
                 batch [i]->getHash ().cbegin (), &object);
 
-            expect (status == notFound, "Should be notFound");
+            BEAST_EXPECT(status == notFound);
         }
     }
 

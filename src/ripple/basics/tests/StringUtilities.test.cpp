@@ -30,23 +30,15 @@ public:
     void testUnHexSuccess (std::string strIn, std::string strExpected)
     {
         std::string strOut;
-
-        expect (strUnHex (strOut, strIn) == strExpected.length (),
-            "strUnHex: parsing correct input failed");
-
-        expect (strOut == strExpected,
-            "strUnHex: parsing doesn't produce expected result");
+        BEAST_EXPECT(strUnHex (strOut, strIn) == strExpected.length ());
+        BEAST_EXPECT(strOut == strExpected);
     }
 
     void testUnHexFailure (std::string strIn)
     {
         std::string strOut;
-
-        expect (strUnHex (strOut, strIn) == -1,
-            "strUnHex: parsing incorrect input succeeded");
-
-        expect (strOut.empty (),
-            "strUnHex: parsing incorrect input returned data");
+        BEAST_EXPECT(strUnHex (strOut, strIn) == -1);
+        BEAST_EXPECT(strOut.empty ());
     }
 
     void testUnHex ()
@@ -76,48 +68,25 @@ public:
         int         iPort;
         std::string strPath;
 
-        unexpected (!parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath),
-            "parseUrl: lower://domain failed");
-
-        unexpected (strScheme != "lower",
-            "parseUrl: lower://domain : scheme failed");
-
-        unexpected (strDomain != "domain",
-            "parseUrl: lower://domain : domain failed");
-
-        unexpected (iPort != -1,
-            "parseUrl: lower://domain : port failed");
-
-        unexpected (strPath != "",
-            "parseUrl: lower://domain : path failed");
-
-        unexpected (!parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath),
-            "parseUrl: UPPER://domain:234/ failed");
-
-        unexpected (strScheme != "upper",
-            "parseUrl: UPPER://domain:234/ : scheme failed");
-
-        unexpected (iPort != 234,
-            boost::str (boost::format ("parseUrl: UPPER://domain:234/ : port failed: %d") % iPort));
-
-        unexpected (strPath != "/",
-            "parseUrl: UPPER://domain:234/ : path failed");
-
-        unexpected (!parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath),
-            "parseUrl: Mixed://domain/path failed");
-
-        unexpected (strScheme != "mixed",
-            "parseUrl: Mixed://domain/path tolower failed");
-
-        unexpected (strPath != "/path",
-            "parseUrl: Mixed://domain/path path failed");
+        BEAST_EXPECT (parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath));
+        BEAST_EXPECT(strScheme == "lower");
+        BEAST_EXPECT(strDomain == "domain");
+        BEAST_EXPECT(iPort == -1);
+        BEAST_EXPECT(strPath == "");
+        BEAST_EXPECT(parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath));
+        BEAST_EXPECT(strScheme == "upper");
+        BEAST_EXPECT(iPort == 234);
+        BEAST_EXPECT(strPath == "/");
+        BEAST_EXPECT(parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath));
+        BEAST_EXPECT(strScheme == "mixed");
+        BEAST_EXPECT(strPath == "/path");
     }
 
     void testToString ()
     {
         testcase ("toString");
         auto result = to_string("hello");
-        expect(result == "hello", result);
+        BEAST_EXPECT(result == "hello");
     }
 
     void run ()

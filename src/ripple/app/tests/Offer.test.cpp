@@ -106,7 +106,7 @@ public:
             sendmax (BTC (1000)), txflags (tfPartialPayment));
 
         env.require (balance ("bob", USD (100)));
-        expect (!isOffer (env, "carol", BTC (1), USD (100)) &&
+        BEAST_EXPECT(!isOffer (env, "carol", BTC (1), USD (100)) &&
             isOffer (env, "carol", BTC (49), XRP (49)));
     }
 
@@ -130,20 +130,20 @@ public:
         env (offer ("alice", XRP (500), USD (100)),
             require (offers ("alice", 1)));
 
-        expect (isOffer (env, "alice", XRP (500), USD (100)));
+        BEAST_EXPECT(isOffer (env, "alice", XRP (500), USD (100)));
 
         // cancel the offer above and replace it with a new offer
         env (offer ("alice", XRP (300), USD (100)), json (osKey, firstOfferSeq),
             require (offers ("alice", 1)));
 
-        expect (isOffer (env, "alice", XRP (300), USD (100)) &&
+        BEAST_EXPECT(isOffer (env, "alice", XRP (300), USD (100)) &&
             !isOffer (env, "alice", XRP (500), USD (100)));
 
         // Test canceling non-existant offer.
         env (offer ("alice", XRP (400), USD (200)), json (osKey, firstOfferSeq),
             require (offers ("alice", 2)));
 
-        expect (isOffer (env, "alice", XRP (300), USD (100)) &&
+        BEAST_EXPECT(isOffer (env, "alice", XRP (300), USD (100)) &&
             isOffer (env, "alice", XRP (400), USD (200)));
     }
 
@@ -275,19 +275,19 @@ public:
                     sendmax (XRP (102)),
                     txflags (tfNoRippleDirect | tfPartialPayment));
 
-                expect (offerCount (carol) == 0);
-                expect (offerCount (dan) == 1);
+                BEAST_EXPECT(offerCount (carol) == 0);
+                BEAST_EXPECT(offerCount (dan) == 1);
                 if (!withFix)
                 {
                     // funded offer was removed
-                    expect (offerCount (erin) == 0);
+                    BEAST_EXPECT(offerCount (erin) == 0);
                     env.require (balance ("erin", USD (1)));
                 }
                 else
                 {
                     // offer was correctly consumed. There is stil some
                     // liquidity left on that offer.
-                    expect (offerCount (erin) == 1);
+                    BEAST_EXPECT(offerCount (erin) == 1);
                     env.require (balance ("erin", USD (0.99999)));
                 }
             }

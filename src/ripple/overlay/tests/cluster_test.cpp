@@ -63,7 +63,7 @@ public:
             auto c = create ({});
 
             for (auto const& n : network)
-                expect (!c->member (n));
+                BEAST_EXPECT(!c->member (n));
         }
 
         {
@@ -76,7 +76,7 @@ public:
             auto c = create (cluster);
 
             for (auto const& n : network)
-                expect (!c->member (n));
+                BEAST_EXPECT(!c->member (n));
         }
 
         {
@@ -91,13 +91,13 @@ public:
             auto c = create (cluster);
 
             for (auto const& n : cluster)
-                expect (c->member (n));
+                BEAST_EXPECT(c->member (n));
 
             for (auto const& n : network)
             {
                 auto found = std::find (
                     cluster.begin (), cluster.end (), n);
-                expect (static_cast<bool>(c->member (n)) ==
+                BEAST_EXPECT(static_cast<bool>(c->member (n)) ==
                     (found != cluster.end ()));
             }
         }
@@ -111,13 +111,13 @@ public:
             auto c = create (cluster);
 
             for (auto const& n : cluster)
-                expect (c->member (n));
+                BEAST_EXPECT(c->member (n));
 
             for (auto const& n : network)
             {
                 auto found = std::find (
                     cluster.begin (), cluster.end (), n);
-                expect (static_cast<bool>(c->member (n)) ==
+                BEAST_EXPECT(static_cast<bool>(c->member (n)) ==
                     (found != cluster.end ()));
             }
         }
@@ -138,48 +138,48 @@ public:
         NetClock::time_point tick = {};
 
         // Initial update
-        expect (c->update (node, "", load, tick));
+        BEAST_EXPECT(c->update (node, "", load, tick));
         {
             auto member = c->member (node);
-            expect (static_cast<bool>(member));
-            expect (member->empty ());
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->empty ());
         }
 
         // Updating too quickly: should fail
-        expect (! c->update (node, name, load, tick));
+        BEAST_EXPECT(! c->update (node, name, load, tick));
         {
             auto member = c->member (node);
-            expect (static_cast<bool>(member));
-            expect (member->empty ());
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->empty ());
         }
 
         using namespace std::chrono_literals;
 
         // Updating the name (empty updates to non-empty)
         tick += 1s;
-        expect (c->update (node, name, load, tick));
+        BEAST_EXPECT(c->update (node, name, load, tick));
         {
             auto member = c->member (node);
-            expect (static_cast<bool>(member));
-            expect (member->compare(name) == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare(name) == 0);
         }
 
         // Updating the name (non-empty doesn't go to empty)
         tick += 1s;
-        expect (c->update (node, "", load, tick));
+        BEAST_EXPECT(c->update (node, "", load, tick));
         {
             auto member = c->member (node);
-            expect (static_cast<bool>(member));
-            expect (member->compare(name) == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare(name) == 0);
         }
 
         // Updating the name (non-empty updates to new non-empty)
         tick += 1s;
-        expect (c->update (node, "test", load, tick));
+        BEAST_EXPECT(c->update (node, "test", load, tick));
         {
             auto member = c->member (node);
-            expect (static_cast<bool>(member));
-            expect (member->compare("test") == 0);
+            BEAST_EXPECT(static_cast<bool>(member));
+            BEAST_EXPECT(member->compare("test") == 0);
         }
     }
 
@@ -213,8 +213,8 @@ public:
         Section s1;
 
         // Correct (empty) configuration
-        expect (c->load (s1));
-        expect (c->size() == 0);
+        BEAST_EXPECT(c->load (s1));
+        BEAST_EXPECT(c->size() == 0);
 
         // Correct configuration
         s1.append (format (network[0]));
@@ -226,23 +226,23 @@ public:
         s1.append (format (network[6], "  Leading & Trailing Whitespace  "));
         s1.append (format (network[7], "  Leading,  Trailing  &  Internal  Whitespace  "));
 
-        expect (c->load (s1));
+        BEAST_EXPECT(c->load (s1));
 
         for (auto const& n : network)
-            expect (c->member (n));
+            BEAST_EXPECT(c->member (n));
 
         // Incorrect configurations
         Section s2;
         s2.append ("NotAPublicKey");
-        expect (!c->load (s2));
+        BEAST_EXPECT(!c->load (s2));
 
         Section s3;
         s3.append (format (network[0], "!"));
-        expect (!c->load (s3));
+        BEAST_EXPECT(!c->load (s3));
 
         Section s4;
         s4.append (format (network[0], "!  Comment"));
-        expect (!c->load (s4));
+        BEAST_EXPECT(!c->load (s4));
 
         // Check if we properly terminate when we encounter
         // a malformed or unparseable entry:
@@ -252,9 +252,9 @@ public:
         Section s5;
         s5.append (format (node1, "XXX"));
         s5.append (format (node2));
-        expect (!c->load (s5));
-        expect (!c->member (node1));
-        expect (!c->member (node2));
+        BEAST_EXPECT(!c->load (s5));
+        BEAST_EXPECT(!c->member (node1));
+        BEAST_EXPECT(!c->member (node2));
     }
 
     void

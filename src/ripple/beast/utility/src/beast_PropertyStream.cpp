@@ -587,8 +587,8 @@ public:
         try
         {
             std::string const peeled_name = Source::peel_name (&s);
-            expect (peeled_name == expected);
-            expect (s == expected_remainder);
+            BEAST_EXPECT(peeled_name == expected);
+            BEAST_EXPECT(s == expected_remainder);
         }
         catch (...)
         {
@@ -602,8 +602,8 @@ public:
         try
         {
             bool const found (Source::peel_leading_slash (&s));
-            expect (found == should_be_found);
-            expect (s == expected);
+            BEAST_EXPECT(found == should_be_found);
+            BEAST_EXPECT(s == expected);
         }
         catch(...)
         {
@@ -617,8 +617,8 @@ public:
         try
         {
             bool const found (Source::peel_trailing_slashstar (&s));
-            expect (found == should_be_found);
-            expect (s == expected_remainder);
+            BEAST_EXPECT(found == should_be_found);
+            BEAST_EXPECT(s == expected_remainder);
         }
         catch (...)
         {
@@ -631,7 +631,7 @@ public:
         try
         {
             Source* source (root.find_one (name));
-            expect (source == expected);
+            BEAST_EXPECT(source == expected);
         }
         catch (...)
         {
@@ -645,7 +645,7 @@ public:
         try
         {
             Source* source (root.find_path (path));
-            expect (source == expected);
+            BEAST_EXPECT(source == expected);
         }
         catch (...)
         {
@@ -659,7 +659,7 @@ public:
         try
         {
             Source* source (root.find_one_deep (name));
-            expect (source == expected);
+            BEAST_EXPECT(source == expected);
         }
         catch(...)
         {
@@ -673,8 +673,8 @@ public:
         try
         {
             auto const result (root.find (path));
-            expect (result.first == expected);
-            expect (result.second == expected_star);
+            BEAST_EXPECT(result.first == expected);
+            BEAST_EXPECT(result.second == expected_star);
         }
         catch (...)
         {

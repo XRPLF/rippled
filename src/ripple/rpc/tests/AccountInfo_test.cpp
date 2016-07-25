@@ -35,14 +35,14 @@ public:
         {
             // account_info with no account.
             auto const info = env.rpc ("json", "account_info", "{ }");
-            expect (info[jss::result][jss::error_message] ==
+            BEAST_EXPECT(info[jss::result][jss::error_message] ==
                 "Missing field 'account'.");
         }
         {
             // account_info with a malformed account sting.
             auto const info = env.rpc ("json", "account_info", "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
-            expect (info[jss::result][jss::error_message] ==
+            BEAST_EXPECT(info[jss::result][jss::error_message] ==
                 "Disallowed seed.");
         }
         {
@@ -50,7 +50,7 @@ public:
             Account const bogie {"bogie"};
             auto const info = env.rpc ("json", "account_info",
                 std::string ("{ ") + "\"account\": \"" + bogie.human() + "\"}");
-            expect (info[jss::result][jss::error_message] ==
+            BEAST_EXPECT(info[jss::result][jss::error_message] ==
                 "Account not found.");
         }
     }
@@ -74,17 +74,17 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withoutSigners);
-            expect (! info[jss::result][jss::account_data].
+            BEAST_EXPECT(! info[jss::result][jss::account_data].
                 isMember (jss::signer_lists));
         }
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withSigners);
             auto const& data = info[jss::result][jss::account_data];
-            expect (data.isMember (jss::signer_lists));
+            BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
-            expect (signerLists.isArray());
-            expect (signerLists.size() == 0);
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 0);
         }
 
         // Give alice a SignerList.
@@ -95,24 +95,24 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withoutSigners);
-            expect (! info[jss::result][jss::account_data].
+            BEAST_EXPECT(! info[jss::result][jss::account_data].
                 isMember (jss::signer_lists));
         }
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withSigners);
             auto const& data = info[jss::result][jss::account_data];
-            expect (data.isMember (jss::signer_lists));
+            BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
-            expect (signerLists.isArray());
-            expect (signerLists.size() == 1);
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 1);
             auto const& signers = signerLists[0u];
-            expect (signers.isObject());
-            expect (signers[sfSignerQuorum.jsonName] == 2);
+            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 2);
             auto const& signerEntries = signers[sfSignerEntries.jsonName];
-            expect (signerEntries.size() == 1);
+            BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
-            expect (entry0[sfSignerWeight.jsonName] == 3);
+            BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
         }
 
         // Give alice a big signer list
@@ -132,21 +132,21 @@ public:
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc ("json", "account_info", withSigners);
             auto const& data = info[jss::result][jss::account_data];
-            expect (data.isMember (jss::signer_lists));
+            BEAST_EXPECT(data.isMember (jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
-            expect (signerLists.isArray());
-            expect (signerLists.size() == 1);
+            BEAST_EXPECT(signerLists.isArray());
+            BEAST_EXPECT(signerLists.size() == 1);
             auto const& signers = signerLists[0u];
-            expect (signers.isObject());
-            expect (signers[sfSignerQuorum.jsonName] == 4);
+            BEAST_EXPECT(signers.isObject());
+            BEAST_EXPECT(signers[sfSignerQuorum.jsonName] == 4);
             auto const& signerEntries = signers[sfSignerEntries.jsonName];
-            expect (signerEntries.size() == 8);
+            BEAST_EXPECT(signerEntries.size() == 8);
             for (unsigned i = 0u; i < 8; ++i)
             {
                 auto const& entry = signerEntries[i][sfSignerEntry.jsonName];
-                expect (entry.size() == 2);
-                expect (entry.isMember(sfAccount.jsonName));
-                expect (entry[sfSignerWeight.jsonName] == 1);
+                BEAST_EXPECT(entry.size() == 2);
+                BEAST_EXPECT(entry.isMember(sfAccount.jsonName));
+                BEAST_EXPECT(entry[sfSignerWeight.jsonName] == 1);
             }
         }
     }

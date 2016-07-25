@@ -188,19 +188,19 @@ public:
         unexpected (map2->getHash () != mapHash, "bad snapshot");
 
         SHAMap::Delta delta;
-        expect(sMap.compare(*map2, delta, 100), "There should be no differences");
-        expect(delta.empty(), "The delta should be empty");
+        BEAST_EXPECT(sMap.compare(*map2, delta, 100));
+        BEAST_EXPECT(delta.empty());
 
         unexpected (!sMap.delItem (sMap.begin()->key()), "bad mod");
         sMap.invariants();
         unexpected (sMap.getHash () == mapHash, "bad snapshot");
         unexpected (map2->getHash () != mapHash, "bad snapshot");
 
-        expect(sMap.compare(*map2, delta, 100), "There should be 1 difference");
-        expect(delta.size() == 1, "The delta should be size 1");
-        expect(delta.begin()->first == h1, "Should be the first key");
-        expect(delta.begin()->second.first == nullptr, "Must be null");
-        expect(delta.begin()->second.second->key() == h1, "The difference is the first key");
+        BEAST_EXPECT(sMap.compare(*map2, delta, 100));
+        BEAST_EXPECT(delta.size() == 1);
+        BEAST_EXPECT(delta.begin()->first == h1);
+        BEAST_EXPECT(delta.begin()->second.first == nullptr);
+        BEAST_EXPECT(delta.begin()->second.second->key() == h1);
 
         sMap.dump();
 
@@ -249,20 +249,20 @@ public:
             if (! backed)
                 map.setUnbacked ();
 
-            expect (map.getHash() == zero, "bad initial empty map hash");
+            BEAST_EXPECT(map.getHash() == zero);
             for (int i = 0; i < keys.size(); ++i)
             {
                 SHAMapItem item (keys[i], IntToVUC (i));
-                expect (map.addItem (std::move(item), true, false), "unable to add item");
-                expect (map.getHash().as_uint256() == hashes[i], "bad buildup map hash");
+                BEAST_EXPECT(map.addItem (std::move(item), true, false));
+                BEAST_EXPECT(map.getHash().as_uint256() == hashes[i]);
                 map.invariants();
             }
             if (v == SHAMap::version{1})
             {
-                expect(!map.is_v2(), "map should be version 1");
+                BEAST_EXPECT(!map.is_v2());
                 auto map_v2 = map.make_v2();
-                expect(map_v2 != nullptr, "make_v2 should never return nullptr");
-                expect(map_v2->is_v2(), "map should be version 2");
+                BEAST_EXPECT(map_v2 != nullptr);
+                BEAST_EXPECT(map_v2->is_v2());
                 map_v2->invariants();
                 auto i1 = map.begin();
                 auto e1 = map.end();
@@ -270,18 +270,18 @@ public:
                 auto e2 = map_v2->end();
                 for (; i1 != e1; ++i1, ++i2)
                 {
-                    expect(i2 != e2, "make_v2 size mismatch");
-                    expect(*i1 == *i2, "make_v2, item mismatch");
+                    BEAST_EXPECT(i2 != e2);
+                    BEAST_EXPECT(*i1 == *i2);
                 }
-                expect(i2 == e2, "make_v2 size mismatch");
+                BEAST_EXPECT(i2 == e2);
             }
             for (int i = keys.size() - 1; i >= 0; --i)
             {
-                expect (map.getHash().as_uint256() == hashes[i], "bad teardown hash");
-                expect (map.delItem (keys[i]), "unable to remove item");
+                BEAST_EXPECT(map.getHash().as_uint256() == hashes[i]);
+                BEAST_EXPECT(map.delItem (keys[i]));
                 map.invariants();
             }
-            expect (map.getHash() == zero, "bad final empty map hash");
+            BEAST_EXPECT(map.getHash() == zero);
         }
 
         if (backed)
@@ -313,7 +313,7 @@ public:
             int i = 7;
             for (auto const& k : map)
             {
-                expect(k.key() == keys[i]);
+                BEAST_EXPECT(k.key() == keys[i]);
                 --i;
             }
         }

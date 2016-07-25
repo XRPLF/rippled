@@ -111,8 +111,7 @@ public:
 
     void on_fetch (Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        expect (sha512Half(makeSlice(blob)) == hash.as_uint256(),
-            "Hash mismatch");
+        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.as_uint256());
         map.emplace (hash, blob);
     }
 
@@ -148,14 +147,14 @@ public:
 //             t3 = std::make_shared <Table> (SHAMapType::FREE, t2->getHash (),
 //                 fullBelowCache);
 //
-//             expect (t3->fetchRoot (t2->getHash (), &filter), "unable to get root");
+//             BEAST_EXPECT(t3->fetchRoot (t2->getHash (), &filter), "unable to get root");
 //
 //             // everything should be in the pack, no hashes should be needed
 //             std::vector <uint256> hashes = t3->getNeededHashes(1, &filter);
-//             expect (hashes.empty(), "missing hashes");
+//             BEAST_EXPECT(hashes.empty(), "missing hashes");
 //
-//             expect (t3->getHash () == t2->getHash (), "root hashes do not match");
-//             expect (t3->deepCompare (*t2), "failed compare");
+//             BEAST_EXPECT(t3->getHash () == t2->getHash (), "root hashes do not match");
+//             BEAST_EXPECT(t3->deepCompare (*t2), "failed compare");
 //         }
 //         catch (std::exception const&)
 //         {

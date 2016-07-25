@@ -54,7 +54,7 @@ struct Regression_test : public beast::unit_test::suite
         auto closed = std::make_shared<Ledger>(
             create_genesis, env.app().config(), env.app().family());
         auto expectedDrops = SYSTEM_CURRENCY_START;
-        expect(closed->info().drops == expectedDrops);
+        BEAST_EXPECT(closed->info().drops == expectedDrops);
 
         auto const aliceXRP = 400;
         auto const aliceAmount = XRP(aliceXRP);
@@ -69,20 +69,20 @@ struct Regression_test : public beast::unit_test::suite
 
             auto const result = ripple::apply(env.app(),
                 accum, *jt.stx, tapNONE, env.journal);
-            expect(result.first == tesSUCCESS);
-            expect(result.second);
+            BEAST_EXPECT(result.first == tesSUCCESS);
+            BEAST_EXPECT(result.second);
 
             accum.apply(*next);
         }
         expectedDrops -= next->fees().base;
-        expect(next->info().drops == expectedDrops);
+        BEAST_EXPECT(next->info().drops == expectedDrops);
         {
             auto const sle = next->read(
                 keylet::account(Account("alice").id()));
-            expect(sle, "sle");
+            BEAST_EXPECT(sle);
             auto balance = sle->getFieldAmount(sfBalance);
 
-            expect(balance == aliceAmount );
+            BEAST_EXPECT(balance == aliceAmount );
         }
 
         {
@@ -95,22 +95,21 @@ struct Regression_test : public beast::unit_test::suite
 
             auto const result = ripple::apply(env.app(),
                 accum, *jt.stx, tapNONE, env.journal);
-            expect(result.first == tecINSUFF_FEE);
-            expect(result.second);
+            BEAST_EXPECT(result.first == tecINSUFF_FEE);
+            BEAST_EXPECT(result.second);
 
             accum.apply(*next);
         }
         {
             auto const sle = next->read(
                 keylet::account(Account("alice").id()));
-            expect(sle, "sle");
+            BEAST_EXPECT(sle);
             auto balance = sle->getFieldAmount(sfBalance);
 
-            expect(balance == XRP(0));
+            BEAST_EXPECT(balance == XRP(0));
         }
         expectedDrops -= aliceXRP * dropsPerXRP<int>::value;
-        expect(next->info().drops == expectedDrops,
-            "next->info().drops == expectedDrops");
+        BEAST_EXPECT(next->info().drops == expectedDrops);
     }
 
     void testSecp256r1key ()
@@ -190,12 +189,12 @@ struct Regression_test : public beast::unit_test::suite
             envs(noop(alice), fee(none), seq(none))(params);
 
             auto tx = env.tx();
-            if (expect(tx))
+            if (BEAST_EXPECT(tx))
             {
-                expect(tx->getAccountID(sfAccount) == alice.id());
-                expect(tx->getTxnType() == ttACCOUNT_SET);
+                BEAST_EXPECT(tx->getAccountID(sfAccount) == alice.id());
+                BEAST_EXPECT(tx->getTxnType() == ttACCOUNT_SET);
                 auto const fee = tx->getFieldAmount(sfFee);
-                expect(fee == drops(expectedFees[i]));
+                BEAST_EXPECT(fee == drops(expectedFees[i]));
             }
         }
     }

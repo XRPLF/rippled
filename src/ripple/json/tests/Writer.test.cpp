@@ -31,14 +31,14 @@ public:
     void testTrivial ()
     {
         setup ("trivial");
-        expect (output_.empty ());
+        BEAST_EXPECT(output_.empty ());
         expectResult("");
     }
 
     void testNearTrivial ()
     {
         setup ("near trivial");
-        expect (output_.empty ());
+        BEAST_EXPECT(output_.empty ());
         writer_->output (0);
         expectResult("0");
     }

@@ -32,18 +32,18 @@ public:
 
         IOUAmount const z (0, 0);
 
-        expect (z.mantissa () == 0);
-        expect (z.exponent () == -100);
-        expect (!z);
-        expect (z.signum () == 0);
-        expect (z == zero);
+        BEAST_EXPECT(z.mantissa () == 0);
+        BEAST_EXPECT(z.exponent () == -100);
+        BEAST_EXPECT(!z);
+        BEAST_EXPECT(z.signum () == 0);
+        BEAST_EXPECT(z == zero);
 
-        expect ((z + z) == z);
-        expect ((z - z) == z);
-        expect (z == -z);
+        BEAST_EXPECT((z + z) == z);
+        BEAST_EXPECT((z - z) == z);
+        BEAST_EXPECT(z == -z);
 
         IOUAmount const zz (zero);
-        expect (z == zz);
+        BEAST_EXPECT(z == zz);
     }
 
     void testSigNum ()
@@ -51,13 +51,13 @@ public:
         testcase ("signum");
 
         IOUAmount const neg (-1, 0);
-        expect (neg.signum () < 0);
+        BEAST_EXPECT(neg.signum () < 0);
 
         IOUAmount const zer (0, 0);
-        expect (zer.signum () == 0);
+        BEAST_EXPECT(zer.signum () == 0);
 
         IOUAmount const pos (1, 0);
-        expect (pos.signum () > 0);
+        BEAST_EXPECT(pos.signum () > 0);
     }
 
     void testBeastZero ()
@@ -66,9 +66,9 @@ public:
 
         {
             IOUAmount z (zero);
-            expect (z == zero);
-            expect (z >= zero);
-            expect (z <= zero);
+            BEAST_EXPECT(z == zero);
+            BEAST_EXPECT(z >= zero);
+            BEAST_EXPECT(z <= zero);
             unexpected (z != zero);
             unexpected (z > zero);
             unexpected (z < zero);
@@ -76,17 +76,17 @@ public:
 
         {
             IOUAmount const neg (-2, 0);
-            expect (neg < zero);
-            expect (neg <= zero);
-            expect (neg != zero);
+            BEAST_EXPECT(neg < zero);
+            BEAST_EXPECT(neg <= zero);
+            BEAST_EXPECT(neg != zero);
             unexpected (neg == zero);
         }
 
         {
             IOUAmount const pos (2, 0);
-            expect (pos > zero);
-            expect (pos >= zero);
-            expect (pos != zero);
+            BEAST_EXPECT(pos > zero);
+            BEAST_EXPECT(pos >= zero);
+            BEAST_EXPECT(pos != zero);
             unexpected (pos == zero);
         }
     }
@@ -99,65 +99,65 @@ public:
         IOUAmount const z (0, 0);
         IOUAmount const p (2, 0);
 
-        expect (z == z);
-        expect (z >= z);
-        expect (z <= z);
-        expect (z == -z);
+        BEAST_EXPECT(z == z);
+        BEAST_EXPECT(z >= z);
+        BEAST_EXPECT(z <= z);
+        BEAST_EXPECT(z == -z);
         unexpected (z > z);
         unexpected (z < z);
         unexpected (z != z);
         unexpected (z != -z);
 
-        expect (n < z);
-        expect (n <= z);
-        expect (n != z);
+        BEAST_EXPECT(n < z);
+        BEAST_EXPECT(n <= z);
+        BEAST_EXPECT(n != z);
         unexpected (n > z);
         unexpected (n >= z);
         unexpected (n == z);
 
-        expect (p > z);
-        expect (p >= z);
-        expect (p != z);
+        BEAST_EXPECT(p > z);
+        BEAST_EXPECT(p >= z);
+        BEAST_EXPECT(p != z);
         unexpected (p < z);
         unexpected (p <= z);
         unexpected (p == z);
 
-        expect (n < p);
-        expect (n <= p);
-        expect (n != p);
+        BEAST_EXPECT(n < p);
+        BEAST_EXPECT(n <= p);
+        BEAST_EXPECT(n != p);
         unexpected (n > p);
         unexpected (n >= p);
         unexpected (n == p);
 
-        expect (p > n);
-        expect (p >= n);
-        expect (p != n);
+        BEAST_EXPECT(p > n);
+        BEAST_EXPECT(p >= n);
+        BEAST_EXPECT(p != n);
         unexpected (p < n);
         unexpected (p <= n);
         unexpected (p == n);
 
-        expect (p > -p);
-        expect (p >= -p);
-        expect (p != -p);
+        BEAST_EXPECT(p > -p);
+        BEAST_EXPECT(p >= -p);
+        BEAST_EXPECT(p != -p);
 
-        expect (n < -n);
-        expect (n <= -n);
-        expect (n != -n);
+        BEAST_EXPECT(n < -n);
+        BEAST_EXPECT(n <= -n);
+        BEAST_EXPECT(n != -n);
     }
 
     void testToString()
     {
         testcase("IOU strings");
 
-        expect(to_string(IOUAmount (-2, 0)) == "-2");
-        expect(to_string(IOUAmount (0, 0)) == "0");
-        expect(to_string(IOUAmount (2, 0)) == "2");
-        expect(to_string(IOUAmount (25, -3)) == "0.025");
-        expect(to_string(IOUAmount (-25, -3)) == "-0.025");
-        expect(to_string(IOUAmount (25, 1)) == "250");
-        expect(to_string(IOUAmount (-25, 1)) == "-250");
-        expect(to_string(IOUAmount (2, 20)) == "2000000000000000e5");
-        expect(to_string(IOUAmount (-2, -20)) == "-2000000000000000e-35");
+        BEAST_EXPECT(to_string(IOUAmount (-2, 0)) == "-2");
+        BEAST_EXPECT(to_string(IOUAmount (0, 0)) == "0");
+        BEAST_EXPECT(to_string(IOUAmount (2, 0)) == "2");
+        BEAST_EXPECT(to_string(IOUAmount (25, -3)) == "0.025");
+        BEAST_EXPECT(to_string(IOUAmount (-25, -3)) == "-0.025");
+        BEAST_EXPECT(to_string(IOUAmount (25, 1)) == "250");
+        BEAST_EXPECT(to_string(IOUAmount (-25, 1)) == "-250");
+        BEAST_EXPECT(to_string(IOUAmount (2, 20)) == "2000000000000000e5");
+        BEAST_EXPECT(to_string(IOUAmount (-2, -20)) == "-2000000000000000e-35");
     }
 
     void testMulRatio()
@@ -177,36 +177,36 @@ public:
             // multiply by a number that would overflow the mantissa, then
             // divide by the same number, and check we didn't lose any value
             IOUAmount bigMan (maxMantissa, 0);
-            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, true));
+            BEAST_EXPECT(bigMan == mulRatio (bigMan, maxUInt, maxUInt, true));
             // rounding mode shouldn't matter as the result is exact
-            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, false));
+            BEAST_EXPECT(bigMan == mulRatio (bigMan, maxUInt, maxUInt, false));
         }
         {
             // Similar test as above, but for negative values
             IOUAmount bigMan (-maxMantissa, 0);
-            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, true));
+            BEAST_EXPECT(bigMan == mulRatio (bigMan, maxUInt, maxUInt, true));
             // rounding mode shouldn't matter as the result is exact
-            expect (bigMan == mulRatio (bigMan, maxUInt, maxUInt, false));
+            BEAST_EXPECT(bigMan == mulRatio (bigMan, maxUInt, maxUInt, false));
         }
 
         {
             // small amounts
             IOUAmount tiny (minMantissa, minExponent);
             // Round up should give the smallest allowable number
-            expect (tiny == mulRatio (tiny, 1, maxUInt, true));
-            expect (tiny == mulRatio (tiny, maxUInt - 1, maxUInt, true));
+            BEAST_EXPECT(tiny == mulRatio (tiny, 1, maxUInt, true));
+            BEAST_EXPECT(tiny == mulRatio (tiny, maxUInt - 1, maxUInt, true));
             // rounding down should be zero
-            expect (beast::zero == mulRatio (tiny, 1, maxUInt, false));
-            expect (beast::zero == mulRatio (tiny, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(beast::zero == mulRatio (tiny, 1, maxUInt, false));
+            BEAST_EXPECT(beast::zero == mulRatio (tiny, maxUInt - 1, maxUInt, false));
 
             // tiny negative numbers
             IOUAmount tinyNeg (-minMantissa, minExponent);
             // Round up should give zero
-            expect (zero == mulRatio (tinyNeg, 1, maxUInt, true));
-            expect (zero == mulRatio (tinyNeg, maxUInt - 1, maxUInt, true));
+            BEAST_EXPECT(zero == mulRatio (tinyNeg, 1, maxUInt, true));
+            BEAST_EXPECT(zero == mulRatio (tinyNeg, maxUInt - 1, maxUInt, true));
             // rounding down should be tiny
-            expect (tinyNeg == mulRatio (tinyNeg, 1, maxUInt, false));
-            expect (tinyNeg == mulRatio (tinyNeg, maxUInt - 1, maxUInt, false));
+            BEAST_EXPECT(tinyNeg == mulRatio (tinyNeg, 1, maxUInt, false));
+            BEAST_EXPECT(tinyNeg == mulRatio (tinyNeg, maxUInt - 1, maxUInt, false));
         }
 
         {
@@ -215,20 +215,20 @@ public:
                 IOUAmount one (1, 0);
                 auto const rup = mulRatio (one, maxUInt - 1, maxUInt, true);
                 auto const rdown = mulRatio (one, maxUInt - 1, maxUInt, false);
-                expect (rup.mantissa () - rdown.mantissa () == 1);
+                BEAST_EXPECT(rup.mantissa () - rdown.mantissa () == 1);
             }
             {
                 IOUAmount big (maxMantissa, maxExponent);
                 auto const rup = mulRatio (big, maxUInt - 1, maxUInt, true);
                 auto const rdown = mulRatio (big, maxUInt - 1, maxUInt, false);
-                expect (rup.mantissa () - rdown.mantissa () == 1);
+                BEAST_EXPECT(rup.mantissa () - rdown.mantissa () == 1);
             }
 
             {
                 IOUAmount negOne (-1, 0);
                 auto const rup = mulRatio (negOne, maxUInt - 1, maxUInt, true);
                 auto const rdown = mulRatio (negOne, maxUInt - 1, maxUInt, false);
-                expect (rup.mantissa () - rdown.mantissa () == 1);
+                BEAST_EXPECT(rup.mantissa () - rdown.mantissa () == 1);
             }
         }
 

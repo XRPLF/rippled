@@ -53,15 +53,15 @@ class SkipList_test : public beast::unit_test::suite
 
         {
             auto l = *(std::next(std::begin(history)));
-            expect((*std::begin(history))->info().seq <
+            BEAST_EXPECT((*std::begin(history))->info().seq <
                 l->info().seq);
-            expect(hashOfSeq(*l, l->info().seq + 1,
+            BEAST_EXPECT(hashOfSeq(*l, l->info().seq + 1,
                 j) == boost::none);
-            expect(hashOfSeq(*l, l->info().seq,
+            BEAST_EXPECT(hashOfSeq(*l, l->info().seq,
                 j) == l->info().hash);
-            expect(hashOfSeq(*l, l->info().seq - 1,
+            BEAST_EXPECT(hashOfSeq(*l, l->info().seq - 1,
                 j) == l->info().parentHash);
-            expect(hashOfSeq(*history.back(),
+            BEAST_EXPECT(hashOfSeq(*history.back(),
                 l->info().seq, j) == boost::none);
         }
 
@@ -74,13 +74,13 @@ class SkipList_test : public beast::unit_test::suite
                     (*i)->info().seq - 256 > 1 ? 257 : 256);
                 ++n)
             {
-                expect(hashOfSeq(**i,
+                BEAST_EXPECT(hashOfSeq(**i,
                     (*n)->info().seq, j) ==
                         (*n)->info().hash);
             }
 
             // edge case accessing beyond 256
-            expect(hashOfSeq(**i,
+            BEAST_EXPECT(hashOfSeq(**i,
                 (*i)->info().seq - 258, j) ==
                     boost::none);
         }
@@ -94,7 +94,7 @@ class SkipList_test : public beast::unit_test::suite
                 n != history.crend();
                 n += 256)
             {
-                expect(hashOfSeq(**i,
+                BEAST_EXPECT(hashOfSeq(**i,
                     (*n)->info().seq, j) ==
                         (*n)->info().hash);
             }

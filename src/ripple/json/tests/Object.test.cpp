@@ -124,9 +124,7 @@ public:
                 "\"obj\":{\"hello\":\"world\"},"
                 "\"obj2\":{\"f\":false,\"h\":\"w\"}}";
         writerObject_.reset();
-        expect (output_ == case1 || output_ == case2,
-                "Got wrong object:\n  " + output_ + "\nShould be either\n  " +
-                case1 + "\nor\n  " + case2);
+        BEAST_EXPECT(output_ == case1 || output_ == case2);
     }
 
     void testSubsShort ()

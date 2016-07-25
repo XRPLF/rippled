@@ -82,14 +82,13 @@ public:
         STAmount quot = divide (n, d, noIssue());
         STAmount res = roundSelf (multiply (quot, mul, noIssue()));
 
-        expect (! res.native (), "Product should not be native");
+        BEAST_EXPECT(! res.native ());
 
         STAmount cmp (noIssue(), (n * m) / d);
 
-        expect (! cmp.native (), "Comparison amount should not be native");
+        BEAST_EXPECT(! cmp.native ());
 
-        expect (cmp.issue().currency == res.issue().currency,
-            "Product and result should be comparable");
+        BEAST_EXPECT(cmp.issue().currency == res.issue().currency);
 
         if (res != cmp)
         {
@@ -108,7 +107,7 @@ public:
         STAmount bb (noIssue(), b);
         STAmount prod1 (multiply (aa, bb, noIssue()));
 
-        expect (! prod1.native ());
+        BEAST_EXPECT(! prod1.native ());
 
         STAmount prod2 (noIssue(), static_cast<std::uint64_t> (a) * static_cast<std::uint64_t> (b));
 
@@ -129,11 +128,11 @@ public:
         try
         {
             STAmount const amount = amountFromString (issue, value);
-            expect (amount.getText () == value, "format " + value);
+            BEAST_EXPECT(amount.getText () == value);
         }
         catch (std::exception const&)
         {
-            expect (!success, "parse " + value + " should fail");
+            BEAST_EXPECT(!success);
         }
     }
 
@@ -462,34 +461,31 @@ public:
 
         STAmount smallXsmall = multiply (smallValue, smallValue, noIssue());
 
-        expect (smallXsmall == zero, "smallXsmall != 0");
+        BEAST_EXPECT(smallXsmall == zero);
 
         STAmount bigDsmall = divide (smallValue, bigValue, noIssue());
 
-        expect (bigDsmall == zero, "small/big != 0: " + bigDsmall.getText ());
+        BEAST_EXPECT(bigDsmall == zero);
 
-        expect (bigDsmall == zero,
-            "small/bigNative != 0: " + bigDsmall.getText ());
+        BEAST_EXPECT(bigDsmall == zero);
 
         bigDsmall = divide (smallValue, bigValue, xrpIssue ());
 
-        expect (bigDsmall == zero,
-            "(small/big)->N != 0: " + bigDsmall.getText ());
+        BEAST_EXPECT(bigDsmall == zero);
 
         bigDsmall = divide (smallValue, bigNative, xrpIssue ());
 
-        expect (bigDsmall == zero,
-            "(small/bigNative)->N != 0: " + bigDsmall.getText ());
+        BEAST_EXPECT(bigDsmall == zero);
 
         // very bad offer
         std::uint64_t r = getRate (smallValue, bigValue);
 
-        expect (r == 0, "getRate(smallOut/bigIn) != 0");
+        BEAST_EXPECT(r == 0);
 
         // very good offer
         r = getRate (bigValue, smallValue);
 
-        expect (r == 0, "getRate(smallIn/bigOUt) != 0");
+        BEAST_EXPECT(r == 0);
     }
 
     //--------------------------------------------------------------------------
@@ -557,9 +553,9 @@ public:
         {
             auto const t = amountFromString (xrp, std::to_string (drops));
             auto const s = t.xrp ();
-            expect (s.drops() == drops);
-            expect (t == STAmount (XRPAmount (drops)));
-            expect (s == XRPAmount (drops));
+            BEAST_EXPECT(s.drops() == drops);
+            BEAST_EXPECT(t == STAmount (XRPAmount (drops)));
+            BEAST_EXPECT(s == XRPAmount (drops));
         }
 
         try
@@ -589,9 +585,9 @@ public:
         {
             auto const t = amountFromString (usd, std::to_string (dollars));
             auto const s = t.iou ();
-            expect (t == STAmount (s, usd));
-            expect (s.mantissa () == t.mantissa ());
-            expect (s.exponent () == t.exponent ());
+            BEAST_EXPECT(t == STAmount (s, usd));
+            BEAST_EXPECT(s.mantissa () == t.mantissa ());
+            BEAST_EXPECT(s.exponent () == t.exponent ());
         }
 
         try
