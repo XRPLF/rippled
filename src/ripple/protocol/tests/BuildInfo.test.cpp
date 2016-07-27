@@ -27,16 +27,6 @@ namespace ripple {
 class BuildInfo_test : public beast::unit_test::suite
 {
 public:
-    void testVersion ()
-    {
-        testcase ("version");
-
-        beast::SemanticVersion v;
-
-        expect (v.parse (BuildInfo::getRawVersionString ()));
-    }
-
-
     ProtocolVersion
     from_version (std::uint16_t major, std::uint16_t minor)
     {
@@ -97,7 +87,6 @@ public:
 
     void run ()
     {
-        testVersion ();
         testValues ();
         testStringVersion ();
         testVersionPacking ();
