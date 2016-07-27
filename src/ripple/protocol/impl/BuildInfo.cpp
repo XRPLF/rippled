@@ -27,21 +27,14 @@ namespace ripple {
 
 namespace BuildInfo {
 
-char const* getRawVersionString ()
-{
-    static char const* const rawText =
+//------------------------------------------------------------------------------
+char const* const versionString =
 
     //--------------------------------------------------------------------------
-    //
-    //  The build version number (edit this for each release)
+    //  The build version number. You must edit this for each release
+    //  and follow the format described here at http://semver.org/
     //
         "0.32.1"
-
-    //
-    //  Must follow the format described here:
-    //
-    //  http://semver.org/
-    //
 
 #if defined(DEBUG) || defined(SANITIZER)
        "+"
@@ -59,9 +52,6 @@ char const* getRawVersionString ()
 
     //--------------------------------------------------------------------------
     ;
-
-    return rawText;
-}
 
 ProtocolVersion const&
 getCurrentProtocol ()
@@ -108,18 +98,19 @@ std::string const&
 getVersionString ()
 {
     static std::string const value = [] {
-        std::string const versionString = getRawVersionString ();
+        std::string const s = versionString;
         beast::SemanticVersion v;
-        if (!v.parse (versionString) || v.print () != versionString)
-            LogicError (versionString + ": Bad server version string");
-        return versionString;
+        if (!v.parse (s) || v.print () != s)
+            LogicError (s + ": Bad server version string");
+        return s;
     }();
     return value;
 }
 
 std::string const& getFullVersionString ()
 {
-    static std::string const value = "rippled-" + getVersionString ();
+    static std::string const value =
+        "rippled-" + getVersionString();
     return value;
 }
 
