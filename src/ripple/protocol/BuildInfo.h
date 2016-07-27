@@ -57,9 +57,6 @@ getCurrentProtocol();
 /** The oldest protocol version we will accept. */
 ProtocolVersion const& getMinimumProtocol ();
 
-char const*
-getRawVersionString();
-
 } // BuildInfo (DEPRECATED)
 
 std::string
