@@ -28,9 +28,10 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/STTx.h>
+#include <ripple/protocol/st.h>
 #include <ripple/test/jtx.h>
 #include <ripple/test/jtx/ticket.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace test {
@@ -110,6 +111,48 @@ class TxQ_test : public beast::unit_test::suite
         for (auto const& value : extra)
             section.set(value.first, value.second);
         return p;
+    }
+
+    void
+    initFee(jtx::Env& env, std::size_t expectedInLedger, std::uint32_t base,
+        std::uint32_t units, std::uint32_t reserve, std::uint32_t increment)
+    {
+        // Change the reserve fee so we can create an account
+        // with a lower balance.
+        STTx feeTx(ttFEE,
+            [&](auto& obj)
+        {
+            obj[sfAccount] = AccountID();
+            obj[sfLedgerSequence] = env.current()->info().seq;
+            obj[sfBaseFee] = base;
+            obj[sfReferenceFeeUnits] = units;
+            obj[sfReserveBase] = reserve;
+            obj[sfReserveIncrement] = increment;
+        });
+
+        auto const changed = env.app().openLedger().modify(
+            [&](OpenView& view, beast::Journal j)
+        {
+            auto const result = ripple::apply(
+                env.app(), view, feeTx,
+                tapNONE, j);
+            BEAST_EXPECT(result.second && result.first ==
+                tesSUCCESS);
+            return result.second;
+        });
+        BEAST_EXPECT(changed);
+        // Pad a couple of txs to keep the median at the default
+        env(noop(env.master));
+        env(noop(env.master));
+        // Close the ledger with a delay to force the TxQ stats
+        // to stay at the default.
+        env.close(env.now() + 5s, 10000ms);
+        checkMetrics(env, 0, boost::none, 0, expectedInLedger, 256);
+        auto const fees = env.current()->fees();
+        BEAST_EXPECT(fees.base == base);
+        BEAST_EXPECT(fees.units == units);
+        BEAST_EXPECT(fees.reserve == reserve);
+        BEAST_EXPECT(fees.increment == increment);
     }
 
 public:
@@ -676,8 +719,11 @@ public:
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
+        initFee(env, 3, 10, 10, 200, 50);
+
         // Create several accounts while the fee is cheap so they all apply.
-        env.fund(XRP(50000), noripple(alice, bob, charlie, daria));
+        env.fund(drops(2000), noripple(alice));
+        env.fund(XRP(500000), noripple(bob, charlie, daria));
         checkMetrics(env, 0, boost::none, 4, 3, 256);
 
         // Alice - price starts exploding: held
@@ -734,7 +780,7 @@ public:
         BEAST_EXPECT(env.seq(charlie) == charlieSeq + 1);
 
         // Alice - fill up the queue
-        std::int64_t aliceFee = 10;
+        std::int64_t aliceFee = 20;
         aliceSeq = env.seq(alice);
         auto lastLedgerSeq = env.current()->info().seq + 2;
         for (auto i = 0; i < 7; i++)
@@ -742,15 +788,14 @@ public:
             env(noop(alice), seq(aliceSeq),
                 json(jss::LastLedgerSequence, lastLedgerSeq + i),
                     fee(aliceFee), queued);
-            aliceFee = (aliceFee + 1) * 125 / 100;
             ++aliceSeq;
         }
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
         {
             auto& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id(),
                 env.app().config(), *env.current());
-            std::int64_t fee = 10;
+            std::int64_t fee = 20;
             auto seq = env.seq(alice);
             if (BEAST_EXPECT(aliceStat))
             {
@@ -766,7 +811,6 @@ public:
                         tx.second.consequences->category == TxConsequences::normal) ||
                         tx.first == env.seq(alice) + 6);
                     ++seq;
-                    fee = (fee + 1) * 125 / 100;
                 }
             }
         }
@@ -777,60 +821,46 @@ public:
         env(noop(alice), seq(aliceSeq),
             json(jss::LastLedgerSequence, lastLedgerSeq + 7),
                 fee(aliceFee), ter(telCAN_NOT_QUEUE));
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Charlie - try to add another item to the queue,
         // which fails because fee is lower than Alice's
         // queued average.
-        env(noop(charlie), fee(24), ter(telINSUF_FEE_P));
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        env(noop(charlie), fee(19), ter(telINSUF_FEE_P));
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Charlie - add another item to the queue, which
         // causes Alice's last txn to drop
         env(noop(charlie), fee(30), queued);
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Alice - now attempt to add one more to the queue,
         // which fails because the last tx was dropped, so
         // there is no complete chain.
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), ter(terPRE_SEQ));
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Alice wants this tx more than the dropped tx,
         // so resubmits with higher fee, but the queue
         // is full, and her account is the cheapest.
         env(noop(alice), seq(aliceSeq - 1),
             fee(aliceFee), ter(telCAN_NOT_QUEUE));
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Try to replace a middle item in the queue
         // without enough fee.
         aliceSeq = env.seq(alice) + 2;
-        aliceFee = 21;
+        aliceFee = 25;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), ter(telINSUF_FEE_P));
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         // Replace a middle item from the queue successfully
         ++aliceFee;
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), queued);
-        checkMetrics(env, 8, 8, 5, 4, 257);
-
-        // Try to replace the next item in the queue
-        // without enough fee.
-        ++aliceSeq;
-        aliceFee = aliceFee * 125 / 100;
-        env(noop(alice), seq(aliceSeq),
-            fee(aliceFee), ter(telINSUF_FEE_P));
-        checkMetrics(env, 8, 8, 5, 4, 257);
-
-        // Replace a middle item from the queue successfully
-        ++aliceFee;
-        env(noop(alice), seq(aliceSeq),
-            fee(aliceFee), queued);
-        checkMetrics(env, 8, 8, 5, 4, 257);
+        checkMetrics(env, 8, 8, 5, 4, 513);
 
         env.close();
         // Alice's transactions processed, along with
@@ -845,7 +875,7 @@ public:
         // more than the minimum reserve in flight before the
         // last queued transaction
         aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops()
-            - (121);
+            - (59);
         env(noop(alice), seq(aliceSeq),
             fee(aliceFee), ter(telCAN_NOT_QUEUE));
         checkMetrics(env, 4, 10, 6, 5, 256);
@@ -1144,15 +1174,18 @@ public:
 
         auto queued = ter(terQUEUED);
 
+        initFee(env, 3, 10, 10, 200, 50);
+
         BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
-        env.fund(XRP(50000), noripple(alice, bob));
+        env.fund(drops(5000), noripple(alice));
+        env.fund(XRP(50000), noripple(bob));
         checkMetrics(env, 0, boost::none, 2, 3, 256);
         auto USD = bob["USD"];
 
-        env(offer(alice, USD(5000), XRP(50000)), require(owners(alice, 1)));
+        env(offer(alice, USD(5000), drops(5000)), require(owners(alice, 1)));
         checkMetrics(env, 0, boost::none, 3, 3, 256);
 
         env.close();
@@ -1163,25 +1196,25 @@ public:
         checkMetrics(env, 0, 6, 4, 3, 256);
 
         // Queue up a couple of transactions, plus one
-        // really expensive one.
+        // more expensive one.
         auto aliceSeq = env.seq(alice);
         env(noop(alice), seq(aliceSeq++), queued);
         env(noop(alice), seq(aliceSeq++), queued);
         env(noop(alice), seq(aliceSeq++), queued);
-        env(noop(alice), fee(XRP(1000)),
+        env(noop(alice), fee(drops(1000)),
             seq(aliceSeq), queued);
         checkMetrics(env, 4, 6, 4, 3, 256);
 
         // This offer should take Alice's offer
         // up to Alice's reserve.
-        env(offer(bob, XRP(50000), USD(5000)),
-            openLedgerFee(env), require(balance("alice", XRP(250)),
+        env(offer(bob, drops(5000), USD(5000)),
+            openLedgerFee(env), require(balance(alice, drops(250)),
                 owners(alice, 1), lines(alice, 1)));
         checkMetrics(env, 4, 6, 5, 3, 256);
 
         // Try adding a new transaction.
         // Too many fees in flight.
-        env(noop(alice), fee(XRP(2000)), seq(aliceSeq+1),
+        env(noop(alice), fee(drops(200)), seq(aliceSeq+1),
             ter(telCAN_NOT_QUEUE));
         checkMetrics(env, 4, 6, 5, 3, 256);
 
@@ -1189,11 +1222,11 @@ public:
         // take a fee, except the last one.
         env.close();
         checkMetrics(env, 1, 10, 3, 5, 256);
-        env.require(balance(alice, XRP(250) - drops(30)));
+        env.require(balance(alice, drops(250 - 30)));
 
         // Still can't add a new transaction for Alice,
         // no matter the fee.
-        env(noop(alice), fee(XRP(2000)), seq(aliceSeq + 1),
+        env(noop(alice), fee(drops(200)), seq(aliceSeq + 1),
             ter(telCAN_NOT_QUEUE));
         checkMetrics(env, 1, 10, 3, 5, 256);
 
@@ -1671,8 +1704,8 @@ public:
     void testExpirationReplacement()
     {
         /* This test is based on a reported regression where a
-            replacement candidate transaction found it's replacee
-            did not have `consequences` set
+            replacement candidate transaction found the tx it was trying
+            to replace did not have `consequences` set
 
             Hypothesis: The queue had '22 through '25. At some point(s),
             both the original '22 and '23 expired and were removed from
@@ -2202,7 +2235,6 @@ public:
         }
         {
             auto const server_state = env.rpc("server_state");
-            log << server_state;
             auto const& state = server_state[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) &&
                 state[jss::load_factor] == 256);
@@ -2248,7 +2280,6 @@ public:
         }
         {
             auto const server_state = env.rpc("server_state");
-            log << server_state;
             auto const& state = server_state[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) &&
                 state[jss::load_factor] == 227555);
@@ -2284,7 +2315,6 @@ public:
         }
         {
             auto const server_state = env.rpc("server_state");
-            log << server_state;
             auto const& state = server_state[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) &&
                 state[jss::load_factor] == 256000);
@@ -2332,7 +2362,6 @@ public:
         }
         {
             auto const server_state = env.rpc("server_state");
-            log << server_state;
             auto const& state = server_state[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) &&
                 state[jss::load_factor] == 227555);
@@ -2376,7 +2405,6 @@ public:
         }
         {
             auto const server_state = env.rpc("server_state");
-            log << server_state;
             auto const& state = server_state[jss::result][jss::state];
             BEAST_EXPECT(state.isMember(jss::load_factor) &&
                 state[jss::load_factor] >= 320 &&
@@ -2395,6 +2423,213 @@ public:
                 state[jss::load_factor_fee_queue] == 256);
             BEAST_EXPECT(state.isMember(jss::load_factor_fee_reference) &&
                 state[jss::load_factor_fee_reference] == 256);
+        }
+    }
+
+    void testClearQueuedAccountTxs()
+    {
+        using namespace jtx;
+
+        Env env(*this,
+            makeConfig({ { "minimum_txn_in_ledger_standalone", "3" } }),
+            features(featureFeeEscalation));
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+
+        checkMetrics(env, 0, boost::none, 0, 3, 256);
+        env.fund(XRP(50000000), alice, bob);
+
+        fillQueue(env, alice);
+
+        auto calcTotalFee = [&](
+            std::int64_t alreadyPaid, boost::optional<std::size_t> numToClear = boost::none)
+                -> std::uint64_t {
+            auto totalFactor = 0;
+            auto const metrics = env.app ().getTxQ ().getMetrics (
+                env.app ().config (), *env.current ());
+            if (!numToClear)
+                numToClear.emplace(metrics->txCount + 1);
+            for (int i = 0; i < *numToClear; ++i)
+            {
+                auto inLedger = metrics->txInLedger + i;
+                totalFactor += inLedger * inLedger;
+            }
+            auto result =
+                mulDiv (metrics->medFeeLevel * totalFactor /
+                        (metrics->txPerLedger * metrics->txPerLedger),
+                    env.current ()->fees ().base, metrics->referenceFeeLevel)
+                    .second;
+            // Subtract the fees already paid
+            result -= alreadyPaid;
+            // round up
+            ++result;
+            return result;
+        };
+
+        testcase("straightfoward positive case");
+        {
+            // Queue up some transactions at a too-low fee.
+            auto aliceSeq = env.seq(alice);
+            for (int i = 0; i < 2; ++i)
+            {
+                env(noop(alice), fee(100), seq(aliceSeq++), ter(terQUEUED));
+            }
+
+            // Queue up a transaction paying the open ledger fee
+            // This will be the first tx to call the operative function,
+            // but it won't succeed.
+            env(noop(alice), openLedgerFee(env), seq(aliceSeq++),
+                ter(terQUEUED));
+
+            checkMetrics(env, 3, boost::none, 4, 3, 256);
+
+            // Figure out how much it would cost to cover all the
+            // queued txs + itself
+            std::uint64_t totalFee1 = calcTotalFee (100 * 2 + 8889);
+            --totalFee1;
+
+            BEAST_EXPECT(totalFee1 == 60911);
+            // Submit a transaction with that fee. It will get queued
+            // because the fee level calculation rounds down. This is
+            // the edge case test.
+            env(noop(alice), fee(totalFee1), seq(aliceSeq++),
+                ter(terQUEUED));
+
+            checkMetrics(env, 4, boost::none, 4, 3, 256);
+
+            // Now repeat the process including the new tx
+            // and avoiding the rounding error
+            std::uint64_t const totalFee2 = calcTotalFee (100 * 2 + 8889 + 60911);
+            BEAST_EXPECT(totalFee2 == 35556);
+            // Submit a transaction with that fee. It will succeed.
+            env(noop(alice), fee(totalFee2), seq(aliceSeq++));
+
+            checkMetrics(env, 0, boost::none, 9, 3, 256);
+        }
+
+        testcase("replace last tx with enough to clear queue");
+        {
+            // Queue up some transactions at a too-low fee.
+            auto aliceSeq = env.seq(alice);
+            for (int i = 0; i < 2; ++i)
+            {
+                env(noop(alice), fee(100), seq(aliceSeq++), ter(terQUEUED));
+            }
+
+            // Queue up a transaction paying the open ledger fee
+            // This will be the first tx to call the operative function,
+            // but it won't succeed.
+            env(noop(alice), openLedgerFee(env), seq(aliceSeq++),
+                ter(terQUEUED));
+
+            checkMetrics(env, 3, boost::none, 9, 3, 256);
+
+            // Figure out how much it would cost to cover all the
+            // queued txs + itself
+            auto const metrics = env.app ().getTxQ ().getMetrics (
+                env.app ().config (), *env.current ());
+            std::uint64_t const totalFee =
+                calcTotalFee (100 * 2, metrics->txCount);
+            BEAST_EXPECT(totalFee == 167578);
+            // Replacing the last tx with the large fee succeeds.
+            --aliceSeq;
+            env(noop(alice), fee(totalFee), seq(aliceSeq++));
+
+            // The queue is clear
+            checkMetrics(env, 0, boost::none, 12, 3, 256);
+
+            env.close();
+            checkMetrics(env, 0, 24, 0, 12, 256);
+        }
+
+        testcase("replace middle tx with enough to clear queue");
+        {
+            fillQueue(env, alice);
+            // Queue up some transactions at a too-low fee.
+            auto aliceSeq = env.seq(alice);
+            for (int i = 0; i < 5; ++i)
+            {
+                env(noop(alice), fee(100), seq(aliceSeq++), ter(terQUEUED));
+            }
+
+            checkMetrics(env, 5, 24, 13, 12, 256);
+
+            // Figure out how much it would cost to cover 3 txns
+            std::uint64_t const totalFee = calcTotalFee(100 * 2, 3);
+            BEAST_EXPECT(totalFee == 20287);
+            // Replacing the last tx with the large fee succeeds.
+            aliceSeq -= 3;
+            env(noop(alice), fee(totalFee), seq(aliceSeq++));
+
+            checkMetrics(env, 2, 24, 16, 12, 256);
+            auto const aliceQueue = env.app().getTxQ().getAccountTxs(
+                alice.id(), env.app().config(), *env.current());
+            if (BEAST_EXPECT(aliceQueue))
+            {
+                BEAST_EXPECT(aliceQueue->size() == 2);
+                auto seq = aliceSeq;
+                for (auto const& tx : *aliceQueue)
+                {
+                    BEAST_EXPECT(tx.first == seq);
+                    BEAST_EXPECT(tx.second.feeLevel == 2560);
+                    ++seq;
+                }
+            }
+
+            // Close the ledger to clear the queue
+            env.close();
+            checkMetrics(env, 0, 32, 2, 16, 256);
+        }
+
+        testcase("clear queue failure (load)");
+        {
+            fillQueue(env, alice);
+            // Queue up some transactions at a too-low fee.
+            auto aliceSeq = env.seq(alice);
+            for (int i = 0; i < 2; ++i)
+            {
+                env(noop(alice), fee(200), seq(aliceSeq++), ter(terQUEUED));
+            }
+            for (int i = 0; i < 2; ++i)
+            {
+                env(noop(alice), fee(22), seq(aliceSeq++), ter(terQUEUED));
+            }
+
+            checkMetrics(env, 4, 32, 17, 16, 256);
+
+            // Figure out how much it would cost to cover all the txns
+            //  + 1
+            std::uint64_t const totalFee = calcTotalFee (200 * 2 + 22 * 2);
+            BEAST_EXPECT(totalFee == 35006);
+            // This fee should be enough, but oh no! Server load went up!
+            auto& feeTrack = env.app().getFeeTrack();
+            auto const origFee = feeTrack.getRemoteFee();
+            feeTrack.setRemoteFee(origFee * 5);
+            // Instead the tx gets queued, and all of the queued
+            // txs stay in the queue.
+            env(noop(alice), fee(totalFee), seq(aliceSeq++), ter(terQUEUED));
+
+            // The original last transaction is still in the queue
+            checkMetrics(env, 5, 32, 17, 16, 256);
+
+            // With high load, some of the txs stay in the queue
+            env.close();
+            checkMetrics(env, 3, 34, 2, 17, 256);
+
+            // Load drops back down
+            feeTrack.setRemoteFee(origFee);
+
+            // Because of the earlier failure, alice can not clear the queue,
+            // no matter how high the fee
+            fillQueue(env, bob);
+            checkMetrics(env, 3, 34, 18, 17, 256);
+
+            env(noop(alice), fee(XRP(1)), seq(aliceSeq++), ter(terQUEUED));
+            checkMetrics(env, 4, 34, 18, 17, 256);
+
+            // With normal load, those txs get into the ledger
+            env.close();
+            checkMetrics(env, 0, 36, 4, 18, 256);
         }
     }
 
@@ -2420,6 +2655,7 @@ public:
         testSignAndSubmitSequence();
         testAccountInfo();
         testServerInfo();
+        testClearQueuedAccountTxs();
     }
 };
 
