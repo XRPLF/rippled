@@ -176,10 +176,10 @@ private:
         // before escalation kicks in.
         std::size_t txnsExpected_;
         // Minimum value of escalationMultiplier.
-        std::uint32_t const minimumMultiplier_;
+        std::uint64_t const minimumMultiplier_;
         // Based on the median fee of the LCL. Used
         // when fee escalation kicks in.
-        std::uint32_t escalationMultiplier_;
+        std::uint64_t escalationMultiplier_;
         beast::Journal j_;
 
         std::mutex mutable lock_;
@@ -223,7 +223,7 @@ private:
             return txnsExpected_;
         }
 
-        std::uint32_t
+        std::uint64_t
         getEscalationMultiplier() const
         {
             std::lock_guard <std::mutex> sl(lock_);
@@ -233,6 +233,19 @@ private:
 
         std::uint64_t
         scaleFeeLevel(OpenView const& view, std::uint32_t txCountPadding = 0) const;
+
+        /**
+            Returns the total fee level for all transactions in a series.
+            Assumes that there are already more than txnsExpected_ txns in
+            the view. If there aren't, the math still works, but the level
+            will be high.
+
+            Returns: A `std::pair` as returned from `mulDiv` indicating whether
+                the calculation result is safe.
+        */
+        std::pair<bool, std::uint64_t>
+        escalatedSeriesFeeLevel(OpenView const& view, std::size_t extraCount,
+            std::size_t seriesSize) const;
     };
 
     class MaybeTx
@@ -302,7 +315,19 @@ private:
         AccountID const account;
         // Sequence number will be used as the key.
         TxMap transactions;
+        /* If this account has had any transaction retry more than
+            `retriesAllowed` times so that it was dropped from the
+            queue, then all other transactions for this account will
+            be given at most 2 attempts before being removed. Helps
+            prevent wasting resources on retries that are more likely
+            to fail.
+        */
         bool retryPenalty = false;
+        /* If this account has had any transaction fail or expire,
+            then when the queue is nearly full, transactions from
+            this account will be discarded. Helps prevent the queue
+            from getting filled and wedged.
+        */
         bool dropPenalty = false;
 
     public:
@@ -365,6 +390,22 @@ private:
     // is higher), or next entry in byFee_ (lower fee level).
     // Used to get the next "applyable" MaybeTx for accept().
     FeeMultiSet::iterator_type eraseAndAdvance(FeeMultiSet::const_iterator_type);
+    // Erase a range of items, based on TxQAccount::TxMap iterators
+    TxQAccount::TxMap::iterator
+    erase(TxQAccount& txQAccount, TxQAccount::TxMap::const_iterator begin,
+        TxQAccount::TxMap::const_iterator end);
+
+    /*
+        All-or-nothing attempt to try to apply all the queued txs for `accountIter`
+        up to and including `tx`.
+    */
+    std::pair<TER, bool>
+    tryClearAccountQueue(Application& app, OpenView& view,
+        STTx const& tx, AccountMap::iterator const& accountIter,
+            TxQAccount::TxMap::iterator, std::uint64_t feeLevelPaid,
+                PreflightResult const& pfresult,
+                    std::size_t const txExtraCount, ApplyFlags flags,
+                        beast::Journal j);
 
 };
 
