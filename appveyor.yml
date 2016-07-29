@@ -10,7 +10,7 @@ environment:
 
   # Other dependencies we just download each time.
   PIP_URL: https://bootstrap.pypa.io/get-pip.py
-  PYWIN32_URL: https://downloads.sourceforge.net/project/pywin32/pywin32/Build%20219/pywin32-219.win-amd64-py2.7.exe
+  PYWIN32_URL: https://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe
 
   # Scons honours these environment variables, setting the include/lib paths.
   BOOST_ROOT: C:/rippled_deps15.01/boost
@@ -44,7 +44,7 @@ install:
   - easy_install https://pypi.python.org/packages/source/S/SCons/scons-2.5.0.tar.gz#md5=bda5530a70a41a7831d83c8b191c021e
 
   # Scons has problems with parallel builds on windows without pywin32.
-  - easy_install pywin32-219.win-amd64-py2.7.exe
+  - easy_install pywin32-220.win-amd64-py2.7.exe
   # (easy_install can do headless installs of .exe wizards)
 
   # Download dependencies if appveyor didn't restore them from the cache.
