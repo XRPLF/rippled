@@ -384,7 +384,8 @@ def config_base(env):
         openssl = os.path.join(OSX_OPENSSL_ROOT, most_recent)
         env.Prepend(CPPPATH='%s/include' % openssl)
         env.Prepend(LIBPATH=['%s/lib' % openssl])
-        env.Append(CPPDEFINES=['NO_LOG_UNHANDLED_EXCEPTIONS'])
+        if not 'vcxproj' in COMMAND_LINE_TARGETS:
+            env.Append(CPPDEFINES=['NO_LOG_UNHANDLED_EXCEPTIONS'])
 
     # handle command-line arguments
     profile_jemalloc = ARGUMENTS.get('profile-jemalloc')
