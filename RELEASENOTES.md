@@ -6,6 +6,43 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.32.1
+
+The `rippled` 0.32.1 release includes an improved version of the payment code, which we expect to be available via Amendment on Wednesday, 2016-08-24 with the name FlowV2, and a completely new implementation of the WebSocket protocol for serving clients.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+**New and Updated Features**
+
+An improved version of the payment processing engine, which we expect to be available via Amendment on Wednesday, 2016-08-24 with the name “FlowV2”. The new payments code adds no new features, but improves efficiency and robustness in payment handling.
+
+The FlowV2 code may occasionally produce slightly different results than the old payment processing engine due to the effects of floating point rounding. Once FlowV2 is enabled on the network then old servers without the FlowV2 amendment will lose sync more frequently because of these differences.
+
+**Beast WebSocket**
+
+A completely new implementation of the WebSocket protocol for serving clients is available as a configurable option for `rippled` administrators. To enable this new implementation, change the “protocol” field in `rippled.cfg` from “ws” to “ws2” (or from “wss” to “wss2” for Secure WebSockets), as illustrated in this example:
+
+    [port_ws_public]
+    port = 5006
+    ip = 0.0.0.0
+    protocol = wss2
+
+The new implementation paves the way for increased reliability and future performance when submitting commands over WebSocket. The behavior and syntax of commands should be identical to the previous implementation. Please report any issues to support@ripple.com. A future version of rippled will remove the old WebSocket implementation, and use only the new one.
+
+**Bug fixes**
+
+Fix a non-exploitable, intermittent crash in some client pathfinding requests (RIPD-1219)
+
+Fix a non-exploitable crash caused by a race condition in the HTTP server. (RIPD-1251)
+
+Fix bug that could cause a previously fee queued transaction to not be relayed after being in the open ledger for an extended time without being included in a validated ledger. Fix bug that would allow an account to have more than the allowed limit of transactions in the fee queue. Fix bug that could crash debug builds in rare cases when replacing a dropped transaction. (RIPD-1200)
+
+Remove incompatible OS X switches in Test.py (RIPD-1250)
+
+Autofilling a transaction fee (sign / submit) with the experimental `x-queue-okay` parameter will use the user’s maximum fee if the open ledger fee is higher, improving queue position, and giving the tx more chance to succeed. (RIPD-1194)
+
+
+
 ## Version 0.32.0
 
 The `rippled` 0.32.0 release improves transaction queue which now supports batching and can hold up to 10 transactions per account, allowing users to queue multiple transactions for processing when the network load is high. Additionally, the `server_info` and `server_state` commands now include information on transaction cost multipliers and the fee command is available to unprivileged users. We advise rippled operators to upgrade immediately.
@@ -42,7 +79,7 @@ You can update to the new version on Red Hat Enterprise Linux 7 or CentOS 7 usin
 
 **Bug fixes**
 
-- Fix history acquire check (RIPD-1112) 
+- Fix history acquire check (RIPD-1112)
 - Correctly handle connections that fail security checks (RIPD-1114)
 - Fix secured Websocket closing
 - Reject invalid MessageKey in SetAccount handler (RIPD-308, RIPD-990)
