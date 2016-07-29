@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/app/tests/AccountTxPaging.test.cpp>
+//#include <ripple/app/tests/AccountTxPaging.test.cpp>
 #include <ripple/app/tests/AmendmentTable.test.cpp>
 #include <ripple/app/tests/CrossingLimits_test.cpp>
 #include <ripple/app/tests/DeliverMin.test.cpp>
