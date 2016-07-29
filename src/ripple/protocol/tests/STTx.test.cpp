@@ -152,9 +152,7 @@ public:
             {
                 ; // If it threw then serialization failed.
             }
-            expect (serialized == expectPass,
-                "Unexpected serialized = " + std::to_string (serialized) +
-                      ".  Object:\n" + signer.getFullText () + "\n");
+            BEAST_EXPECT(serialized == expectPass);
         };
 
         {

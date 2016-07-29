@@ -88,39 +88,39 @@ public:
         pv.emplace_back(1);
         pv.emplace_back(2);
         BasicNetwork<Peer*> net;
-        expect(net.rand(0, 1) == 0);
-        expect(! net.connect(&pv[0], &pv[0]));
-        expect(net.connect(&pv[0], &pv[1], 1s));
-        expect(net.connect(&pv[1], &pv[2], 1s));
-        expect(! net.connect(&pv[0], &pv[1]));
+        BEAST_EXPECT(net.rand(0, 1) == 0);
+        BEAST_EXPECT(! net.connect(&pv[0], &pv[0]));
+        BEAST_EXPECT(net.connect(&pv[0], &pv[1], 1s));
+        BEAST_EXPECT(net.connect(&pv[1], &pv[2], 1s));
+        BEAST_EXPECT(! net.connect(&pv[0], &pv[1]));
         std::size_t diameter = 0;
         net.bfs(&pv[0],
             [&](auto d, Peer*)
                 { diameter = std::max(d, diameter); });
-        expect(diameter == 2);
+        BEAST_EXPECT(diameter == 2);
         for(auto& peer : pv)
             peer.start(net);
-        expect(net.step_for(0s));
-        expect(net.step_for(1s));
-        expect(net.step());
-        expect(! net.step());
-        expect(! net.step_for(1s));
+        BEAST_EXPECT(net.step_for(0s));
+        BEAST_EXPECT(net.step_for(1s));
+        BEAST_EXPECT(net.step());
+        BEAST_EXPECT(! net.step());
+        BEAST_EXPECT(! net.step_for(1s));
         net.send(&pv[0], &pv[1], []{});
         net.send(&pv[1], &pv[0], []{});
-        expect(net.disconnect(&pv[0], &pv[1]));
-        expect(! net.disconnect(&pv[0], &pv[1]));
+        BEAST_EXPECT(net.disconnect(&pv[0], &pv[1]));
+        BEAST_EXPECT(! net.disconnect(&pv[0], &pv[1]));
         for(;;)
         {
             auto const links = net.links(&pv[1]);
             if(links.empty())
                 break;
-            expect(links[0].disconnect());
+            BEAST_EXPECT(links[0].disconnect());
         }
-        expect(pv[0].set ==
+        BEAST_EXPECT(pv[0].set ==
             std::set<int>({0, 2, 4}));
-        expect(pv[1].set ==
+        BEAST_EXPECT(pv[1].set ==
             std::set<int>({1, 3}));
-        expect(pv[2].set ==
+        BEAST_EXPECT(pv[2].set ==
             std::set<int>({2, 4}));
         net.timer(0s, []{});
     }

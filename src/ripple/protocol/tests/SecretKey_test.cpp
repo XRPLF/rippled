@@ -49,8 +49,8 @@ public:
         {
             auto const keypair = randomKeyPair (KeyType::secp256k1);
 
-            expect (keypair.first == derivePublicKey (KeyType::secp256k1, keypair.second));
-            expect (*publicKeyType (keypair.first) == KeyType::secp256k1);
+            BEAST_EXPECT(keypair.first == derivePublicKey (KeyType::secp256k1, keypair.second));
+            BEAST_EXPECT(*publicKeyType (keypair.first) == KeyType::secp256k1);
 
             for (std::size_t j = 0; j < 32; j++)
             {
@@ -63,12 +63,12 @@ public:
                 auto sig = signDigest (
                     keypair.first, keypair.second, digest);
 
-                expect (sig.size() != 0);
-                expect (verifyDigest (keypair.first,
+                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(verifyDigest (keypair.first,
                     digest, sig, true));
 
                 // Wrong digest:
-                expect (!verifyDigest (keypair.first,
+                BEAST_EXPECT(!verifyDigest (keypair.first,
                     ~digest, sig, true));
 
                 // Slightly change the signature:
@@ -76,11 +76,11 @@ public:
                     ptr[j % sig.size()]++;
 
                 // Wrong signature:
-                expect (!verifyDigest (keypair.first,
+                BEAST_EXPECT(!verifyDigest (keypair.first,
                     digest, sig, true));
 
                 // Wrong digest and signature:
-                expect (!verifyDigest (keypair.first,
+                BEAST_EXPECT(!verifyDigest (keypair.first,
                     ~digest, sig, true));
             }
         }
@@ -92,8 +92,8 @@ public:
         {
             auto const keypair = randomKeyPair (type);
 
-            expect (keypair.first == derivePublicKey (type, keypair.second));
-            expect (*publicKeyType (keypair.first) == type);
+            BEAST_EXPECT(keypair.first == derivePublicKey (type, keypair.second));
+            BEAST_EXPECT(*publicKeyType (keypair.first) == type);
 
             for (std::size_t j = 0; j < 32; j++)
             {
@@ -107,8 +107,8 @@ public:
                     keypair.first, keypair.second,
                     makeSlice (data));
 
-                expect (sig.size() != 0);
-                expect (verify(keypair.first,
+                BEAST_EXPECT(sig.size() != 0);
+                BEAST_EXPECT(verify(keypair.first,
                     makeSlice(data), sig, true));
 
                 // Construct wrong data:
@@ -120,7 +120,7 @@ public:
                     std::max_element (badData.begin(), badData.end()));
 
                 // Wrong data: should fail
-                expect (!verify (keypair.first,
+                BEAST_EXPECT(!verify (keypair.first,
                     makeSlice(badData), sig, true));
 
                 // Slightly change the signature:
@@ -128,11 +128,11 @@ public:
                     ptr[j % sig.size()]++;
 
                 // Wrong signature: should fail
-                expect (!verify (keypair.first,
+                BEAST_EXPECT(!verify (keypair.first,
                     makeSlice(data), sig, true));
 
                 // Wrong data and signature: should fail
-                expect (!verify (keypair.first,
+                BEAST_EXPECT(!verify (keypair.first,
                     makeSlice(badData), sig, true));
             }
         }
@@ -151,9 +151,9 @@ public:
             auto const sk2 = parseBase58<SecretKey> (
                 TOKEN_NODE_PRIVATE,
                 "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
-            expect (sk2);
+            BEAST_EXPECT(sk2);
 
-            expect (equal (sk1, *sk2));
+            BEAST_EXPECT(equal (sk1, *sk2));
         }
 
         {
@@ -164,15 +164,15 @@ public:
             auto const sk2 = parseBase58<SecretKey> (
                 TOKEN_NODE_PRIVATE,
                 "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
-            expect (sk2);
+            BEAST_EXPECT(sk2);
 
-            expect (equal (sk1, *sk2));
+            BEAST_EXPECT(equal (sk1, *sk2));
         }
 
         // Try converting short, long and malformed data
-        expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, ""));
-        expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, " "));
-        expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, "!35gty9mhju8nfjl"));
+        BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, ""));
+        BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, " "));
+        BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, "!35gty9mhju8nfjl"));
 
         auto const good = toBase58 (
             TokenType::TOKEN_NODE_PRIVATE,
@@ -188,7 +188,7 @@ public:
             while (!s.empty())
             {
                 s.erase (r(s) % s.size(), 1);
-                expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+                BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
             }
         }
 
@@ -197,7 +197,7 @@ public:
         {
             auto s = good;
             s.resize (s.size() + i, s[i % s.size()]);
-            expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+            BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
         }
 
         // Strings with invalid Base58 characters
@@ -207,7 +207,7 @@ public:
             {
                 auto s = good;
                 s[i % s.size()] = c;
-                expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+                BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
             }
         }
 
@@ -218,7 +218,7 @@ public:
             for (auto c : std::string("ansrJqtv7"))
             {
                 s[0] = c;
-                expect (!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
+                BEAST_EXPECT(!parseBase58<SecretKey> (TOKEN_NODE_PRIVATE, s));
             }
         }
 
@@ -233,27 +233,27 @@ public:
             auto const si = toBase58 (
                 TokenType::TOKEN_NODE_PRIVATE,
                 keys[i]);
-            expect (!si.empty());
+            BEAST_EXPECT(!si.empty());
 
             auto const ski = parseBase58<SecretKey> (
                 TOKEN_NODE_PRIVATE, si);
-            expect (ski && equal(keys[i], *ski));
+            BEAST_EXPECT(ski && equal(keys[i], *ski));
 
             for (std::size_t j = i; j != keys.size(); ++j)
             {
-                expect (equal (keys[i], keys[j]) == (i == j));
+                BEAST_EXPECT(equal (keys[i], keys[j]) == (i == j));
 
                 auto const sj = toBase58 (
                     TokenType::TOKEN_NODE_PRIVATE,
                     keys[j]);
 
-                expect ((si == sj) == (i == j));
+                BEAST_EXPECT((si == sj) == (i == j));
 
                 auto const skj = parseBase58<SecretKey> (
                     TOKEN_NODE_PRIVATE, sj);
-                expect (skj && equal(keys[j], *skj));
+                BEAST_EXPECT(skj && equal(keys[j], *skj));
 
-                expect (equal (*ski, *skj) == (i == j));
+                BEAST_EXPECT(equal (*ski, *skj) == (i == j));
             }
         }
     }
@@ -267,11 +267,11 @@ public:
             generateSeed ("masterpassphrase"));
 
         SecretKey sk2 (sk1);
-        expect (equal (sk1, sk2));
+        BEAST_EXPECT(equal (sk1, sk2));
 
         SecretKey sk3;
         sk3 = sk2;
-        expect (equal (sk3, sk2));
+        BEAST_EXPECT(equal (sk3, sk2));
     }
 
     void run() override

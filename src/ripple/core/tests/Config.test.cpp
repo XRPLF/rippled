@@ -380,13 +380,13 @@ port_wss_admin
 
         c.loadFromString (toLoad);
 
-        expect (c.legacy ("ssl_verify") == "0");
+        BEAST_EXPECT(c.legacy ("ssl_verify") == "0");
         expectException ([&c] {c.legacy ("server");});  // not a single line
 
         // set a legacy value
-        expect (c.legacy ("not_in_file") == "");
+        BEAST_EXPECT(c.legacy ("not_in_file") == "");
         c.legacy ("not_in_file", "new_value");
-        expect (c.legacy ("not_in_file") == "new_value");
+        BEAST_EXPECT(c.legacy ("not_in_file") == "new_value");
     }
     void testDbPath ()
     {
@@ -403,13 +403,13 @@ port_wss_admin
                 // Dummy test - do we get back what we put in
                 Config c;
                 c.loadFromString (boost::str (cc % dataDirAbs.string ()));
-                expect (c.legacy ("database_path") == dataDirAbs.string ());
+                BEAST_EXPECT(c.legacy ("database_path") == dataDirAbs.string ());
             }
             {
                 // Rel paths should convert to abs paths
                 Config c;
                 c.loadFromString (boost::str (cc % dataDirRel.string ()));
-                expect (c.legacy ("database_path") == dataDirAbs.string ());
+                BEAST_EXPECT(c.legacy ("database_path") == dataDirAbs.string ());
             }
             {
                 // No db section.
@@ -417,7 +417,7 @@ port_wss_admin
                 // load will not.
                 Config c;
                 c.loadFromString ("");
-                expect (c.legacy ("database_path") == "");
+                BEAST_EXPECT(c.legacy ("database_path") == "");
             }
         }
         {
@@ -427,10 +427,9 @@ port_wss_admin
             path const dataDirAbs (cwd / path ("test_db") / dataDirRel);
             detail::RippledCfgGuard g (*this, "test_db", dataDirAbs.string (), "");
             auto& c (g.config ());
-            expect (g.dataDirExists ());
-            expect (g.configFileExists ());
-            expect (c.legacy ("database_path") == dataDirAbs.string (),
-                    "dbPath Abs Path File");
+            BEAST_EXPECT(g.dataDirExists ());
+            BEAST_EXPECT(g.configFileExists ());
+            BEAST_EXPECT(c.legacy ("database_path") == dataDirAbs.string ());
         }
         {
             // read from file relative path
@@ -438,10 +437,9 @@ port_wss_admin
             detail::RippledCfgGuard g (*this, "test_db", dbPath, "");
             auto& c (g.config ());
             std::string const nativeDbPath = absolute (path (dbPath)).string ();
-            expect (g.dataDirExists ());
-            expect (g.configFileExists ());
-            expect (c.legacy ("database_path") == nativeDbPath,
-                    "dbPath Rel Path File");
+            BEAST_EXPECT(g.dataDirExists ());
+            BEAST_EXPECT(g.configFileExists ());
+            BEAST_EXPECT(c.legacy ("database_path") == nativeDbPath);
         }
         {
             // read from file no path
@@ -451,10 +449,9 @@ port_wss_admin
                 absolute (path ("test_db") /
                           path (Config::databaseDirName))
                     .string ();
-            expect (g.dataDirExists ());
-            expect (g.configFileExists ());
-            expect (c.legacy ("database_path") == nativeDbPath,
-                    "dbPath No Path");
+            BEAST_EXPECT(g.dataDirExists ());
+            BEAST_EXPECT(g.configFileExists ());
+            BEAST_EXPECT(c.legacy ("database_path") == nativeDbPath);
         }
     }
 
@@ -477,7 +474,7 @@ port_wss_admin
             } catch (std::runtime_error& e) {
                 error = e.what();
             }
-            expect (error == expectedError);
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load should throw for invalid [validators_file]
@@ -496,7 +493,7 @@ port_wss_admin
             } catch (std::runtime_error& e) {
                 error = e.what();
             }
-            expect (error == expectedError);
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load validators and quorum from config
@@ -515,24 +512,24 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
 4
 )rippleConfig");
             c.loadFromString (toLoad);
-            expect (c.legacy ("validators_file").empty ());
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 3);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 2);
-            expect (c.VALIDATION_QUORUM == 4);
+            BEAST_EXPECT(c.legacy ("validators_file").empty ());
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 3);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 2);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == 4);
         }
         {
             // load from specified [validators_file] absolute path
             int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.cfg", quorum);
-            expect (vtg.validatorsFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
             Config c;
             boost::format cc ("[validators_file]\n%1%\n");
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
-            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            expect (c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
         }
         {
             // load from specified [validators_file] file name
@@ -543,13 +540,13 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
                 *this, "test_cfg", valFileName, quorum);
             detail::RippledCfgGuard rcg (
                 *this, "test_cfg", "", valFileName);
-            expect (vtg.validatorsFileExists ());
-            expect (rcg.configFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
+            BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
-            expect (c.legacy ("validators_file") == valFileName);
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            expect (c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.legacy ("validators_file") == valFileName);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
         }
         {
             // load from specified [validators_file] relative path
@@ -560,13 +557,13 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
                 *this, "test_cfg", "validators.txt", quorum);
             detail::RippledCfgGuard rcg (
                 *this, "test_cfg", "", valFilePath);
-            expect (vtg.validatorsFileExists ());
-            expect (rcg.configFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
+            BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
-            expect (c.legacy ("validators_file") == valFilePath);
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            expect (c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.legacy ("validators_file") == valFilePath);
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
         }
         {
             // load from validators file in default location
@@ -574,13 +571,13 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.txt", quorum);
             detail::RippledCfgGuard rcg (*this, "test_cfg", "", "");
-            expect (vtg.validatorsFileExists ());
-            expect (rcg.configFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
+            BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
-            expect (c.legacy ("validators_file").empty ());
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            expect (c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.legacy ("validators_file").empty ());
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
         }
         {
             // load from specified [validators_file] instead
@@ -588,18 +585,18 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.cfg", quorum);
-            expect (vtg.validatorsFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
             detail::ValidatorsTxtGuard vtgDefault (
                 *this, "test_cfg", "validators.txt", 4);
-            expect (vtgDefault.validatorsFileExists ());
+            BEAST_EXPECT(vtgDefault.validatorsFileExists ());
             detail::RippledCfgGuard rcg (
                 *this, "test_cfg", "", vtg.validatorsFile ());
-            expect (rcg.configFileExists ());
+            BEAST_EXPECT(rcg.configFileExists ());
             auto& c (rcg.config ());
-            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            expect (c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
         }
         {
             // do not load quorum from validators file if in config
@@ -613,13 +610,13 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.cfg", quorum);
-            expect (vtg.validatorsFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
             Config c;
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
-            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 5);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
-            expect (c.VALIDATION_QUORUM == 4);
+            BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 3);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == 4);
         }
         {
             // load validators from both config and validators file
@@ -642,13 +639,13 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             int const quorum = 3;
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.cfg", quorum);
-            expect (vtg.validatorsFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
             Config c;
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
-            expect (c.legacy ("validators_file") == vtg.validatorsFile ());
-            expect (c.section (SECTION_VALIDATORS).values ().size () == 10);
-            expect (c.section (SECTION_VALIDATOR_KEYS).values ().size () == 5);
-            expect (c.VALIDATION_QUORUM == quorum);
+            BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
+            BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 10);
+            BEAST_EXPECT(c.section (SECTION_VALIDATOR_KEYS).values ().size () == 5);
+            BEAST_EXPECT(c.VALIDATION_QUORUM == quorum);
         }
         {
             // load should throw if [validators] and [validator_keys] are
@@ -658,7 +655,7 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             std::string error;
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.cfg", boost::none);
-            expect (vtg.validatorsFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
             auto const expectedError =
                 "The file specified in [validators_file] does not contain a "
                 "[validators] or [validator_keys] section: " +
@@ -670,7 +667,7 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             } catch (std::runtime_error& e) {
                 error = e.what();
             }
-            expect (error == expectedError);
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load should throw if [validation_quorum] is
@@ -680,7 +677,7 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             std::string error;
             detail::ValidatorsTxtGuard vtg (
                 *this, "test_cfg", "validators.cfg", boost::none);
-            expect (vtg.validatorsFileExists ());
+            BEAST_EXPECT(vtg.validatorsFileExists ());
             auto const expectedError =
                 "The file specified in [validators_file] does not contain a "
                 "[validation_quorum] section: " + vtg.validatorsFile ();
@@ -689,7 +686,7 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             } catch (std::runtime_error& e) {
                 error = e.what();
             }
-            expect (error == expectedError);
+            BEAST_EXPECT(error == expectedError);
         }
     }
 
@@ -705,81 +702,81 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ false,
                 /* bSilent */ false, /* bStandalone */ false);
-            expect(!config.quiet());
-            expect(!config.silent());
-            expect(!config.standalone());
-            expect(config.LEDGER_HISTORY == 256);
-            expect(!config.legacy("database_path").empty());
+            BEAST_EXPECT(!config.quiet());
+            BEAST_EXPECT(!config.silent());
+            BEAST_EXPECT(!config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
+            BEAST_EXPECT(!config.legacy("database_path").empty());
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ true,
                 /* bSilent */ false, /* bStandalone */ false);
-            expect(config.quiet());
-            expect(!config.silent());
-            expect(!config.standalone());
-            expect(config.LEDGER_HISTORY == 256);
-            expect(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.quiet());
+            BEAST_EXPECT(!config.silent());
+            BEAST_EXPECT(!config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
+            BEAST_EXPECT(!config.legacy("database_path").empty());
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ false,
                 /* bSilent */ true, /* bStandalone */ false);
-            expect(config.quiet());
-            expect(config.silent());
-            expect(!config.standalone());
-            expect(config.LEDGER_HISTORY == 256);
-            expect(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.quiet());
+            BEAST_EXPECT(config.silent());
+            BEAST_EXPECT(!config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
+            BEAST_EXPECT(!config.legacy("database_path").empty());
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ true,
                 /* bSilent */ true, /* bStandalone */ false);
-            expect(config.quiet());
-            expect(config.silent());
-            expect(!config.standalone());
-            expect(config.LEDGER_HISTORY == 256);
-            expect(!config.legacy("database_path").empty());
+            BEAST_EXPECT(config.quiet());
+            BEAST_EXPECT(config.silent());
+            BEAST_EXPECT(!config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 256);
+            BEAST_EXPECT(!config.legacy("database_path").empty());
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ false,
                 /* bSilent */ false, /* bStandalone */ true);
-            expect(!config.quiet());
-            expect(!config.silent());
-            expect(config.standalone());
-            expect(config.LEDGER_HISTORY == 0);
-            expect(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(!config.quiet());
+            BEAST_EXPECT(!config.silent());
+            BEAST_EXPECT(config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
+            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ true,
                 /* bSilent */ false, /* bStandalone */ true);
-            expect(config.quiet());
-            expect(!config.silent());
-            expect(config.standalone());
-            expect(config.LEDGER_HISTORY == 0);
-            expect(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.quiet());
+            BEAST_EXPECT(!config.silent());
+            BEAST_EXPECT(config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
+            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ false,
                 /* bSilent */ true, /* bStandalone */ true);
-            expect(config.quiet());
-            expect(config.silent());
-            expect(config.standalone());
-            expect(config.LEDGER_HISTORY == 0);
-            expect(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.quiet());
+            BEAST_EXPECT(config.silent());
+            BEAST_EXPECT(config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
+            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
         }
         {
             Config config;
             config.setup(cfg.configFile(), /*bQuiet*/ true,
                 /* bSilent */ true, /* bStandalone */ true);
-            expect(config.quiet());
-            expect(config.silent());
-            expect(config.standalone());
-            expect(config.LEDGER_HISTORY == 0);
-            expect(config.legacy("database_path").empty() == !explicitPath);
+            BEAST_EXPECT(config.quiet());
+            BEAST_EXPECT(config.silent());
+            BEAST_EXPECT(config.standalone());
+            BEAST_EXPECT(config.LEDGER_HISTORY == 0);
+            BEAST_EXPECT(config.legacy("database_path").empty() == !explicitPath);
         }
     }
 

@@ -44,7 +44,7 @@ public:
             jv[jss::streams] = Json::arrayValue;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("subscribe", jv);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -54,7 +54,7 @@ public:
             payment[jss::tx_json] = pay("alice", "bob", XRP(1));
             payment[jss::tx_json][sfLastLedgerSequence.fieldName] = 1;
             auto jv = wsc->invoke("submit", payment);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "tefMAX_LEDGER");
 
             // Submit past sequence transaction
@@ -62,21 +62,21 @@ public:
             payment[jss::tx_json][sfSequence.fieldName] =
                 env.seq("alice") - 1;
             jv = wsc->invoke("submit", payment);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "tefPAST_SEQ");
 
             // Submit future sequence transaction
             payment[jss::tx_json][sfSequence.fieldName] =
                 env.seq("alice") + 1;
             jv = wsc->invoke("submit", payment);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "terPRE_SEQ");
 
             // Submit transaction to bridge the sequence gap
             payment[jss::tx_json][sfSequence.fieldName] =
                 env.seq("alice");
             jv = wsc->invoke("submit", payment);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "tesSUCCESS");
 
             // Wait for the jobqueue to process everything
@@ -84,13 +84,13 @@ public:
 
             // Finalize transactions
             jv = wsc->invoke("ledger_accept");
-            expect(jv[jss::result].isMember(
+            BEAST_EXPECT(jv[jss::result].isMember(
                 jss::ledger_current_index));
         }
 
         {
             // Check balances
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& ff = jv[jss::meta]["AffectedNodes"]
@@ -99,7 +99,7 @@ public:
                         ff["Balance"] == "10001000000";
                 }));
 
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& ff = jv[jss::meta]["AffectedNodes"]
@@ -136,7 +136,7 @@ public:
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = pay("alice", "bob", XRP(1));
             jv = wsc->invoke("submit", jv);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "tesSUCCESS");
 
             // Disconnect
@@ -158,9 +158,9 @@ public:
             // Check balance
             auto ff = jv[jss::result][jss::transactions][0u][jss::meta]
                 ["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"];
-            expect(ff[jss::Account] ==
+            BEAST_EXPECT(ff[jss::Account] ==
                 Account("bob").human());
-            expect(ff["Balance"] == "10001000000");
+            BEAST_EXPECT(ff["Balance"] == "10001000000");
         }
     }
 
@@ -180,12 +180,12 @@ public:
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = pay("alice", "bob", XRP(1));
             jv = wsc->invoke("submit", jv);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "tesSUCCESS");
 
             // Finalize transaction
             jv = wsc->invoke("ledger_accept");
-            expect(jv[jss::result].isMember(
+            BEAST_EXPECT(jv[jss::result].isMember(
                 jss::ledger_current_index));
 
             // Wait for the jobqueue to process everything
@@ -198,18 +198,18 @@ public:
             jv[jss::streams] = Json::arrayValue;
             jv[jss::streams].append("ledger");
             jv = wsc->invoke("subscribe", jv);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
 
             // Close ledgers
             for(auto i = 0; i < 8; ++i)
             {
-                expect(wsc->invoke("ledger_accept")[jss::result].
+                BEAST_EXPECT(wsc->invoke("ledger_accept")[jss::result].
                     isMember(jss::ledger_current_index));
 
                 // Wait for the jobqueue to process everything
                 env.app().getJobQueue().rendezvous();
 
-                expect(wsc->findMsg(5s,
+                BEAST_EXPECT(wsc->findMsg(5s,
                     [&](auto const& jv)
                     {
                         return jv[jss::type] == "ledgerClosed";
@@ -226,18 +226,18 @@ public:
             jv[jss::streams] = Json::arrayValue;
             jv[jss::streams].append("ledger");
             jv = wsc->invoke("subscribe", jv);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
 
             // Close ledgers
             for (auto i = 0; i < 2; ++i)
             {
-                expect(wsc->invoke("ledger_accept")[jss::result].
+                BEAST_EXPECT(wsc->invoke("ledger_accept")[jss::result].
                     isMember(jss::ledger_current_index));
 
                 // Wait for the jobqueue to process everything
                 env.app().getJobQueue().rendezvous();
 
-                expect(wsc->findMsg(5s,
+                BEAST_EXPECT(wsc->findMsg(5s,
                     [&](auto const& jv)
                     {
                         return jv[jss::type] == "ledgerClosed";
@@ -257,9 +257,9 @@ public:
             // Check balance
             auto ff = jv[jss::result][jss::transactions][0u][jss::meta]
                 ["AffectedNodes"][1u]["ModifiedNode"]["FinalFields"];
-            expect(ff[jss::Account] ==
+            BEAST_EXPECT(ff[jss::Account] ==
                 Account("bob").human());
-            expect(ff["Balance"] == "10001000000");
+            BEAST_EXPECT(ff["Balance"] == "10001000000");
         }
     }
 
@@ -280,7 +280,7 @@ public:
             jv[jss::accounts_proposed].append(
                 Account("alice").human());
             jv = wsc->invoke("subscribe", jv);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -290,13 +290,13 @@ public:
             jv[jss::tx_json] = fset("alice", 0);
             jv[jss::tx_json][jss::Fee] = 10;
             jv = wsc->invoke("submit", jv);
-            expect(jv[jss::result][jss::engine_result] ==
+            BEAST_EXPECT(jv[jss::result][jss::engine_result] ==
                 "tesSUCCESS");
         }
 
         {
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::transaction][jss::TransactionType] ==

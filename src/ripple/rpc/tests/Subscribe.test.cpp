@@ -42,7 +42,7 @@ public:
             stream[jss::streams] = Json::arrayValue;
             stream[jss::streams].append("server");
             auto jv = wsc->invoke("subscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -52,7 +52,7 @@ public:
             env.app().getOPs().reportFeeChange();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::type] == "serverStatus";
@@ -62,7 +62,7 @@ public:
         {
             // RPC unsubscribe
             auto jv = wsc->invoke("unsubscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -72,7 +72,7 @@ public:
             env.app().getOPs().reportFeeChange();
 
             // Check stream update
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
     }
 
@@ -89,7 +89,7 @@ public:
             stream[jss::streams] = Json::arrayValue;
             stream[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", stream);
-            expect(jv[jss::result][jss::ledger_index] == 2);
+            BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
         }
 
         {
@@ -97,7 +97,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::ledger_index] == 3;
@@ -109,7 +109,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::ledger_index] == 4;
@@ -118,7 +118,7 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", stream);
-        expect(jv[jss::status] == "success");
+        BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     void testTransactions()
@@ -134,7 +134,7 @@ public:
             stream[jss::streams] = Json::arrayValue;
             stream[jss::streams].append("transactions");
             auto jv = wsc->invoke("subscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -142,7 +142,7 @@ public:
             env.close();
 
             // Check stream update for payment transaction
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::meta]["AffectedNodes"][1u]
@@ -151,7 +151,7 @@ public:
                 }));
 
             // Check stream update for accountset transaction
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::meta]["AffectedNodes"][0u]
@@ -163,7 +163,7 @@ public:
             env.close();
 
             // Check stream update for payment transaction
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::meta]["AffectedNodes"][1u]
@@ -172,7 +172,7 @@ public:
                 }));
 
             // Check stream update for accountset transaction
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::meta]["AffectedNodes"][0u]
@@ -184,7 +184,7 @@ public:
         {
             // RPC unsubscribe
             auto jv = wsc->invoke("unsubscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -193,21 +193,21 @@ public:
             stream[jss::accounts] = Json::arrayValue;
             stream[jss::accounts].append(Account("alice").human());
             auto jv = wsc->invoke("subscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
             // Transaction that does not affect stream
             env.fund(XRP(10000), "carol");
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
 
             // Transactions concerning alice
             env.trust(Account("bob")["USD"](100), "alice");
             env.close();
 
             // Check stream updates
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::meta]["AffectedNodes"][1u]
@@ -215,7 +215,7 @@ public:
                             Account("alice").human();
                 }));
 
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::meta]["AffectedNodes"][1u]
@@ -226,7 +226,7 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", stream);
-        expect(jv[jss::status] == "success");
+        BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     void testManifests()
@@ -241,12 +241,12 @@ public:
             stream[jss::streams] = Json::arrayValue;
             stream[jss::streams].append("manifests");
             auto jv = wsc->invoke("subscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", stream);
-        expect(jv[jss::status] == "success");
+        BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     static
@@ -293,7 +293,7 @@ public:
             stream[jss::streams] = Json::arrayValue;
             stream[jss::streams].append("validations");
             auto jv = wsc->invoke("subscribe", stream);
-            expect(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
 
         {
@@ -301,7 +301,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     return jv[jss::type] == "validationReceived" &&
@@ -321,7 +321,7 @@ public:
 
         // RPC unsubscribe
         auto jv = wsc->invoke("unsubscribe", stream);
-        expect(jv[jss::status] == "success");
+        BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     void run() override

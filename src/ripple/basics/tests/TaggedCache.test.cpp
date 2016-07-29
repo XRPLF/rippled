@@ -53,61 +53,61 @@ public:
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {
-            expect (c.getCacheSize() == 0);
-            expect (c.getTrackSize() == 0);
-            expect (! c.insert (1, "one"));
-            expect (c.getCacheSize() == 1);
-            expect (c.getTrackSize() == 1);
+            BEAST_EXPECT(c.getCacheSize() == 0);
+            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(! c.insert (1, "one"));
+            BEAST_EXPECT(c.getCacheSize() == 1);
+            BEAST_EXPECT(c.getTrackSize() == 1);
 
             {
                 std::string s;
-                expect (c.retrieve (1, s));
-                expect (s == "one");
+                BEAST_EXPECT(c.retrieve (1, s));
+                BEAST_EXPECT(s == "one");
             }
 
             ++clock;
             c.sweep ();
-            expect (c.getCacheSize () == 0);
-            expect (c.getTrackSize () == 0);
+            BEAST_EXPECT(c.getCacheSize () == 0);
+            BEAST_EXPECT(c.getTrackSize () == 0);
         }
 
         // Insert an item, maintain a strong pointer, age it, and
         // verify that the entry still exists.
         {
-            expect (! c.insert (2, "two"));
-            expect (c.getCacheSize() == 1);
-            expect (c.getTrackSize() == 1);
+            BEAST_EXPECT(! c.insert (2, "two"));
+            BEAST_EXPECT(c.getCacheSize() == 1);
+            BEAST_EXPECT(c.getTrackSize() == 1);
 
             {
                 Cache::mapped_ptr p (c.fetch (2));
-                expect (p != nullptr);
+                BEAST_EXPECT(p != nullptr);
                 ++clock;
                 c.sweep ();
-                expect (c.getCacheSize() == 0);
-                expect (c.getTrackSize() == 1);
+                BEAST_EXPECT(c.getCacheSize() == 0);
+                BEAST_EXPECT(c.getTrackSize() == 1);
             }
 
             // Make sure its gone now that our reference is gone
             ++clock;
             c.sweep ();
-            expect (c.getCacheSize() == 0);
-            expect (c.getTrackSize() == 0);
+            BEAST_EXPECT(c.getCacheSize() == 0);
+            BEAST_EXPECT(c.getTrackSize() == 0);
         }
 
         // Insert the same key/value pair and make sure we get the same result
         {
-            expect (! c.insert (3, "three"));
+            BEAST_EXPECT(! c.insert (3, "three"));
 
             {
                 Cache::mapped_ptr const p1 (c.fetch (3));
                 Cache::mapped_ptr p2 (std::make_shared <Value> ("three"));
                 c.canonicalize (3, p2);
-                expect (p1.get() == p2.get());
+                BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
             c.sweep ();
-            expect (c.getCacheSize() == 0);
-            expect (c.getTrackSize() == 0);
+            BEAST_EXPECT(c.getCacheSize() == 0);
+            BEAST_EXPECT(c.getTrackSize() == 0);
         }
 
         // Put an object in but keep a strong pointer to it, advance the clock a lot,
@@ -115,34 +115,34 @@ public:
         // original object.
         {
             // Put an object in
-            expect (! c.insert (4, "four"));
-            expect (c.getCacheSize() == 1);
-            expect (c.getTrackSize() == 1);
+            BEAST_EXPECT(! c.insert (4, "four"));
+            BEAST_EXPECT(c.getCacheSize() == 1);
+            BEAST_EXPECT(c.getTrackSize() == 1);
 
             {
                 // Keep a strong pointer to it
                 Cache::mapped_ptr p1 (c.fetch (4));
-                expect (p1 != nullptr);
-                expect (c.getCacheSize() == 1);
-                expect (c.getTrackSize() == 1);
+                BEAST_EXPECT(p1 != nullptr);
+                BEAST_EXPECT(c.getCacheSize() == 1);
+                BEAST_EXPECT(c.getTrackSize() == 1);
                 // Advance the clock a lot
                 ++clock;
                 c.sweep ();
-                expect (c.getCacheSize() == 0);
-                expect (c.getTrackSize() == 1);
+                BEAST_EXPECT(c.getCacheSize() == 0);
+                BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 Cache::mapped_ptr p2 (std::make_shared <std::string> ("four"));
-                expect (c.canonicalize (4, p2, false));
-                expect (c.getCacheSize() == 1);
-                expect (c.getTrackSize() == 1);
+                BEAST_EXPECT(c.canonicalize (4, p2, false));
+                BEAST_EXPECT(c.getCacheSize() == 1);
+                BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object
-                expect (p1.get() == p2.get());
+                BEAST_EXPECT(p1.get() == p2.get());
             }
 
             ++clock;
             c.sweep ();
-            expect (c.getCacheSize() == 0);
-            expect (c.getTrackSize() == 0);
+            BEAST_EXPECT(c.getCacheSize() == 0);
+            BEAST_EXPECT(c.getTrackSize() == 0);
         }
     }
 };

@@ -67,34 +67,34 @@ public:
         Journal j(sink);
 
         j.trace() << " ";
-        expect(sink.count() == 0);
+        BEAST_EXPECT(sink.count() == 0);
         j.debug() << " ";
-        expect(sink.count() == 0);
+        BEAST_EXPECT(sink.count() == 0);
         j.info() << " ";
-        expect(sink.count() == 1);
+        BEAST_EXPECT(sink.count() == 1);
         j.warn() << " ";
-        expect(sink.count() == 2);
+        BEAST_EXPECT(sink.count() == 2);
         j.error() << " ";
-        expect(sink.count() == 3);
+        BEAST_EXPECT(sink.count() == 3);
         j.fatal() << " ";
-        expect(sink.count() == 4);
+        BEAST_EXPECT(sink.count() == 4);
 
         sink.reset();
 
         sink.threshold(kDebug);
 
         j.trace() << " ";
-        expect(sink.count() == 0);
+        BEAST_EXPECT(sink.count() == 0);
         j.debug() << " ";
-        expect(sink.count() == 1);
+        BEAST_EXPECT(sink.count() == 1);
         j.info() << " ";
-        expect(sink.count() == 2);
+        BEAST_EXPECT(sink.count() == 2);
         j.warn() << " ";
-        expect(sink.count() == 3);
+        BEAST_EXPECT(sink.count() == 3);
         j.error() << " ";
-        expect(sink.count() == 4);
+        BEAST_EXPECT(sink.count() == 4);
         j.fatal() << " ";
-        expect(sink.count() == 5);
+        BEAST_EXPECT(sink.count() == 5);
     }
 };
 

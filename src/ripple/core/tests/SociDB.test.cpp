@@ -105,7 +105,7 @@ public:
         for (auto const& i : d)
         {
             SociConfig sc (c, i.first);
-            expect (boost::ends_with (sc.connectionString (),
+            BEAST_EXPECT(boost::ends_with (sc.connectionString (),
                                       i.first + i.second));
         }
     }
@@ -125,7 +125,7 @@ public:
             std::vector<int> intResult (20 * intData.size ());
             s << "SELECT StringData, IntData FROM SociTestTable;",
                 soci::into (stringResult), soci::into (intResult);
-            expect (stringResult.size () == stringData.size () &&
+            BEAST_EXPECT(stringResult.size () == stringData.size () &&
                     intResult.size () == intData.size ());
             for (int i = 0; i < stringResult.size (); ++i)
             {
@@ -136,7 +136,7 @@ public:
                 auto ii = std::distance (
                     intData.begin (),
                     std::find (intData.begin (), intData.end (), intResult[i]));
-                expect (si == ii && si < stringResult.size ());
+                BEAST_EXPECT(si == ii && si < stringResult.size ());
             }
         };
 
@@ -208,7 +208,7 @@ public:
                 std::uint64_t ubig = 0;
                 s << "SELECT I, UI, BI, UBI from STT;", soci::into (ig),
                     soci::into (uig), soci::into (big), soci::into (ubig);
-                expect (ig == id[0] && uig == uid[0] && big == bid[0] &&
+                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
                         ubig == ubid[0]);
             }
             catch (std::exception&)
@@ -223,7 +223,7 @@ public:
                 boost::optional<std::uint64_t> ubig;
                 s << "SELECT I, UI, BI, UBI from STT;", soci::into (ig),
                     soci::into (uig), soci::into (big), soci::into (ubig);
-                expect (*ig == id[0] && *uig == uid[0] && *big == bid[0] &&
+                BEAST_EXPECT(*ig == id[0] && *uig == uid[0] && *big == bid[0] &&
                         *ubig == ubid[0]);
             }
             catch (std::exception&)
@@ -246,7 +246,7 @@ public:
                 uig = r.get<std::uint32_t>(1);
                 big = r.get<std::int64_t>(2);
                 ubig = r.get<std::uint64_t>(3);
-                expect (ig == id[0] && uig == uid[0] && big == bid[0] &&
+                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
                         ubig == ubid[0]);
             }
             catch (std::exception&)
@@ -265,7 +265,7 @@ public:
                 uig = r.get<std::uint32_t>("UI");
                 big = r.get<std::int64_t>("BI");
                 ubig = r.get<std::uint64_t>("UBI");
-                expect (ig == id[0] && uig == uid[0] && big == bid[0] &&
+                BEAST_EXPECT(ig == id[0] && uig == uid[0] && big == bid[0] &&
                         ubig == ubid[0]);
             }
             catch (std::exception&)
@@ -279,7 +279,7 @@ public:
                              std::int64_t,
                              std::uint64_t> d;
                 s << "SELECT I, UI, BI, UBI from STT", soci::into (d);
-                expect (get<0>(d) == id[0] && get<1>(d) == uid[0] &&
+                BEAST_EXPECT(get<0>(d) == id[0] && get<1>(d) == uid[0] &&
                         get<2>(d) == bid[0] && get<3>(d) == ubid[0]);
             }
             catch (std::exception&)
@@ -352,7 +352,7 @@ public:
             s << "SELECT LedgerSeq FROM Ledgers;", soci::into (ledgersLS);
             s << "SELECT LedgerHash FROM Validations;",
                 soci::into (validationsLH);
-            expect (ledgersLS.size () == numRows &&
+            BEAST_EXPECT(ledgersLS.size () == numRows &&
                     validationsLH.size () == numRows);
         }
         using namespace boost::filesystem;

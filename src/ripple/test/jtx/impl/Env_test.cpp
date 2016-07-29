@@ -108,36 +108,36 @@ public:
             pass();
         }
 
-        expect(to_string(XRP(5)) == "5 XRP");
-        expect(to_string(XRP(.80)) == "0.8 XRP");
-        expect(to_string(XRP(.005)) == "5000 drops");
-        expect(to_string(XRP(0.1)) == "0.1 XRP");
-        expect(to_string(XRP(10000)) == "10000 XRP");
-        expect(to_string(drops(10)) == "10 drops");
-        expect(to_string(drops(123400000)) == "123.4 XRP");
-        expect(to_string(XRP(-5)) == "-5 XRP");
-        expect(to_string(XRP(-.99)) == "-0.99 XRP");
-        expect(to_string(XRP(-.005)) == "-5000 drops");
-        expect(to_string(XRP(-0.1)) == "-0.1 XRP");
-        expect(to_string(drops(-10)) == "-10 drops");
-        expect(to_string(drops(-123400000)) == "-123.4 XRP");
+        BEAST_EXPECT(to_string(XRP(5)) == "5 XRP");
+        BEAST_EXPECT(to_string(XRP(.80)) == "0.8 XRP");
+        BEAST_EXPECT(to_string(XRP(.005)) == "5000 drops");
+        BEAST_EXPECT(to_string(XRP(0.1)) == "0.1 XRP");
+        BEAST_EXPECT(to_string(XRP(10000)) == "10000 XRP");
+        BEAST_EXPECT(to_string(drops(10)) == "10 drops");
+        BEAST_EXPECT(to_string(drops(123400000)) == "123.4 XRP");
+        BEAST_EXPECT(to_string(XRP(-5)) == "-5 XRP");
+        BEAST_EXPECT(to_string(XRP(-.99)) == "-0.99 XRP");
+        BEAST_EXPECT(to_string(XRP(-.005)) == "-5000 drops");
+        BEAST_EXPECT(to_string(XRP(-0.1)) == "-0.1 XRP");
+        BEAST_EXPECT(to_string(drops(-10)) == "-10 drops");
+        BEAST_EXPECT(to_string(drops(-123400000)) == "-123.4 XRP");
 
-        expect(XRP(1) == drops(1000000));
-        expect(XRP(1) == STAmount(1000000));
-        expect(STAmount(1000000) == XRP(1));
+        BEAST_EXPECT(XRP(1) == drops(1000000));
+        BEAST_EXPECT(XRP(1) == STAmount(1000000));
+        BEAST_EXPECT(STAmount(1000000) == XRP(1));
 
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
-        expect(to_string(USD(0)) == "0/USD(gw)");
-        expect(to_string(USD(10)) == "10/USD(gw)");
-        expect(to_string(USD(-10)) == "-10/USD(gw)");
-        expect(USD(0) == STAmount(USD, 0));
-        expect(USD(1) == STAmount(USD, 1));
-        expect(USD(-1) == STAmount(USD, -1));
+        BEAST_EXPECT(to_string(USD(0)) == "0/USD(gw)");
+        BEAST_EXPECT(to_string(USD(10)) == "10/USD(gw)");
+        BEAST_EXPECT(to_string(USD(-10)) == "-10/USD(gw)");
+        BEAST_EXPECT(USD(0) == STAmount(USD, 0));
+        BEAST_EXPECT(USD(1) == STAmount(USD, 1));
+        BEAST_EXPECT(USD(-1) == STAmount(USD, -1));
 
         auto const get = [](AnyAmount a){ return a; };
-        expect(! get(USD(10)).is_any);
-        expect(get(any(USD(10))).is_any);
+        BEAST_EXPECT(! get(USD(10)).is_any);
+        BEAST_EXPECT(get(any(USD(10))).is_any);
     }
 
     // Test Env
@@ -186,24 +186,24 @@ public:
         // balance
         {
             Env env(*this);
-            expect(env.balance(alice) == 0);
-            expect(env.balance(alice, USD) != 0);
-            expect(env.balance(alice, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice) == 0);
+            BEAST_EXPECT(env.balance(alice, USD) != 0);
+            BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             env.fund(n, alice, gw);
-            expect(env.balance(alice) == n);
-            expect(env.balance(gw) == n);
+            BEAST_EXPECT(env.balance(alice) == n);
+            BEAST_EXPECT(env.balance(gw) == n);
             env.trust(USD(1000), alice);
             env(pay(gw, alice, USD(10)));
-            expect(to_string(env.balance("alice", USD)) == "10/USD(gw)");
-            expect(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
+            BEAST_EXPECT(to_string(env.balance("alice", USD)) == "10/USD(gw)");
+            BEAST_EXPECT(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
         // seq
         {
             Env env(*this);
             env.fund(n, noripple("alice", gw));
-            expect(env.seq("alice") == 1);
-            expect(env.seq(gw) == 1);
+            BEAST_EXPECT(env.seq("alice") == 1);
+            BEAST_EXPECT(env.seq(gw) == 1);
         }
 
         // autofill
@@ -402,31 +402,31 @@ public:
         JTx jt1;
         // Test a straightforward
         // property
-        expect(!jt1.get<int>());
+        BEAST_EXPECT(!jt1.get<int>());
         jt1.set<int>(7);
-        expect(jt1.get<int>());
-        expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<UDT>());
+        BEAST_EXPECT(jt1.get<int>());
+        BEAST_EXPECT(*jt1.get<int>() == 7);
+        BEAST_EXPECT(!jt1.get<UDT>());
 
         // Test that the property is
         // replaced if it exists.
         jt1.set<int>(17);
-        expect(jt1.get<int>());
-        expect(*jt1.get<int>() == 17);
-        expect(!jt1.get<UDT>());
+        BEAST_EXPECT(jt1.get<int>());
+        BEAST_EXPECT(*jt1.get<int>() == 17);
+        BEAST_EXPECT(!jt1.get<UDT>());
 
         // Test that modifying the
         // returned prop is saved
         *jt1.get<int>() = 42;
-        expect(jt1.get<int>());
-        expect(*jt1.get<int>() == 42);
-        expect(!jt1.get<UDT>());
+        BEAST_EXPECT(jt1.get<int>());
+        BEAST_EXPECT(*jt1.get<int>() == 42);
+        BEAST_EXPECT(!jt1.get<UDT>());
 
         // Test get() const
         auto const& jt2 = jt1;
-        expect(jt2.get<int>());
-        expect(*jt2.get<int>() == 42);
-        expect(!jt2.get<UDT>());
+        BEAST_EXPECT(jt2.get<int>());
+        BEAST_EXPECT(*jt2.get<int>() == 42);
+        BEAST_EXPECT(!jt2.get<UDT>());
     }
 
     void testProp()
@@ -435,21 +435,21 @@ public:
         Env env(*this);
         env.fund(XRP(100000), "alice");
         auto jt1 = env.jt(noop("alice"));
-        expect(!jt1.get<std::uint16_t>());
+        BEAST_EXPECT(!jt1.get<std::uint16_t>());
         auto jt2 = env.jt(noop("alice"),
             prop<std::uint16_t>(-1));
-        expect(jt2.get<std::uint16_t>());
-        expect(*jt2.get<std::uint16_t>() ==
+        BEAST_EXPECT(jt2.get<std::uint16_t>());
+        BEAST_EXPECT(*jt2.get<std::uint16_t>() ==
             65535);
         auto jt3 = env.jt(noop("alice"),
             prop<std::string>(
                 "Hello, world!"),
                     prop<bool>(false));
-        expect(jt3.get<std::string>());
-        expect(*jt3.get<std::string>() ==
+        BEAST_EXPECT(jt3.get<std::string>());
+        BEAST_EXPECT(*jt3.get<std::string>() ==
             "Hello, world!");
-        expect(jt3.get<bool>());
-        expect(!*jt3.get<bool>());
+        BEAST_EXPECT(jt3.get<bool>());
+        BEAST_EXPECT(!*jt3.get<bool>());
     }
 
     void testJTxCopy()
@@ -458,18 +458,18 @@ public:
         using namespace jtx;
         JTx jt1;
         jt1.set<int>(7);
-        expect(jt1.get<int>());
-        expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<UDT>());
+        BEAST_EXPECT(jt1.get<int>());
+        BEAST_EXPECT(*jt1.get<int>() == 7);
+        BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(jt1);
-        expect(jt2.get<int>());
-        expect(*jt2.get<int>() == 7);
-        expect(!jt2.get<UDT>());
+        BEAST_EXPECT(jt2.get<int>());
+        BEAST_EXPECT(*jt2.get<int>() == 7);
+        BEAST_EXPECT(!jt2.get<UDT>());
         JTx jt3;
         jt3 = jt1;
-        expect(jt3.get<int>());
-        expect(*jt3.get<int>() == 7);
-        expect(!jt3.get<UDT>());
+        BEAST_EXPECT(jt3.get<int>());
+        BEAST_EXPECT(*jt3.get<int>() == 7);
+        BEAST_EXPECT(!jt3.get<UDT>());
     }
 
     void testJTxMove()
@@ -478,21 +478,21 @@ public:
         using namespace jtx;
         JTx jt1;
         jt1.set<int>(7);
-        expect(jt1.get<int>());
-        expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<UDT>());
+        BEAST_EXPECT(jt1.get<int>());
+        BEAST_EXPECT(*jt1.get<int>() == 7);
+        BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
-        expect(!jt1.get<int>());
-        expect(!jt1.get<UDT>());
-        expect(jt2.get<int>());
-        expect(*jt2.get<int>() == 7);
-        expect(!jt2.get<UDT>());
+        BEAST_EXPECT(!jt1.get<int>());
+        BEAST_EXPECT(!jt1.get<UDT>());
+        BEAST_EXPECT(jt2.get<int>());
+        BEAST_EXPECT(*jt2.get<int>() == 7);
+        BEAST_EXPECT(!jt2.get<UDT>());
         jt1 = std::move(jt2);
-        expect(!jt2.get<int>());
-        expect(!jt2.get<UDT>());
-        expect(jt1.get<int>());
-        expect(*jt1.get<int>() == 7);
-        expect(!jt1.get<UDT>());
+        BEAST_EXPECT(!jt2.get<int>());
+        BEAST_EXPECT(!jt2.get<UDT>());
+        BEAST_EXPECT(jt1.get<int>());
+        BEAST_EXPECT(*jt1.get<int>() == 7);
+        BEAST_EXPECT(!jt1.get<UDT>());
     }
 
     void
@@ -517,13 +517,13 @@ public:
         using namespace jtx;
         Env env(*this);
         auto seq = env.current()->seq();
-        expect(seq == env.closed()->seq() + 1);
+        BEAST_EXPECT(seq == env.closed()->seq() + 1);
         env.close();
-        expect(env.closed()->seq() == seq);
-        expect(env.current()->seq() == seq + 1);
+        BEAST_EXPECT(env.closed()->seq() == seq);
+        BEAST_EXPECT(env.current()->seq() == seq + 1);
         env.close();
-        expect(env.closed()->seq() == seq + 1);
-        expect(env.current()->seq() == seq + 2);
+        BEAST_EXPECT(env.closed()->seq() == seq + 1);
+        BEAST_EXPECT(env.current()->seq() == seq + 2);
     }
 
     void
@@ -593,10 +593,10 @@ public:
 
             // Make sure we get the right account back.
             auto tx = env.tx();
-            if (expect(tx))
+            if (BEAST_EXPECT(tx))
             {
-                expect(tx->getAccountID(sfAccount) == alice.id());
-                expect(tx->getTxnType() == ttACCOUNT_SET);
+                BEAST_EXPECT(tx->getAccountID(sfAccount) == alice.id());
+                BEAST_EXPECT(tx->getTxnType() == ttACCOUNT_SET);
             }
         }
 
@@ -606,10 +606,10 @@ public:
 
             // Make sure we get the right account back.
             auto tx = env.tx();
-            if (expect(tx))
+            if (BEAST_EXPECT(tx))
             {
-                expect(tx->getAccountID(sfAccount) == alice.id());
-                expect(tx->getTxnType() == ttACCOUNT_SET);
+                BEAST_EXPECT(tx->getAccountID(sfAccount) == alice.id());
+                BEAST_EXPECT(tx->getTxnType() == ttACCOUNT_SET);
             }
         }
 
@@ -623,7 +623,7 @@ public:
                 seq(none), ter(temINVALID))(params);
 
             auto tx = env.tx();
-            expect(!tx);
+            BEAST_EXPECT(!tx);
         }
     }
 

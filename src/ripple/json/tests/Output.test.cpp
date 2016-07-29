@@ -30,7 +30,7 @@ struct Output_test : ripple::RPC::TestOutputSuite
     {
         setup (name);
         Json::Value value;
-        expect (Json::Reader().parse (valueDesc, value));
+        BEAST_EXPECT(Json::Reader().parse (valueDesc, value));
         auto out = stringOutput (output_);
         outputJson (value, out);
 

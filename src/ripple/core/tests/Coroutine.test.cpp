@@ -77,10 +77,10 @@ public:
                 jc->yield();
                 g2.signal();
             });
-        expect(g1.wait_for(5s));
+        BEAST_EXPECT(g1.wait_for(5s));
         jc->join();
         jc->post();
-        expect(g2.wait_for(5s));
+        BEAST_EXPECT(g2.wait_for(5s));
     }
 
     void
@@ -99,7 +99,7 @@ public:
                 jc->yield();
                 g.signal();
             });
-        expect(g.wait_for(5s));
+        BEAST_EXPECT(g.wait_for(5s));
     }
 
     void
@@ -114,19 +114,19 @@ public:
         std::array<std::shared_ptr<JobCoro>, N> a;
 
         LocalValue<int> lv(-1);
-        expect(*lv == -1);
+        BEAST_EXPECT(*lv == -1);
 
         gate g;
         jq.addJob(jtCLIENT, "LocalValue-Test",
             [&](auto const& job)
             {
-                this->expect(*lv == -1);
+                this->BEAST_EXPECT(*lv == -1);
                 *lv = -2;
-                this->expect(*lv == -2);
+                this->BEAST_EXPECT(*lv == -2);
                 g.signal();
             });
-        expect(g.wait_for(5s));
-        expect(*lv == -1);
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(*lv == -1);
 
         for(int i = 0; i < N; ++i)
         {
@@ -137,21 +137,21 @@ public:
                     g.signal();
                     jc->yield();
 
-                    this->expect(*lv == -1);
+                    this->BEAST_EXPECT(*lv == -1);
                     *lv = id;
-                    this->expect(*lv == id);
+                    this->BEAST_EXPECT(*lv == id);
                     g.signal();
                     jc->yield();
 
-                    this->expect(*lv == id);
+                    this->BEAST_EXPECT(*lv == id);
                 });
-            expect(g.wait_for(5s));
+            BEAST_EXPECT(g.wait_for(5s));
             a[i]->join();
         }
         for(auto const& jc : a)
         {
             jc->post();
-            expect(g.wait_for(5s));
+            BEAST_EXPECT(g.wait_for(5s));
             jc->join();
         }
         for(auto const& jc : a)
@@ -163,11 +163,11 @@ public:
         jq.addJob(jtCLIENT, "LocalValue-Test",
             [&](auto const& job)
             {
-                this->expect(*lv == -2);
+                this->BEAST_EXPECT(*lv == -2);
                 g.signal();
             });
-        expect(g.wait_for(5s));
-        expect(*lv == -1);
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(*lv == -1);
     }
 
     void

@@ -223,7 +223,7 @@ private:
             flow.in, issue_in,
             flow.out, issue_out));
 
-        expect (expected == result, name + (sell ? " (s)" : " (b)"));
+        BEAST_EXPECT(expected == result);
 
         if (expected != result)
         {

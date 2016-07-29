@@ -1854,8 +1854,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), ledger);
 
-            expect (! RPC::contains_error (result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(! RPC::contains_error (result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -1869,8 +1869,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), ledger);
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -1883,8 +1883,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), ledger);
 
-            expect (RPC::contains_error (result), "Invalid checkFee");
-            expect(!req[jss::tx_json].isMember(jss::Fee));
+            BEAST_EXPECT(RPC::contains_error (result));
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -1899,8 +1899,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), ledger);
 
-            expect(RPC::contains_error(result), "Invalid checkFee");
-            expect(!req[jss::tx_json].isMember(jss::Fee));
+            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -1913,8 +1913,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), ledger);
 
-            expect(RPC::contains_error(result), "Invalid checkFee");
-            expect(!req[jss::tx_json].isMember(jss::Fee));
+            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -1927,8 +1927,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), ledger);
 
-            expect(RPC::contains_error(result), "Divide by 0");
-            expect(!req[jss::tx_json].isMember(jss::Fee));
+            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
     }
 
@@ -1958,8 +1958,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), env.current());
 
-            expect (! RPC::contains_error (result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(! RPC::contains_error (result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -1976,8 +1976,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -1994,8 +1994,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 8889);
         }
 
@@ -2013,8 +2013,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 8889);
         }
 
@@ -2031,8 +2031,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -2049,8 +2049,8 @@ public:
                     env.app().config(), feeTrack,
                       env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -2068,8 +2068,8 @@ public:
                     env.app().config(), feeTrack,
                       env.app().getTxQ(), env.current());
 
-            expect(RPC::contains_error(result), "Invalid checkFee");
-            expect(!req[jss::tx_json].isMember(jss::Fee));
+            BEAST_EXPECT(RPC::contains_error(result));
+            BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
         {
@@ -2086,8 +2086,8 @@ public:
                     env.app().config(), feeTrack,
                         env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 50);
         }
 
@@ -2106,8 +2106,8 @@ public:
                     env.app().config(), feeTrack,
                     env.app().getTxQ(), env.current());
 
-            expect(!RPC::contains_error(result), "Legal checkFee");
-            expect(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 3333);
         }
 
@@ -2220,10 +2220,7 @@ public:
                         errStr = result["error_message"].asString ();
 
                     std::string const expStr (txnTest.expMsg[get<3>(testFunc)]);
-                    expect (errStr == expStr,
-                        "Expected: \"" + expStr + "\"\n  Got: \"" + errStr +
-                        "\"\nIn " + std::string (get<2>(testFunc)) +
-                            ": " + txnTest.description);
+                    BEAST_EXPECT(errStr == expStr);
                 }
             }
         }

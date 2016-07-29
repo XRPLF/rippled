@@ -197,13 +197,13 @@ public:
         try
         {
             auto const n = boost::asio::read_until (s, b, '\n');
-            if (expect (n == match.size()))
+            if (BEAST_EXPECT(n == match.size()))
             {
                 std::string got;
                 got.resize (n);
                 boost::asio::buffer_copy (boost::asio::buffer (
                     &got[0], n), b.data());
-                return expect (got == match);
+                return BEAST_EXPECT(got == match);
             }
         }
         catch (std::length_error const& e)

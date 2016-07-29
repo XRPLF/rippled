@@ -129,12 +129,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             accountSend (av, gw1, alice, toCredit, j);
-            expect (accountHolds (av, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit);
 
             accountSend (av, alice, gw1, toDebit, j);
-            expect (accountHolds (av, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit - toDebit);
         }
@@ -148,12 +148,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             rippleCredit (av, gw1, alice, toCredit, true, j);
-            expect (accountHolds (av, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit);
 
             rippleCredit (av, alice, gw1, toDebit, true, j);
-            expect (accountHolds (av, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit - toDebit);
         }
@@ -168,12 +168,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             accountSend (pv, gw1, alice, toCredit, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);
 
             accountSend (pv, alice, gw1, toDebit, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
         }
@@ -188,7 +188,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             rippleCredit (pv, gw1, alice, toCredit, true, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);
         }
@@ -203,7 +203,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             redeemIOU (pv, alice, toDebit, iss, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
         }
@@ -218,7 +218,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             issueIOU (pv, alice, toCredit, iss, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);
         }
@@ -233,23 +233,23 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
             accountSend (pv, gw1, alice, toCredit, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);
 
             {
                 PaymentSandbox pv2(&pv);
-                expect (accountHolds (pv2, alice, iss.currency, iss.account,
+                BEAST_EXPECT(accountHolds (pv2, alice, iss.currency, iss.account,
                             fhIGNORE_FREEZE, j) ==
                         startingAmount);
                 accountSend (pv2, gw1, alice, toCredit, j);
-                expect (accountHolds (pv2, alice, iss.currency, iss.account,
+                BEAST_EXPECT(accountHolds (pv2, alice, iss.currency, iss.account,
                             fhIGNORE_FREEZE, j) ==
                         startingAmount);
             }
 
             accountSend (pv, alice, gw1, toDebit, j);
-            expect (accountHolds (pv, alice, iss.currency, iss.account,
+            BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
         }
@@ -286,9 +286,9 @@ class PaymentSandbox_test : public beast::unit_test::suite
             PaymentSandbox pv (&av);
             pv.creditHook (gw, alice, hugeAmt, -tinyAmt);
             if (closeTime > amendmentRIPD1141SoTime ())
-                expect (pv.balanceHook (alice, gw, hugeAmt) == tinyAmt);
+                BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) == tinyAmt);
             else
-                expect (pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
+                BEAST_EXPECT(pv.balanceHook (alice, gw, hugeAmt) != tinyAmt);
         }
     }
     void testReserve()
@@ -327,7 +327,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
             accountSend (sb, xrpAccount (), alice, XRP(100), dj);
             accountSend (sb, alice, xrpAccount (), XRP(100), dj);
-            expect (accountFundsXRP (sb, alice) == beast::zero);
+            BEAST_EXPECT(accountFundsXRP (sb, alice) == beast::zero);
         }
 
     }

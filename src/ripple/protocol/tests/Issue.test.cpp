@@ -54,23 +54,23 @@ public:
         Unsigned const u2 (2);
         Unsigned const u3 (3);
 
-        expect (u1 != u2);
-        expect (u1 <  u2);
-        expect (u1 <= u2);
-        expect (u2 <= u2);
-        expect (u2 == u2);
-        expect (u2 >= u2);
-        expect (u3 >= u2);
-        expect (u3 >  u2);
+        BEAST_EXPECT(u1 != u2);
+        BEAST_EXPECT(u1 <  u2);
+        BEAST_EXPECT(u1 <= u2);
+        BEAST_EXPECT(u2 <= u2);
+        BEAST_EXPECT(u2 == u2);
+        BEAST_EXPECT(u2 >= u2);
+        BEAST_EXPECT(u3 >= u2);
+        BEAST_EXPECT(u3 >  u2);
 
         std::hash <Unsigned> hash;
 
-        expect (hash (u1) == hash (u1));
-        expect (hash (u2) == hash (u2));
-        expect (hash (u3) == hash (u3));
-        expect (hash (u1) != hash (u2));
-        expect (hash (u1) != hash (u3));
-        expect (hash (u2) != hash (u3));
+        BEAST_EXPECT(hash (u1) == hash (u1));
+        BEAST_EXPECT(hash (u2) == hash (u2));
+        BEAST_EXPECT(hash (u3) == hash (u3));
+        BEAST_EXPECT(hash (u1) != hash (u2));
+        BEAST_EXPECT(hash (u1) != hash (u3));
+        BEAST_EXPECT(hash (u2) != hash (u3));
     }
 
     //--------------------------------------------------------------------------
@@ -83,42 +83,42 @@ public:
         Currency const c2 (2); AccountID const i2 (2);
         Currency const c3 (3); AccountID const i3 (3);
 
-        expect (Issue (c1, i1) != Issue (c2, i1));
-        expect (Issue (c1, i1) <  Issue (c2, i1));
-        expect (Issue (c1, i1) <= Issue (c2, i1));
-        expect (Issue (c2, i1) <= Issue (c2, i1));
-        expect (Issue (c2, i1) == Issue (c2, i1));
-        expect (Issue (c2, i1) >= Issue (c2, i1));
-        expect (Issue (c3, i1) >= Issue (c2, i1));
-        expect (Issue (c3, i1) >  Issue (c2, i1));
-        expect (Issue (c1, i1) != Issue (c1, i2));
-        expect (Issue (c1, i1) <  Issue (c1, i2));
-        expect (Issue (c1, i1) <= Issue (c1, i2));
-        expect (Issue (c1, i2) <= Issue (c1, i2));
-        expect (Issue (c1, i2) == Issue (c1, i2));
-        expect (Issue (c1, i2) >= Issue (c1, i2));
-        expect (Issue (c1, i3) >= Issue (c1, i2));
-        expect (Issue (c1, i3) >  Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i1) != Issue (c2, i1));
+        BEAST_EXPECT(Issue (c1, i1) <  Issue (c2, i1));
+        BEAST_EXPECT(Issue (c1, i1) <= Issue (c2, i1));
+        BEAST_EXPECT(Issue (c2, i1) <= Issue (c2, i1));
+        BEAST_EXPECT(Issue (c2, i1) == Issue (c2, i1));
+        BEAST_EXPECT(Issue (c2, i1) >= Issue (c2, i1));
+        BEAST_EXPECT(Issue (c3, i1) >= Issue (c2, i1));
+        BEAST_EXPECT(Issue (c3, i1) >  Issue (c2, i1));
+        BEAST_EXPECT(Issue (c1, i1) != Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i1) <  Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i1) <= Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i2) <= Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i2) == Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i2) >= Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i3) >= Issue (c1, i2));
+        BEAST_EXPECT(Issue (c1, i3) >  Issue (c1, i2));
 
         std::hash <Issue> hash;
 
-        expect (hash (Issue (c1, i1)) == hash (Issue (c1, i1)));
-        expect (hash (Issue (c1, i2)) == hash (Issue (c1, i2)));
-        expect (hash (Issue (c1, i3)) == hash (Issue (c1, i3)));
-        expect (hash (Issue (c2, i1)) == hash (Issue (c2, i1)));
-        expect (hash (Issue (c2, i2)) == hash (Issue (c2, i2)));
-        expect (hash (Issue (c2, i3)) == hash (Issue (c2, i3)));
-        expect (hash (Issue (c3, i1)) == hash (Issue (c3, i1)));
-        expect (hash (Issue (c3, i2)) == hash (Issue (c3, i2)));
-        expect (hash (Issue (c3, i3)) == hash (Issue (c3, i3)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c1, i2)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c1, i3)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c2, i1)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c2, i2)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c2, i3)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c3, i1)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c3, i2)));
-        expect (hash (Issue (c1, i1)) != hash (Issue (c3, i3)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) == hash (Issue (c1, i1)));
+        BEAST_EXPECT(hash (Issue (c1, i2)) == hash (Issue (c1, i2)));
+        BEAST_EXPECT(hash (Issue (c1, i3)) == hash (Issue (c1, i3)));
+        BEAST_EXPECT(hash (Issue (c2, i1)) == hash (Issue (c2, i1)));
+        BEAST_EXPECT(hash (Issue (c2, i2)) == hash (Issue (c2, i2)));
+        BEAST_EXPECT(hash (Issue (c2, i3)) == hash (Issue (c2, i3)));
+        BEAST_EXPECT(hash (Issue (c3, i1)) == hash (Issue (c3, i1)));
+        BEAST_EXPECT(hash (Issue (c3, i2)) == hash (Issue (c3, i2)));
+        BEAST_EXPECT(hash (Issue (c3, i3)) == hash (Issue (c3, i3)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c1, i2)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c1, i3)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c2, i1)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c2, i2)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c2, i3)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c3, i1)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c3, i2)));
+        BEAST_EXPECT(hash (Issue (c1, i1)) != hash (Issue (c3, i3)));
     }
 
     template <class Set>
@@ -135,34 +135,34 @@ public:
             Set c;
 
             c.insert (a1);
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             c.insert (a2);
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
-            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
-            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i2)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i1)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c2, i2)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
         }
 
         {
             Set c;
 
             c.insert (a1);
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             c.insert (a2);
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
-            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
-            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i2)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i1)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c2, i2)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
             c.emplace (c1, i1);
-            if (! expect (c.size() == 1)) return;
+            if (! BEAST_EXPECT(c.size() == 1)) return;
             c.emplace (c2, i2);
-            if (! expect (c.size() == 2)) return;
+            if (! BEAST_EXPECT(c.size() == 2)) return;
     #endif
         }
     }
@@ -181,28 +181,28 @@ public:
             Map c;
 
             c.insert (std::make_pair (a1, 1));
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             c.insert (std::make_pair (a2, 2));
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
-            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
-            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i2)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i1)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c2, i2)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
         }
 
         {
             Map c;
 
             c.insert (std::make_pair (a1, 1));
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             c.insert (std::make_pair (a2, 2));
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
-            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
-            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i2)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c1, i1)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Issue (c2, i2)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
         }
     }
 
@@ -268,14 +268,14 @@ public:
         Issue a3 (c2, i2);
         Issue a4 (c3, i2);
 
-        expect (Book (a1, a2) != Book (a2, a3));
-        expect (Book (a1, a2) <  Book (a2, a3));
-        expect (Book (a1, a2) <= Book (a2, a3));
-        expect (Book (a2, a3) <= Book (a2, a3));
-        expect (Book (a2, a3) == Book (a2, a3));
-        expect (Book (a2, a3) >= Book (a2, a3));
-        expect (Book (a3, a4) >= Book (a2, a3));
-        expect (Book (a3, a4) >  Book (a2, a3));
+        BEAST_EXPECT(Book (a1, a2) != Book (a2, a3));
+        BEAST_EXPECT(Book (a1, a2) <  Book (a2, a3));
+        BEAST_EXPECT(Book (a1, a2) <= Book (a2, a3));
+        BEAST_EXPECT(Book (a2, a3) <= Book (a2, a3));
+        BEAST_EXPECT(Book (a2, a3) == Book (a2, a3));
+        BEAST_EXPECT(Book (a2, a3) >= Book (a2, a3));
+        BEAST_EXPECT(Book (a3, a4) >= Book (a2, a3));
+        BEAST_EXPECT(Book (a3, a4) >  Book (a2, a3));
 
         std::hash <Book> hash;
 
@@ -297,18 +297,18 @@ public:
 //         log << std::hex << hash (Book (a3, a4));
 //         log << std::hex << hash (Book (a3, a4));
 
-        expect (hash (Book (a1, a2)) == hash (Book (a1, a2)));
-        expect (hash (Book (a1, a3)) == hash (Book (a1, a3)));
-        expect (hash (Book (a1, a4)) == hash (Book (a1, a4)));
-        expect (hash (Book (a2, a3)) == hash (Book (a2, a3)));
-        expect (hash (Book (a2, a4)) == hash (Book (a2, a4)));
-        expect (hash (Book (a3, a4)) == hash (Book (a3, a4)));
+        BEAST_EXPECT(hash (Book (a1, a2)) == hash (Book (a1, a2)));
+        BEAST_EXPECT(hash (Book (a1, a3)) == hash (Book (a1, a3)));
+        BEAST_EXPECT(hash (Book (a1, a4)) == hash (Book (a1, a4)));
+        BEAST_EXPECT(hash (Book (a2, a3)) == hash (Book (a2, a3)));
+        BEAST_EXPECT(hash (Book (a2, a4)) == hash (Book (a2, a4)));
+        BEAST_EXPECT(hash (Book (a3, a4)) == hash (Book (a3, a4)));
 
-        expect (hash (Book (a1, a2)) != hash (Book (a1, a3)));
-        expect (hash (Book (a1, a2)) != hash (Book (a1, a4)));
-        expect (hash (Book (a1, a2)) != hash (Book (a2, a3)));
-        expect (hash (Book (a1, a2)) != hash (Book (a2, a4)));
-        expect (hash (Book (a1, a2)) != hash (Book (a3, a4)));
+        BEAST_EXPECT(hash (Book (a1, a2)) != hash (Book (a1, a3)));
+        BEAST_EXPECT(hash (Book (a1, a2)) != hash (Book (a1, a4)));
+        BEAST_EXPECT(hash (Book (a1, a2)) != hash (Book (a2, a3)));
+        BEAST_EXPECT(hash (Book (a1, a2)) != hash (Book (a2, a4)));
+        BEAST_EXPECT(hash (Book (a1, a2)) != hash (Book (a3, a4)));
     }
 
     //--------------------------------------------------------------------------
@@ -329,34 +329,34 @@ public:
             Set c;
 
             c.insert (b1);
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             c.insert (b2);
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
-            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
-            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a1)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a2)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a2, a1)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
         }
 
         {
             Set c;
 
             c.insert (b1);
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             c.insert (b2);
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
-            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
-            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a1)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a2)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a2, a1)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
             c.emplace (a1, a2);
-            if (! expect (c.size() == 1)) return;
+            if (! BEAST_EXPECT(c.size() == 1)) return;
             c.emplace (a2, a1);
-            if (! expect (c.size() == 2)) return;
+            if (! BEAST_EXPECT(c.size() == 2)) return;
     #endif
         }
     }
@@ -381,15 +381,15 @@ public:
 
             //c.insert (value_type (b1, 1));
             c.insert (std::make_pair (b1, 1));
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             //c.insert (value_type (b2, 2));
             c.insert (std::make_pair (b2, 1));
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
-            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
-            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a1)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a2)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a2, a1)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
         }
 
         {
@@ -397,15 +397,15 @@ public:
 
             //c.insert (value_type (b1, 1));
             c.insert (std::make_pair (b1, 1));
-            if (! expect (c.size () == 1)) return;
+            if (! BEAST_EXPECT(c.size () == 1)) return;
             //c.insert (value_type (b2, 2));
             c.insert (std::make_pair (b2, 1));
-            if (! expect (c.size () == 2)) return;
+            if (! BEAST_EXPECT(c.size () == 2)) return;
 
-            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
-            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
-            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
-            if (! expect (c.empty ())) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a1)) == 0)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a1, a2)) == 1)) return;
+            if (! BEAST_EXPECT(c.erase (Book (a2, a1)) == 1)) return;
+            if (! BEAST_EXPECT(c.empty ())) return;
         }
     }
 

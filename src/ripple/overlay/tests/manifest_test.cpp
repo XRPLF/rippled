@@ -113,7 +113,7 @@ public:
         st[sfSigningPubKey] = spk;
 
         sign(st, HashPrefix::manifest, type, sk);
-        expect(verify(st, HashPrefix::manifest, pk, true));
+        BEAST_EXPECT(verify(st, HashPrefix::manifest, pk, true));
 
         if (broken)
         {
@@ -168,8 +168,8 @@ public:
         Section s1;
 
         // Correct (empty) configuration
-        expect (cache.loadValidatorKeys (s1, journal));
-        expect (cache.size() == 0);
+        BEAST_EXPECT(cache.loadValidatorKeys (s1, journal));
+        BEAST_EXPECT(cache.size() == 0);
 
         // Correct configuration
         s1.append (format (network[0]));
@@ -181,23 +181,23 @@ public:
         s1.append (format (network[6], "    Leading, Trailing & Internal    Whitespace    "));
         s1.append (format (network[7], "    "));
 
-        expect (cache.loadValidatorKeys (s1, journal));
+        BEAST_EXPECT(cache.loadValidatorKeys (s1, journal));
 
         for (auto const& n : network)
-            expect (cache.trusted (n));
+            BEAST_EXPECT(cache.trusted (n));
 
         // Incorrect configurations:
         Section s2;
         s2.append ("NotAPublicKey");
-        expect (!cache.loadValidatorKeys (s2, journal));
+        BEAST_EXPECT(!cache.loadValidatorKeys (s2, journal));
 
         Section s3;
         s3.append (format (network[0], "!"));
-        expect (!cache.loadValidatorKeys (s3, journal));
+        BEAST_EXPECT(!cache.loadValidatorKeys (s3, journal));
 
         Section s4;
         s4.append (format (network[0], "!  Comment"));
-        expect (!cache.loadValidatorKeys (s4, journal));
+        BEAST_EXPECT(!cache.loadValidatorKeys (s4, journal));
 
         // Check if we properly terminate when we encounter
         // a malformed or unparseable entry:
@@ -207,9 +207,9 @@ public:
         Section s5;
         s5.append (format (masterKey1, "XXX"));
         s5.append (format (masterKey2));
-        expect (!cache.loadValidatorKeys (s5, journal));
-        expect (!cache.trusted (masterKey1));
-        expect (!cache.trusted (masterKey2));
+        BEAST_EXPECT(!cache.loadValidatorKeys (s5, journal));
+        BEAST_EXPECT(!cache.trusted (masterKey1));
+        BEAST_EXPECT(!cache.trusted (masterKey2));
 
         // Reject secp256k1 permanent validator keys
         auto const node1 = randomNode ();
@@ -218,9 +218,9 @@ public:
         Section s6;
         s6.append (format (node1));
         s6.append (format (node2, " Comment"));
-        expect (!cache.loadValidatorKeys (s6, journal));
-        expect (!cache.trusted (node1));
-        expect (!cache.trusted (node2));
+        BEAST_EXPECT(!cache.loadValidatorKeys (s6, journal));
+        BEAST_EXPECT(!cache.trusted (node1));
+        BEAST_EXPECT(!cache.trusted (node2));
 
         // Trust our own master public key from configured manifest
         auto unl = std::make_unique<ValidatorList> (journal);
@@ -230,7 +230,7 @@ public:
         auto const m  = make_Manifest (KeyType::ed25519, sk, kp.first, 0);
 
         cache.configManifest (clone (m), *unl, journal);
-        expect (cache.trusted (m.masterKey));
+        BEAST_EXPECT(cache.trusted (m.masterKey));
     }
 
     void testLoadStore (ManifestCache const& m, ValidatorList& unl)
@@ -278,7 +278,7 @@ public:
                 ManifestCache loaded;
 
                 loaded.load (dbCon, unl, journal);
-                expect (loaded.size() == 0);
+                BEAST_EXPECT(loaded.size() == 0);
             }
             {
                 // load should load all trusted master keys from db
@@ -294,7 +294,7 @@ public:
 
                 if (inManifests.size () == loadedManifests.size ())
                 {
-                    expect (std::equal
+                    BEAST_EXPECT(std::equal
                             (inManifests.begin (), inManifests.end (),
                              loadedManifests.begin (),
                              [](Manifest const* lhs, Manifest const* rhs)
@@ -312,12 +312,12 @@ public:
 
                 if (!*iMan)
                     fail ();
-                expect (m.trusted((*iMan)->masterKey));
-                expect (unl.insertPermanentKey((*iMan)->masterKey, "trusted key"));
-                expect (unl.trusted((*iMan)->masterKey));
+                BEAST_EXPECT(m.trusted((*iMan)->masterKey));
+                BEAST_EXPECT(unl.insertPermanentKey((*iMan)->masterKey, "trusted key"));
+                BEAST_EXPECT(unl.trusted((*iMan)->masterKey));
                 loaded.load (dbCon, unl, journal);
-                expect (!unl.trusted((*iMan)->masterKey));
-                expect (loaded.trusted((*iMan)->masterKey));
+                BEAST_EXPECT(!unl.trusted((*iMan)->masterKey));
+                BEAST_EXPECT(loaded.trusted((*iMan)->masterKey));
             }
         }
         boost::filesystem::remove (getDatabasePath () /
@@ -341,7 +341,7 @@ public:
         st.addWithoutSigningFields(ss);
         auto const sig = sign(KeyType::ed25519, sk, ss.slice());
 
-        expect (strHex(sig) == strHex(m.getSignature()));
+        BEAST_EXPECT(strHex(sig) == strHex(m.getSignature()));
     }
 
     void
@@ -372,24 +372,23 @@ public:
                 make_Manifest (KeyType::ed25519, sk_b, kp_b.first, 2, true);  // broken
             auto const fake = s_b1.serialized + '\0';
 
-            expect (cache.applyManifest (clone (s_a0), *unl, journal) == untrusted,
-                    "have to install a trusted key first");
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == untrusted);
 
             cache.addTrustedKey (pk_a, "a");
             cache.addTrustedKey (pk_b, "b");
 
-            expect (cache.applyManifest (clone (s_a0), *unl, journal) == accepted);
-            expect (cache.applyManifest (clone (s_a0), *unl, journal) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == stale);
 
-            expect (cache.applyManifest (clone (s_a1), *unl, journal) == accepted);
-            expect (cache.applyManifest (clone (s_a1), *unl, journal) == stale);
-            expect (cache.applyManifest (clone (s_a0), *unl, journal) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl, journal) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a1), *unl, journal) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_a0), *unl, journal) == stale);
 
-            expect (cache.applyManifest (clone (s_b0), *unl, journal) == accepted);
-            expect (cache.applyManifest (clone (s_b0), *unl, journal) == stale);
+            BEAST_EXPECT(cache.applyManifest (clone (s_b0), *unl, journal) == accepted);
+            BEAST_EXPECT(cache.applyManifest (clone (s_b0), *unl, journal) == stale);
 
-            expect (!ripple::make_Manifest(fake));
-            expect (cache.applyManifest (clone (s_b2), *unl, journal) == invalid);
+            BEAST_EXPECT(!ripple::make_Manifest(fake));
+            BEAST_EXPECT(cache.applyManifest (clone (s_b2), *unl, journal) == invalid);
 
             // When trusted permanent key is found as manifest master key
             // move to manifest cache
@@ -397,12 +396,12 @@ public:
             auto const pk_c = derivePublicKey(KeyType::ed25519, sk_c);
             auto const kp_c = randomKeyPair(KeyType::secp256k1);
             auto const s_c0 = make_Manifest (KeyType::ed25519, sk_c, kp_c.first, 0);
-            expect (unl->insertPermanentKey(pk_c, "trusted key"));
-            expect (unl->trusted(pk_c));
-            expect (!cache.trusted(pk_c));
-            expect (cache.applyManifest(clone (s_c0), *unl, journal) == accepted);
-            expect (!unl->trusted(pk_c));
-            expect (cache.trusted(pk_c));
+            BEAST_EXPECT(unl->insertPermanentKey(pk_c, "trusted key"));
+            BEAST_EXPECT(unl->trusted(pk_c));
+            BEAST_EXPECT(!cache.trusted(pk_c));
+            BEAST_EXPECT(cache.applyManifest(clone (s_c0), *unl, journal) == accepted);
+            BEAST_EXPECT(!unl->trusted(pk_c));
+            BEAST_EXPECT(cache.trusted(pk_c));
         }
         testConfigLoad();
         testLoadStore (cache, *unl);

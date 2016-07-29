@@ -484,6 +484,12 @@
     <Filter Include="sqlite\sqlite">
       <UniqueIdentifier>{D2A046B6-8986-92AC-082F-15B3A01B8E40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{D5859751-012E-81F5-D121-159FE9A25436}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="unity">
+      <UniqueIdentifier>{82E1AA93-0E6B-39FA-4212-EB820AD49028}</UniqueIdentifier>
+    </Filter>
     <Filter Include="websocketpp_02">
       <UniqueIdentifier>{96CE200F-2670-323E-3B37-B90DBC0EDA11}</UniqueIdentifier>
     </Filter>
@@ -1605,9 +1611,6 @@
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\AccountTxPaging.test.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\AmendmentTable.test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
@@ -5417,6 +5420,12 @@
     </ClInclude>
     <ClCompile Include="..\..\src\sqlite\sqlite_unity.c">
       <Filter>sqlite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\AccountTxPaging_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity.cpp">
+      <Filter>unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
       <Filter>websocketpp_02\src\base64</Filter>
