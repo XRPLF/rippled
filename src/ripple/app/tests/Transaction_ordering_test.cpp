@@ -41,20 +41,20 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         env(tx1);
         env.close();
-        expect(env.seq(alice) == aliceSequence + 1);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 1);
         env(tx2);
         env.close();
-        expect(env.seq(alice) == aliceSequence + 2);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 2);
 
         env.close();
 
         {
             auto const result = env.rpc("tx", to_string(tx1.stx->getTransactionID()));
-            expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
         {
             auto const result = env.rpc("tx", to_string(tx2.stx->getTransactionID()));
-            expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
     }
 
@@ -74,20 +74,20 @@ struct Transaction_ordering_test : public beast::unit_test::suite
             json(R"({"LastLedgerSequence":7})"));
 
         env(tx2, ter(terPRE_SEQ));
-        expect(env.seq(alice) == aliceSequence);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
         env(tx1);
         env.app().getJobQueue().rendezvous();
-        expect(env.seq(alice) == aliceSequence + 2);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 2);
 
         env.close();
 
         {
             auto const result = env.rpc("tx", to_string(tx1.stx->getTransactionID()));
-            expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
         {
             auto const result = env.rpc("tx", to_string(tx2.stx->getTransactionID()));
-            expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
     }
 
@@ -114,19 +114,19 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         for (auto i = 1; i < 5; ++i)
         {
             env(tx[i], ter(terPRE_SEQ));
-            expect(env.seq(alice) == aliceSequence);
+            BEAST_EXPECT(env.seq(alice) == aliceSequence);
         }
 
         env(tx[0]);
         env.app().getJobQueue().rendezvous();
-        expect(env.seq(alice) == aliceSequence + 5);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 5);
 
         env.close();
 
         for (auto i = 0; i < 5; ++i)
         {
             auto const result = env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
-            expect(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
     }
 

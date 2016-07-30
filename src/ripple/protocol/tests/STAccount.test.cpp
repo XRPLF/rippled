@@ -31,19 +31,19 @@ struct STAccount_test : public beast::unit_test::suite
         {
             // Test default constructor.
             STAccount const defaultAcct;
-            expect (defaultAcct.getSType() == STI_ACCOUNT);
-            expect (defaultAcct.getText() == "");
-            expect (defaultAcct.isDefault() == true);
-            expect (defaultAcct.value() == AccountID {});
+            BEAST_EXPECT(defaultAcct.getSType() == STI_ACCOUNT);
+            BEAST_EXPECT(defaultAcct.getText() == "");
+            BEAST_EXPECT(defaultAcct.isDefault() == true);
+            BEAST_EXPECT(defaultAcct.value() == AccountID {});
             {
 #ifdef NDEBUG // Qualified because the serialization asserts in a debug build.
                 Serializer s;
                 defaultAcct.add (s); // Asserts in debug build
-                expect (s.size() == 1);
-                expect (s.getHex() == "00");
+                BEAST_EXPECT(s.size() == 1);
+                BEAST_EXPECT(s.getHex() == "00");
                 SerialIter sit (s.slice ());
                 STAccount const deserializedDefault (sit, sfAccount);
-                expect (deserializedDefault.isEquivalent (defaultAcct));
+                BEAST_EXPECT(deserializedDefault.isEquivalent (defaultAcct));
 #endif // NDEBUG
             }
             {
@@ -52,42 +52,42 @@ struct STAccount_test : public beast::unit_test::suite
                 s.addVL (nullptr, 0);
                 SerialIter sit (s.slice ());
                 STAccount const deserializedDefault (sit, sfAccount);
-                expect (deserializedDefault.isEquivalent (defaultAcct));
+                BEAST_EXPECT(deserializedDefault.isEquivalent (defaultAcct));
             }
 
             // Test constructor from SField.
             STAccount const sfAcct {sfAccount};
-            expect (sfAcct.getSType() == STI_ACCOUNT);
-            expect (sfAcct.getText() == "");
-            expect (sfAcct.isDefault());
-            expect (sfAcct.value() == AccountID {});
-            expect (sfAcct.isEquivalent (defaultAcct));
+            BEAST_EXPECT(sfAcct.getSType() == STI_ACCOUNT);
+            BEAST_EXPECT(sfAcct.getText() == "");
+            BEAST_EXPECT(sfAcct.isDefault());
+            BEAST_EXPECT(sfAcct.value() == AccountID {});
+            BEAST_EXPECT(sfAcct.isEquivalent (defaultAcct));
             {
                 Serializer s;
                 sfAcct.add (s);
-                expect (s.size() == 1);
-                expect (s.getHex() == "00");
+                BEAST_EXPECT(s.size() == 1);
+                BEAST_EXPECT(s.getHex() == "00");
                 SerialIter sit (s.slice ());
                 STAccount const deserializedSf (sit, sfAccount);
-                expect (deserializedSf.isEquivalent(sfAcct));
+                BEAST_EXPECT(deserializedSf.isEquivalent(sfAcct));
             }
 
             // Test constructor from SField and AccountID.
             STAccount const zeroAcct {sfAccount, AccountID{}};
-            expect (zeroAcct.getText() == "rrrrrrrrrrrrrrrrrrrrrhoLvTp");
-            expect (! zeroAcct.isDefault());
-            expect (zeroAcct.value() == AccountID {0});
-            expect (! zeroAcct.isEquivalent (defaultAcct));
-            expect (! zeroAcct.isEquivalent (sfAcct));
+            BEAST_EXPECT(zeroAcct.getText() == "rrrrrrrrrrrrrrrrrrrrrhoLvTp");
+            BEAST_EXPECT(! zeroAcct.isDefault());
+            BEAST_EXPECT(zeroAcct.value() == AccountID {0});
+            BEAST_EXPECT(! zeroAcct.isEquivalent (defaultAcct));
+            BEAST_EXPECT(! zeroAcct.isEquivalent (sfAcct));
             {
                 Serializer s;
                 zeroAcct.add (s);
-                expect (s.size() == 21);
-                expect (s.getHex() ==
+                BEAST_EXPECT(s.size() == 21);
+                BEAST_EXPECT(s.getHex() ==
                     "140000000000000000000000000000000000000000");
                 SerialIter sit (s.slice ());
                 STAccount const deserializedZero (sit, sfAccount);
-                expect (deserializedZero.isEquivalent (zeroAcct));
+                BEAST_EXPECT(deserializedZero.isEquivalent (zeroAcct));
             }
             {
                 // Construct from a VL that is not exactly 160 bits.
@@ -102,23 +102,23 @@ struct STAccount_test : public beast::unit_test::suite
                 }
                 catch (std::runtime_error const& ex)
                 {
-                    expect (ex.what() == std::string("Invalid STAccount size"));
+                    BEAST_EXPECT(ex.what() == std::string("Invalid STAccount size"));
                 }
 
             }
 
             // Interestingly, equal values but different types are equivalent!
             STAccount const regKey {sfRegularKey, AccountID{}};
-            expect (regKey.isEquivalent (zeroAcct));
+            BEAST_EXPECT(regKey.isEquivalent (zeroAcct));
 
             // Test assignment.
             STAccount assignAcct;
-            expect (assignAcct.isEquivalent (defaultAcct));
-            expect (assignAcct.isDefault());
+            BEAST_EXPECT(assignAcct.isEquivalent (defaultAcct));
+            BEAST_EXPECT(assignAcct.isDefault());
             assignAcct = AccountID{};
-            expect (! assignAcct.isEquivalent (defaultAcct));
-            expect (assignAcct.isEquivalent (zeroAcct));
-            expect (! assignAcct.isDefault());
+            BEAST_EXPECT(! assignAcct.isEquivalent (defaultAcct));
+            BEAST_EXPECT(assignAcct.isEquivalent (zeroAcct));
+            BEAST_EXPECT(! assignAcct.isDefault());
         }
     }
 

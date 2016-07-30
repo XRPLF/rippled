@@ -29,25 +29,25 @@ struct json_value_test : beast::unit_test::suite
 {
     void test_bool()
     {
-        expect (! Json::Value());
+        BEAST_EXPECT(! Json::Value());
 
-        expect (! Json::Value(""));
+        BEAST_EXPECT(! Json::Value(""));
 
-        expect (bool (Json::Value("empty")));
-        expect (bool (Json::Value(false)));
-        expect (bool (Json::Value(true)));
-        expect (bool (Json::Value(0)));
-        expect (bool (Json::Value(1)));
+        BEAST_EXPECT(bool (Json::Value("empty")));
+        BEAST_EXPECT(bool (Json::Value(false)));
+        BEAST_EXPECT(bool (Json::Value(true)));
+        BEAST_EXPECT(bool (Json::Value(0)));
+        BEAST_EXPECT(bool (Json::Value(1)));
 
         Json::Value array (Json::arrayValue);
-        expect (! array);
+        BEAST_EXPECT(! array);
         array.append(0);
-        expect (bool (array));
+        BEAST_EXPECT(bool (array));
 
         Json::Value object (Json::objectValue);
-        expect (! object);
+        BEAST_EXPECT(! object);
         object[""] = false;
-        expect (bool (object));
+        BEAST_EXPECT(bool (object));
     }
 
     void test_bad_json ()
@@ -86,13 +86,13 @@ struct json_value_test : beast::unit_test::suite
         Json::Value j1;
         Json::Reader r1;
 
-        expect (r1.parse (json, j1), "parsing integer edge cases");
-        expect (j1["max_uint"].asUInt() == max_uint, "max_uint");
-        expect (j1["max_int"].asInt() == max_int, "min_int");
-        expect (j1["min_int"].asInt() == min_int, "max_int");
-        expect (j1["a_uint"].asUInt() == a_uint, "a_uint");
-        expect (j1["a_large_int"].asInt() == a_large_int, "a_large_int");
-        expect (j1["a_small_int"].asInt() == a_small_int, "a_large_int");
+        BEAST_EXPECT(r1.parse (json, j1));
+        BEAST_EXPECT(j1["max_uint"].asUInt() == max_uint);
+        BEAST_EXPECT(j1["max_int"].asInt() == max_int);
+        BEAST_EXPECT(j1["min_int"].asInt() == min_int);
+        BEAST_EXPECT(j1["a_uint"].asUInt() == a_uint);
+        BEAST_EXPECT(j1["a_large_int"].asInt() == a_large_int);
+        BEAST_EXPECT(j1["a_small_int"].asInt() == a_small_int);
 
         json  = "{\"overflow\":";
         json += std::to_string(std::uint64_t(max_uint) + 1);
@@ -101,7 +101,7 @@ struct json_value_test : beast::unit_test::suite
         Json::Value j2;
         Json::Reader r2;
 
-        expect (!r2.parse (json, j2), "parsing unsigned integer that overflows");
+        BEAST_EXPECT(!r2.parse (json, j2));
 
         json  = "{\"underflow\":";
         json += std::to_string(std::int64_t(min_int) - 1);
@@ -110,7 +110,7 @@ struct json_value_test : beast::unit_test::suite
         Json::Value j3;
         Json::Reader r3;
 
-        expect (!r3.parse (json, j3), "parsing signed integer that underflows");
+        BEAST_EXPECT(!r3.parse (json, j3));
 
         pass ();
     }
@@ -119,22 +119,22 @@ struct json_value_test : beast::unit_test::suite
     test_copy ()
     {
         Json::Value v1{2.5};
-        expect (v1.isDouble ());
-        expect (v1.asDouble () == 2.5);
+        BEAST_EXPECT(v1.isDouble ());
+        BEAST_EXPECT(v1.asDouble () == 2.5);
 
         Json::Value v2 = v1;
-        expect (v1.isDouble ());
-        expect (v1.asDouble () == 2.5);
-        expect (v2.isDouble ());
-        expect (v2.asDouble () == 2.5);
-        expect (v1 == v2);
+        BEAST_EXPECT(v1.isDouble ());
+        BEAST_EXPECT(v1.asDouble () == 2.5);
+        BEAST_EXPECT(v2.isDouble ());
+        BEAST_EXPECT(v2.asDouble () == 2.5);
+        BEAST_EXPECT(v1 == v2);
 
         v1 = v2;
-        expect (v1.isDouble ());
-        expect (v1.asDouble () == 2.5);
-        expect (v2.isDouble ());
-        expect (v2.asDouble () == 2.5);
-        expect (v1 == v2);
+        BEAST_EXPECT(v1.isDouble ());
+        BEAST_EXPECT(v1.asDouble () == 2.5);
+        BEAST_EXPECT(v2.isDouble ());
+        BEAST_EXPECT(v2.asDouble () == 2.5);
+        BEAST_EXPECT(v1 == v2);
 
         pass ();
     }
@@ -143,20 +143,20 @@ struct json_value_test : beast::unit_test::suite
     test_move ()
     {
         Json::Value v1{2.5};
-        expect (v1.isDouble ());
-        expect (v1.asDouble () == 2.5);
+        BEAST_EXPECT(v1.isDouble ());
+        BEAST_EXPECT(v1.asDouble () == 2.5);
 
         Json::Value v2 = std::move(v1);
-        expect (!v1);
-        expect (v2.isDouble ());
-        expect (v2.asDouble () == 2.5);
-        expect (v1 != v2);
+        BEAST_EXPECT(!v1);
+        BEAST_EXPECT(v2.isDouble ());
+        BEAST_EXPECT(v2.asDouble () == 2.5);
+        BEAST_EXPECT(v1 != v2);
 
         v1 = std::move(v2);
-        expect (v1.isDouble ());
-        expect (v1.asDouble () == 2.5);
-        expect (! v2);
-        expect (v1 != v2);
+        BEAST_EXPECT(v1.isDouble ());
+        BEAST_EXPECT(v1.asDouble () == 2.5);
+        BEAST_EXPECT(! v2);
+        BEAST_EXPECT(v1 != v2);
 
         pass ();
     }
@@ -166,39 +166,39 @@ struct json_value_test : beast::unit_test::suite
     {
         Json::Value a, b;
         auto testEquals = [&] (std::string const& name) {
-            expect (a == b, "a == b " + name);
-            expect (a <= b, "a <= b " + name);
-            expect (a >= b, "a >= b " + name);
+            BEAST_EXPECT(a == b);
+            BEAST_EXPECT(a <= b);
+            BEAST_EXPECT(a >= b);
 
-            expect (! (a != b), "! (a != b) " + name);
-            expect (! (a < b), "! (a < b) " + name);
-            expect (! (a > b), "! (a > b) " + name);
+            BEAST_EXPECT(! (a != b));
+            BEAST_EXPECT(! (a < b));
+            BEAST_EXPECT(! (a > b));
 
-            expect (b == a, "b == a " + name);
-            expect (b <= a, "b <= a " + name);
-            expect (b >= a, "b >= a " + name);
+            BEAST_EXPECT(b == a);
+            BEAST_EXPECT(b <= a);
+            BEAST_EXPECT(b >= a);
 
-            expect (! (b != a), "! (b != a) " + name);
-            expect (! (b < a), "! (b < a) " + name);
-            expect (! (b > a), "! (b > a) " + name);
+            BEAST_EXPECT(! (b != a));
+            BEAST_EXPECT(! (b < a));
+            BEAST_EXPECT(! (b > a));
         };
 
         auto testGreaterThan = [&] (std::string const& name) {
-            expect (! (a == b), "! (a == b) " + name);
-            expect (! (a <= b), "! (a <= b) " + name);
-            expect (a >= b, "a >= b " + name);
+            BEAST_EXPECT(! (a == b));
+            BEAST_EXPECT(! (a <= b));
+            BEAST_EXPECT(a >= b);
 
-            expect (a != b, "a != b " + name);
-            expect (! (a < b), "! (a < b) " + name);
-            expect (a > b, "a > b " + name);
+            BEAST_EXPECT(a != b);
+            BEAST_EXPECT(! (a < b));
+            BEAST_EXPECT(a > b);
 
-            expect (! (b == a), "! (b == a) " + name);
-            expect (b <= a, "b <= a " + name);
-            expect (! (b >= a), "! (b >= a) " + name);
+            BEAST_EXPECT(! (b == a));
+            BEAST_EXPECT(b <= a);
+            BEAST_EXPECT(! (b >= a));
 
-            expect (b != a, "b != a " + name);
-            expect (b < a, "b < a " + name);
-            expect (! (b > a), "! (b > a) " + name);
+            BEAST_EXPECT(b != a);
+            BEAST_EXPECT(b < a);
+            BEAST_EXPECT(! (b > a));
         };
 
         a["a"] = Json::UInt (0);

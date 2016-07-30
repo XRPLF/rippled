@@ -65,17 +65,17 @@ struct AccountTxPaging_test : beast::unit_test::suite
     void
     checkToken (Json::Value const& token, int ledger, int sequence)
     {
-        expect (token.isMember ("ledger"));
-        expect (token["ledger"].asInt() == ledger);
-        expect (token.isMember ("seq"));
-        expect (token["seq"].asInt () == sequence);
+        BEAST_EXPECT(token.isMember ("ledger"));
+        BEAST_EXPECT(token["ledger"].asInt() == ledger);
+        BEAST_EXPECT(token.isMember ("seq"));
+        BEAST_EXPECT(token["seq"].asInt () == sequence);
     }
 
     void
     checkTransaction (NetworkOPs::AccountTx const& tx, int ledger, int index)
     {
-        expect (tx.second->getLgrSeq () == ledger);
-        expect (tx.second->getIndex () == index);
+        BEAST_EXPECT(tx.second->getLgrSeq () == ledger);
+        BEAST_EXPECT(tx.second->getIndex () == index);
     }
 
     std::size_t
@@ -145,21 +145,21 @@ struct AccountTxPaging_test : beast::unit_test::suite
         {
             limit = 2;
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 2);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 2);
             checkTransaction (txs_[0], 3, 5);
             checkTransaction (txs_[1], 4, 4);
             checkToken (token, 4, 10);
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 2);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 2);
             checkTransaction (txs_[0], 4, 10);
             checkTransaction (txs_[1], 5, 4);
             checkToken (token, 5, 7);
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 1);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 5, 7);
 
-            expect(! token["ledger"]);
-            expect(! token["seq"]);
+            BEAST_EXPECT(! token["ledger"]);
+            BEAST_EXPECT(! token["seq"]);
         }
 
         token = Json::nullValue;
@@ -170,15 +170,15 @@ struct AccountTxPaging_test : beast::unit_test::suite
         {
             limit = 1;
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 1);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 3, 5);
             checkToken (token, 4, 4);
 
-            expect(next(limit, forward, token, min_ledger, max_ledger) == 1);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 4, 4);
             checkToken (token, 4, 10);
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 1);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 4, 10);
             checkToken (token, 5, 4);
         }
@@ -186,29 +186,29 @@ struct AccountTxPaging_test : beast::unit_test::suite
         {
             limit = 3;
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 3);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 3);
             checkTransaction (txs_[0], 5, 4);
             checkTransaction (txs_[1], 5, 7);
             checkTransaction (txs_[2], 6, 1);
             checkToken (token, 6, 5);
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 3);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 3);
             checkTransaction (txs_[0], 6, 5);
             checkTransaction (txs_[1], 6, 6);
             checkTransaction (txs_[2], 6, 7);
             checkToken (token, 6, 8);
 
-            expect (next(limit, forward, token, min_ledger, max_ledger) == 3);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 3);
             checkTransaction (txs_[0], 6, 8);
             checkTransaction (txs_[1], 6, 9);
             checkTransaction (txs_[2], 6, 10);
             checkToken (token, 6, 11);
 
-            expect(next(limit, forward, token, min_ledger, max_ledger) == 1);
+            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
             checkTransaction (txs_[0], 6, 11);
 
-            expect(! token["ledger"]);
-            expect(! token["seq"]);
+            BEAST_EXPECT(! token["ledger"]);
+            BEAST_EXPECT(! token["seq"]);
         }
 
         token = Json::nullValue;
@@ -216,12 +216,12 @@ struct AccountTxPaging_test : beast::unit_test::suite
         {
             limit = 2;
 
-            expect (next(limit, ! forward, token, min_ledger, max_ledger) == 2);
+            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 2);
             checkTransaction (txs_[0], 6, 11);
             checkTransaction (txs_[1], 6, 10);
             checkToken (token, 6, 9);
 
-            expect(next(limit, ! forward, token, min_ledger, max_ledger) == 2);
+            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 2);
             checkTransaction (txs_[0], 6, 9);
             checkTransaction (txs_[1], 6, 8);
             checkToken (token, 6, 7);
@@ -230,26 +230,26 @@ struct AccountTxPaging_test : beast::unit_test::suite
         {
             limit = 3;
 
-            expect (next(limit, ! forward, token, min_ledger, max_ledger) == 3);
+            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 3);
             checkTransaction (txs_[0], 6, 7);
             checkTransaction (txs_[1], 6, 6);
             checkTransaction (txs_[2], 6, 5);
             checkToken (token, 6, 1);
 
-            expect (next(limit, ! forward, token, min_ledger, max_ledger) == 3);
+            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 3);
             checkTransaction (txs_[0], 6, 1);
             checkTransaction (txs_[1], 5, 7);
             checkTransaction (txs_[2], 5, 4);
             checkToken (token, 4, 10);
 
-            expect (next(limit, ! forward, token, min_ledger, max_ledger) == 3);
+            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 3);
             checkTransaction (txs_[0], 4, 10);
             checkTransaction (txs_[1], 4, 4);
             checkTransaction (txs_[2], 3, 5);
         }
 
-        expect (! token["ledger"]);
-        expect (! token["seq"]);
+        BEAST_EXPECT(! token["ledger"]);
+        BEAST_EXPECT(! token["seq"]);
     }
 };
 

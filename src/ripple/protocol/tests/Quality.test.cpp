@@ -73,7 +73,7 @@ public:
         auto actual_result (q.ceil_in (
             amounts (in, out), amount (limit)));
 
-        expect (actual_result == expect_result);
+        BEAST_EXPECT(actual_result == expect_result);
     }
 
     template <class In1, class Out1, class Int, class In2, class Out2>
@@ -85,7 +85,7 @@ public:
         auto const actual_result (q.ceil_out (
             amounts (in, out), amount (limit)));
 
-        expect (actual_result == expect_result);
+        BEAST_EXPECT(actual_result == expect_result);
     }
 
     void
@@ -234,7 +234,7 @@ public:
                 raw (4131113916555555, -16));       // .4131113916555555
             Amounts const result (
                 q.ceil_out (value, limit));
-            expect (result.in != zero);
+            BEAST_EXPECT(result.in != zero);
         }
     }
 
@@ -253,12 +253,12 @@ public:
         Quality const q21 (Amounts (amount2, amount1));
         Quality const q31 (Amounts (amount3, amount1));
 
-        expect (q11 == q11);
-        expect (q11 < q12);
-        expect (q12 < q13);
-        expect (q31 < q21);
-        expect (q21 < q11);
-        expect (q31 != q21);
+        BEAST_EXPECT(q11 == q11);
+        BEAST_EXPECT(q11 < q12);
+        BEAST_EXPECT(q12 < q13);
+        BEAST_EXPECT(q31 < q21);
+        BEAST_EXPECT(q21 < q11);
+        BEAST_EXPECT(q31 != q21);
     }
 
     void
@@ -276,7 +276,7 @@ public:
         Quality const q21 (Amounts (amount2, amount1));
         Quality const q31 (Amounts (amount3, amount1));
 
-        expect (
+        BEAST_EXPECT(
             composed_quality (q12, q21) == q11);
 
         Quality const q13_31 (
@@ -284,8 +284,8 @@ public:
         Quality const q31_13 (
             composed_quality (q31, q13));
 
-        expect (q13_31 == q31_13);
-        expect (q13_31 == q11);
+        BEAST_EXPECT(q13_31 == q31_13);
+        BEAST_EXPECT(q13_31 == q11);
     }
 
     void
@@ -300,16 +300,16 @@ public:
         Quality qa (q11);
         Quality qb (q11);
 
-        expect (qa == qb);
-        expect (++qa != q11);
-        expect (qa != qb);
-        expect (--qb != q11);
-        expect (qa != qb);
-        expect (qb < qa);
-        expect (qb++ < qa);
-        expect (qb++ < qa);
-        expect (qb++ == qa);
-        expect (qa < qb);
+        BEAST_EXPECT(qa == qb);
+        BEAST_EXPECT(++qa != q11);
+        BEAST_EXPECT(qa != qb);
+        BEAST_EXPECT(--qb != q11);
+        BEAST_EXPECT(qa != qb);
+        BEAST_EXPECT(qb < qa);
+        BEAST_EXPECT(qb++ < qa);
+        BEAST_EXPECT(qb++ < qa);
+        BEAST_EXPECT(qb++ == qa);
+        BEAST_EXPECT(qa < qb);
     }
     void
     run()

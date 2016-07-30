@@ -332,12 +332,12 @@ public:
 
         if (shouldPass )
         {
-            expect (v.parse (input));
-            expect (v.print () == input);
+            BEAST_EXPECT(v.parse (input));
+            BEAST_EXPECT(v.print () == input);
         }
         else
         {
-            expect (! v.parse (input));
+            BEAST_EXPECT(! v.parse (input));
         }
     }
 
@@ -481,14 +481,14 @@ public:
     {
         SemanticVersion v;
 
-        expect (v.parse (input));
+        BEAST_EXPECT(v.parse (input));
 
-        expect (v.majorVersion == majorVersion);
-        expect (v.minorVersion == minorVersion);
-        expect (v.patchVersion == patchVersion);
+        BEAST_EXPECT(v.majorVersion == majorVersion);
+        BEAST_EXPECT(v.minorVersion == minorVersion);
+        BEAST_EXPECT(v.patchVersion == patchVersion);
 
-        expect (v.preReleaseIdentifiers == preReleaseIdentifiers);
-        expect (v.metaData == metaData);
+        BEAST_EXPECT(v.preReleaseIdentifiers == preReleaseIdentifiers);
+        BEAST_EXPECT(v.metaData == metaData);
     }
 
     void testValues ()
@@ -513,18 +513,18 @@ public:
         SemanticVersion left;
         SemanticVersion right;
 
-        expect (left.parse (lhs));
-        expect (right.parse (rhs));
+        BEAST_EXPECT(left.parse (lhs));
+        BEAST_EXPECT(right.parse (rhs));
 
-        expect (compare (left, left) == 0);
-        expect (compare (right, right) == 0);
-        expect (compare (left, right) < 0);
-        expect (compare (right, left) > 0);
+        BEAST_EXPECT(compare (left, left) == 0);
+        BEAST_EXPECT(compare (right, right) == 0);
+        BEAST_EXPECT(compare (left, right) < 0);
+        BEAST_EXPECT(compare (right, left) > 0);
 
-        expect (left < right);
-        expect (right > left);
-        expect (left == left);
-        expect (right == right);
+        BEAST_EXPECT(left < right);
+        BEAST_EXPECT(right > left);
+        BEAST_EXPECT(left == left);
+        BEAST_EXPECT(right == right);
     }
 
     void checkLess (std::string const& lhs, std::string const& rhs)

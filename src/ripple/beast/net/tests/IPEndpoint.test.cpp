@@ -43,11 +43,11 @@ public:
         std::pair <AddressV4, bool> const result (
             AddressV4::from_string (s));
 
-        if (expect (result.second))
+        if (BEAST_EXPECT(result.second))
         {
-            if (expect (result.first.value == value))
+            if (BEAST_EXPECT(result.first.value == value))
             {
-                expect (to_string (result.first) == s);
+                BEAST_EXPECT(to_string (result.first) == s);
             }
         }
     }
@@ -61,20 +61,20 @@ public:
     {
         testcase ("AddressV4");
 
-        expect (AddressV4().value == 0);
-        expect (is_unspecified (AddressV4()));
-        expect (AddressV4(0x01020304).value == 0x01020304);
-        expect (AddressV4(1, 2, 3, 4).value == 0x01020304);
+        BEAST_EXPECT(AddressV4().value == 0);
+        BEAST_EXPECT(is_unspecified (AddressV4()));
+        BEAST_EXPECT(AddressV4(0x01020304).value == 0x01020304);
+        BEAST_EXPECT(AddressV4(1, 2, 3, 4).value == 0x01020304);
 
         unexpected (is_unspecified (AddressV4(1, 2, 3, 4)));
 
         AddressV4 const v1 (1);
-        expect (AddressV4(v1).value == 1);
+        BEAST_EXPECT(AddressV4(v1).value == 1);
 
         {
             AddressV4 v;
             v = v1;
-            expect (v.value == v1.value);
+            BEAST_EXPECT(v.value == v1.value);
         }
 
         {
@@ -83,10 +83,10 @@ public:
             v [1] = 2;
             v [2] = 3;
             v [3] = 4;
-            expect (v.value == 0x01020304);
+            BEAST_EXPECT(v.value == 0x01020304);
         }
 
-        expect (to_string (AddressV4(0x01020304)) == "1.2.3.4");
+        BEAST_EXPECT(to_string (AddressV4(0x01020304)) == "1.2.3.4");
 
         shouldParseV4 ("1.2.3.4", 0x01020304);
         shouldParseV4 ("255.255.255.255", 0xffffffff);
@@ -111,19 +111,19 @@ public:
       testcase ("AddressV4::Proxy");
 
       AddressV4 v4 (10, 0, 0, 1);
-      expect (v4[0]==10);
-      expect (v4[1]==0);
-      expect (v4[2]==0);
-      expect (v4[3]==1);
+      BEAST_EXPECT(v4[0]==10);
+      BEAST_EXPECT(v4[1]==0);
+      BEAST_EXPECT(v4[2]==0);
+      BEAST_EXPECT(v4[3]==1);
 
-      expect((!((0xff)<<16)) == 0x00000000);
-      expect((~((0xff)<<16)) == 0xff00ffff);
+      BEAST_EXPECT((!((0xff)<<16)) == 0x00000000);
+      BEAST_EXPECT((~((0xff)<<16)) == 0xff00ffff);
 
       v4[1] = 10;
-      expect (v4[0]==10);
-      expect (v4[1]==10);
-      expect (v4[2]==0);
-      expect (v4[3]==1);
+      BEAST_EXPECT(v4[0]==10);
+      BEAST_EXPECT(v4[1]==10);
+      BEAST_EXPECT(v4[2]==0);
+      BEAST_EXPECT(v4[3]==1);
     }
 
     //--------------------------------------------------------------------------
@@ -134,9 +134,9 @@ public:
 
         std::pair <Address, bool> result (
             Address::from_string ("1.2.3.4"));
-        expect (result.second);
-        if (expect (result.first.is_v4 ()))
-            expect (result.first.to_v4() == AddressV4 (1, 2, 3, 4));
+        BEAST_EXPECT(result.second);
+        if (BEAST_EXPECT(result.first.is_v4 ()))
+            BEAST_EXPECT(result.first.to_v4() == AddressV4 (1, 2, 3, 4));
     }
 
     //--------------------------------------------------------------------------
@@ -148,146 +148,146 @@ public:
         {
             std::pair <Endpoint, bool> result (
                 Endpoint::from_string_checked ("1.2.3.4"));
-            expect (result.second);
-            if (expect (result.first.address().is_v4 ()))
+            BEAST_EXPECT(result.second);
+            if (BEAST_EXPECT(result.first.address().is_v4 ()))
             {
-                expect (result.first.address().to_v4() ==
+                BEAST_EXPECT(result.first.address().to_v4() ==
                     AddressV4 (1, 2, 3, 4));
-                expect (result.first.port() == 0);
-                expect (to_string (result.first) == "1.2.3.4");
+                BEAST_EXPECT(result.first.port() == 0);
+                BEAST_EXPECT(to_string (result.first) == "1.2.3.4");
             }
         }
 
         {
             std::pair <Endpoint, bool> result (
                 Endpoint::from_string_checked ("1.2.3.4:5"));
-            expect (result.second);
-            if (expect (result.first.address().is_v4 ()))
+            BEAST_EXPECT(result.second);
+            if (BEAST_EXPECT(result.first.address().is_v4 ()))
             {
-                expect (result.first.address().to_v4() ==
+                BEAST_EXPECT(result.first.address().to_v4() ==
                     AddressV4 (1, 2, 3, 4));
-                expect (result.first.port() == 5);
-                expect (to_string (result.first) == "1.2.3.4:5");
+                BEAST_EXPECT(result.first.port() == 5);
+                BEAST_EXPECT(to_string (result.first) == "1.2.3.4:5");
             }
         }
 
         Endpoint ep;
 
         ep = Endpoint (AddressV4 (127,0,0,1), 80);
-        expect (! is_unspecified (ep));
-        expect (! is_public (ep));
-        expect (  is_private (ep));
-        expect (! is_multicast (ep));
-        expect (  is_loopback (ep));
-        expect (to_string (ep) == "127.0.0.1:80");
+        BEAST_EXPECT(! is_unspecified (ep));
+        BEAST_EXPECT(! is_public (ep));
+        BEAST_EXPECT(  is_private (ep));
+        BEAST_EXPECT(! is_multicast (ep));
+        BEAST_EXPECT(  is_loopback (ep));
+        BEAST_EXPECT(to_string (ep) == "127.0.0.1:80");
 
         ep = Endpoint (AddressV4 (10,0,0,1));
-        expect (AddressV4::get_class (ep.to_v4()) == 'A');
-        expect (! is_unspecified (ep));
-        expect (! is_public (ep));
-        expect (  is_private (ep));
-        expect (! is_multicast (ep));
-        expect (! is_loopback (ep));
-        expect (to_string (ep) == "10.0.0.1");
+        BEAST_EXPECT(AddressV4::get_class (ep.to_v4()) == 'A');
+        BEAST_EXPECT(! is_unspecified (ep));
+        BEAST_EXPECT(! is_public (ep));
+        BEAST_EXPECT(  is_private (ep));
+        BEAST_EXPECT(! is_multicast (ep));
+        BEAST_EXPECT(! is_loopback (ep));
+        BEAST_EXPECT(to_string (ep) == "10.0.0.1");
 
         ep = Endpoint (AddressV4 (166,78,151,147));
-        expect (! is_unspecified (ep));
-        expect (  is_public (ep));
-        expect (! is_private (ep));
-        expect (! is_multicast (ep));
-        expect (! is_loopback (ep));
-        expect (to_string (ep) == "166.78.151.147");
+        BEAST_EXPECT(! is_unspecified (ep));
+        BEAST_EXPECT(  is_public (ep));
+        BEAST_EXPECT(! is_private (ep));
+        BEAST_EXPECT(! is_multicast (ep));
+        BEAST_EXPECT(! is_loopback (ep));
+        BEAST_EXPECT(to_string (ep) == "166.78.151.147");
 
         {
             ep = Endpoint::from_string ("192.0.2.112");
-            expect (! is_unspecified (ep));
-            expect (ep == Endpoint::from_string_altform ("192.0.2.112"));
+            BEAST_EXPECT(! is_unspecified (ep));
+            BEAST_EXPECT(ep == Endpoint::from_string_altform ("192.0.2.112"));
 
             auto const ep1 = Endpoint::from_string ("192.0.2.112:2016");
-            expect (! is_unspecified (ep1));
-            expect (ep.address() == ep1.address());
-            expect (ep1.port() == 2016);
+            BEAST_EXPECT(! is_unspecified (ep1));
+            BEAST_EXPECT(ep.address() == ep1.address());
+            BEAST_EXPECT(ep1.port() == 2016);
 
             auto const ep2 =
                 Endpoint::from_string_altform ("192.0.2.112:2016");
-            expect (! is_unspecified (ep2));
-            expect (ep.address() == ep2.address());
-            expect (ep2.port() == 2016);
-            expect (ep1 == ep2);
+            BEAST_EXPECT(! is_unspecified (ep2));
+            BEAST_EXPECT(ep.address() == ep2.address());
+            BEAST_EXPECT(ep2.port() == 2016);
+            BEAST_EXPECT(ep1 == ep2);
 
             auto const ep3 =
                 Endpoint::from_string_altform ("192.0.2.112 2016");
-            expect (! is_unspecified (ep3));
-            expect (ep.address() == ep3.address());
-            expect (ep3.port() == 2016);
-            expect (ep2 == ep3);
+            BEAST_EXPECT(! is_unspecified (ep3));
+            BEAST_EXPECT(ep.address() == ep3.address());
+            BEAST_EXPECT(ep3.port() == 2016);
+            BEAST_EXPECT(ep2 == ep3);
 
             auto const ep4 =
                 Endpoint::from_string_altform ("192.0.2.112     2016");
-            expect (! is_unspecified (ep4));
-            expect (ep.address() == ep4.address());
-            expect (ep4.port() == 2016);
-            expect (ep3 == ep4);
+            BEAST_EXPECT(! is_unspecified (ep4));
+            BEAST_EXPECT(ep.address() == ep4.address());
+            BEAST_EXPECT(ep4.port() == 2016);
+            BEAST_EXPECT(ep3 == ep4);
 
-            expect (to_string(ep1) == to_string(ep2));
-            expect (to_string(ep1) == to_string(ep3));
-            expect (to_string(ep1) == to_string(ep4));
+            BEAST_EXPECT(to_string(ep1) == to_string(ep2));
+            BEAST_EXPECT(to_string(ep1) == to_string(ep3));
+            BEAST_EXPECT(to_string(ep1) == to_string(ep4));
         }
 
         // Failures:
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string ("192.0.2.112:port")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform ("192.0.2.112:port")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform ("192.0.2.112 port")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string ("ip:port")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform ("ip:port")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform ("ip port")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("255")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("255")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("512")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("512")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("1.2.3.256")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3.256")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("1.2.3:80")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3:80")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3 80")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("1.2.3.4:65536")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3:65536")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3 65536")));
 
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string("1.2.3.4:89119")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3:89119")));
-        expect (is_unspecified (
+        BEAST_EXPECT(is_unspecified (
             Endpoint::from_string_altform("1.2.3 89119")));
     }
 
@@ -306,8 +306,8 @@ public:
     void shouldPass (char const* text)
     {
         T t;
-        expect (parse (text, t));
-        expect (to_string (t) == std::string (text));
+        BEAST_EXPECT(parse (text, t));
+        BEAST_EXPECT(to_string (t) == std::string (text));
     }
 
     template <typename T>

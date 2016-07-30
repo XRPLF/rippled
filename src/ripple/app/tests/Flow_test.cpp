@@ -183,9 +183,9 @@ struct Flow_test : public beast::unit_test::suite
         {
             auto r = toStrand (*env.current (), alice, bob,
                 deliver, sendMaxIssue, path, true, env.app ().logs ().journal ("Flow"));
-            expect (r.first == expTer);
+            BEAST_EXPECT(r.first == expTer);
             if (sizeof...(expSteps))
-                expect (equal (
+                BEAST_EXPECT(equal (
                     r.second, std::forward<decltype (expSteps)> (expSteps)...));
         };
 
@@ -237,20 +237,20 @@ struct Flow_test : public beast::unit_test::suite
                     // The root account can't be the dst
                     auto r = toStrand (*env.current (), alice,
                         xrpAccount (), XRP, USD.issue (), STPath (), true, flowJournal);
-                    expect (r.first == temBAD_PATH);
+                    BEAST_EXPECT(r.first == temBAD_PATH);
                 }
                 {
                     // The root account can't be the src
                     auto r =
                         toStrand (*env.current (), xrpAccount (),
                             alice, XRP, boost::none, STPath (), true, flowJournal);
-                    expect (r.first == temBAD_PATH);
+                    BEAST_EXPECT(r.first == temBAD_PATH);
                 }
                 {
                     // The root account can't be the src
                     auto r = toStrand (*env.current (),
                         noAccount (), bob, USD, boost::none, STPath (), true, flowJournal);
-                    expect (r.first == terNO_ACCOUNT);
+                    BEAST_EXPECT(r.first == terNO_ACCOUNT);
                 }
             }
 
@@ -339,7 +339,7 @@ struct Flow_test : public beast::unit_test::suite
             env (pay (gw, alice, USD (100)));
             test (env, USD, boost::none, STPath (), tesSUCCESS);
             env (trust (gw, alice["USD"] (0), tfSetFreeze));
-            expect (getTrustFlag (env, gw, alice, usdC, TrustFlag::freeze));
+            BEAST_EXPECT(getTrustFlag (env, gw, alice, usdC, TrustFlag::freeze));
             test (env, USD, boost::none, STPath (), terNO_LINE);
         }
         {
@@ -352,7 +352,7 @@ struct Flow_test : public beast::unit_test::suite
             env.trust (USD (1000), alice, bob);
             // Authorize alice but not bob
             env (trust (gw, alice ["USD"] (1000), tfSetfAuth));
-            expect (getTrustFlag (env, gw, alice, usdC, TrustFlag::auth));
+            BEAST_EXPECT(getTrustFlag (env, gw, alice, usdC, TrustFlag::auth));
             env (pay (gw, alice, USD (100)));
             env.require (balance (alice, USD (100)));
             test (env, USD, boost::none, STPath (), terNO_AUTH);
@@ -360,8 +360,8 @@ struct Flow_test : public beast::unit_test::suite
             // Check pure issue redeem still works
             auto r = toStrand (*env.current (), alice, gw, USD,
                 boost::none, STPath (), true, env.app ().logs ().journal ("Flow"));
-            expect (r.first == tesSUCCESS);
-            expect (equal (r.second, D{alice, gw, usdC}));
+            BEAST_EXPECT(r.first == tesSUCCESS);
+            BEAST_EXPECT(equal (r.second, D{alice, gw, usdC}));
         }
         {
             // Check path with sendMax and node with correct sendMax already set
@@ -621,7 +621,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require (balance (bob, BTC (50)));
             env.require (balance (bob, USD (0)));
             env.require (balance (carol, USD (50)));
-            expect (!isOffer (env, bob, BTC (50), USD (50)));
+            BEAST_EXPECT(!isOffer (env, bob, BTC (50), USD (50)));
         }
         {
             // simple IOU/XRP XRP/IOU offer
@@ -644,8 +644,8 @@ struct Flow_test : public beast::unit_test::suite
             env.require (balance (bob, BTC (50)));
             env.require (balance (bob, USD (0)));
             env.require (balance (carol, USD (50)));
-            expect (!isOffer (env, bob, XRP (50), USD (50)));
-            expect (!isOffer (env, bob, BTC (50), XRP (50)));
+            BEAST_EXPECT(!isOffer (env, bob, XRP (50), USD (50)));
+            BEAST_EXPECT(!isOffer (env, bob, BTC (50), XRP (50)));
         }
         {
             // simple XRP -> USD through offer and sendmax
@@ -666,7 +666,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require (balance (bob, xrpMinusFee (env, 10000 + 50)));
             env.require (balance (bob, USD (0)));
             env.require (balance (carol, USD (50)));
-            expect (!isOffer (env, bob, XRP (50), USD (50)));
+            BEAST_EXPECT(!isOffer (env, bob, XRP (50), USD (50)));
         }
         {
             // simple USD -> XRP through offer and sendmax
@@ -687,7 +687,7 @@ struct Flow_test : public beast::unit_test::suite
             env.require (balance (bob, xrpMinusFee (env, 10000 - 50)));
             env.require (balance (bob, USD (50)));
             env.require (balance (carol, XRP (10000 + 50)));
-            expect (!isOffer (env, bob, USD (50), XRP (50)));
+            BEAST_EXPECT(!isOffer (env, bob, USD (50), XRP (50)));
         }
         {
             // test unfunded offers are removed when payment succeeds
@@ -708,9 +708,9 @@ struct Flow_test : public beast::unit_test::suite
 
             // unfund offer
             env (pay (bob, gw, EUR (50)));
-            expect (isOffer (env, bob, BTC (50), USD (50)));
-            expect (isOffer (env, bob, BTC (60), EUR (50)));
-            expect (isOffer (env, bob, EUR (50), USD (50)));
+            BEAST_EXPECT(isOffer (env, bob, BTC (50), USD (50)));
+            BEAST_EXPECT(isOffer (env, bob, BTC (60), EUR (50)));
+            BEAST_EXPECT(isOffer (env, bob, EUR (50), USD (50)));
 
             env (pay (alice, carol, USD (50)),
                 path (~USD), path (~EUR, ~USD),
@@ -722,11 +722,11 @@ struct Flow_test : public beast::unit_test::suite
             env.require (balance (bob, EUR (0)));
             env.require (balance (carol, USD (50)));
             // used in the payment
-            expect (!isOffer (env, bob, BTC (50), USD (50)));
+            BEAST_EXPECT(!isOffer (env, bob, BTC (50), USD (50)));
             // found unfunded
-            expect (!isOffer (env, bob, BTC (60), EUR (50)));
+            BEAST_EXPECT(!isOffer (env, bob, BTC (60), EUR (50)));
             // unfunded, but should not yet be found unfunded
-            expect (isOffer (env, bob, EUR (50), USD (50)));
+            BEAST_EXPECT(isOffer (env, bob, EUR (50), USD (50)));
         }
         {
             // test unfunded offers are returned when the payment fails.
@@ -754,8 +754,8 @@ struct Flow_test : public beast::unit_test::suite
 
             // unfund offer
             env (pay (bob, gw, EUR (50)));
-            expect (isOffer (env, bob, BTC (50), USD (50)));
-            expect (isOffer (env, bob, BTC (60), EUR (50)));
+            BEAST_EXPECT(isOffer (env, bob, BTC (50), USD (50)));
+            BEAST_EXPECT(isOffer (env, bob, BTC (60), EUR (50)));
 
             auto flowJournal = env.app ().logs ().journal ("Flow");
             auto const flowResult = [&]
@@ -777,7 +777,7 @@ struct Flow_test : public beast::unit_test::suite
                     boost::none, smax, flowJournal);
             }();
 
-            expect (flowResult.removableOffers.size () == 1);
+            BEAST_EXPECT(flowResult.removableOffers.size () == 1);
             env.app ().openLedger ().modify (
                 [&](OpenView& view, beast::Journal j)
                 {
@@ -792,9 +792,9 @@ struct Flow_test : public beast::unit_test::suite
                 });
 
             // used in payment, but since payment failed should be untouched
-            expect (isOffer (env, bob, BTC (50), USD (50)));
+            BEAST_EXPECT(isOffer (env, bob, BTC (50), USD (50)));
             // found unfunded
-            expect (!isOffer (env, bob, BTC (60), EUR (50)));
+            BEAST_EXPECT(!isOffer (env, bob, BTC (60), EUR (50)));
         }
         {
             // Do not produce more in the forward pass than the reverse pass
@@ -1028,7 +1028,7 @@ struct Flow_test : public beast::unit_test::suite
             txflags (tfNoRippleDirect | tfPartialPayment));
 
         auto const carolUSD = env.balance(carol, USD).value();
-        expect (carolUSD > USD (0) && carolUSD < USD (50));
+        BEAST_EXPECT(carolUSD > USD (0) && carolUSD < USD (50));
     }
 
     void
@@ -1157,13 +1157,13 @@ struct Flow_test : public beast::unit_test::suite
         env.require (balance (alice, EUR (1000)));
 
         auto aliceOffers = offersOnAccount (env, alice);
-        expect (aliceOffers.size () == 1);
+        BEAST_EXPECT(aliceOffers.size () == 1);
         for (auto const& offerPtr : aliceOffers)
         {
             auto const offer = *offerPtr;
-            expect (offer[sfLedgerEntryType] == ltOFFER);
-            expect (offer[sfTakerGets] == EUR (600));
-            expect (offer[sfTakerPays] == USD (500));
+            BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(offer[sfTakerGets] == EUR (600));
+            BEAST_EXPECT(offer[sfTakerPays] == USD (500));
         }
 
         env (pay (alice, alice, EUR (600)), sendmax (USD (500)),
@@ -1174,13 +1174,13 @@ struct Flow_test : public beast::unit_test::suite
         env.require (balance (alice, USD (1)));
         env.require (balance (alice, EUR (1000)));
         aliceOffers = offersOnAccount (env, alice);
-        expect (aliceOffers.size () == 1);
+        BEAST_EXPECT(aliceOffers.size () == 1);
         for (auto const& offerPtr : aliceOffers)
         {
             auto const offer = *offerPtr;
-            expect (offer[sfLedgerEntryType] == ltOFFER);
-            expect (offer[sfTakerGets] == EUR (598.8));
-            expect (offer[sfTakerPays] == USD (499));
+            BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(offer[sfTakerGets] == EUR (598.8));
+            BEAST_EXPECT(offer[sfTakerPays] == USD (499));
         }
     }
 
@@ -1231,13 +1231,13 @@ struct Flow_test : public beast::unit_test::suite
         env.require (balance (alice, EUR (600)));
 
         auto aliceOffers = offersOnAccount (env, alice);
-        expect (aliceOffers.size () == 1);
+        BEAST_EXPECT(aliceOffers.size () == 1);
         for (auto const& offerPtr : aliceOffers)
         {
             auto const offer = *offerPtr;
-            expect (offer[sfLedgerEntryType] == ltOFFER);
-            expect (offer[sfTakerGets] == EUR (600));
-            expect (offer[sfTakerPays] == USD (500));
+            BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(offer[sfTakerGets] == EUR (600));
+            BEAST_EXPECT(offer[sfTakerPays] == USD (500));
         }
 
         env (pay (alice, alice, EUR (60)), sendmax (USD (50)),
@@ -1248,13 +1248,13 @@ struct Flow_test : public beast::unit_test::suite
         env.require (balance (alice, USD (500)));
         env.require (balance (alice, EUR (600)));
         aliceOffers = offersOnAccount (env, alice);
-        expect (aliceOffers.size () == 1);
+        BEAST_EXPECT(aliceOffers.size () == 1);
         for (auto const& offerPtr : aliceOffers)
         {
             auto const offer = *offerPtr;
-            expect (offer[sfLedgerEntryType] == ltOFFER);
-            expect (offer[sfTakerGets] == EUR (594));
-            expect (offer[sfTakerPays] == USD (495));
+            BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
+            BEAST_EXPECT(offer[sfTakerGets] == EUR (594));
+            BEAST_EXPECT(offer[sfTakerPays] == USD (495));
         }
     }
 

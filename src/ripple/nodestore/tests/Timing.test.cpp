@@ -275,7 +275,7 @@ public:
         beast::Journal journal;
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
-        expect (backend != nullptr);
+        BEAST_EXPECT(backend != nullptr);
 
         class Body
         {
@@ -329,7 +329,7 @@ public:
         beast::Journal journal;
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
-        expect (backend != nullptr);
+        BEAST_EXPECT(backend != nullptr);
 
         class Body
         {
@@ -360,7 +360,7 @@ public:
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
                     backend_.fetch(obj->getHash().data(), &result);
-                    suite_.expect (result && isSame(result, obj));
+                    suite_.expect(result && isSame(result, obj));
                 }
                 catch(std::exception const& e)
                 {
@@ -390,7 +390,7 @@ public:
         beast::Journal journal;
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
-        expect (backend != nullptr);
+        BEAST_EXPECT(backend != nullptr);
 
         class Body
         {
@@ -422,7 +422,7 @@ public:
                     auto const key = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
                     backend_.fetch(key.data(), &result);
-                    suite_.expect (! result);
+                    suite_.expect(! result);
                 }
                 catch(std::exception const& e)
                 {
@@ -453,7 +453,7 @@ public:
         beast::Journal journal;
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
-        expect (backend != nullptr);
+        BEAST_EXPECT(backend != nullptr);
 
         class Body
         {
@@ -491,7 +491,7 @@ public:
                         auto const key = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
                         backend_.fetch(key.data(), &result);
-                        suite_.expect (! result);
+                        suite_.expect(! result);
                     }
                     else
                     {
@@ -499,7 +499,7 @@ public:
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
                         backend_.fetch(obj->getHash().data(), &result);
-                        suite_.expect (result && isSame(result, obj));
+                        suite_.expect(result && isSame(result, obj));
                     }
                 }
                 catch(std::exception const& e)
@@ -536,7 +536,7 @@ public:
         DummyScheduler scheduler;
         auto backend = make_Backend (config, scheduler, journal);
         backend->setDeletePath();
-        expect (backend != nullptr);
+        BEAST_EXPECT(backend != nullptr);
 
         class Body
         {
@@ -578,10 +578,8 @@ public:
                         obj = seq1_.obj(j);
                         std::shared_ptr<NodeObject> result1;
                         backend_.fetch(obj->getHash().data(), &result);
-                        suite_.expect (result != nullptr,
-                            "object " + std::to_string(j) + " missing");
-                        suite_.expect (isSame(result, obj),
-                            "object " + std::to_string(j) + " not a clone");
+                        suite_.expect(result != nullptr);
+                        suite_.expect(isSame(result, obj));
                     }
 
                     char p[2];

@@ -123,13 +123,13 @@ class View_test
             v.succ(k(id).key);
         if (answer)
         {
-            if (expect(next))
-                expect(*next ==
+            if (BEAST_EXPECT(next))
+                BEAST_EXPECT(*next ==
                     k(*answer).key);
         }
         else
         {
-            expect( ! next);
+            BEAST_EXPECT( ! next);
         }
     }
 
@@ -161,22 +161,22 @@ class View_test
         ReadView& v = *ledger;
         succ(v, 0, boost::none);
         ledger->rawInsert(sle(1, 1));
-        expect(v.exists(k(1)));
-        expect(seq(v.read(k(1))) == 1);
+        BEAST_EXPECT(v.exists(k(1)));
+        BEAST_EXPECT(seq(v.read(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, boost::none);
         ledger->rawInsert(sle(2, 2));
-        expect(seq(v.read(k(2))) == 2);
+        BEAST_EXPECT(seq(v.read(k(2))) == 2);
         ledger->rawInsert(sle(3, 3));
-        expect(seq(v.read(k(3))) == 3);
+        BEAST_EXPECT(seq(v.read(k(3))) == 3);
         auto s = copy(v.read(k(2)));
         seq(s, 4);
         ledger->rawReplace(std::move(s));
-        expect(seq(v.read(k(2))) == 4);
+        BEAST_EXPECT(seq(v.read(k(2))) == 4);
         ledger->rawErase(sle(2));
-        expect(! v.exists(k(2)));
-        expect(v.exists(k(1)));
-        expect(v.exists(k(3)));
+        BEAST_EXPECT(! v.exists(k(2)));
+        BEAST_EXPECT(v.exists(k(1)));
+        BEAST_EXPECT(v.exists(k(3)));
     }
 
     void
@@ -189,24 +189,24 @@ class View_test
         ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, boost::none);
         v.insert(sle(1));
-        expect(v.exists(k(1)));
-        expect(seq(v.read(k(1))) == 1);
-        expect(seq(v.peek(k(1))) == 1);
+        BEAST_EXPECT(v.exists(k(1)));
+        BEAST_EXPECT(seq(v.read(k(1))) == 1);
+        BEAST_EXPECT(seq(v.peek(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, boost::none);
         v.insert(sle(2, 2));
-        expect(seq(v.read(k(2))) == 2);
+        BEAST_EXPECT(seq(v.read(k(2))) == 2);
         v.insert(sle(3, 3));
         auto s = v.peek(k(3));
-        expect(seq(s) == 3);
+        BEAST_EXPECT(seq(s) == 3);
         s = v.peek(k(2));
         seq(s, 4);
         v.update(s);
-        expect(seq(v.read(k(2))) == 4);
+        BEAST_EXPECT(seq(v.read(k(2))) == 4);
         v.erase(s);
-        expect(! v.exists(k(2)));
-        expect(v.exists(k(1)));
-        expect(v.exists(k(3)));
+        BEAST_EXPECT(! v.exists(k(2)));
+        BEAST_EXPECT(v.exists(k(1)));
+        BEAST_EXPECT(v.exists(k(3)));
     }
 
     // Exercise all succ paths
@@ -293,26 +293,26 @@ class View_test
             auto s = v1.peek(k(4));
             seq(s, 5);
             v1.update(s);
-            expect(seq(v1.read(k(1))) == 1);
-            expect(! v1.exists(k(2)));
-            expect(seq(v1.read(k(3))) == 3);
-            expect(seq(v1.read(k(4))) == 5);
+            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(! v1.exists(k(2)));
+            BEAST_EXPECT(seq(v1.read(k(3))) == 3);
+            BEAST_EXPECT(seq(v1.read(k(4))) == 5);
             {
                 Sandbox v2(&v1);
                 auto s = v2.peek(k(3));
                 seq(s, 6);
                 v2.update(s);
                 v2.erase(v2.peek(k(4)));
-                expect(seq(v2.read(k(1))) == 1);
-                expect(! v2.exists(k(2)));
-                expect(seq(v2.read(k(3))) == 6);
-                expect(! v2.exists(k(4)));
+                BEAST_EXPECT(seq(v2.read(k(1))) == 1);
+                BEAST_EXPECT(! v2.exists(k(2)));
+                BEAST_EXPECT(seq(v2.read(k(3))) == 6);
+                BEAST_EXPECT(! v2.exists(k(4)));
                 // discard v2
             }
-            expect(seq(v1.read(k(1))) == 1);
-            expect(! v1.exists(k(2)));
-            expect(seq(v1.read(k(3))) == 3);
-            expect(seq(v1.read(k(4))) == 5);
+            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(! v1.exists(k(2)));
+            BEAST_EXPECT(seq(v1.read(k(3))) == 3);
+            BEAST_EXPECT(seq(v1.read(k(4))) == 5);
 
             {
                 Sandbox v2(&v1);
@@ -320,22 +320,22 @@ class View_test
                 seq(s, 6);
                 v2.update(s);
                 v2.erase(v2.peek(k(4)));
-                expect(seq(v2.read(k(1))) == 1);
-                expect(! v2.exists(k(2)));
-                expect(seq(v2.read(k(3))) == 6);
-                expect(! v2.exists(k(4)));
+                BEAST_EXPECT(seq(v2.read(k(1))) == 1);
+                BEAST_EXPECT(! v2.exists(k(2)));
+                BEAST_EXPECT(seq(v2.read(k(3))) == 6);
+                BEAST_EXPECT(! v2.exists(k(4)));
                 v2.apply(v1);
             }
-            expect(seq(v1.read(k(1))) == 1);
-            expect(! v1.exists(k(2)));
-            expect(seq(v1.read(k(3))) == 6);
-            expect(! v1.exists(k(4)));
+            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(! v1.exists(k(2)));
+            BEAST_EXPECT(seq(v1.read(k(3))) == 6);
+            BEAST_EXPECT(! v1.exists(k(4)));
             v1.apply(v0);
         }
-        expect(seq(v0.read(k(1))) == 1);
-        expect(! v0.exists(k(2)));
-        expect(seq(v0.read(k(3))) == 6);
-        expect(! v0.exists(k(4)));
+        BEAST_EXPECT(seq(v0.read(k(1))) == 1);
+        BEAST_EXPECT(! v0.exists(k(2)));
+        BEAST_EXPECT(seq(v0.read(k(3))) == 6);
+        BEAST_EXPECT(! v0.exists(k(4)));
     }
 
     // Verify contextual information
@@ -349,42 +349,42 @@ class View_test
             wipe(env.app().openLedger());
             auto const open = env.current();
             OpenView v0(open.get());
-            expect(v0.seq() != 98);
-            expect(v0.seq() == open->seq());
-            expect(v0.parentCloseTime() != NetClock::time_point{99s});
-            expect(v0.parentCloseTime() ==
+            BEAST_EXPECT(v0.seq() != 98);
+            BEAST_EXPECT(v0.seq() == open->seq());
+            BEAST_EXPECT(v0.parentCloseTime() != NetClock::time_point{99s});
+            BEAST_EXPECT(v0.parentCloseTime() ==
                 open->parentCloseTime());
             {
                 // shallow copy
                 OpenView v1(v0);
-                expect (v1.seq() == v0.seq());
-                expect (v1.parentCloseTime() ==
+                BEAST_EXPECT(v1.seq() == v0.seq());
+                BEAST_EXPECT(v1.parentCloseTime() ==
                     v1.parentCloseTime());
 
                 ApplyViewImpl v2(&v1, tapNO_CHECK_SIGN);
-                expect(v2.parentCloseTime() ==
+                BEAST_EXPECT(v2.parentCloseTime() ==
                     v1.parentCloseTime());
-                expect(v2.seq() == v1.seq());
-                expect(v2.flags() == tapNO_CHECK_SIGN);
+                BEAST_EXPECT(v2.seq() == v1.seq());
+                BEAST_EXPECT(v2.flags() == tapNO_CHECK_SIGN);
 
                 Sandbox v3(&v2);
-                expect(v3.seq() == v2.seq());
-                expect(v3.parentCloseTime() ==
+                BEAST_EXPECT(v3.seq() == v2.seq());
+                BEAST_EXPECT(v3.parentCloseTime() ==
                     v2.parentCloseTime());
-                expect(v3.flags() == tapNO_CHECK_SIGN);
+                BEAST_EXPECT(v3.flags() == tapNO_CHECK_SIGN);
             }
             {
                 ApplyViewImpl v1(&v0, tapNO_CHECK_SIGN);
                 PaymentSandbox v2(&v1);
-                expect(v2.seq() == v0.seq());
-                expect(v2.parentCloseTime() ==
+                BEAST_EXPECT(v2.seq() == v0.seq());
+                BEAST_EXPECT(v2.parentCloseTime() ==
                     v0.parentCloseTime());
-                expect(v2.flags() == tapNO_CHECK_SIGN);
+                BEAST_EXPECT(v2.flags() == tapNO_CHECK_SIGN);
                 PaymentSandbox v3(&v2);
-                expect(v3.seq() == v2.seq());
-                expect(v3.parentCloseTime() ==
+                BEAST_EXPECT(v3.seq() == v2.seq());
+                BEAST_EXPECT(v3.parentCloseTime() ==
                     v2.parentCloseTime());
-                expect(v3.flags() == v2.flags());
+                BEAST_EXPECT(v3.flags() == v2.flags());
             }
         }
     }
@@ -428,7 +428,7 @@ class View_test
             ledger->rawInsert (sle (1));
             ledger->rawInsert (sle (2));
             ledger->rawInsert (sle (3));
-            expect (sles (*ledger) == list (1, 2, 3));
+            BEAST_EXPECT(sles (*ledger) == list (1, 2, 3));
         };
         {
             setup123 ();
@@ -436,13 +436,13 @@ class View_test
             view.rawErase (sle (1));
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
-            expect (sles (view) == list (2, 3, 4, 5));
+            BEAST_EXPECT(sles (view) == list (2, 3, 4, 5));
             auto b = view.sles.begin();
-            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(1)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(2)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(3)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(4)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -451,13 +451,13 @@ class View_test
             view.rawErase (sle (2));
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
-            expect (sles (view) == list (3, 4, 5));
+            BEAST_EXPECT(sles (view) == list (3, 4, 5));
             auto b = view.sles.begin();
-            expect (view.sles.upper_bound(uint256(1)) == b);
-            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(1)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(2)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(3)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(4)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -467,13 +467,13 @@ class View_test
             view.rawErase (sle (3));
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
-            expect (sles (view) == list (4, 5));
+            BEAST_EXPECT(sles (view) == list (4, 5));
             auto b = view.sles.begin();
-            expect (view.sles.upper_bound(uint256(1)) == b);
-            expect (view.sles.upper_bound(uint256(2)) == b);
-            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(1)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(2)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(3)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(4)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
@@ -481,46 +481,46 @@ class View_test
             view.rawErase (sle (3));
             view.rawInsert (sle (4));
             view.rawInsert (sle (5));
-            expect (sles (view) == list (1, 2, 4, 5));
+            BEAST_EXPECT(sles (view) == list (1, 2, 4, 5));
             auto b = view.sles.begin();
             ++b;
-            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(2)) == b);
-            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(1)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(2)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(3)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(4)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(5)) == b);
         }
         {
             setup123 ();
             OpenView view (ledger.get ());
             view.rawReplace (sle (1, 10));
             view.rawReplace (sle (3, 30));
-            expect (sles (view) == list (1, 2, 3));
-            expect (seq (view.read(k (1))) == 10);
-            expect (seq (view.read(k (2))) == 1);
-            expect (seq (view.read(k (3))) == 30);
+            BEAST_EXPECT(sles (view) == list (1, 2, 3));
+            BEAST_EXPECT(seq (view.read(k (1))) == 10);
+            BEAST_EXPECT(seq (view.read(k (2))) == 1);
+            BEAST_EXPECT(seq (view.read(k (3))) == 30);
 
             view.rawErase (sle (3));
-            expect (sles (view) == list (1, 2));
+            BEAST_EXPECT(sles (view) == list (1, 2));
             auto b = view.sles.begin();
             ++b;
-            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(2)) == b);
-            expect (view.sles.upper_bound(uint256(3)) == b);
-            expect (view.sles.upper_bound(uint256(4)) == b);
-            expect (view.sles.upper_bound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(1)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(2)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(3)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(4)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(5)) == b);
 
             view.rawInsert (sle (5));
             view.rawInsert (sle (4));
             view.rawInsert (sle (3));
-            expect (sles (view) == list (1, 2, 3, 4, 5));
+            BEAST_EXPECT(sles (view) == list (1, 2, 3, 4, 5));
             b = view.sles.begin();
             ++b;
-            expect (view.sles.upper_bound(uint256(1)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(2)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(3)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(4)) == b); ++b;
-            expect (view.sles.upper_bound(uint256(5)) == b);
+            BEAST_EXPECT(view.sles.upper_bound(uint256(1)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(2)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(3)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(4)) == b); ++b;
+            BEAST_EXPECT(view.sles.upper_bound(uint256(5)) == b);
         }
     }
 
@@ -551,7 +551,7 @@ class View_test
             env.close();
 
             // Alice's USD balance should be zero if frozen.
-            expect(USD(0) == accountHolds (*env.closed(),
+            BEAST_EXPECT(USD(0) == accountHolds (*env.closed(),
                 alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // Thaw gw and try again.
@@ -569,13 +569,13 @@ class View_test
             env.close();
 
             // Bob's balance should be zero if frozen.
-            expect(USD(0) == accountHolds (*env.closed(),
+            BEAST_EXPECT(USD(0) == accountHolds (*env.closed(),
                 bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
             env(trust(gw, USD(100), bob, tfClearFreeze));
             env.close();
-            expect(USD(50) == accountHolds (*env.closed(),
+            BEAST_EXPECT(USD(50) == accountHolds (*env.closed(),
                 bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
@@ -584,11 +584,11 @@ class View_test
             env.close();
 
             // carol has no EUR.
-            expect(EUR(0) == accountHolds (*env.closed(),
+            BEAST_EXPECT(EUR(0) == accountHolds (*env.closed(),
                 carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // But carol does have USD.
-            expect(USD(50) == accountHolds (*env.closed(),
+            BEAST_EXPECT(USD(50) == accountHolds (*env.closed(),
                 carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
@@ -599,7 +599,7 @@ class View_test
             // 1 trust line times its reserve: 1 * -50
             //                                 -------
             // carol's available balance:         9750
-            expect(carolsXRP == XRP(9750));
+            BEAST_EXPECT(carolsXRP == XRP(9750));
 
             // carol should be able to spend *more* than her XRP balance on
             // a fee by eating into her reserve.
@@ -607,7 +607,7 @@ class View_test
             env.close();
 
             // carol's XRP balance should now show as zero.
-            expect (XRP(0) == accountHolds (*env.closed(),
+            BEAST_EXPECT(XRP(0) == accountHolds (*env.closed(),
                 carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
@@ -615,24 +615,24 @@ class View_test
             // Gateways have whatever funds they claim to have.
             auto const gwUSD = accountFunds(
                 *env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
-            expect (gwUSD == USD(314159));
+            BEAST_EXPECT(gwUSD == USD(314159));
 
             // carol has funds from the gateway.
             auto carolsUSD = accountFunds(
                 *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
-            expect (carolsUSD == USD(50));
+            BEAST_EXPECT(carolsUSD == USD(50));
 
             // If carol's funds are frozen she has no funds...
             env(fset (gw, asfGlobalFreeze));
             env.close();
             carolsUSD = accountFunds(
                 *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
-            expect (carolsUSD == USD(0));
+            BEAST_EXPECT(carolsUSD == USD(0));
 
             // ... unless the query ignores the FROZEN state.
             carolsUSD = accountFunds(
                 *env.closed(), carol, USD(0), fhIGNORE_FREEZE, env.journal);
-            expect (carolsUSD == USD(50));
+            BEAST_EXPECT(carolsUSD == USD(50));
 
             // Just to be tidy, thaw gw.
             env(fclear (gw, asfGlobalFreeze));
@@ -653,13 +653,13 @@ class View_test
 
         auto rdView = env.closed();
         // Test with no rate set on gw1.
-        expect (transferRate (*rdView, gw1) == parityRate);
+        BEAST_EXPECT(transferRate (*rdView, gw1) == parityRate);
 
         env(rate(gw1, 1.02));
         env.close();
 
         rdView = env.closed();
-        expect (transferRate (*rdView, gw1) == Rate{ 1020000000 });
+        BEAST_EXPECT(transferRate (*rdView, gw1) == Rate{ 1020000000 });
     }
 
     void
@@ -695,7 +695,7 @@ class View_test
             {
                 Section& s = (*cfg)[sectionName];
                 auto const port = s.get<std::int32_t>("port");
-                this->expect (port);
+                BEAST_EXPECT(port);
                 if (port)
                 {
                     constexpr int portIncr = 5;
@@ -718,24 +718,24 @@ class View_test
 
         // Check for compatibility.
         auto jStream = eA.journal.error();
-        expect (  areCompatible (*rdViewA3, *rdViewA4, jStream, ""));
-        expect (  areCompatible (*rdViewA4, *rdViewA3, jStream, ""));
-        expect (  areCompatible (*rdViewA4, *rdViewA4, jStream, ""));
-        expect (! areCompatible (*rdViewA3, *rdViewB4, jStream, ""));
-        expect (! areCompatible (*rdViewA4, *rdViewB3, jStream, ""));
-        expect (! areCompatible (*rdViewA4, *rdViewB4, jStream, ""));
+        BEAST_EXPECT(  areCompatible (*rdViewA3, *rdViewA4, jStream, ""));
+        BEAST_EXPECT(  areCompatible (*rdViewA4, *rdViewA3, jStream, ""));
+        BEAST_EXPECT(  areCompatible (*rdViewA4, *rdViewA4, jStream, ""));
+        BEAST_EXPECT(! areCompatible (*rdViewA3, *rdViewB4, jStream, ""));
+        BEAST_EXPECT(! areCompatible (*rdViewA4, *rdViewB3, jStream, ""));
+        BEAST_EXPECT(! areCompatible (*rdViewA4, *rdViewB4, jStream, ""));
 
         // Try the other interface.
         // Note that the different interface has different outcomes.
         auto const& iA3 = rdViewA3->info();
         auto const& iA4 = rdViewA4->info();
 
-        expect (  areCompatible (iA3.hash, iA3.seq, *rdViewA4, jStream, ""));
-        expect (  areCompatible (iA4.hash, iA4.seq, *rdViewA3, jStream, ""));
-        expect (  areCompatible (iA4.hash, iA4.seq, *rdViewA4, jStream, ""));
-        expect (! areCompatible (iA3.hash, iA3.seq, *rdViewB4, jStream, ""));
-        expect (  areCompatible (iA4.hash, iA4.seq, *rdViewB3, jStream, ""));
-        expect (! areCompatible (iA4.hash, iA4.seq, *rdViewB4, jStream, ""));
+        BEAST_EXPECT(  areCompatible (iA3.hash, iA3.seq, *rdViewA4, jStream, ""));
+        BEAST_EXPECT(  areCompatible (iA4.hash, iA4.seq, *rdViewA3, jStream, ""));
+        BEAST_EXPECT(  areCompatible (iA4.hash, iA4.seq, *rdViewA4, jStream, ""));
+        BEAST_EXPECT(! areCompatible (iA3.hash, iA3.seq, *rdViewB4, jStream, ""));
+        BEAST_EXPECT(  areCompatible (iA4.hash, iA4.seq, *rdViewB3, jStream, ""));
+        BEAST_EXPECT(! areCompatible (iA4.hash, iA4.seq, *rdViewB4, jStream, ""));
     }
 
     void
@@ -765,22 +765,22 @@ class View_test
                 v2.erase(v2.peek(k(1)));
                 v2.apply(v1);
             }
-            expect(! v1.exists(k(1)));
+            BEAST_EXPECT(! v1.exists(k(1)));
         }
 
         // Make sure OpenLedger::empty works
         {
             Env env(*this);
-            expect(env.app().openLedger().empty());
+            BEAST_EXPECT(env.app().openLedger().empty());
             env.fund(XRP(10000), Account("test"));
-            expect(! env.app().openLedger().empty());
+            BEAST_EXPECT(! env.app().openLedger().empty());
         }
     }
 
     void run()
     {
         // This had better work, or else
-        expect(k(0).key < k(1).key);
+        BEAST_EXPECT(k(0).key < k(1).key);
 
         testLedger();
         testMeta();
@@ -823,7 +823,7 @@ class GetAmendments_test
 
         // Start out with no amendments.
         auto majorities = getMajorityAmendments (*env.closed());
-        expect (majorities.empty());
+        BEAST_EXPECT(majorities.empty());
 
         // Now close ledgers until the amendments show up.
         int i = 0;
@@ -837,12 +837,12 @@ class GetAmendments_test
 
         // There should be at least 5 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
-        expect (i == 254);
-        expect (majorities.size() >= 5);
+        BEAST_EXPECT(i == 254);
+        BEAST_EXPECT(majorities.size() >= 5);
 
         // None of the amendments should be enabled yet.
         auto enableds = getEnabledAmendments(*env.closed());
-        expect (enableds.empty());
+        BEAST_EXPECT(enableds.empty());
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
         // enabled.  Speed the process by closing ledgers every 80 minutes,
@@ -855,8 +855,8 @@ class GetAmendments_test
             if (! enableds.empty())
                 break;
         }
-        expect (i == 255);
-        expect (enableds.size() >= 5);
+        BEAST_EXPECT(i == 255);
+        BEAST_EXPECT(enableds.size() >= 5);
     }
 
     void run() override
@@ -881,16 +881,16 @@ class DirIsEmpty_test
         env.close();
 
         // alice should have an empty directory.
-        expect (dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
         // Give alice a signer list, then there will be stuff in the directory.
         env(signers(alice, 1, { { bogie, 1} }));
         env.close();
-        expect (! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
         env(signers(alice, jtx::none));
         env.close();
-        expect (dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
         // The next test is a bit awkward.  It tests the case where alice
         // uses 3 directory pages and then deletes all entries from the
@@ -940,7 +940,7 @@ class DirIsEmpty_test
         env(offer(becky, XRP(10), lastCurrency(50)));
         env.close();
 
-        expect (! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
         // Now alice gives all the currencies except the last one back to becky.
         for (auto currency : currencies)
@@ -950,13 +950,13 @@ class DirIsEmpty_test
         }
 
         // This is the crux of the test.
-        expect (! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
 
         // Give the last currency to becky.  Now alice's directory is empty.
         env(pay(alice, becky, lastCurrency(50)));
         env.close();
 
-        expect (dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
     }
 
     void run() override

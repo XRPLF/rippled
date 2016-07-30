@@ -72,25 +72,25 @@ public:
         {
             Env env(*this);
             auto const result = env.rpc("server_info", "1");
-            expect (!result[jss::result].isMember (jss::error));
-            expect (result[jss::status] == "success");
-            expect (result[jss::result].isMember(jss::info));
+            BEAST_EXPECT(!result[jss::result].isMember (jss::error));
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result[jss::result].isMember(jss::info));
         }
         {
             Env env(*this, makeValidatorConfig());
             auto const result = env.rpc("server_info", "1");
-            expect (!result[jss::result].isMember (jss::error));
-            expect (result[jss::status] == "success");
-            expect (result[jss::result].isMember(jss::info));
-            expect(result[jss::result][jss::info]
+            BEAST_EXPECT(!result[jss::result].isMember (jss::error));
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result[jss::result].isMember(jss::info));
+            BEAST_EXPECT(result[jss::result][jss::info]
                 [jss::pubkey_validator] == validator::signing_key);
-            expect (result[jss::result][jss::info].isMember(
+            BEAST_EXPECT(result[jss::result][jss::info].isMember(
                 jss::validation_manifest));
-            expect (result[jss::result][jss::info][jss::validation_manifest]
+            BEAST_EXPECT(result[jss::result][jss::info][jss::validation_manifest]
                 [jss::master_key] == validator::master_key);
-            expect (result[jss::result][jss::info][jss::validation_manifest]
+            BEAST_EXPECT(result[jss::result][jss::info][jss::validation_manifest]
                 [jss::signing_key] == validator::signing_key);
-            expect (result[jss::result][jss::info][jss::validation_manifest]
+            BEAST_EXPECT(result[jss::result][jss::info][jss::validation_manifest]
                 [jss::seq] == validator::sequence);
         }
     }

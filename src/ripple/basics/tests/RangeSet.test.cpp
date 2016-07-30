@@ -56,9 +56,9 @@ public:
         r2.setRange (6, 10);
         r2.setRange (10, 20);
 
-        expect (!r1.hasValue (5));
+        BEAST_EXPECT(!r1.hasValue (5));
 
-        expect (r2.hasValue (9));
+        BEAST_EXPECT(r2.hasValue (9));
     }
 
     void testPrevMissing ()
@@ -74,7 +74,7 @@ public:
             int const expectedPrevMissing =
                 ((i % 10) > 6) ? (i-1) : oneBelowRange;
 
-            expect (set.prevMissing (i) == expectedPrevMissing);
+            BEAST_EXPECT(set.prevMissing (i) == expectedPrevMissing);
         }
     }
 

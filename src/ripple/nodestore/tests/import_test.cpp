@@ -431,11 +431,9 @@ public:
                     buffer buf2;
                     auto const check = codec.decompress(
                         out.first, out.second, buf2);
-                    expect(check.second == size,
-                        "codec size error");
-                    expect(std::memcmp(
-                        check.first, clean.get(), size) == 0,
-                            "codec data error");
+                    BEAST_EXPECT(check.second == size);
+                    BEAST_EXPECT(std::memcmp(
+                        check.first, clean.get(), size) == 0);
                 }
                 // Data Record
                 auto os = dw.prepare(

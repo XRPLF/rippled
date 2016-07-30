@@ -120,7 +120,7 @@ class SHAMapStore_test : public beast::unit_test::suite
 
     std::string getHash(Json::Value const& json)
     {
-        expect(json.isMember(jss::result) &&
+        BEAST_EXPECT(json.isMember(jss::result) &&
             json[jss::result].isMember(jss::ledger) &&
             json[jss::result][jss::ledger].isMember(jss::hash) &&
             json[jss::result][jss::ledger][jss::hash].isString());
@@ -135,7 +135,7 @@ class SHAMapStore_test : public beast::unit_test::suite
         *db << "SELECT count(*) AS rows FROM Validations;",
             soci::into(actual);
 
-        expect(actual == expected);
+        BEAST_EXPECT(actual == expected);
 
     }
 
@@ -153,9 +153,9 @@ class SHAMapStore_test : public beast::unit_test::suite
             soci::into(actualFirst),
             soci::into(actualLast);
 
-        expect(actualRows == rows);
-        expect(actualFirst == first);
-        expect(actualLast == first + rows - 1);
+        BEAST_EXPECT(actualRows == rows);
+        BEAST_EXPECT(actualFirst == first);
+        BEAST_EXPECT(actualLast == first + rows - 1);
 
     }
 
@@ -168,7 +168,7 @@ class SHAMapStore_test : public beast::unit_test::suite
             "FROM Transactions;",
             soci::into(actualRows);
 
-        expect(actualRows == rows);
+        BEAST_EXPECT(actualRows == rows);
     }
 
     void accountTransactionCheck(jtx::Env& env, int const rows)
@@ -180,7 +180,7 @@ class SHAMapStore_test : public beast::unit_test::suite
             "FROM AccountTransactions;",
             soci::into(actualRows);
 
-        expect(actualRows == rows);
+        BEAST_EXPECT(actualRows == rows);
     }
 
     int waitForReady(jtx::Env& env)
@@ -191,15 +191,15 @@ class SHAMapStore_test : public beast::unit_test::suite
 
         int ledgerSeq = 3;
         store.rendezvous();
-        expect(!store.getLastRotated());
+        BEAST_EXPECT(!store.getLastRotated());
 
         env.close();
         store.rendezvous();
 
         auto ledger = env.rpc("ledger", "validated");
-        expect(goodLedger(env, ledger, to_string(ledgerSeq++)));
+        BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++)));
 
-        expect(store.getLastRotated() == ledgerSeq - 1);
+        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         return ledgerSeq;
     }
 
@@ -224,22 +224,22 @@ public:
         std::map<std::uint32_t, Json::Value const> ledgers;
 
         auto ledgerTmp = env.rpc("ledger", "0");
-        expect(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp));
 
         ledgers.emplace(std::make_pair(1, env.rpc("ledger", "1")));
-        expect(goodLedger(env, ledgers[1], "1"));
+        BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
 
         ledgers.emplace(std::make_pair(2, env.rpc("ledger", "2")));
-        expect(goodLedger(env, ledgers[2], "2"));
+        BEAST_EXPECT(goodLedger(env, ledgers[2], "2"));
 
         ledgerTmp = env.rpc("ledger", "current");
-        expect(goodLedger(env, ledgerTmp, "3"));
+        BEAST_EXPECT(goodLedger(env, ledgerTmp, "3"));
 
         ledgerTmp = env.rpc("ledger", "4");
-        expect(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp));
 
         ledgerTmp = env.rpc("ledger", "100");
-        expect(bad(ledgerTmp));
+        BEAST_EXPECT(bad(ledgerTmp));
 
         auto const firstSeq = waitForReady(env);
         auto lastRotated = firstSeq - 1;
@@ -250,15 +250,15 @@ public:
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
-            expect(goodLedger(env, ledgerTmp, to_string(i)));
+            BEAST_EXPECT(goodLedger(env, ledgerTmp, to_string(i)));
         }
-        expect(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
         for (auto i = 3; i < deleteInterval + lastRotated; ++i)
         {
             ledgers.emplace(std::make_pair(i,
                 env.rpc("ledger", to_string(i))));
-            expect(goodLedger(env, ledgers[i], to_string(i), true) &&
+            BEAST_EXPECT(goodLedger(env, ledgers[i], to_string(i), true) &&
                 getHash(ledgers[i]).length());
         }
 
@@ -332,14 +332,14 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "current");
-            expect(goodLedger(env, ledger, to_string(deleteInterval + 4)));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(deleteInterval + 4)));
         }
 
         store.rendezvous();
 
-        expect(store.getLastRotated() == deleteInterval + 3);
+        BEAST_EXPECT(store.getLastRotated() == deleteInterval + 3);
         lastRotated = store.getLastRotated();
-        expect(lastRotated == 11, to_string(lastRotated));
+        BEAST_EXPECT(lastRotated == 11);
 
         // That took care of the fake hashes
         validationCheck(env, deleteInterval + 8);
@@ -355,14 +355,14 @@ public:
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
-            expect(goodLedger(env, ledgerTmp, to_string(i + 3)));
+            BEAST_EXPECT(goodLedger(env, ledgerTmp, to_string(i + 3)));
 
             ledgers.emplace(std::make_pair(i,
                 env.rpc("ledger", to_string(i))));
-            expect(store.getLastRotated() == lastRotated ||
-                i == lastRotated + deleteInterval - 2, "lastRotated");
-            expect(goodLedger(env, ledgers[i], to_string(i), true) &&
-                getHash(ledgers[i]).length(), to_string(ledgers[i]));
+            BEAST_EXPECT(store.getLastRotated() == lastRotated ||
+                i == lastRotated + deleteInterval - 2);
+            BEAST_EXPECT(goodLedger(env, ledgers[i], to_string(i), true) &&
+                getHash(ledgers[i]).length());
 
             std::vector<std::string> ledgerHashes({
                 getHash(ledgers[i])
@@ -382,7 +382,7 @@ public:
 
         store.rendezvous();
 
-        expect(store.getLastRotated() == deleteInterval + lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == deleteInterval + lastRotated);
 
         validationCheck(env, deleteInterval - 1);
         ledgerCheck(env, deleteInterval + 1, lastRotated);
@@ -402,14 +402,13 @@ public:
 
         auto ledgerSeq = waitForReady(env);
         auto lastRotated = ledgerSeq - 1;
-        expect(store.getLastRotated() == lastRotated,
-            to_string(store.getLastRotated()));
-        expect(lastRotated != 2);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(lastRotated != 2);
 
         // Because advisory_delete is unset,
         // "can_delete" is disabled.
         auto const canDelete = env.rpc("can_delete");
-        expect(bad(canDelete, rpcNOT_ENABLED));
+        BEAST_EXPECT(bad(canDelete, rpcNOT_ENABLED));
 
         // Close ledgers without triggering a rotate
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
@@ -417,7 +416,7 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
@@ -426,21 +425,21 @@ public:
         // regardless of lastRotated.
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
-        expect(lastRotated == store.getLastRotated());
+        BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         {
             // Closing one more ledger triggers a rotate
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
-        expect(lastRotated != store.getLastRotated());
+        BEAST_EXPECT(lastRotated != store.getLastRotated());
 
         lastRotated = store.getLastRotated();
 
@@ -450,14 +449,14 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, deleteInterval + 1, lastRotated);
-        expect(lastRotated != store.getLastRotated());
+        BEAST_EXPECT(lastRotated != store.getLastRotated());
     }
 
     void testCanDelete()
@@ -472,17 +471,16 @@ public:
 
         auto ledgerSeq = waitForReady(env);
         auto lastRotated = ledgerSeq - 1;
-        expect(store.getLastRotated() == lastRotated,
-            to_string(store.getLastRotated()));
-        expect(lastRotated != 2);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
-        expect(!RPC::contains_error(canDelete[jss::result]));
-        expect(canDelete[jss::result][jss::can_delete] == 0);
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        expect(!RPC::contains_error(canDelete[jss::result]));
-        expect(canDelete[jss::result][jss::can_delete] == 0);
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         auto const firstBatch = deleteInterval + ledgerSeq;
         for (; ledgerSeq < firstBatch; ++ledgerSeq)
@@ -490,34 +488,34 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
-        expect(lastRotated == store.getLastRotated());
+        BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", to_string(
             ledgerSeq + deleteInterval / 2));
-        expect(!RPC::contains_error(canDelete[jss::result]));
-        expect(canDelete[jss::result][jss::can_delete] ==
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] ==
             ledgerSeq + deleteInterval / 2);
 
         store.rendezvous();
 
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - 2, 2);
-        expect(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off a cleanup, but it stays small.
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -525,7 +523,7 @@ public:
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        expect(store.getLastRotated() == ledgerSeq - 1);
+        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
@@ -534,19 +532,19 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
 
-        expect(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off another cleanup.
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -554,13 +552,13 @@ public:
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - firstBatch, firstBatch);
 
-        expect(store.getLastRotated() == ledgerSeq - 1);
+        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
-        expect(!RPC::contains_error(canDelete[jss::result]));
-        expect(canDelete[jss::result][jss::can_delete] ==
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] ==
             std::numeric_limits <unsigned int>::max());
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
@@ -569,19 +567,19 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
 
-        expect(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off another cleanup.
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -589,13 +587,13 @@ public:
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        expect(store.getLastRotated() == ledgerSeq - 1);
+        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
-        expect(!RPC::contains_error(canDelete[jss::result]));
-        expect(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
+        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
         {
@@ -603,19 +601,19 @@ public:
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq), true));
         }
 
         store.rendezvous();
 
-        expect(store.getLastRotated() == lastRotated);
+        BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
         {
             // This kicks off another cleanup.
             env.close();
 
             auto ledger = env.rpc("ledger", "validated");
-            expect(goodLedger(env, ledger, to_string(ledgerSeq++), true));
+            BEAST_EXPECT(goodLedger(env, ledger, to_string(ledgerSeq++), true));
         }
 
         store.rendezvous();
@@ -623,7 +621,7 @@ public:
         validationCheck(env, 0);
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        expect(store.getLastRotated() == ledgerSeq - 1);
+        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
         lastRotated = ledgerSeq - 1;
     }
 

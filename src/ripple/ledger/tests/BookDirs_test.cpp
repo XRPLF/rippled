@@ -36,12 +36,12 @@ struct BookDirs_test : public beast::unit_test::suite
             Book book(xrpIssue(), USD.issue());
             {
                 auto d = BookDirs(*env.current(), book);
-                expect(std::begin(d) == std::end(d));
-                expect(std::distance(d.begin(), d.end()) == 0);
+                BEAST_EXPECT(std::begin(d) == std::end(d));
+                BEAST_EXPECT(std::distance(d.begin(), d.end()) == 0);
             }
             {
                 auto d = BookDirs(*env.current(), reversed(book));
-                expect(std::distance(d.begin(), d.end()) == 0);
+                BEAST_EXPECT(std::distance(d.begin(), d.end()) == 0);
             }
         }
 
@@ -49,14 +49,14 @@ struct BookDirs_test : public beast::unit_test::suite
             env(offer("alice", Account("alice")["USD"](50), XRP(10)));
             auto d = BookDirs(*env.current(),
                 Book(Account("alice")["USD"].issue(), xrpIssue()));
-            expect(std::distance(d.begin(), d.end()) == 1);
+            BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
             env(offer("alice", gw["CNY"](50), XRP(10)));
             auto d = BookDirs(*env.current(),
                 Book(gw["CNY"].issue(), xrpIssue()));
-            expect(std::distance(d.begin(), d.end()) == 1);
+            BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
@@ -65,7 +65,7 @@ struct BookDirs_test : public beast::unit_test::suite
             env(offer("alice", USD(50), Account("bob")["CNY"](10)));
             auto d = BookDirs(*env.current(),
                 Book(USD.issue(), Account("bob")["CNY"].issue()));
-            expect(std::distance(d.begin(), d.end()) == 1);
+            BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
@@ -76,12 +76,12 @@ struct BookDirs_test : public beast::unit_test::suite
 
             auto d = BookDirs(*env.current(),
                 Book(AUD.issue(), xrpIssue()));
-            expect(std::distance(d.begin(), d.end()) == 240);
+            BEAST_EXPECT(std::distance(d.begin(), d.end()) == 240);
             auto i = 1, j = 3, k = 0;
             for (auto const& e : d)
             {
-                expect(e->getFieldAmount(sfTakerPays) == AUD(i));
-                expect(e->getFieldAmount(sfTakerGets) == XRP(j));
+                BEAST_EXPECT(e->getFieldAmount(sfTakerPays) == AUD(i));
+                BEAST_EXPECT(e->getFieldAmount(sfTakerGets) == XRP(j));
                 if (++k % 80 == 0)
                 {
                     ++i;

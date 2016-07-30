@@ -43,12 +43,12 @@ public:
         auto batch2 = createPredictableBatch (
             numObjectsToTest, seedValue);
 
-        expect (areBatchesEqual (batch1, batch2), "Should be equal");
+        BEAST_EXPECT(areBatchesEqual (batch1, batch2));
 
         auto batch3 = createPredictableBatch (
             numObjectsToTest, seedValue + 1);
 
-        expect (! areBatchesEqual (batch1, batch3), "Should not be equal");
+        BEAST_EXPECT(! areBatchesEqual (batch1, batch3));
     }
 
     // Checks encoding/decoding blobs
@@ -66,13 +66,13 @@ public:
 
             DecodedBlob decoded (encoded.getKey (), encoded.getData (), encoded.getSize ());
 
-            expect (decoded.wasOk (), "Should be ok");
+            BEAST_EXPECT(decoded.wasOk ());
 
             if (decoded.wasOk ())
             {
                 std::shared_ptr<NodeObject> const object (decoded.createObject ());
 
-                expect (isSame(batch[i], object), "Should be clones");
+                BEAST_EXPECT(isSame(batch[i], object));
             }
         }
     }

@@ -49,21 +49,21 @@ class TxQ_test : public beast::unit_test::suite
     {
         auto optMetrics = env.app().getTxQ().getMetrics(
             env.app().config(), *env.current());
-        if (!expect(optMetrics))
+        if (!BEAST_EXPECT(optMetrics))
             return;
         auto& metrics = *optMetrics;
-        expect(metrics.referenceFeeLevel == 256, "referenceFeeLevel");
-        expect(metrics.txCount == expectedCount, "txCount");
-        expect(metrics.txQMaxSize == expectedMaxCount, "txQMaxSize");
-        expect(metrics.txInLedger == expectedInLedger, "txInLedger");
-        expect(metrics.txPerLedger == expectedPerLedger, "txPerLedger");
-        expect(metrics.minFeeLevel == expectedMinFeeLevel, "minFeeLevel");
-        expect(metrics.medFeeLevel == expectedMedFeeLevel, "medFeeLevel");
+        BEAST_EXPECT(metrics.referenceFeeLevel == 256);
+        BEAST_EXPECT(metrics.txCount == expectedCount);
+        BEAST_EXPECT(metrics.txQMaxSize == expectedMaxCount);
+        BEAST_EXPECT(metrics.txInLedger == expectedInLedger);
+        BEAST_EXPECT(metrics.txPerLedger == expectedPerLedger);
+        BEAST_EXPECT(metrics.minFeeLevel == expectedMinFeeLevel);
+        BEAST_EXPECT(metrics.medFeeLevel == expectedMedFeeLevel);
         auto expectedCurFeeLevel = expectedInLedger > expectedPerLedger ?
             expectedMedFeeLevel * expectedInLedger * expectedInLedger /
                 (expectedPerLedger * expectedPerLedger) :
                     metrics.referenceFeeLevel;
-        expect(metrics.expFeeLevel == expectedCurFeeLevel, "expFeeLevel");
+        BEAST_EXPECT(metrics.expFeeLevel == expectedCurFeeLevel);
     }
 
     void
@@ -73,7 +73,7 @@ class TxQ_test : public beast::unit_test::suite
     {
         auto metrics = env.app().getTxQ().getMetrics(env.app().config(),
             *env.current());
-        if (!expect(metrics))
+        if (!BEAST_EXPECT(metrics))
             return;
         for (int i = metrics->txInLedger; i <= metrics->txPerLedger; ++i)
             env(noop(account));
@@ -87,7 +87,7 @@ class TxQ_test : public beast::unit_test::suite
         auto const& view = *env.current();
         auto metrics = env.app().getTxQ().getMetrics(env.app().config(),
             view);
-        if (!expect(metrics))
+        if (!BEAST_EXPECT(metrics))
             return fee(none);
 
         // Don't care about the overflow flag
@@ -133,7 +133,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
@@ -282,7 +282,7 @@ public:
         // test ends and the TxQ is destructed.
 
         auto metrics = txq.getMetrics(env.app().config(), *env.current());
-        expect(metrics->txCount == 0, "txCount");
+        BEAST_EXPECT(metrics->txCount == 0);
 
         // Stuff the ledger.
         for (int i = metrics->txInLedger; i <= metrics->txPerLedger; ++i)
@@ -314,7 +314,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 2, 256);
 
@@ -389,7 +389,7 @@ public:
         env(noop(daria));
         checkMetrics(env, 0, boost::none, 3, 2, 256);
 
-        expect(env.current()->info().seq == 6);
+        BEAST_EXPECT(env.current()->info().seq == 6);
         // Fail to queue an item with a low LastLedgerSeq
         env(noop(alice), json(R"({"LastLedgerSequence":7})"),
             ter(telINSUF_FEE_P));
@@ -418,7 +418,7 @@ public:
         env.close();
         // alice's transaction is still hanging around
         checkMetrics(env, 1, 8, 5, 4, 256, 700 * 256);
-        expect(env.seq(alice) == 1);
+        BEAST_EXPECT(env.seq(alice) == 1);
 
         // Keep alice's transaction waiting.
         env(noop(bob), fee(8000), queued);
@@ -437,12 +437,12 @@ public:
         // into the ledger, so her transaction is gone,
         // though one of felicia's is still in the queue.
         checkMetrics(env, 1, 10, 6, 5, 256, 700 * 256);
-        expect(env.seq(alice) == 1);
+        BEAST_EXPECT(env.seq(alice) == 1);
 
         env.close();
         // And now the queue is empty
         checkMetrics(env, 0, 12, 1, 6, 256, 800 * 256);
-        expect(env.seq(alice) == 1);
+        BEAST_EXPECT(env.seq(alice) == 1);
     }
 
     void testZeroFeeTxn()
@@ -538,19 +538,19 @@ public:
         // and Carol's low fee tx is reapplied from the
         // Local Txs.
         checkMetrics(env, 3, 10, 6, 5, 256);
-        expect(env.seq(bob) == seqBob - 2);
-        expect(env.seq(carol) == seqCarol);
+        BEAST_EXPECT(env.seq(bob) == seqBob - 2);
+        BEAST_EXPECT(env.seq(carol) == seqCarol);
 
 
         env.close();
         checkMetrics(env, 0, 12, 4, 6, 256);
-        expect(env.seq(bob) == seqBob + 1);
-        expect(env.seq(carol) == seqCarol + 1);
+        BEAST_EXPECT(env.seq(bob) == seqBob + 1);
+        BEAST_EXPECT(env.seq(carol) == seqCarol + 1);
 
         env.close();
         checkMetrics(env, 0, 12, 0, 6, 256);
-        expect(env.seq(bob) == seqBob + 1);
-        expect(env.seq(carol) == seqCarol + 1);
+        BEAST_EXPECT(env.seq(bob) == seqBob + 1);
+        BEAST_EXPECT(env.seq(carol) == seqCarol + 1);
     }
 
     void testPreclaimFailures()
@@ -606,7 +606,7 @@ public:
         // Now cheat, and bypass the queue.
         {
             auto const& jt = env.jt(noop(alice));
-            expect(jt.stx);
+            BEAST_EXPECT(jt.stx);
 
             bool didApply;
             TER ter;
@@ -645,7 +645,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
@@ -690,9 +690,9 @@ public:
         env(noop(charlie), fee(15), queued);
         checkMetrics(env, 6, boost::none, 4, 3, 256);
 
-        expect(env.seq(alice) == aliceSeq);
-        expect(env.seq(bob) == bobSeq);
-        expect(env.seq(charlie) == charlieSeq);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+        BEAST_EXPECT(env.seq(charlie) == charlieSeq);
 
         env.close();
         // Verify that all of but one of the queued transactions
@@ -702,9 +702,9 @@ public:
         // Verify that the stuck transaction is Bob's second.
         // Even though it had a higher fee than Alice's and
         // Charlie's, it didn't get attempted until the fee escalated.
-        expect(env.seq(alice) == aliceSeq + 3);
-        expect(env.seq(bob) == bobSeq + 1);
-        expect(env.seq(charlie) == charlieSeq + 1);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 3);
+        BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+        BEAST_EXPECT(env.seq(charlie) == charlieSeq + 1);
 
         // Alice - fill up the queue
         std::int64_t aliceFee = 10;
@@ -868,7 +868,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 4, 256);
 
@@ -942,14 +942,14 @@ public:
         env.close();
         checkMetrics(env, 3, 10, 6, 5, 256);
 
-        expect(aliceSeq + 1 == env.seq(alice));
-        expect(bobSeq + 1 == env.seq(bob));
-        expect(charlieSeq + 2 == env.seq(charlie));
-        expect(dariaSeq + 1 == env.seq(daria));
-        expect(elmoSeq + 1 == env.seq(elmo));
-        expect(fredSeq == env.seq(fred));
-        expect(gwenSeq == env.seq(gwen));
-        expect(hankSeq == env.seq(hank));
+        BEAST_EXPECT(aliceSeq + 1 == env.seq(alice));
+        BEAST_EXPECT(bobSeq + 1 == env.seq(bob));
+        BEAST_EXPECT(charlieSeq + 2 == env.seq(charlie));
+        BEAST_EXPECT(dariaSeq + 1 == env.seq(daria));
+        BEAST_EXPECT(elmoSeq + 1 == env.seq(elmo));
+        BEAST_EXPECT(fredSeq == env.seq(fred));
+        BEAST_EXPECT(gwenSeq == env.seq(gwen));
+        BEAST_EXPECT(hankSeq == env.seq(hank));
 
         aliceSeq = env.seq(alice);
         bobSeq = env.seq(bob);
@@ -977,14 +977,14 @@ public:
         env.close();
         checkMetrics(env, 4, 12, 7, 6, 256);
 
-        expect(fredSeq + 1 == env.seq(fred));
-        expect(gwenSeq + 1 == env.seq(gwen));
-        expect(hankSeq + 1 == env.seq(hank));
-        expect(aliceSeq + 4 == env.seq(alice));
-        expect(bobSeq == env.seq(bob));
-        expect(charlieSeq == env.seq(charlie));
-        expect(dariaSeq == env.seq(daria));
-        expect(elmoSeq == env.seq(elmo));
+        BEAST_EXPECT(fredSeq + 1 == env.seq(fred));
+        BEAST_EXPECT(gwenSeq + 1 == env.seq(gwen));
+        BEAST_EXPECT(hankSeq + 1 == env.seq(hank));
+        BEAST_EXPECT(aliceSeq + 4 == env.seq(alice));
+        BEAST_EXPECT(bobSeq == env.seq(bob));
+        BEAST_EXPECT(charlieSeq == env.seq(charlie));
+        BEAST_EXPECT(dariaSeq == env.seq(daria));
+        BEAST_EXPECT(elmoSeq == env.seq(elmo));
     }
 
     void testDisabled()
@@ -995,7 +995,7 @@ public:
 
         auto alice = Account("alice");
 
-        expect(!env.app().getTxQ().getMetrics(env.app().config(),
+        BEAST_EXPECT(!env.app().getTxQ().getMetrics(env.app().config(),
             *env.current()));
 
         env.fund(XRP(50000), noripple(alice));
@@ -1007,7 +1007,7 @@ public:
             env(noop(alice), fee(30));
 
         env.close();
-        expect(!env.app().getTxQ().getMetrics(env.app().config(),
+        BEAST_EXPECT(!env.app().getTxQ().getMetrics(env.app().config(),
             *env.current()));
     }
 
@@ -1022,7 +1022,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 1, 256);
 
@@ -1093,7 +1093,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
@@ -1180,7 +1180,7 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().base == 10);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
@@ -1244,9 +1244,9 @@ public:
 
         auto queued = ter(terQUEUED);
 
-        expect(env.current()->fees().base == 10);
-        expect(env.current()->fees().reserve == 200 * 1000000);
-        expect(env.current()->fees().increment == 50 * 1000000);
+        BEAST_EXPECT(env.current()->fees().base == 10);
+        BEAST_EXPECT(env.current()->fees().reserve == 200 * 1000000);
+        BEAST_EXPECT(env.current()->fees().increment == 50 * 1000000);
 
         checkMetrics(env, 0, boost::none, 0, 3, 256);
 
@@ -1423,7 +1423,7 @@ public:
         // entire sendMax, alice will send her
         // entire XRP balance to charlie in the
         // form of USD.
-        expect(XRP(60000) > aliceBal);
+        BEAST_EXPECT(XRP(60000) > aliceBal);
         env(pay(alice, charlie, USD(1000)),
             sendmax(XRP(60000)), queued);
 
@@ -1457,7 +1457,7 @@ public:
         // entire sendMax, alice will only send
         // a portion of her XRP balance to charlie
         // in the form of USD.
-        expect(aliceBal > XRP(6001));
+        BEAST_EXPECT(aliceBal > XRP(6001));
         env(pay(alice, charlie, USD(500)),
             sendmax(XRP(6000)), queued);
 
@@ -1495,11 +1495,11 @@ public:
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
         }
 
         {
@@ -1509,11 +1509,11 @@ public:
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
         }
 
         {
@@ -1521,11 +1521,11 @@ public:
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
         }
 
         {
@@ -1537,11 +1537,11 @@ public:
                 seq(1), fee(10));
             auto const pf = preflight(env.app(), env.current()->rules(),
                 *jtx.stx, tapNONE, env.journal);
-            expect(pf.ter == tesSUCCESS);
+            BEAST_EXPECT(pf.ter == tesSUCCESS);
             auto const conseq = calculateConsequences(pf);
-            expect(conseq.category == TxConsequences::normal);
-            expect(conseq.fee == drops(10));
-            expect(conseq.potentialSpend == XRP(0));
+            BEAST_EXPECT(conseq.category == TxConsequences::normal);
+            BEAST_EXPECT(conseq.fee == drops(10));
+            BEAST_EXPECT(conseq.potentialSpend == XRP(0));
         }
     }
 
@@ -1553,15 +1553,15 @@ public:
 
             auto fee = env.rpc("fee");
 
-            if (expect(fee.isMember(jss::result) &&
+            if (BEAST_EXPECT(fee.isMember(jss::result) &&
                 !RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
-                expect(result.isMember(jss::drops));
-                expect(result.isMember(jss::levels));
-                expect(result.isMember(jss::current_ledger_size));
-                expect(result.isMember(jss::current_queue_size));
-                expect(result.isMember(jss::expected_ledger_size));
+                BEAST_EXPECT(result.isMember(jss::drops));
+                BEAST_EXPECT(result.isMember(jss::levels));
+                BEAST_EXPECT(result.isMember(jss::current_ledger_size));
+                BEAST_EXPECT(result.isMember(jss::current_queue_size));
+                BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
             }
         }
 
@@ -1570,11 +1570,11 @@ public:
 
             auto fee = env.rpc("fee");
 
-            if(expect(fee.isMember(jss::result) &&
+            if(BEAST_EXPECT(fee.isMember(jss::result) &&
                 RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
-                expect(result.isMember(jss::error) &&
+                BEAST_EXPECT(result.isMember(jss::error) &&
                     result[jss::error] ==
                         RPC::get_error_info(rpcNOT_ENABLED).token);
             }
@@ -1608,7 +1608,7 @@ public:
         checkMetrics(env, 0, boost::none, 2, 1, 256);
 
         auto const aliceSeq = env.seq(alice);
-        expect(env.current()->info().seq == 3);
+        BEAST_EXPECT(env.current()->info().seq == 3);
         env(noop(alice), seq(aliceSeq), json(R"({"LastLedgerSequence":5})"), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 1), json(R"({"LastLedgerSequence":5})"), ter(terQUEUED));
         env(noop(alice), seq(aliceSeq + 2), json(R"({"LastLedgerSequence":10})"), ter(terQUEUED));
@@ -1665,7 +1665,7 @@ public:
         // We expect that all of alice's queued tx's got into
         // the open ledger.
         checkMetrics(env, 0, 50, 4, 5, 256);
-        expect(env.seq(alice) == aliceSeq + 4);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 4);
     }
 
     void run()

@@ -50,11 +50,11 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::offers) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 0);
-            expect(! jv[jss::result].isMember(jss::asks));
-            expect(! jv[jss::result].isMember(jss::bids));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::bids));
         }
 
         {
@@ -64,7 +64,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -79,11 +79,11 @@ public:
             env(offer("alice", USD(100), XRP(75)),
                 require(owners("alice", 2)));
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -119,15 +119,15 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::offers) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 1);
-            expect(jv[jss::result][jss::offers][0u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::offers][0u][jss::TakerGets] ==
                 XRP(200).value().getJson(0));
-            expect(jv[jss::result][jss::offers][0u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::offers][0u][jss::TakerPays] ==
                 USD(100).value().getJson(0));
-            expect(! jv[jss::result].isMember(jss::asks));
-            expect(! jv[jss::result].isMember(jss::bids));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::bids));
         }
 
         {
@@ -137,7 +137,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -152,11 +152,11 @@ public:
             env(offer("alice", USD(100), XRP(75)),
                 require(owners("alice", 4)));
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -184,12 +184,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::asks) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 0);
-            expect(jv[jss::result].isMember(jss::bids) &&
+            BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
                 jv[jss::result][jss::bids].size() == 0);
-            expect(! jv[jss::result].isMember(jss::offers));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::offers));
         }
 
         {
@@ -199,7 +199,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -216,7 +216,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -227,7 +227,7 @@ public:
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -264,20 +264,20 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::asks) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 1);
-            expect(jv[jss::result].isMember(jss::bids) &&
+            BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
                 jv[jss::result][jss::bids].size() == 1);
-            expect(jv[jss::result][jss::asks][0u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::asks][0u][jss::TakerGets] ==
                 USD(100).value().getJson(0));
-            expect(jv[jss::result][jss::asks][0u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::asks][0u][jss::TakerPays] ==
                 XRP(500).value().getJson(0));
-            expect(jv[jss::result][jss::bids][0u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::bids][0u][jss::TakerGets] ==
                 XRP(200).value().getJson(0));
-            expect(jv[jss::result][jss::bids][0u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::bids][0u][jss::TakerPays] ==
                 USD(100).value().getJson(0));
-            expect(! jv[jss::result].isMember(jss::offers));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::offers));
         }
 
         {
@@ -287,7 +287,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -304,7 +304,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -315,7 +315,7 @@ public:
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -352,11 +352,11 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::offers) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 0);
-            expect(! jv[jss::result].isMember(jss::asks));
-            expect(! jv[jss::result].isMember(jss::bids));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::bids));
         }
 
         {
@@ -366,7 +366,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -381,7 +381,7 @@ public:
             env(offer("alice", USD(100), XRP(75)),
                 require(owners("alice", 2)));
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
 
         {
@@ -391,7 +391,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -406,11 +406,11 @@ public:
             env(offer("alice", JPY(100), CNY(75)),
                 require(owners("alice", 4)));
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -464,19 +464,19 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::offers) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 2);
-            expect(jv[jss::result][jss::offers][0u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::offers][0u][jss::TakerGets] ==
                 XRP(200).value().getJson(0));
-            expect(jv[jss::result][jss::offers][0u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::offers][0u][jss::TakerPays] ==
                 USD(100).value().getJson(0));
-            expect(jv[jss::result][jss::offers][1u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::offers][1u][jss::TakerGets] ==
                 CNY(200).value().getJson(0));
-            expect(jv[jss::result][jss::offers][1u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::offers][1u][jss::TakerPays] ==
                 JPY(100).value().getJson(0));
-            expect(! jv[jss::result].isMember(jss::asks));
-            expect(! jv[jss::result].isMember(jss::bids));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::bids));
         }
 
         {
@@ -486,7 +486,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -501,7 +501,7 @@ public:
             env(offer("alice", USD(100), XRP(75)),
                 require(owners("alice", 6)));
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
 
         {
@@ -511,7 +511,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -526,11 +526,11 @@ public:
             env(offer("alice", JPY(100), CNY(75)),
                 require(owners("alice", 8)));
             env.close();
-            expect(! wsc->getMsg(10ms));
+            BEAST_EXPECT(! wsc->getMsg(10ms));
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -569,12 +569,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::asks) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 0);
-            expect(jv[jss::result].isMember(jss::bids) &&
+            BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
                 jv[jss::result][jss::bids].size() == 0);
-            expect(! jv[jss::result].isMember(jss::offers));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::offers));
         }
 
         {
@@ -584,7 +584,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -601,7 +601,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -618,7 +618,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -635,7 +635,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -646,7 +646,7 @@ public:
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
@@ -703,28 +703,28 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            expect(jv[jss::status] == "success");
-            expect(jv[jss::result].isMember(jss::asks) &&
+            BEAST_EXPECT(jv[jss::status] == "success");
+            BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 2);
-            expect(jv[jss::result].isMember(jss::bids) &&
+            BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
                 jv[jss::result][jss::bids].size() == 2);
-            expect(jv[jss::result][jss::asks][0u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::asks][0u][jss::TakerGets] ==
                 USD(100).value().getJson(0));
-            expect(jv[jss::result][jss::asks][0u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::asks][0u][jss::TakerPays] ==
                 XRP(500).value().getJson(0));
-            expect(jv[jss::result][jss::asks][1u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::asks][1u][jss::TakerGets] ==
                 JPY(100).value().getJson(0));
-            expect(jv[jss::result][jss::asks][1u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::asks][1u][jss::TakerPays] ==
                 CNY(500).value().getJson(0));
-            expect(jv[jss::result][jss::bids][0u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::bids][0u][jss::TakerGets] ==
                 XRP(200).value().getJson(0));
-            expect(jv[jss::result][jss::bids][0u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::bids][0u][jss::TakerPays] ==
                 USD(100).value().getJson(0));
-            expect(jv[jss::result][jss::bids][1u][jss::TakerGets] ==
+            BEAST_EXPECT(jv[jss::result][jss::bids][1u][jss::TakerGets] ==
                 CNY(200).value().getJson(0));
-            expect(jv[jss::result][jss::bids][1u][jss::TakerPays] ==
+            BEAST_EXPECT(jv[jss::result][jss::bids][1u][jss::TakerPays] ==
                 JPY(100).value().getJson(0));
-            expect(! jv[jss::result].isMember(jss::offers));
+            BEAST_EXPECT(! jv[jss::result].isMember(jss::offers));
         }
 
         {
@@ -734,7 +734,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -751,7 +751,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -768,7 +768,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -785,7 +785,7 @@ public:
             env.close();
 
             // Check stream update
-            expect(wsc->findMsg(5s,
+            BEAST_EXPECT(wsc->findMsg(5s,
                 [&](auto const& jv)
                 {
                     auto const& t = jv[jss::transaction];
@@ -796,7 +796,7 @@ public:
         }
 
         // RPC unsubscribe
-        expect(wsc->invoke("unsubscribe",
+        BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 

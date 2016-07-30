@@ -616,8 +616,8 @@ checkMapContents (Container& c, Values const& v)
 {
     if (v.empty())
     {
-        expect (c.empty());
-        expect (c.size() == 0);
+        BEAST_EXPECT(c.empty());
+        BEAST_EXPECT(c.size() == 0);
         return;
     }
 
@@ -627,7 +627,7 @@ checkMapContents (Container& c, Values const& v)
         for (auto const& e : v)
             c.at (e.first);
         for (auto const& e : v)
-            expect (c.operator[](e.first) == e.second);
+            BEAST_EXPECT(c.operator[](e.first) == e.second);
     }
     catch (std::out_of_range const&)
     {
@@ -665,10 +665,10 @@ checkUnorderedContentsRefRef (C&& c, Values const& v)
                     return Traits::extract (*iter) ==
                         Traits::extract (e);
                 }));
-            expect (match != v.end());
-            expect (key_eq (Traits::extract (*iter),
+            BEAST_EXPECT(match != v.end());
+            BEAST_EXPECT(key_eq (Traits::extract (*iter),
                 Traits::extract (*match)));
-            expect (hash (Traits::extract (*iter)) ==
+            BEAST_EXPECT(hash (Traits::extract (*iter)) ==
                 hash (Traits::extract (*match)));
         }
     }
@@ -687,18 +687,18 @@ checkContentsRefRef (C&& c, Values const& v)
                 >;
     using size_type = typename Cont::size_type;
 
-    expect (c.size() == v.size());
-    expect (size_type (std::distance (
+    BEAST_EXPECT(c.size() == v.size());
+    BEAST_EXPECT(size_type (std::distance (
         c.begin(), c.end())) == v.size());
-    expect (size_type (std::distance (
+    BEAST_EXPECT(size_type (std::distance (
         c.cbegin(), c.cend())) == v.size());
-    expect (size_type (std::distance (
+    BEAST_EXPECT(size_type (std::distance (
         c.chronological.begin(), c.chronological.end())) == v.size());
-    expect (size_type (std::distance (
+    BEAST_EXPECT(size_type (std::distance (
         c.chronological.cbegin(), c.chronological.cend())) == v.size());
-    expect (size_type (std::distance (
+    BEAST_EXPECT(size_type (std::distance (
         c.chronological.rbegin(), c.chronological.rend())) == v.size());
-    expect (size_type (std::distance (
+    BEAST_EXPECT(size_type (std::distance (
         c.chronological.crbegin(), c.chronological.crend())) == v.size());
 
     checkUnorderedContentsRefRef (c, v);
@@ -1071,7 +1071,7 @@ testCopyMove ()
         typename Traits::template Cont <> c2 (c);
         checkContents (c, v);
         checkContents (c2, v);
-        expect (c == c2);
+        BEAST_EXPECT(c == c2);
         unexpected (c != c2);
     }
 
@@ -1081,7 +1081,7 @@ testCopyMove ()
         typename Traits::template Cont <> c2 (c, Alloc());
         checkContents (c, v);
         checkContents (c2, v);
-        expect (c == c2);
+        BEAST_EXPECT(c == c2);
         unexpected (c != c2);
     }
 
@@ -1093,7 +1093,7 @@ testCopyMove ()
         c2 = c;
         checkContents (c, v);
         checkContents (c2, v);
-        expect (c == c2);
+        BEAST_EXPECT(c == c2);
         unexpected (c != c2);
     }
 
@@ -1153,35 +1153,31 @@ testIterator()
     // Should be able to construct or assign an iterator from an iterator.
     iterator nnIt_0 {c.begin()};
     iterator nnIt_1 {nnIt_0};
-    expect (nnIt_0 == nnIt_1, "iterator constructor failed");
+    BEAST_EXPECT(nnIt_0 == nnIt_1);
     iterator nnIt_2;
     nnIt_2 = nnIt_1;
-    expect (nnIt_1 == nnIt_2, "iterator assignment failed");
+    BEAST_EXPECT(nnIt_1 == nnIt_2);
 
     // Should be able to construct or assign a const_iterator from a
     // const_iterator.
     const_iterator ccIt_0 {c.cbegin()};
     const_iterator ccIt_1 {ccIt_0};
-    expect (ccIt_0 == ccIt_1, "const_iterator constructor failed");
+    BEAST_EXPECT(ccIt_0 == ccIt_1);
     const_iterator ccIt_2;
     ccIt_2 = ccIt_1;
-    expect (ccIt_1 == ccIt_2, "const_iterator assignment failed");
+    BEAST_EXPECT(ccIt_1 == ccIt_2);
 
     // Comparison between iterator and const_iterator is okay
-    expect (nnIt_0 == ccIt_0,
-        "Comparing an iterator to a const_iterator failed");
-    expect (ccIt_1 == nnIt_1,
-        "Comparing a const_iterator to an iterator failed");
+    BEAST_EXPECT(nnIt_0 == ccIt_0);
+    BEAST_EXPECT(ccIt_1 == nnIt_1);
 
     // Should be able to construct a const_iterator from an iterator.
     const_iterator ncIt_3 {c.begin()};
     const_iterator ncIt_4 {nnIt_0};
-    expect (ncIt_3 == ncIt_4,
-        "const_iterator construction from iterator failed");
+    BEAST_EXPECT(ncIt_3 == ncIt_4);
     const_iterator ncIt_5;
     ncIt_5 = nnIt_2;
-    expect (ncIt_5 == ncIt_4,
-        "const_iterator assignment from iterator failed");
+    BEAST_EXPECT(ncIt_5 == ncIt_4);
 
     // None of these should compile because they construct or assign to a
     // non-const iterator with a const_iterator.
@@ -1226,35 +1222,31 @@ testReverseIterator()
     // reverse_iterator.
     reverse_iterator rNrNit_0 {c.rbegin()};
     reverse_iterator rNrNit_1 {rNrNit_0};
-    expect (rNrNit_0 == rNrNit_1, "reverse_iterator constructor failed");
+    BEAST_EXPECT(rNrNit_0 == rNrNit_1);
     reverse_iterator xXrNit_2;
     xXrNit_2 = rNrNit_1;
-    expect (rNrNit_1 == xXrNit_2, "reverse_iterator assignment failed");
+    BEAST_EXPECT(rNrNit_1 == xXrNit_2);
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // const_reverse_iterator
     const_reverse_iterator rCrCit_0 {c.crbegin()};
     const_reverse_iterator rCrCit_1 {rCrCit_0};
-    expect (rCrCit_0 == rCrCit_1, "reverse_iterator constructor failed");
+    BEAST_EXPECT(rCrCit_0 == rCrCit_1);
     const_reverse_iterator xXrCit_2;
     xXrCit_2 = rCrCit_1;
-    expect (rCrCit_1 == xXrCit_2, "reverse_iterator assignment failed");
+    BEAST_EXPECT(rCrCit_1 == xXrCit_2);
 
     // Comparison between reverse_iterator and const_reverse_iterator is okay
-    expect (rNrNit_0 == rCrCit_0,
-        "Comparing an iterator to a const_iterator failed");
-    expect (rCrCit_1 == rNrNit_1,
-        "Comparing a const_iterator to an iterator failed");
+    BEAST_EXPECT(rNrNit_0 == rCrCit_0);
+    BEAST_EXPECT(rCrCit_1 == rNrNit_1);
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // reverse_iterator
     const_reverse_iterator rNrCit_0 {c.rbegin()};
     const_reverse_iterator rNrCit_1 {rNrNit_0};
-    expect (rNrCit_0 == rNrCit_1,
-        "const_reverse_iterator construction from reverse_iterator failed");
+    BEAST_EXPECT(rNrCit_0 == rNrCit_1);
     xXrCit_2 = rNrNit_1;
-    expect (rNrCit_1 == xXrCit_2,
-        "const_reverse_iterator assignment from reverse_iterator failed");
+    BEAST_EXPECT(rNrCit_1 == xXrCit_2);
 
     // The standard allows these conversions:
     //  o reverse_iterator is explicitly constructible from iterator.
@@ -1263,11 +1255,9 @@ testReverseIterator()
     // non-reverse iterators.
     reverse_iterator fNrNit_0 {c.begin()};
     const_reverse_iterator fNrCit_0 {c.begin()};
-    expect (fNrNit_0 == fNrCit_0,
-        "reverse_iterator construction from iterator failed");
+    BEAST_EXPECT(fNrNit_0 == fNrCit_0);
     const_reverse_iterator fCrCit_0 {c.cbegin()};
-    expect (fNrCit_0 == fCrCit_0,
-        "const_reverse_iterator construction from const_iterator failed");
+    BEAST_EXPECT(fNrCit_0 == fCrCit_0);
 
     // None of these should compile because they construct a non-reverse
     // iterator from a reverse_iterator.
@@ -1427,7 +1417,7 @@ testChronological ()
     typename Traits::template Cont <> c (
         v.begin(), v.end(), clock);
 
-    expect (std::equal (
+    BEAST_EXPECT(std::equal (
         c.chronological.cbegin(), c.chronological.cend(),
             v.begin(), v.end(), equal_value <Traits> ()));
 
@@ -1437,13 +1427,13 @@ testChronological ()
         using iterator = typename decltype (c)::iterator;
         iterator found (c.find (Traits::extract (*iter)));
 
-        expect (found != c.cend());
+        BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
             return;
         c.touch (found);
     }
 
-    expect (std::equal (
+    BEAST_EXPECT(std::equal (
         c.chronological.cbegin(), c.chronological.cend(),
             v.crbegin(), v.crend(), equal_value <Traits> ()));
 
@@ -1453,13 +1443,13 @@ testChronological ()
         using const_iterator = typename decltype (c)::const_iterator;
         const_iterator found (c.find (Traits::extract (*iter)));
 
-        expect (found != c.cend());
+        BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
             return;
         c.touch (found);
     }
 
-    expect (std::equal (
+    BEAST_EXPECT(std::equal (
         c.chronological.cbegin(), c.chronological.cend(),
             v.cbegin(), v.cend(), equal_value <Traits> ()));
 
@@ -1638,7 +1628,7 @@ testElementErase ()
             tempContainer.cbegin(), tempContainer.cend()))
             return; // Test failed
 
-        expect (tempContainer.empty(), "Failed to erase all elements");
+        BEAST_EXPECT(tempContainer.empty());
         pass();
     }
     {
@@ -1648,41 +1638,35 @@ testElementErase ()
         if (! doElementErase (tempContainer, chron.begin(), chron.end()))
             return; // Test failed
 
-        expect (tempContainer.empty(),
-            "Failed to chronologically erase all elements");
+        BEAST_EXPECT(tempContainer.empty());
         pass();
     }
     {
         // Test standard iterator partial erase
         auto tempContainer (c);
-        expect (tempContainer.size() > 2,
-            "Internal failure.  Container too small.");
+        BEAST_EXPECT(tempContainer.size() > 2);
         if (! doElementErase (tempContainer, ++tempContainer.begin(),
             nextToEndIter (tempContainer.begin(), tempContainer.end())))
             return; // Test failed
 
-        expect (tempContainer.size() == 2,
-            "Failed to erase expected number of elements");
+        BEAST_EXPECT(tempContainer.size() == 2);
         pass();
     }
     {
         // Test chronological iterator partial erase
         auto tempContainer (c);
-        expect (tempContainer.size() > 2,
-            "Internal failure.  Container too small.");
+        BEAST_EXPECT(tempContainer.size() > 2);
         auto& chron (tempContainer.chronological);
         if (! doElementErase (tempContainer, ++chron.begin(),
             nextToEndIter (chron.begin(), chron.end())))
             return; // Test failed
 
-        expect (tempContainer.size() == 2,
-            "Failed to chronologically erase expected number of elements");
+        BEAST_EXPECT(tempContainer.size() == 2);
         pass();
     }
     {
         auto tempContainer (c);
-        expect (tempContainer.size() > 4,
-            "Internal failure.  Container too small.");
+        BEAST_EXPECT(tempContainer.size() > 4);
         // erase(reverse_iterator) is not allowed.  None of the following
         // should compile for any aged_container type.
 //      c.erase (c.rbegin());
@@ -1712,8 +1696,7 @@ void
 aged_associative_container_test_base::
 doRangeErase (Container& c, BeginEndSrc const& beginEndSrc)
 {
-    expect (c.size () > 2,
-        "Internal test failure. Container must have more than 2 elements");
+    BEAST_EXPECT(c.size () > 2);
     auto itBeginPlusOne (beginEndSrc.begin ());
     auto const valueFront = *itBeginPlusOne;
     ++itBeginPlusOne;
@@ -1725,19 +1708,10 @@ doRangeErase (Container& c, BeginEndSrc const& beginEndSrc)
     // Erase all elements but first and last
     auto const retIter = c.erase (itBeginPlusOne, itBack);
 
-    expect (c.size() == 2,
-        "Unexpected size for range-erased container");
-
-    expect (valueFront == *(beginEndSrc.begin()),
-        "Unexpected first element in range-erased container");
-
-    expect (valueBack == *(++beginEndSrc.begin()),
-        "Unexpected last element in range-erased container");
-
-    expect (retIter == (++beginEndSrc.begin()),
-        "Unexpected return iterator from erase");
-
-    pass ();
+    BEAST_EXPECT(c.size() == 2);
+    BEAST_EXPECT(valueFront == *(beginEndSrc.begin()));
+    BEAST_EXPECT(valueBack == *(++beginEndSrc.begin()));
+    BEAST_EXPECT(retIter == (++beginEndSrc.begin()));
 }
 
 //------------------------------------------------------------------------------
