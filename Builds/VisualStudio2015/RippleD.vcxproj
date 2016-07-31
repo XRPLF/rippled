@@ -1583,8 +1583,6 @@
     <ClCompile Include="..\..\src\ripple\beast\core\core.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\HeapBlock.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\LexicalCast.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1599,8 +1597,6 @@
     </ClInclude>
     <None Include="..\..\src\ripple\beast\core\mac_SystemStats.mm">
     </None>
-    <ClInclude Include="..\..\src\ripple\beast\core\MeasureFunctionCallTime.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\Memory.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\osx_ObjCHelpers.h">

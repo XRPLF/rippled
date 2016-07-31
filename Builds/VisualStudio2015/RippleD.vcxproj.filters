@@ -2076,9 +2076,6 @@
     <ClCompile Include="..\..\src\ripple\beast\core\core.unity.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\HeapBlock.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\LexicalCast.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
@@ -2097,9 +2094,6 @@
     <None Include="..\..\src\ripple\beast\core\mac_SystemStats.mm">
       <Filter>ripple\beast\core</Filter>
     </None>
-    <ClInclude Include="..\..\src\ripple\beast\core\MeasureFunctionCallTime.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\Memory.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
