@@ -56,8 +56,6 @@
 #include <ripple/beast/core/SystemStats.h>
 #include <ripple/beast/core/SemanticVersion.h>
 
-#include <ripple/beast/core/MeasureFunctionCallTime.h>
-
 #if BEAST_MSVC
 #pragma warning (pop)
 #endif
