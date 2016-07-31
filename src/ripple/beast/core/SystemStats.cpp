@@ -21,7 +21,6 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/HeapBlock.h>
 #include <cstdlib>
 #include <iterator>
 #include <memory>
@@ -61,24 +60,30 @@ getStackBacktrace()
         std::distance(std::begin(stack), std::end(stack)),
         stack, nullptr);
 
-    HeapBlock<SYMBOL_INFO> symbol;
-    symbol.calloc (sizeof (SYMBOL_INFO) + 256, 1);
-    symbol->MaxNameLen = 255;
-    symbol->SizeOfStruct = sizeof (SYMBOL_INFO);
+    // Allow symbols that are up to 1024 characters long.
+    std::size_t constexpr nameLength = 1024;
+
+    alignas(SYMBOL_INFO) unsigned char symbuf[
+        sizeof(SYMBOL_INFO) + nameLength * sizeof(SYMBOL_INFO::Name)];
+
+    auto symbol = reinterpret_cast<SYMBOL_INFO*>(symbuf);
 
     for (int i = 0; i < frames; ++i)
     {
         DWORD64 displacement = 0;
 
-        if (SymFromAddr (process, (DWORD64) stack[i], &displacement, symbol))
+        std::memset (symbol, 0, sizeof(symbuf));
+
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen = nameLength;
+
+        if (SymFromAddr (process, (DWORD64)stack[i], &displacement, symbol))
         {
             std::string frame;
 
             frame.append (std::to_string (i) + ": ");
 
-            IMAGEHLP_MODULE64 moduleInfo;
-            zerostruct (moduleInfo);
-            moduleInfo.SizeOfStruct = sizeof (moduleInfo);
+            IMAGEHLP_MODULE64 moduleInfo { sizeof(moduleInfo) };
 
             if (::SymGetModuleInfo64 (process, symbol->ModBase, &moduleInfo))
             {
@@ -103,8 +108,8 @@ getStackBacktrace()
     int frames = backtrace (stack,
         std::distance(std::begin(stack), std::end(stack)));
 
-    std::unique_ptr<char*[], void(*)(void*)> frame (
-        backtrace_symbols (stack, frames), std::free);
+    std::unique_ptr<char*[], decltype(std::free)*> frame {
+        backtrace_symbols (stack, frames), std::free };
 
     for (int i = 0; i < frames; ++i)
         result.push_back (frame[i]);
