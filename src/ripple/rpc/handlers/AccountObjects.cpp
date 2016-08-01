@@ -63,7 +63,7 @@ Json::Value doAccountObjects (RPC::Context& context)
         if (auto jv = RPC::accountFromString (accountID, strIdent))
         {
             for (auto it = jv.begin (); it != jv.end (); ++it)
-                result[it.memberName ()] = it.key ();
+                result[it.memberName ()] = *it;
 
             return result;
         }
