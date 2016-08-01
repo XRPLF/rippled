@@ -129,10 +129,9 @@ public:
       @param map      the transaction set.
       @param acquired true if we have acquired the transaction set.
     */
-    void mapComplete (
+    void gotMap (
         uint256 const& hash,
-        std::shared_ptr<SHAMap> const& map,
-        bool acquired) override;
+        std::shared_ptr<SHAMap> const& map) override;
 
     /**
       On timer call the correct handler for each state.
@@ -303,56 +302,57 @@ private:
     Application& app_;
     ConsensusImp& consensus_;
     InboundTransactions& inboundTransactions_;
-    LocalTxs& m_localTX;
+    LocalTxs& localTX_;
     LedgerMaster& ledgerMaster_;
-    FeeVote& m_feeVote;
+    FeeVote& feeVote_;
     std::recursive_mutex lock_;
 
     State state_;
 
     // The wall time this ledger closed
-    NetClock::time_point mCloseTime;
+    NetClock::time_point closeTime_;
 
-    uint256 mPrevLedgerHash;
-    uint256 mAcquiringLedger;
+    uint256 prevLedgerHash_;
+    uint256 acquiringLedger_;
 
-    std::shared_ptr<Ledger const> mPreviousLedger;
-    LedgerProposal::pointer mOurPosition;
-    PublicKey mValPublic;
-    SecretKey mValSecret;
-    bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
+    std::shared_ptr<Ledger const> previousLedger_;
+    LedgerProposal::pointer ourPosition_;
+    PublicKey valPublic_;
+    SecretKey valSecret_;
+    bool proposing_, validating_, haveCorrectLCL_, consensusFail_;
 
-    std::chrono::milliseconds mCurrentMSeconds;
+    // How much time has elapsed since the round started
+    std::chrono::milliseconds roundTime_;
 
     // How long the close has taken, expressed as a percentage of the time that
     // we expected it to take.
-    int mClosePercent;
+    int closePercent_;
 
-    NetClock::duration mCloseResolution;
+    NetClock::duration closeResolution_;
 
-    bool mHaveCloseTimeConsensus;
+    bool haveCloseTimeConsensus_;
 
-    std::chrono::steady_clock::time_point   mConsensusStartTime;
-    int                             mPreviousProposers;
+    std::chrono::steady_clock::time_point consensusStartTime_;
+    int previousProposers_;
 
-    // The time it took for the last consensus process to converge
-    std::chrono::milliseconds mPreviousMSeconds;
+    // Time it took for the last consensus round to converge
+    std::chrono::milliseconds previousRoundTime_;
 
     // Convergence tracking, trusted peers indexed by hash of public key
-    hash_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
+    hash_map<NodeID, LedgerProposal::pointer>  peerPositions_;
 
     // Transaction Sets, indexed by hash of transaction tree
-    hash_map<uint256, std::shared_ptr<SHAMap>> mAcquired;
+    hash_map<uint256, std::shared_ptr<SHAMap>> acquired_;
 
     // Disputed transactions
-    hash_map<uint256, std::shared_ptr <DisputedTx>> mDisputes;
-    hash_set<uint256> mCompares;
+    hash_map<uint256, std::shared_ptr <DisputedTx>> disputes_;
+    hash_set<uint256> compares_;
 
     // Close time estimates, keep ordered for predictable traverse
-    std::map<NetClock::time_point, int> mCloseTimes;
+    std::map<NetClock::time_point, int> closeTimes_;
 
     // nodes that have bowed out of this consensus process
-    hash_set<NodeID> mDeadNodes;
+    hash_set<NodeID> deadNodes_;
     beast::Journal j_;
 };
 
@@ -366,6 +366,24 @@ make_LedgerConsensus (
     LocalTxs& localtx,
     LedgerMaster& ledgerMaster,
     FeeVote& feeVote);
+
+//------------------------------------------------------------------------------
+/** Apply a set of transactions to a ledger
+
+  Typically the txFilter is used to reject transactions
+  that already got in the prior ledger
+
+  @param set            set of transactions to apply
+  @param view           ledger to apply to
+  @param txFilter       callback, return false to reject txn
+  @return               retriable transactions
+*/
+CanonicalTXSet
+applyTransactions (
+    Application& app,
+    SHAMap const& set,
+    OpenView& view,
+    std::function<bool(uint256 const&)> txFilter);
 
 } // ripple
 

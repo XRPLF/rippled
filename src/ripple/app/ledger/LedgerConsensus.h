@@ -47,8 +47,8 @@ public:
 
     virtual uint256 getLCL () = 0;
 
-    virtual void mapComplete (uint256 const& hash,
-        std::shared_ptr<SHAMap> const& map, bool acquired) = 0;
+    virtual void gotMap (uint256 const& hash,
+        std::shared_ptr<SHAMap> const& map) = 0;
 
     virtual void timerEntry () = 0;
 
@@ -73,41 +73,6 @@ public:
     virtual void simulate (
         boost::optional<std::chrono::milliseconds> consensusDelay) = 0;
 };
-
-//------------------------------------------------------------------------------
-/** Apply a set of transactions to a ledger
-
-  @param set                   The set of transactions to apply
-  @param applyLedger           The ledger to which the transactions should
-                               be applied.
-  @param checkLedger           A reference ledger for determining error
-                               messages (typically new last closed
-                                ledger).
-  @param retriableTransactions collect failed transactions in this set
-  @param openLgr               true if applyLedger is open, else false.
-*/
-void applyTransactions (
-    Application& app,
-    SHAMap const* set,
-    OpenView& view,
-    ReadView const& checkLedger,
-    CanonicalTXSet& retriableTransactions,
-    ApplyFlags flags);
-
-/** Apply a single transaction to a ledger
-  @param view                   The open view to apply to
-  @param txn                    The transaction to apply
-  @param retryAssured           True if another pass is assured
-  @param flags                  Flags for transactor
-  @return                       resultSuccess, resultFail or resultRetry
-*/
-int applyTransaction (
-    Application& app,
-    OpenView& view,
-    std::shared_ptr<STTx const> const& txn,
-    bool retryAssured,
-    ApplyFlags flags,
-    beast::Journal j);
 
 } // ripple
 
