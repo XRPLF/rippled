@@ -90,6 +90,13 @@ public:
         std::uint64_t expFeeLevel;        // Estimated fee level to get in next ledger
     };
 
+    struct AccountTxDetails
+    {
+        uint64_t feeLevel;
+        boost::optional<LedgerIndex const> lastValid;
+        boost::optional<TxConsequences const> consequences;
+    };
+
     TxQ(Setup const& setup,
         beast::Journal j);
 
@@ -120,18 +127,32 @@ public:
     accept(Application& app, OpenView& view);
 
     /**
-        A new ledger has been validated. Update and clean up the
-        queue.
+        Update stats and clean up the queue in preparation for
+        the next ledger.
     */
     void
-    processValidatedLedger(Application& app,
+    processClosedLedger(Application& app,
         OpenView const& view, bool timeLeap);
 
     /** Returns fee metrics in reference fee level units.
+
+        @returns Uninitialized @ref optional if the FeeEscalation
+        amendment is not enabled.
     */
     boost::optional<Metrics>
     getMetrics(Config const& config, OpenView const& view,
         std::uint32_t txCountPadding = 0) const;
+
+    /** Returns information about the transactions currently
+        in the queue for the account.
+
+        @returns Uninitialized @ref optional if the FeeEscalation
+        amendment is not enabled, OR if the account has no transactions
+        in the queue.
+    */
+    boost::optional<std::map<TxSeq, AccountTxDetails>>
+    getAccountTxs(AccountID const& account, Config const& config,
+        ReadView const& view) const;
 
     /** Packages up fee metrics for the `fee` RPC command.
     */
@@ -215,7 +236,6 @@ private:
         scaleFeeLevel(OpenView const& view, std::uint32_t txCountPadding = 0) const;
     };
 
-    // Alternate name: MaybeTx
     class MaybeTx
     {
     public:

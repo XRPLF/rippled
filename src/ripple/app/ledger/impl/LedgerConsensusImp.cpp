@@ -1012,7 +1012,7 @@ void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
                     *buildLCL, retriableTxs, tapNONE);
             }
             // Update fee computations.
-            app_.getTxQ().processValidatedLedger(app_, accum,
+            app_.getTxQ().processClosedLedger(app_, accum,
                 mCurrentMSeconds > 5s);
 
             accum.apply(*buildLCL);

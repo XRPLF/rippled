@@ -1409,7 +1409,7 @@ void NetworkOPsImp::switchLastClosedLedger (
 
     // Update fee computations.
     // TODO: Needs an open ledger
-    //app_.getTxQ().processValidatedLedger(app_, *newLCL, true);
+    //app_.getTxQ().processClosedLedger(app_, *newLCL, true);
 
     // Caller must own master lock
     {
