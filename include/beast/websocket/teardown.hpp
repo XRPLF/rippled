@@ -51,7 +51,7 @@ teardown(teardown_tag, Socket& socket, error_code& ec)
 */
     static_assert(sizeof(Socket)==-1,
         "Unknown Socket type in teardown.");
-};
+}
 
 /** Start tearing down a connection.
 

@@ -110,7 +110,7 @@ is_valid(close_code::value code)
     if(v >= 1016 && v <= 2999)
         return false;
     // not used
-    if(v >= 0 && v <= 999)
+    if(v <= 999)
         return false;
     return true;
 }
