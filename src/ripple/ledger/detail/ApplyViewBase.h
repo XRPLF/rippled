@@ -131,7 +131,6 @@ protected:
     ApplyFlags flags_;
     ReadView const* base_;
     detail::ApplyStateTable items_;
-    XRPAmount dropsDestroyed_ = 0;
 };
 
 } // detail

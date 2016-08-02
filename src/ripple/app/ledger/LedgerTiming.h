@@ -23,6 +23,7 @@
 #include <chrono>
 #include <cstdint>
 #include <ripple/basics/chrono.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace ripple {
 
@@ -49,6 +50,80 @@ NetClock::time_point
 roundCloseTime (
     NetClock::time_point closeTime,
     NetClock::duration closeResolution);
+
+/** Determines whether the current ledger should close at this time.
+
+    This function should be called when a ledger is open and there is no close
+    in progress, or when a transaction is received and no close is in progress.
+
+    @param anyTransactions indicates whether any transactions have been received
+    @param previousProposers proposers in the last closing
+    @param proposersClosed proposers who have currently closed this ledger
+    @param proposersValidated proposers who have validated the last closed
+                              ledger
+    @param previousTime time for the previous ledger to reach consensus
+    @param currentTime  time since the previous ledger's
+                           (possibly rounded) close time
+    @param openTime     time waiting to close this ledger
+    @param idleInterval the network's desired idle interval
+    @param j            journal for logging
+*/
+bool
+shouldCloseLedger (
+    bool anyTransactions,
+    int previousProposers,
+    int proposersClosed,
+    int proposersValidated,
+    std::chrono::milliseconds previousTime,
+    std::chrono::milliseconds currentTime, // Time since last ledger's close time
+    std::chrono::milliseconds openTime,    // Time waiting to close this ledger
+    std::chrono::seconds idleInterval,
+    beast::Journal j);
+
+
+/** Determine if a consensus has been reached
+
+    This function determines if a consensus has been reached
+
+    @param agreeing count of agreements with our position
+    @param total count of participants other than us
+    @param count_self whether we count ourselves
+    @return True if a consensus has been reached
+*/
+bool
+checkConsensusReached (int agreeing, int total, bool count_self);
+
+/** Whether we have or don't have a consensus */
+enum class ConsensusState
+{
+    No,           // We do not have consensus
+    MovedOn,      // The network has consensus without us
+    Yes           // We have consensus along with the network
+};
+
+/** Determine whether the network reached consensus and whether we joined.
+
+    @param previousProposers proposers in the last closing (not including us)
+    @param currentProposers proposers in this closing so far (not including us)
+    @param currentAgree proposers who agree with us
+    @param currentFinished proposers who have validated a ledger after this one
+    @param previousAgreeTime how long, in milliseconds, it took to agree on the
+                             last ledger
+    @param currentAgreeTime how long, in milliseconds, we've been trying to
+                            agree
+    @param proposing        whether we should count ourselves
+    @param j                journal for logging
+*/
+ConsensusState
+checkConsensus (
+    int previousProposers,
+    int currentProposers,
+    int currentAgree,
+    int currentFinished,
+    std::chrono::milliseconds previousAgreeTime,
+    std::chrono::milliseconds currentAgreeTime,
+    bool proposing,
+    beast::Journal j);
 
 //------------------------------------------------------------------------------
 

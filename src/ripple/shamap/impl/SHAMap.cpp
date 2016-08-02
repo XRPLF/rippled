@@ -111,8 +111,8 @@ SHAMap::make_v2() const
         t = hotUNKNOWN;
         break;
     }
-    ret->unshare();
     ret->flushDirty(t, ret->seq_);
+    ret->unshare();
     return ret;
 }
 
@@ -144,8 +144,8 @@ SHAMap::make_v1() const
         t = hotUNKNOWN;
         break;
     }
-    ret->unshare();
     ret->flushDirty(t, ret->seq_);
+    ret->unshare();
     return ret;
 }
 
@@ -184,12 +184,13 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     assert(stack == nullptr || stack->empty());
     auto inNode = root_;
     SHAMapNodeID nodeID;
-    if (stack != nullptr)
-        stack->push({inNode, nodeID});
     auto const isv2 = is_v2();
 
     while (inNode->isInner())
     {
+        if (stack != nullptr)
+            stack->push({inNode, nodeID});
+
         auto const inner = std::static_pointer_cast<SHAMapInnerNode>(std::move(inNode));
         if (isv2)
         {
@@ -208,7 +209,10 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
             {
                 auto n = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(inNode);
                 if (n == nullptr)
+                {
+                    assert (false);
                     return nullptr;
+                }
                 nodeID = SHAMapNodeID{n->depth(), n->common()};
             }
             else
@@ -220,9 +224,10 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
         {
             nodeID = nodeID.getChildNodeID (branch);
         }
-        if (stack != nullptr)
-            stack->push({inNode, nodeID});
     }
+
+    if (stack != nullptr)
+        stack->push({inNode, nodeID});
     return static_cast<SHAMapTreeNode*>(inNode.get());
 }
 
@@ -305,26 +310,6 @@ SHAMap::checkFilter(SHAMapHash const& hash,
     {
         node = SHAMapAbstractNode::make(
             nodeData, 0, snfPREFIX, hash, true, f_.journal ());
-        if (node && node->isInner())
-        {
-            bool isv2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(node) != nullptr;
-            if (isv2 != is_v2())
-            {
-                auto root =  std::dynamic_pointer_cast<SHAMapInnerNode>(root_);
-                assert(root);
-                assert(root->isEmpty());
-                if (isv2)
-                {
-                    auto temp = make_v2();
-                    swap(temp->root_, const_cast<std::shared_ptr<SHAMapAbstractNode>&>(root_));
-                }
-                else
-                {
-                    auto temp = make_v1();
-                    swap(temp->root_, const_cast<std::shared_ptr<SHAMapAbstractNode>&>(root_));
-                }
-            }
-        }
         if (node)
         {
             filter->gotNode (true, hash,
@@ -458,14 +443,15 @@ SHAMap::descend (SHAMapInnerNode * parent, SHAMapNodeID const& parentID,
     if (!child)
     {
         std::shared_ptr<SHAMapAbstractNode> childNode = fetchNodeNT (childHash, filter);
-        if (isInconsistentNode(childNode))
-            childNode = nullptr;
 
         if (childNode)
         {
             childNode = parent->canonicalizeChild (branch, std::move(childNode));
             child = childNode.get ();
         }
+
+        if (child && isInconsistentNode(childNode))
+            child = nullptr;
     }
 
     if (child && is_v2())
@@ -512,21 +498,12 @@ SHAMap::descendAsync (SHAMapInnerNode* parent, int branch,
 
             ptr = SHAMapAbstractNode::make(obj->getData(), 0, snfPREFIX,
                                            hash, true, f_.journal());
-
-            if (ptr && ptr->isInner())
-            {
-                bool isv2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(ptr) != nullptr;
-                if (isv2 != is_v2())
-                {
-                    assert(false);
-                }
-            }
             if (ptr && backed_)
                 canonicalize (hash, ptr);
         }
     }
 
-    if (isInconsistentNode(ptr))
+    if (ptr && isInconsistentNode(ptr))
         ptr = nullptr;
     if (ptr)
         ptr = parent->canonicalizeChild (branch, std::move(ptr));
@@ -955,7 +932,7 @@ SHAMap::addGiveItem (std::shared_ptr<SHAMapItem const> const& item,
                 auto parent_depth = parent->depth();
                 auto depth = inner->get_common_prefix(tag);
                 auto new_inner = std::make_shared<SHAMapInnerNodeV2>(seq_);
-                auto nodeID = SHAMapNodeID{depth, prefix(depth, inner->common())};
+                nodeID = SHAMapNodeID{depth, prefix(depth, inner->common())};
                 new_inner->setChild(nodeID.selectBranch(inner->common()), inner);
                 nodeID = SHAMapNodeID{depth, prefix(depth, tag)};
                 new_inner->setChild(nodeID.selectBranch(tag),
@@ -1394,10 +1371,18 @@ SHAMap::invariants() const
 bool
 SHAMap::isInconsistentNode(std::shared_ptr<SHAMapAbstractNode> const& node) const
 {
+    assert(root_);
+    assert(node);
     if (std::dynamic_pointer_cast<SHAMapTreeNode>(node) != nullptr)
         return false;
     bool is_node_v2 = std::dynamic_pointer_cast<SHAMapInnerNodeV2>(node) != nullptr;
-    return is_v2() != is_node_v2;
+    assert (! is_node_v2 || (std::dynamic_pointer_cast<SHAMapInnerNodeV2>(node)->depth() != 0));
+
+    if (is_v2() == is_node_v2)
+        return false;
+
+    state_ = SHAMapState::Invalid;
+    return true;
 }
 
 } // ripple

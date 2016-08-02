@@ -44,6 +44,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/mulDiv.h>
 #include <ripple/basics/random.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/StringUtilities.h>
@@ -1409,7 +1410,7 @@ void NetworkOPsImp::switchLastClosedLedger (
 
     // Update fee computations.
     // TODO: Needs an open ledger
-    //app_.getTxQ().processValidatedLedger(app_, *newLCL, true);
+    //app_.getTxQ().processClosedLedger(app_, *newLCL, true);
 
     // Caller must own master lock
     {
@@ -1514,7 +1515,7 @@ void
 NetworkOPsImp::mapComplete (uint256 const& hash,
                             std::shared_ptr<SHAMap> const& map)
 {
-    mLedgerConsensus->mapComplete (hash, map, true);
+    mLedgerConsensus->gotMap (hash, map);
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
@@ -2095,57 +2096,74 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     auto const escalationMetrics = app_.getTxQ().getMetrics(
         app_.config(), *app_.openLedger().current());
+
+    constexpr std::uint64_t max32 =
+        std::numeric_limits<std::uint32_t>::max();
+    auto const loadFactorServer = app_.getFeeTrack().getLoadFactor();
+    auto const loadBaseServer = app_.getFeeTrack().getLoadBase();
+    auto const loadFactorFeeEscalation = escalationMetrics ?
+        escalationMetrics->expFeeLevel : 1;
+    auto const loadBaseFeeEscalation = escalationMetrics ?
+        escalationMetrics->referenceFeeLevel : 1;
+
+    auto const loadFactor = std::max(static_cast<std::uint64_t>(loadFactorServer),
+        mulDiv(loadFactorFeeEscalation, loadBaseServer, loadBaseFeeEscalation).second);
+
     if (!human)
     {
-        info[jss::load_base] = app_.getFeeTrack ().getLoadBase ();
-        info[jss::load_factor] = app_.getFeeTrack ().getLoadFactor ();
+        info[jss::load_base] = loadBaseServer;
+        info[jss::load_factor] = static_cast<std::uint32_t>(
+            std::min(max32, loadFactor));
         if (escalationMetrics)
         {
+            info[jss::load_factor_server] = loadFactorServer;
+
             /* Json::Value doesn't support uint64, so clamp to max
                 uint32 value. This is mostly theoretical, since there
                 probably isn't enough extant XRP to drive the factor
                 that high.
             */
-            constexpr std::uint64_t max =
-                std::numeric_limits<std::uint32_t>::max();
             info[jss::load_factor_fee_escalation] =
                 static_cast<std::uint32_t> (std::min(
-                    max, escalationMetrics->expFeeLevel));
+                    max32, loadFactorFeeEscalation));
             info[jss::load_factor_fee_queue] =
                 static_cast<std::uint32_t> (std::min(
-                    max, escalationMetrics->minFeeLevel));
+                    max32, escalationMetrics->minFeeLevel));
             info[jss::load_factor_fee_reference] =
                 static_cast<std::uint32_t> (std::min(
-                    max, escalationMetrics->referenceFeeLevel));
+                    max32, loadBaseFeeEscalation));
         }
     }
     else
     {
-        info[jss::load_factor] =
-            static_cast<double> (app_.getFeeTrack ().getLoadFactor ()) /
-                app_.getFeeTrack ().getLoadBase ();
+        info[jss::load_factor] = static_cast<double> (loadFactor) / loadBaseServer;
+
+        if (loadFactorServer != loadFactor)
+            info[jss::load_factor_server] =
+                static_cast<double> (loadFactorServer) / loadBaseServer;
+
         if (admin)
         {
-            std::uint32_t base = app_.getFeeTrack().getLoadBase();
             std::uint32_t fee = app_.getFeeTrack().getLocalFee();
-            if (fee != base)
+            if (fee != loadBaseServer)
                 info[jss::load_factor_local] =
-                    static_cast<double> (fee) / base;
+                    static_cast<double> (fee) / loadBaseServer;
             fee = app_.getFeeTrack ().getRemoteFee();
-            if (fee != base)
+            if (fee != loadBaseServer)
                 info[jss::load_factor_net] =
-                    static_cast<double> (fee) / base;
+                    static_cast<double> (fee) / loadBaseServer;
             fee = app_.getFeeTrack().getClusterFee();
-            if (fee != base)
+            if (fee != loadBaseServer)
                 info[jss::load_factor_cluster] =
-                    static_cast<double> (fee) / base;
+                    static_cast<double> (fee) / loadBaseServer;
         }
         if (escalationMetrics)
         {
-            if (escalationMetrics->expFeeLevel !=
-                    escalationMetrics->referenceFeeLevel)
+            if (loadFactorFeeEscalation !=
+                    escalationMetrics->referenceFeeLevel &&
+                        (admin || loadFactorFeeEscalation != loadFactor))
                 info[jss::load_factor_fee_escalation] =
-                    static_cast<double> (escalationMetrics->expFeeLevel) /
+                    static_cast<double> (loadFactorFeeEscalation) /
                         escalationMetrics->referenceFeeLevel;
             if (escalationMetrics->minFeeLevel !=
                     escalationMetrics->referenceFeeLevel)

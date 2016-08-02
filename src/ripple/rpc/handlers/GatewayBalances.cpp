@@ -85,10 +85,8 @@ Json::Value doGatewayBalances (RPC::Context& context)
     // Parse the specified hotwallet(s), if any
     std::set <AccountID> hotWallets;
 
-    if (params.isMember ("hotwallet"))
+    if (params.isMember (jss::hotwallet))
     {
-        Json::Value const& hw = params["hotwallet"];
-        bool valid = true;
 
         auto addHotWallet = [&hotWallets](Json::Value const& j)
         {
@@ -115,6 +113,9 @@ Json::Value doGatewayBalances (RPC::Context& context)
             return false;
         };
 
+        Json::Value const& hw = params[jss::hotwallet];
+        bool valid = true;
+
         if (hw.isArray())
         {
             for (unsigned i = 0; i < hw.size(); ++i)
@@ -140,6 +141,7 @@ Json::Value doGatewayBalances (RPC::Context& context)
     std::map <Currency, STAmount> sums;
     std::map <AccountID, std::vector <STAmount>> hotBalances;
     std::map <AccountID, std::vector <STAmount>> assets;
+    std::map <AccountID, std::vector <STAmount>> frozenBalances;
 
     // Traverse the cold wallet's trust lines
     {
@@ -162,13 +164,18 @@ Json::Value doGatewayBalances (RPC::Context& context)
 
                 if (hotWallets.count (peer) > 0)
                 {
-                    // This is a specified hot wallt
+                    // This is a specified hot wallet
                     hotBalances[peer].push_back (-rs->getBalance ());
                 }
                 else if (balSign > 0)
                 {
                     // This is a gateway asset
                     assets[peer].push_back (rs->getBalance ());
+                }
+                else if (rs->getFreeze())
+                {
+                    // An obligation the gateway has frozen
+                    frozenBalances[peer].push_back (-rs->getBalance ());
                 }
                 else
                 {
@@ -187,43 +194,41 @@ Json::Value doGatewayBalances (RPC::Context& context)
 
     if (! sums.empty())
     {
-        Json::Value& j = (result [jss::obligations] = Json::objectValue);
+        Json::Value j;
         for (auto const& e : sums)
         {
             j[to_string (e.first)] = e.second.getText ();
         }
+        result [jss::obligations] = std::move (j);
     }
 
-    if (! hotBalances.empty())
-    {
-        Json::Value& j = (result [jss::balances] = Json::objectValue);
-        for (auto const& account : hotBalances)
+    auto populate = [](
+        std::map <AccountID, std::vector <STAmount>> const& array,
+        Json::Value& result,
+        Json::StaticString const& name)
         {
-            Json::Value& balanceArray = (j[to_string (account.first)] = Json::arrayValue);
-            for (auto const& balance : account.second)
+            if (!array.empty())
             {
-                Json::Value& entry = balanceArray.append (Json::objectValue);
-                entry[jss::currency] = to_string (balance.issue ().currency);
-                entry[jss::value] = balance.getText();
+                Json::Value j;
+                for (auto const& account : array)
+                {
+                    Json::Value balanceArray;
+                    for (auto const& balance : account.second)
+                    {
+                        Json::Value entry;
+                        entry[jss::currency] = to_string (balance.issue ().currency);
+                        entry[jss::value] = balance.getText();
+                        balanceArray.append (std::move (entry));
+                    }
+                    j [to_string (account.first)] = std::move (balanceArray);
+                }
+                result [name] = std::move (j);
             }
-        }
-    }
+        };
 
-    if (! assets.empty())
-    {
-        Json::Value& j = (result [jss::assets] = Json::objectValue);
-
-        for (auto const& account : assets)
-        {
-            Json::Value& balanceArray = (j[to_string (account.first)] = Json::arrayValue);
-            for (auto const& balance : account.second)
-            {
-                Json::Value& entry = balanceArray.append (Json::objectValue);
-                entry[jss::currency] = to_string (balance.issue ().currency);
-                entry[jss::value] = balance.getText();
-            }
-        }
-    }
+    populate (hotBalances, result, jss::balances);
+    populate (frozenBalances, result, jss::frozen_balances);
+    populate (assets, result, jss::assets);
 
     return result;
 }

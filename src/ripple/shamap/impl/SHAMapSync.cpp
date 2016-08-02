@@ -183,6 +183,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
                         {
                             if (!pending)
                             { // node is not in the database
+                                missingHashes.insert (childHash);
                                 ret.emplace_back (
                                     childID,
                                     childHash.as_uint256());
@@ -254,15 +255,15 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
 
         // Process all deferred reads
         int hits = 0;
-        for (auto const& node : deferredReads)
+        for (auto const& deferredNode : deferredReads)
         {
-            auto parent = std::get<0>(node);
-            auto branch = std::get<1>(node);
-            auto const& nodeID = std::get<2>(node);
+            auto parent = std::get<0>(deferredNode);
+            auto branch = std::get<1>(deferredNode);
+            auto const& deferredNodeID = std::get<2>(deferredNode);
             auto const& nodeHash = parent->getChildHash (branch);
 
             auto nodePtr = fetchNodeNT(nodeHash, filter);
-            if (nodePtr && !isInconsistentNode(nodePtr))
+            if (nodePtr)
             {
                 ++hits;
                 if (backed_)
@@ -273,7 +274,7 @@ SHAMap::getMissingNodes(std::size_t max, SHAMapSyncFilter* filter)
             {
                 ret.push_back (
                     std::make_pair (
-                        nodeID,
+                        deferredNodeID,
                         nodeHash.as_uint256()));
 
                 --max;
@@ -401,10 +402,10 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted,
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer s;
-                            childNode->addRaw (s, snfWIRE);
+                            Serializer ns;
+                            childNode->addRaw (ns, snfWIRE);
                             nodeIDs.push_back (childID);
-                            rawNodes.push_back (std::move (s.peekData ()));
+                            rawNodes.push_back (std::move (ns.peekData ()));
                         }
                     }
                 }
@@ -498,18 +499,6 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
         if (iNode == nullptr)
         {
-            if ((std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && !iNodeID.has_common_prefix(node)) ||
-               (!std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && iNodeID != node))
-            {
-                // Either this node is broken or we didn't request it (yet)
-                JLOG(journal_.warn()) << "unable to hook node " << node;
-                JLOG(journal_.info()) << " stuck at " << iNodeID;
-                JLOG(journal_.info()) <<
-                    "got depth=" << node.getDepth () <<
-                        ", walked to= " << iNodeID.getDepth ();
-                return SHAMapAddNode::invalid ();
-            }
-
             if (!newNode || !newNode->isValid() || childHash != newNode->getNodeHash ())
             {
                 JLOG(journal_.warn()) << "Corrupt node received";
@@ -525,16 +514,25 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
             if (newNode && isInconsistentNode(newNode))
             {
-                return SHAMapAddNode::invalid();
+                state_ = SHAMapState::Invalid;
+                return SHAMapAddNode::useful();
+            }
+
+            if ((std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && !iNodeID.has_common_prefix(node)) ||
+               (!std::dynamic_pointer_cast<SHAMapInnerNodeV2>(newNode) && iNodeID != node))
+            {
+                // Either this node is broken or we didn't request it (yet)
+                JLOG(journal_.warn()) << "unable to hook node " << node;
+                JLOG(journal_.info()) << " stuck at " << iNodeID;
+                JLOG(journal_.info()) <<
+                    "got depth=" << node.getDepth () <<
+                        ", walked to= " << iNodeID.getDepth ();
+                return SHAMapAddNode::useful ();
             }
 
             if (backed_)
-            {
-                auto temp = newNode;
                 canonicalize (childHash, newNode);
-                if (isInconsistentNode(newNode))
-                    newNode = temp;
-            }
+
             newNode = prevNode->canonicalizeChild (branch, std::move(newNode));
 
             if (filter)

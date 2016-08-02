@@ -428,7 +428,21 @@ transactionPreProcessImpl (
 
                 return rpcError (rpcSRC_ACT_NOT_FOUND);
             }
-            tx_json[jss::Sequence] = (*sle)[sfSequence];
+
+            auto seq = (*sle)[sfSequence];
+            auto const queued = app.getTxQ().getAccountTxs(srcAddressID,
+                app.config(), *ledger);
+            // If the account has any txs in the TxQ, skip those sequence
+            // numbers (accounting for possible gaps).
+            if(queued)
+                for(auto const& tx : *queued)
+                {
+                    if (tx.first == seq)
+                        ++seq;
+                    else if (tx.first > seq)
+                        break;
+                }
+            tx_json[jss::Sequence] = seq;
         }
 
         if (!tx_json.isMember (jss::Flags))
@@ -680,9 +694,9 @@ Json::Value checkFee (
             ledger->fees().base, ledger->fees().units, isUnlimited (role));
     std::uint64_t fee = loadFee;
     {
-        auto const assumeTx = request.isMember("x-assume-tx") &&
-            request["x-assume-tx"].isConvertibleTo(Json::uintValue) ?
-                request["x-assume-tx"].asUInt() : 0;
+        auto const assumeTx = request.isMember("x_assume_tx") &&
+            request["x_assume_tx"].isConvertibleTo(Json::uintValue) ?
+                request["x_assume_tx"].asUInt() : 0;
         auto const metrics = txQ.getMetrics(config, *ledger, assumeTx);
         if(metrics)
         {
@@ -702,9 +716,9 @@ Json::Value checkFee (
         mult, div);
 
     if (fee > limit && fee != loadFee &&
-        request.isMember("x-queue-okay") &&
-            request["x-queue-okay"].isBool() &&
-                request["x-queue-okay"].asBool())
+        request.isMember("x_queue_okay") &&
+            request["x_queue_okay"].isBool() &&
+                request["x_queue_okay"].asBool())
     {
         fee = std::max(loadFee, limit);
     }
