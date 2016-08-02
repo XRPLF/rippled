@@ -34,7 +34,7 @@ char const* const versionString =
     //  The build version number. You must edit this for each release
     //  and follow the format described here at http://semver.org/
     //
-        "0.33.0-b1"
+        "0.33.0-b2"
 
 #if defined(DEBUG) || defined(SANITIZER)
        "+"
