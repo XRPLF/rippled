@@ -42,14 +42,24 @@ namespace ripple {
 
 namespace STParsedJSONDetail
 {
-
-template <typename T, typename U>
-static T range_check_cast (U value, T minimum, T maximum)
+template <typename U, typename S>
+constexpr
+std::enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
+to_unsigned (S value)
 {
-    if ((value < minimum) || (value > maximum))
+    if (value < 0 || std::numeric_limits<U>::max () < value)
         Throw<std::runtime_error> ("Value out of range");
+    return static_cast<U> (value);
+}
 
-    return static_cast<T> (value);
+template <typename U1, typename U2>
+constexpr
+std::enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
+to_unsigned (U2 value)
+{
+    if (std::numeric_limits<U1>::max () < value)
+        Throw<std::runtime_error> ("Value out of range");
+    return static_cast<U1> (value);
 }
 
 static std::string make_name (std::string const& object,
@@ -192,8 +202,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 }
 
                 ret = detail::make_stvar <STUInt8> (field,
-                    range_check_cast <unsigned char> (
-                        value.asInt (), 0, 255));
+                    static_cast <unsigned char> (value.asInt ()));
             }
             else if (value.isUInt ())
             {
@@ -204,8 +213,7 @@ static boost::optional<detail::STVar> parseLeaf (
                 }
 
                 ret = detail::make_stvar <STUInt8> (field,
-                    range_check_cast <unsigned char> (
-                        value.asUInt (), 0, 255));
+                    static_cast <unsigned char> (value.asUInt ()));
             }
             else
             {
@@ -268,14 +276,12 @@ static boost::optional<detail::STVar> parseLeaf (
             else if (value.isInt ())
             {
                 ret = detail::make_stvar <STUInt16> (field,
-                    range_check_cast <std::uint16_t> (
-                        value.asInt (), 0, 65535));
+                    to_unsigned <std::uint16_t> (value.asInt ()));
             }
             else if (value.isUInt ())
             {
                 ret = detail::make_stvar <STUInt16> (field,
-                    range_check_cast <std::uint16_t> (
-                        value.asUInt (), 0, 65535));
+                    to_unsigned <std::uint16_t> (value.asUInt ()));
             }
             else
             {
@@ -303,8 +309,7 @@ static boost::optional<detail::STVar> parseLeaf (
             else if (value.isInt ())
             {
                 ret = detail::make_stvar <STUInt32> (field,
-                    range_check_cast <std::uint32_t> (
-                        value.asInt (), 0u, 4294967295u));
+                    to_unsigned <std::uint32_t> (value.asInt ()));
             }
             else if (value.isUInt ())
             {
@@ -336,8 +341,7 @@ static boost::optional<detail::STVar> parseLeaf (
             else if (value.isInt ())
             {
                 ret = detail::make_stvar <STUInt64> (field,
-                    range_check_cast<std::uint64_t> (
-                        value.asInt (), 0, 18446744073709551615ull));
+                    to_unsigned<std::uint64_t> (value.asInt ()));
             }
             else if (value.isUInt ())
             {
