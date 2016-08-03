@@ -35,18 +35,18 @@ public:
             })();
 
         // Valid range 0-127
-        expect(utf8.write(buf.data(), 128));
-        expect(utf8.finish());
+        BEAST_EXPECT(utf8.write(buf.data(), 128));
+        BEAST_EXPECT(utf8.finish());
 
         // Invalid range 128-193
         for (auto it = std::next(buf.begin(), 128);
             it != std::next(buf.begin(), 194); ++it)
-                expect(! utf8.write(&(*it), 1));
+                BEAST_EXPECT(! utf8.write(&(*it), 1));
 
         // Invalid range 245-255
         for (auto it = std::next(buf.begin(), 245);
             it != buf.end(); ++it)
-                expect(! utf8.write(&(*it), 1));
+                BEAST_EXPECT(! utf8.write(&(*it), 1));
     }
 
     void
@@ -63,22 +63,22 @@ public:
             {
                 // Second byte valid range 128-191
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(utf8.write(buf, 2));
-                expect(utf8.finish());
+                BEAST_EXPECT(utf8.write(buf, 2));
+                BEAST_EXPECT(utf8.finish());
             }
 
             for (auto j = 0; j <= 127; ++j)
             {
                 // Second byte invalid range 0-127
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(! utf8.write(buf, 2));
+                BEAST_EXPECT(! utf8.write(buf, 2));
             }
 
             for (auto j = 192; j <= 255; ++j)
             {
                 // Second byte invalid range 192-255
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(! utf8.write(buf, 2));
+                BEAST_EXPECT(! utf8.write(buf, 2));
             }
         }
     }
@@ -104,22 +104,22 @@ public:
                 {
                     // Third byte valid range 128-191
                     buf[2] = static_cast<std::uint8_t>(k);
-                    expect(utf8.write(buf, 3));
-                    expect(utf8.finish());
+                    BEAST_EXPECT(utf8.write(buf, 3));
+                    BEAST_EXPECT(utf8.finish());
                 }
 
                 for (auto k = 0; k <= 127; ++k)
                 {
                     // Third byte invalid range 0-127
                     buf[2] = static_cast<std::uint8_t>(k);
-                    expect(! utf8.write(buf, 3));
+                    BEAST_EXPECT(! utf8.write(buf, 3));
                 }
 
                 for (auto k = 192; k <= 255; ++k)
                 {
                     // Third byte invalid range 192-255
                     buf[2] = static_cast<std::uint8_t>(k);
-                    expect(! utf8.write(buf, 3));
+                    BEAST_EXPECT(! utf8.write(buf, 3));
                 }
             }
 
@@ -127,14 +127,14 @@ public:
             {
                 // Second byte invalid range 0-127 or 0-159
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(! utf8.write(buf, 3));
+                BEAST_EXPECT(! utf8.write(buf, 3));
             }
 
             for (auto j = e + 1; j <= 255; ++j)
             {
                 // Second byte invalid range 160-255 or 192-255
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(! utf8.write(buf, 3));
+                BEAST_EXPECT(! utf8.write(buf, 3));
             }
         }
     }
@@ -166,22 +166,22 @@ public:
                     {
                         // Fourth byte valid range 128-191
                         buf[3] = static_cast<std::uint8_t>(n);
-                        expect(utf8.write(const_buffers_1{buf, 4}));
-                        expect(utf8.finish());
+                        BEAST_EXPECT(utf8.write(const_buffers_1{buf, 4}));
+                        BEAST_EXPECT(utf8.finish());
                     }
 
                     for (auto n = 0; n <= 127; ++n)
                     {
                         // Fourth byte invalid range 0-127
                         buf[3] = static_cast<std::uint8_t>(n);
-                        expect(! utf8.write(const_buffers_1{buf, 4}));
+                        BEAST_EXPECT(! utf8.write(const_buffers_1{buf, 4}));
                     }
 
                     for (auto n = 192; n <= 255; ++n)
                     {
                         // Fourth byte invalid range 192-255
                         buf[3] = static_cast<std::uint8_t>(n);
-                        expect(! utf8.write(buf, 4));
+                        BEAST_EXPECT(! utf8.write(buf, 4));
                     }
                 }
 
@@ -189,14 +189,14 @@ public:
                 {
                     // Third byte invalid range 0-127
                     buf[2] = static_cast<std::uint8_t>(k);
-                    expect(! utf8.write(buf, 4));
+                    BEAST_EXPECT(! utf8.write(buf, 4));
                 }
 
                 for (auto k = 192; k <= 255; ++k)
                 {
                     // Third byte invalid range 192-255
                     buf[2] = static_cast<std::uint8_t>(k);
-                    expect(! utf8.write(buf, 4));
+                    BEAST_EXPECT(! utf8.write(buf, 4));
                 }
             }
 
@@ -204,14 +204,14 @@ public:
             {
                 // Second byte invalid range 0-127 or 0-143
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(! utf8.write(buf, 3));
+                BEAST_EXPECT(! utf8.write(buf, 3));
             }
 
             for (auto j = e + 1; j <= 255; ++j)
             {
                 // Second byte invalid range 144-255 or 192-255
                 buf[1] = static_cast<std::uint8_t>(j);
-                expect(! utf8.write(buf, 3));
+                BEAST_EXPECT(! utf8.write(buf, 3));
             }
         }
     }
@@ -258,8 +258,8 @@ public:
                     cb.consume(amount);
                     n -= amount;
                 }
-                expect(utf8.write(sb.data()));
-                expect(utf8.finish());
+                BEAST_EXPECT(utf8.write(sb.data()));
+                BEAST_EXPECT(utf8.finish());
             }
         }
     }

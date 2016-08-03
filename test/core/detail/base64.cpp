@@ -20,8 +20,8 @@ public:
     check (std::string const& in, std::string const& out)
     {
         auto const encoded = base64_encode (in);
-        expect (encoded == out);
-        expect (base64_decode (encoded) == in);
+        BEAST_EXPECT(encoded == out);
+        BEAST_EXPECT(base64_decode (encoded) == in);
     }
 
     void

@@ -27,14 +27,14 @@ public:
             m.url = "/";
             m.version = 11;
             m.headers.insert("Upgrade", "test");
-            expect(! is_upgrade(m));
+            BEAST_EXPECT(! is_upgrade(m));
 
             prepare(m, connection::upgrade);
-            expect(is_upgrade(m));
-            expect(m.headers["Connection"] == "upgrade");
+            BEAST_EXPECT(is_upgrade(m));
+            BEAST_EXPECT(m.headers["Connection"] == "upgrade");
 
             m.version = 10;
-            expect(! is_upgrade(m));
+            BEAST_EXPECT(! is_upgrade(m));
         }
     }
 
@@ -42,7 +42,7 @@ public:
     {
         request_v1<empty_body> m;
         m.version = 10;
-        expect(! is_upgrade(m));
+        BEAST_EXPECT(! is_upgrade(m));
         m.headers.insert("Transfer-Encoding", "chunked");
         try
         {
@@ -77,7 +77,7 @@ public:
         m.version = 11;
         m.headers.erase("Connection");
         m.headers.insert("Connection", "close");
-        expect(! is_keep_alive(m));
+        BEAST_EXPECT(! is_keep_alive(m));
     }
 
     void testSwap()
@@ -93,16 +93,16 @@ public:
         m2.body = "2";
         m2.version = 11;
         swap(m1, m2);
-        expect(m1.status == 404);
-        expect(m2.status == 200);
-        expect(m1.reason == "OK");
-        expect(m2.reason.empty());
-        expect(m1.version == 11);
-        expect(m2.version == 10);
-        expect(m1.body == "2");
-        expect(m2.body == "1");
-        expect(! m1.headers.exists("h"));
-        expect(m2.headers.exists("h"));
+        BEAST_EXPECT(m1.status == 404);
+        BEAST_EXPECT(m2.status == 200);
+        BEAST_EXPECT(m1.reason == "OK");
+        BEAST_EXPECT(m2.reason.empty());
+        BEAST_EXPECT(m1.version == 11);
+        BEAST_EXPECT(m2.version == 10);
+        BEAST_EXPECT(m1.body == "2");
+        BEAST_EXPECT(m2.body == "1");
+        BEAST_EXPECT(! m1.headers.exists("h"));
+        BEAST_EXPECT(m2.headers.exists("h"));
     }
 
     void run() override

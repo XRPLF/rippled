@@ -82,9 +82,9 @@ public:
     void
     run ()
     {
-        expect (test_one());
-        expect (test_two());
-        pass ();
+        BEAST_EXPECT(test_one());
+        BEAST_EXPECT(test_two());
+        pass();
     }
 };
 

@@ -54,7 +54,7 @@ public:
         init(ctx);
         update(ctx, message.data(), message.size());
         finish(ctx, &result[0]);
-        expect(result == digest);
+        BEAST_EXPECT(result == digest);
     }
 
     void

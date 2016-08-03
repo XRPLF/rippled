@@ -510,6 +510,14 @@ suite::run (runner& r)
     }
 }
 
+#ifndef BEAST_EXPECT
+/** Check a precondition.
+*/
+#define BEAST_EXPECT_S1(x) #x
+#define BEAST_EXPECT_S2(x) BEAST_EXPECT_S1(x)
+#define BEAST_EXPECT(cond) expect(cond, __FILE__ ":" BEAST_EXPECT_S2(__LINE__))
+#endif
+
 } // unit_test
 } // beast
 

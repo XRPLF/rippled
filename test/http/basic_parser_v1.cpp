@@ -120,17 +120,17 @@ public:
                 "\r\n"
                 "*";
             p.write(buffer(s), ec);
-            if(expect(! ec))
+            if(BEAST_EXPECT(! ec))
             {
-                expect(p.start);
-                expect(p.method);
-                expect(p.uri);
-                expect(p.request);
-                expect(p.field);
-                expect(p.value);
-                expect(p.headers);
-                expect(p.body);
-                expect(p.complete);
+                BEAST_EXPECT(p.start);
+                BEAST_EXPECT(p.method);
+                BEAST_EXPECT(p.uri);
+                BEAST_EXPECT(p.request);
+                BEAST_EXPECT(p.field);
+                BEAST_EXPECT(p.value);
+                BEAST_EXPECT(p.headers);
+                BEAST_EXPECT(p.body);
+                BEAST_EXPECT(p.complete);
             }
         }
         {
@@ -143,16 +143,16 @@ public:
                 "\r\n"
                 "*";
             p.write(buffer(s), ec);
-            if(expect(! ec))
+            if(BEAST_EXPECT(! ec))
             {
-                expect(p.start);
-                expect(p.reason);
-                expect(p.response);
-                expect(p.field);
-                expect(p.value);
-                expect(p.headers);
-                expect(p.body);
-                expect(p.complete);
+                BEAST_EXPECT(p.start);
+                BEAST_EXPECT(p.reason);
+                BEAST_EXPECT(p.response);
+                BEAST_EXPECT(p.field);
+                BEAST_EXPECT(p.value);
+                BEAST_EXPECT(p.headers);
+                BEAST_EXPECT(p.body);
+                BEAST_EXPECT(p.complete);
             }
         }
     }
@@ -211,25 +211,25 @@ public:
                     p.write(buffer(s1.data(), s1.size()), ec);
                     if(ec == test::fail_error)
                         continue;
-                    if(! expect(! ec))
+                    if(! BEAST_EXPECT(! ec))
                         break;
-                    if(! expect(s2.empty() || ! p.complete()))
+                    if(! BEAST_EXPECT(s2.empty() || ! p.complete()))
                         break;
                     p.write(buffer(s2.data(), s2.size()), ec);
                     if(ec == test::fail_error)
                         continue;
-                    if(! expect(! ec))
+                    if(! BEAST_EXPECT(! ec))
                         break;
                     p.write_eof(ec);
                     if(ec == test::fail_error)
                         continue;
-                    if(! expect(! ec))
+                    if(! BEAST_EXPECT(! ec))
                         break;
-                    expect(p.complete());
+                    BEAST_EXPECT(p.complete());
                     f(p);
                     break;
                 }
-                expect(n < Limit);
+                BEAST_EXPECT(n < Limit);
             });
     }
 
@@ -261,10 +261,10 @@ public:
                         continue;
                     if(ec)
                     {
-                        expect((ec && ! ev) || ec == ev);
+                        BEAST_EXPECT((ec && ! ev) || ec == ev);
                         break;
                     }
-                    if(! expect(! p.complete()))
+                    if(! BEAST_EXPECT(! p.complete()))
                         break;
                     if(! s2.empty())
                     {
@@ -273,20 +273,20 @@ public:
                             continue;
                         if(ec)
                         {
-                            expect((ec && ! ev) || ec == ev);
+                            BEAST_EXPECT((ec && ! ev) || ec == ev);
                             break;
                         }
-                        if(! expect(! p.complete()))
+                        if(! BEAST_EXPECT(! p.complete()))
                             break;
                     }
                     p.write_eof(ec);
                     if(ec == test::fail_error)
                         continue;
-                    expect(! p.complete());
-                    expect((ec && ! ev) || ec == ev);
+                    BEAST_EXPECT(! p.complete());
+                    BEAST_EXPECT((ec && ! ev) || ec == ev);
                     break;
                 }
-                expect(n < Limit);
+                BEAST_EXPECT(n < Limit);
             });
     }
 
@@ -317,8 +317,8 @@ public:
         void
         operator()(Parser const& p) const
         {
-            s_.expect(p.http_major() == major_);
-            s_.expect(p.http_minor() == minor_);
+            s_.BEAST_EXPECT(p.http_major() == major_);
+            s_.BEAST_EXPECT(p.http_minor() == minor_);
         }
     };
 
@@ -337,7 +337,7 @@ public:
         void
         operator()(Parser const& p) const
         {
-            s_.expect(p.status_code() == code_);
+            s_.BEAST_EXPECT(p.status_code() == code_);
         }
     };
 
@@ -392,7 +392,7 @@ public:
                 buf("GET / "), buf("_TTP/1.1\r\n"),
                 buf("\r\n")
                 ), ec);
-            expect(ec == parse_error::bad_version);
+            BEAST_EXPECT(ec == parse_error::bad_version);
         }
     }
 
@@ -509,7 +509,7 @@ public:
         void
         operator()(Parser const& p) const
         {
-            s_.expect(p.flags() == value_);
+            s_.BEAST_EXPECT(p.flags() == value_);
         }
     };
 
@@ -529,7 +529,7 @@ public:
         void
         operator()(Parser const& p) const
         {
-            s_.expect(p.keep_alive() == value_);
+            s_.BEAST_EXPECT(p.keep_alive() == value_);
         }
     };
 
@@ -661,9 +661,9 @@ public:
                 good<true>(1, s,
                     [&](fail_parser<true> const& p)
                     {
-                        expect(p.content_length() == v);
+                        BEAST_EXPECT(p.content_length() == v);
                         if(v != no_content_length)
-                            expect(p.flags() & parse_flag::contentlength);
+                            BEAST_EXPECT(p.flags() & parse_flag::contentlength);
                     });
             };
         auto const c =
@@ -787,7 +787,7 @@ public:
             "\r\n",
             [&](fail_parser<true> const& p)
             {
-                expect(p.upgrade());
+                BEAST_EXPECT(p.upgrade());
             });
     }
 
@@ -811,7 +811,7 @@ public:
         void
         operator()(Parser const& p) const
         {
-            s_.expect(p.body == body_);
+            s_.BEAST_EXPECT(p.body == body_);
         }
     };
 
@@ -855,8 +855,8 @@ public:
                 "Content-Length: 1\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
         }
 
         // write the body in 3 pieces
@@ -871,15 +871,15 @@ public:
                 buf("12"),
                 buf("345"),
                 buf("67890")), ec);
-            expect(! ec);
-            expect(p.complete());
-            expect(! p.needs_eof());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
+            BEAST_EXPECT(! p.needs_eof());
             p.write_eof(ec);
-            expect(! ec);
+            BEAST_EXPECT(! ec);
             p.write_eof(ec);
-            expect(! ec);
+            BEAST_EXPECT(! ec);
             p.write(buf("GET / HTTP/1.1\r\n\r\n"), ec);
-            expect(ec == parse_error::connection_closed);
+            BEAST_EXPECT(ec == parse_error::connection_closed);
         }
 
         // request without Content-Length or
@@ -892,9 +892,9 @@ public:
                 "GET / HTTP/1.0\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(! p.needs_eof());
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.needs_eof());
+            BEAST_EXPECT(p.complete());
         }
         {
             error_code ec;
@@ -904,9 +904,9 @@ public:
                 "GET / HTTP/1.1\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(! p.needs_eof());
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.needs_eof());
+            BEAST_EXPECT(p.complete());
         }
 
         // response without Content-Length or
@@ -919,20 +919,20 @@ public:
                 "HTTP/1.0 200 OK\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(! p.complete());
-            expect(p.needs_eof());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.complete());
+            BEAST_EXPECT(p.needs_eof());
             p.write(buf(
                 "hello"
                 ), ec);
-            expect(! ec);
-            expect(! p.complete());
-            expect(p.needs_eof());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.complete());
+            BEAST_EXPECT(p.needs_eof());
             p.write_eof(ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
             p.write(buf("GET / HTTP/1.1\r\n\r\n"), ec);
-            expect(ec == parse_error::connection_closed);
+            BEAST_EXPECT(ec == parse_error::connection_closed);
         }
 
         // 304 "Not Modified" response does not require eof
@@ -944,9 +944,9 @@ public:
                 "HTTP/1.0 304 Not Modified\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(! p.needs_eof());
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.needs_eof());
+            BEAST_EXPECT(p.complete());
         }
 
         // Chunked response does not require eof
@@ -959,15 +959,15 @@ public:
                 "Transfer-Encoding: chunked\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(! p.needs_eof());
-            expect(! p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.needs_eof());
+            BEAST_EXPECT(! p.complete());
             p.write(buf(
                 "0\r\n\r\n"
                 ), ec);
-            expect(! ec);
-            expect(! p.needs_eof());
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(! p.needs_eof());
+            BEAST_EXPECT(p.complete());
         }
 
         // restart: 1.0 assumes Connection: close
@@ -979,13 +979,13 @@ public:
                 "GET / HTTP/1.0\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
             p.write(buf(
                 "GET / HTTP/1.0\r\n"
                 "\r\n"
                 ), ec);
-            expect(ec == parse_error::connection_closed);
+            BEAST_EXPECT(ec == parse_error::connection_closed);
         }
 
         // restart: 1.1 assumes Connection: keep-alive
@@ -997,14 +997,14 @@ public:
                 "GET / HTTP/1.1\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
             p.write(buf(
                 "GET / HTTP/1.0\r\n"
                 "\r\n"
                 ), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
         }
 
         bad<false>(3,
@@ -1110,9 +1110,9 @@ public:
                     ), ec);
                 if(! ec)
                     break;
-                expect(ec == parse_error::headers_too_big);
+                BEAST_EXPECT(ec == parse_error::headers_too_big);
             }
-            expect(n < Limit);
+            BEAST_EXPECT(n < Limit);
         }
         {
             for(n = 1; n < Limit; ++n)
@@ -1130,9 +1130,9 @@ public:
                     ), ec);
                 if(! ec)
                     break;
-                expect(ec == parse_error::headers_too_big);
+                BEAST_EXPECT(ec == parse_error::headers_too_big);
             }
-            expect(n < Limit);
+            BEAST_EXPECT(n < Limit);
         }
         {
             test::fail_counter fc(1000);
@@ -1146,7 +1146,7 @@ public:
                     "\r\n"
                     "****"
                 ), ec);
-            expect(ec == parse_error::body_too_big);
+            BEAST_EXPECT(ec == parse_error::body_too_big);
         }
     }
 

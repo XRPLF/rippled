@@ -19,7 +19,7 @@ public:
     void run() override
     {
         for(int i = 1; i <= 999; ++i)
-            expect(reason_string(i) != nullptr);
+            BEAST_EXPECT(reason_string(i) != nullptr);
     }
 };
 

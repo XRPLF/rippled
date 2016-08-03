@@ -242,7 +242,7 @@ public:
             string_write_stream ss(ios_);
             async_write(ss, m, do_yield[ec]);
             if(expect(! ec, ec.message()))
-                expect(ss.str ==
+                BEAST_EXPECT(ss.str ==
                     "HTTP/1.0 200 OK\r\n"
                     "Server: test\r\n"
                     "Content-Length: 5\r\n"
@@ -261,7 +261,7 @@ public:
             string_write_stream ss(ios_);
             async_write(ss, m, do_yield[ec]);
             if(expect(! ec, ec.message()))
-                expect(ss.str ==
+                BEAST_EXPECT(ss.str ==
                     "HTTP/1.1 200 OK\r\n"
                     "Server: test\r\n"
                     "Transfer-Encoding: chunked\r\n"
@@ -295,7 +295,7 @@ public:
             try
             {
                 write(fs, m);
-                expect(fs.next_layer().str ==
+                BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
                     "Content-Length: 5\r\n"
@@ -309,7 +309,7 @@ public:
             {
             }
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
 
         for(n = 0; n < limit; ++n)
         {
@@ -329,7 +329,7 @@ public:
             write(fs, m, ec);
             if(ec == boost::asio::error::eof)
             {
-                expect(fs.next_layer().str ==
+                BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
                     "Transfer-Encoding: chunked\r\n"
@@ -344,7 +344,7 @@ public:
                 break;
             }
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
 
         for(n = 0; n < limit; ++n)
         {
@@ -364,7 +364,7 @@ public:
             async_write(fs, m, do_yield[ec]);
             if(ec == boost::asio::error::eof)
             {
-                expect(fs.next_layer().str ==
+                BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
                     "Transfer-Encoding: chunked\r\n"
@@ -379,7 +379,7 @@ public:
                 break;
             }
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
 
         for(n = 0; n < limit; ++n)
         {
@@ -399,7 +399,7 @@ public:
             write(fs, m, ec);
             if(! ec)
             {
-                expect(fs.next_layer().str ==
+                BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
                     "Content-Length: 5\r\n"
@@ -409,7 +409,7 @@ public:
                 break;
             }
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
 
         for(n = 0; n < limit; ++n)
         {
@@ -429,7 +429,7 @@ public:
             async_write(fs, m, do_yield[ec]);
             if(! ec)
             {
-                expect(fs.next_layer().str ==
+                BEAST_EXPECT(fs.next_layer().str ==
                     "GET / HTTP/1.0\r\n"
                     "User-Agent: test\r\n"
                     "Content-Length: 5\r\n"
@@ -439,7 +439,7 @@ public:
                 break;
             }
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void
@@ -454,7 +454,7 @@ public:
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
-            expect(str(m) ==
+            BEAST_EXPECT(str(m) ==
                 "GET / HTTP/1.0\r\n"
                 "User-Agent: test\r\n"
                 "Content-Length: 1\r\n"
@@ -471,7 +471,7 @@ public:
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m, connection::keep_alive);
-            expect(str(m) ==
+            BEAST_EXPECT(str(m) ==
                 "GET / HTTP/1.0\r\n"
                 "User-Agent: test\r\n"
                 "Content-Length: 1\r\n"
@@ -510,8 +510,8 @@ public:
             string_write_stream ss(ios_);
             error_code ec;
             write(ss, m, ec);
-            expect(ec == boost::asio::error::eof);
-            expect(ss.str ==
+            BEAST_EXPECT(ec == boost::asio::error::eof);
+            BEAST_EXPECT(ss.str ==
                 "GET / HTTP/1.0\r\n"
                 "User-Agent: test\r\n"
                 "\r\n"
@@ -527,7 +527,7 @@ public:
             m.headers.insert("User-Agent", "test");
             m.body = "*";
             prepare(m);
-            expect(str(m) ==
+            BEAST_EXPECT(str(m) ==
                 "GET / HTTP/1.1\r\n"
                 "User-Agent: test\r\n"
                 "Content-Length: 1\r\n"
@@ -547,8 +547,8 @@ public:
             string_write_stream ss(ios_);
             error_code ec;
             write(ss, m, ec);
-            expect(ec == boost::asio::error::eof);
-            expect(ss.str ==
+            BEAST_EXPECT(ec == boost::asio::error::eof);
+            BEAST_EXPECT(ss.str ==
                 "GET / HTTP/1.1\r\n"
                 "User-Agent: test\r\n"
                 "Content-Length: 1\r\n"
@@ -565,7 +565,7 @@ public:
             m.version = 11;
             m.headers.insert("User-Agent", "test");
             prepare(m, connection::upgrade);
-            expect(str(m) ==
+            BEAST_EXPECT(str(m) ==
                 "GET / HTTP/1.1\r\n"
                 "User-Agent: test\r\n"
                 "Connection: upgrade\r\n"
@@ -584,7 +584,7 @@ public:
             string_write_stream ss(ios_);
             error_code ec;
             write(ss, m, ec);
-            expect(ss.str ==
+            BEAST_EXPECT(ss.str ==
                 "GET / HTTP/1.1\r\n"
                 "User-Agent: test\r\n"
                 "Transfer-Encoding: chunked\r\n"
@@ -605,7 +605,7 @@ public:
         m.headers.insert("User-Agent", "test");
         m.body = "*";
         prepare(m);
-        expect(boost::lexical_cast<std::string>(m) ==
+        BEAST_EXPECT(boost::lexical_cast<std::string>(m) ==
             "GET / HTTP/1.1\r\nUser-Agent: test\r\nContent-Length: 1\r\n\r\n*");
     }
 

@@ -18,7 +18,7 @@ class to_string_test : public beast::unit_test::suite
 public:
     void run()
     {
-        expect(to_string(boost::asio::const_buffers_1("x", 1)) == "x");
+        BEAST_EXPECT(to_string(boost::asio::const_buffers_1("x", 1)) == "x");
     }
 };
 

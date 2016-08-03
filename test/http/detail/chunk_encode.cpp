@@ -71,7 +71,7 @@ public:
     {
         std::string s;
         encode(s, args...);
-        expect(s == answer);
+        BEAST_EXPECT(s == answer);
     }
 
     void run() override

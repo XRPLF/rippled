@@ -34,20 +34,20 @@ class frame_test : public beast::unit_test::suite
 public:
     void testCloseCodes()
     {
-        expect(! is_valid(0));
-        expect(! is_valid(1));
-        expect(! is_valid(999));
-        expect(! is_valid(1004));
-        expect(! is_valid(1005));
-        expect(! is_valid(1006));
-        expect(! is_valid(1016));
-        expect(! is_valid(2000));
-        expect(! is_valid(2999));
-        expect(is_valid(1000));
-        expect(is_valid(1002));
-        expect(is_valid(3000));
-        expect(is_valid(4000));
-        expect(is_valid(5000));
+        BEAST_EXPECT(! is_valid(0));
+        BEAST_EXPECT(! is_valid(1));
+        BEAST_EXPECT(! is_valid(999));
+        BEAST_EXPECT(! is_valid(1004));
+        BEAST_EXPECT(! is_valid(1005));
+        BEAST_EXPECT(! is_valid(1006));
+        BEAST_EXPECT(! is_valid(1016));
+        BEAST_EXPECT(! is_valid(2000));
+        BEAST_EXPECT(! is_valid(2999));
+        BEAST_EXPECT(is_valid(1000));
+        BEAST_EXPECT(is_valid(1002));
+        BEAST_EXPECT(is_valid(3000));
+        BEAST_EXPECT(is_valid(4000));
+        BEAST_EXPECT(is_valid(5000));
     }
 
     struct test_fh : frame_header
@@ -80,16 +80,16 @@ public:
                     close_code::value code;
                     auto const n = read_fh1(
                         fh1, sb, role, code);
-                    if(! expect(! code))
+                    if(! BEAST_EXPECT(! code))
                         return;
-                    if(! expect(sb.size() == n))
+                    if(! BEAST_EXPECT(sb.size() == n))
                         return;
                     read_fh2(fh1, sb, role, code);
-                    if(! expect(! code))
+                    if(! BEAST_EXPECT(! code))
                         return;
-                    if(! expect(sb.size() == 0))
+                    if(! BEAST_EXPECT(sb.size() == 0))
                         return;
-                    expect(fh1 == fh);
+                    BEAST_EXPECT(fh1 == fh);
                 };
 
             test_fh fh;
@@ -135,12 +135,12 @@ public:
                         pass();
                         return;
                     }
-                    if(! expect(sb.size() == n))
+                    if(! BEAST_EXPECT(sb.size() == n))
                         return;
                     read_fh2(fh1, sb, role, code);
-                    if(! expect(code))
+                    if(! BEAST_EXPECT(code))
                         return;
-                    if(! expect(sb.size() == 0))
+                    if(! BEAST_EXPECT(sb.size() == 0))
                         return;
                 };
 
@@ -200,12 +200,12 @@ public:
             pass();
             return;
         }
-        if(! expect(sb.size() == n))
+        if(! BEAST_EXPECT(sb.size() == n))
             return;
         read_fh2(fh, sb, role, code);
-        if(! expect(code))
+        if(! BEAST_EXPECT(code))
             return;
-        if(! expect(sb.size() == 0))
+        if(! BEAST_EXPECT(sb.size() == 0))
             return;
     }
 

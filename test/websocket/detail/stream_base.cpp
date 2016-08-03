@@ -21,7 +21,7 @@ class stream_base_test : public beast::unit_test::suite
 public:
     void testClamp()
     {
-        expect(detail::clamp(
+        BEAST_EXPECT(detail::clamp(
             std::numeric_limits<std::uint64_t>::max()) ==
                 std::numeric_limits<std::size_t>::max());
     }

@@ -32,14 +32,14 @@ public:
                 "\r\n"
                 "*";
             p.write(buffer(s), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
             auto m = p.release();
-            expect(m.method == "GET");
-            expect(m.url == "/");
-            expect(m.version == 11);
-            expect(m.headers["User-Agent"] == "test");
-            expect(m.body == "*");
+            BEAST_EXPECT(m.method == "GET");
+            BEAST_EXPECT(m.url == "/");
+            BEAST_EXPECT(m.version == 11);
+            BEAST_EXPECT(m.headers["User-Agent"] == "test");
+            BEAST_EXPECT(m.body == "*");
         }
         {
             error_code ec;
@@ -52,14 +52,14 @@ public:
                 "\r\n"
                 "*";
             p.write(buffer(s), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
             auto m = p.release();
-            expect(m.status == 200);
-            expect(m.reason == "OK");
-            expect(m.version == 11);
-            expect(m.headers["Server"] == "test");
-            expect(m.body == "*");
+            BEAST_EXPECT(m.status == 200);
+            BEAST_EXPECT(m.reason == "OK");
+            BEAST_EXPECT(m.version == 11);
+            BEAST_EXPECT(m.headers["Server"] == "test");
+            BEAST_EXPECT(m.body == "*");
         }
         // skip body
         {
@@ -71,8 +71,8 @@ public:
                 "\r\n";
             p.set_option(skip_body{true});
             p.write(buffer(s), ec);
-            expect(! ec);
-            expect(p.complete());
+            BEAST_EXPECT(! ec);
+            BEAST_EXPECT(p.complete());
         }
     }
 };

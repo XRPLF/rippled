@@ -38,7 +38,7 @@ public:
     void run() override
     {
         maskgen_t<test_generator> mg;
-        expect(mg() != 0);
+        BEAST_EXPECT(mg() != 0);
     }
 };
 

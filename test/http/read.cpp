@@ -48,7 +48,7 @@ public:
             if(! ec)
                 break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         for(n = 0; n < limit; ++n)
         {
             static std::size_t constexpr pre = 10;
@@ -64,7 +64,7 @@ public:
             if(! ec)
                 break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         for(n = 0; n < limit; ++n)
         {
             streambuf sb;
@@ -79,7 +79,7 @@ public:
             if(! ec)
                 break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         for(n = 0; n < limit; ++n)
         {
             static std::size_t constexpr pre = 10;
@@ -95,7 +95,7 @@ public:
             if(! ec)
                 break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void testThrow()
@@ -201,7 +201,7 @@ public:
             {
             }
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
 
         for(n = 0; n < limit; ++n)
         {
@@ -219,7 +219,7 @@ public:
             if(! ec)
                 break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
 
         for(n = 0; n < limit; ++n)
         {
@@ -237,7 +237,7 @@ public:
             if(! ec)
                 break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void testEof(yield_context do_yield)
@@ -248,7 +248,7 @@ public:
             parser_v1<true, streambuf_body, headers> p;
             error_code ec;
             parse(ss, sb, p, ec);
-            expect(ec == boost::asio::error::eof);
+            BEAST_EXPECT(ec == boost::asio::error::eof);
         }
         {
             streambuf sb;
@@ -256,7 +256,7 @@ public:
             parser_v1<true, streambuf_body, headers> p;
             error_code ec;
             async_parse(ss, sb, p, do_yield[ec]);
-            expect(ec == boost::asio::error::eof);
+            BEAST_EXPECT(ec == boost::asio::error::eof);
         }
     }
 
