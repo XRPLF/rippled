@@ -113,9 +113,9 @@ Blob strCopy (std::string const& strSrc)
 {
     Blob vucDst;
 
-    vucDst.resize (strSrc.size ());
+    vucDst.reserve (strSrc.size ());
 
-    std::copy (strSrc.begin (), strSrc.end (), vucDst.begin ());
+    std::copy (strSrc.begin (), strSrc.end (), std::back_inserter(vucDst));
 
     return vucDst;
 }
@@ -124,12 +124,11 @@ std::string strCopy (Blob const& vucSrc)
 {
     std::string strDst;
 
-    strDst.resize (vucSrc.size ());
+    strDst.reserve (vucSrc.size ());
 
-    std::copy (vucSrc.begin (), vucSrc.end (), strDst.begin ());
+    std::copy (vucSrc.begin (), vucSrc.end (), std::back_inserter(strDst));
 
     return strDst;
-
 }
 
 // TODO Callers should be using beast::URL and beast::parse_URL instead.
