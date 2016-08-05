@@ -16,6 +16,18 @@ environment:
   BOOST_ROOT: C:/rippled_deps15.01/boost
   OPENSSL_ROOT: C:/rippled_deps15.01/openssl
 
+  matrix:
+  - build: scons
+    target: msvc.debug
+  - build: cmake
+    target: msvc.debug
+    app: signlibdemo
+  # This build works, but our current Appveyor config runs matrix builds
+  # sequentially, and the one build is already slow enough.
+  #- build: cmake
+  #  target: msvc.debug
+  #  app: rippled
+
 os: Visual Studio 2015
 
 # At the end of each successful build we cache this directory. It must be less
@@ -32,20 +44,13 @@ install:
   - SET PATH=%PYTHON%;%PYTHON%/Scripts;C:/rippled_deps15.01;%PATH%
 
   # `ps` prefix means the command is executed by powershell.
-  - ps: Start-FileDownload $env:PIP_URL
-  - ps: Start-FileDownload $env:PYWIN32_URL
+  - ps: |
+        if ($env:build -eq "scons") {
+          Start-FileDownload $env:PIP_URL
+          Start-FileDownload $env:PYWIN32_URL
 
-  # Installing pip will install setuptools/easy_install.
-  - python get-pip.py
-
-  # Pip has some problems installing scons on windows so we use easy install.
-  # - easy_install scons
-  # Workaround
-  - easy_install https://pypi.python.org/packages/source/S/SCons/scons-2.5.0.tar.gz#md5=bda5530a70a41a7831d83c8b191c021e
-
-  # Scons has problems with parallel builds on windows without pywin32.
-  - easy_install pywin32-220.win-amd64-py2.7.exe
-  # (easy_install can do headless installs of .exe wizards)
+        }
+  - bin/ci/windows/install-dependencies.bat
 
   # Download dependencies if appveyor didn't restore them from the cache.
   # Use 7zip to unzip.
@@ -73,17 +78,47 @@ build_script:
   - '"%VS140COMNTOOLS%../../VC/vcvarsall.bat" x86_amd64'
   # Show which version of the compiler we are using.
   - cl
-  - scons msvc.debug -j%NUMBER_OF_PROCESSORS%
+  - ps: |
+        if ($env:build -eq "scons") {
+          # Build with scons
+          scons $env:target -j%NUMBER_OF_PROCESSORS%
+        }
+        else
+        {
+          # Build with cmake
+          cmake --version
+          cmake -G"Visual Studio 14 2015 Win64" -Dtarget=$($env:target).ci
+          msbuild "$($env:app).vcxproj"
+        }
 
 after_build:
-  # Put our executable in a place where npm test can find it.
-  - ps: cp build/msvc.debug/rippled.exe build
-  - ps: ls build
+  - ps: |
+        if ($env:build -eq "scons") {
+          # Put our executable in a place where npm test can find it.
+          cp build/$($env:target)/rippled.exe build
+          ls build
+          $exe="build/rippled"
+        }
+        else
+        {
+          $exe="Debug/$env:app"
+        }
+        "Exe is at $exe"
 
 test_script:
-  # Run the unit tests
-  - build\\rippled --unittest
+  - ps: |
+        if ($env:app -eq "signlibdemo") {
+          # Run the signlibdemo test
+          & $exe
+        }
+        else
+        {
+          # Run the rippled unit tests
+          & $exe --unittest
 
-  # Run the integration tests
-  - npm install --progress=false
-  - npm test
+          # Run the rippled integration tests
+          & npm install --progress=false
+          & npm test --rippled="$exe"
+        }
+
+

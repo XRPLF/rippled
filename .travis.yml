@@ -27,6 +27,8 @@ packages: &gcc5_pkgs
 
 matrix:
   include:
+      # Default BUILD is scons. Default APP is rippled.
+
     - compiler: gcc
       env: GCC_VER=5 TARGET=debug.nounity
       addons: &ao_gcc5
@@ -46,10 +48,20 @@ matrix:
       env: GCC_VER=5 TARGET=debug.nounity CLANG_VER=3.8 PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
       addons: *ao_gcc5
 
+    - compiler: gcc
+      env: GCC_VER=5 APP=signlibdemo BUILD=cmake TARGET=debug PATH=$PWD/cmake/bin:$PATH
+      addons: *ao_gcc5
+
+    # Experimental rippled cmake build.
+    - compiler: gcc
+      env: GCC_VER=5 BUILD=cmake TARGET=debug PATH=$PWD/cmake/bin:$PATH
+      addons: *ao_gcc5
+
 cache:
   directories:
   - $BOOST_ROOT
   - llvm-$LLVM_VERSION
+  - cmake
 
 before_install:
   - bin/ci/ubuntu/install-dependencies.sh
