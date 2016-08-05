@@ -132,7 +132,7 @@ public:
     virtual void invariants(bool is_v2, bool is_root = false) const = 0;
 
     static std::shared_ptr<SHAMapAbstractNode>
-        make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
+        make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat format,
              SHAMapHash const& hash, bool hashValid, beast::Journal j,
              SHAMapNodeID const& id = SHAMapNodeID{});
 
@@ -181,7 +181,7 @@ public:
     void invariants(bool is_v2, bool is_root = false) const override;
 
     friend std::shared_ptr<SHAMapAbstractNode>
-        SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq,
+        SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq,
              SHANodeFormat format, SHAMapHash const& hash, bool hashValid,
                  beast::Journal j, SHAMapNodeID const& id);
 
@@ -218,7 +218,7 @@ public:
     void invariants(bool is_v2, bool is_root = false) const override;
 
     friend std::shared_ptr<SHAMapAbstractNode>
-        SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq,
+        SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq,
              SHANodeFormat format, SHAMapHash const& hash, bool hashValid,
                  beast::Journal j, SHAMapNodeID const& id);
 };

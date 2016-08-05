@@ -79,14 +79,9 @@ inline static std::string sqlEscape (Blob const& vecSrc)
     return j;
 }
 
-int strUnHex (std::string& strDst, std::string const& strSrc);
-
 uint64_t uintFromHex (std::string const& strSrc);
 
 std::pair<Blob, bool> strUnHex (std::string const& strSrc);
-
-Blob strCopy (std::string const& strSrc);
-std::string strCopy (Blob const& vucSrc);
 
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);

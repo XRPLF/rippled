@@ -127,7 +127,7 @@ private:
     bool takeTxNode (const std::vector<SHAMapNodeID>& IDs,
                      const std::vector<Blob>& data,
                      SHAMapAddNode&);
-    bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
+    bool takeTxRootNode (Slice const& data, SHAMapAddNode&);
 
     // VFALCO TODO Rename to receiveAccountStateNode
     //             Don't use acronyms, but if we are going to use them at least
@@ -136,7 +136,7 @@ private:
     bool takeAsNode (const std::vector<SHAMapNodeID>& IDs,
                      const std::vector<Blob>& data,
                      SHAMapAddNode&);
-    bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
+    bool takeAsRootNode (Slice const& data, SHAMapAddNode&);
 
     std::vector<uint256>
     neededTxHashes (

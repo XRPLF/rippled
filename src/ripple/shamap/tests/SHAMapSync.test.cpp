@@ -147,7 +147,7 @@ public:
 
             BEAST_EXPECT(destination.addRootNode (
                 source.getHash(),
-                *gotNodes_a.begin (),
+                makeSlice(*gotNodes_a.begin ()),
                 snfWIRE,
                 nullptr).isGood());
         }
@@ -184,7 +184,7 @@ public:
                 BEAST_EXPECT(
                     destination.addKnownNode (
                         gotNodeIDs_b[i],
-                        gotNodes_b[i],
+                        makeSlice(gotNodes_b[i]),
                         nullptr).isUseful ());
             }
         }

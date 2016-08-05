@@ -422,7 +422,7 @@ bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format) const
     return true;
 }
 
-SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode, SHANodeFormat format,
+SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Slice const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
     // we already have a root_ node
@@ -459,7 +459,7 @@ SHAMapAddNode SHAMap::addRootNode (SHAMapHash const& hash, Blob const& rootNode,
 }
 
 SHAMapAddNode
-SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
+SHAMap::addKnownNode (const SHAMapNodeID& node, Slice const& rawNode,
                       SHAMapSyncFilter* filter)
 {
     // return value: true=okay, false=error

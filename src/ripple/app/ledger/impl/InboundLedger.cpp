@@ -856,14 +856,14 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
         if (nodeIDit->isRoot ())
         {
             san += mLedger->txMap().addRootNode (
-                SHAMapHash{mLedger->info().txHash}, *nodeDatait, snfWIRE, &tFilter);
+                SHAMapHash{mLedger->info().txHash}, makeSlice(*nodeDatait), snfWIRE, &tFilter);
             if (!san.isGood())
                 return false;
         }
         else
         {
             san +=  mLedger->txMap().addKnownNode (
-                *nodeIDit, *nodeDatait, &tFilter);
+                *nodeIDit, makeSlice(*nodeDatait), &tFilter);
             if (!san.isGood())
                 return false;
         }
@@ -926,7 +926,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         if (nodeIDit->isRoot ())
         {
             san += mLedger->stateMap().addRootNode (
-                SHAMapHash{mLedger->info().accountHash}, *nodeDatait, snfWIRE, &tFilter);
+                SHAMapHash{mLedger->info().accountHash}, makeSlice(*nodeDatait), snfWIRE, &tFilter);
             if (!san.isGood ())
             {
                 JLOG (m_journal.warn()) <<
@@ -937,7 +937,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         else
         {
             san += mLedger->stateMap().addKnownNode (
-                *nodeIDit, *nodeDatait, &tFilter);
+                *nodeIDit, makeSlice(*nodeDatait), &tFilter);
             if (!san.isGood ())
             {
                 JLOG (m_journal.warn()) <<
@@ -967,7 +967,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
 /** Process AS root node received from a peer
     Call with a lock
 */
-bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
+bool InboundLedger::takeAsRootNode (Slice const& data, SHAMapAddNode& san)
 {
     if (mFailed || mHaveState)
     {
@@ -990,7 +990,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 /** Process AS root node received from a peer
     Call with a lock
 */
-bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
+bool InboundLedger::takeTxRootNode (Slice const& data, SHAMapAddNode& san)
 {
     if (mFailed || mHaveTransactions)
     {
@@ -1106,14 +1106,14 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
 
 
         if (!mHaveState && (packet.nodes ().size () > 1) &&
-            !takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
+            !takeAsRootNode (makeSlice(packet.nodes(1).nodedata ()), san))
         {
             JLOG (m_journal.warn()) <<
                 "Included AS root invalid";
         }
 
         if (!mHaveTransactions && (packet.nodes ().size () > 2) &&
-            !takeTxRootNode (strCopy (packet.nodes (2).nodedata ()), san))
+            !takeTxRootNode (makeSlice(packet.nodes(2).nodedata ()), san))
         {
             JLOG (m_journal.warn()) <<
                 "Included TX root invalid";

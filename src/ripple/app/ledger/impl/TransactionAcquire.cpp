@@ -215,14 +215,14 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& node
                 if (mHaveRoot)
                     JLOG (j_.debug()) << "Got root TXS node, already have it";
                 else if (!mMap->addRootNode (SHAMapHash{getHash ()},
-                                             *nodeDatait, snfWIRE, nullptr).isGood())
+                                             makeSlice(*nodeDatait), snfWIRE, nullptr).isGood())
                 {
                     JLOG (j_.warn()) << "TX acquire got bad root node";
                 }
                 else
                     mHaveRoot = true;
             }
-            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf).isGood())
+            else if (!mMap->addKnownNode (*nodeIDit, makeSlice(*nodeDatait), &sf).isGood())
             {
                 JLOG (j_.warn()) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid ();

@@ -98,7 +98,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::shared_ptr<SHAMapItem const> const& item,
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat format,
+SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat format,
                          SHAMapHash const& hash, bool hashValid, beast::Journal j,
                          SHAMapNodeID const& id)
 {
@@ -108,7 +108,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
             return {};
 
         Serializer s (rawNode.data(), rawNode.size() - 1);
-        int type = rawNode.back ();
+        int type = rawNode[rawNode.size() - 1];
         int len = s.getLength ();
 
         if ((type < 0) || (type > 6))
@@ -265,7 +265,7 @@ SHAMapAbstractNode::make(Blob const& rawNode, std::uint32_t seq, SHANodeFormat f
         if (prefix == HashPrefix::transactionID)
         {
             auto item = std::make_shared<SHAMapItem const>(
-                sha512Half(makeSlice(rawNode)),
+                sha512Half(rawNode),
                     s.peekData ());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_NM, seq, hash);

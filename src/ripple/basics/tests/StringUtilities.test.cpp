@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/beast/unit_test.h>
@@ -27,18 +28,18 @@ namespace ripple {
 class StringUtilities_test : public beast::unit_test::suite
 {
 public:
-    void testUnHexSuccess (std::string strIn, std::string strExpected)
+    void testUnHexSuccess (std::string const& strIn, std::string const& strExpected)
     {
-        std::string strOut;
-        BEAST_EXPECT(strUnHex (strOut, strIn) == strExpected.length ());
-        BEAST_EXPECT(strOut == strExpected);
+        auto rv = strUnHex (strIn);
+        BEAST_EXPECT(rv.second);
+        BEAST_EXPECT(makeSlice(rv.first) == makeSlice(strExpected));
     }
 
-    void testUnHexFailure (std::string strIn)
+    void testUnHexFailure (std::string const& strIn)
     {
-        std::string strOut;
-        BEAST_EXPECT(strUnHex (strOut, strIn) == -1);
-        BEAST_EXPECT(strOut.empty ());
+        auto rv = strUnHex (strIn);
+        BEAST_EXPECT(! rv.second);
+        BEAST_EXPECT(rv.first.empty());
     }
 
     void testUnHex ()
