@@ -1,25 +1,59 @@
 #!/bin/bash -u
 # We use set -e and bash with -u to bail on first non zero exit code of any
-# processes launched or upon any unbound variable
-set -e
+# processes launched or upon any unbound variable.
+# We use set -x to print commands before running them to help with
+# debugging.
+set -ex
 __dirname=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo "using CC: $CC"
 echo "using TARGET: $TARGET"
-export RIPPLED_PATH="$PWD/build/$CC.$TARGET/rippled"
-echo "using RIPPLED_PATH: $RIPPLED_PATH"
-# Make sure vcxproj is up to date
-scons vcxproj
-git diff --exit-code
-# $CC will be either `clang` or `gcc`
-# http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
-#   indicates that 2 cores are available to containers.
-scons -j${NUM_PROCESSORS:-2} $CC.$TARGET
+
+# Ensure APP defaults to rippled if it's not set.
+: ${APP:=rippled}
+if [[ ${BUILD:-scons} == "cmake" ]]; then
+  echo "cmake building ${APP}"
+  CMAKE_TARGET=$CC.$TARGET
+  if [[ ${CI:-} == true ]]; then
+    CMAKE_TARGET=$CMAKE_TARGET.ci
+  fi
+  mkdir -p "build/${CMAKE_TARGET}"
+  pushd "build/${CMAKE_TARGET}"
+  cmake ../.. -Dtarget=$CMAKE_TARGET
+  make -j${NUM_PROCESSORS:-2} ${APP}
+  popd
+  export APP_PATH="$PWD/build/${CMAKE_TARGET}/${APP}"
+  echo "using APP_PATH: $APP_PATH"
+
+else
+  export APP_PATH="$PWD/build/$CC.$TARGET/${APP}"
+  echo "using APP_PATH: $APP_PATH"
+  # Make sure vcxproj is up to date
+  scons vcxproj
+  git diff --exit-code
+  # $CC will be either `clang` or `gcc`
+  # http://docs.travis-ci.com/user/migrating-from-legacy/?utm_source=legacy-notice&utm_medium=banner&utm_campaign=legacy-upgrade
+  #   indicates that 2 cores are available to containers.
+  scons -j${NUM_PROCESSORS:-2} $CC.$TARGET
+fi
 # We can be sure we're using the build/$CC.$TARGET variant
 # (-f so never err)
-rm -f build/rippled
+rm -f build/${APP}
 
 # See what we've actually built
-ldd $RIPPLED_PATH
+ldd $APP_PATH
+
+if [[ ${APP} == "rippled" ]]; then
+  export APP_ARGS="--unittest"
+  # Only report on src/ripple files
+  export LCOV_FILES="*/src/ripple/*"
+  # Exclude */src/ripple/test directory
+  export LCOV_EXCLUDE_FILES="*/src/ripple/test/*"
+else
+  : ${APP_ARGS:=}
+  : ${LCOV_FILES:="*/src/*"}
+  # Don't exclude anything
+  : ${LCOV_EXCLUDE_FILES:="LCOV_NO_EXCLUDE"}
+fi
 
 if [[ $TARGET == "coverage" ]]; then
   export PATH=$PATH:$LCOV_ROOT/usr/bin
@@ -36,7 +70,7 @@ gdb -return-child-result -quiet -batch \
     -ex run \
     -ex "thread apply all backtrace full" \
     -ex "quit" \
-    --args $RIPPLED_PATH --unittest
+    --args $APP_PATH --unittest
 
 if [[ $TARGET == "coverage" ]]; then
   # Create test coverage data file
@@ -45,16 +79,18 @@ if [[ $TARGET == "coverage" ]]; then
   # Combine baseline and test coverage data
   lcov -a baseline.info -a tests.info -o lcov-all.info
 
-  # Only report on src/ripple files
-  lcov -e "lcov-all.info" "*/src/ripple/*" -o lcov.pre.info
+  # Included files
+  lcov -e "lcov-all.info" "${LCOV_FILES}" -o lcov.pre.info
 
-  # Exclude */src/test directory
-  lcov --remove lcov.pre.info "*/src/ripple/test/*" -o lcov.info
+  # Excluded files
+  lcov --remove lcov.pre.info "${LCOV_EXCLUDE_FILES}" -o lcov.info
 
   # Push the results (lcov.info) to codecov
   codecov -X gcov # don't even try and look for .gcov files ;)
 fi
 
-# Run NPM tests
-npm install --progress=false
-npm test --rippled=$RIPPLED_PATH
+if [[ ${APP} == "rippled" ]]; then
+  # Run NPM tests
+  npm install --progress=false
+  npm test --rippled=$APP_PATH
+fi
