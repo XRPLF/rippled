@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/beast/core/LexicalCast.h>
@@ -31,14 +32,11 @@
 
 namespace ripple {
 
-// NIKB NOTE: This function is only used by strUnHex (std::string const& strSrc)
-// which results in a pointless copy from std::string into std::vector. Should
-// we just scrap this function altogether?
-int strUnHex (std::string& strDst, std::string const& strSrc)
+std::pair<Blob, bool> strUnHex (std::string const& strSrc)
 {
-    std::string tmp;
+    Blob out;
 
-    tmp.reserve ((strSrc.size () + 1) / 2);
+    out.reserve ((strSrc.size () + 1) / 2);
 
     auto iter = strSrc.cbegin ();
 
@@ -47,9 +45,9 @@ int strUnHex (std::string& strDst, std::string const& strSrc)
         int c = charUnHex (*iter);
 
         if (c < 0)
-            return -1;
+            return std::make_pair (Blob (), false);
 
-        tmp.push_back(c);
+        out.push_back(c);
         ++iter;
     }
 
@@ -59,30 +57,18 @@ int strUnHex (std::string& strDst, std::string const& strSrc)
         ++iter;
 
         if (cHigh < 0)
-            return -1;
+            return std::make_pair (Blob (), false);
 
         int cLow = charUnHex (*iter);
         ++iter;
 
         if (cLow < 0)
-            return -1;
+            return std::make_pair (Blob (), false);
 
-        tmp.push_back (static_cast<char>((cHigh << 4) | cLow));
+        out.push_back (static_cast<unsigned char>((cHigh << 4) | cLow));
     }
 
-    strDst = std::move(tmp);
-
-    return strDst.size ();
-}
-
-std::pair<Blob, bool> strUnHex (std::string const& strSrc)
-{
-    std::string strTmp;
-
-    if (strUnHex (strTmp, strSrc) == -1)
-        return std::make_pair (Blob (), false);
-
-    return std::make_pair(strCopy (strTmp), true);
+    return std::make_pair(std::move(out), true);
 }
 
 uint64_t uintFromHex (std::string const& strSrc)
@@ -103,33 +89,6 @@ uint64_t uintFromHex (std::string const& strSrc)
     }
 
     return uValue;
-}
-
-//
-// Misc string
-//
-
-Blob strCopy (std::string const& strSrc)
-{
-    Blob vucDst;
-
-    vucDst.resize (strSrc.size ());
-
-    std::copy (strSrc.begin (), strSrc.end (), vucDst.begin ());
-
-    return vucDst;
-}
-
-std::string strCopy (Blob const& vucSrc)
-{
-    std::string strDst;
-
-    strDst.resize (vucSrc.size ());
-
-    std::copy (vucSrc.begin (), vucSrc.end (), strDst.begin ());
-
-    return strDst;
-
 }
 
 // TODO Callers should be using beast::URL and beast::parse_URL instead.

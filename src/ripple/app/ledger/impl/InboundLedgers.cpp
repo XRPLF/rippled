@@ -243,7 +243,7 @@ public:
 
                 auto id_string = node.nodeid();
                 auto newNode = SHAMapAbstractNode::make(
-                    Blob (node.nodedata().begin(), node.nodedata().end()),
+                    makeSlice(node.nodedata()),
                     0, snfWIRE, SHAMapHash{uZero}, false, app_.journal ("SHAMapNodeID"),
                     SHAMapNodeID(id_string.data(), id_string.size()));
 

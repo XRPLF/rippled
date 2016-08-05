@@ -195,9 +195,9 @@ public:
 
     bool getRootNode (Serializer & s, SHANodeFormat format) const;
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
-    SHAMapAddNode addRootNode (SHAMapHash const& hash, Blob const& rootNode,
+    SHAMapAddNode addRootNode (SHAMapHash const& hash, Slice const& rootNode,
                                SHANodeFormat format, SHAMapSyncFilter * filter);
-    SHAMapAddNode addKnownNode (SHAMapNodeID const& nodeID, Blob const& rawNode,
+    SHAMapAddNode addKnownNode (SHAMapNodeID const& nodeID, Slice const& rawNode,
                                 SHAMapSyncFilter * filter);
 
     // status functions
