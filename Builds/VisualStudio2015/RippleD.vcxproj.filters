@@ -1617,9 +1617,6 @@
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
       <Filter>ripple\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\AmendmentTable.test.cpp">
-      <Filter>ripple\app\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\CrossingLimits_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
@@ -5553,5 +5550,8 @@
     <ClInclude Include="..\..\src\websocketpp_02\src\websocket_frame.hpp">
       <Filter>websocketpp_02\src</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\test\AmendmentTable.test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

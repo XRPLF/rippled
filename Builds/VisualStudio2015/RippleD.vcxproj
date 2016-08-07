@@ -1131,10 +1131,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\paths\Types.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tests\AmendmentTable.test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\CrossingLimits_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -4766,6 +4762,8 @@
     <ClCompile Include="..\..\src\test\AccountTxPaging_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\AmendmentTable.test.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\unity\test_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>

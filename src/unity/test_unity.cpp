@@ -18,3 +18,4 @@
 //==============================================================================
 
 #include <test/AccountTxPaging_test.cpp>
+#include <test/AmendmentTable.test.cpp>
