@@ -132,7 +132,7 @@ protected:
     }
 
     void
-    on_write_sb(error_code const& ec);
+    on_ws_handshake(error_code const& ec);
 
     void
     do_write();
@@ -196,7 +196,7 @@ run()
     impl().ws_.set_option(beast::websocket::decorate(identity{}));
     using namespace beast::asio;
     impl().ws_.async_accept(request_, strand_.wrap(std::bind(
-        &BaseWSPeer::on_write_sb, impl().shared_from_this(),
+        &BaseWSPeer::on_ws_handshake, impl().shared_from_this(),
             placeholders::error)));
 }
 
@@ -217,9 +217,9 @@ send(std::shared_ptr<WSMsg> w)
         cr_.reason = "Client is too slow.";
         do_close_ = true;
         wq_.erase(std::next(wq_.begin()), wq_.end());
+        return;
     }
-    else
-        wq_.emplace_back(std::move(w));
+    wq_.emplace_back(std::move(w));
     if(wq_.size() == 1)
         on_write({});
 }
@@ -254,10 +254,10 @@ complete()
 template<class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::
-on_write_sb(error_code const& ec)
+on_ws_handshake(error_code const& ec)
 {
     if(ec)
-        return fail(ec, "write_resp");
+        return fail(ec, "on_ws_handshake");
     do_read();
 }
 
