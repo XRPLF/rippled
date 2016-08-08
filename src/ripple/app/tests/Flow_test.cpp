@@ -150,6 +150,14 @@ struct Flow_test : public beast::unit_test::suite
             xrpAccount (), iss.currency, iss.account);
     };
 
+    // Issuer path element
+    static auto IAPE(AccountID const& account)
+    {
+        return STPathElement (
+            STPathElement::typeIssuer,
+            xrpAccount (), xrpCurrency (), account);
+    };
+
     // Currency path element
     static auto CPE(Currency const& c)
     {
@@ -213,6 +221,12 @@ struct Flow_test : public beast::unit_test::suite
             // Path with explicit offer
             test (env, EUR, USD.issue (), STPath ({IPE (EUR)}),
                 tesSUCCESS, D{alice, gw, usdC}, B{USD, EUR}, D{gw, bob, eurC});
+
+            // Path with offer that changes issuer only
+            env.trust (carol["USD"] (1000), bob);
+            test (env, carol["USD"], USD.issue (), STPath ({IAPE (carol)}),
+                  tesSUCCESS,
+                  D{alice, gw, usdC}, B{USD, carol["USD"]}, D{carol, bob, usdC});
 
             // Path with XRP src currency
             test (env, USD, xrpIssue (), STPath ({IPE (USD)}), tesSUCCESS,
