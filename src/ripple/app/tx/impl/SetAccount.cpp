@@ -370,6 +370,15 @@ SetAccount::doApply ()
     }
 
     //
+    // Memos
+    //
+    if (ctx_.tx.isFieldPresent (sfMemos))
+    {
+        STArray const& memos = ctx_.tx.getFieldArray(sfMemos);
+        sle->setFieldArray(sfMemos, memos);
+    }
+    
+    //
     // WalletLocator
     //
     if (ctx_.tx.isFieldPresent (sfWalletLocator))
