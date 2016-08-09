@@ -580,7 +580,7 @@ private:
     // account_lines <account> <account>|"" [<ledger>]
     Json::Value parseAccountLines (Json::Value const& jvParams)
     {
-        return parseAccountRaw2 (jvParams, "peer");
+        return parseAccountRaw2 (jvParams, jss::peer);
     }
 
     // account_channels <account> <account>|"" [<ledger>]
@@ -658,27 +658,32 @@ private:
         Json::Value jvRequest (Json::objectValue);
         for (auto i = 0; i < nParams; ++i)
         {
-            std::string const strParam = jvParams[i].asString ();
+            std::string strParam = jvParams[i].asString ();
 
-            // Parameters 0 and 1 may be accounts
-            if ((i < 2) && (parseBase58<PublicKey> (
-                                TokenType::TOKEN_ACCOUNT_PUBLIC, strParam) ||
-                               parseBase58<AccountID> (strParam) ||
-                               parseGenericSeed (strParam)))
-            {
-                jvRequest[accFields[i]] = strParam;
+            if (i==1 && strParam.empty())
                 continue;
-            }
 
-            // Parameters 1 and 2 may be ledgers, but only if it's the last param
-            if (i > 0 && i == nParams - 1)
+            // Parameters 0 and 1 are accounts
+            if (i < 2)
+            {
+                if (parseBase58<PublicKey> (
+                        TokenType::TOKEN_ACCOUNT_PUBLIC, strParam) ||
+                    parseBase58<AccountID> (strParam) ||
+                    parseGenericSeed (strParam))
+                {
+                    jvRequest[accFields[i]] = std::move (strParam);
+                }
+                else
+                {
+                    return rpcError (rpcACT_MALFORMED);
+                }
+            }
+            else
             {
                 if (jvParseLedger (jvRequest, strParam))
                     return jvRequest;
-            }
-            if (i == 3)
                 return rpcError (rpcLGR_IDX_MALFORMED);
-            return rpcError (rpcACT_MALFORMED);
+            }
         }
 
         return jvRequest;
