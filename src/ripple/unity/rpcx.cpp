@@ -105,6 +105,7 @@
 #include <ripple/rpc/tests/JSONRPC.test.cpp>
 #include <ripple/rpc/tests/GatewayBalances.test.cpp>
 #include <ripple/rpc/tests/LedgerRequestRPC.test.cpp>
+#include <ripple/rpc/tests/LedgerData.test.cpp>
 #include <ripple/rpc/tests/KeyGeneration.test.cpp>
 #include <ripple/rpc/tests/RobustTransaction.test.cpp>
 #include <ripple/rpc/tests/ServerInfo.test.cpp>
