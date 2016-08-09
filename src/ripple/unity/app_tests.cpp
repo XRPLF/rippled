@@ -35,6 +35,7 @@
 #include <ripple/app/tests/SHAMapStore_test.cpp>
 #include <ripple/app/tests/SusPay_test.cpp>
 #include <ripple/app/tests/SetAuth_test.cpp>
+#include <ripple/app/tests/SetRegularKey.test.cpp>
 #include <ripple/app/tests/OversizeMeta_test.cpp>
 #include <ripple/app/tests/Taker.test.cpp>
 #include <ripple/app/tests/Transaction_ordering_test.cpp>
