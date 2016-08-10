@@ -527,12 +527,6 @@ if (NOT WIN32)
 
   if (is_gcc)
     add_compile_options(-Wno-unused-but-set-variable -Wno-unused-local-typedefs)
-    # Generator expressions are not supported in add_definitions, use set_property instead
-    set_property(
-      DIRECTORY
-      APPEND
-      PROPERTY COMPILE_DEFINITIONS
-      $<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:_FORTIFY_SOURCE=2>)
     add_compile_options($<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:-O0>)
   endif (is_gcc)
 else(NOT WIN32)
