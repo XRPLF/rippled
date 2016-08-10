@@ -127,6 +127,29 @@ validate (Condition const& c)
     if (c.type == condition_hashlock)
         return (c.featureBitmask == (feature_sha256 | feature_preimage));
 
+    // A prefix condition contains a subfulfillment; it
+    // requires all the features its child may require.
+    if (c.type == condition_prefix_sha256)
+    {
+        auto const mask = (feature_sha256 | feature_prefix);
+
+        // We need to have at least our own feature suites:
+        auto const cf1 = c.featureBitmask & mask;
+
+        if (cf1 != mask)
+            return false;
+
+        // And at least one more feature suite for our
+        // subfulfillment (since you need to terminate a
+        // chain of prefix conditions with a non-prefix)
+        auto const cf2 = c.featureBitmask & ~mask;
+
+        if (cf2 == 0)
+            return false;
+
+        return (cf2 & definedFeatures) == cf2;
+    }
+
     if (c.type == condition_ed25519)
         return (c.featureBitmask == feature_ed25519);
 

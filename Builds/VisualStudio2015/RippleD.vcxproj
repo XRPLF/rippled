@@ -1802,6 +1802,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\PrefixSha256.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\PreimageSha256.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
@@ -4553,6 +4555,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\Ed25519_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\PrefixSha256_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
