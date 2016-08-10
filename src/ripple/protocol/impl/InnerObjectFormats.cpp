@@ -34,6 +34,29 @@ InnerObjectFormats::InnerObjectFormats ()
         << SOElement (sfSigningPubKey,        SOE_REQUIRED)
         << SOElement (sfTxnSignature,         SOE_REQUIRED)
         ;
+
+    add (sfChannelClaim.getJsonName ().c_str (), sfChannelClaim.getCode ())
+        << SOElement (sfPayChannel,           SOE_REQUIRED)
+        << SOElement (sfPublicKey,            SOE_REQUIRED)
+        << SOElement (sfAmount,               SOE_REQUIRED)
+        << SOElement (sfSequence,             SOE_REQUIRED)
+        << SOElement (sfSignature,            SOE_OPTIONAL)
+        << SOElement (sfSourceTag,            SOE_OPTIONAL)
+        << SOElement (sfDestinationTag,       SOE_OPTIONAL)
+        << SOElement (sfInvoiceID,            SOE_OPTIONAL)
+        // TODO Support crypto conditional channel payments
+        // << SOElement (sfDigest,               SOE_OPTIONAL)
+        // << SOElement (sfProof,                SOE_OPTIONAL)
+        ;
+
+    add (sfChannelMember.getJsonName ().c_str (), sfChannelMember.getCode ())
+        << SOElement (sfAccount,              SOE_REQUIRED)
+        << SOElement (sfBalance,              SOE_REQUIRED)
+        << SOElement (sfPublicKey,            SOE_REQUIRED)
+        << SOElement (sfAmount,               SOE_REQUIRED)
+        << SOElement (sfSequence,             SOE_REQUIRED)
+        << SOElement (sfOwnerNode,            SOE_REQUIRED)
+        ;
 }
 
 void InnerObjectFormats::addCommonFields (Item& item)

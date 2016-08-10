@@ -270,6 +270,7 @@ JSS ( max_spend_drops );            // out: AccountInfo
 JSS ( max_spend_drops_total );      // out: AccountInfo
 JSS ( median_fee );                 // out: TxQ
 JSS ( median_level );               // out: TxQ
+JSS ( members );                    // out: AccountChannels
 JSS ( message );                    // error.
 JSS ( meta );                       // out: NetworkOPs, AccountTx*, Tx
 JSS ( metaData );

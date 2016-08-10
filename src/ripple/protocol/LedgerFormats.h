@@ -110,7 +110,7 @@ enum LedgerNameSpace
     spaceFee            = 'e',
     spaceTicket         = 'T',
     spaceSignerList     = 'S',
-    spaceXRPUChannel    = 'x',
+    spaceXRPChannel     = 'x',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.

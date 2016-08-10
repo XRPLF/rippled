@@ -24,8 +24,10 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/protocol/PayChan.h>
+#include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STAccount.h>
+#include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -34,96 +36,72 @@
 namespace ripple {
 
 // {
-//   secret_key: <signing_secret_key>
-//   channel_id: 256-bit channel id
-//   drops: 64-bit uint (as string)
+//   tx_json: <object>,
+//   secret: <secret key>
 // }
 Json::Value doChannelAuthorize (RPC::Context& context)
 {
     auto const& params (context.params);
-    for (auto const& p : {jss::secret, jss::channel_id, jss::amount})
+    for (auto const& p : {jss::secret, jss::tx_json})
         if (!params.isMember (p))
             return RPC::missing_field_error (p);
 
-    Json::Value result;
-    auto const keypair = RPC::keypairForSignature (params, result);
-    if (RPC::contains_error (result))
-        return result;
+    STParsedJSONObject claim ("claim", params[jss::tx_json], sfChannelClaim);
 
-    uint256 channelId;
-    if (!channelId.SetHexExact (params[jss::channel_id].asString ()))
-        return rpcError (rpcCHANNEL_MALFORMED);
+    if (claim.object == boost::none)
+        return RPC::make_error (
+            rpcINTERNAL, claim.error[jss::error_message].asString ());
 
-    std::uint64_t drops = 0;
-    try
-    {
-        drops = std::stoul (params[jss::amount].asString ());
-    }
-    catch (std::exception const&)
-    {
-        return rpcError (rpcCHANNEL_AMT_MALFORMED);
-    }
+    auto const sk = parseBase58<SecretKey>(
+        TokenType::TOKEN_ACCOUNT_SECRET, params[jss::secret].asString ());
+    auto const pk = get<PublicKey>(*claim.object, sfPublicKey);
 
-    Serializer msg;
-    serializePayChanAuthorization (msg, channelId, XRPAmount (drops));
+    if (! sk || ! pk)
+        return rpcError (rpcINVALID_PARAMS);
+
+    auto keyType = publicKeyType (*pk);
+    if (! keyType || *pk != derivePublicKey (*keyType, *sk))
+        return rpcError (rpcINVALID_PARAMS);
 
     try
     {
-        auto const buf = sign (keypair.first, keypair.second, msg.slice ());
-        result[jss::signature] = strHex (buf);
+        sign (*claim.object, HashPrefix::paymentChannelClaim, *keyType, *sk);
     }
     catch (std::exception&)
     {
-        result =
-            RPC::make_error (rpcINTERNAL, "Exception occurred during signing.");
+        return RPC::make_error (
+            rpcINTERNAL, "Exception occurred during signing.");
     }
+
+    Json::Value result;
+    result["ChannelClaim"] = claim.object->getJson (0);
     return result;
 }
 
 // {
-//   public_key: <public_key>
-//   channel_id: 256-bit channel id
-//   drops: 64-bit uint (as string)
-//   signature: signature to verify
+//   tx_json: <object>
 // }
 Json::Value doChannelVerify (RPC::Context& context)
 {
     auto const& params (context.params);
-    for (auto const& p :
-        {jss::public_key, jss::channel_id, jss::amount, jss::signature})
-        if (!params.isMember (p))
-            return RPC::missing_field_error (p);
+    if (!params.isMember (jss::tx_json))
+        return RPC::missing_field_error (jss::tx_json);
 
-    std::string const strPk = params[jss::public_key].asString ();
-    auto const pk =
-        parseBase58<PublicKey> (TokenType::TOKEN_ACCOUNT_PUBLIC, strPk);
-    if (!pk)
-        return rpcError (rpcPUBLIC_MALFORMED);
+    STParsedJSONObject claim ("claim", params[jss::tx_json], sfChannelClaim);
 
-    uint256 channelId;
-    if (!channelId.SetHexExact (params[jss::channel_id].asString ()))
-        return rpcError (rpcCHANNEL_MALFORMED);
+    if (claim.object == boost::none)
+        return RPC::make_error (
+            rpcINTERNAL, claim.error[jss::error_message].asString ());
 
-    std::uint64_t drops = 0;
-    try
-    {
-        drops = std::stoul (params[jss::amount].asString ());
-    }
-    catch (std::exception const&)
-    {
-        return rpcError (rpcCHANNEL_AMT_MALFORMED);
-    }
+    auto const pk = get<PublicKey>(*claim.object, sfPublicKey);
 
-    std::pair<Blob, bool> sig(strUnHex (params[jss::signature].asString ()));
-    if (!sig.second || !sig.first.size ())
+    if (! pk)
         return rpcError (rpcINVALID_PARAMS);
 
-    Serializer msg;
-    serializePayChanAuthorization (msg, channelId, XRPAmount (drops));
-
     Json::Value result;
-    result[jss::signature_verified] =
-        verify (*pk, msg.slice (), makeSlice (sig.first), /*canonical*/ true);
+    result[jss::signature_verified] = verify (
+        *claim.object, HashPrefix::paymentChannelClaim, *pk, /*canonical*/ true);
+
     return result;
 }
 

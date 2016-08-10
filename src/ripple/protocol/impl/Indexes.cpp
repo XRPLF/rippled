@@ -328,7 +328,7 @@ payChan (AccountID const& source, AccountID const& dst, std::uint32_t seq)
 {
     sha512_half_hasher h;
     using beast::hash_append;
-    hash_append(h, spaceXRPUChannel);
+    hash_append(h, spaceXRPChannel);
     hash_append(h, source);
     hash_append(h, dst);
     hash_append(h, seq);
