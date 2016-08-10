@@ -2442,6 +2442,9 @@
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
       <Filter>ripple\conditions\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\PrefixSha256.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\PreimageSha256.h">
       <Filter>ripple\conditions</Filter>
     </ClInclude>
@@ -5335,6 +5338,9 @@
       <Filter>test\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\Ed25519_test.cpp">
+      <Filter>test\conditions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\PrefixSha256_test.cpp">
       <Filter>test\conditions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
