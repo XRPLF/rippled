@@ -651,9 +651,6 @@ def config_env(toolchain, variant, env):
             # extra error checking into the code (e.g. std::vector will throw
             # for out-of-bounds conditions)
             if is_debug_variant(variant):
-                env.Append(CPPDEFINES={
-                    '_FORTIFY_SOURCE': 2
-                    })
                 env.Append(CCFLAGS=[
                     '-O0'
                     ])
