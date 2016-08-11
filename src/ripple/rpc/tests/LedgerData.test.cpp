@@ -60,16 +60,16 @@ public:
     void testCurrentLedgerToLimits(bool as_admin)
     {
         using namespace test::jtx;
-        Env env(*this, makeConfig(as_admin));
-        Account const gw ("gateway");
-        auto const USD  = gw["USD"];
+        Env env {*this, makeConfig(as_admin)};
+        Account const gw {"gateway"};
+        auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        const int max_limit = 256; //would be 2048 for binary requests, no need to test that here
+        int const max_limit = 256; //would be 2048 for binary requests, no need to test that here
 
         for (auto i = 0; i < max_limit + 10; i++)
         {
-            Account const bob (std::string("bob") + std::to_string(i));
+            Account const bob {std::string("bob") + std::to_string(i)};
             env.fund(XRP(1000), bob);
         }
         env.close();
@@ -79,34 +79,38 @@ public:
         // accounts is greater than max, which it is here
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
-        jvParams[jss::binary] = false;
-        auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
-        BEAST_EXPECT(jrr[jss::ledger_current_index].isIntegral() && jrr[jss::ledger_current_index].asInt() > 0);
-        BEAST_EXPECT(checkMarker(jrr));
-        BEAST_EXPECT(checkArraySize(jrr[jss::state], max_limit));
+        jvParams[jss::binary]       = false;
+        auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        BEAST_EXPECT(
+            jrr[jss::ledger_current_index].isIntegral() &&
+            jrr[jss::ledger_current_index].asInt() > 0 );
+        BEAST_EXPECT( checkMarker(jrr) );
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], max_limit) );
 
         // check limits values around the max_limit (+/- 1)
         for (auto delta = -1; delta <= 1; delta++)
         {
             jvParams[jss::limit] = max_limit + delta;
-            auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(checkArraySize(jrr[jss::state], (delta > 0 && !as_admin) ? max_limit : max_limit + delta ));
+            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            BEAST_EXPECT(
+                checkArraySize( jrr[jss::state],
+                    (delta > 0 && !as_admin) ? max_limit : max_limit + delta ));
         }
     }
 
     void testCurrentLedgerBinary()
     {
         using namespace test::jtx;
-        Env env(*this, makeConfig(false));
-        Account const gw ("gateway");
-        auto const USD  = gw["USD"];
+        Env env { *this, makeConfig(false) };
+        Account const gw { "gateway" };
+        auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        const int num_accounts = 10;
+        int const num_accounts = 10;
 
         for (auto i = 0; i < num_accounts; i++)
         {
-            Account const bob (std::string("bob") + std::to_string(i));
+            Account const bob { std::string("bob") + std::to_string(i) };
             env.fund(XRP(1000), bob);
         }
         env.close();
@@ -116,20 +120,22 @@ public:
         // plus three more related to the gateway setup
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
-        jvParams[jss::binary] = true;
-        auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
-        BEAST_EXPECT(jrr[jss::ledger_current_index].isIntegral() && jrr[jss::ledger_current_index].asInt() > 0);
-        BEAST_EXPECT(! jrr.isMember(jss::marker));
-        BEAST_EXPECT(checkArraySize(jrr[jss::state], num_accounts + 3));
+        jvParams[jss::binary]       = true;
+        auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        BEAST_EXPECT(
+            jrr[jss::ledger_current_index].isIntegral() &&
+            jrr[jss::ledger_current_index].asInt() > 0);
+        BEAST_EXPECT( ! jrr.isMember(jss::marker) );
+        BEAST_EXPECT( checkArraySize(jrr[jss::state], num_accounts + 3) );
     }
 
     void testBadInput()
     {
         using namespace test::jtx;
-        Env env(*this);
-        Account const gw ("gateway");
-        auto const USD  = gw["USD"];
-        Account const bob ("bob");
+        Env env { *this };
+        Account const gw { "gateway" };
+        auto const USD = gw["USD"];
+        Account const bob { "bob" };
 
         env.fund(XRP(10000), gw, bob);
         env.trust(USD(1000), bob);
@@ -137,8 +143,8 @@ public:
         {
             // bad limit
             Json::Value jvParams;
-            jvParams[jss::limit]   = "0"; // NOT an integer
-            auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
+            jvParams[jss::limit] = "0"; // NOT an integer
+            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not integer.");
@@ -147,8 +153,8 @@ public:
         {
             // invalid marker
             Json::Value jvParams;
-            jvParams[jss::marker]   = "NOT_A_MARKER";
-            auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
+            jvParams[jss::marker] = "NOT_A_MARKER";
+            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
@@ -157,8 +163,8 @@ public:
         {
             // invalid marker - not a string
             Json::Value jvParams;
-            jvParams[jss::marker]   = 1;
-            auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
+            jvParams[jss::marker] = 1;
+            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
@@ -167,8 +173,8 @@ public:
         {
             // ask for a bad ledger index
             Json::Value jvParams;
-            jvParams[jss::ledger_index]   = 10u;
-            auto const jrr = env.rpc ("json", "ledger_data", jvParams.toStyledString())[jss::result];
+            jvParams[jss::ledger_index] = 10u;
+            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
