@@ -59,6 +59,9 @@ public:
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
+
+    // path_find semantics
+    // Subscriber is updated
     PathRequest (
         Application& app,
         std::shared_ptr <InfoSub> const& subscriber,
@@ -66,6 +69,8 @@ public:
         PathRequests&,
         beast::Journal journal);
 
+    // ripple_path_find semantics
+    // Completion function is called
     PathRequest (
         Application& app,
         std::function <void (void)> const& completion,

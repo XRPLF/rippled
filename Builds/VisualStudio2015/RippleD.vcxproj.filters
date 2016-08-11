@@ -3810,9 +3810,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\json_body.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
-      <Filter>ripple\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Role.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>

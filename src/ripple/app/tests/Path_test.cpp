@@ -29,7 +29,6 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <ripple/rpc/RipplePathFind.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
@@ -143,52 +142,6 @@ equal(STAmount const& sa1, STAmount const& sa2)
         sa1.issue().account == sa2.issue().account;
 }
 
-std::tuple <STPathSet, STAmount, STAmount>
-find_paths(jtx::Env& env,
-    jtx::Account const& src, jtx::Account const& dst,
-        STAmount const& saDstAmount,
-            boost::optional<STAmount> const& saSendMax = boost::none)
-{
-    static int const level = 8;
-    auto const& view = env.current();
-    auto cache = std::make_shared<RippleLineCache>(view);
-    auto currencies = accountSourceCurrencies(src, cache, true);
-    auto jvSrcCurrencies = Json::Value(Json::arrayValue);
-    for (auto const& c : currencies)
-    {
-        Json::Value jvCurrency = Json::objectValue;
-        jvCurrency[jss::currency] = to_string(c);
-        jvSrcCurrencies.append(jvCurrency);
-    }
-    auto const convert_all =
-        saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
-    auto result = ripplePathFind(cache, src.id(), dst.id(),
-        (convert_all ? STAmount(saDstAmount.issue(), STAmount::cMaxValue,
-            STAmount::cMaxOffset) : saDstAmount), jvSrcCurrencies, boost::none,
-                level, saSendMax, convert_all, env.app());
-    if (! result.first)
-    {
-        Throw<std::runtime_error> (
-            "Path_test::findPath: ripplePathFind find failed");
-    }
-    auto const& jv = result.second[0u];
-    Json::Value paths;
-    paths["Paths"] = jv["paths_computed"];
-    STParsedJSONObject stp("generic", paths);
-
-    STAmount sa;
-    if (jv.isMember(jss::source_amount))
-        sa = amountFromJson(sfGeneric, jv[jss::source_amount]);
-
-    STAmount da;
-    if (jv.isMember(jss::destination_amount))
-        da = amountFromJson(sfGeneric, jv[jss::destination_amount]);
-
-    return std::make_tuple(
-        std::move(stp.object->getFieldPathSet(sfPaths)),
-            std::move(sa), std::move(da));
-}
-
 Json::Value
 rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
 {
@@ -251,6 +204,79 @@ public:
             cv_.notify_all();
         }
     };
+
+    std::tuple <STPathSet, STAmount, STAmount>
+    find_paths(jtx::Env& env,
+        jtx::Account const& src, jtx::Account const& dst,
+            STAmount const& saDstAmount,
+                boost::optional<STAmount> const& saSendMax = boost::none)
+    {
+        using namespace jtx;
+
+        auto& app = env.app();
+        Resource::Charge loadType = Resource::feeReferenceRPC;
+        Resource::Consumer c;
+        RPC::Context context {beast::Journal(), {}, app, loadType,
+            app.getOPs(), app.getLedgerMaster(), c, Role::USER, {}};
+
+        Json::Value params = Json::objectValue;
+        params[jss::command] = "ripple_path_find";
+        params[jss::source_account] = toBase58 (src);
+        params[jss::destination_account] = toBase58 (dst);
+        params[jss::destination_amount] = saDstAmount.getJson(0);
+        if (saSendMax)
+            params[jss::send_max] = saSendMax->getJson(0);
+
+        Json::Value result;
+        gate g;
+        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client",
+            [&](auto const& coro)
+            {
+                context.params = std::move (params);
+                context.jobCoro = coro;
+                RPC::doCommand (context, result);
+                g.signal();
+            });
+
+        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(! result.isMember(jss::error));
+
+        STAmount da;
+        if (result.isMember(jss::destination_amount))
+            da = amountFromJson(sfGeneric,
+                result[jss::destination_amount]);
+
+        STAmount sa;
+        STPathSet paths;
+        if (result.isMember(jss::alternatives))
+        {
+            auto const& alts = result[jss::alternatives];
+            if (alts.size() > 0)
+            {
+                auto const& path = alts[0u];
+
+                if (path.isMember(jss::source_amount))
+                    sa = amountFromJson(sfGeneric,
+                        path[jss::source_amount]);
+
+
+                if (path.isMember(jss::destination_amount))
+                    da = amountFromJson(sfGeneric,
+                        path[jss::destination_amount]);
+
+                if (path.isMember(jss::paths_computed))
+                {
+                    Json::Value p;
+                    p["Paths"] = path[jss::paths_computed];
+                    STParsedJSONObject po("generic", p);
+                    paths = po.object->getFieldPathSet (sfPaths);
+                }
+            }
+        }
+
+        return std::make_tuple(
+            std::move(paths), std::move(sa), std::move(da));
+    }
 
     void
     source_currencies_limit()

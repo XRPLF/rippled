@@ -218,7 +218,7 @@ PathRequests::makePathRequest(
         insertPathRequest (req);
         app_.getLedgerMaster().newPathRequest();
     }
-    return result.second;
+    return std::move (result.second);
 }
 
 // Make an old-style ripple_path_find request
@@ -249,7 +249,25 @@ PathRequests::makeLegacyPathRequest(
         app_.getLedgerMaster().newPathRequest();
     }
 
-    return result.second;
+    return std::move (result.second);
+}
+
+Json::Value
+PathRequests::doLegacyPathRequest (
+        Resource::Consumer& consumer,
+        std::shared_ptr<ReadView const> const& inLedger,
+        Json::Value const& request)
+{
+    auto cache = std::make_shared<RippleLineCache> (inLedger);
+
+    auto dummyCompletion = []() { ; };
+    auto req = std::make_shared<PathRequest> (app_, std::move (dummyCompletion),
+        consumer, ++mLastIdentifier, *this, mJournal);
+
+    auto result = req->doCreate (cache, request);
+    if (result.first)
+        result.second = req->doUpdate (cache, false);
+    return std::move (result.second);
 }
 
 } // ripple

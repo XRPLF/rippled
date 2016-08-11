@@ -98,8 +98,12 @@ Disposition Consumer::disposition() const
 
 Disposition Consumer::charge (Charge const& what)
 {
-    assert (m_entry != nullptr);
-    return m_logic->charge (*m_entry, what);
+    Disposition d = ok;
+
+    if (m_logic && m_entry)
+        d = m_logic->charge (*m_entry, what);
+
+    return d;
 }
 
 bool Consumer::warn ()
