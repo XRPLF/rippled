@@ -3355,8 +3355,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\json_body.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\RipplePathFind.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Role.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">

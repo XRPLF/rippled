@@ -49,14 +49,26 @@ public:
     std::shared_ptr<RippleLineCache> getLineCache (
         std::shared_ptr <ReadView const> const& ledger, bool authoritative);
 
+    // Create a new-style path request that pushes
+    // updates to a subscriber
     Json::Value makePathRequest (
         std::shared_ptr <InfoSub> const& subscriber,
         std::shared_ptr<ReadView const> const& ledger,
         Json::Value const& request);
 
+    // Create an old-style path request that is
+    // managed by a coroutine and updated by
+    // the path engine
     Json::Value makeLegacyPathRequest (
         PathRequest::pointer& req,
         std::function <void (void)> completion,
+        Resource::Consumer& consumer,
+        std::shared_ptr<ReadView const> const& inLedger,
+        Json::Value const& request);
+
+    // Execute an old-style path request immediately
+    // with the ledger specified by the caller
+    Json::Value doLegacyPathRequest (
         Resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         Json::Value const& request);
