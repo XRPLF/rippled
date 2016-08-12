@@ -1,5 +1,25 @@
 # Beast
 
+---
+
+## CppCon 2016
+
+I will be giving a lightning talk on Beast at CppCon 2016 in Bellevue,
+Washington from September 18 to September 22. If you'd like to meet me
+and hear the talk or ask questions about Beast feel free to approach
+me in person or send me an email at vinnie.falco@gmail.com to schedule
+some time.
+
+Beast is used in [rippled](https://github.com/ripple/rippled), an
+open source server application that implements a decentralized
+cryptocurrency system.
+
+About CppCon 2016:
+http://cppcon.org
+
+---
+
+
 [![Join the chat at https://gitter.im/vinniefalco/Beast](https://badges.gitter.im/vinniefalco/Beast.svg)](https://gitter.im/vinniefalco/Beast?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status]
 (https://travis-ci.org/vinniefalco/Beast.svg?branch=master)](https://travis-ci.org/vinniefalco/Beast) [![codecov]
 (https://codecov.io/gh/vinniefalco/Beast/branch/master/graph/badge.svg)](https://codecov.io/gh/vinniefalco/Beast) [![coveralls]
