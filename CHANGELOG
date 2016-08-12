@@ -1,3 +1,16 @@
+1.0.0-b10
+
+* Fix compilation warnings
+* Add websocketpp comparison to HTML documentation
+
+--------------------------------------------------------------------------------
+
+1.0.0-b9
+
+* Fix CMakeLists.txt
+
+--------------------------------------------------------------------------------
+
 1.0.0-b8
 
 * Fix include in example code
