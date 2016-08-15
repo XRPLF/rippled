@@ -260,8 +260,7 @@ PathRequests::doLegacyPathRequest (
 {
     auto cache = std::make_shared<RippleLineCache> (inLedger);
 
-    auto dummyCompletion = []() { ; };
-    auto req = std::make_shared<PathRequest> (app_, std::move (dummyCompletion),
+    auto req = std::make_shared<PathRequest> (app_, []{},
         consumer, ++mLastIdentifier, *this, mJournal);
 
     auto result = req->doCreate (cache, request);
