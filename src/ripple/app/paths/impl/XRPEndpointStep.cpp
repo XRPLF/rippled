@@ -139,15 +139,8 @@ static
 XRPAmount
 xrpLiquid (ReadView& sb, AccountID const& src)
 {
-    if (auto sle = sb.read (keylet::account (src)))
-    {
-        auto const reserve = sb.fees ().accountReserve ((*sle)[sfOwnerCount]);
-        auto const balance = (*sle)[sfBalance].xrp ();
-        if (balance < reserve)
-            return XRPAmount (beast::zero);
-        return balance - reserve;
-    }
-    return XRPAmount (beast::zero);
+    return accountHolds(
+        sb, src, xrpCurrency(), xrpAccount(), fhIGNORE_FREEZE, {}).xrp();
 }
 
 

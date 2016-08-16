@@ -76,7 +76,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         view.rules ().enabled (featureCompareFlowV1V2, config.features);
 
     bool const useFlowV1Output =
-        !view.rules ().enabled (featureFlowV2, config.features);
+        !view.rules().enabled(featureFlow, config.features);
     bool const callFlowV1 = useFlowV1Output || compareFlowV1V2;
     bool const callFlowV2 = !useFlowV1Output || compareFlowV1V2;
 
