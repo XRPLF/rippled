@@ -179,7 +179,46 @@ public:
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
+    }
 
+    void testMarkerFollow()
+    {
+        using namespace test::jtx;
+        Env env { *this, makeConfig(false) };
+        Account const gw { "gateway" };
+        auto const USD = gw["USD"];
+        env.fund(XRP(100000), gw);
+
+        int const num_accounts = 20;
+
+        for (auto i = 0; i < num_accounts; i++)
+        {
+            Account const bob { std::string("bob") + std::to_string(i) };
+            env.fund(XRP(1000), bob);
+        }
+        env.close();
+
+        // no limit specified
+        // with no limit specified, we should get all of our fund entries
+        // plus three more related to the gateway setup
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::binary]       = false;
+        auto jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        auto const total_count = jrr[jss::state].size();
+
+        // now make request with a limit and loop until we get all
+        jvParams[jss::limit]        = 5;
+        jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        BEAST_EXPECT( checkMarker(jrr) );
+        auto running_total = jrr[jss::state].size();
+        while ( jrr.isMember(jss::marker) )
+        {
+            jvParams[jss::marker] = jrr[jss::marker];
+            jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            running_total += jrr[jss::state].size();
+        }
+        BEAST_EXPECT( running_total == total_count );
     }
 
     void run()
@@ -188,6 +227,7 @@ public:
         testCurrentLedgerToLimits(false);
         testCurrentLedgerBinary();
         testBadInput();
+        testMarkerFollow();
     }
 
 };
@@ -195,4 +235,3 @@ public:
 BEAST_DEFINE_TESTSUITE(LedgerData,app,ripple);
 
 }
-
