@@ -175,6 +175,12 @@ public:
         return *bundle_.app;
     }
 
+    ManualTimeKeeper&
+    timeKeeper()
+    {
+        return *bundle_.timeKeeper;
+    }
+
     /** Returns the current Ripple Network Time
 
         @note This is manually advanced when ledgers
@@ -183,7 +189,7 @@ public:
     NetClock::time_point
     now()
     {
-        return app().timeKeeper().now();
+        return timeKeeper().now();
     }
 
     /** Returns the connected client. */
