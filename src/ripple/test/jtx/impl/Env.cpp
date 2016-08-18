@@ -204,7 +204,7 @@ Env::close(NetClock::time_point closeTime,
 {
     // Round up to next distinguishable value
     closeTime += closed()->info().closeTimeResolution - 1s;
-    bundle_.timeKeeper->set(closeTime);
+    timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
     if (consensusDelay)
@@ -214,7 +214,7 @@ Env::close(NetClock::time_point closeTime,
         rpc("ledger_accept");
         // VFALCO No error check?
     }
-    bundle_.timeKeeper->set(
+    timeKeeper().set(
         closed()->info().closeTime);
 }
 
