@@ -19,3 +19,7 @@
 
 #include <test/AccountTxPaging_test.cpp>
 #include <test/AmendmentTable_test.cpp>
+#include <test/SemanticVersion_test.cpp>
+#include <test/beast_Debug_test.cpp>
+#include <test/beast_PropertyStream_test.cpp>
+#include <test/Workers_test.cpp>

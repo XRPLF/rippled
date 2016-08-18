@@ -19,7 +19,6 @@
 
 #include <ripple/core/impl/Workers.h>
 #include <ripple/core/ThreadEntry.h>
-#include <ripple/beast/unit_test.h>
 #include <cassert>
 
 namespace ripple {
@@ -237,66 +236,4 @@ void Workers::Worker::runImpl ()
     }
 }
 
-//------------------------------------------------------------------------------
-
-class Workers_test : public beast::unit_test::suite
-{
-public:
-    struct TestCallback : Workers::Callback
-    {
-        explicit TestCallback (int count_)
-            : finished (false, count_ == 0)
-            , count (count_)
-        {
-        }
-
-        void processTask ()
-        {
-            if (--count == 0)
-                finished.signal ();
-        }
-
-        beast::WaitableEvent finished;
-        std::atomic <int> count;
-    };
-
-    void testThreads (int const threadCount)
-    {
-        testcase ("threadCount = " + std::to_string (threadCount));
-
-        TestCallback cb (threadCount);
-
-        Workers w (cb, "Test", 0);
-        BEAST_EXPECT(w.getNumberOfThreads () == 0);
-
-        w.setNumberOfThreads (threadCount);
-        BEAST_EXPECT(w.getNumberOfThreads () == threadCount);
-
-        for (int i = 0; i < threadCount; ++i)
-            w.addTask ();
-
-        // 10 seconds should be enough to finish on any system
-        //
-        bool signaled = cb.finished.wait (10 * 1000);
-        BEAST_EXPECT(signaled);
-
-        w.pauseAllThreadsAndWait ();
-
-        // We had better finished all our work!
-        BEAST_EXPECT(cb.count.load () == 0);
-    }
-
-    void run ()
-    {
-        testThreads (0);
-        testThreads (1);
-        testThreads (2);
-        testThreads (4);
-        testThreads (16);
-        testThreads (64);
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(Workers,core,ripple);
-
-} // beast
+} // ripple

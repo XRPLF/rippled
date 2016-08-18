@@ -5442,6 +5442,21 @@
     <ClCompile Include="..\..\src\test\AccountTxPaging_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\AmendmentTable_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\beast_Debug_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\beast_PropertyStream_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\SemanticVersion_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\Workers_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\unity\test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
@@ -5550,8 +5565,5 @@
     <ClInclude Include="..\..\src\websocketpp_02\src\websocket_frame.hpp">
       <Filter>websocketpp_02\src</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\test\AmendmentTable.test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
