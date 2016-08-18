@@ -32,10 +32,3 @@
 #include <ripple/ledger/impl/ReadView.cpp>
 #include <ripple/ledger/impl/TxMeta.cpp>
 #include <ripple/ledger/impl/View.cpp>
-
-#include <ripple/ledger/tests/BookDirs_test.cpp>
-#include <ripple/ledger/tests/Directory_test.cpp>
-#include <ripple/ledger/tests/PaymentSandbox_test.cpp>
-#include <ripple/ledger/tests/SkipList_test.cpp>
-#include <ripple/ledger/tests/View_test.cpp>
-#include <ripple/ledger/tests/PendingSaves_test.cpp>

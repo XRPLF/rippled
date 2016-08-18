@@ -949,17 +949,13 @@ def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
-        'src/ripple/beast/unity/beast_clock_unity.cpp',
-        'src/ripple/beast/unity/beast_container_unity.cpp',
         'src/ripple/beast/unity/beast_insight_unity.cpp',
         'src/ripple/beast/unity/beast_net_unity.cpp',
-        'src/ripple/beast/unity/beast_nudb_unity.cpp',
         'src/ripple/beast/unity/beast_utility_unity.cpp',
         'src/ripple/unity/app_ledger.cpp',
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
         'src/ripple/unity/app_paths.cpp',
-        'src/ripple/unity/app_tests.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',

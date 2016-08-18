@@ -24,8 +24,3 @@
 #include <ripple/beast/utility/src/beast_Debug.cpp>
 #include <ripple/beast/utility/src/beast_Journal.cpp>
 #include <ripple/beast/utility/src/beast_PropertyStream.cpp>
-
-#include <ripple/beast/utility/test/beast_Journal_test.cpp>
-#include <ripple/beast/utility/test/beast_tagged_integer_test.cpp>
-#include <ripple/beast/utility/test/beast_weak_fn_test.cpp>
-#include <ripple/beast/utility/test/beast_Zero_test.cpp>

@@ -62,23 +62,6 @@
 #include <ripple/protocol/impl/STVector256.cpp>
 #include <ripple/protocol/impl/IOUAmount.cpp>
 
-
-#include <ripple/protocol/tests/BuildInfo.test.cpp>
-#include <ripple/protocol/tests/digest_test.cpp>
-#include <ripple/protocol/tests/InnerObjectFormats.test.cpp>
-#include <ripple/protocol/tests/IOUAmount.test.cpp>
-#include <ripple/protocol/tests/Issue.test.cpp>
-#include <ripple/protocol/tests/PublicKey_test.cpp>
-#include <ripple/protocol/tests/Quality.test.cpp>
-#include <ripple/protocol/tests/STAccount.test.cpp>
-#include <ripple/protocol/tests/Seed_test.cpp>
-#include <ripple/protocol/tests/SecretKey_test.cpp>
-#include <ripple/protocol/tests/STAmount.test.cpp>
-#include <ripple/protocol/tests/STObject.test.cpp>
-#include <ripple/protocol/tests/STTx.test.cpp>
-#include <ripple/protocol/tests/types_test.cpp>
-#include <ripple/protocol/tests/XRPAmount.test.cpp>
-
 #if DOXYGEN
 #include <ripple/protocol/README.md>
 #endif

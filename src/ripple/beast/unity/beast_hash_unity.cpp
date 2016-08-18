@@ -24,6 +24,3 @@
 #include <ripple/beast/hash/impl/xxhash.c>
 #endif
 #include <ripple/beast/hash/impl/siphash.cpp>
-
-#include <ripple/beast/hash/tests/hash_append_test.cpp>
-#include <ripple/beast/hash/tests/hash_speed_test.cpp>
