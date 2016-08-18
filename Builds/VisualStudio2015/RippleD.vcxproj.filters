@@ -5415,6 +5415,9 @@
     <ClCompile Include="..\..\src\test\rpc\KeyGeneration_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\LedgerClosed_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\LedgerData_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
