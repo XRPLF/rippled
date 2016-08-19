@@ -195,6 +195,8 @@ PaymentSandbox::balanceHook (AccountID const& account,
             }
         }
         adjustedAmt = std::min(amount, lastBal - delta);
+        if (amendmentRIPD1274 (info ().parentCloseTime))
+            adjustedAmt.setIssuer(amount.getIssuer());
     }
     else
     {
