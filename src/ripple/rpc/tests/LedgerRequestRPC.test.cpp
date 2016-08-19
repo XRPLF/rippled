@@ -274,6 +274,7 @@ public:
         }
 
         auto result = env.rpc ( "ledger_request", "1" ) [jss::result];
+        log << result; //temporary
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index]     == "1");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins]      == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed]           == true);
