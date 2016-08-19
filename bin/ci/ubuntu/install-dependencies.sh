@@ -1,6 +1,6 @@
 #!/bin/bash -u
-# Exit if anything fails.
-set -e
+# Exit if anything fails. Echo commands to aid debugging.
+set -ex
 # Override gcc version to $GCC_VER.
 # Put an appropriate symlink at the front of the path.
 mkdir -v $HOME/bin
@@ -23,6 +23,19 @@ if [[ -n ${CLANG_VER:-} ]]; then
     fi
     llvm-${LLVM_VERSION}/bin/llvm-config --version;
     export LLVM_CONFIG="llvm-${LLVM_VERSION}/bin/llvm-config";
+fi
+
+if [[ ${BUILD:-} == cmake ]]; then
+    # There are cases where the directory exists, but the exe is not available.
+    # Use this workaround for now.
+    if [[ ! -x cmake/bin/cmake && -d cmake ]]; then
+        rm -fr cmake
+    fi
+    if [[ ! -d cmake ]]; then
+      CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
+      mkdir cmake && wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+      cmake --version
+    fi
 fi
 
 # What versions are we ACTUALLY running?

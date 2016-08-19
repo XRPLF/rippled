@@ -62,6 +62,8 @@ if (NOT target AND NOT CMAKE_BUILD_TYPE)
   endif()
 endif()
 
+set(openssl_min 1.0.2)
+
 if (target)
   # Parse the target
   set(remaining ${target})
@@ -135,6 +137,12 @@ if (target)
 
     if (${cur_component} STREQUAL profile)
       set(profile true)
+    endif()
+
+    if (${cur_component} STREQUAL ci)
+      # Workarounds that make various CI builds work, but that
+      # we don't want in the general case.
+      set(openssl_min 1.0.1)
     endif()
 
   endwhile()
@@ -217,8 +225,8 @@ macro(group_sources curdir)
   endforeach()
 endmacro()
 
-macro(add_with_props files)
-  list(APPEND src ${files})
+macro(add_with_props src_var files)
+  list(APPEND ${src_var} ${files})
   foreach (arg ${ARGN})
     set(props "${props} ${arg}")
   endforeach()
@@ -316,6 +324,14 @@ if (NOT WIN32)
   else()
     message(FATAL_ERROR "Boost not found")
   endif()
+else(DEFINED ENV{BOOST_ROOT})
+  include_directories(SYSTEM $ENV{BOOST_ROOT})
+  link_directories($ENV{BOOST_ROOT}/stage/lib)
+endif()
+
+if (NOT WIN32)
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+  find_package(Threads)
 endif()
 
 if (APPLE)
@@ -346,9 +362,9 @@ else()
   else()
     message(FATAL_ERROR "OpenSSL not found")
   endif()
-  if (UNIX AND NOT APPLE AND ${OPENSSL_VERSION} VERSION_LESS 1.0.2)
+  if (UNIX AND NOT APPLE AND ${OPENSSL_VERSION} VERSION_LESS ${openssl_min})
     message(FATAL_ERROR
-      "Your openssl is Version: ${OPENSSL_VERSION}, rippled requires 1.0.2 or better.")
+      "Your openssl is Version: ${OPENSSL_VERSION}, rippled requires ${openssl_min} or better.")
   endif()
 endif()
 
@@ -610,6 +626,10 @@ set(soci_extra_includes
   -I"${CMAKE_SOURCE_DIR}/"src/sqlite)
 
 if (WIN32 OR is_xcode OR unity)
+  prepend(signlib_unity_srcs
+    src/ripple/unity/
+    signlib_demo.cpp)
+
   prepend(beast_unity_srcs
     src/ripple/beast/unity/
     beast_clock_unity.cpp
@@ -641,50 +661,58 @@ if (WIN32 OR is_xcode OR unity)
     server.cpp
     test.cpp)
 
-  list(APPEND src ${beast_unity_srcs} ${ripple_unity_srcs})
+  list(APPEND rippled_src ${beast_unity_srcs} ${ripple_unity_srcs})
+  list(APPEND signlib_src ${signlib_unity_srcs})
 
-  add_with_props(src/ripple/unity/nodestore.cpp
+  add_with_props("rippled_src" src/ripple/unity/nodestore.cpp
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
     ${rocks_db_system_header})
 
-  add_with_props(src/ripple/unity/soci_ripple.cpp ${soci_extra_includes})
+  add_with_props("rippled_src" src/ripple/unity/soci_ripple.cpp ${soci_extra_includes})
 
-  set(unity_srcs ${beast_unity_srcs} ${ripple_unity_srcs}
+  list(APPEND ripple_unity_srcs ${beast_unity_srcs}
     src/ripple/unity/nodestore.cpp
     src/ripple/unity/soci_ripple.cpp)
 
   set_property(
-    SOURCE ${unity_srcs}
+    SOURCE ${ripple_unity_srcs}
     APPEND
     PROPERTY HEADER_FILE_ONLY
     ${nonunity})
+  set_property(
+    SOURCE ${signlib_unity_srcs}
+    APPEND
+    PROPERTY HEADER_FILE_ONLY
+    false)
   # Doesn't work
   # $<OR:$<CONFIG:DebugClassic>,$<CONFIG:ReleaseClassic>>)
 
 endif ()
 
 if (WIN32 OR is_xcode OR NOT unity)
+  # Rippled
   file(GLOB_RECURSE core_srcs src/ripple/core/*.cpp)
-  add_with_props("${core_srcs}"
+  add_with_props("rippled_src" "${core_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/soci/src/core
     -I"${CMAKE_SOURCE_DIR}/"src/sqlite)
 
   set(non_unity_srcs ${core_srcs})
 
   foreach(curdir
-      beast/clock beast/container beast/insight beast/net beast/nudb beast/utility
-      app basics crypto json ledger legacy net overlay peerfinder protocol rpc
-      shamap server test)
+      beast/asio beast/clock beast/container beast/core beast/crypto
+      beast/cxx17 beast/hash beast/insight beast/net beast/nudb beast/utility
+      app basics crypto json ledger legacy net overlay peerfinder proto
+      protocol resource rpc server shamap test validators websocket)
     file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)
-    list(APPEND src "${cursrcs}")
+    list(APPEND rippled_src "${cursrcs}")
     list(APPEND non_unity_srcs "${cursrcs}")
   endforeach()
 
   file(GLOB_RECURSE nodestore_srcs src/ripple/nodestore/*.cpp)
 
-  add_with_props("${nodestore_srcs}"
+  add_with_props("rippled_src" "${nodestore_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
@@ -692,18 +720,36 @@ if (WIN32 OR is_xcode OR NOT unity)
 
   list(APPEND non_unity_srcs "${nodestore_srcs}")
 
+  file(GLOB_RECURSE rippled_headers src/ripple/*.h)
+  list(APPEND rippled_src "${rippled_headers}")
+
+  # Signlibdemo only
+  foreach(curdir
+      beast/core beast/hash beast/utility
+      basics crypto json)
+    file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.h
+      src/ripple/${curdir}/*.cpp)
+    list(APPEND signlib_src "${cursrcs}")
+  endforeach()
+
+  # Properties
   set_property(
     SOURCE ${non_unity_srcs}
     APPEND
     PROPERTY HEADER_FILE_ONLY
     ${unity})
+  set_property(
+    SOURCE ${rippled_headers}
+    APPEND
+    PROPERTY HEADER_FILE_ONLY
+    true)
     # Doesn't work
     # $<OR:$<CONFIG:Debug>,$<CONFIG:Release>>)
 endif()
 
 ############################################################
 
-add_with_props(src/ripple/unity/soci.cpp
+add_with_props("rippled_src" src/ripple/unity/soci.cpp
   ${soci_extra_includes})
 
 if (NOT is_msvc)
@@ -712,9 +758,12 @@ else()
   unset(no_unused_w)
 endif()
 
-add_with_props(src/ripple/unity/secp256k1.cpp
+add_with_props("rippled_src" src/ripple/unity/secp256k1.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/secp256k1
   ${no_unused_w}
+  )
+add_with_props("signlib_src" src/ripple/unity/signlib.cpp
+  -I"${CMAKE_SOURCE_DIR}/"src/secp256k1
   )
 
 foreach(cursrc
@@ -726,7 +775,7 @@ foreach(cursrc
     src/ripple/unity/resource.cpp
     src/ripple/unity/websocket02.cpp)
 
-  add_with_props(${cursrc}
+  add_with_props("rippled_src" ${cursrc}
     ${rocks_db_system_header}
     )
 
@@ -738,7 +787,7 @@ else()
   unset(extra_props)
 endif()
 
-add_with_props(src/sqlite/sqlite_unity.c
+add_with_props("rippled_src" src/sqlite/sqlite_unity.c
   ${extra_props})
 
 if (NOT is_msvc)
@@ -747,7 +796,9 @@ if (NOT is_msvc)
     -Wno-array-bounds)
 endif()
 
-add_with_props(src/ripple/unity/ed25519.c
+add_with_props("rippled_src" src/ripple/unity/ed25519.c
+  -I"${CMAKE_SOURCE_DIR}/"src/ed25519-donna)
+add_with_props("signlib_src" src/ripple/unity/ed25519.c
   -I"${CMAKE_SOURCE_DIR}/"src/ed25519-donna)
 
 if (is_gcc)
@@ -756,7 +807,7 @@ else()
   unset(no_init_w)
 endif()
 
-add_with_props(src/ripple/unity/rocksdb.cpp
+add_with_props("rippled_src" src/ripple/unity/rocksdb.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2
   -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
@@ -767,13 +818,13 @@ if (NOT is_msvc)
   set(no_unused_w -Wno-unused-function)
 endif()
 
-add_with_props(src/ripple/unity/snappy.cpp
+add_with_props("rippled_src" src/ripple/unity/snappy.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
   ${no_unused_w})
 
 if (APPLE AND is_clang)
-  list(APPEND src src/ripple/unity/beastobjc.mm)
+  list(APPEND rippled_src src/ripple/unity/beastobjc.mm)
 endif()
 
 ############################################################
@@ -782,7 +833,8 @@ if (WIN32 OR is_xcode)
   group_sources(src)
 endif()
 
-add_executable(rippled ${src} ${PROTO_HDRS})
+add_executable(rippled ${rippled_src} ${PROTO_HDRS})
+add_executable(signlibdemo ${signlib_src})
 
 if (static)
   append_flags(CMAKE_EXE_LINKER_FLAGS -static-libstdc++)
@@ -799,27 +851,33 @@ if (WIN32)
 endif()
 
 target_link_libraries(rippled
-  ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
+  ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
+target_link_libraries(signlibdemo
+  ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
 
 
-if (NOT WIN32)
-  target_link_libraries(rippled dl)
-  if (APPLE)
-    find_library(app_kit AppKit)
-    find_library(foundation Foundation)
-    target_link_libraries(rippled
-      crypto ssl ${app_kit} ${foundation})
-  else()
-    target_link_libraries(rippled rt)
-  endif()
-else(NOT WIN32)
-  target_link_libraries(rippled
-    $<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:VC/static/ssleay32MTd>
-    $<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:VC/static/libeay32MTd>)
-  target_link_libraries(rippled
-    $<$<OR:$<CONFIG:Release>,$<CONFIG:ReleaseClassic>>:VC/static/ssleay32MT>
-    $<$<OR:$<CONFIG:Release>,$<CONFIG:ReleaseClassic>>:VC/static/libeay32MT>)
-  target_link_libraries(rippled
-    legacy_stdio_definitions.lib Shlwapi kernel32 user32 gdi32 winspool comdlg32
-    advapi32 shell32 ole32 oleaut32 uuid odbc32 odbccp32)
-endif (NOT WIN32)
+foreach(cur_project rippled signlibdemo)
+  if (NOT WIN32)
+    target_link_libraries(${cur_project} ${Boost_LIBRARIES})
+    target_link_libraries(${cur_project} dl)
+    target_link_libraries(${cur_project} Threads::Threads)
+    if (APPLE)
+      find_library(app_kit AppKit)
+      find_library(foundation Foundation)
+      target_link_libraries(${cur_project}
+        crypto ssl ${app_kit} ${foundation})
+    else()
+      target_link_libraries(${cur_project} rt)
+    endif()
+  else(NOT WIN32)
+    target_link_libraries(${cur_project}
+      $<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:VC/static/ssleay32MTd>
+      $<$<OR:$<CONFIG:Debug>,$<CONFIG:DebugClassic>>:VC/static/libeay32MTd>)
+    target_link_libraries(${cur_project}
+      $<$<OR:$<CONFIG:Release>,$<CONFIG:ReleaseClassic>>:VC/static/ssleay32MT>
+      $<$<OR:$<CONFIG:Release>,$<CONFIG:ReleaseClassic>>:VC/static/libeay32MT>)
+    target_link_libraries(${cur_project}
+      legacy_stdio_definitions.lib Shlwapi kernel32 user32 gdi32 winspool comdlg32
+      advapi32 shell32 ole32 oleaut32 uuid odbc32 odbccp32)
+  endif (NOT WIN32)
+endforeach()
