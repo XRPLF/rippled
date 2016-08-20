@@ -56,7 +56,7 @@ private:
         typename clock_type::time_point start = clock_type::now();
 
         explicit
-        suite_results(std::string const& name_ = "")
+        suite_results(std::string name_ = "")
             : name(std::move(name_))
         {
         }
@@ -90,6 +90,7 @@ private:
     results results_;
     suite_results suite_results_;
     case_results case_results_;
+    bool prefixed_ = false;
 
 public:
     reporter(reporter const&) = delete;
@@ -227,6 +228,7 @@ reporter<_>::
 on_suite_begin(suite_info const& info)
 {
     suite_results_ = suite_results{info.full_name()};
+    prefixed_ = false;
 }
 
 template<class _>
@@ -242,10 +244,13 @@ reporter<_>::
 on_case_begin(std::string const& name)
 {
     case_results_ = case_results (name);
-    os_ <<
-        suite_results_.name <<
-        (case_results_.name.empty() ?
-            "" : (" " + case_results_.name)) << std::endl;
+    if(!prefixed_)
+    {
+        os_ << suite_results_.name <<
+            (case_results_.name.empty() ? "" : 
+                (" " + case_results_.name)) << std::endl;
+        prefixed_ = true;
+    }
 }
 
 template<class _>
@@ -281,6 +286,13 @@ void
 reporter<_>::
 on_log(std::string const& s)
 {
+    if(!prefixed_)
+    {
+        os_ << suite_results_.name <<
+            (case_results_.name.empty() ? "" :
+                (" " + case_results_.name)) << "\n";
+        prefixed_ = true;
+    }
     os_ << s;
     os_.flush();
 }
