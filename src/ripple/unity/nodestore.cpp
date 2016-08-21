@@ -34,9 +34,3 @@
 #include <ripple/nodestore/impl/ManagerImp.cpp>
 #include <ripple/nodestore/impl/NodeObject.cpp>
 
-#include <ripple/nodestore/tests/Backend.test.cpp>
-#include <ripple/nodestore/tests/Basics.test.cpp>
-#include <ripple/nodestore/tests/Database.test.cpp>
-#include <ripple/nodestore/tests/import_test.cpp>
-#include <ripple/nodestore/tests/Timing.test.cpp>
-#include <ripple/nodestore/tests/varint_test.cpp>
