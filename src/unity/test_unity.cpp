@@ -131,3 +131,4 @@
 #include <test/BasicNetwork_test.cpp>
 #include <test/WSClient_test.cpp>
 #include <test/Env_test.cpp>
+#include <test/define_print.cpp>
