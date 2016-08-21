@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/beast/hash/endian.h>
 #include <ripple/beast/hash/fnv1a.h>
 #include <ripple/beast/hash/siphash.h>
 #include <ripple/beast/hash/xxhasher.h>

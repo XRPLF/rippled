@@ -21,6 +21,7 @@
 #include <BeastConfig.h>
 #endif
 
+#include <ripple/beast/hash/impl/spookyv2.h>
 #include <ripple/beast/hash/endian.h>
 #include <ripple/beast/hash/tests/hash_metrics.h>
 #include <ripple/beast/hash/hash_append.h>

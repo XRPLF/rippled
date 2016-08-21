@@ -22,6 +22,8 @@
 #include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <boost/utility/base_from_member.hpp>
+#include <ripple/resource/impl/Consumer.cpp>
+
 
 namespace ripple {
 namespace Resource {
