@@ -923,8 +923,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/server', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
-    append_sources(result, *list_sources('src/test', '.cpp'))
-
+    
     if use_shp(toolchain):
         cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
     else:
@@ -932,7 +931,7 @@ def get_classic_sources(toolchain):
 
     append_sources(
         result,
-        *list_sources('src/ripple/nodestore', '.cpp'),
+        *(list_sources('src/ripple/nodestore', '.cpp') + list_sources('src/test', '.cpp')),
         CPPPATH=[
             'src/rocksdb2/include',
             'src/snappy/snappy',
@@ -969,8 +968,7 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/server.cpp',
-        'src/ripple/unity/test.cpp',
-        'src/unity/test_unity.cpp',
+        'src/ripple/unity/test.cpp'
     )
 
     if use_shp(toolchain):
@@ -981,6 +979,7 @@ def get_unity_sources(toolchain):
     append_sources(
         result,
         'src/ripple/unity/nodestore.cpp',
+		 'src/unity/test_unity.cpp',
         CPPPATH=[
             'src/rocksdb2/include',
             'src/snappy/snappy',
