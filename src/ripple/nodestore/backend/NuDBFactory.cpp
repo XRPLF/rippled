@@ -26,7 +26,6 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <ripple/beast/nudb.h>
-#include <ripple/beast/nudb/detail/varint.h>
 #include <ripple/beast/nudb/visit.h>
 #include <ripple/beast/hash/xxhasher.h>
 #include <boost/filesystem.hpp>

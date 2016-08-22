@@ -21,11 +21,11 @@
 #define RIPPLE_NODESTORE_CODEC_H_INCLUDED
 
 #include <ripple/basics/contract.h>
-#include <ripple/nodestore/NodeObject.h>
-#include <ripple/protocol/HashPrefix.h>
 #include <ripple/beast/nudb/common.h>
 #include <ripple/beast/nudb/detail/field.h>
-#include <ripple/beast/nudb/detail/varint.h>
+#include <ripple/nodestore/impl/varint.h>
+#include <ripple/nodestore/NodeObject.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <lz4/lib/lz4.h>
 #include <snappy.h>
 #include <cstddef>
