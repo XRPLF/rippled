@@ -39,4 +39,4 @@
 #include <ripple/nodestore/tests/Database.test.cpp>
 #include <ripple/nodestore/tests/import_test.cpp>
 #include <ripple/nodestore/tests/Timing.test.cpp>
-
+#include <ripple/nodestore/tests/varint_test.cpp>

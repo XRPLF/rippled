@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/nudb/detail/varint.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/nodestore/impl/varint.h>
 #include <array>
 #include <vector>
 
