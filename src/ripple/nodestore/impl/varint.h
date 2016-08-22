@@ -28,7 +28,7 @@ namespace beast {
 namespace nudb {
 namespace detail {
 
-// base128 varint format is from
+// This is a variant of the base128 varint format from
 // google protocol buffers:
 // https://developers.google.com/protocol-buffers/docs/encoding#varints
 
