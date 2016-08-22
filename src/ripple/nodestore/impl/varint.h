@@ -24,8 +24,8 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace beast {
-namespace nudb {
+namespace ripple {
+namespace NodeStore {
 namespace detail {
 
 // This is a variant of the base128 varint format from
@@ -127,7 +127,7 @@ write_varint (void* p0, std::size_t v)
 template <class T, std::enable_if_t<
     std::is_same<T, varint>::value>* = nullptr>
 void
-read (istream& is, std::size_t& u)
+read (beast::nudb::detail::istream& is, std::size_t& u)
 {
     auto p0 = is(1);
     auto p1 = p0;
@@ -141,14 +141,14 @@ read (istream& is, std::size_t& u)
 template <class T, std::enable_if_t<
     std::is_same<T, varint>::value>* = nullptr>
 void
-write (ostream& os, std::size_t t)
+write (beast::nudb::detail::ostream& os, std::size_t t)
 {
     write_varint(os.data(
         size_varint(t)), t);
 }
 
 } // detail
-} // nudb
-} // beast
+} // NodeStore
+} // ripple
 
 #endif

@@ -22,11 +22,11 @@
 #include <array>
 #include <vector>
 
-namespace beast {
-namespace nudb {
+namespace ripple {
+namespace NodeStore {
 namespace tests {
 
-class varint_test : public unit_test::suite
+class varint_test : public beast::unit_test::suite
 {
 public:
     void
@@ -67,8 +67,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(varint,nudb,beast);
+BEAST_DEFINE_TESTSUITE(varint,NodeStore,ripple);
 
 } // test
-} // nudb
-} // beast
+} // NodeStore
+} // ripple
