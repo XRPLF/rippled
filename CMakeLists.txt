@@ -612,11 +612,8 @@ set(soci_extra_includes
 if (WIN32 OR is_xcode OR unity)
   prepend(beast_unity_srcs
     src/ripple/beast/unity/
-    beast_clock_unity.cpp
-    beast_container_unity.cpp
     beast_insight_unity.cpp
     beast_net_unity.cpp
-    beast_nudb_unity.cpp
     beast_utility_unity.cpp)
 
   prepend(ripple_unity_srcs
@@ -625,7 +622,6 @@ if (WIN32 OR is_xcode OR unity)
     app_main.cpp
     app_misc.cpp
     app_paths.cpp
-    app_tests.cpp
     app_tx.cpp
     core.cpp
     basics.cpp
@@ -643,6 +639,12 @@ if (WIN32 OR is_xcode OR unity)
 
   list(APPEND src ${beast_unity_srcs} ${ripple_unity_srcs})
 
+  add_with_props(src/unity/test_unity.cpp
+    -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
+    -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
+    -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
+    ${rocks_db_system_header})
+	
   add_with_props(src/ripple/unity/nodestore.cpp
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
@@ -653,7 +655,8 @@ if (WIN32 OR is_xcode OR unity)
 
   set(unity_srcs ${beast_unity_srcs} ${ripple_unity_srcs}
     src/ripple/unity/nodestore.cpp
-    src/ripple/unity/soci_ripple.cpp)
+    src/ripple/unity/soci_ripple.cpp
+	src/unity/test_unity.cpp)
 
   set_property(
     SOURCE ${unity_srcs}
@@ -689,8 +692,17 @@ if (WIN32 OR is_xcode OR NOT unity)
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
     ${rocks_db_system_header})
-
+  
   list(APPEND non_unity_srcs "${nodestore_srcs}")
+  
+  file(GLOB_RECURSE test_srcs src/test/*.cpp)
+  add_with_props("${test_srcs}"
+    -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
+    -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
+    -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
+    ${rocks_db_system_header})
+  
+  list(APPEND non_unity_srcs "${test_srcs}")
 
   set_property(
     SOURCE ${non_unity_srcs}
