@@ -2385,9 +2385,6 @@
     <ClInclude Include="..\..\src\ripple\beast\nudb\detail\stream.h">
       <Filter>ripple\beast\nudb\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\varint.h">
-      <Filter>ripple\beast\nudb\detail</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\nudb\file.h">
       <Filter>ripple\beast\nudb</Filter>
     </ClInclude>
@@ -2413,9 +2410,6 @@
       <Filter>ripple\beast\nudb\test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\nudb\test\beast_nudb_store_test.cpp">
-      <Filter>ripple\beast\nudb\test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\beast\nudb\test\beast_nudb_varint_test.cpp">
       <Filter>ripple\beast\nudb\test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\nudb\test\beast_nudb_verify_test.cpp">
@@ -2961,6 +2955,9 @@
     <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\varint.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
@@ -2989,6 +2986,9 @@
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\nodestore\tests\Timing.test.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\varint_test.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">

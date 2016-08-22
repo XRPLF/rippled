@@ -20,5 +20,4 @@
 #include <ripple/beast/nudb/test/beast_nudb_callgrind_test.cpp>
 #include <ripple/beast/nudb/test/beast_nudb_recover_test.cpp>
 #include <ripple/beast/nudb/test/beast_nudb_store_test.cpp>
-#include <ripple/beast/nudb/test/beast_nudb_varint_test.cpp>
 #include <ripple/beast/nudb/test/beast_nudb_verify_test.cpp>
