@@ -83,8 +83,15 @@ uint64_t uintFromHex (std::string const& strSrc);
 
 std::pair<Blob, bool> strUnHex (std::string const& strSrc);
 
-bool parseUrl (std::string const& strUrl, std::string& strScheme,
-               std::string& strDomain, int& iPort, std::string& strPath);
+struct parsedURL
+{
+    std::string scheme;
+    std::string domain;
+    boost::optional<std::uint16_t> port;
+    std::string path;
+};
+
+bool parseUrl (parsedURL& pUrl, std::string const& strUrl);
 
 std::string trim_whitespace (std::string str);
 
