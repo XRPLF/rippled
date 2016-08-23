@@ -91,26 +91,27 @@ uint64_t uintFromHex (std::string const& strSrc)
 }
 
 // TODO Callers should be using beast::URL and beast::parse_URL instead.
-bool parseUrl (std::string const& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
+bool parseUrl (parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
     static boost::regex reUrl ("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^:/]+)(?::(\\d+))?(/.*)?\\s*?\\'");
-    boost::smatch   smMatch;
+    boost::smatch smMatch;
 
-    bool    bMatch  = boost::regex_match (strUrl, smMatch, reUrl);          // Match status code.
+    bool bMatch = boost::regex_match (strUrl, smMatch, reUrl); // Match status code.
 
     if (bMatch)
     {
         std::string strPort;
 
-        strScheme   = smMatch[1];
-        strDomain   = smMatch[2];
-        strPort     = smMatch[3];
-        strPath     = smMatch[4];
-
-        boost::algorithm::to_lower (strScheme);
-
-        iPort   = strPort.empty () ? -1 : beast::lexicalCast <int> (strPort);
+        pUrl.scheme = smMatch[1];
+        boost::algorithm::to_lower (pUrl.scheme);
+        pUrl.domain = smMatch[2];
+        if (smMatch[3].length ())
+        {
+            pUrl.port = beast::lexicalCast <std::uint16_t> (
+                std::string (smMatch[3]));
+        }
+        pUrl.path = smMatch[4];
     }
 
     return bMatch;
