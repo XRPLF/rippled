@@ -22,6 +22,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/app/ledger/LedgerMaster.h>
 
 namespace ripple {
 
@@ -261,6 +262,7 @@ public:
         using namespace test::jtx;
         Env env {*this};
         Account const gw {"gateway"};
+        env.app().getLedgerMaster().tune(0, 3600);
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
@@ -274,7 +276,6 @@ public:
         }
 
         auto result = env.rpc ( "ledger_request", "1" ) [jss::result];
-        log << result; //temporary
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index]     == "1");
         BEAST_EXPECT(result[jss::ledger][jss::total_coins]      == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed]           == true);
