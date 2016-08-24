@@ -156,6 +156,20 @@ if (NOT DEFINED unity)
   set(nonunity false)
 endif()
 
+if (EXISTS "rules.ninja")
+  set(generator "-GNinja")
+endif()
+
+add_custom_target(gcc.release COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=gcc.release . WORKING_DIRECTORY .)
+add_custom_target(gcc.release.nounity COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=gcc.release.nounity . WORKING_DIRECTORY .)
+add_custom_target(gcc.debug COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=gcc.debug . WORKING_DIRECTORY .)
+add_custom_target(gcc.debug.nonunity COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=gcc.debug.nounity . WORKING_DIRECTORY .)
+add_custom_target(clang.release COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=clang.release . WORKING_DIRECTORY .)
+add_custom_target(clang.release.nounity COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=clang.release.nounity . WORKING_DIRECTORY .)
+add_custom_target(clang.debug COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=clang.debug . WORKING_DIRECTORY .)
+add_custom_target(clang.debug.nonunity COMMAND ${CMAKE_COMMAND} ${generator} -Dtarget=clang.debug.nounity . WORKING_DIRECTORY .)
+
+
 set(san "" CACHE STRING "On gcc & clang, add sanitizer instrumentation")
 set_property(CACHE san PROPERTY STRINGS ";address;thread")
 set(assert false CACHE BOOL "Enables asserts, even in release builds")
