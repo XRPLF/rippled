@@ -113,7 +113,7 @@ mask_inplace_general(
 {
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
-    auto n = buffer_size(b);
+    auto const n = buffer_size(b);
     auto p = buffer_cast<std::uint8_t*>(b);
     for(auto i = n / sizeof(key); i; --i)
     {
@@ -122,13 +122,14 @@ mask_inplace_general(
         *p ^= (key >>16); ++p;
         *p ^= (key >>24); ++p;
     }
-    n %= sizeof(key);
-    switch(n)
+    auto const m =
+        static_cast<std::uint8_t>(n % sizeof(key));
+    switch(m)
     {
     case 3: p[2] ^= (key >>16);
     case 2: p[1] ^= (key >> 8);
     case 1: p[0] ^=  key;
-        key = ror(key, n*8);
+        key = ror(key, m*8);
     default:
         break;
     }
@@ -144,7 +145,7 @@ mask_inplace_general(
 {
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
-    auto n = buffer_size(b);
+    auto const n = buffer_size(b);
     auto p = buffer_cast<std::uint8_t*>(b);
     for(auto i = n / sizeof(key); i; --i)
     {
@@ -157,8 +158,9 @@ mask_inplace_general(
         *p ^= (key >>48); ++p;
         *p ^= (key >>56); ++p;
     }
-    n %= sizeof(key);
-    switch(n)
+    auto const m =
+        static_cast<std::uint8_t>(n % sizeof(key));
+    switch(m)
     {
     case 7: p[6] ^= (key >>16);
     case 6: p[5] ^= (key >> 8);
@@ -167,7 +169,7 @@ mask_inplace_general(
     case 3: p[2] ^= (key >>16);
     case 2: p[1] ^= (key >> 8);
     case 1: p[0] ^=  key;
-        key = ror(key, n*8);
+        key = ror(key, m*8);
     default:
         break;
     }

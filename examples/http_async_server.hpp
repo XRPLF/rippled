@@ -15,6 +15,7 @@
 #include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
 #include <boost/asio.hpp>
+#include <cstddef>
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -44,7 +45,7 @@ class http_async_server
 
 public:
     http_async_server(endpoint_type const& ep,
-            int threads, std::string const& root)
+            std::size_t threads, std::string const& root)
         : acceptor_(ios_)
         , sock_(ios_)
         , root_(root)
@@ -57,7 +58,7 @@ public:
             std::bind(&http_async_server::on_accept, this,
                 beast::asio::placeholders::error));
         thread_.reserve(threads);
-        for(int i = 0; i < threads; ++i)
+        for(std::size_t i = 0; i < threads; ++i)
             thread_.emplace_back(
                 [&] { ios_.run(); });
     }

@@ -124,7 +124,7 @@ template <class = void>
 std::string
 base64_decode(std::string const& data)
 {
-    int in_len = data.size();
+    auto in_len = data.size();
     unsigned char c3[3], c4[4];
     int i = 0;
     int j = 0;
