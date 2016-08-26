@@ -16,8 +16,10 @@ namespace websocket {
 /// Error codes returned from @ref stream operations.
 enum class error
 {
+    success = 0,
+
     /// Both sides performed a WebSocket close
-    closed = 1,
+    closed,
 
     /// WebSocket connection failed, protocol violation
     failed,

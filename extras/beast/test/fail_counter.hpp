@@ -15,7 +15,9 @@ namespace test {
 
 enum error
 {
-    fail_error = 1
+    success = 0,
+
+    fail_error
 };
 
 namespace detail {
