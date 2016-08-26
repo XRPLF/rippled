@@ -73,10 +73,6 @@ DerivedData
 # Intel Parallel Studio 2013 XE
 My Amplifier XE Results - RippleD
 
-# KeyvaDB files
-*.key
-*.val
-
 # Compiler intermediate output
 /out.txt
 
@@ -87,3 +83,9 @@ rippled-build.log
 gmon.out
 
 Builds/VisualStudio2015/*.db
+Builds/VisualStudio2015/*.user
+Builds/VisualStudio2015/*.opendb
+Builds/VisualStudio2015/*.sdf
+
+# MSVC
+*.pdb
