@@ -56,8 +56,8 @@ boostbook doc
         <xsl:param>chapter.autolabel=0
         <xsl:param>boost.image.src=images/beast.png
         <xsl:param>boost.image.alt="Beast Logo"
-        <xsl:param>boost.image.w=1007
-        <xsl:param>boost.image.h=107
+        <xsl:param>boost.image.w=2400
+        <xsl:param>boost.image.h=80
         <xsl:param>boost.root=$(broot)
         <xsl:param>chapter.autolabel=0
         <xsl:param>chunk.first.sections=1               # Chunk the first top-level section?

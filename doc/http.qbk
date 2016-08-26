@@ -222,7 +222,7 @@ When the implementation reads messages from a socket, it can read bytes lying
 after the end of the message if they are present (the alternative is to read
 a single byte at a time which is unsuitable for performance reasons). To
 store and re-use these extra bytes on subsequent messages, the read interface
-requires an additional paramter: a [link beast.types.DynamicBuffer [*`DynamicBuffer`]]
+requires an additional parameter: a [link beast.types.DynamicBuffer [*`DynamicBuffer`]]
 object. This example reads a message from the socket, with the extra bytes
 stored in the streambuf parameter for use in a subsequent call to read:
 ```
