@@ -93,9 +93,12 @@ Json::Value doAccountLines (RPC::Context& context)
     std::string strIdent (params[jss::account].asString ());
     AccountID accountID;
 
-    // Intentional assignment in if.  Extra parentheses silence warning.
-    if ((result = RPC::accountFromString (accountID, strIdent)))
+    if (auto jv = RPC::accountFromString (accountID, strIdent))
+    {
+        for (auto it = jv.begin (); it != jv.end (); ++it)
+            result[it.memberName ()] = *it;
         return result;
+    }
 
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
@@ -108,9 +111,12 @@ Json::Value doAccountLines (RPC::Context& context)
     AccountID raPeerAccount;
     if (hasPeer)
     {
-        // Intentional assignment in if.  Extra parentheses silence warning.
-        if ((result = RPC::accountFromString (raPeerAccount, strPeer)))
+        if (auto jv = RPC::accountFromString (raPeerAccount, strPeer))
+        {
+            for (auto it = jv.begin (); it != jv.end (); ++it)
+                result[it.memberName ()] = *it;
             return result;
+        }
     }
 
     unsigned int limit;
