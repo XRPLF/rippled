@@ -6,7 +6,7 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 mkdir -p ../bin/doc/xml
-doxygen beast.dox
+doxygen source.dox
 cd ../bin/doc/xml
 xsltproc combine.xslt index.xml > all.xml
 cd ../../../doc

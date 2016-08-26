@@ -192,9 +192,9 @@ start. Other design goals:
             [websocketpp]
         ][
             [```
-                template<class Streambuf>
+                template<class DynamicBuffer>
                 void
-                read(opcode& op, Streambuf& streambuf)
+                read(opcode& op, DynamicBuffer& dynabuf)
             ```]
             [
                 /<not available>/
@@ -339,9 +339,9 @@ start. Other design goals:
                 [@https://github.com/zaphoyd/websocketpp/blob/378437aecdcb1dfe62096ffd5d944bf1f640ccc3/websocketpp/connection.hpp#L473 also]]
         ][
             [```
-                template<class Streambuf, class ReadHandler>
+                template<class DynamicBuffer, class ReadHandler>
                 typename async_completion<ReadHandler, void(error_code)>::result_type
-                async_read(opcode& op, Streambuf& streambuf, ReadHandler&& handler);
+                async_read(opcode& op, DynamicBuffer& dynabuf, ReadHandler&& handler);
             ```]
             [```
                 typedef lib::function<void(connection_hdl,message_ptr)> message_handler;
@@ -365,7 +365,7 @@ start. Other design goals:
         ][
             [```
                 beast::async_completion<ReadHandler, void(error_code)> completion(handler);
-                read_op<Streambuf, decltype(completion.handler)>{
+                read_op<DynamicBuffer, decltype(completion.handler)>{
                     completion.handler, *this, op, streambuf};
                 return completion.result.get();
             ```]

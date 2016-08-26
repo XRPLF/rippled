@@ -92,19 +92,20 @@ and its customization points in more depth, for advanced applications.
 [heading Declarations]
 
 To do anything, a message must be declared. The message class template
-requires at mininum, a value indicating whether the message is a request
+requires at minimum, a value indicating whether the message is a request
 (versus a response), and a `Body` type. The choice of `Body` determines the
 kind of container used to represent the message body. Here we will
-declare a request that has a `std::string` for the body container:
+declare a HTTP/1 request that has a `std::string` for the body container:
 ```
-    http::message<true, http::string_body> req;
+    http::message_v1<true, http::string_body> req;
 ```
 
 Two type aliases are provided for notational convenience when declaring
-messages. These two statements declare a request and a response respectively:
+HTTP/1 messages. These two statements declare a request and a response
+respectively:
 ```
-    http::request<http::string_body> req;
-    http::response<http::string_body> resp;
+    http::request_v1<http::string_body> req;
+    http::response_v1<http::string_body> resp;
 ```
 
 [heading Members]
@@ -113,28 +114,17 @@ Message objects are default constructible, with public access to data members.
 Request and response objects have some common members, and some members unique
 to the message type. These statements set all the members in each message:
 ```
-    http::request<http::string_body> req;
-    req.method = http::method_t::http_get;
+    http::request_v1<http::string_body> req;
+    req.method = "GET";
     req.url = "/index.html";
     req.version = 11;           // HTTP/1.1
     req.headers.insert("User-Agent", "hello_world");
     req.body = "";
 
-    http::response<http::string_body> resp;
+    http::response_v1<http::string_body> resp;
     resp.status = 404;
     resp.reason = "Not Found";
     resp.version = 10;          // HTTP/1.0
-    resp.headers.insert("Server", "Beast.HTTP");
-    resp.body = "The requested resource was not found.";
-```
-
-The following statements achieve the same effects as the statements above:
-```
-    http::request<http::string_body> req({http::method_t::http_get, "/index.html", 11});
-    req.headers.insert("User-Agent", "hello_world");
-    req.body = "";
-
-    http::response<http::string_body> resp({404, "Not Found", 10});
     resp.headers.insert("Server", "Beast.HTTP");
     resp.body = "The requested resource was not found.";
 ```
@@ -146,7 +136,7 @@ pairs in the message. These statements change the values of the headers
 in the message passed:
 ```
     template<class Body>
-    void set_fields(http::request<Body>& req)
+    void set_fields(http::request_v1<Body>& req)
     {
         if(! req.exists("User-Agent"))
             req.insert("User-Agent", "myWebClient");
@@ -168,7 +158,10 @@ following types, provided by the library, are suitable choices for the
 * [link beast.ref.http__empty_body [*`empty_body`:]] An empty message body.
 Used in GET requests where there is no message body. Example:
 ```
-    http::request<http::empty_body> req({http::method_t::http_get, "/index.html", 11});
+    http::request_v1<http::empty_body> req;
+    req.version = 11;
+    req.method = "GET";
+    req.url = "/index.html";
 ```
 
 * [link beast.ref.http__string_body [*`string_body`:]] A body with a
@@ -177,7 +170,7 @@ or response with simple text in the message body (such as an error message).
 Has the same insertion complexity of `std::string`. This is the type of body
 used in the examples:
 ```
-    http::response<http::string_body> resp;
+    http::response_v1<http::string_body> resp;
     static_assert(std::is_same<decltype(resp.body), std::string>::value);
     resp.body = "Here is the data you requested";
 ```
@@ -197,7 +190,10 @@ functions:
 ```
     void send_request(boost::asio::ip::tcp::socket& sock)
     {
-        http::request<http::empty_body> req({http::method_t::http_get, "/index.html", 11});
+        http::request<http::empty_body> req;
+        req.version = 11;
+        req.method = "GET";
+        req.url = "/index.html";
         ...
         http::write(sock, req); // Throws exception on error
         ...
@@ -213,7 +209,7 @@ An asynchronous interface is available:
 ```
     void handle_write(boost::system::error_code);
     ...
-    http::request<http::empty_body> req;
+    http::request_v1<http::empty_body> req;
     ...
     http::async_write(sock, req, std::bind(&handle_write, std::placeholders::_1));
 ```
@@ -228,7 +224,7 @@ stored in the streambuf parameter for use in a subsequent call to read:
 ```
     boost::asio::streambuf sb;
     ...
-    http::response<http::string_body> resp;
+    http::response_v1<http::string_body> resp;
     http::read(sock, sb, resp); // Throws exception on error
     ...
     // Alternatively
@@ -245,7 +241,7 @@ called:
     void handle_read(boost::system::error_code);
     ...
     boost::asio::streambuf sb;
-    http::response<http::string_body> resp;
+    http::response_v1<http::string_body> resp;
     ...
     http::async_read(sock, resp, std::bind(&handle_read, std::placeholders::_1));
 ```
@@ -257,7 +253,7 @@ An alternative to using a `boost::asio::streambuf` is to use a
     void handle_read(boost::system::error_code);
     ...
     beast::streambuf sb;
-    http::response<http::string_body> resp;
+    http::response_v1<http::string_body> resp;
     http::read(sock, sb, resp);
 ```
 

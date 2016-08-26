@@ -15,7 +15,7 @@ using boostbook ;
 using quickbook ;
 using doxygen ;
 
-xml beast_boostbook : beast.qbk ;
+xml beast_boostbook : master.qbk ;
 
 path-constant out : . ;
 
