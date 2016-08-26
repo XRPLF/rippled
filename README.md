@@ -20,28 +20,128 @@ and hear the talk or ask questions about Beast feel free to approach
 me in person or send me an email at vinnie.falco@gmail.com to schedule
 some time.
 
-Beast is used in [rippled](https://github.com/ripple/rippled), an
-open source server application that implements a decentralized
-cryptocurrency system.
-
 About CppCon 2016:
 http://cppcon.org
 
 ---
 
-Beast provides implementations of the HTTP and WebSocket protocols
-built on top of Boost.Asio and other parts of boost.
+## Contents
 
-Requirements:
+- [Introduction](#introduction)
+- [Description](#description)
+- [Requirements](#requirements)
+- [Building](#building)
+- [Usage](#usage)
+- [Licence](#licence)
+- [Contact](#contact)
 
-* Boost
+## Introduction
+
+Beast is a header-only, cross-platform C++ library built on Boost.Asio and
+Boost, containing two modules implementing widely used network protocols.
+Beast.HTTP offers a universal model for describing, sending, and receiving
+HTTP messages while Beast.WebSocket provides a complete implementation of
+the WebSocket protocol. Their design achieves these goals:
+
+* **Symmetry.** Interfaces are role-agnostic; the same interfaces can be
+used to build clients, servers, or both.
+
+* **Ease of Use.** HTTP messages are modeled using simple, readily
+accessible objects. Functions and classes used to send and receive HTTP
+or WebSocket messages are designed to resemble Boost.Asio as closely as
+possible. Users familiar with Boost.Asio will be immediately comfortable
+using this library.
+
+* **Flexibility.** Interfaces do not mandate specific implementation
+strategies; important decisions such as buffer or thread management are
+left to users of the library.
+
+* **Performance.** The implementation performs competitively, making it a
+realistic choice for building high performance network servers.
+
+* **Scalability.** Development of network applications that scale to thousands
+of concurrent connections is possible with the implementation.
+
+* **Basis for further abstraction.** The interfaces facilitate the
+development of other libraries that provide higher levels of abstraction.
+
+Beast is used in [rippled](https://github.com/ripple/rippled), an
+open source server application that implements a decentralized
+cryptocurrency system.
+
+## Description
+
+This software is currently in beta: interfaces may change.
+For recent changes see the [CHANGELOG](CHANGELOG).
+The library has been submitted to the
+[Boost Library Incubator](http://rrsd.com/blincubator.com/bi_library/beast-2/?gform_post_id=1579)
+
+* [Project Site](http://vinniefalco.github.io/)
+* [Repository](https://github.com/vinniefalco/Beast)
+* [Project Documentation](http://vinniefalco.github.io/beast/)
+* [Autobahn.testsuite results](http://vinniefalco.github.io/autobahn/index.html)
+
+## Requirements
+
+* Boost 1.58 or higher
 * C++11 or greater
 * OpenSSL (optional)
 
-This software is currently in beta: interfaces are subject to change. For
-recent changes see [CHANGELOG](CHANGELOG).
-The library has been submitted to the
-[Boost Library Incubator](http://rrsd.com/blincubator.com/bi_library/beast-2/?gform_post_id=1579)
+## Building
+
+Beast is header-only so there are no libraries to build or link with.
+To use Beast in your project, simply copy the Beast sources to your
+project's source tree (alternatively, bring Beast into your Git repository
+using the `git subtree` or `git submodule` commands). Then, edit your
+ build scripts to add the `include/` directory to the list of paths checked
+ by the C++ compiler when searching for includes. Beast `#include` lines
+ will look like this:
+```
+#include <beast/http.hpp>
+#include <beast/websocket.hpp>
+```
+
+For the examples and tests, Beast provides build scripts for Boost.Build (bjam)
+and CMake. Developers using Microsoft Visual Studio can generate Visual Studio
+project files by executing these commands from the root of the repository:
+
+
+```
+cd bin
+cmake ..                                    # for 32-bit builds
+cd ../bin64
+cmake -G"Visual Studio 14 2015 Win64" ..    # for 64-bit builds
+```
+
+To build with Boost.Build, it is necessary to have the bjam executable
+in your path. And bjam needs to know how to find the Boost sources. The
+easiest way to do this is make sure that the version of bjam in your path
+is the one at the root of the Boost source tree, which is built when
+running `bootstrap.sh` (or `bootstrap.bat` on Windows).
+
+Once bjam is in your path, simply run bjam in the root of the Beast
+repository to automatically build the required Boost libraries if they
+are not already built, build the examples, then build and run the unit
+tests.
+
+The files in the repository are laid out thusly:
+
+```
+./
+    bin/            Holds executables and project files
+    bin64/          Holds 64-bit Windows executables and project files
+    include/        Add this to your compiler includes
+        beast/
+    extras/         Additional APIs, may change
+    examples/       Self contained example programs
+    test/           Unit tests and benchmarks
+```
+
+
+## Usage
+
+These examples are complete, self-contained programs that you can build
+and run yourself (they are in the `examples` directory).
 
 Example WebSocket program:
 ```C++
@@ -110,12 +210,13 @@ int main()
 }
 ```
 
-Links:
+## License
 
-* [Home](http://vinniefalco.github.io/)
-* [Repository](https://github.com/vinniefalco/Beast)
-* [Documentation](http://vinniefalco.github.io/beast/)
-* [Autobahn.testsuite results](http://vinniefalco.github.io/autobahn/index.html)
+Distributed under the Boost Software License, Version 1.0.
+(See accompanying file [LICENSE_1_0.txt](LICENSE_1_0.txt) or copy at
+http://www.boost.org/LICENSE_1_0.txt)
+
+## Contact
 
 Please report issues or questions here:
 https://github.com/vinniefalco/Beast/issues

@@ -39,11 +39,11 @@
 
 [section:intro Introduction]
 
-Beast is a cross-platform C++ library built on Boost.Asio and Boost, containing
-two modules implementing widely used network protocols. Beast.HTTP offers a
-universal model for describing, sending, and receiving HTTP messages while
-Beast.WebSocket provides a complete implementation of the WebSocket protocol.
-Their design achieves these goals:
+Beast is a header-only, cross-platform C++ library built on Boost.Asio and
+Boost, containing two modules implementing widely used network protocols.
+Beast.HTTP offers a universal model for describing, sending, and receiving
+HTTP messages while Beast.WebSocket provides a complete implementation of
+the WebSocket protocol. Their design achieves these goals:
 
 * [*Symmetry.] Interfaces are role-agnostic; the same interfaces can be
 used to build clients, servers, or both.
