@@ -7,8 +7,8 @@ GroupSources(test/websocket "/")
 add_executable (websocket-tests
     ${BEAST_INCLUDES}
     ../../extras/beast/unit_test/main.cpp
-    websocket_async_echo_peer.hpp
-    websocket_sync_echo_peer.hpp
+    websocket_async_echo_server.hpp
+    websocket_sync_echo_server.hpp
     error.cpp
     option.cpp
     rfc6455.cpp
@@ -26,8 +26,8 @@ endif()
 
 add_executable (websocket-echo
     ${BEAST_INCLUDES}
-    websocket_async_echo_peer.hpp
-    websocket_sync_echo_peer.hpp
+    websocket_async_echo_server.hpp
+    websocket_sync_echo_server.hpp
     websocket_echo.cpp
 )
 

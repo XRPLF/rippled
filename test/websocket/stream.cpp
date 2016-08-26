@@ -8,8 +8,8 @@
 // Test that header file is self-contained.
 #include <beast/websocket/stream.hpp>
 
-#include "websocket_async_echo_peer.hpp"
-#include "websocket_sync_echo_peer.hpp"
+#include "websocket_async_echo_server.hpp"
+#include "websocket_sync_echo_server.hpp"
 
 #include <beast/core/streambuf.hpp>
 #include <beast/core/to_string.hpp>
@@ -1389,7 +1389,7 @@ public:
             testBadHandshakes();
             testBadResponses();
             {
-                sync_echo_peer server(true, any);
+                sync_echo_server server(true, any);
                 auto const ep = server.local_endpoint();
             
                 //testInvokable1(ep);
@@ -1403,7 +1403,7 @@ public:
                 yield_to_mf(ep, &stream_test::testAsyncClient);
             }
             {
-                async_echo_peer server(true, any, 4);
+                async_echo_server server(true, any, 4);
                 auto const ep = server.local_endpoint();
                 testSyncClient(ep);
                 testAsyncWriteFrame(ep);

@@ -21,7 +21,7 @@ namespace websocket {
 
 // Synchronous WebSocket echo client/server
 //
-class sync_echo_peer
+class sync_echo_server
 {
 public:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -36,7 +36,7 @@ private:
     std::thread thread_;
 
 public:
-    sync_echo_peer(bool server, endpoint_type ep)
+    sync_echo_server(bool server, endpoint_type ep)
         : sock_(ios_)
         , acceptor_(ios_)
     {
@@ -51,12 +51,12 @@ public:
             boost::asio::socket_base::max_connections, ec);
         maybe_throw(ec, "listen");
         acceptor_.async_accept(sock_,
-            std::bind(&sync_echo_peer::on_accept, this,
+            std::bind(&sync_echo_server::on_accept, this,
                 beast::asio::placeholders::error));
         thread_ = std::thread{[&]{ ios_.run(); }};
     }
 
-    ~sync_echo_peer()
+    ~sync_echo_server()
     {
         error_code ec;
         ios_.dispatch(
@@ -100,13 +100,13 @@ private:
     struct lambda
     {
         int id;
-        sync_echo_peer& self;
+        sync_echo_server& self;
         boost::asio::io_service::work work;
         // Must be destroyed before work otherwise the
         // io_service could be destroyed before the socket.
         socket_type sock;
 
-        lambda(int id_, sync_echo_peer& self_,
+        lambda(int id_, sync_echo_server& self_,
                 socket_type&& sock_)
             : id(id_)
             , self(self_)
@@ -130,7 +130,7 @@ private:
         static int id_ = 0;
         std::thread{lambda{++id_, *this, std::move(sock_)}}.detach();
         acceptor_.async_accept(sock_,
-            std::bind(&sync_echo_peer::on_accept, this,
+            std::bind(&sync_echo_server::on_accept, this,
                 beast::asio::placeholders::error));
     }
 

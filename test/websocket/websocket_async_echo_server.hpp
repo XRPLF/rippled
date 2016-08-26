@@ -22,7 +22,7 @@ namespace websocket {
 
 // Asynchronous WebSocket echo client/server
 //
-class async_echo_peer
+class async_echo_server
 {
 public:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -37,7 +37,7 @@ private:
     std::vector<std::thread> thread_;
 
 public:
-    async_echo_peer(bool server,
+    async_echo_server(bool server,
             endpoint_type const& ep, std::size_t threads)
         : sock_(ios_)
         , acceptor_(ios_)
@@ -55,7 +55,7 @@ public:
                 boost::asio::socket_base::max_connections, ec);
             maybe_throw(ec, "listen");
             acceptor_.async_accept(sock_,
-                std::bind(&async_echo_peer::on_accept, this,
+                std::bind(&async_echo_server::on_accept, this,
                     beast::asio::placeholders::error));
         }
         else
@@ -68,7 +68,7 @@ public:
                 [&]{ ios_.run(); });
     }
 
-    ~async_echo_peer()
+    ~async_echo_server()
     {
         error_code ec;
         ios_.dispatch(
@@ -325,7 +325,7 @@ private:
         maybe_throw(ec, "accept");
         socket_type sock(std::move(sock_));
         acceptor_.async_accept(sock_,
-            std::bind(&async_echo_peer::on_accept, this,
+            std::bind(&async_echo_server::on_accept, this,
                 beast::asio::placeholders::error));
         Peer{false, std::move(sock)};
     }
