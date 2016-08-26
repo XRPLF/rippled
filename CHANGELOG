@@ -1,3 +1,15 @@
+1.0.0-b11
+
+* Set URI in generated WebSocket Upgrade requests
+* Rename echo server class and file names
+* Rename to DynamicBuffer in some code and documentation
+* Fix integer warnings in Windows builds
+* Add 32 and 64 bit Windows build support
+* Update README for build instructions and more
+* Add repository and documention banners
+
+--------------------------------------------------------------------------------
+
 1.0.0-b10
 
 * Fix compilation warnings
