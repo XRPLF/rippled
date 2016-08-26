@@ -91,7 +91,7 @@ public:
         return op->d_->cont;
     }
 
-    template <class Function>
+    template<class Function>
     friend
     void asio_handler_invoke(Function&& f, parse_op* op)
     {
@@ -277,7 +277,7 @@ public:
         return op->d_->cont;
     }
 
-    template <class Function>
+    template<class Function>
     friend
     void asio_handler_invoke(Function&& f, read_op* op)
     {

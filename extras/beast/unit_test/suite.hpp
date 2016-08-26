@@ -127,7 +127,7 @@ private:
         scoped_testcase
         operator()(abort_t abort);
 
-        template <class T>
+        template<class T>
         scoped_testcase
         operator<<(T const& t);
     };
@@ -187,11 +187,11 @@ public:
 
     /** Expect an exception from f() */
     /** @{ */
-    template <class F, class String>
+    template<class F, class String>
     bool
     except (F&& f, String const& reason);
 
-    template <class F>
+    template<class F>
     bool
     except (F&& f)
     {
@@ -201,11 +201,11 @@ public:
 
     /** Expect an exception of the given type from f() */
     /** @{ */
-    template <class E, class F, class String>
+    template<class E, class F, class String>
     bool
     except (F&& f, String const& reason);
 
-    template <class E, class F>
+    template<class E, class F>
     bool
     except (F&& f)
     {
@@ -215,11 +215,11 @@ public:
 
     /** Fail if f() throws */
     /** @{ */
-    template <class F, class String>
+    template<class F, class String>
     bool
     unexcept (F&& f, String const& reason);
 
-    template <class F>
+    template<class F>
     bool
     unexcept (F&& f)
     {
@@ -236,12 +236,12 @@ public:
 
     // DEPRECATED
     // @return `true` if the test condition indicates success (a false value)
-    template <class Condition, class String>
+    template<class Condition, class String>
     bool
     unexpected (Condition shouldBeFalse,
         String const& reason);
 
-    template <class Condition>
+    template<class Condition>
     bool
     unexpected (Condition shouldBeFalse)
     {
@@ -249,12 +249,12 @@ public:
     }
 
     /** Record a successful test condition. */
-    template <class = void>
+    template<class = void>
     void
     pass();
 
     /** Record a failure. */
-    template <class = void>
+    template<class = void>
     void
     fail (std::string const& reason = "");
 
@@ -277,7 +277,7 @@ private:
     void
     propagate_abort();
 
-    template <class = void>
+    template<class = void>
     void
     run (runner& r);
 };
@@ -375,7 +375,7 @@ suite::operator()(runner& r)
     }
 }
 
-template <class Condition, class String>
+template<class Condition, class String>
 inline
 bool
 suite::expect(Condition const& shouldBeTrue,
@@ -390,7 +390,7 @@ suite::expect(Condition const& shouldBeTrue,
     return false;
 }
 
-template <class F, class String>
+template<class F, class String>
 bool
 suite::except (F&& f, String const& reason)
 {
@@ -407,7 +407,7 @@ suite::except (F&& f, String const& reason)
     return true;
 }
 
-template <class E, class F, class String>
+template<class E, class F, class String>
 bool
 suite::except (F&& f, String const& reason)
 {
@@ -424,7 +424,7 @@ suite::except (F&& f, String const& reason)
     return true;
 }
 
-template <class F, class String>
+template<class F, class String>
 bool
 suite::unexcept (F&& f, String const& reason)
 {
@@ -441,7 +441,7 @@ suite::unexcept (F&& f, String const& reason)
     return false;
 }
 
-template <class Condition, class String>
+template<class Condition, class String>
 inline
 bool
 suite::unexpected (Condition shouldBeFalse,
@@ -449,14 +449,14 @@ suite::unexpected (Condition shouldBeFalse,
 {
     bool const b =
         static_cast<bool>(shouldBeFalse);
-    if (! b)
+    if(! b)
         pass();
     else
         fail (reason);
     return ! b;
 }
 
-template <class>
+template<class>
 void
 suite::pass()
 {
@@ -464,13 +464,13 @@ suite::pass()
     runner_->pass();
 }
 
-template <class>
+template<class>
 void
 suite::fail (std::string const& reason)
 {
     propagate_abort();
     runner_->fail (reason);
-    if (abort_)
+    if(abort_)
     {
         aborted_ = true;
         throw abort_exception();
@@ -481,11 +481,11 @@ inline
 void
 suite::propagate_abort()
 {
-    if (abort_ && aborted_)
+    if(abort_ && aborted_)
         throw abort_exception();
 }
 
-template <class>
+template<class>
 void
 suite::run (runner& r)
 {

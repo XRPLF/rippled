@@ -117,7 +117,7 @@ public:
         return op->d_->cont;
     }
 
-    template <class Function>
+    template<class Function>
     friend
     void asio_handler_invoke(Function&& f, read_frame_op* op)
     {
@@ -252,7 +252,7 @@ operator()(error_code ec,std::size_t bytes_transferred, bool again)
                     break;
                 }
                 d.state = do_read_fh + 2;
-                if (n == 0)
+                if(n == 0)
                 {
                     bytes_transferred = 0;
                     break;

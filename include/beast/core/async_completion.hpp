@@ -47,7 +47,7 @@ namespace beast {
     @note See <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3896.pdf">
         Library Foundations For Asynchronous Operations</a>
 */
-template <class CompletionHandler, class Signature>
+template<class CompletionHandler, class Signature>
 struct async_completion
 {
     /** The type of the final handler called by the asynchronous initiation function.

@@ -33,7 +33,7 @@ static
 std::string
 prefix(suite_info const& s)
 {
-    if (s.manual())
+    if(s.manual())
         return "|M| ";
     return "    ";
 }
@@ -121,7 +121,7 @@ int main(int ac, char const* av[])
                 match_auto(suites));
         else
             failed = r.run_each(global_suites());
-        if (failed)
+        if(failed)
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }

@@ -17,7 +17,7 @@ class empty_base_optimization_test
     : public beast::unit_test::suite
 {
 public:
-    template <class T>
+    template<class T>
     class test1
         : private empty_base_optimization<T>
     {
@@ -32,7 +32,7 @@ public:
         T const& member() const {return Base::member();}
     };
 
-    template <class T>
+    template<class T>
     class test2
     {
         void* m_p;
@@ -53,34 +53,34 @@ public:
 
     static
     bool
-    test_one ()
+    test_one()
     {
         test1<int> t1(1);
         test2<int> t2(2);
         static_assert(sizeof(t1) == sizeof(t2), "don't optimize for int");
-        if (t1.member() != 1)
+        if(t1.member() != 1)
             return false;
-        if (t2.member() != 2)
+        if(t2.member() != 2)
             return false;
         return true;
     }
 
     static
     bool
-    test_two ()
+    test_two()
     {
         test1<Empty> t1((Empty()));
         test2<Empty> t2((Empty()));
         static_assert(sizeof(t1) < sizeof(t2), "do optimize for Empty");
-        if (t1.member() != true)
+        if(t1.member() != true)
             return false;
-        if (t2.member() != true)
+        if(t2.member() != true)
             return false;
         return true;
     }
 
     void
-    run ()
+    run()
     {
         BEAST_EXPECT(test_one());
         BEAST_EXPECT(test_two());

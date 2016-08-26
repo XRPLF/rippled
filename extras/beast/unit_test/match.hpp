@@ -45,27 +45,27 @@ private:
     std::string library_;
 
 public:
-    template <class = void>
+    template<class = void>
     explicit
     selector (mode_t mode, std::string const& pattern = "");
 
-    template <class = void>
+    template<class = void>
     bool
     operator() (suite_info const& s);
 };
 
 //------------------------------------------------------------------------------
 
-template <class>
+template<class>
 selector::selector (mode_t mode, std::string const& pattern)
     : mode_ (mode)
     , pat_ (pattern)
 {
-    if (mode_ == automatch && pattern.empty())
+    if(mode_ == automatch && pattern.empty())
         mode_ = all;
 }
 
-template <class>
+template<class>
 bool
 selector::operator() (suite_info const& s)
 {
@@ -73,14 +73,14 @@ selector::operator() (suite_info const& s)
     {
     case automatch:
         // suite or full name
-        if (s.name() == pat_ || s.full_name() == pat_)
+        if(s.name() == pat_ || s.full_name() == pat_)
         {
             mode_ = none;
             return true;
         }
 
         // check module
-        if (pat_ == s.module())
+        if(pat_ == s.module())
         {
             mode_ = module;
             library_ = s.library();
@@ -88,7 +88,7 @@ selector::operator() (suite_info const& s)
         }
 
         // check library
-        if (pat_ == s.library())
+        if(pat_ == s.library())
         {
             mode_ = library;
             return ! s.manual();

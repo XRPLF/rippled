@@ -46,7 +46,7 @@ private:
         std::size_t failed_;
 
     public:
-        tests_t ()
+        tests_t()
             : failed_ (0)
         {
         }

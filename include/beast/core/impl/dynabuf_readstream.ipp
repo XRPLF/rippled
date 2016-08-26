@@ -85,7 +85,7 @@ public:
             is_continuation(op->d_->h);
     }
 
-    template <class Function>
+    template<class Function>
     friend
     void asio_handler_invoke(Function&& f, read_some_op* op)
     {

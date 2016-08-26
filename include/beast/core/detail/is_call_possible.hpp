@@ -13,7 +13,7 @@
 namespace beast {
 namespace detail {
 
-template <class R, class C, class ...A>
+template<class R, class C, class ...A>
 auto
 is_call_possible_test(C&& c, int, A&& ...a)
     -> decltype(std::is_convertible<
@@ -21,7 +21,7 @@ is_call_possible_test(C&& c, int, A&& ...a)
             std::is_same<R, void>::value,
                 std::true_type());
 
-template <class R, class C, class ...A>
+template<class R, class C, class ...A>
 std::false_type
 is_call_possible_test(C&& c, long, A&& ...a);
 
@@ -30,13 +30,13 @@ is_call_possible_test(C&& c, long, A&& ...a);
         is_call_possible<T, void(std::string)>
 */
 /** @{ */
-template <class C, class F>
+template<class C, class F>
 struct is_call_possible
     : std::false_type
 {
 };
 
-template <class C, class R, class ...A>
+template<class C, class R, class ...A>
 struct is_call_possible<C, R(A...)>
     : decltype(is_call_possible_test<R>(
         std::declval<C>(), 1, std::declval<A>()...))

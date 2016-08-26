@@ -34,10 +34,10 @@ namespace beast {
     caller is still responsible for freeing memory.
 */
 #if GENERATING_DOCS
-template <class T, class CompletionHandler>
+template<class T, class CompletionHandler>
 class handler_alloc;
 #else
-template <class T, class CompletionHandler>
+template<class T, class CompletionHandler>
 class handler_alloc
 {
 private:
@@ -46,7 +46,7 @@ private:
     // should produce a compile error if CompletionHandler is not
     // constructible from H.
     //
-    template <class U, class H>
+    template<class U, class H>
     friend class handler_alloc;
 
     CompletionHandler h_;

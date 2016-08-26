@@ -30,7 +30,7 @@ escaped_string(boost::string_ref const& s)
             out.append("\\r");
         else if(*p == '\n')
             out.append("\\n");
-        else if (*p == '\t')
+        else if(*p == '\t')
             out.append("\\t");
         else
             out.append(p, 1);

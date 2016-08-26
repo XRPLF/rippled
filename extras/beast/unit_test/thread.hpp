@@ -44,7 +44,7 @@ public:
         return *this;
     }
 
-    template <class F, class... Args>
+    template<class F, class... Args>
     explicit
     thread (suite& s, F&& f, Args&&... args)
         : s_ (&s)

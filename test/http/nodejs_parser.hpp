@@ -223,7 +223,7 @@ private:
         template<class T, class R =
             decltype(std::declval<T>().on_start(), std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -253,7 +253,7 @@ private:
                     std::declval<std::string const&>()),
                         std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -283,7 +283,7 @@ private:
             decltype(std::declval<T>().on_headers_complete(
                 std::declval<error_code&>()), std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -314,7 +314,7 @@ private:
                         std::declval<bool>(), std::declval<bool>()),
                             std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -349,7 +349,7 @@ private:
                         std::declval<bool>(), std::declval<bool>()),
                             std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
 #if 0
         using type = decltype(check<C>(0));
@@ -389,7 +389,7 @@ private:
                 std::declval<void const*>(), std::declval<std::size_t>(),
                     std::declval<error_code&>()), std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -418,7 +418,7 @@ private:
         template<class T, class R =
             decltype(std::declval<T>().on_complete(), std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -488,7 +488,7 @@ nodejs_basic_parser<Derived>::write(
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
     std::size_t bytes_used = 0;
-    for (auto const& buffer : buffers)
+    for(auto const& buffer : buffers)
     {
         auto const n = write(
             buffer_cast<void const*>(buffer),
@@ -609,7 +609,7 @@ template<class Derived>
 void
 nodejs_basic_parser<Derived>::check_header()
 {
-    if (! value_.empty())
+    if(! value_.empty())
     {
         //detail::trim(value_);
         call_on_field(field_, value_,

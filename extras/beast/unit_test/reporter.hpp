@@ -157,7 +157,7 @@ results::add(suite_results const& r)
     cases += r.cases;
     failed += r.failed;
     auto const elapsed = clock_type::now() - r.start;
-    if (elapsed >= std::chrono::seconds{1})
+    if(elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(top.begin(),
             top.end(), elapsed,
@@ -166,13 +166,13 @@ results::add(suite_results const& r)
             {
                 return t1.second > t2;
             });
-        if (iter != top.end())
+        if(iter != top.end())
         {
-            if (top.size() == max_top)
+            if(top.size() == max_top)
                 top.resize(top.size() - 1);
             top.emplace(iter, r.name, elapsed);
         }
-        else if (top.size() < max_top)
+        else if(top.size() < max_top)
         {
             top.emplace_back(r.name, elapsed);
         }
@@ -214,7 +214,7 @@ reporter<_>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
-    if (ms < seconds{1})
+    if(ms < seconds{1})
         return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) <<

@@ -34,7 +34,7 @@ class has_get_io_service
         decltype(std::declval<U>().get_io_service()),
             boost::asio::io_service&>>
     static R check(int);
-    template <class>
+    template<class>
     static std::false_type check(...);
 public:
     using type = decltype(check<T>(0));

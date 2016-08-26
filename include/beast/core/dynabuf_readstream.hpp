@@ -227,7 +227,7 @@ public:
 
     /// Write the given data to the stream. Returns the number of bytes written,
     /// or 0 if an error occurred.
-    template <class ConstBufferSequence>
+    template<class ConstBufferSequence>
     std::size_t
     write_some(ConstBufferSequence const& buffers,
         error_code& ec)

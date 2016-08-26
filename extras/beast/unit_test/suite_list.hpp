@@ -33,7 +33,7 @@ public:
 
         The suite must not already exist.
     */
-    template <class Suite>
+    template<class Suite>
     void
     insert(
         char const* name,
@@ -44,7 +44,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-template <class Suite>
+template<class Suite>
 void
 suite_list::insert(
     char const* name,

@@ -26,7 +26,7 @@ public:
     amount (amount const&) = default;
     amount& operator= (amount const&) = delete;
 
-    template <class = void>
+    template<class = void>
     amount (std::size_t n, std::string const& what);
 
     friend
@@ -34,7 +34,7 @@ public:
     operator<< (std::ostream& s, amount const& t);
 };
 
-template <class>
+template<class>
 amount::amount (std::size_t n, std::string const& what)
     : n_ (n)
     , what_ (what)

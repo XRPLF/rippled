@@ -29,7 +29,7 @@ class chunk_encode_text
     // Storage for the longest hex string we might need, plus delimiters.
     std::array<char, 2 * sizeof(std::size_t) + 2> buf_;
 
-    template <class OutIter>
+    template<class OutIter>
     static
     OutIter
     to_hex(OutIter last, std::size_t n)
