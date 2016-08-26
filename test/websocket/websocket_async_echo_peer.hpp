@@ -94,7 +94,7 @@ private:
             stream<socket_type> ws;
             boost::asio::io_service::strand strand;
             opcode op;
-            beast::streambuf sb;
+            beast::streambuf db;
             int id;
 
             data(bool log_, socket_type&& sock_)
@@ -177,22 +177,22 @@ private:
             }
         }
 
-        template<class Streambuf, std::size_t N>
+        template<class DynamicBuffer, std::size_t N>
         static
         bool
-        match(Streambuf& sb, char const(&s)[N])
+        match(DynamicBuffer& db, char const(&s)[N])
         {
             using boost::asio::buffer;
             using boost::asio::buffer_copy;
-            if(sb.size() < N-1)
+            if(db.size() < N-1)
                 return false;
             static_string<N-1> t;
             t.resize(N-1);
             buffer_copy(buffer(t.data(), t.size()),
-                sb.data());
+                db.data());
             if(t != s)
                 return false;
-            sb.consume(N-1);
+            db.consume(N-1);
             return true;
         }
 
@@ -217,10 +217,10 @@ private:
             case 1:
                 if(ec)
                     return fail(ec, "async_handshake");
-                d.sb.consume(d.sb.size());
+                d.db.consume(d.db.size());
                 // read message
                 d.state = 2;
-                d.ws.async_read(d.op, d.sb,
+                d.ws.async_read(d.op, d.db,
                     d.strand.wrap(std::move(*this)));
                 return;
 
@@ -230,33 +230,33 @@ private:
                     return;
                 if(ec)
                     return fail(ec, "async_read");
-                if(match(d.sb, "RAW"))
+                if(match(d.db, "RAW"))
                 {
                     d.state = 1;
                     boost::asio::async_write(d.ws.next_layer(),
-                        d.sb.data(), d.strand.wrap(std::move(*this)));
+                        d.db.data(), d.strand.wrap(std::move(*this)));
                     return;
                 }
-                else if(match(d.sb, "TEXT"))
+                else if(match(d.db, "TEXT"))
                 {
                     d.state = 1;
                     d.ws.set_option(message_type{opcode::text});
                     d.ws.async_write(
-                        d.sb.data(), d.strand.wrap(std::move(*this)));
+                        d.db.data(), d.strand.wrap(std::move(*this)));
                     return;
                 }
-                else if(match(d.sb, "PING"))
+                else if(match(d.db, "PING"))
                 {
                     ping_data payload;
-                    d.sb.consume(buffer_copy(
+                    d.db.consume(buffer_copy(
                         buffer(payload.data(), payload.size()),
-                            d.sb.data()));
+                            d.db.data()));
                     d.state = 1;
                     d.ws.async_ping(payload,
                         d.strand.wrap(std::move(*this)));
                     return;
                 }
-                else if(match(d.sb, "CLOSE"))
+                else if(match(d.db, "CLOSE"))
                 {
                     d.state = 1;
                     d.ws.async_close({},
@@ -266,7 +266,7 @@ private:
                 // write message
                 d.state = 1;
                 d.ws.set_option(message_type(d.op));
-                d.ws.async_write(d.sb.data(),
+                d.ws.async_write(d.db.data(),
                     d.strand.wrap(std::move(*this)));
                 return;
 

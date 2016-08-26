@@ -151,22 +151,22 @@ private:
         }
     };
 
-    template<class Streambuf, std::size_t N>
+    template<class DynamicBuffer, std::size_t N>
     static
     bool
-    match(Streambuf& sb, char const(&s)[N])
+    match(DynamicBuffer& db, char const(&s)[N])
     {
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
-        if(sb.size() < N-1)
+        if(db.size() < N-1)
             return false;
         static_string<N-1> t;
         t.resize(N-1);
         buffer_copy(buffer(t.data(), t.size()),
-            sb.data());
+            db.data());
         if(t != s)
             return false;
-        sb.consume(N-1);
+        db.consume(N-1);
         return true;
     }
 

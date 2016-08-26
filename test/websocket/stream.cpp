@@ -109,15 +109,15 @@ public:
         return false;
     }
 
-    template<class NextLayer, class Streambuf>
+    template<class NextLayer, class DynamicBuffer>
     static
     void
-    read(stream<NextLayer>& ws, opcode& op, Streambuf& sb)
+    read(stream<NextLayer>& ws, opcode& op, DynamicBuffer& db)
     {
         frame_info fi;
         for(;;)
         {
-            ws.read_frame(fi, sb);
+            ws.read_frame(fi, db);
             op = fi.op;
             if(fi.fin)
                 break;
@@ -453,11 +453,11 @@ public:
                 if(! expect(! ec, ec.message()))
                     break;
                 opcode op;
-                streambuf sb;
-                ws.read(op, sb, ec);
+                streambuf db;
+                ws.read(op, db, ec);
                 if(! expect(! ec, ec.message()))
                     break;
-                expect(to_string(sb.data()) ==
+                expect(to_string(db.data()) ==
                     std::string{v.data(), v.size()});
                 v.push_back(n+1);
             }
@@ -479,11 +479,11 @@ public:
                 if(! expect(! ec, ec.message()))
                     break;
                 opcode op;
-                streambuf sb;
-                ws.async_read(op, sb, do_yield[ec]);
+                streambuf db;
+                ws.async_read(op, db, do_yield[ec]);
                 if(! expect(! ec, ec.message()))
                     break;
-                expect(to_string(sb.data()) ==
+                expect(to_string(db.data()) ==
                     std::string{v.data(), v.size()});
                 v.push_back(n+1);
             }
@@ -544,9 +544,9 @@ public:
 
         // Read
         opcode op;
-        streambuf sb;
+        streambuf db;
         ++count;
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 --count;
@@ -600,11 +600,11 @@ public:
         ws.write(buffer_cat(sbuf("TEXT"),
             cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
         opcode op;
-        streambuf sb;
+        streambuf db;
         std::size_t count = 0;
         // Read text message with bad utf8.
         // Causes a close to be sent, blocking writes.
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 // Read should fail with protocol error
@@ -612,7 +612,7 @@ public:
                 expect(ec == error::failed,
                     ec.message());
                 // Reads after failure are aborted
-                ws.async_read(op, sb,
+                ws.async_read(op, db,
                     [&](error_code ec)
                     {
                         ++count;
@@ -668,11 +668,11 @@ public:
         ws.set_option(message_type(opcode::binary));
         ws.write(sbuf("CLOSE"));
         opcode op;
-        streambuf sb;
+        streambuf db;
         std::size_t count = 0;
         // Read a close frame.
         // Sends a close frame, blocking writes.
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 // Read should complete with error::closed
@@ -734,9 +734,9 @@ public:
         ws.set_option(message_type(opcode::binary));
         ws.write(sbuf("CLOSE"));
         opcode op;
-        streambuf sb;
+        streambuf db;
         std::size_t count = 0;
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 ++count;
@@ -785,8 +785,8 @@ public:
                     });
             });
         opcode op;
-        streambuf sb;
-        ws.async_read(op, sb,
+        streambuf db;
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 expect(ec == error::closed, ec.message());
@@ -811,8 +811,8 @@ public:
                     try
                     {
                         opcode op;
-                        streambuf sb;
-                        ws.read(op, sb);
+                        streambuf db;
+                        ws.read(op, db);
                         fail();
                         return false;
                     }
@@ -846,10 +846,10 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    read(ws, op, sb);
+                    streambuf db;
+                    read(ws, op, db);
                     expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                 }
 
                 // close, no payload
@@ -882,11 +882,11 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
+                    streambuf db;
+                    ws.read(op, db);
                     expect(pong == 1);
                     expect(op == opcode::binary);
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(pong_callback{});
 
@@ -903,10 +903,10 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
+                    streambuf db;
+                    ws.read(op, db);
                     expect(pong == 1);
-                    expect(to_string(sb.data()) == "Hello, World!");
+                    expect(to_string(db.data()) == "Hello, World!");
                 }
                 ws.set_option(pong_callback{});
 
@@ -916,9 +916,9 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
-                    expect(to_string(sb.data()) == "Hello");
+                    streambuf db;
+                    ws.read(op, db);
+                    expect(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(auto_fragment_size(0));
 
@@ -930,9 +930,9 @@ public:
                     {
                         // receive echoed message
                         opcode op;
-                        streambuf sb;
-                        ws.read(op, sb);
-                        expect(to_string(sb.data()) == s);
+                        streambuf db;
+                        ws.read(op, db);
+                        expect(to_string(db.data()) == s);
                     }
                 }
 
@@ -944,10 +944,10 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
+                    streambuf db;
+                    ws.read(op, db);
                     expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                 }
 
                 // cause close
@@ -1040,9 +1040,9 @@ public:
                 [&](error_code ev)
                 {
                     opcode op;
-                    streambuf sb;
+                    streambuf db;
                     error_code ec;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    ws.async_read(op, db, do_yield[ec]);
                     if(! ec)
                     {
                         fail();
@@ -1085,12 +1085,12 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
                     expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                 }
 
                 // close, no payload
@@ -1133,12 +1133,12 @@ public:
                         throw system_error{ec};
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
                     expect(op == opcode::binary);
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                     ws.set_option(pong_callback{});
                 }
 
@@ -1161,11 +1161,11 @@ public:
                     {
                         // receive echoed message
                         opcode op;
-                        streambuf sb;
-                        ws.async_read(op, sb, do_yield[ec]);
+                        streambuf db;
+                        ws.async_read(op, db, do_yield[ec]);
                         if(ec)
                             throw system_error{ec};
-                        expect(to_string(sb.data()) == "Hello, World!");
+                        expect(to_string(db.data()) == "Hello, World!");
                     }
                     ws.set_option(pong_callback{});
                 }
@@ -1176,11 +1176,11 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(auto_fragment_size(0));
 
@@ -1194,11 +1194,11 @@ public:
                     {
                         // receive echoed message
                         opcode op;
-                        streambuf sb;
-                        ws.async_read(op, sb, do_yield[ec]);
+                        streambuf db;
+                        ws.async_read(op, db, do_yield[ec]);
                         if(ec)
                             throw system_error{ec};
-                        expect(to_string(sb.data()) == s);
+                        expect(to_string(db.data()) == s);
                     }
                 }
 
@@ -1214,12 +1214,12 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
                     expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    expect(to_string(db.data()) == "Hello");
                 }
 
                 // cause close

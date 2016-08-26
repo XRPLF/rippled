@@ -472,85 +472,85 @@ public:
         return s;
     }
 
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    headers(Streambuf& sb)
+    headers(DynamicBuffer& db)
     {
         while(rand(6))
         {
-            write(sb, field());
-            write(sb, rand(4) ? ": " : ":");
-            write(sb, value());
-            write(sb, "\r\n");
+            write(db, field());
+            write(db, rand(4) ? ": " : ":");
+            write(db, value());
+            write(db, "\r\n");
         }
     }
 
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    body(Streambuf& sb)
+    body(DynamicBuffer& db)
     {
         if(! rand(4))
         {
-            write(sb, "Content-Length: 0\r\n\r\n");
+            write(db, "Content-Length: 0\r\n\r\n");
             return;
         }
         if(rand(2))
         {
             auto const len = rand(500);
-            write(sb, "Content-Length: ", len, "\r\n\r\n");
-            for(auto const& b : sb.prepare(len))
+            write(db, "Content-Length: ", len, "\r\n\r\n");
+            for(auto const& b : db.prepare(len))
             {
                 auto p = boost::asio::buffer_cast<char*>(b);
                 auto n = boost::asio::buffer_size(b);
                 while(n--)
                     *p++ = static_cast<char>(32 + rand(26+26+10+6));
             }
-            sb.commit(len);
+            db.commit(len);
         }
         else
         {
             auto len = rand(500);
-            write(sb, "Transfer-Encoding: chunked\r\n\r\n");
+            write(db, "Transfer-Encoding: chunked\r\n\r\n");
             while(len > 0)
             {
                 auto n = std::min(1 + rand(300), len);
                 len -= n;
-                write(sb, to_hex(n), "\r\n");
-                for(auto const& b : sb.prepare(n))
+                write(db, to_hex(n), "\r\n");
+                for(auto const& b : db.prepare(n))
                 {
                     auto p = boost::asio::buffer_cast<char*>(b);
                     auto m = boost::asio::buffer_size(b);
                     while(m--)
                         *p++ = static_cast<char>(32 + rand(26+26+10+6));
                 }
-                sb.commit(n);
-                write(sb, "\r\n");
+                db.commit(n);
+                write(db, "\r\n");
             }
-            write(sb, "0\r\n\r\n");
+            write(db, "0\r\n\r\n");
         }
     }
 
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    request(Streambuf& sb)
+    request(DynamicBuffer& db)
     {
-        write(sb, method(), " ", uri(), " HTTP/1.1\r\n");
-        headers(sb);
-        body(sb);
+        write(db, method(), " ", uri(), " HTTP/1.1\r\n");
+        headers(db);
+        body(db);
     }
 
-    template<class Streambuf>
+    template<class DynamicBuffer>
     void
-    response(Streambuf& sb)
+    response(DynamicBuffer& db)
     {
-        write(sb, "HTTP/1.");
-        write(sb, rand(2) ? "0" : "1");
-        write(sb, " ", 100 + rand(401), " ");
-        write(sb, token());
-        write(sb, "\r\n");
-        headers(sb);
-        body(sb);
-        write(sb, "\r\n");
+        write(db, "HTTP/1.");
+        write(db, rand(2) ? "0" : "1");
+        write(db, " ", 100 + rand(401), " ");
+        write(db, token());
+        write(db, "\r\n");
+        headers(db);
+        body(db);
+        write(db, "\r\n");
     }
 };
 
