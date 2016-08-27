@@ -35,6 +35,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>

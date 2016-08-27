@@ -24,8 +24,11 @@
 #include <ripple/basics/strHex.h>
 #include <ripple/basics/TestSuite.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/protocol/digest.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
+#include <ripple/protocol/Sign.h>
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/asio.hpp>
 
@@ -660,8 +663,8 @@ private:
         auto const sequence = 1;
         auto const version = 1;
 
-        auto constexpr port1 = 7475;
-        auto constexpr port2 = 7476;
+        std::uint16_t constexpr port1 = 7475;
+        std::uint16_t constexpr port2 = 7476;
 
         using endpoint_type = boost::asio::ip::tcp::endpoint;
         using address_type = boost::asio::ip::address;

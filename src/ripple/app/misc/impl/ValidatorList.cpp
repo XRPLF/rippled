@@ -21,7 +21,9 @@
 #include <ripple/app/misc/detail/WorkSSL.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/json/json_reader.h>
+#include <beast/core/detail/base64.hpp>
 #include <beast/core/placeholders.hpp>
 #include <boost/regex.hpp>
 

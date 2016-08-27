@@ -33,6 +33,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>

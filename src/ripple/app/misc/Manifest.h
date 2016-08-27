@@ -20,7 +20,6 @@
 #ifndef RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
 #define RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
 
-#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STExchange.h>
@@ -120,6 +119,7 @@ enum class ManifestDisposition
 };
 
 class DatabaseCon;
+class ValidatorList;
 
 /** Remembers manifests with the highest sequence number. */
 class ManifestCache

@@ -21,8 +21,10 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
 
 #include <ripple/app/misc/detail/WorkBase.h>
+#include <ripple/basics/contract.h>
 #include <boost/asio/ssl.hpp>
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 
 namespace ripple {
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/TestSuite.h>
