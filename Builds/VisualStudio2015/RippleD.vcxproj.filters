@@ -109,6 +109,9 @@
     <Filter Include="ripple\app\misc">
       <UniqueIdentifier>{5A1509B2-871B-A7AC-1E60-544D3F398741}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\misc\detail">
+      <UniqueIdentifier>{2919FCCC-A707-22B8-FFB4-89494A8AC070}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\misc\impl">
       <UniqueIdentifier>{C4BDB9F8-7DB7-E304-D286-098085D5D16E}</UniqueIdentifier>
     </Filter>
@@ -1437,9 +1440,6 @@
     <ClCompile Include="..\..\src\ripple\app\misc\impl\Manifest.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\Manifest.h">
-      <Filter>ripple\app\misc</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\Transaction.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
@@ -1450,6 +1450,9 @@
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\LoadFeeTrack.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\Manifest.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
@@ -1648,6 +1651,8 @@
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\LoadFeeTrack.test.cpp">
+      <Filter>ripple\app\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\tests\Manifest_test.cpp">
       <Filter>ripple\app\tests</Filter>
     </ClCompile>
