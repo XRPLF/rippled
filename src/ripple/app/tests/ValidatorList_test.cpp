@@ -1406,6 +1406,7 @@ public:
     void
     run() override
     {
+log << "test flush\n" << std::flush;
         testConfigLoad ();
         testFetchList ();
         testUpdate ();

@@ -82,6 +82,8 @@ after_build:
 
 test_script:
   # Run the unit tests
+#REMOVE THIS:
+  - build\\rippled --unittest=ripple.app.ValidatorList
   - build\\rippled --unittest
 
   # Run the integration tests
