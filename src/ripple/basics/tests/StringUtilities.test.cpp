@@ -64,23 +64,20 @@ public:
     {
         testcase ("parseUrl");
 
-        std::string strScheme;
-        std::string strDomain;
-        int         iPort;
-        std::string strPath;
+        parsedURL pUrl;
 
-        BEAST_EXPECT (parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath));
-        BEAST_EXPECT(strScheme == "lower");
-        BEAST_EXPECT(strDomain == "domain");
-        BEAST_EXPECT(iPort == -1);
-        BEAST_EXPECT(strPath == "");
-        BEAST_EXPECT(parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath));
-        BEAST_EXPECT(strScheme == "upper");
-        BEAST_EXPECT(iPort == 234);
-        BEAST_EXPECT(strPath == "/");
-        BEAST_EXPECT(parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath));
-        BEAST_EXPECT(strScheme == "mixed");
-        BEAST_EXPECT(strPath == "/path");
+        BEAST_EXPECT(parseUrl (pUrl, "lower://domain"));
+        BEAST_EXPECT(pUrl.scheme == "lower");
+        BEAST_EXPECT(pUrl.domain == "domain");
+        BEAST_EXPECT(! pUrl.port);
+        BEAST_EXPECT(pUrl.path == "");
+        BEAST_EXPECT(parseUrl (pUrl, "UPPER://domain:234/"));
+        BEAST_EXPECT(pUrl.scheme == "upper");
+        BEAST_EXPECT(*pUrl.port == 234);
+        BEAST_EXPECT(pUrl.path == "/");
+        BEAST_EXPECT(parseUrl (pUrl, "Mixed://domain/path"));
+        BEAST_EXPECT(pUrl.scheme == "mixed");
+        BEAST_EXPECT(pUrl.path == "/path");
     }
 
     void testToString ()

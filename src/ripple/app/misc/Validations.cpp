@@ -106,7 +106,8 @@ private:
         auto hash = val->getLedgerHash ();
         auto node = val->getNodeID ();
 
-        if (val->isTrusted () && isCurrent)
+        if (isCurrent &&
+            (val->isTrusted () || app_.validators ().listed (signer)))
         {
             ScopedLockType sl (mLock);
 
@@ -317,6 +318,8 @@ private:
                 condWrite ();
                 it = mCurrentValidations.erase (it);
             }
+            else if (! it->second->isTrusted())
+                ++it;
             else if (! it->second->isFieldPresent (sfLedgerSequence) ||
                 (it->second->getFieldU32 (sfLedgerSequence) >= cutoffBefore))
             {

@@ -17,11 +17,9 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
-#define RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
+#define RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
 
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STExchange.h>
@@ -57,13 +55,10 @@ namespace ripple {
     There are two stores of information within rippled related to manifests.
     An instance of ManifestCache stores, for each trusted validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
-    seen for that validator, if any.  On startup, the [validator_keys] config
-    entries are used to prime the manifest cache with the trusted master keys.
-    At this point, the manifest cache has all the entries it will ever have,
-    but none of them have manifests.  The [validation_manifest] config entry
-    (which is the manifest for this validator) is then decoded and added to
-    the manifest cache.  Other manifests are added as "gossip" is received
-    from rippled peers.
+    seen for that validator, if any.  On startup, the [validation_manifest]
+    config entry (which is the manifest for this validator) is decoded and
+    added to the manifest cache.  Other manifests are added as "gossip" is
+    received from rippled peers.
 
     The other data store (which does not involve manifests per se) contains
     the set of active ephemeral validator keys.  Keys are added to the set
@@ -124,67 +119,52 @@ enum class ManifestDisposition
 };
 
 class DatabaseCon;
+class ValidatorList;
+
 /** Remembers manifests with the highest sequence number. */
 class ManifestCache
 {
 private:
-    struct MappedType
-    {
-        MappedType() = default;
-        MappedType(MappedType&&) = default;
-        MappedType& operator=(MappedType&&) = default;
+    using MapType = hash_map<PublicKey, Manifest>;
 
-        MappedType(std::string comment,
-                   std::string serialized,
-                   PublicKey pk, PublicKey spk, std::uint32_t seq)
-            :comment (std::move(comment))
-        {
-            m.emplace (std::move(serialized), std::move(pk), std::move(spk),
-                       seq);
-        }
+    beast::Journal mutable j_;
+    std::mutex apply_mutex_;
+    std::mutex mutable read_mutex_;
 
-        std::string comment;
-        boost::optional<Manifest> m;
-    };
-
-    using MapType = hash_map<PublicKey, MappedType>;
-
-    mutable std::mutex mutex_;
+    /** Active manifests stored by master public key. */
     MapType map_;
 
+    /** Master public keys stored by current ephemeral public key. */
+    hash_map <PublicKey, PublicKey> signingToMasterKeys_;
+
     ManifestDisposition
-    canApply (PublicKey const& pk, std::uint32_t seq,
-        beast::Journal journal) const;
+    applicable (
+        Manifest const& m,
+        ValidatorList const& unl) const;
 
 public:
-    ManifestCache() = default;
-    ManifestCache (ManifestCache const&) = delete;
-    ManifestCache& operator= (ManifestCache const&) = delete;
-    ~ManifestCache() = default;
+    explicit
+    ManifestCache (beast::Journal j = beast::Journal())
+        : j_ (j)
+    {
+    };
 
-    bool loadValidatorKeys(
-        Section const& keys,
-        beast::Journal journal);
+    boost::optional<PublicKey>
+    getSigningKey (PublicKey const& pk) const;
 
-    void configManifest (Manifest m, ValidatorList& unl, beast::Journal journal);
+    boost::optional<PublicKey>
+    getMasterKey (PublicKey const& pk) const;
 
-    /** Determines whether a node is in the trusted master key list */
+    // Determines if master public key has been revoked
     bool
-    trusted (
-        PublicKey const& identity) const;
-
-    void addTrustedKey (PublicKey const& pk, std::string comment);
-
-    /** The number of installed trusted master keys */
-    std::size_t
-    size () const;
+    revoked (PublicKey const& pk) const;
 
     ManifestDisposition
     applyManifest (
-        Manifest m, ValidatorList& unl, beast::Journal journal);
+        Manifest m, ValidatorList& unl);
 
     void load (
-        DatabaseCon& dbCon, ValidatorList& unl, beast::Journal journal);
+        DatabaseCon& dbCon, ValidatorList& unl);
     void save (DatabaseCon& dbCon) const;
 
     // A "for_each" for populated manifests only
@@ -192,11 +172,10 @@ public:
     void
     for_each_manifest(Function&& f) const
     {
-        std::lock_guard<std::mutex> lock (mutex_);
-        for (auto const& e : map_)
+        std::lock_guard<std::mutex> lock{read_mutex_};
+        for (auto const& m : map_)
         {
-            if (auto const& m = e.second.m)
-                f(*m);
+            f(m.second);
         }
     }
 
@@ -207,12 +186,11 @@ public:
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard<std::mutex> lock{read_mutex_};
         pf(map_.size ());
-        for (auto const& e : map_)
+        for (auto const& m : map_)
         {
-            if (auto const& m = e.second.m)
-                f(*m);
+            f(m.second);
         }
     }
 };

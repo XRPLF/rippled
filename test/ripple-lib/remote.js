@@ -2157,47 +2157,6 @@ Remote.prototype.requestUnlList = function (callback) {
 };
 
 /**
- * Request unl_add
- *
- * @param {String} address
- * @param {String} comment
- * @param [Function] callback
- * @return {Request}
- */
-
-Remote.prototype.requestUnlAdd = function (address, comment, callback) {
-  var request = new Request(this, 'unl_add');
-
-  request.message.node = address;
-
-  if (comment) {
-    // note is not specified anywhere, should remove?
-    request.message.comment = undefined;
-  }
-
-  request.callback(callback);
-
-  return request;
-};
-
-/**
- * Request unl_delete
- *
- * @param {String} node
- * @param [Function] callback
- * @return {Request}
- */
-
-Remote.prototype.requestUnlDelete = function (node, callback) {
-  var request = new Request(this, 'unl_delete');
-
-  request.message.node = node;
-  request.callback(callback);
-
-  return request;
-};
-
-/**
  * Request peers
  *
  * @param [Function] callback

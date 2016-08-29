@@ -38,9 +38,6 @@ namespace boost { namespace asio { namespace ssl { class context; } } }
 
 namespace ripple {
 
-class DatabaseCon;
-class BasicConfig;
-
 /** Manages the set of connected peers. */
 class Overlay
     : public Stoppable
@@ -163,15 +160,6 @@ public:
     void
     relay (protocol::TMValidation& m,
         uint256 const& uid) = 0;
-
-    virtual
-    void
-    setupValidatorKeyManifests (BasicConfig const& config,
-                                DatabaseCon& db) = 0;
-
-    virtual
-    void
-    saveValidatorKeyManifests (DatabaseCon& db) const = 0;
 
     /** Visit every active peer and return a value
         The functor must:

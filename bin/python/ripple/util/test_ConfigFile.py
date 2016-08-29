@@ -45,7 +45,6 @@ RESULT = {
     'websocket_public_port': '5206',
     'peer_ip': '0.0.0.0',
     'rpc_port': '5205',
-    'validation_quorum': '3',
     'websocket_ip': '127.0.0.1'}
 
 FULL = """
@@ -130,10 +129,6 @@ n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj	RL2
 n9L81uNCaPgtUJfaHh89gmdvXKAmSt5Gdsw2g1iPWaPkAHW5Nm4C	RL3
 n9KiYM9CgngLvtRCQHZwgC2gjpdaZcCcbt3VboxiNFcKuwFVujzS	RL4
 n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA	RL5
-
-# Ditto.
-[validation_quorum]
-3
 
 [validation_seed]
 sh1T8T9yGuV7Jb6DPhqSzdU2s5LcV
