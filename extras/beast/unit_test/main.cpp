@@ -90,7 +90,7 @@ int main(int ac, char const* av[])
     po::options_description desc("Options");
     desc.add_options()
        ("help,h",  "Produce a help message")
-       ("print,r", "Print the list of available test suites")
+       ("print,p", "Print the list of available test suites")
        ("suites,s", po::value<string>(), "suites to run")
         ;
 

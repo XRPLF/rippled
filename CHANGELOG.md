@@ -1,5 +1,6 @@
 1.0.0-b12
 
+* Use -p to print suites from unit test main.
 * BEAST_EXPECTS to add a reason string to test failures
 * Fix unit test runner to output all case names
 * Update README for build requirements
