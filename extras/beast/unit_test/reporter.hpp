@@ -90,7 +90,6 @@ private:
     results results_;
     suite_results suite_results_;
     case_results case_results_;
-    bool prefixed_ = false;
 
 public:
     reporter(reporter const&) = delete;
@@ -228,7 +227,6 @@ reporter<_>::
 on_suite_begin(suite_info const& info)
 {
     suite_results_ = suite_results{info.full_name()};
-    prefixed_ = false;
 }
 
 template<class _>
@@ -244,13 +242,9 @@ reporter<_>::
 on_case_begin(std::string const& name)
 {
     case_results_ = case_results(name);
-    if(! prefixed_)
-    {
-        os_ << suite_results_.name <<
-            (case_results_.name.empty() ? "" : 
-                (" " + case_results_.name)) << std::endl;
-        prefixed_ = true;
-    }
+    os_ << suite_results_.name <<
+        (case_results_.name.empty() ? "" : 
+            (" " + case_results_.name)) << std::endl;
 }
 
 template<class _>
@@ -286,13 +280,6 @@ void
 reporter<_>::
 on_log(std::string const& s)
 {
-    if(!prefixed_)
-    {
-        os_ << suite_results_.name <<
-            (case_results_.name.empty() ? "" :
-                (" " + case_results_.name)) << "\n";
-        prefixed_ = true;
-    }
     os_ << s;
     os_.flush();
 }

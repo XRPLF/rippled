@@ -72,7 +72,7 @@ private:
         {
             auto const& s = this->str();
             if(s.size() > 0)
-                suite_.runner_->on_log(s);
+                suite_.runner_->log(s);
             this->str("");
             return 0;
         }
@@ -146,7 +146,9 @@ public:
     /** Returns the "current" running suite.
         If no suite is running, nullptr is returned.
     */
-    static suite* this_suite()
+    static
+    suite*
+    this_suite()
     {
         return *p_this_suite();
     }
@@ -158,6 +160,7 @@ public:
     }
 
     /** Invokes the test using the specified runner.
+
         Data members are set up here instead of the constructor as a
         convenience to writing the derived class to avoid repetition of
         forwarded constructor arguments to the base.
@@ -168,6 +171,7 @@ public:
     operator()(runner& r);
 
     /** Evaluate a test condition.
+
         The condition is passed as a template argument instead of `bool` so
         that implicit conversion is not required. The `reason` argument is
         logged if the condition is false.
@@ -298,7 +302,10 @@ public:
     {
         auto const& name = ss_.str();
         if(! name.empty())
+        {
+            suite_.log.flush();
             suite_.runner_->testcase(name);
+        }
     }
 
     scoped_testcase(suite& self, std::stringstream& ss)
@@ -333,10 +340,11 @@ public:
 
 inline
 void
-suite::testcase_t::operator()(std::string const& name,
-    abort_t abort)
+suite::testcase_t::operator()(
+    std::string const& name, abort_t abort)
 {
     suite_.abort_ = abort == abort_on_fail;
+    suite_.log.flush();
     suite_.runner_->testcase(name);
 }
 
