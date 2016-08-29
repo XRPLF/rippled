@@ -214,8 +214,8 @@ public:
     /// Determines the quorum for the trusted validator list size.
     static int
     calcQuorum (
-        std::uint32_t const& nTrusted,
-        std::uint32_t const& nListed);
+        std::uint32_t nTrusted,
+        std::uint32_t nListed);
 
     void
     stop ();

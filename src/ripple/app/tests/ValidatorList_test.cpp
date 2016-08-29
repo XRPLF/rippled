@@ -771,7 +771,8 @@ private:
             BEAST_EXPECT(! validators->trustedPublisher (
                 untrustedMasterPublic));
 
-            while (validators->getFetchedSitesCount () == 0)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () == 0 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -804,7 +805,8 @@ private:
                 cfgKeys2, emptyCfgManifest));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
 
-            while (validators->getFetchedSitesCount () == 0)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () == 0 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -834,7 +836,8 @@ private:
                 cfgKeys2, emptyCfgManifest));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
 
-            while (validators->getFetchedSitesCount () < 2)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () < 2 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -873,7 +876,8 @@ private:
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic2));
 
-            while (validators->getFetchedSitesCount () < 2)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () < 2 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -930,7 +934,8 @@ private:
                 cfgKeys2, emptyCfgManifest));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
 
-            while (validators->getFetchedSitesCount () < 2)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () < 2 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -974,7 +979,8 @@ private:
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic2));
 
-            while (validators->getFetchedSitesCount () < 2)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () < 2 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -1014,7 +1020,8 @@ private:
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic2));
 
-            while (validators->getFetchedSitesCount () < 2)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () < 2 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             auto maxManifest = make_Manifest (
@@ -1059,7 +1066,8 @@ private:
                 cfgKeys1, emptyCfgManifest));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
 
-            while (validators->getFetchedSitesCount () == 0)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () == 0 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -1105,7 +1113,8 @@ private:
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic2));
 
-            while (validators->getFetchedSitesCount () < 2)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () < 2 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);
@@ -1164,7 +1173,8 @@ private:
                 cfgKeys1, emptyCfgValidators));
             BEAST_EXPECT(validators->trustedPublisher (masterPublic1));
 
-            while (validators->getFetchedSitesCount () == 0)
+            auto tries = 0;
+            while (validators->getFetchedSitesCount () == 0 && tries++ < 10)
                 std::this_thread::sleep_for (std::chrono::milliseconds (10));
 
             validators->update (activeValidators);

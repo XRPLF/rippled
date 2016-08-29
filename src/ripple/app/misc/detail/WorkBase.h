@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
 
 #include <ripple/app/misc/detail/Work.h>
+#include <ripple/protocol/BuildInfo.h>
 #include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
 #include <beast/http/empty_body.hpp>
@@ -178,11 +179,11 @@ void
 WorkBase<Impl>::on_start()
 {
     req_.method = "GET";
-    req_.url = path_;
+    req_.url = path_.empty() ? "/" : path_;
     req_.version = 11;
     req_.headers.replace (
         "Host", host_ + ":" + port_);
-    req_.headers.replace ("User-Agent", "Beast");
+    req_.headers.replace ("User-Agent", BuildInfo::getFullVersionString());
     beast::http::prepare (req_);
 
     beast::http::async_write(impl().stream(), req_,

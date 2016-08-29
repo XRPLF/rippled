@@ -22,9 +22,11 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/beast/rfc2616.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/json/json_reader.h>
 #include <beast/core/detail/base64.hpp>
 #include <beast/core/placeholders.hpp>
+#include <boost/iterator/counting_iterator.hpp>
 #include <boost/regex.hpp>
 
 namespace ripple {
@@ -477,8 +479,8 @@ ValidatorList::getTargetSize () const
 
 int
 ValidatorList::calcQuorum (
-    std::uint32_t const& nTrusted,
-    std::uint32_t const& nListed)
+    std::uint32_t nTrusted,
+    std::uint32_t nListed)
 {
     const std::vector<int> neededValidations{
         0, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7};
@@ -514,12 +516,11 @@ ValidatorList::update (
     // "Iterate" the listed validators in random order so that it is not
     // deterministic which validators tied with the same number of listings
     // make the cut to be included on the trusted list
-    std::vector<int> indexes;
-    indexes.reserve (validatorListings_.size());
-    for (int i=0; i<validatorListings_.size(); ++i)
-        indexes.push_back (i);
+    std::vector<std::size_t> indexes (
+        boost::counting_iterator<std::size_t> (std::size_t(0)),
+        boost::counting_iterator<std::size_t> (validatorListings_.size()));
+    std::shuffle (indexes.begin(), indexes.end(), crypto_prng());
 
-    std::random_shuffle (indexes.begin(), indexes.end());
     for (auto const& index : indexes)
     {
         auto const& val = std::next (validatorListings_.begin(), index);
@@ -714,7 +715,8 @@ ValidatorList::load (
         for (auto const& line : configManifest)
             s += beast::rfc2616::trim(line);
 
-        if (mo = make_Manifest (beast::detail::base64_decode(s)))
+        mo = make_Manifest (beast::detail::base64_decode(s));
+        if (mo)
         {
             if (mo->signingKey != localSigningKey)
             {

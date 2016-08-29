@@ -164,12 +164,11 @@ ManifestCache::revoked (PublicKey const& pk) const
 }
 
 ManifestDisposition
-ManifestCache::canApply (
-    PublicKey const& pk,
-    std::uint32_t seq,
+ManifestCache::applicable (
+    Manifest const& m,
     ValidatorList const& unl) const
 {
-    if (! unl.listed (pk) && ! unl.trustedPublisher (pk))
+    if (! unl.listed (m.masterKey) && ! unl.trustedPublisher (m.masterKey))
     {
         /*
             A manifest was received whose master key we don't trust.
@@ -177,14 +176,14 @@ ManifestCache::canApply (
             this will happen normally any time a peer connects.
         */
         if (auto stream = j_.debug())
-            logMftAct(stream, "Untrusted", pk, seq);
+            logMftAct(stream, "Untrusted", m.masterKey, m.sequence);
         return ManifestDisposition::untrusted;
     }
 
-    auto const iter = map_.find(pk);
+    auto const iter = map_.find(m.masterKey);
 
     if (iter != map_.end() &&
-        seq <= iter->second.sequence)
+        m.sequence <= iter->second.sequence)
     {
         /*
             A manifest was received for a validator we're tracking, but
@@ -193,7 +192,7 @@ ManifestCache::canApply (
             connects.
         */
         if (auto stream = j_.debug())
-            logMftAct(stream, "Stale", pk, seq, iter->second.sequence);
+            logMftAct(stream, "Stale", m.masterKey, m.sequence, iter->second.sequence);
         return ManifestDisposition::stale;  // not a newer manifest, ignore
     }
 
@@ -210,12 +209,10 @@ ManifestCache::applyManifest (
         before we spend time checking the signature, make sure we trust the
         master key and the sequence number is newer than any we have.
     */
-    auto const chk = canApply(m.masterKey, m.sequence, unl);
+    auto const chk = applicable(m, unl);
 
     if (chk != ManifestDisposition::accepted)
-    {
         return chk;
-    }
 
     if (! m.verify())
     {
@@ -230,7 +227,7 @@ ManifestCache::applyManifest (
 
     std::lock_guard<std::mutex> readLock{read_mutex_};
 
-    bool revoked = m.revoked();
+    bool const revoked = m.revoked();
 
     if (revoked && unl.trustedPublisher (m.masterKey))
         unl.removeList (m.masterKey);

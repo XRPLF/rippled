@@ -138,9 +138,8 @@ private:
     hash_map <PublicKey, PublicKey> signingToMasterKeys_;
 
     ManifestDisposition
-    canApply (
-        PublicKey const& pk,
-        std::uint32_t seq,
+    applicable (
+        Manifest const& m,
         ValidatorList const& unl) const;
 
 public:
