@@ -83,7 +83,7 @@ private:
         typename clock_type::time_point start = clock_type::now();
 
         void
-        add (suite_results const& r);
+        add(suite_results const& r);
     };
 
     std::ostream& os_;
@@ -108,7 +108,7 @@ private:
 
     virtual
     void
-    on_suite_begin (suite_info const& info) override;
+    on_suite_begin(suite_info const& info) override;
 
     virtual
     void
@@ -116,7 +116,7 @@ private:
 
     virtual
     void
-    on_case_begin (std::string const& name) override;
+    on_case_begin(std::string const& name) override;
 
     virtual
     void
@@ -128,11 +128,11 @@ private:
 
     virtual
     void
-    on_fail (std::string const& reason) override;
+    on_fail(std::string const& reason) override;
 
     virtual
     void
-    on_log (std::string const& s) override;
+    on_log(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
@@ -218,7 +218,7 @@ reporter<_>::fmtdur(typename clock_type::duration const& d)
         return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) <<
-        (ms.count()/1000.) << "s";
+       (ms.count()/1000.) << "s";
     return ss.str();
 }
 
@@ -243,8 +243,8 @@ void
 reporter<_>::
 on_case_begin(std::string const& name)
 {
-    case_results_ = case_results (name);
-    if(!prefixed_)
+    case_results_ = case_results(name);
+    if(! prefixed_)
     {
         os_ << suite_results_.name <<
             (case_results_.name.empty() ? "" : 
@@ -278,7 +278,7 @@ on_fail(std::string const& reason)
     ++case_results_.total;
     os_ <<
         "#" << case_results_.total << " failed" <<
-        (reason.empty() ? "" : ": ") << reason << std::endl;
+       (reason.empty() ? "" : ": ") << reason << std::endl;
 }
 
 template<class _>

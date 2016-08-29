@@ -165,7 +165,7 @@ public:
     */
     template<class = void>
     void
-    operator() (runner& r);
+    operator()(runner& r);
 
     /** Evaluate a test condition.
         The condition is passed as a template argument instead of `bool` so
@@ -189,11 +189,11 @@ public:
     /** @{ */
     template<class F, class String>
     bool
-    except (F&& f, String const& reason);
+    except(F&& f, String const& reason);
 
     template<class F>
     bool
-    except (F&& f)
+    except(F&& f)
     {
         return except(f, "");
     }
@@ -203,11 +203,11 @@ public:
     /** @{ */
     template<class E, class F, class String>
     bool
-    except (F&& f, String const& reason);
+    except(F&& f, String const& reason);
 
     template<class E, class F>
     bool
-    except (F&& f)
+    except(F&& f)
     {
         return except<E>(f, "");
     }
@@ -217,11 +217,11 @@ public:
     /** @{ */
     template<class F, class String>
     bool
-    unexcept (F&& f, String const& reason);
+    unexcept(F&& f, String const& reason);
 
     template<class F>
     bool
-    unexcept (F&& f)
+    unexcept(F&& f)
     {
         return unexcept(f, "");
     }
@@ -235,17 +235,17 @@ public:
     }
 
     // DEPRECATED
-    // @return `true` if the test condition indicates success (a false value)
+    // @return `true` if the test condition indicates success(a false value)
     template<class Condition, class String>
     bool
-    unexpected (Condition shouldBeFalse,
+    unexpected(Condition shouldBeFalse,
         String const& reason);
 
     template<class Condition>
     bool
-    unexpected (Condition shouldBeFalse)
+    unexpected(Condition shouldBeFalse)
     {
-        return unexpected (shouldBeFalse, "");
+        return unexpected(shouldBeFalse, "");
     }
 
     /** Record a successful test condition. */
@@ -256,7 +256,7 @@ public:
     /** Record a failure. */
     template<class = void>
     void
-    fail (std::string const& reason = "");
+    fail(std::string const& reason = "");
 
 private:
     friend class thread;
@@ -279,7 +279,7 @@ private:
 
     template<class = void>
     void
-    run (runner& r);
+    run(runner& r);
 };
 
 //------------------------------------------------------------------------------
@@ -298,7 +298,7 @@ public:
     {
         auto const& name = ss_.str();
         if(! name.empty())
-            suite_.runner_->testcase (name);
+            suite_.runner_->testcase(name);
     }
 
     scoped_testcase(suite& self, std::stringstream& ss)
@@ -333,16 +333,16 @@ public:
 
 inline
 void
-suite::testcase_t::operator() (std::string const& name,
+suite::testcase_t::operator()(std::string const& name,
     abort_t abort)
 {
     suite_.abort_ = abort == abort_on_fail;
-    suite_.runner_->testcase (name);
+    suite_.runner_->testcase(name);
 }
 
 inline
 suite::scoped_testcase
-suite::testcase_t::operator() (abort_t abort)
+suite::testcase_t::operator()(abort_t abort)
 {
     suite_.abort_ = abort == abort_on_fail;
     return { suite_, ss_ };
@@ -351,7 +351,7 @@ suite::testcase_t::operator() (abort_t abort)
 template<class T>
 inline
 suite::scoped_testcase
-suite::testcase_t::operator<< (T const& t)
+suite::testcase_t::operator<<(T const& t)
 {
     return { suite_, ss_, t };
 }
@@ -392,7 +392,7 @@ suite::expect(Condition const& shouldBeTrue,
 
 template<class F, class String>
 bool
-suite::except (F&& f, String const& reason)
+suite::except(F&& f, String const& reason)
 {
     try
     {
@@ -409,7 +409,7 @@ suite::except (F&& f, String const& reason)
 
 template<class E, class F, class String>
 bool
-suite::except (F&& f, String const& reason)
+suite::except(F&& f, String const& reason)
 {
     try
     {
@@ -426,7 +426,7 @@ suite::except (F&& f, String const& reason)
 
 template<class F, class String>
 bool
-suite::unexcept (F&& f, String const& reason)
+suite::unexcept(F&& f, String const& reason)
 {
     try
     {
@@ -444,7 +444,7 @@ suite::unexcept (F&& f, String const& reason)
 template<class Condition, class String>
 inline
 bool
-suite::unexpected (Condition shouldBeFalse,
+suite::unexpected(Condition shouldBeFalse,
     String const& reason)
 {
     bool const b =
@@ -452,7 +452,7 @@ suite::unexpected (Condition shouldBeFalse,
     if(! b)
         pass();
     else
-        fail (reason);
+        fail(reason);
     return ! b;
 }
 
@@ -466,10 +466,10 @@ suite::pass()
 
 template<class>
 void
-suite::fail (std::string const& reason)
+suite::fail(std::string const& reason)
 {
     propagate_abort();
-    runner_->fail (reason);
+    runner_->fail(reason);
     if(abort_)
     {
         aborted_ = true;
@@ -487,7 +487,7 @@ suite::propagate_abort()
 
 template<class>
 void
-suite::run (runner& r)
+suite::run(runner& r)
 {
     runner_ = &r;
 
@@ -495,18 +495,18 @@ suite::run (runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch(abort_exception const&)
     {
         // ends the suite
     }
-    catch (std::exception const& e)
+    catch(std::exception const& e)
     {
-        runner_->fail ("unhandled exception: " +
-            std::string (e.what()));
+        runner_->fail("unhandled exception: " +
+            std::string(e.what()));
     }
-    catch (...)
+    catch(...)
     {
-        runner_->fail ("unhandled exception");
+        runner_->fail("unhandled exception");
     }
 }
 
@@ -527,7 +527,7 @@ suite::run (runner& r)
 // This inserts the suite with the given manual flag
 #define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual) \
     static beast::unit_test::detail::insert_suite <Class##_test>   \
-        Library ## Module ## Class ## _test_instance (             \
+        Library ## Module ## Class ## _test_instance(             \
             #Class, #Module, #Library, manual)
 
 //------------------------------------------------------------------------------

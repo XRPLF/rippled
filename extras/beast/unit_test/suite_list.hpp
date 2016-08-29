@@ -56,14 +56,14 @@ suite_list::insert(
     {
         std::string s;
         s = std::string(library) + "." + module + "." + name;
-        auto const result (names_.insert(s));
-        assert (result.second); // Duplicate name
+        auto const result(names_.insert(s));
+        assert(result.second); // Duplicate name
     }
 
     {
-        auto const result (classes_.insert (
-            std::type_index (typeid(Suite))));
-        assert (result.second); // Duplicate type
+        auto const result(classes_.insert(
+            std::type_index(typeid(Suite))));
+        assert(result.second); // Duplicate type
     }
 #endif
     cont().emplace(make_suite_info<Suite>(

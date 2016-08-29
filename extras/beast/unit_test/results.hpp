@@ -23,14 +23,14 @@ public:
     /** Holds the result of evaluating one test condition. */
     struct test
     {
-        explicit test (bool pass_)
-            : pass (pass_)
+        explicit test(bool pass_)
+            : pass(pass_)
         {
         }
 
-        test (bool pass_, std::string const& reason_)
-            : pass (pass_)
-            , reason (reason_)
+        test(bool pass_, std::string const& reason_)
+            : pass(pass_)
+            , reason(reason_)
         {
         }
 
@@ -47,7 +47,7 @@ private:
 
     public:
         tests_t()
-            : failed_ (0)
+            : failed_(0)
         {
         }
 
@@ -69,15 +69,15 @@ private:
         void
         pass()
         {
-            cont().emplace_back (true);
+            cont().emplace_back(true);
         }
 
         /** Register a failed test condition. */
         void
-        fail (std::string const& reason = "")
+        fail(std::string const& reason = "")
         {
             ++failed_;
-            cont().emplace_back (false, reason);
+            cont().emplace_back(false, reason);
         }
     };
 
@@ -87,17 +87,17 @@ private:
     public:
         /** Insert a string into the log. */
         void
-        insert (std::string const& s)
+        insert(std::string const& s)
         {
-            cont().push_back (s);
+            cont().push_back(s);
         }
     };
 
     std::string name_;
 
 public:
-    explicit case_results (std::string const& name = "")
-        : name_ (name)
+    explicit case_results(std::string const& name = "")
+        : name_(name)
     {
     }
 
@@ -127,8 +127,8 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit suite_results (std::string const& name = "")
-        : name_ (name)
+    explicit suite_results(std::string const& name = "")
+        : name_(name)
     {
     }
 
@@ -156,17 +156,17 @@ public:
     /** Insert a set of testcase results. */
     /** @{ */
     void
-    insert (case_results&& r)
+    insert(case_results&& r)
     {
-        cont().emplace_back (std::move (r));
+        cont().emplace_back(std::move(r));
         total_ += r.tests.total();
         failed_ += r.tests.failed();
     }
 
     void
-    insert (case_results const& r)
+    insert(case_results const& r)
     {
-        cont().push_back (r);
+        cont().push_back(r);
         total_ += r.tests.total();
         failed_ += r.tests.failed();
     }
@@ -187,9 +187,9 @@ private:
 
 public:
     results()
-        : m_cases (0)
-        , total_ (0)
-        , failed_ (0)
+        : m_cases(0)
+        , total_(0)
+        , failed_(0)
     {
     }
 
@@ -217,21 +217,21 @@ public:
     /** Insert a set of suite results. */
     /** @{ */
     void
-    insert (suite_results&& r)
+    insert(suite_results&& r)
     {
         m_cases += r.size();
         total_ += r.total();
         failed_ += r.failed();
-        cont().emplace_back (std::move (r));
+        cont().emplace_back(std::move(r));
     }
 
     void
-    insert (suite_results const& r)
+    insert(suite_results const& r)
     {
         m_cases += r.size();
         total_ += r.total();
         failed_ += r.failed();
-        cont().push_back (r);
+        cont().push_back(r);
     }
     /** @} */
 };

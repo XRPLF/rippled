@@ -47,19 +47,19 @@ private:
 public:
     template<class = void>
     explicit
-    selector (mode_t mode, std::string const& pattern = "");
+    selector(mode_t mode, std::string const& pattern = "");
 
     template<class = void>
     bool
-    operator() (suite_info const& s);
+    operator()(suite_info const& s);
 };
 
 //------------------------------------------------------------------------------
 
 template<class>
-selector::selector (mode_t mode, std::string const& pattern)
-    : mode_ (mode)
-    , pat_ (pattern)
+selector::selector(mode_t mode, std::string const& pattern)
+    : mode_(mode)
+    , pat_(pattern)
 {
     if(mode_ == automatch && pattern.empty())
         mode_ = all;
@@ -67,9 +67,9 @@ selector::selector (mode_t mode, std::string const& pattern)
 
 template<class>
 bool
-selector::operator() (suite_info const& s)
+selector::operator()(suite_info const& s)
 {
-    switch (mode_)
+    switch(mode_)
     {
     case automatch:
         // suite or full name
@@ -138,9 +138,9 @@ selector::operator() (suite_info const& s)
 */
 inline
 selector
-match_auto (std::string const& name)
+match_auto(std::string const& name)
 {
-    return selector (selector::automatch, name);
+    return selector(selector::automatch, name);
 }
 
 /** Return a predicate that matches all suites not marked manual. */
@@ -148,23 +148,23 @@ inline
 selector
 match_all()
 {
-    return selector (selector::all);
+    return selector(selector::all);
 }
 
 /** Returns a predicate that matches a specific suite. */
 inline
 selector
-match_suite (std::string const& name)
+match_suite(std::string const& name)
 {
-    return selector (selector::suite, name);
+    return selector(selector::suite, name);
 }
 
 /** Returns a predicate that matches all suites in a library. */
 inline
 selector
-match_library (std::string const& name)
+match_library(std::string const& name)
 {
-    return selector (selector::library, name);
+    return selector(selector::library, name);
 }
 
 } // unit_test

@@ -28,16 +28,16 @@ public:
     using native_handle_type = std::thread::native_handle_type;
 
     thread() = default;
-    thread (thread const&) = delete;
-    thread& operator= (thread const&) = delete;
+    thread(thread const&) = delete;
+    thread& operator=(thread const&) = delete;
 
-    thread (thread&& other)
-        : s_ (other.s_)
-        , t_ (std::move(other.t_))
+    thread(thread&& other)
+        : s_(other.s_)
+        , t_(std::move(other.t_))
     {
     }
 
-    thread& operator= (thread&& other)
+    thread& operator=(thread&& other)
     {
         s_ = other.s_;
         t_ = std::move(other.t_);
@@ -46,13 +46,13 @@ public:
 
     template<class F, class... Args>
     explicit
-    thread (suite& s, F&& f, Args&&... args)
-        : s_ (&s)
+    thread(suite& s, F&& f, Args&&... args)
+        : s_(&s)
     {
         std::function<void(void)> b =
             std::bind(std::forward<F>(f),
                 std::forward<Args>(args)...);
-        t_ = std::thread (&thread::run, this,
+        t_ = std::thread(&thread::run, this,
             std::move(b));
     }
 
@@ -89,7 +89,7 @@ public:
     }
 
     void
-    swap (thread& other)
+    swap(thread& other)
     {
         std::swap(s_, other.s_);
         std::swap(t_, other.t_);
@@ -97,23 +97,23 @@ public:
 
 private:
     void
-    run (std::function <void(void)> f)
+    run(std::function <void(void)> f)
     {
         try
         {
             f();
         }
-        catch (suite::abort_exception const&)
+        catch(suite::abort_exception const&)
         {
         }
-        catch (std::exception const& e)
+        catch(std::exception const& e)
         {
-            s_->fail ("unhandled exception: " +
-                std::string (e.what()));
+            s_->fail("unhandled exception: " +
+                std::string(e.what()));
         }
-        catch (...)
+        catch(...)
         {
-            s_->fail ("unhandled exception");
+            s_->fail("unhandled exception");
         }
     }
 };

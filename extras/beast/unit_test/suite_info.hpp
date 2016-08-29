@@ -80,7 +80,7 @@ public:
     void
     run(runner& r) const
     {
-        run_ (r);
+        run_(r);
     }
 
     friend

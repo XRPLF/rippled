@@ -45,7 +45,7 @@ print(std::ostream& os, suite_list const& c)
     std::size_t manual = 0;
     for(auto const& s : c)
     {
-        os << prefix (s) << s.full_name() << '\n';
+        os << prefix(s) << s.full_name() << '\n';
         if(s.manual())
             ++manual;
     }
@@ -80,18 +80,18 @@ int main(int ac, char const* av[])
 
 #ifdef _MSC_VER
     {
-        int flags = _CrtSetDbgFlag (_CRTDBG_REPORT_FLAG);
+        int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
         flags |= _CRTDBG_LEAK_CHECK_DF;
-        _CrtSetDbgFlag (flags);
+        _CrtSetDbgFlag(flags);
     }
 #endif
 
     namespace po = boost::program_options;
     po::options_description desc("Options");
     desc.add_options()
-        ("help,h",  "Produce a help message")
-        ("print,r", "Print the list of available test suites")
-        ("suites,s", po::value<string>(), "suites to run")
+       ("help,h",  "Produce a help message")
+       ("print,r", "Print the list of available test suites")
+       ("suites,s", po::value<string>(), "suites to run")
         ;
 
     po::positional_options_description p;

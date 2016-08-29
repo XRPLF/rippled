@@ -18,6 +18,7 @@ namespace beast {
 namespace unit_test {
 
 /** Unit test runner interface.
+
     Derived classes can customize the reporting behavior. This interface is
     injected into the unit_test class to receive the results of the tests.
 */
@@ -60,7 +61,7 @@ public:
     */
     template<class = void>
     bool
-    run (suite_info const& s);
+    run(suite_info const& s);
 
     /** Run a sequence of suites.
         The expression
@@ -70,12 +71,12 @@ public:
     */
     template<class FwdIter>
     bool
-    run (FwdIter first, FwdIter last);
+    run(FwdIter first, FwdIter last);
 
     /** Conditionally run a sequence of suites.
         pred will be called as:
         @code
-            bool pred (suite_info const&);
+            bool pred(suite_info const&);
         @endcode
         @return `true` if any conditions failed.
     */
@@ -88,12 +89,12 @@ public:
     */
     template<class SequenceContainer>
     bool
-    run_each (SequenceContainer const& c);
+    run_each(SequenceContainer const& c);
 
     /** Conditionally run suites in a container.
         pred will be called as:
         @code
-            bool pred (suite_info const&);
+            bool pred(suite_info const&);
         @endcode
         @return `true` if any conditions failed.
     */
@@ -102,10 +103,6 @@ public:
     run_each_if(SequenceContainer const& c, Pred pred = Pred{});
 
 protected:
-    //
-    // Overrides
-    //
-
     /// Called when a new suite starts.
     virtual
     void
@@ -161,7 +158,7 @@ private:
     // Start a new testcase.
     template<class = void>
     void
-    testcase (std::string const& name);
+    testcase(std::string const& name);
 
     template<class = void>
     void
@@ -169,26 +166,26 @@ private:
 
     template<class = void>
     void
-    fail (std::string const& reason);
+    fail(std::string const& reason);
 
     template<class = void>
     void
-    log (std::string const& s);
+    log(std::string const& s);
 };
 
 //------------------------------------------------------------------------------
 
 template<class>
 bool
-runner::run (suite_info const& s)
+runner::run(suite_info const& s)
 {
     // Enable 'default' testcase
     default_ = true;
     failed_ = false;
-    on_suite_begin (s);
-    s.run (*this);
+    on_suite_begin(s);
+    s.run(*this);
     // Forgot to call pass or fail.
-    assert (cond_);
+    assert(cond_);
     on_case_end();
     on_suite_end();
     return failed_;
@@ -196,11 +193,11 @@ runner::run (suite_info const& s)
 
 template<class FwdIter>
 bool
-runner::run (FwdIter first, FwdIter last)
+runner::run(FwdIter first, FwdIter last)
 {
-    bool failed (false);
+    bool failed(false);
     for(;first != last; ++first)
-        failed = run (*first) || failed;
+        failed = run(*first) || failed;
     return failed;
 }
 
@@ -208,20 +205,20 @@ template<class FwdIter, class Pred>
 bool
 runner::run_if(FwdIter first, FwdIter last, Pred pred)
 {
-    bool failed (false);
+    bool failed(false);
     for(;first != last; ++first)
-        if(pred (*first))
-            failed = run (*first) || failed;
+        if(pred(*first))
+            failed = run(*first) || failed;
     return failed;
 }
 
 template<class SequenceContainer>
 bool
-runner::run_each (SequenceContainer const& c)
+runner::run_each(SequenceContainer const& c)
 {
-    bool failed (false);
+    bool failed(false);
     for(auto const& s : c)
-        failed = run (s) || failed;
+        failed = run(s) || failed;
     return failed;
 }
 
@@ -229,27 +226,27 @@ template<class SequenceContainer, class Pred>
 bool
 runner::run_each_if(SequenceContainer const& c, Pred pred)
 {
-    bool failed (false);
+    bool failed(false);
     for(auto const& s : c)
-        if(pred (s))
-            failed = run (s) || failed;
+        if(pred(s))
+            failed = run(s) || failed;
     return failed;
 }
 
 template<class>
 void
-runner::testcase (std::string const& name)
+runner::testcase(std::string const& name)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     // Name may not be empty
-    assert (default_ || ! name.empty());
+    assert(default_ || ! name.empty());
     // Forgot to call pass or fail
-    assert (default_ || cond_);
+    assert(default_ || cond_);
     if(! default_)
         on_case_end();
     default_ = false;
     cond_ = false;
-    on_case_begin (name);
+    on_case_begin(name);
 }
 
 template<class>
@@ -258,31 +255,31 @@ runner::pass()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if(default_)
-        testcase ("");
+        testcase("");
     on_pass();
     cond_ = true;
 }
 
 template<class>
 void
-runner::fail (std::string const& reason)
+runner::fail(std::string const& reason)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if(default_)
-        testcase ("");
-    on_fail (reason);
+        testcase("");
+    on_fail(reason);
     failed_ = true;
     cond_ = true;
 }
 
 template<class>
 void
-runner::log (std::string const& s)
+runner::log(std::string const& s)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     if(default_)
-        testcase ("");
-    on_log (s);
+        testcase("");
+    on_log(s);
 }
 
 } // unit_test

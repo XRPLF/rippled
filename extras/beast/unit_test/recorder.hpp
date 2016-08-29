@@ -24,8 +24,8 @@ private:
 
 public:
     recorder() = default;
-    recorder (recorder const&) = default;
-    recorder& operator= (recorder const&) = default;
+    recorder(recorder const&) = default;
+    recorder& operator=(recorder const&) = default;
 
     /** Returns a report with the results of all completed suites. */
     results const&
@@ -37,23 +37,23 @@ public:
 private:
     virtual
     void
-    on_suite_begin (suite_info const& info) override
+    on_suite_begin(suite_info const& info) override
     {
-        m_suite = suite_results (info.full_name());
+        m_suite = suite_results(info.full_name());
     }
 
     virtual
     void
     on_suite_end() override
     {
-        m_results.insert (std::move (m_suite));
+        m_results.insert(std::move(m_suite));
     }
 
     virtual
     void
-    on_case_begin (std::string const& name) override
+    on_case_begin(std::string const& name) override
     {
-        m_case = case_results (name);
+        m_case = case_results(name);
     }
 
     virtual
@@ -61,7 +61,7 @@ private:
     on_case_end() override
     {
         if(m_case.tests.size() > 0)
-            m_suite.insert (std::move (m_case));
+            m_suite.insert(std::move(m_case));
     }
 
     virtual
@@ -73,16 +73,16 @@ private:
 
     virtual
     void
-    on_fail (std::string const& reason) override
+    on_fail(std::string const& reason) override
     {
-        m_case.tests.fail (reason);
+        m_case.tests.fail(reason);
     }
 
     virtual
     void
-    on_log (std::string const& s) override
+    on_log(std::string const& s) override
     {
-        m_case.log.insert (s);
+        m_case.log.insert(s);
     }
 };
 
