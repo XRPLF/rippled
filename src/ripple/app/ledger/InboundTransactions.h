@@ -78,8 +78,8 @@ make_InboundTransactions (
     Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function
-        <void (uint256 const&,
-            std::shared_ptr <SHAMap> const&)> gotSet);
+        <void (std::shared_ptr <SHAMap> const&,
+            bool)> gotSet);
 
 
 } // ripple

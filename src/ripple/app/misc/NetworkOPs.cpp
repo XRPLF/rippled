@@ -297,7 +297,9 @@ public:
         const std::shared_ptr<Peer>& peer, uint256 const& set,
         protocol::TxSetStatus status);
 
-    void mapComplete (uint256 const& hash, std::shared_ptr<SHAMap> const& map) override;
+    void mapComplete (
+        std::shared_ptr<SHAMap> const& map,
+        bool fromAcquire) override;
 
     // Network state machine.
 
@@ -1512,10 +1514,24 @@ void NetworkOPsImp::processTrustedProposal (
 }
 
 void
-NetworkOPsImp::mapComplete (uint256 const& hash,
-                            std::shared_ptr<SHAMap> const& map)
+NetworkOPsImp::mapComplete (
+    std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 {
-    mLedgerConsensus->gotMap (hash, map);
+    // We now have an additional transaction set
+    // either created locally during the consensus process
+    // or acquired from a peer
+
+    // Inform peers we have this set
+    protocol::TMHaveTransactionSet msg;
+    msg.set_hash (map->getHash().as_uint256().begin(), 256 / 8);
+    msg.set_status (protocol::tsHAVE);
+    app_.overlay().foreach (send_always (
+        std::make_shared<Message> (
+            msg, protocol::mtHAVE_SET)));
+
+    // We acquired it because consensus asked us to
+    if (fromAcquire)
+        mLedgerConsensus->gotMap (map);
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)

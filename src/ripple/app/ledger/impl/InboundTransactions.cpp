@@ -70,8 +70,8 @@ public:
             clock_type& clock,
             Stoppable& parent,
             beast::insight::Collector::ptr const& collector,
-            std::function <void (uint256 const&,
-                std::shared_ptr <SHAMap> const&)> gotSet)
+            std::function <void (std::shared_ptr <SHAMap> const&,
+                bool)> gotSet)
         : Stoppable ("InboundTransactions", parent)
         , app_ (app)
         , m_clock (clock)
@@ -202,8 +202,8 @@ public:
 
         }
 
-        if (isNew && fromAcquire)
-            m_gotSet (hash, set);
+        if (isNew)
+            m_gotSet (set, fromAcquire);
     }
 
     Json::Value getInfo() override
@@ -285,7 +285,7 @@ private:
     // The empty transaction set whose hash is zero
     InboundTransactionSet& m_zeroSet;
 
-    std::function <void (uint256 const&, std::shared_ptr <SHAMap> const&)> m_gotSet;
+    std::function <void (std::shared_ptr <SHAMap> const&, bool)> m_gotSet;
 };
 
 //------------------------------------------------------------------------------
@@ -298,8 +298,8 @@ make_InboundTransactions (
     InboundLedgers::clock_type& clock,
     Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
-    std::function <void (uint256 const&,
-        std::shared_ptr <SHAMap> const&)> gotSet)
+    std::function <void (std::shared_ptr <SHAMap> const&,
+        bool)> gotSet)
 {
     return std::make_unique <InboundTransactionsImp>
         (app, clock, parent, collector, std::move (gotSet));

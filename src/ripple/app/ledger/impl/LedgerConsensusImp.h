@@ -125,12 +125,10 @@ public:
     /**
       We have a complete transaction set, typically acquired from the network
 
-      @param hash     hash of the transaction set.
       @param map      the transaction set.
       @param acquired true if we have acquired the transaction set.
     */
     void gotMap (
-        uint256 const& hash,
         std::shared_ptr<SHAMap> const& map) override;
 
     /**
@@ -186,12 +184,10 @@ private:
     /**
       We have a complete transaction set, typically acquired from the network
 
-      @param hash     hash of the transaction set.
       @param map      the transaction set.
       @param acquired true if we have acquired the transaction set.
     */
     void mapCompleteInternal (
-        uint256 const& hash,
         std::shared_ptr<SHAMap> const& map,
         bool acquired);
 
@@ -240,15 +236,6 @@ private:
     */
     void propose ();
 
-    /** Let peers know that we a particular transactions set so they
-       can fetch it from us.
-
-      @param hash   The ID of the transaction.
-      @param direct true if we have this transaction set locally, else a
-                    directly connected peer has it.
-    */
-    void sendHaveTxSet (uint256 const& hash, bool direct);
-
     /** Send a node status change message to our directly connected peers
 
       @param event   The event which caused the status change.  This is
@@ -257,12 +244,14 @@ private:
     */
     void statusChange (protocol::NodeEvent event, ReadView const& ledger);
 
-    /** Take an initial position on what we think the consensus should be
-        based on the transactions that made it into our open ledger
-
-      @param initialLedger The ledger that contains our initial position.
+    /** Determine our initial proposed transaction set based on
+        our open ledger
     */
-    void takeInitialPosition (std::shared_ptr<ReadView const> const& initialLedger);
+    std::shared_ptr<SHAMap> makeInitialPosition();
+
+    /** Take an initial position on what we think the consensus set should be
+    */
+    void takeInitialPosition ();
 
     /**
        Called while trying to avalanche towards consensus.
