@@ -241,7 +241,7 @@ public:
             error_code ec;
             string_write_stream ss(ios_);
             async_write(ss, m, do_yield[ec]);
-            if(expect(! ec, ec.message()))
+            if(BEAST_EXPECTS(! ec, ec.message()))
                 BEAST_EXPECT(ss.str ==
                     "HTTP/1.0 200 OK\r\n"
                     "Server: test\r\n"
@@ -260,7 +260,7 @@ public:
             error_code ec;
             string_write_stream ss(ios_);
             async_write(ss, m, do_yield[ec]);
-            if(expect(! ec, ec.message()))
+            if(BEAST_EXPECTS(! ec, ec.message()))
                 BEAST_EXPECT(ss.str ==
                     "HTTP/1.1 200 OK\r\n"
                     "Server: test\r\n"

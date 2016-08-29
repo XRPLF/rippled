@@ -56,7 +56,7 @@ public:
             [&](std::string const& s)
             {
                 auto const got = str(param_list{s});
-                expect(got == s, fmt(got));
+                BEAST_EXPECTS(got == s, fmt(got));
             };
         auto const cs =
             [&](std::string const& s, std::string const& good)
@@ -64,13 +64,13 @@ public:
                 ce(good);
                 auto const got = str(param_list{s});
                 ce(got);
-                expect(got == good, fmt(got));
+                BEAST_EXPECTS(got == good, fmt(got));
             };
         auto const cq =
             [&](std::string const& s, std::string const& good)
             {
                 auto const got = str(param_list{s});
-                expect(got == good, fmt(got));
+                BEAST_EXPECTS(got == good, fmt(got));
             };
 
         ce("");
@@ -114,7 +114,7 @@ public:
             [&](std::string const& s)
             {
                 auto const got = str(ext_list{s});
-                expect(got == s, fmt(got));
+                BEAST_EXPECTS(got == s, fmt(got));
             };
         auto const cs =
             [&](std::string const& s, std::string const& good)
@@ -122,13 +122,13 @@ public:
                 ce(good);
                 auto const got = str(ext_list{s});
                 ce(got);
-                expect(got == good, fmt(got));
+                BEAST_EXPECTS(got == good, fmt(got));
             };
         auto const cq =
             [&](std::string const& s, std::string const& good)
             {
                 auto const got = str(ext_list{s});
-                expect(got == good, fmt(got));
+                BEAST_EXPECTS(got == good, fmt(got));
             };
     /*
         ext-list    = *( "," OWS ) ext *( OWS "," [ OWS ext ] )
@@ -161,9 +161,9 @@ public:
         cq("ab;x=\" \"", "ab;x= ");
         cq("ab;x=\"\\\"\"", "ab;x=\"");
 
-        expect(ext_list{"a,b;i=1,c;j=2;k=3"}.exists("A"));
-        expect(ext_list{"a,b;i=1,c;j=2;k=3"}.exists("b"));
-        expect(! ext_list{"a,b;i=1,c;j=2;k=3"}.exists("d"));
+        BEAST_EXPECT(ext_list{"a,b;i=1,c;j=2;k=3"}.exists("A"));
+        BEAST_EXPECT(ext_list{"a,b;i=1,c;j=2;k=3"}.exists("b"));
+        BEAST_EXPECT(! ext_list{"a,b;i=1,c;j=2;k=3"}.exists("d"));
 
         // invalid strings
         cs("i j", "i");
@@ -193,7 +193,7 @@ public:
             [&](std::string const& s)
             {
                 auto const got = str(token_list{s});
-                expect(got == s, fmt(got));
+                BEAST_EXPECTS(got == s, fmt(got));
             };
         auto const cs =
             [&](std::string const& s, std::string const& good)
@@ -201,7 +201,7 @@ public:
                 ce(good);
                 auto const got = str(token_list{s});
                 ce(got);
-                expect(got == good, fmt(got));
+                BEAST_EXPECTS(got == good, fmt(got));
             };
 
         cs("", "");
@@ -222,9 +222,9 @@ public:
         cs("x ,\ty ", "x,y");
         cs("x, y, z", "x,y,z");
 
-        expect(token_list{"a,b,c"}.exists("A"));
-        expect(token_list{"a,b,c"}.exists("b"));
-        expect(! token_list{"a,b,c"}.exists("d"));
+        BEAST_EXPECT(token_list{"a,b,c"}.exists("A"));
+        BEAST_EXPECT(token_list{"a,b,c"}.exists("b"));
+        BEAST_EXPECT(! token_list{"a,b,c"}.exists("d"));
 
         // invalid
         cs("x y", "x");

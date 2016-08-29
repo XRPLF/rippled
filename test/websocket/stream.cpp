@@ -204,7 +204,7 @@ public:
                 {
                 }
             }
-            expect(n < limit);
+            BEAST_EXPECT(n < limit);
         }
         {
             // valid
@@ -259,11 +259,11 @@ public:
                     {
                         ws.accept(boost::asio::buffer(
                             s.substr(0, i), i));
-                        expect(! ev);
+                        BEAST_EXPECTS(! ev, ev.message());
                     }
                     catch(system_error const& se)
                     {
-                        expect(se.code() == ev);
+                        BEAST_EXPECT(se.code() == ev);
                     }
                 }
             };
@@ -369,7 +369,7 @@ public:
                 }
                 catch(system_error const& se)
                 {
-                    expect(se.code() == error::response_failed);
+                    BEAST_EXPECT(se.code() == error::response_failed);
                 }
             };
         // wrong HTTP version
@@ -443,22 +443,22 @@ public:
                 error_code ec;
                 socket_type sock(ios_);
                 sock.connect(ep, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 stream<socket_type&> ws(sock);
                 ws.handshake("localhost", "/", ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 ws.write(boost::asio::buffer(v), ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 opcode op;
                 streambuf db;
                 ws.read(op, db, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
-                expect(to_string(db.data()) ==
-                    std::string{v.data(), v.size()});
+                BEAST_EXPECT(to_string(db.data()) ==
+                    std::string(v.data(), v.size()));
                 v.push_back(n+1);
             }
         }
@@ -469,22 +469,22 @@ public:
                 error_code ec;
                 socket_type sock(ios_);
                 sock.connect(ep, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 stream<socket_type&> ws(sock);
                 ws.handshake("localhost", "/", ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 ws.async_write(boost::asio::buffer(v), do_yield[ec]);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 opcode op;
                 streambuf db;
                 ws.async_read(op, db, do_yield[ec]);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
-                expect(to_string(db.data()) ==
-                    std::string{v.data(), v.size()});
+                BEAST_EXPECT(to_string(db.data()) ==
+                    std::string(v.data(), v.size()));
                 v.push_back(n+1);
             }
         }
@@ -561,7 +561,7 @@ public:
             {
                 ++count;
                 // Send is canceled because close received.
-                expect(ec == boost::asio::
+                BEAST_EXPECT(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
                 // Writes after close are aborted.
@@ -569,7 +569,7 @@ public:
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECT(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -583,7 +583,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 #endif
@@ -609,14 +609,14 @@ public:
             {
                 // Read should fail with protocol error
                 ++count;
-                expect(ec == error::failed,
-                    ec.message());
+                BEAST_EXPECTS(
+                    ec == error::failed, ec.message());
                 // Reads after failure are aborted
                 ws.async_read(op, db,
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -631,7 +631,7 @@ public:
             {
                 ++count;
                 // Send is canceled because close received.
-                expect(ec == boost::asio::
+                BEAST_EXPECTS(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
                 // Writes after close are aborted.
@@ -639,7 +639,7 @@ public:
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -653,7 +653,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 
@@ -677,19 +677,19 @@ public:
             {
                 // Read should complete with error::closed
                 ++count;
-                expect(ec == error::closed,
+                BEAST_EXPECTS(ec == error::closed,
                     ec.message());
                 // Pings after a close are aborted
                 ws.async_ping("",
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
             });
-        if(! expect(run_until(ios, 100,
+        if(! BEAST_EXPECT(run_until(ios, 100,
                 [&]{ return ws.wr_close_; })))
             return;
         // Try to ping
@@ -698,7 +698,7 @@ public:
             {
                 // Pings after a close are aborted
                 ++count;
-                expect(ec == boost::asio::
+                BEAST_EXPECTS(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
                 // Subsequent calls to close are aborted
@@ -706,7 +706,7 @@ public:
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -719,7 +719,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 
@@ -740,7 +740,7 @@ public:
             [&](error_code ec)
             {
                 ++count;
-                expect(ec == error::closed,
+                BEAST_EXPECTS(ec == error::closed,
                     ec.message());
             });
         while(! ws.wr_block_)
@@ -750,7 +750,7 @@ public:
             [&](error_code ec)
             {
                 ++count;
-                expect(ec == boost::asio::
+                BEAST_EXPECTS(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
             });
@@ -762,7 +762,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 
@@ -777,11 +777,11 @@ public:
         ws.async_write(sbuf("CLOSE"),
             [&](error_code ec)
             {
-                expect(! ec);
+                BEAST_EXPECT(! ec);
                 ws.async_write(sbuf("PING"),
                     [&](error_code ec)
                     {
-                        expect(! ec);
+                        BEAST_EXPECT(! ec);
                     });
             });
         opcode op;
@@ -789,9 +789,9 @@ public:
         ws.async_read(op, db,
             [&](error_code ec)
             {
-                expect(ec == error::closed, ec.message());
+                BEAST_EXPECTS(ec == error::closed, ec.message());
             });
-        if(! expect(run_until(ios, 100,
+        if(! BEAST_EXPECT(run_until(ios, 100,
                 [&]{ return ios.stopped(); })))
             return;
     }
@@ -823,7 +823,7 @@ public:
                     }
                     error_code ec;
                     ws.lowest_layer().connect(ep, ec);
-                    if(! expect(! ec, ec.message()))
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
                         return false;
                     ws.handshake("localhost", "/");
                     return true;
@@ -834,7 +834,7 @@ public:
                     // connect
                     error_code ec;
                     ws.lowest_layer().connect(ep, ec);
-                    if(! expect(! ec, ec.message()))
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
                         return;
                 }
                 ws.handshake("localhost", "/");
@@ -848,8 +848,8 @@ public:
                     opcode op;
                     streambuf db;
                     read(ws, op, db);
-                    expect(op == opcode::text);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // close, no payload
@@ -872,9 +872,9 @@ public:
                 ws.set_option(pong_callback{
                     [&](ping_data const& payload)
                     {
-                        expect(! pong);
+                        BEAST_EXPECT(! pong);
                         pong = true;
-                        expect(payload == "");
+                        BEAST_EXPECT(payload == "");
                     }});
                 ws.ping("");
                 ws.set_option(message_type(opcode::binary));
@@ -884,9 +884,9 @@ public:
                     opcode op;
                     streambuf db;
                     ws.read(op, db);
-                    expect(pong == 1);
-                    expect(op == opcode::binary);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(pong == 1);
+                    BEAST_EXPECT(op == opcode::binary);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(pong_callback{});
 
@@ -894,7 +894,7 @@ public:
                 ws.set_option(pong_callback{
                     [&](ping_data const& payload)
                     {
-                        expect(payload == "payload");
+                        BEAST_EXPECT(payload == "payload");
                     }});
                 ws.ping("payload");
                 ws.write_frame(false, sbuf("Hello, "));
@@ -905,8 +905,8 @@ public:
                     opcode op;
                     streambuf db;
                     ws.read(op, db);
-                    expect(pong == 1);
-                    expect(to_string(db.data()) == "Hello, World!");
+                    BEAST_EXPECT(pong == 1);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
                 }
                 ws.set_option(pong_callback{});
 
@@ -918,7 +918,7 @@ public:
                     opcode op;
                     streambuf db;
                     ws.read(op, db);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(auto_fragment_size(0));
 
@@ -932,7 +932,7 @@ public:
                         opcode op;
                         streambuf db;
                         ws.read(op, db);
-                        expect(to_string(db.data()) == s);
+                        BEAST_EXPECT(to_string(db.data()) == s);
                     }
                 }
 
@@ -946,8 +946,8 @@ public:
                     opcode op;
                     streambuf db;
                     ws.read(op, db);
-                    expect(op == opcode::text);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // cause close
@@ -1024,7 +1024,7 @@ public:
             }
             break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void testAsyncClient(
@@ -1057,7 +1057,7 @@ public:
                     ws.lowest_layer().close(ec);
                     ec = {};
                     ws.lowest_layer().connect(ep, ec);
-                    if(! expect(! ec, ec.message()))
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
                         return false;
                     ws.async_handshake("localhost", "/", do_yield[ec]);
                     if(ec)
@@ -1070,7 +1070,7 @@ public:
 
                 // connect
                 ws.lowest_layer().connect(ep, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     return;
                 ws.async_handshake("localhost", "/", do_yield[ec]);
                 if(ec)
@@ -1089,8 +1089,8 @@ public:
                     ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(op == opcode::text);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // close, no payload
@@ -1120,9 +1120,9 @@ public:
                     ws.set_option(pong_callback{
                         [&](ping_data const& payload)
                         {
-                            expect(! pong);
+                            BEAST_EXPECT(! pong);
                             pong = true;
-                            expect(payload == "");
+                            BEAST_EXPECT(payload == "");
                         }});
                     ws.async_ping("", do_yield[ec]);
                     if(ec)
@@ -1137,8 +1137,8 @@ public:
                     ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(op == opcode::binary);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::binary);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                     ws.set_option(pong_callback{});
                 }
 
@@ -1147,7 +1147,7 @@ public:
                     ws.set_option(pong_callback{
                         [&](ping_data const& payload)
                         {
-                            expect(payload == "payload");
+                            BEAST_EXPECT(payload == "payload");
                         }});
                     ws.async_ping("payload", do_yield[ec]);
                     if(! ec)
@@ -1165,7 +1165,7 @@ public:
                         ws.async_read(op, db, do_yield[ec]);
                         if(ec)
                             throw system_error{ec};
-                        expect(to_string(db.data()) == "Hello, World!");
+                        BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
                     }
                     ws.set_option(pong_callback{});
                 }
@@ -1180,7 +1180,7 @@ public:
                     ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(auto_fragment_size(0));
 
@@ -1198,7 +1198,7 @@ public:
                         ws.async_read(op, db, do_yield[ec]);
                         if(ec)
                             throw system_error{ec};
-                        expect(to_string(db.data()) == s);
+                        BEAST_EXPECT(to_string(db.data()) == s);
                     }
                 }
 
@@ -1218,8 +1218,8 @@ public:
                     ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(op == opcode::text);
-                    expect(to_string(db.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // cause close
@@ -1325,7 +1325,7 @@ public:
             }
             break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void testAsyncWriteFrame(endpoint_type const& ep)
@@ -1336,11 +1336,11 @@ public:
             error_code ec;
             socket_type sock(ios);
             sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
+            if(! BEAST_EXPECTS(! ec, ec.message()))
                 break;
             stream<socket_type&> ws(sock);
             ws.handshake("localhost", "/", ec);
-            if(! expect(! ec, ec.message()))
+            if(! BEAST_EXPECTS(! ec, ec.message()))
                 break;
             ws.async_write_frame(false,
                 boost::asio::null_buffers{},
@@ -1349,7 +1349,7 @@ public:
                     fail();
                 });
             ws.next_layer().cancel(ec);
-            if(! expect(! ec, ec.message()))
+            if(! BEAST_EXPECTS(! ec, ec.message()))
                 break;
             //
             // Destruction of the io_service will cause destruction

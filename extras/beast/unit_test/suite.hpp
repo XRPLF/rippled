@@ -9,6 +9,7 @@
 #define BEAST_UNIT_TEST_SUITE_HPP
 
 #include <beast/unit_test/runner.hpp>
+#include <boost/filesystem.hpp>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -170,66 +171,93 @@ public:
     void
     operator()(runner& r);
 
+    /** Record a successful test condition. */
+    template<class = void>
+    void
+    pass();
+
+    /** Record a failure.
+
+        @param reason 
+    */
+    template<class = void>
+    void
+    fail(std::string const& reason = "");
+
     /** Evaluate a test condition.
 
-        The condition is passed as a template argument instead of `bool` so
-        that implicit conversion is not required. The `reason` argument is
-        logged if the condition is false.
+        This function provides improved logging by incorporating the
+        file name and line number into the reported output on failure,
+        as well as additional text specified by the caller.
+
+        @param shouldBeTrue The condition to test. The condition
+        is evaluated in a boolean context.
+
+        @param reason Optional added text to output on a failure.
+
+        @param file The source code file where the test failed.
+
+        @param line The source code line number where the test failed.
+
         @return `true` if the test condition indicates success.
     */
-    template<class Condition, class String>
-    bool
-    expect(Condition const& shouldBeTrue,
-        String const& reason);
-
+    /** @{ */
     template<class Condition>
     bool
     expect(Condition const& shouldBeTrue)
     {
-        return expect(shouldBeTrue, "");
+        return expect(shouldBeTrue, {});
     }
 
-    /** Expect an exception from f() */
-    /** @{ */
+    template<class Condition>
+    bool
+    expect(Condition const& shouldBeTrue, std::string const& reason);
+
+    template<class Condition>
+    bool
+    expect(Condition const& shouldBeTrue,
+        char const* file, int line)
+    {
+        return expect(shouldBeTrue, {}, file, line);
+    }
+
+    template<class Condition>
+    bool
+    expect(Condition const& shouldBeTrue,
+        std::string const& reason, char const* file, int line);
+    /** @} */
+
+    //
+    // DEPRECATED
+    //
+    // Expect an exception from f()
     template<class F, class String>
     bool
     except(F&& f, String const& reason);
-
     template<class F>
     bool
     except(F&& f)
     {
         return except(f, "");
     }
-    /** @} */
-
-    /** Expect an exception of the given type from f() */
-    /** @{ */
     template<class E, class F, class String>
     bool
     except(F&& f, String const& reason);
-
     template<class E, class F>
     bool
     except(F&& f)
     {
         return except<E>(f, "");
     }
-    /** @} */
-
-    /** Fail if f() throws */
-    /** @{ */
     template<class F, class String>
     bool
     unexcept(F&& f, String const& reason);
-
     template<class F>
     bool
     unexcept(F&& f)
     {
         return unexcept(f, "");
     }
-    /** @} */
 
     /** Return the argument associated with the runner. */
     std::string const&
@@ -251,16 +279,6 @@ public:
     {
         return unexpected(shouldBeFalse, "");
     }
-
-    /** Record a successful test condition. */
-    template<class = void>
-    void
-    pass();
-
-    /** Record a failure. */
-    template<class = void>
-    void
-    fail(std::string const& reason = "");
 
 private:
     friend class thread;
@@ -368,7 +386,8 @@ suite::testcase_t::operator<<(T const& t)
 
 template<class>
 void
-suite::operator()(runner& r)
+suite::
+operator()(runner& r)
 {
     *p_this_suite() = this;
     try
@@ -383,11 +402,11 @@ suite::operator()(runner& r)
     }
 }
 
-template<class Condition, class String>
-inline
+template<class Condition>
 bool
-suite::expect(Condition const& shouldBeTrue,
-    String const& reason)
+suite::
+expect(
+    Condition const& shouldBeTrue, std::string const& reason)
 {
     if(shouldBeTrue)
     {
@@ -398,9 +417,35 @@ suite::expect(Condition const& shouldBeTrue,
     return false;
 }
 
+template<class Condition>
+bool
+suite::
+expect(Condition const& shouldBeTrue,
+    std::string const& reason, char const* file, int line)
+{
+    if(shouldBeTrue)
+    {
+        pass();
+        return true;
+    }
+    std::string s;
+    if(! reason.empty())
+    {
+        s += reason;
+        s += " ";
+    }
+    s += boost::filesystem::path{file}.filename().string() +
+        "(" + std::to_string(line) + ")";
+    fail(s);
+    return false;
+}
+
+// DEPRECATED
+
 template<class F, class String>
 bool
-suite::except(F&& f, String const& reason)
+suite::
+except(F&& f, String const& reason)
 {
     try
     {
@@ -417,7 +462,8 @@ suite::except(F&& f, String const& reason)
 
 template<class E, class F, class String>
 bool
-suite::except(F&& f, String const& reason)
+suite::
+except(F&& f, String const& reason)
 {
     try
     {
@@ -434,7 +480,8 @@ suite::except(F&& f, String const& reason)
 
 template<class F, class String>
 bool
-suite::unexcept(F&& f, String const& reason)
+suite::
+unexcept(F&& f, String const& reason)
 {
     try
     {
@@ -450,10 +497,10 @@ suite::unexcept(F&& f, String const& reason)
 }
 
 template<class Condition, class String>
-inline
 bool
-suite::unexpected(Condition shouldBeFalse,
-    String const& reason)
+suite::
+unexpected(
+    Condition shouldBeFalse, String const& reason)
 {
     bool const b =
         static_cast<bool>(shouldBeFalse);
@@ -466,15 +513,18 @@ suite::unexpected(Condition shouldBeFalse,
 
 template<class>
 void
-suite::pass()
+suite::
+pass()
 {
     propagate_abort();
     runner_->pass();
 }
 
+// ::fail
 template<class>
 void
-suite::fail(std::string const& reason)
+suite::
+fail(std::string const& reason)
 {
     propagate_abort();
     runner_->fail(reason);
@@ -487,7 +537,8 @@ suite::fail(std::string const& reason)
 
 inline
 void
-suite::propagate_abort()
+suite::
+propagate_abort()
 {
     if(abort_ && aborted_)
         throw abort_exception();
@@ -495,7 +546,8 @@ suite::propagate_abort()
 
 template<class>
 void
-suite::run(runner& r)
+suite::
+run(runner& r)
 {
     runner_ = &r;
 
@@ -520,10 +572,18 @@ suite::run(runner& r)
 
 #ifndef BEAST_EXPECT
 /** Check a precondition.
+
+    If the condition is false, the file and line number are reported.
 */
-#define BEAST_EXPECT_S1(x) #x
-#define BEAST_EXPECT_S2(x) BEAST_EXPECT_S1(x)
-#define BEAST_EXPECT(cond) expect(cond, __FILE__ ":" BEAST_EXPECT_S2(__LINE__))
+#define BEAST_EXPECT(cond) expect(cond, __FILE__, __LINE__)
+#endif
+
+#ifndef BEAST_EXPECTS
+/** Check a precondition.
+
+    If the condition is false, the file and line number are reported.
+*/
+#define BEAST_EXPECTS(cond, reason) expect(cond, reason, __FILE__, __LINE__)
 #endif
 
 } // unit_test
