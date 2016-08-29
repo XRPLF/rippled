@@ -158,8 +158,8 @@ public:
     virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;
 
-    virtual void mapComplete (uint256 const& hash,
-                              std::shared_ptr<SHAMap> const& map) = 0;
+    virtual void mapComplete (std::shared_ptr<SHAMap> const& map,
+        bool fromAcquire) = 0;
 
     // network state machine
     virtual bool beginConsensus (uint256 const& netLCL) = 0;

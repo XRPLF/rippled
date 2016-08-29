@@ -214,10 +214,11 @@ uint256 LedgerConsensusImp::getLCL ()
 // and update our tracking if any validators currently
 // propose it
 void LedgerConsensusImp::mapCompleteInternal (
-    uint256 const& hash,
     std::shared_ptr<SHAMap> const& map,
     bool acquired)
 {
+    auto hash = map->getHash ().as_uint256();
+
     {
         auto it = acquired_.find (hash);
         if (it != acquired_.end ())
@@ -265,9 +266,6 @@ void LedgerConsensusImp::mapCompleteInternal (
         // Put the map where others can get it
         inboundTransactions_.giveSet (hash, map, false);
     }
-
-    // Inform directly-connected peers that we have this transaction set
-    sendHaveTxSet (hash, true);
 
     if (ourPosition_ && (! ourPosition_->isBowOut ())
         && (hash != ourPosition_->getCurrentHash ()))
@@ -324,17 +322,17 @@ void LedgerConsensusImp::mapCompleteInternal (
 }
 
 void LedgerConsensusImp::gotMap (
-    uint256 const& hash,
     std::shared_ptr<SHAMap> const& map)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
     try
     {
-        mapCompleteInternal (hash, map, true);
+        mapCompleteInternal (map, true);
     }
     catch (SHAMapMissingNode const& mn)
     {
+        // This should never happen
         leaveConsensus();
         JLOG (j_.error()) <<
             "Missing node processing complete map " << mn;
@@ -542,6 +540,7 @@ void LedgerConsensusImp::timerEntry ()
     }
     catch (SHAMapMissingNode const& mn)
     {
+        // This should never happen
         leaveConsensus ();
         JLOG (j_.error()) <<
            "Missing node during consensus process " << mn;
@@ -782,10 +781,6 @@ void LedgerConsensusImp::simulate (
 
 void LedgerConsensusImp::accept (std::shared_ptr<SHAMap> set)
 {
-    // put our set where others can get it later
-    if (set->getHash ().isNonZero ())
-       consensus_.takePosition (previousLedger_->info().seq, set);
-
     auto closeTime = ourPosition_->getCloseTime();
     bool closeTimeCorrect;
 
@@ -1218,16 +1213,6 @@ void LedgerConsensusImp::propose ()
     app_.overlay().send(prop);
 }
 
-void LedgerConsensusImp::sendHaveTxSet (uint256 const& hash, bool direct)
-{
-    protocol::TMHaveTransactionSet msg;
-    msg.set_hash (hash.begin (), 256 / 8);
-    msg.set_status (direct ? protocol::tsHAVE : protocol::tsCAN_GET);
-    app_.overlay ().foreach (send_always (
-        std::make_shared <Message> (
-            msg, protocol::mtHAVE_SET)));
-}
-
 void LedgerConsensusImp::statusChange (
     protocol::NodeEvent event, ReadView const& ledger)
 {
@@ -1266,10 +1251,17 @@ void LedgerConsensusImp::statusChange (
     JLOG (j_.trace()) << "send status change to peer";
 }
 
-void LedgerConsensusImp::takeInitialPosition (
-    std::shared_ptr<ReadView const> const& initialLedger)
+// For the consensus refactor, takeInitialPosition has been split
+// into two pieces. This piece, makeInitialPosition does the
+// non-consensus parts
+std::shared_ptr<SHAMap> LedgerConsensusImp::makeInitialPosition ()
 {
-    std::shared_ptr<SHAMap> initialSet = std::make_shared <SHAMap> (
+    // Tell the ledger master not to acquire the ledger we're probably building
+    ledgerMaster_.setBuildingLedger (previousLedger_->info().seq + 1);
+
+    auto initialLedger = app_.openLedger().current();
+
+    auto initialSet = std::make_shared <SHAMap> (
         SHAMapType::TRANSACTION, app_.family(), SHAMap::version{1});
     initialSet->setUnbacked ();
 
@@ -1311,21 +1303,23 @@ void LedgerConsensusImp::takeInitialPosition (
     }
 
     // Set should be immutable snapshot
-    initialSet = initialSet->snapShot (false);
+    return initialSet->snapShot (false);
+}
 
-    // Tell the ledger master not to acquire the ledger we're probably building
-    ledgerMaster_.setBuildingLedger (previousLedger_->info().seq + 1);
+void LedgerConsensusImp::takeInitialPosition()
+{
+    auto initialSet = makeInitialPosition();
 
-    auto txSet = initialSet->getHash ().as_uint256();
-    JLOG (j_.info()) << "initial position " << txSet;
-    mapCompleteInternal (txSet, initialSet, false);
+    mapCompleteInternal (initialSet, false);
 
     ourPosition_ = std::make_shared<LedgerProposal> (
-        initialLedger->info().parentHash, txSet, closeTime_);
+        previousLedger_->info().hash,
+        initialSet->getHash().as_uint256(),
+        closeTime_);
 
     for (auto& it : disputes_)
     {
-        it.second->setOurVote (initialLedger->txExists (it.first));
+        it.second->setOurVote (initialSet->hasItem (it.first));
     }
 
     // if any peers have taken a contrary position, process disputes
@@ -1550,7 +1544,7 @@ void LedgerConsensusImp::updateOurPositions ()
             if (proposing_)
                 propose ();
 
-            mapCompleteInternal (newHash, ourPosition, false);
+            mapCompleteInternal (ourPosition, false);
         }
     }
 }
@@ -1598,7 +1592,7 @@ void LedgerConsensusImp::closeLedger ()
     consensus_.setLastCloseTime(closeTime_);
     statusChange (protocol::neCLOSING_LEDGER, *previousLedger_);
     ledgerMaster_.applyHeldTransactions ();
-    takeInitialPosition (app_.openLedger().current());
+    takeInitialPosition ();
 }
 
 void LedgerConsensusImp::checkOurValidation ()

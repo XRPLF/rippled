@@ -94,8 +94,6 @@ public:
     NetClock::time_point
     getLastCloseTime () const;
 
-    void takePosition (int seq, std::shared_ptr<SHAMap> const& position);
-
     std::vector <std::shared_ptr <LedgerProposal>>
     getStoredProposals (uint256 const& previousLedger);
 
@@ -122,12 +120,9 @@ private:
     // The last close time
     NetClock::time_point lastCloseTime_;
 
-    // Recent positions taken
-    std::map<uint256, std::pair<int, std::shared_ptr<SHAMap>>> recentPositions_;
-
     Consensus::Proposals storedProposals_;
 
-    // lock to protect recentPositions_ and storedProposals_
+    // lock to protect storedProposals_
     std::mutex lock_;
 };
 

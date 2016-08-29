@@ -154,29 +154,6 @@ ConsensusImp::storeProposal (
     props.push_back (proposal);
 }
 
-// Must be called while holding the master lock
-void
-ConsensusImp::takePosition (int seq, std::shared_ptr<SHAMap> const& position)
-{
-    std::lock_guard <std::mutex> _(lock_);
-
-    recentPositions_[position->getHash ().as_uint256()] = std::make_pair (seq, position);
-
-    if (recentPositions_.size () > 4)
-    {
-        for (auto i = recentPositions_.begin (); i != recentPositions_.end ();)
-        {
-            if (i->second.first < (seq - 2))
-            {
-                recentPositions_.erase (i);
-                return;
-            }
-
-            ++i;
-        }
-    }
-}
-
 std::vector <std::shared_ptr <LedgerProposal>>
 ConsensusImp::getStoredProposals (uint256 const& prevLedger)
 {
