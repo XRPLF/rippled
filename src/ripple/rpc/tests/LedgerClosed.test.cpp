@@ -45,7 +45,8 @@ public:
 
         auto const ar_alice = env.le(alice);
         BEAST_EXPECT(ar_alice->getAccountID(sfAccount) == alice.id());
-        BEAST_EXPECT((*ar_alice)[sfBalance] == drops( 10000000000 ));
+        //BEAST_EXPECT((*ar_alice)[sfBalance] == drops( 10000000000 ));
+        BEAST_EXPECT((*ar_alice)[sfBalance] == XRP( 10000 ));
 
         lc_result = env.rpc("ledger_closed") [jss::result];
         BEAST_EXPECT(lc_result[jss::ledger_hash]  == "7C3EEDB3124D92E49E75D81A8826A2E65A75FD71FC3FD6F36FEB803C5F1D812D");
