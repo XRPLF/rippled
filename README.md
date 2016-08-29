@@ -72,7 +72,7 @@ cryptocurrency system.
 ## Description
 
 This software is currently in beta: interfaces may change.
-For recent changes see the [CHANGELOG](CHANGELOG).
+For recent changes see the [CHANGELOG](CHANGELOG.md).
 The library has been submitted to the
 [Boost Library Incubator](http://rrsd.com/blincubator.com/bi_library/beast-2/?gform_post_id=1579)
 
@@ -101,6 +101,11 @@ using the `git subtree` or `git submodule` commands). Then, edit your
 #include <beast/websocket.hpp>
 ```
 
+To link your program successfully, you'll need to add the Boost.System
+library to link with. If you use coroutines you'll also need the
+Boost.Coroutine library. Please visit the Boost documentation for
+instructions on how to do this for your particular build system.
+
 For the examples and tests, Beast provides build scripts for Boost.Build (bjam)
 and CMake. Developers using Microsoft Visual Studio can generate Visual Studio
 project files by executing these commands from the root of the repository:
@@ -108,9 +113,11 @@ project files by executing these commands from the root of the repository:
 
 ```
 cd bin
-cmake ..                                    # for 32-bit builds
+cmake ..                                    # for 32-bit Windows build
+
 cd ../bin64
-cmake -G"Visual Studio 14 2015 Win64" ..    # for 64-bit builds
+cmake ..                                    # for Linux/Mac builds, OR
+cmake -G"Visual Studio 14 2015 Win64" ..    # for 64-bit Windows builds
 ```
 
 To build with Boost.Build, it is necessary to have the bjam executable

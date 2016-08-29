@@ -1,3 +1,10 @@
+1.0.0-b12
+
+* Update README for build requirements
+* Rename to CHANGELOG.md
+
+--------------------------------------------------------------------------------
+
 1.0.0-b11
 
 * Set URI in generated WebSocket Upgrade requests
