@@ -119,6 +119,7 @@ import subprocess
 import sys
 import textwrap
 import time
+import glob
 import SCons.Action
 
 sys.path.append(os.path.join('src', 'ripple', 'beast', 'site_scons'))
@@ -979,7 +980,7 @@ def get_unity_sources(toolchain):
     append_sources(
         result,
         'src/ripple/unity/nodestore.cpp',
-		 'src/unity/test_unity.cpp',
+        *glob.glob('src/unity/test_unity*.cpp'),
         CPPPATH=[
             'src/rocksdb2/include',
             'src/snappy/snappy',

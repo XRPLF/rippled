@@ -636,15 +636,17 @@ if (WIN32 OR is_xcode OR unity)
     shamap.cpp
     server.cpp
     test.cpp)
-
+    
   list(APPEND src ${beast_unity_srcs} ${ripple_unity_srcs})
+ 
+  file(GLOB test_unity_srcs src/unity/test_unity*.cpp)
 
-  add_with_props(src/unity/test_unity.cpp
+  add_with_props("${test_unity_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
     ${rocks_db_system_header})
-	
+  
   add_with_props(src/ripple/unity/nodestore.cpp
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
@@ -653,10 +655,9 @@ if (WIN32 OR is_xcode OR unity)
 
   add_with_props(src/ripple/unity/soci_ripple.cpp ${soci_extra_includes})
 
-  set(unity_srcs ${beast_unity_srcs} ${ripple_unity_srcs}
+  set(unity_srcs ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs}
     src/ripple/unity/nodestore.cpp
-    src/ripple/unity/soci_ripple.cpp
-	src/unity/test_unity.cpp)
+    src/ripple/unity/soci_ripple.cpp)
 
   set_property(
     SOURCE ${unity_srcs}

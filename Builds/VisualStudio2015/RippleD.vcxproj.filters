@@ -5409,7 +5409,22 @@
     <ClCompile Include="..\..\src\test\XRPAmount_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity.cpp">
+    <ClCompile Include="..\..\src\unity\test_unity00.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity01.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity02.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity03.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity04.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity05.cpp">
       <Filter>unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
