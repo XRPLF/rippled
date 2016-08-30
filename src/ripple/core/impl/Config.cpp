@@ -318,7 +318,7 @@ void Config::loadFromString (std::string const& fileContents)
     std::string strTemp;
 
     if (getSingleSection (secConfig, SECTION_PEER_PRIVATE, strTemp, j_))
-        PEER_PRIVATE        = beast::lexicalCastThrow <bool> (strTemp);
+        PEER_PRIVATE = beast::lexicalCastThrow <bool> (strTemp);
 
     if (getSingleSection (secConfig, SECTION_PEERS_MAX, strTemp, j_))
         PEERS_MAX = std::max (0, beast::lexicalCastThrow <int> (strTemp));
@@ -378,9 +378,6 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
         NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);
 
-    if (getSingleSection (secConfig, SECTION_VALIDATION_QUORUM, strTemp, j_))
-        VALIDATION_QUORUM   = std::max (0, beast::lexicalCastThrow <int> (strTemp));
-
     if (getSingleSection (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp, j_))
         FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <std::uint64_t> (strTemp);
 
@@ -425,106 +422,108 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_PATH_SEARCH_MAX, strTemp, j_))
         PATH_SEARCH_MAX     = beast::lexicalCastThrow <int> (strTemp);
 
-    // If a file was explicitly specified, then throw if the
-    // path is malformed or if the file does not exist or is
-    // not a file.
-    // If the specified file is not an absolute path, then look
-    // for it in the same directory as the config file.
-    // If no path was specified, then look for validators.txt
-    // in the same directory as the config file, but don't complain
-    // if we can't find it.
-    boost::filesystem::path validatorsFile;
-
-    if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))
-    {
-        validatorsFile = strTemp;
-
-        if (validatorsFile.empty ())
-            Throw<std::runtime_error> (
-                "Invalid path specified in [" SECTION_VALIDATORS_FILE "]");
-
-        if (!validatorsFile.is_absolute() && !CONFIG_DIR.empty())
-            validatorsFile = CONFIG_DIR / validatorsFile;
-
-        if (!boost::filesystem::exists (validatorsFile))
-            Throw<std::runtime_error> (
-                "The file specified in [" SECTION_VALIDATORS_FILE "] "
-                "does not exist: " + validatorsFile.string());
-
-        else if (!boost::filesystem::is_regular_file (validatorsFile) &&
-                !boost::filesystem::is_symlink (validatorsFile))
-            Throw<std::runtime_error> (
-                "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " +
-                validatorsFile.string());
-    }
-    else if (!CONFIG_DIR.empty())
-    {
-        validatorsFile = CONFIG_DIR / validatorsFileName;
-
-        if (!validatorsFile.empty ())
-        {
-            if(!boost::filesystem::exists (validatorsFile))
-                validatorsFile.clear();
-            else if (!boost::filesystem::is_regular_file (validatorsFile) &&
-                    !boost::filesystem::is_symlink (validatorsFile))
-                validatorsFile.clear();
-        }
-    }
-
-    if (!validatorsFile.empty () &&
-            boost::filesystem::exists (validatorsFile) &&
-            (boost::filesystem::is_regular_file (validatorsFile) ||
-            boost::filesystem::is_symlink (validatorsFile)))
-    {
-        std::ifstream ifsDefault (validatorsFile.native().c_str());
-
-        std::string data;
-
-        data.assign (
-            std::istreambuf_iterator<char>(ifsDefault),
-            std::istreambuf_iterator<char>());
-
-        auto iniFile = parseIniFile (data, true);
-
-        auto entries = getIniFileSection (
-            iniFile,
-            SECTION_VALIDATORS);
-
-        if (entries)
-            section (SECTION_VALIDATORS).append (*entries);
-
-        auto valKeyEntries = getIniFileSection(
-            iniFile,
-            SECTION_VALIDATOR_KEYS);
-
-        if (valKeyEntries)
-            section (SECTION_VALIDATOR_KEYS).append (*valKeyEntries);
-
-        if (!entries && !valKeyEntries)
-            Throw<std::runtime_error> (
-                "The file specified in [" SECTION_VALIDATORS_FILE "] "
-                "does not contain a [" SECTION_VALIDATORS "] or "
-                "[" SECTION_VALIDATOR_KEYS "] section: " +
-                validatorsFile.string());
-
-        // Look for [validation_quorum] in the validators file
-        // if it was not in the config
-        if (!getIniFileSection (secConfig, SECTION_VALIDATION_QUORUM))
-        {
-            if (!getSingleSection (
-                iniFile, SECTION_VALIDATION_QUORUM, strTemp, j_))
-                Throw<std::runtime_error> (
-                    "The file specified in [" SECTION_VALIDATORS_FILE "] "
-                    "does not contain a [" SECTION_VALIDATION_QUORUM "] "
-                    "section: " + validatorsFile.string());
-            else
-                VALIDATION_QUORUM = std::max (
-                    0, beast::lexicalCastThrow <int> (strTemp));
-        }
-    }
-
     if (getSingleSection (secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
         DEBUG_LOGFILE       = strTemp;
+
+    // Do not load trusted validator configuration for standalone mode
+    if (! RUN_STANDALONE)
+    {
+        // If a file was explicitly specified, then throw if the
+        // path is malformed or if the file does not exist or is
+        // not a file.
+        // If the specified file is not an absolute path, then look
+        // for it in the same directory as the config file.
+        // If no path was specified, then look for validators.txt
+        // in the same directory as the config file, but don't complain
+        // if we can't find it.
+        boost::filesystem::path validatorsFile;
+
+        if (getSingleSection (secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))
+        {
+            validatorsFile = strTemp;
+
+            if (validatorsFile.empty ())
+                Throw<std::runtime_error> (
+                    "Invalid path specified in [" SECTION_VALIDATORS_FILE "]");
+
+            if (!validatorsFile.is_absolute() && !CONFIG_DIR.empty())
+                validatorsFile = CONFIG_DIR / validatorsFile;
+
+            if (!boost::filesystem::exists (validatorsFile))
+                Throw<std::runtime_error> (
+                    "The file specified in [" SECTION_VALIDATORS_FILE "] "
+                    "does not exist: " + validatorsFile.string());
+
+            else if (!boost::filesystem::is_regular_file (validatorsFile) &&
+                    !boost::filesystem::is_symlink (validatorsFile))
+                Throw<std::runtime_error> (
+                    "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " +
+                    validatorsFile.string());
+        }
+        else if (!CONFIG_DIR.empty())
+        {
+            validatorsFile = CONFIG_DIR / validatorsFileName;
+
+            if (!validatorsFile.empty ())
+            {
+                if(!boost::filesystem::exists (validatorsFile))
+                    validatorsFile.clear();
+                else if (!boost::filesystem::is_regular_file (validatorsFile) &&
+                        !boost::filesystem::is_symlink (validatorsFile))
+                    validatorsFile.clear();
+            }
+        }
+
+        if (!validatorsFile.empty () &&
+                boost::filesystem::exists (validatorsFile) &&
+                (boost::filesystem::is_regular_file (validatorsFile) ||
+                boost::filesystem::is_symlink (validatorsFile)))
+        {
+            std::ifstream ifsDefault (validatorsFile.native().c_str());
+
+            std::string data;
+
+            data.assign (
+                std::istreambuf_iterator<char>(ifsDefault),
+                std::istreambuf_iterator<char>());
+
+            auto iniFile = parseIniFile (data, true);
+
+            auto entries = getIniFileSection (
+                iniFile,
+                SECTION_VALIDATORS);
+
+            if (entries)
+                section (SECTION_VALIDATORS).append (*entries);
+
+            auto valKeyEntries = getIniFileSection(
+                iniFile,
+                SECTION_VALIDATOR_KEYS);
+
+            if (valKeyEntries)
+                section (SECTION_VALIDATOR_KEYS).append (*valKeyEntries);
+
+            auto valListKeys = getIniFileSection(
+                iniFile,
+                SECTION_VALIDATOR_LIST_KEYS);
+
+            if (valListKeys)
+                section (SECTION_VALIDATOR_LIST_KEYS).append (*valListKeys);
+
+            if (!entries && !valKeyEntries && !valListKeys)
+                Throw<std::runtime_error> (
+                    "The file specified in [" SECTION_VALIDATORS_FILE "] "
+                    "does not contain a [" SECTION_VALIDATORS "], "
+                    "[" SECTION_VALIDATOR_KEYS "] or "
+                    "[" SECTION_VALIDATOR_LIST_KEYS "]"
+                    " section: " +
+                    validatorsFile.string());
+        }
+
+        // Consolidate [validator_keys] and [validators]
+        section (SECTION_VALIDATORS).append (
+            section (SECTION_VALIDATOR_KEYS).lines ());
+    }
 
     {
         auto const part = section("features");

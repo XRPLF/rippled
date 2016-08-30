@@ -35,6 +35,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
@@ -1267,14 +1268,14 @@ LedgerConsensusImp<Traits>::makeInitialPosition () ->
             app_.getValidations().getValidations (
                 previousLedger_->info().parentHash);
 
-        auto const count = std::count_if (
+        std::size_t const count = std::count_if (
             validations.begin(), validations.end(),
             [](auto const& v)
             {
                 return v.second->isTrusted();
             });
 
-        if (count >= ledgerMaster_.getMinValidations())
+        if (count >= app_.validators ().quorum ())
         {
             feeVote_.doVoting (
                 previousLedger_,

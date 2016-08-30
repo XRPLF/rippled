@@ -135,6 +135,10 @@ const char* WalletDBInit[] =
         RawData          BLOB NOT NULL               \
     );",
 
+    "CREATE TABLE IF NOT EXISTS PublisherManifests ( \
+        RawData          BLOB NOT NULL               \
+    );",
+
     // Old tables that were present in wallet.db and we
     // no longer need or use.
     "DROP INDEX IF EXISTS SeedNodeNext;",
