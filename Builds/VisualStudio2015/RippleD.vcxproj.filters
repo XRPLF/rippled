@@ -1521,6 +1521,9 @@
     <ClCompile Include="..\..\src\ripple\app\misc\impl\LoadFeeTrack.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\Manifest.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\Transaction.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
@@ -1531,6 +1534,9 @@
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\LoadFeeTrack.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\Manifest.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\NetworkOPs.cpp">
@@ -2836,12 +2842,6 @@
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\ConnectAttempt.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\overlay\impl\Manifest.cpp">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\Manifest.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
@@ -4917,6 +4917,9 @@
     <ClCompile Include="..\..\src\test\app\LoadFeeTrack_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Manifest_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\MultiSign_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
@@ -5356,9 +5359,6 @@
       <Filter>test\nodestore</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\overlay\cluster_test.cpp">
-      <Filter>test\overlay</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\overlay\manifest_test.cpp">
       <Filter>test\overlay</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\overlay\short_read_test.cpp">

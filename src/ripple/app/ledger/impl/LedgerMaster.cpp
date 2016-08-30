@@ -33,6 +33,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/Validations.h>
+#include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
@@ -53,9 +54,6 @@ namespace ripple {
 
 using namespace std::chrono_literals;
 
-// 150/256ths of validations of previous ledger
-#define MIN_VALIDATION_RATIO    150
-
 // Don't catch up more than 100 ledgers (cannot exceed 256)
 #define MAX_LEDGER_GAP          100
 
@@ -73,8 +71,6 @@ LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     , mHeldTransactions (uint256 ())
     , mLedgerCleaner (detail::make_LedgerCleaner (
         app, *this, app_.journal("LedgerCleaner")))
-    , mMinValidations (0)
-    , mStrictValCount (false)
     , mLastValidateSeq (0)
     , mAdvanceThread (false)
     , mAdvanceWork (false)
@@ -115,13 +111,6 @@ LedgerMaster::isCompatible (
     beast::Journal::Stream s,
     char const* reason)
 {
-    if (mStrictValCount)
-    {
-        // If we're only using validation count, then we can't
-        // reject a ledger even if it's incompatible
-        return true;
-    }
-
     auto validLedger = getValidatedLedger();
 
     if (validLedger &&
@@ -217,7 +206,7 @@ LedgerMaster::setValidLedger(
 
     NetClock::time_point signTime;
 
-    if (! times.empty () && times.size() >= mMinValidations)
+    if (! times.empty () && times.size() >= app_.validators ().quorum ())
     {
         // Calculate the sample median
         std::sort (times.begin (), times.end ());
@@ -713,18 +702,11 @@ LedgerMaster::checkAccept (uint256 const& hash, std::uint32_t seq)
         valCount =
             app_.getValidations().getTrustedValidationCount (hash);
 
-        if (valCount >= mMinValidations)
+        if (valCount >= app_.validators ().quorum ())
         {
             ScopedLockType ml (m_mutex);
             if (seq > mLastValidLedger.second)
                 mLastValidLedger = std::make_pair (hash, seq);
-
-            if (!mStrictValCount && (mMinValidations < (valCount/2 + 1)))
-            {
-                mMinValidations = (valCount/2 + 1);
-                JLOG (m_journal.info())
-                    << "Raising minimum validations to " << mMinValidations;
-            }
         }
 
         if (seq == mValidLedgerSeq)
@@ -742,7 +724,7 @@ LedgerMaster::checkAccept (uint256 const& hash, std::uint32_t seq)
         if ((seq != 0) && (getValidLedgerIndex() == 0))
         {
             // Set peers sane early if we can
-            if (valCount >= mMinValidations)
+            if (valCount >= app_.validators ().quorum ())
                 app_.overlay().checkSanity (seq);
         }
 
@@ -757,30 +739,14 @@ LedgerMaster::checkAccept (uint256 const& hash, std::uint32_t seq)
 }
 
 /**
-    * Determines how many validations are needed to fully-validated a ledger
+    * Determines how many validations are needed to fully validate a ledger
     *
     * @return Number of validations needed
     */
 int
 LedgerMaster::getNeededValidations ()
 {
-    if (standalone_)
-        return 0;
-
-    int minVal = mMinValidations;
-
-    if (mLastValidateHash.isNonZero ())
-    {
-        int val = app_.getValidations ().getTrustedValidationCount (
-            mLastValidateHash);
-        val *= MIN_VALIDATION_RATIO;
-        val /= 256;
-
-        if (val > minVal)
-            minVal = val;
-    }
-
-    return minVal;
+    return standalone_ ? 0 : app_.validators().quorum ();
 }
 
 void
@@ -1311,21 +1277,6 @@ LedgerMaster::getPublishedLedger ()
 {
     ScopedLockType lock(m_mutex);
     return mPubLedger;
-}
-
-int
-LedgerMaster::getMinValidations ()
-{
-    return mMinValidations;
-}
-
-void
-LedgerMaster::setMinValidations (int v, bool strict)
-{
-    JLOG (m_journal.info()) << "Validation quorum: " << v
-        << (strict ? " strict" : "");
-    mMinValidations = v;
-    mStrictValCount = strict;
 }
 
 std::string
