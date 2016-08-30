@@ -50,7 +50,6 @@ add(    jtRPC,           "RPC",                     maxLimit, false, 0,     0);
 add(    jtUPDATE_PF,     "updatePaths",             maxLimit, false, 0,     0);
 add(    jtTRANSACTION,   "transaction",             maxLimit, false, 250,   1000);
 add(    jtBATCH,         "batch",                   maxLimit, false, 250,   1000);
-add(    jtUNL,           "unl",                     1,        false, 0,     0);
 add(    jtADVANCE,       "advanceLedger",           maxLimit, false, 0,     0);
 add(    jtPUBLEDGER,     "publishNewLedger",        maxLimit, false, 3000,  4500);
 add(    jtTXN_DATA,      "fetchTxnData",            1,        false, 0,     0);

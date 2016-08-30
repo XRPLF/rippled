@@ -703,8 +703,8 @@ PeerImp::doProtocolStart()
 
     protocol::TMManifests tm;
 
-    overlay_.manifestCache ().for_each_manifest (
-        [&tm](size_t s){tm.mutable_list()->Reserve(s);},
+    app_.validatorManifests ().for_each_manifest (
+        [&tm](std::size_t s){tm.mutable_list()->Reserve(s);},
         [&tm](Manifest const& manifest)
         {
             auto const& s = manifest.serialized;

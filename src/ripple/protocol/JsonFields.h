@@ -116,10 +116,9 @@ JSS ( close_time_resolution );      // in: Application; out: LedgerToJson
 JSS ( closed );                     // out: NetworkOPs, LedgerToJson,
                                     //      handlers/Ledger
 JSS ( closed_ledger );              // out: NetworkOPs
-JSS ( cluster );                    // out: UniqueNodeList, PeerImp
+JSS ( cluster );                    // out: PeerImp
 JSS ( code );                       // out: errors
 JSS ( command );                    // in: RPCHandler
-JSS ( comment );                    // out: UnlList
 JSS ( complete );                   // out: NetworkOPs, InboundLedger
 JSS ( complete_ledgers );           // out: NetworkOPs, PeerImp
 JSS ( consensus );                  // out: NetworkOPs, LedgerConsensus
@@ -156,7 +155,6 @@ JSS ( enabled );                    // out: AmendmentTable
 JSS ( engine_result );              // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_code );         // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_message );      // out: NetworkOPs, TransactionSign, Submit
-JSS ( ephemeral );                  // out: UnlList
 JSS ( error );                      // out: error
 JSS ( error_code );                 // out: error
 JSS ( error_exception );            // out: Submit
@@ -416,6 +414,7 @@ JSS ( transactions );               // out: LedgerToJson,
 JSS ( transitions );                // out: NetworkOPs
 JSS ( treenode_cache_size );        // out: GetCounts
 JSS ( treenode_track_size );        // out: GetCounts
+JSS ( trusted );                    // out: UnlList
 JSS ( tx );                         // out: STTx, AccountTx*
 JSS ( tx_blob );                    // in/out: Submit,
                                     // in: TransactionSign, AccountTx*

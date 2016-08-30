@@ -1202,8 +1202,8 @@ public:
             if (nodesUsing > v.nodesUsing)
                 return true;
 
-            if (nodesUsing < v.nodesUsing) return
-                false;
+            if (nodesUsing < v.nodesUsing)
+                return false;
 
             return highNodeUsing > v.highNodeUsing;
         }
@@ -1484,6 +1484,9 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
     assert (prevLedger->info().hash == closingInfo.parentHash);
     assert (closingInfo.parentHash ==
             m_ledgerMaster.getClosedLedger()->info().hash);
+
+    app_.validators().onConsensusStart (
+        app_.getValidations().getCurrentPublicKeys ());
 
     mConsensus->startRound (
         *mLedgerConsensus,
@@ -2032,7 +2035,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (mNeedNetworkLedger)
         info[jss::network_ledger] = "waiting";
 
-    info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
+    info[jss::validation_quorum] = static_cast<Json::UInt>(
+        app_.validators ().quorum ());
 
     info[jss::io_latency_ms] = static_cast<Json::UInt> (
         app_.getIOLatency().count());
@@ -2050,7 +2054,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
                 s.reserve (Manifest::textLength);
                 for (auto const& line : validation_manifest.lines())
                     s += beast::rfc2616::trim(line);
-                if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
+                if (auto mo = Manifest::make_Manifest (beast::detail::base64_decode(s)))
                 {
                     Json::Value valManifest = Json::objectValue;
                     valManifest [jss::master_key] = toBase58 (
