@@ -57,10 +57,13 @@ public:
 
 [validation_seed]
 %2%
+
+[validators]
+%3%
 )rippleConfig");
 
         p->loadFromString (boost::str (
-            toLoad % validator::manifest % validator::seed));
+            toLoad % validator::manifest % validator::seed % validator::master_key));
 
         setupConfigForUnitTests(*p);
 

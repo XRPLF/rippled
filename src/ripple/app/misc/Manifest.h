@@ -17,14 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
-#define RIPPLE_OVERLAY_MANIFEST_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
+#define RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
 
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STExchange.h>
 #include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <string>
@@ -57,13 +54,10 @@ namespace ripple {
     There are two stores of information within rippled related to manifests.
     An instance of ManifestCache stores, for each trusted validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
-    seen for that validator, if any.  On startup, the [validator_keys] config
-    entries are used to prime the manifest cache with the trusted master keys.
-    At this point, the manifest cache has all the entries it will ever have,
-    but none of them have manifests.  The [validation_manifest] config entry
-    (which is the manifest for this validator) is then decoded and added to
-    the manifest cache.  Other manifests are added as "gossip" is received
-    from rippled peers.
+    seen for that validator, if any.  On startup, the [validation_manifest]
+    config entry (which is the manifest for this validator) is decoded and
+    added to the manifest cache.  Other manifests are added as "gossip" is
+    received from rippled peers.
 
     The other data store (which does not involve manifests per se) contains
     the set of active ephemeral validator keys.  Keys are added to the set
@@ -97,127 +91,219 @@ struct Manifest
     Manifest(Manifest&& other) = default;
     Manifest& operator=(Manifest&& other) = default;
 
+    inline bool
+    operator==(Manifest const& rhs) const
+    {
+        return sequence == rhs.sequence && masterKey == rhs.masterKey &&
+               signingKey == rhs.signingKey && serialized == rhs.serialized;
+    }
+
+    inline bool
+    operator!=(Manifest const& rhs) const
+    {
+        return !(*this == rhs);
+    }
+
+    /** Constructs Manifest from serialized string
+
+        @param s Serialized manifest string
+
+        @return `boost::none` if string is invalid
+    */
+    static boost::optional<Manifest> make_Manifest(std::string s);
+
+    /// Returns `true` if manifest signature is valid
     bool verify () const;
+
+    /// Returns hash of serialized manifest data
     uint256 hash () const;
+
+    /// Returns `true` if manifest revokes master key
     bool revoked () const;
+
+    /// Returns manifest signature
     Blob getSignature () const;
 
     /// Returns manifest master key signature
     Blob getMasterSignature () const;
 };
 
-boost::optional<Manifest> make_Manifest(std::string s);
-
-inline bool operator==(Manifest const& lhs, Manifest const& rhs)
-{
-    return lhs.serialized == rhs.serialized && lhs.masterKey == rhs.masterKey &&
-           lhs.signingKey == rhs.signingKey && lhs.sequence == rhs.sequence;
-}
-
-inline bool operator!=(Manifest const& lhs, Manifest const& rhs)
-{
-    return !(lhs == rhs);
-}
-
 enum class ManifestDisposition
 {
-    accepted = 0, // everything checked out
+    /// Manifest is valid
+    accepted = 0,
 
-    untrusted,    // manifest declares a master key we don't trust
-    stale,        // trusted master key, but seq is too old
-    invalid,      // trusted and timely, but invalid signature
+    /// Sequence is too old
+    stale,
+
+    /// Timely, but invalid signature
+    invalid
 };
 
 class DatabaseCon;
+
 /** Remembers manifests with the highest sequence number. */
 class ManifestCache
 {
 private:
-    struct MappedType
-    {
-        MappedType() = default;
-        MappedType(MappedType&&) = default;
-        MappedType& operator=(MappedType&&) = default;
+    beast::Journal mutable j_;
+    std::mutex apply_mutex_;
+    std::mutex mutable read_mutex_;
 
-        MappedType(std::string comment,
-                   std::string serialized,
-                   PublicKey pk, PublicKey spk, std::uint32_t seq)
-            :comment (std::move(comment))
-        {
-            m.emplace (std::move(serialized), std::move(pk), std::move(spk),
-                       seq);
-        }
+    /** Active manifests stored by master public key. */
+    hash_map <PublicKey, Manifest> map_;
 
-        std::string comment;
-        boost::optional<Manifest> m;
-    };
-
-    using MapType = hash_map<PublicKey, MappedType>;
-
-    mutable std::mutex mutex_;
-    MapType map_;
-
-    ManifestDisposition
-    canApply (PublicKey const& pk, std::uint32_t seq,
-        beast::Journal journal) const;
+    /** Master public keys stored by current ephemeral public key. */
+    hash_map <PublicKey, PublicKey> signingToMasterKeys_;
 
 public:
-    ManifestCache() = default;
-    ManifestCache (ManifestCache const&) = delete;
-    ManifestCache& operator= (ManifestCache const&) = delete;
-    ~ManifestCache() = default;
+    explicit
+    ManifestCache (beast::Journal j = beast::Journal())
+        : j_ (j)
+    {
+    };
 
-    bool loadValidatorKeys(
-        Section const& keys,
-        beast::Journal journal);
+    /** Returns master key's current signing key.
 
-    void configManifest (Manifest m, ValidatorList& unl, beast::Journal journal);
+        @param pk Master public key
 
-    /** Determines whether a node is in the trusted master key list */
+        @return pk if no known signing key from a manifest
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    PublicKey
+    getSigningKey (PublicKey const& pk) const;
+
+    /** Returns ephemeral signing key's master public key.
+
+        @param pk Ephemeral signing public key
+
+        @return pk if signing key is not in a valid manifest
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    PublicKey
+    getMasterKey (PublicKey const& pk) const;
+
+    /** Returns `true` if master key has been revoked in a manifest.
+
+        @param pk Master public key
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
     bool
-    trusted (
-        PublicKey const& identity) const;
+    revoked (PublicKey const& pk) const;
 
-    void addTrustedKey (PublicKey const& pk, std::string comment);
+    /** Add manifest to cache.
 
-    /** The number of installed trusted master keys */
-    std::size_t
-    size () const;
+        @param m Manifest to add
 
+        @return `ManifestDisposition::accepted` if successful, or
+                `stale` or `invalid` otherwise
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
     ManifestDisposition
     applyManifest (
-        Manifest m, ValidatorList& unl, beast::Journal journal);
+        Manifest m);
 
+    /** Populate manifest cache with manifests in database and config.
+
+        @param dbCon Database connection with dbTable
+
+        @param dbTable Database table
+
+        @param configManifest Base64 encoded manifest for local node's
+            validator keys
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    bool load (
+        DatabaseCon& dbCon, std::string const& dbTable,
+        std::vector<std::string> const& configManifest);
+
+    /** Populate manifest cache with manifests in database.
+
+        @param dbCon Database connection with dbTable
+
+        @param dbTable Database table
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
     void load (
-        DatabaseCon& dbCon, ValidatorList& unl, beast::Journal journal);
-    void save (DatabaseCon& dbCon) const;
+        DatabaseCon& dbCon, std::string const& dbTable);
 
-    // A "for_each" for populated manifests only
+    /** Save cached manifests to database.
+
+        @param dbCon Database connection with `ValidatorManifests` table
+
+        @param isTrusted Function that returns true if manifest is trusted
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
+    void save (
+        DatabaseCon& dbCon, std::string const& dbTable,
+        std::function <bool (PublicKey const&)> isTrusted);
+
+    /** Invokes the callback once for every populated manifest.
+
+        @note Undefined behavior results when calling ManifestCache members from
+        within the callback
+
+        @param f Function called for each manifest
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
     template <class Function>
     void
     for_each_manifest(Function&& f) const
     {
-        std::lock_guard<std::mutex> lock (mutex_);
-        for (auto const& e : map_)
+        std::lock_guard<std::mutex> lock{read_mutex_};
+        for (auto const& m : map_)
         {
-            if (auto const& m = e.second.m)
-                f(*m);
+            f(m.second);
         }
     }
 
-    // A "for_each" for populated manifests only
-    // The PreFun is called with the maximum number of
-    // times EachFun will be called (useful for memory allocations)
+    /** Invokes the callback once for every populated manifest.
+
+        @note Undefined behavior results when calling ManifestCache members from
+        within the callback
+
+        @param pf Pre-function called with the maximum number of times f will be
+            called (useful for memory allocations)
+
+        @param f Function called for each manifest
+
+        @par Thread Safety
+
+        May be called concurrently
+    */
     template <class PreFun, class EachFun>
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::lock_guard<std::mutex> lock (mutex_);
+        std::lock_guard<std::mutex> lock{read_mutex_};
         pf(map_.size ());
-        for (auto const& e : map_)
+        for (auto const& m : map_)
         {
-            if (auto const& m = e.second.m)
-                f(*m);
+            f(m.second);
         }
     }
 };

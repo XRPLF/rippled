@@ -88,9 +88,12 @@ private:
     bool addValidation (STValidation::ref val, std::string const& source) override
     {
         auto signer = val->getSignerPublic ();
+        auto hash = val->getLedgerHash ();
         bool isCurrent = current (val);
 
-        if (!val->isTrusted() && app_.validators().trusted (signer))
+        auto pubKey = app_.validators ().getTrustedKey (signer);
+
+        if (!val->isTrusted() && pubKey)
             val->setTrusted();
 
         if (!val->isTrusted ())
@@ -98,45 +101,71 @@ private:
             JLOG (j_.trace()) <<
                 "Node " << toBase58 (TokenType::TOKEN_NODE_PUBLIC, signer) <<
                 " not in UNL st=" << val->getSignTime().time_since_epoch().count() <<
-                ", hash=" << val->getLedgerHash () <<
+                ", hash=" << hash <<
                 ", shash=" << val->getSigningHash () <<
                 " src=" << source;
         }
 
-        auto hash = val->getLedgerHash ();
-        auto node = val->getNodeID ();
+        if (! pubKey)
+            pubKey = app_.validators ().getListedKey (signer);
 
-        if (val->isTrusted () && isCurrent)
+        if (isCurrent &&
+            (val->isTrusted () || pubKey))
         {
             ScopedLockType sl (mLock);
 
-            if (!findCreateSet (hash)->insert (std::make_pair (node, val)).second)
+            if (!findCreateSet (hash)->insert (
+                    std::make_pair (*pubKey, val)).second)
                 return false;
 
-            auto it = mCurrentValidations.find (node);
+            auto it = mCurrentValidations.find (*pubKey);
 
             if (it == mCurrentValidations.end ())
             {
                 // No previous validation from this validator
-                mCurrentValidations.emplace (node, val);
+                mCurrentValidations.emplace (*pubKey, val);
             }
             else if (!it->second)
             {
                 // Previous validation has expired
                 it->second = val;
             }
-            else if (val->getSignTime () > it->second->getSignTime ())
-            {
-                // This is a newer validation
-                val->setPreviousHash (it->second->getLedgerHash ());
-                mStaleValidations.push_back (it->second);
-                it->second = val;
-                condWrite ();
-            }
             else
             {
-                // We already have a newer validation from this source
-                isCurrent = false;
+                auto const oldSeq = (*it->second)[~sfLedgerSequence];
+                auto const newSeq = (*val)[~sfLedgerSequence];
+
+                if (oldSeq && newSeq && *oldSeq == *newSeq)
+                {
+                    JLOG (j_.warn()) <<
+                        "Trusted node " <<
+                        toBase58 (TokenType::TOKEN_NODE_PUBLIC, *pubKey) <<
+                        " published multiple validations for ledger " <<
+                        *oldSeq;
+
+                    // Remove current validation for the revoked signing key
+                    if (signer != it->second->getSignerPublic())
+                    {
+                        auto set = findSet (it->second->getLedgerHash ());
+                        if (set)
+                            set->erase (*pubKey);
+                    }
+                }
+
+                if (val->getSignTime () > it->second->getSignTime () ||
+                    signer != it->second->getSignerPublic())
+                {
+                    // This is either a newer validation or a new signing key
+                    val->setPreviousHash (it->second->getLedgerHash ());
+                    mStaleValidations.push_back (it->second);
+                    it->second = val;
+                    condWrite ();
+                }
+                else
+                {
+                    // We already have a newer validation from this source
+                    isCurrent = false;
+                }
             }
         }
 
@@ -185,9 +214,10 @@ private:
                 (val->getSeenTime() < (now + VALIDATION_VALID_LOCAL)));
     }
 
-    int getTrustedValidationCount (uint256 const& ledger) override
+    std::size_t
+    getTrustedValidationCount (uint256 const& ledger) override
     {
-        int trusted = 0;
+        std::size_t trusted = 0;
         ScopedLockType sl (mLock);
         auto set = findSet (ledger);
 
@@ -292,6 +322,37 @@ private:
         return ret;
     }
 
+    hash_set<PublicKey> getCurrentPublicKeys () override
+    {
+        hash_set<PublicKey> ret;
+
+        ScopedLockType sl (mLock);
+        auto it = mCurrentValidations.begin ();
+
+        while (it != mCurrentValidations.end ())
+        {
+            if (!it->second) // contains no record
+                it = mCurrentValidations.erase (it);
+            else if (! current (it->second))
+            {
+                // contains a stale record
+                mStaleValidations.push_back (it->second);
+                it->second.reset ();
+                condWrite ();
+                it = mCurrentValidations.erase (it);
+            }
+            else
+            {
+                // contains a live record
+                ret.insert (it->first);
+
+                ++it;
+            }
+        }
+
+        return ret;
+    }
+
     LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger,
         uint256 priorLedger,
@@ -317,6 +378,8 @@ private:
                 condWrite ();
                 it = mCurrentValidations.erase (it);
             }
+            else if (! it->second->isTrusted())
+                ++it;
             else if (! it->second->isFieldPresent (sfLedgerSequence) ||
                 (it->second->getFieldU32 (sfLedgerSequence) >= cutoffBefore))
             {

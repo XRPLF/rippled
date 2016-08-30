@@ -22,7 +22,7 @@
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/json/json_value.h>
-#include <ripple/overlay/impl/Manifest.h>
+#include <ripple/app/misc/Manifest.h>
 #include <ripple/resource/Consumer.h>
 #include <ripple/protocol/Book.h>
 #include <ripple/core/Stoppable.h>

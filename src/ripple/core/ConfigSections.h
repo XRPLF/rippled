@@ -60,11 +60,11 @@ struct ConfigSection
 #define SECTION_SSL_VERIFY_FILE         "ssl_verify_file"
 #define SECTION_SSL_VERIFY_DIR          "ssl_verify_dir"
 #define SECTION_VALIDATORS_FILE         "validators_file"
-#define SECTION_VALIDATION_QUORUM       "validation_quorum"
 #define SECTION_VALIDATION_SEED         "validation_seed"
 #define SECTION_WEBSOCKET_PING_FREQ     "websocket_ping_frequency"
-#define SECTION_VALIDATORS              "validators"
 #define SECTION_VALIDATOR_KEYS          "validator_keys"
+#define SECTION_VALIDATOR_LIST_KEYS     "validator_list_keys"
+#define SECTION_VALIDATORS              "validators"
 #define SECTION_VALIDATION_MANIFEST     "validation_manifest"
 #define SECTION_VETO_AMENDMENTS         "veto_amendments"
 
