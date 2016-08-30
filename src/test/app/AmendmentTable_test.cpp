@@ -402,7 +402,7 @@ public:
                 v->setFieldV256 (sfAmendments, field);
 
             v->setTrusted();
-            validations [calcNodeID(val)] = v;
+            validations [val] = v;
         }
 
         ourVotes = table.doValidation (enabled);

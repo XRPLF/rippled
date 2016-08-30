@@ -138,8 +138,6 @@ public:
 
     // Note: The following parameters do not relate to the UNL or trust at all
     std::size_t                 NETWORK_QUORUM = 0;         // Minimum number of nodes to consider the network present
-    int                         VALIDATION_QUORUM = 1;      // Minimum validations to consider ledger authoritative
-    bool                        LOCK_QUORUM = false;        // Do not raise the quorum
 
     // Peer networking parameters
     bool                        PEER_PRIVATE = false;           // True to ask peers not to relay current IP.
@@ -156,6 +154,7 @@ public:
     // Validation
     PublicKey                   VALIDATION_PUB;
     SecretKey                   VALIDATION_PRIV;
+    boost::optional<std::size_t> VALIDATION_QUORUM;     // Minimum validations to consider ledger authoritative
 
     // Node Identity
     std::string                 NODE_SEED;
