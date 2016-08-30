@@ -32,3 +32,5 @@
 #include <test/WSClient_test.cpp>
 #include <test/Env_test.cpp>
 #include <test/define_print.cpp>
+#include <test/LedgerData_test.cpp>
+#include <test/varint_test.cpp>

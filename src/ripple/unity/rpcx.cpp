@@ -95,5 +95,3 @@
 #include <ripple/rpc/impl/RPCHelpers.cpp>
 #include <ripple/rpc/impl/ServerHandlerImp.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
-
-#include <ripple/rpc/tests/LedgerData.test.cpp>

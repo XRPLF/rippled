@@ -2739,9 +2739,6 @@
     <ClInclude Include="..\..\src\ripple\nodestore\tests\Base.test.h">
       <Filter>ripple\nodestore\tests</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\nodestore\tests\varint_test.cpp">
-      <Filter>ripple\nodestore\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
@@ -3510,9 +3507,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-      <Filter>ripple\rpc\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\tests\LedgerData.test.cpp">
     <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
       <Filter>ripple\rpc\tests</Filter>
     </ClInclude>
@@ -5124,9 +5118,6 @@
     <ClCompile Include="..\..\src\test\beast_nudb_store_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_nudb_varint_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\test\beast_nudb_verify_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
@@ -5233,6 +5224,9 @@
       <Filter>test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\KeyGeneration_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\LedgerData_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\LedgerRequestRPC_test.cpp">
@@ -5392,6 +5386,9 @@
       <Filter>test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\ValidatorList_test.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\varint_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\View_test.cpp">
