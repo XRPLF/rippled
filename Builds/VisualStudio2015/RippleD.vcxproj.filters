@@ -448,6 +448,48 @@
     <Filter Include="test">
       <UniqueIdentifier>{D5859751-012E-81F5-D121-159FE9A25436}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\app">
+      <UniqueIdentifier>{CB62DF03-8B06-99E3-905E-DE9E4444A179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\basics">
+      <UniqueIdentifier>{E1429BDE-60F8-9F50-97E2-A4533D1F3DA4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\beast">
+      <UniqueIdentifier>{8B0B95AC-5386-EE34-AA85-E1C7974E6E93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\core">
+      <UniqueIdentifier>{26D7F11B-5BF1-54BC-8BF5-D45F68A6A408}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\json">
+      <UniqueIdentifier>{87249A3B-D8F5-1A8C-6C1D-F1CDCCF5242B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\ledger">
+      <UniqueIdentifier>{272EB630-1801-CFB7-68ED-3FD2AF1FEF87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\nodestore">
+      <UniqueIdentifier>{D245AFF2-E02A-AB08-85C6-632FFB77D25B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\overlay">
+      <UniqueIdentifier>{0198696A-8575-E86B-C683-4ACB35406C22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\peerfinder">
+      <UniqueIdentifier>{643C570C-14A2-D7AB-6B2C-61C011864D8F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\protocol">
+      <UniqueIdentifier>{48FBA929-C7B7-CE6C-4074-D440347DCEBC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\resource">
+      <UniqueIdentifier>{3E8DC74A-BEA9-DE65-C5AE-F7F7F9373552}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\rpc">
+      <UniqueIdentifier>{FDF959A9-11D3-61C5-07F6-077C556E1A8E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\server">
+      <UniqueIdentifier>{6CFCE215-49E3-9407-C201-479021338F6C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\shamap">
+      <UniqueIdentifier>{2E37F2EA-49FC-1F02-C3EA-D7EB608603A1}</UniqueIdentifier>
+    </Filter>
     <Filter Include="unity">
       <UniqueIdentifier>{82E1AA93-0E6B-39FA-4212-EB820AD49028}</UniqueIdentifier>
     </Filter>
@@ -5058,370 +5100,397 @@
     <ClCompile Include="..\..\src\sqlite\sqlite_unity.c">
       <Filter>sqlite</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AccountInfo_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\AccountTxPaging_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AccountLinesRPC_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\AmendmentTable_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AccountObjects_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\CrossingLimits_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AccountOffers_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\DeliverMin_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AccountSet_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\Flow_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AccountTxPaging_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\HashRouter_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\aged_associative_container_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\LoadFeeTrack_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\AmendmentTable_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\MultiSign_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Backend_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\OfferStream_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\base_uint_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\app\Offer_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\OversizeMeta_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Path_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\PayChan_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Regression_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\SetAuth_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\SetRegularKey_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\SHAMapStore_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\SusPay_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Taker_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Transaction_ordering_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\TxQ_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\ValidatorList_test.cpp">
+      <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\BasicNetwork_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Basics_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\base_uint_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_abstract_clock_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\CheckLibraryVersions_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_asio_error_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\contract_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_basic_seconds_clock_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\hardened_hash_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_Debug_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\KeyCache_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_Journal_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\mulDiv_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_nudb_callgrind_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\RangeSet_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_nudb_recover_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\StringUtilities_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_nudb_store_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\basics\TaggedCache_test.cpp">
+      <Filter>test\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_nudb_verify_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\aged_associative_container_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_PropertyStream_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_abstract_clock_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_tagged_integer_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_asio_error_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_weak_fn_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_basic_seconds_clock_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\beast_Zero_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_Debug_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\BookDirs_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_Journal_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Book_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_nudb_callgrind_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\BuildInfo_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_nudb_recover_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\CheckLibraryVersions_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_nudb_store_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\cluster_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_nudb_verify_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Config_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_PropertyStream_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\contract_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_tagged_integer_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Coroutine_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_weak_fn_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\CrossingLimits_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\beast_Zero_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Database_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\define_print.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\define_print.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\hash_append_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\DeliverMin_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\hash_speed_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\digest_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\IPEndpoint_test.cpp">
+      <Filter>test\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Directory_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\beast\LexicalCast_test.cpp">
+      <Filter>test\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\beast\SemanticVersion_test.cpp">
+      <Filter>test\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\Config_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\Coroutine_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\SociDB_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\Stoppable_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\Workers_test.cpp">
+      <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\Env_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\FetchPack_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\json\json_value_test.cpp">
+      <Filter>test\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Flow_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\json\Object_test.cpp">
+      <Filter>test\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\GatewayBalances_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\json\Output_test.cpp">
+      <Filter>test\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\hardened_hash_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\json\Writer_test.cpp">
+      <Filter>test\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\HashRouter_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\ledger\BookDirs_test.cpp">
+      <Filter>test\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\hash_append_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\ledger\Directory_test.cpp">
+      <Filter>test\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\hash_speed_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\ledger\PaymentSandbox_test.cpp">
+      <Filter>test\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\import_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\ledger\PendingSaves_test.cpp">
+      <Filter>test\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\InnerObjectFormats_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\ledger\SkipList_test.cpp">
+      <Filter>test\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\IOUAmount_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\ledger\View_test.cpp">
+      <Filter>test\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\IPEndpoint_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\nodestore\Backend_test.cpp">
+      <Filter>test\nodestore</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Issue_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\nodestore\Basics_test.cpp">
+      <Filter>test\nodestore</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\JSONRPC_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\nodestore\Database_test.cpp">
+      <Filter>test\nodestore</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\json_value_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\nodestore\import_test.cpp">
+      <Filter>test\nodestore</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\KeyCache_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\nodestore\Timing_test.cpp">
+      <Filter>test\nodestore</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\KeyGeneration_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\nodestore\varint_test.cpp">
+      <Filter>test\nodestore</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\LedgerData_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\overlay\cluster_test.cpp">
+      <Filter>test\overlay</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\LedgerRequestRPC_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\overlay\manifest_test.cpp">
+      <Filter>test\overlay</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\LexicalCast_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\overlay\short_read_test.cpp">
+      <Filter>test\overlay</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Livecache_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\overlay\TMHello_test.cpp">
+      <Filter>test\overlay</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\LoadFeeTrack_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\peerfinder\Livecache_test.cpp">
+      <Filter>test\peerfinder</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Logic_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\peerfinder\PeerFinder_test.cpp">
+      <Filter>test\peerfinder</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\manifest_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\BuildInfo_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\mulDiv_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\digest_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\MultiSign_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\InnerObjectFormats_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Object_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\IOUAmount_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\OfferStream_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\Issue_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Offer_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\PublicKey_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Output_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\Quality_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\OversizeMeta_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\SecretKey_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Path_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\Seed_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\PayChan_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\STAccount_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\PaymentSandbox_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\STAmount_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\PeerFinder_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\STObject_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\PendingSaves_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\STTx_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\PublicKey_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\types_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Quality_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\protocol\XRPAmount_test.cpp">
+      <Filter>test\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\RangeSet_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\resource\Logic_test.cpp">
+      <Filter>test\resource</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Regression_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\AccountInfo_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\RobustTransaction_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\AccountLinesRPC_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SecretKey_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\AccountObjects_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Seed_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\AccountOffers_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SemanticVersion_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\AccountSet_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\ServerInfo_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\Book_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Server_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\GatewayBalances_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SetAuth_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\JSONRPC_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SetRegularKey_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\KeyGeneration_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SHAMapStore_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\LedgerData_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SHAMapSync_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\LedgerRequestRPC_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SHAMap_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\RobustTransaction_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\short_read_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\ServerInfo_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SkipList_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\Status_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\SociDB_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\rpc\Subscribe_test.cpp">
+      <Filter>test\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\STAccount_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\server\Server_test.cpp">
+      <Filter>test\server</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\STAmount_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\shamap\FetchPack_test.cpp">
+      <Filter>test\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Status_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\shamap\SHAMapSync_test.cpp">
+      <Filter>test\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\STObject_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Stoppable_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\StringUtilities_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\STTx_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Subscribe_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\SusPay_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\TaggedCache_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Taker_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Timing_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\TMHello_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Transaction_ordering_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\TxQ_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\types_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\ValidatorList_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\varint_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\View_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Workers_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\Writer_test.cpp">
-      <Filter>test</Filter>
+    <ClCompile Include="..\..\src\test\shamap\SHAMap_test.cpp">
+      <Filter>test\shamap</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\WSClient_test.cpp">
       <Filter>test</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\XRPAmount_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity00.cpp">
+    <ClCompile Include="..\..\src\unity\app_test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity01.cpp">
+    <ClCompile Include="..\..\src\unity\basics_test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity02.cpp">
+    <ClCompile Include="..\..\src\unity\beast_test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity03.cpp">
+    <ClCompile Include="..\..\src\unity\core_test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity04.cpp">
+    <ClCompile Include="..\..\src\unity\json_test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity05.cpp">
+    <ClCompile Include="..\..\src\unity\ledger_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\nodestore_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\overlay_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\peerfinder_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\protocol_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\resource_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\rpc_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\server_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\shamap_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">

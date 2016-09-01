@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,23 +18,4 @@
 */
 //==============================================================================
 
-#include <test/AccountTxPaging_test.cpp>
-#include <test/AmendmentTable_test.cpp>
-#include <test/SemanticVersion_test.cpp>
-#include <test/beast_Debug_test.cpp>
-#include <test/beast_PropertyStream_test.cpp>
-#include <test/Workers_test.cpp>
-#include <test/CrossingLimits_test.cpp>
-#include <test/DeliverMin_test.cpp>
-#include <test/Flow_test.cpp>
-#include <test/HashRouter_test.cpp>
-#include <test/LoadFeeTrack_test.cpp>
-#include <test/MultiSign_test.cpp>
-#include <test/Offer_test.cpp>
-#include <test/OfferStream_test.cpp>
-#include <test/OversizeMeta_test.cpp>
-#include <test/Path_test.cpp>
-#include <test/PayChan_test.cpp>
-#include <test/Regression_test.cpp>
-#include <test/SetAuth_test.cpp>
-#include <test/SetRegularKey_test.cpp>
+#include <test/server/Server_test.cpp>

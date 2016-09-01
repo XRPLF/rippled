@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,22 +18,25 @@
 */
 //==============================================================================
 
-#include <test/hash_append_test.cpp>
-#include <test/beast_asio_error_test.cpp>
-#include <test/IPEndpoint_test.cpp>
-#include <test/beast_nudb_callgrind_test.cpp>
-#include <test/beast_nudb_recover_test.cpp>
-#include <test/beast_nudb_store_test.cpp>
-#include <test/beast_nudb_verify_test.cpp>
-#include <test/beast_Journal_test.cpp>
-#include <test/beast_tagged_integer_test.cpp>
-#include <test/beast_weak_fn_test.cpp>
-#include <test/beast_Zero_test.cpp>
-#include <test/Config_test.cpp>
-#include <test/Coroutine_test.cpp>
-#include <test/SociDB_test.cpp>
-#include <test/Stoppable_test.cpp>
-#include <test/json_value_test.cpp>
-#include <test/Object_test.cpp>
-#include <test/Output_test.cpp>
-#include <test/Writer_test.cpp>
+#include <test/app/AccountTxPaging_test.cpp>
+#include <test/app/AmendmentTable_test.cpp>
+#include <test/app/CrossingLimits_test.cpp>
+#include <test/app/DeliverMin_test.cpp>
+#include <test/app/Flow_test.cpp>
+#include <test/app/HashRouter_test.cpp>
+#include <test/app/LoadFeeTrack_test.cpp>
+#include <test/app/MultiSign_test.cpp>
+#include <test/app/OfferStream_test.cpp>
+#include <test/app/Offer_test.cpp>
+#include <test/app/OversizeMeta_test.cpp>
+#include <test/app/Path_test.cpp>
+#include <test/app/PayChan_test.cpp>
+#include <test/app/Regression_test.cpp>
+#include <test/app/SetAuth_test.cpp>
+#include <test/app/SetRegularKey_test.cpp>
+#include <test/app/SHAMapStore_test.cpp>
+#include <test/app/SusPay_test.cpp>
+#include <test/app/Taker_test.cpp>
+#include <test/app/Transaction_ordering_test.cpp>
+#include <test/app/TxQ_test.cpp>
+#include <test/app/ValidatorList_test.cpp>

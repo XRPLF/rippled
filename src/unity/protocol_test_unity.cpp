@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,23 +18,18 @@
 */
 //==============================================================================
 
-#include <test/SHAMapStore_test.cpp>
-#include <test/SusPay_test.cpp>
-#include <test/Taker_test.cpp>
-#include <test/Transaction_ordering_test.cpp>
-#include <test/TxQ_test.cpp>
-#include <test/ValidatorList_test.cpp>
-#include <test/base_uint_test.cpp>
-#include <test/CheckLibraryVersions_test.cpp>
-#include <test/contract_test.cpp>
-#include <test/hardened_hash_test.cpp>
-#include <test/KeyCache_test.cpp>
-#include <test/mulDiv_test.cpp>
-#include <test/RangeSet_test.cpp>
-#include <test/StringUtilities_test.cpp>
-#include <test/TaggedCache_test.cpp>
-#include <test/beast_abstract_clock_test.cpp>
-#include <test/beast_basic_seconds_clock_test.cpp>
-#include <test/aged_associative_container_test.cpp>
-#include <test/LexicalCast_test.cpp>
-#include <test/hash_speed_test.cpp>
+#include <test/protocol/BuildInfo_test.cpp>
+#include <test/protocol/digest_test.cpp>
+#include <test/protocol/InnerObjectFormats_test.cpp>
+#include <test/protocol/IOUAmount_test.cpp>
+#include <test/protocol/Issue_test.cpp>
+#include <test/protocol/PublicKey_test.cpp>
+#include <test/protocol/Quality_test.cpp>
+#include <test/protocol/SecretKey_test.cpp>
+#include <test/protocol/Seed_test.cpp>
+#include <test/protocol/STAccount_test.cpp>
+#include <test/protocol/STAmount_test.cpp>
+#include <test/protocol/STObject_test.cpp>
+#include <test/protocol/STTx_test.cpp>
+#include <test/protocol/types_test.cpp>
+#include <test/protocol/XRPAmount_test.cpp>

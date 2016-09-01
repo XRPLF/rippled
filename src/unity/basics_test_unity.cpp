@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,23 +18,12 @@
 */
 //==============================================================================
 
-#include <test/BookDirs_test.cpp>
-#include <test/Directory_test.cpp>
-#include <test/PaymentSandbox_test.cpp>
-#include <test/PendingSaves_test.cpp>
-#include <test/SkipList_test.cpp>
-#include <test/View_test.cpp>
-#include <test/Backend_test.cpp>
-#include <test/Basics_test.cpp>
-#include <test/Database_test.cpp>
-#include <test/import_test.cpp>
-#include <test/Timing_test.cpp>
-#include <test/cluster_test.cpp>
-#include <test/manifest_test.cpp>
-#include <test/short_read_test.cpp>
-#include <test/TMHello_test.cpp>
-#include <test/Livecache_test.cpp>
-#include <test/PeerFinder_test.cpp>
-#include <test/BuildInfo_test.cpp>
-#include <test/digest_test.cpp>
-#include <test/InnerObjectFormats_test.cpp>
+#include <test/basics/base_uint_test.cpp>
+#include <test/basics/CheckLibraryVersions_test.cpp>
+#include <test/basics/contract_test.cpp>
+#include <test/basics/hardened_hash_test.cpp>
+#include <test/basics/KeyCache_test.cpp>
+#include <test/basics/mulDiv_test.cpp>
+#include <test/basics/RangeSet_test.cpp>
+#include <test/basics/StringUtilities_test.cpp>
+#include <test/basics/TaggedCache_test.cpp>

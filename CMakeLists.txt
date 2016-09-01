@@ -636,12 +636,29 @@ if (WIN32 OR is_xcode OR unity)
     shamap.cpp
     server.cpp
     test.cpp)
+  
+  prepend(test_unity_srcs 
+    src/unity/
+    app_test_unity.cpp
+    basics_test_unity.cpp
+    beast_test_unity.cpp
+    core_test_unity.cpp
+    json_test_unity.cpp
+    ledger_test_unity.cpp
+    overlay_test_unity.cpp
+    peerfinder_test_unity.cpp
+    protocol_test_unity.cpp
+    resource_test_unity.cpp
+    rpc_test_unity.cpp
+    server_test_unity.cpp
+    shamap_test_unity.cpp
+    test_unity.cpp)
     
-  list(APPEND src ${beast_unity_srcs} ${ripple_unity_srcs})
+  list(APPEND src ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
  
-  file(GLOB test_unity_srcs src/unity/test_unity*.cpp)
+  
 
-  add_with_props("${test_unity_srcs}"
+  add_with_props(src/unity/nodestore_test_unity.cpp
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
@@ -657,7 +674,8 @@ if (WIN32 OR is_xcode OR unity)
 
   set(unity_srcs ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs}
     src/ripple/unity/nodestore.cpp
-    src/ripple/unity/soci_ripple.cpp)
+    src/ripple/unity/soci_ripple.cpp
+    src/unity/nodestore_test_unity.cpp)
 
   set_property(
     SOURCE ${unity_srcs}
@@ -696,6 +714,7 @@ if (WIN32 OR is_xcode OR NOT unity)
   
   list(APPEND non_unity_srcs "${nodestore_srcs}")
   
+
   file(GLOB_RECURSE test_srcs src/test/*.cpp)
   add_with_props("${test_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include

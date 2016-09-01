@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,23 +18,8 @@
 */
 //==============================================================================
 
-#include <test/IOUAmount_test.cpp>
-#include <test/Issue_test.cpp>
-#include <test/PublicKey_test.cpp>
-#include <test/Quality_test.cpp>
-#include <test/SecretKey_test.cpp>
-#include <test/Seed_test.cpp>
-#include <test/STAccount_test.cpp>
-#include <test/STAmount_test.cpp>
-#include <test/STObject_test.cpp>
-#include <test/STTx_test.cpp>
-#include <test/types_test.cpp>
-#include <test/XRPAmount_test.cpp>
-#include <test/Logic_test.cpp>
-#include <test/AccountInfo_test.cpp>
-#include <test/AccountLinesRPC_test.cpp>
-#include <test/AccountObjects_test.cpp>
-#include <test/AccountOffers_test.cpp>
-#include <test/AccountSet_test.cpp>
-#include <test/Book_test.cpp>
-#include <test/GatewayBalances_test.cpp>
+#include <test/core/Config_test.cpp>
+#include <test/core/Coroutine_test.cpp>
+#include <test/core/SociDB_test.cpp>
+#include <test/core/Stoppable_test.cpp>
+#include <test/core/Workers_test.cpp>

@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,20 +18,5 @@
 */
 //==============================================================================
 
-#include <test/JSONRPC_test.cpp>
-#include <test/KeyGeneration_test.cpp>
-#include <test/LedgerRequestRPC_test.cpp>
-#include <test/RobustTransaction_test.cpp>
-#include <test/ServerInfo_test.cpp>
-#include <test/Status_test.cpp>
-#include <test/Subscribe_test.cpp>
-#include <test/Server_test.cpp>
-#include <test/FetchPack_test.cpp>
-#include <test/SHAMap_test.cpp>
-#include <test/SHAMapSync_test.cpp>
-#include <test/BasicNetwork_test.cpp>
-#include <test/WSClient_test.cpp>
-#include <test/Env_test.cpp>
-#include <test/define_print.cpp>
-#include <test/LedgerData_test.cpp>
-#include <test/varint_test.cpp>
+#include <test/peerfinder/Livecache_test.cpp>
+#include <test/peerfinder/PeerFinder_test.cpp>
