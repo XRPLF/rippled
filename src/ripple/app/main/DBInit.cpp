@@ -114,216 +114,41 @@ const char* LedgerDBInit[] =
 
 int LedgerDBCount = std::extent<decltype(LedgerDBInit)>::value;
 
-// NodeIdentity database holds local accounts and trusted nodes
-// VFALCO NOTE but its a table not a database, so...?
-//
 const char* WalletDBInit[] =
 {
-    // Node identity must be persisted for CAS routing and responsibilities.
     "BEGIN TRANSACTION;",
 
+    // A node's identity must be persisted, including
+    // for clustering purposes. This table holds one
+    // entry: the server's unique identity, but the
+    // value can be overriden by specifying a node
+    // identity in the config file using a [node_seed]
+    // entry.
     "CREATE TABLE IF NOT EXISTS NodeIdentity (      \
         PublicKey       CHARACTER(53),              \
         PrivateKey      CHARACTER(52)               \
     );",
 
-    // Miscellaneous persistent information
-    // Integer: 1 : Used to simplify SQL.
-    // ScoreUpdated: when scores was last updated.
-    // FetchUpdated: when last fetch succeeded.
-    "CREATE TABLE IF NOT EXISTS Misc (              \
-        Magic           INTEGER UNIQUE NOT NULL,    \
-        ScoreUpdated    DATETIME,                   \
-        FetchUpdated    DATETIME                    \
-    );",
-
-    // Scoring and other information for domains.
-    //
-    // Domain:
-    //  Domain source for https.
-    // PublicKey:
-    //  Set if ever succeeded.
-    // XXX Use NULL in place of ""
-    // Source:
-    //  'M' = Manually added.   : 1500
-    //  'V' = validators.txt    : 1000
-    //  'W' = Web browsing.     :  200
-    //  'R' = Referral          :    0
-    // Next:
-    //  Time of next fetch attempt.
-    // Scan:
-    //  Time of last fetch attempt.
-    // Fetch:
-    //  Time of last successful fetch.
-    // Sha256:
-    //  Checksum of last fetch.
-    // Comment:
-    //  User supplied comment.
-    // Table of Domains user has asked to trust.
-    "CREATE TABLE IF NOT EXISTS SeedDomains (       \
-        Domain          TEXT PRIMARY KEY NOT NULL,  \
-        PublicKey       CHARACTER(53),              \
-        Source          CHARACTER(1) NOT NULL,      \
-        Next            DATETIME,                   \
-        Scan            DATETIME,                   \
-        Fetch           DATETIME,                   \
-        Sha256          CHARACTER[64],              \
-        Comment         TEXT                        \
-    );",
-
-    // Allow us to easily find the next SeedDomain to fetch.
-    "CREATE INDEX IF NOT EXISTS SeedDomainNext ON SeedDomains (Next);",
-
-    // Table of PublicKeys user has asked to trust.
-    // Fetches are made to the CAS.  This gets the ripple.txt so even validators
-    // without a web server can publish a ripple.txt.
-    // Source:
-    //  'M' = Manually added.   : 1500
-    //  'V' = validators.txt    : 1000
-    //  'W' = Web browsing.     :  200
-    //  'R' = Referral          :    0
-    // Next:
-    //  Time of next fetch attempt.
-    // Scan:
-    //  Time of last fetch attempt.
-    // Fetch:
-    //  Time of last successful fetch.
-    // Sha256:
-    //  Checksum of last fetch.
-    // Comment:
-    //  User supplied comment.
-    "CREATE TABLE IF NOT EXISTS SeedNodes (         \
-        PublicKey       CHARACTER(53) PRIMARY KEY NOT NULL, \
-        Source          CHARACTER(1) NOT NULL,      \
-        Next            DATETIME,                   \
-        Scan            DATETIME,                   \
-        Fetch           DATETIME,                   \
-        Sha256          CHARACTER[64],              \
-        Comment         TEXT                        \
-    );",
-
-    // Allow us to easily find the next SeedNode to fetch.
-    "CREATE INDEX IF NOT EXISTS SeedNodeNext ON SeedNodes (Next);",
-
-    // Nodes we trust to not grossly collude against us.  Derived from
-    // SeedDomains, SeedNodes, and ValidatorReferrals.
-    //
-    // Score:
-    //  Computed trust score.  Higher is better.
-    // Seen:
-    //  Last validation received.
-    "CREATE TABLE IF NOT EXISTS TrustedNodes (              \
-        PublicKey       CHARACTER(53) PRIMARY KEY NOT NULL, \
-        Score           INTEGER DEFAULT 0 NOT NULL,         \
-        Seen            DATETIME,                           \
-        Comment         TEXT                                \
-    );",
-
-    // List of referrals.
-    // - There may be multiple sources for a Validator. The last source is used.
-    // Validator:
-    //  Public key of referrer.
-    // Entry:
-    //  Entry index in [validators] table.
-    // Referral:
-    //  This is the form provided by the ripple.txt:
-    //  - Public key for CAS based referral.
-    //  - Domain for domain based referral.
-    // XXX Do garbage collection when validators have no references.
-    "CREATE TABLE IF NOT EXISTS ValidatorReferrals (\
-        Validator       CHARACTER(53) NOT NULL,     \
-        Entry           INTEGER NOT NULL,           \
-        Referral        TEXT NOT NULL,              \
-        PRIMARY KEY (Validator,Entry)               \
-    );",
-
     // Validator Manifests
-    R"(
-        CREATE TABLE IF NOT EXISTS ValidatorManifests (
-        RawData          BLOB NOT NULL
-        );
-    )",
-
-    // List of referrals from ripple.txt files.
-    // Validator:
-    //  Public key of referree.
-    // Entry:
-    //  Entry index in [validators] table.
-    // IP:
-    //  IP of referred.
-    // Port:
-    //  -1 = Default
-    // XXX Do garbage collection when ips have no references.
-    "CREATE TABLE IF NOT EXISTS IpReferrals (           \
-        Validator       CHARACTER(53) NOT NULL,         \
-        Entry           INTEGER NOT NULL,               \
-        IP              TEXT NOT NULL,                  \
-        Port            INTEGER NOT NULL DEFAULT -1,    \
-        PRIMARY KEY (Validator,Entry)                   \
+    "CREATE TABLE IF NOT EXISTS ValidatorManifests ( \
+        RawData          BLOB NOT NULL               \
     );",
+
+    // Old tables that were present in wallet.db and we
+    // no longer need or use.
+    "DROP INDEX IF EXISTS SeedNodeNext;",
+    "DROP INDEX IF EXISTS SeedDomainNext;",
+    "DROP TABLE IF EXISTS Features;",
+    "DROP TABLE IF EXISTS TrustedNodes;",
+    "DROP TABLE IF EXISTS ValidatorReferrals;",
+    "DROP TABLE IF EXISTS IpReferrals;",
+    "DROP TABLE IF EXISTS SeedNodes;",
+    "DROP TABLE IF EXISTS SeedDomains;",
+    "DROP TABLE IF EXISTS Misc;",
 
     "END TRANSACTION;"
 };
 
 int WalletDBCount = std::extent<decltype(WalletDBInit)>::value;
-
-// Hash node database holds nodes indexed by hash
-// VFALCO TODO Remove this since it looks unused
-/*
-
-int HashNodeDBCount = std::extent<decltype(HashNodeDBInit)>::value;
-*/
-
-// Net node database holds nodes seen on the network
-// XXX Not really used needs replacement.
-/*
-const char* NetNodeDBInit[] =
-{
-    "CREATE TABLE KnownNodes (                      \
-        Hanko           CHARACTER(35) PRIMARY KEY,  \
-        LastSeen        TEXT,                       \
-        HaveContactInfo CHARACTER(1),               \
-        ContactObject   BLOB                        \
-    );"
-};
-
-int NetNodeDBCount = std::extent<decltype(NetNodeDBInit)>::value;
-*/
-
-// This appears to be unused
-/*
-const char* PathFindDBInit[] =
-{
-    "PRAGMA synchronous = OFF;            ",
-
-    "DROP TABLE TrustLines;               ",
-
-    "CREATE TABLE TrustLines {            "
-    "To             CHARACTER(40),    "  // Hex of account trusted
-    "By             CHARACTER(40),    " // Hex of account trusting
-    "Currency       CHARACTER(80),    " // Hex currency, hex issuer
-    "Use            INTEGER,          " // Use count
-    "Seq            BIGINT UNSIGNED   " // Sequence when use count was updated
-    "};                                   ",
-
-    "CREATE INDEX TLBy ON TrustLines(By, Currency, Use);",
-    "CREATE INDEX TLTo ON TrustLines(To, Currency, Use);",
-
-    "DROP TABLE Exchanges;",
-
-    "CREATE TABLE Exchanges {             "
-    "From           CHARACTER(80),    "
-    "To             CHARACTER(80),    "
-    "Currency       CHARACTER(80),    "
-    "Use            INTEGER,          "
-    "Seq            BIGINT UNSIGNED   "
-    "};                                   ",
-
-    "CREATE INDEX ExBy ON Exchanges(By, Currency, Use);",
-    "CREATE INDEX ExTo ON Exchanges(To, Currency, Use);",
-};
-
-int PathFindDBCount = std::extent<decltype(PathFindDBInit)>::value;
-*/
 
 } // ripple
