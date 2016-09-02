@@ -22,6 +22,5 @@
 // MUST come first!
 #include <BeastConfig.h>
 #include <ripple/beast/core/core.unity.cpp>
-#include <ripple/beast/define_print.cpp>
 
 #endif

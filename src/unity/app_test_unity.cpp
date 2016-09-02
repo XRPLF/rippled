@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,18 +18,25 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/ledger/impl/ApplyStateTable.cpp>
-#include <ripple/ledger/impl/ApplyViewBase.cpp>
-#include <ripple/ledger/impl/ApplyViewImpl.cpp>
-#include <ripple/ledger/impl/BookDirs.cpp>
-#include <ripple/ledger/impl/CachedSLEs.cpp>
-#include <ripple/ledger/impl/CachedView.cpp>
-#include <ripple/ledger/impl/Directory.cpp>
-#include <ripple/ledger/impl/OpenView.cpp>
-#include <ripple/ledger/impl/PaymentSandbox.cpp>
-#include <ripple/ledger/impl/RawStateTable.cpp>
-#include <ripple/ledger/impl/ReadView.cpp>
-#include <ripple/ledger/impl/TxMeta.cpp>
-#include <ripple/ledger/impl/View.cpp>
+#include <test/app/AccountTxPaging_test.cpp>
+#include <test/app/AmendmentTable_test.cpp>
+#include <test/app/CrossingLimits_test.cpp>
+#include <test/app/DeliverMin_test.cpp>
+#include <test/app/Flow_test.cpp>
+#include <test/app/HashRouter_test.cpp>
+#include <test/app/LoadFeeTrack_test.cpp>
+#include <test/app/MultiSign_test.cpp>
+#include <test/app/OfferStream_test.cpp>
+#include <test/app/Offer_test.cpp>
+#include <test/app/OversizeMeta_test.cpp>
+#include <test/app/Path_test.cpp>
+#include <test/app/PayChan_test.cpp>
+#include <test/app/Regression_test.cpp>
+#include <test/app/SetAuth_test.cpp>
+#include <test/app/SetRegularKey_test.cpp>
+#include <test/app/SHAMapStore_test.cpp>
+#include <test/app/SusPay_test.cpp>
+#include <test/app/Taker_test.cpp>
+#include <test/app/Transaction_ordering_test.cpp>
+#include <test/app/TxQ_test.cpp>
+#include <test/app/ValidatorList_test.cpp>

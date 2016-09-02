@@ -36,16 +36,6 @@
 #include <ripple/basics/impl/Time.cpp>
 #include <ripple/basics/impl/UptimeTimer.cpp>
 
-#include <ripple/basics/tests/base_uint.test.cpp>
-#include <ripple/basics/tests/CheckLibraryVersions.test.cpp>
-#include <ripple/basics/tests/mulDiv.test.cpp>
-#include <ripple/basics/tests/contract.test.cpp>
-#include <ripple/basics/tests/hardened_hash_test.cpp>
-#include <ripple/basics/tests/KeyCache.test.cpp>
-#include <ripple/basics/tests/RangeSet.test.cpp>
-#include <ripple/basics/tests/StringUtilities.test.cpp>
-#include <ripple/basics/tests/TaggedCache.test.cpp>
-
 #if DOXYGEN
 #include <ripple/basics/README.md>
 #endif

@@ -170,7 +170,7 @@ std::istream& operator>> (std::istream& is, AddressV4& addr)
     is >> IP::detail::integer (octet [0]);
     for (int i = 1; i < 4; ++i)
     {
-        if (!is || !IP::detail::BEAST_EXPECT(is, '.'))
+        if (!is || !IP::detail::expect(is, '.'))
             return is;
         is >> IP::detail::integer (octet [i]);
         if (!is)

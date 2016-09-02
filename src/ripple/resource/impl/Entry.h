@@ -107,7 +107,7 @@ struct Entry
     clock_type::rep whenExpires;
 };
 
-std::ostream& operator<< (std::ostream& os, Entry const& v)
+inline std::ostream& operator<< (std::ostream& os, Entry const& v)
 {
     os << v.to_string();
     return os;

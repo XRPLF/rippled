@@ -161,11 +161,11 @@ public:
             checkValues (s);
         }
         {
-            using namespace boost::filesystem;
+            namespace bfs = boost::filesystem;
             // Remove the database
-            path dbPath (sc.connectionString ());
-            if (is_regular_file (dbPath))
-                remove (dbPath);
+            bfs::path dbPath (sc.connectionString ());
+            if (bfs::is_regular_file (dbPath))
+                bfs::remove (dbPath);
         }
     }
 
@@ -289,11 +289,11 @@ public:
 #endif
         }
         {
-            using namespace boost::filesystem;
+            namespace bfs = boost::filesystem;
             // Remove the database
-            path dbPath (sc.connectionString ());
-            if (is_regular_file (dbPath))
-                remove (dbPath);
+            bfs::path dbPath (sc.connectionString ());
+            if (bfs::is_regular_file (dbPath))
+                bfs::remove (dbPath);
         }
     }
     void testSQLiteDeleteWithSubselect()
@@ -355,11 +355,11 @@ public:
             BEAST_EXPECT(ledgersLS.size () == numRows &&
                     validationsLH.size () == numRows);
         }
-        using namespace boost::filesystem;
+        namespace bfs = boost::filesystem;
         // Remove the database
-        path dbPath (sc.connectionString ());
-        if (is_regular_file (dbPath))
-            remove (dbPath);
+        bfs::path dbPath (sc.connectionString ());
+        if (bfs::is_regular_file (dbPath))
+            bfs::remove (dbPath);
     }
     void testSQLite ()
     {

@@ -31,7 +31,7 @@ int signum (adl_tester)
 }
 
 
-namespace detail {
+namespace inner_adl_test {
 
 struct adl_tester2 {};
 
@@ -124,7 +124,7 @@ public:
     test_adl ()
     {
       expect (adl_tester{} == zero, "ADL failure!");
-      expect (detail::adl_tester2{} == zero, "ADL failure!");
+      expect (inner_adl_test::adl_tester2{} == zero, "ADL failure!");
     }
 
     void

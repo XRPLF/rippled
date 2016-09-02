@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,18 +18,23 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/ledger/impl/ApplyStateTable.cpp>
-#include <ripple/ledger/impl/ApplyViewBase.cpp>
-#include <ripple/ledger/impl/ApplyViewImpl.cpp>
-#include <ripple/ledger/impl/BookDirs.cpp>
-#include <ripple/ledger/impl/CachedSLEs.cpp>
-#include <ripple/ledger/impl/CachedView.cpp>
-#include <ripple/ledger/impl/Directory.cpp>
-#include <ripple/ledger/impl/OpenView.cpp>
-#include <ripple/ledger/impl/PaymentSandbox.cpp>
-#include <ripple/ledger/impl/RawStateTable.cpp>
-#include <ripple/ledger/impl/ReadView.cpp>
-#include <ripple/ledger/impl/TxMeta.cpp>
-#include <ripple/ledger/impl/View.cpp>
+#include <test/beast/aged_associative_container_test.cpp>
+#include <test/beast/beast_abstract_clock_test.cpp>
+#include <test/beast/beast_asio_error_test.cpp>
+#include <test/beast/beast_basic_seconds_clock_test.cpp>
+#include <test/beast/beast_Debug_test.cpp>
+#include <test/beast/beast_Journal_test.cpp>
+#include <test/beast/beast_nudb_callgrind_test.cpp>
+#include <test/beast/beast_nudb_recover_test.cpp>
+#include <test/beast/beast_nudb_store_test.cpp>
+#include <test/beast/beast_nudb_verify_test.cpp>
+#include <test/beast/beast_PropertyStream_test.cpp>
+#include <test/beast/beast_tagged_integer_test.cpp>
+#include <test/beast/beast_weak_fn_test.cpp>
+#include <test/beast/beast_Zero_test.cpp>
+#include <test/beast/define_print.cpp>
+#include <test/beast/hash_append_test.cpp>
+#include <test/beast/hash_speed_test.cpp>
+#include <test/beast/IPEndpoint_test.cpp>
+#include <test/beast/LexicalCast_test.cpp>
+#include <test/beast/SemanticVersion_test.cpp>

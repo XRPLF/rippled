@@ -46,7 +46,10 @@ if [[ $TARGET == "coverage" ]]; then
   lcov -a baseline.info -a tests.info -o lcov-all.info
 
   # Only report on src/ripple files
-  lcov -e "lcov-all.info" "*/src/ripple/*" -o lcov.info
+  lcov -e "lcov-all.info" "*/src/ripple/*" -o lcov.pre.info
+
+  # Exclude */src/test directory
+  lcov --remove lcov.pre.info "*/src/ripple/test/*" -o lcov.info
 
   # Push the results (lcov.info) to codecov
   codecov -X gcov # don't even try and look for .gcov files ;)

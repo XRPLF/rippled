@@ -32,7 +32,3 @@
 #include <ripple/core/impl/ThreadEntry.cpp>
 #include <ripple/core/impl/Workers.cpp>
 
-#include <ripple/core/tests/Config.test.cpp>
-#include <ripple/core/tests/Coroutine.test.cpp>
-#include <ripple/core/tests/Stoppable.test.cpp>
-

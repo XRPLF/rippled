@@ -119,6 +119,7 @@ import subprocess
 import sys
 import textwrap
 import time
+import glob
 import SCons.Action
 
 sys.path.append(os.path.join('src', 'ripple', 'beast', 'site_scons'))
@@ -923,7 +924,24 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/server', '.cpp'))
     append_sources(result, *list_sources('src/ripple/test', '.cpp'))
-
+    append_sources(result, 
+        'src/test/BasicNetwork_test.cpp',
+        'src/test/Env_test.cpp',
+        'src/test/WSClient_test.cpp')
+    append_sources(result, *list_sources('src/test/app', '.cpp'))
+    append_sources(result, *list_sources('src/test/basics', '.cpp'))
+    append_sources(result, *list_sources('src/test/beast', '.cpp'))
+    append_sources(result, *list_sources('src/test/core', '.cpp'))
+    append_sources(result, *list_sources('src/test/json', '.cpp'))
+    append_sources(result, *list_sources('src/test/ledger', '.cpp'))
+    append_sources(result, *list_sources('src/test/overlay', '.cpp'))
+    append_sources(result, *list_sources('src/test/peerfinder', '.cpp'))
+    append_sources(result, *list_sources('src/test/protocol', '.cpp'))
+    append_sources(result, *list_sources('src/test/resource', '.cpp'))
+    append_sources(result, *list_sources('src/test/rpc', '.cpp'))
+    append_sources(result, *list_sources('src/test/server', '.cpp'))
+    append_sources(result, *list_sources('src/test/shamap', '.cpp'))
+    
     if use_shp(toolchain):
         cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
     else:
@@ -931,7 +949,7 @@ def get_classic_sources(toolchain):
 
     append_sources(
         result,
-        *list_sources('src/ripple/nodestore', '.cpp'),
+        *(list_sources('src/ripple/nodestore', '.cpp') + list_sources('src/test/nodestore', '.cpp')),
         CPPPATH=[
             'src/rocksdb2/include',
             'src/snappy/snappy',
@@ -948,17 +966,13 @@ def get_unity_sources(toolchain):
     result = []
     append_sources(
         result,
-        'src/ripple/beast/unity/beast_clock_unity.cpp',
-        'src/ripple/beast/unity/beast_container_unity.cpp',
         'src/ripple/beast/unity/beast_insight_unity.cpp',
         'src/ripple/beast/unity/beast_net_unity.cpp',
-        'src/ripple/beast/unity/beast_nudb_unity.cpp',
         'src/ripple/beast/unity/beast_utility_unity.cpp',
         'src/ripple/unity/app_ledger.cpp',
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
         'src/ripple/unity/app_paths.cpp',
-        'src/ripple/unity/app_tests.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
@@ -973,6 +987,20 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/server.cpp',
         'src/ripple/unity/test.cpp',
+        'src/unity/app_test_unity.cpp',
+        'src/unity/basics_test_unity.cpp',
+        'src/unity/beast_test_unity.cpp',
+        'src/unity/core_test_unity.cpp',
+        'src/unity/json_test_unity.cpp',
+        'src/unity/ledger_test_unity.cpp',
+        'src/unity/overlay_test_unity.cpp',
+        'src/unity/peerfinder_test_unity.cpp',
+        'src/unity/protocol_test_unity.cpp',
+        'src/unity/resource_test_unity.cpp',
+        'src/unity/rpc_test_unity.cpp',
+        'src/unity/server_test_unity.cpp',
+        'src/unity/shamap_test_unity.cpp',
+        'src/unity/test_unity.cpp'
     )
 
     if use_shp(toolchain):
@@ -983,6 +1011,7 @@ def get_unity_sources(toolchain):
     append_sources(
         result,
         'src/ripple/unity/nodestore.cpp',
+        'src/unity/nodestore_test_unity.cpp',
         CPPPATH=[
             'src/rocksdb2/include',
             'src/snappy/snappy',

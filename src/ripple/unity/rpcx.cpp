@@ -95,19 +95,3 @@
 #include <ripple/rpc/impl/RPCHelpers.cpp>
 #include <ripple/rpc/impl/ServerHandlerImp.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
-
-#include <ripple/rpc/tests/AccountInfo_test.cpp>
-#include <ripple/rpc/tests/AccountLinesRPC.test.cpp>
-#include <ripple/rpc/tests/AccountObjects_test.cpp>
-#include <ripple/rpc/tests/AccountOffers.test.cpp>
-#include <ripple/rpc/tests/AccountSet.test.cpp>
-#include <ripple/rpc/tests/Book.test.cpp>
-#include <ripple/rpc/tests/JSONRPC.test.cpp>
-#include <ripple/rpc/tests/GatewayBalances.test.cpp>
-#include <ripple/rpc/tests/LedgerRequestRPC.test.cpp>
-#include <ripple/rpc/tests/LedgerData.test.cpp>
-#include <ripple/rpc/tests/KeyGeneration.test.cpp>
-#include <ripple/rpc/tests/RobustTransaction.test.cpp>
-#include <ripple/rpc/tests/ServerInfo.test.cpp>
-#include <ripple/rpc/tests/Status.test.cpp>
-#include <ripple/rpc/tests/Subscribe.test.cpp>

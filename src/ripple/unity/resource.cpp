@@ -26,7 +26,6 @@
 #include <ripple/resource/impl/Kind.h>
 #include <ripple/resource/impl/ResourceManager.cpp>
 #include <ripple/resource/impl/Tuning.h>
-#include <ripple/resource/tests/Logic.test.cpp>
 
 #if DOXYGEN
 #include <ripple/resource/README.md>

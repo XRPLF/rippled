@@ -24,7 +24,6 @@
 #include <ripple/test/jtx/impl/balance.cpp>
 #include <ripple/test/jtx/impl/delivermin.cpp>
 #include <ripple/test/jtx/impl/Env.cpp>
-#include <ripple/test/jtx/impl/Env_test.cpp>
 #include <ripple/test/jtx/impl/fee.cpp>
 #include <ripple/test/jtx/impl/flags.cpp>
 #include <ripple/test/jtx/impl/jtx_json.cpp>
@@ -47,9 +46,6 @@
 #include <ripple/test/jtx/impl/utility.cpp>
 
 #include <ripple/test/mao/impl/Net.cpp>
-
-#include <ripple/test/impl/BasicNetwork_test.cpp>
 #include <ripple/test/impl/JSONRPCClient.cpp>
 #include <ripple/test/impl/ManualTimeKeeper.cpp>
 #include <ripple/test/impl/WSClient.cpp>
-#include <ripple/test/impl/WSClient_test.cpp>

@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -17,18 +18,18 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-
-#include <ripple/ledger/impl/ApplyStateTable.cpp>
-#include <ripple/ledger/impl/ApplyViewBase.cpp>
-#include <ripple/ledger/impl/ApplyViewImpl.cpp>
-#include <ripple/ledger/impl/BookDirs.cpp>
-#include <ripple/ledger/impl/CachedSLEs.cpp>
-#include <ripple/ledger/impl/CachedView.cpp>
-#include <ripple/ledger/impl/Directory.cpp>
-#include <ripple/ledger/impl/OpenView.cpp>
-#include <ripple/ledger/impl/PaymentSandbox.cpp>
-#include <ripple/ledger/impl/RawStateTable.cpp>
-#include <ripple/ledger/impl/ReadView.cpp>
-#include <ripple/ledger/impl/TxMeta.cpp>
-#include <ripple/ledger/impl/View.cpp>
+#include <test/rpc/AccountInfo_test.cpp>
+#include <test/rpc/AccountLinesRPC_test.cpp>
+#include <test/rpc/AccountObjects_test.cpp>
+#include <test/rpc/AccountOffers_test.cpp>
+#include <test/rpc/AccountSet_test.cpp>
+#include <test/rpc/Book_test.cpp>
+#include <test/rpc/GatewayBalances_test.cpp>
+#include <test/rpc/JSONRPC_test.cpp>
+#include <test/rpc/KeyGeneration_test.cpp>
+#include <test/rpc/LedgerData_test.cpp>
+#include <test/rpc/LedgerRequestRPC_test.cpp>
+#include <test/rpc/RobustTransaction_test.cpp>
+#include <test/rpc/ServerInfo_test.cpp>
+#include <test/rpc/Status_test.cpp>
+#include <test/rpc/Subscribe_test.cpp>

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/xor_shift_engine.h>
 

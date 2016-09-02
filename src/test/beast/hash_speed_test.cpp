@@ -17,15 +17,12 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
-#include <beast/container/fnv1a.h>
-#include <beast/container/siphash.h>
-#include <beast/container/xxhasher.h>
-#include <beast/rngfill.h>
-#include <beast/xor_shift_engine.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/beast/hash/endian.h>
+#include <ripple/beast/hash/fnv1a.h>
+#include <ripple/beast/hash/siphash.h>
+#include <ripple/beast/hash/xxhasher.h>
+#include <ripple/beast/xor_shift_engine.h>
+#include <ripple/beast/unit_test.h>
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -38,6 +35,44 @@ namespace beast {
 class hash_speed_test : public beast::unit_test::suite
 {
 public:
+    template <class Generator>
+    static
+    void
+    rngfill (void* buffer, std::size_t bytes,
+        Generator& g)
+    {
+        using result_type =
+            typename Generator::result_type;
+        while (bytes >= sizeof(result_type))
+        {
+            auto const v = g();
+            std::memcpy(buffer, &v, sizeof(v));
+            buffer = reinterpret_cast<
+                std::uint8_t*>(buffer) + sizeof(v);
+            bytes -= sizeof(v);
+        }
+        if (bytes > 0)
+        {
+            auto const v = g();
+            std::memcpy(buffer, &v, bytes);
+        }
+    }
+
+    template <class Generator, std::size_t N,
+        class = std::enable_if_t<
+            N % sizeof(typename Generator::result_type) == 0>>
+    static
+    void
+    rngfill (std::array<std::uint8_t, N>& a, Generator& g)
+    {
+        using result_type =
+            typename Generator::result_type;
+        auto i = N / sizeof(result_type);
+        result_type* p =
+            reinterpret_cast<result_type*>(a.data());
+        while (i--)
+            *p++ = g();
+    }
     using clock_type =
         std::chrono::high_resolution_clock;
     template <class Hasher, std::size_t KeySize>
@@ -53,14 +88,14 @@ public:
         {
             rngfill (key, g);
             Hasher h;
-            h.append(key.data(), KeySize);
+            h(key.data(), KeySize);
             volatile size_t temp =
                 static_cast<std::size_t>(h);
             (void)temp;
         }
         auto const elapsed = clock_type::now() - start;
         log << setw(12) << what << " " <<
-            duration<double>(elapsed) << "s" << std::endl;
+            duration<double>(elapsed).count() << "s" << std::endl;
     }
 
     void

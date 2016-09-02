@@ -1,7 +1,8 @@
+
 //------------------------------------------------------------------------------
 /*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,4 +18,4 @@
 */
 //==============================================================================
 
-#include <ripple/beast/container/tests/aged_associative_container.test.cpp>
+#include <test/server/Server_test.cpp>

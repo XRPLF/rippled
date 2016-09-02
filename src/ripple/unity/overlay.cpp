@@ -29,11 +29,6 @@
 #include <ripple/overlay/impl/TMHello.cpp>
 #include <ripple/overlay/impl/TrafficCount.cpp>
 
-#include <ripple/overlay/tests/cluster_test.cpp>
-#include <ripple/overlay/tests/manifest_test.cpp>
-#include <ripple/overlay/tests/short_read.test.cpp>
-#include <ripple/overlay/tests/TMHello.test.cpp>
-
 #if DOXYGEN
 #include <ripple/overlay/README.md>
 #endif
