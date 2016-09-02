@@ -1,6 +1,8 @@
 1.0.0-b13
 
+* dstream improvements
 * Remove bin and bin64 directories
+* Tidy up .vcxproj file groupings
 
 --------------------------------------------------------------------------------
 
