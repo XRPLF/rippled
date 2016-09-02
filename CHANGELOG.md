@@ -1,3 +1,9 @@
+1.0.0-b13
+
+* Remove bin and bin64 directories
+
+--------------------------------------------------------------------------------
+
 1.0.0-b12
 
 * Use -p to print suites from unit test main.
