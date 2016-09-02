@@ -1,11 +1,12 @@
 # Part of Beast
 
-GroupSources(extras/beast beast)
+GroupSources(extras/beast extras)
 GroupSources(include/beast beast)
 GroupSources(test/websocket "/")
 
 add_executable (websocket-tests
     ${BEAST_INCLUDES}
+    ${EXTRAS_INCLUDES}
     ../../extras/beast/unit_test/main.cpp
     websocket_async_echo_server.hpp
     websocket_sync_echo_server.hpp
@@ -14,10 +15,10 @@ add_executable (websocket-tests
     rfc6455.cpp
     stream.cpp
     teardown.cpp
-    detail/frame.cpp
-    detail/mask.cpp
-    detail/stream_base.cpp
-    detail/utf8_checker.cpp
+    frame.cpp
+    mask.cpp
+    stream_base.cpp
+    utf8_checker.cpp
 )
 
 if (NOT WIN32)
@@ -26,6 +27,7 @@ endif()
 
 add_executable (websocket-echo
     ${BEAST_INCLUDES}
+    ${EXTRAS_INCLUDES}
     websocket_async_echo_server.hpp
     websocket_sync_echo_server.hpp
     websocket_echo.cpp

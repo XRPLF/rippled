@@ -1,11 +1,12 @@
 # Part of Beast
 
-GroupSources(extras/beast beast)
+GroupSources(extras/beast extras)
 GroupSources(include/beast beast)
 GroupSources(test/core "/")
 
 add_executable (core-tests
     ${BEAST_INCLUDES}
+    ${EXTRAS_INCLUDES}
     ../../extras/beast/unit_test/main.cpp
     buffer_test.hpp
     async_completion.cpp
@@ -27,10 +28,10 @@ add_executable (core-tests
     streambuf.cpp
     to_string.cpp
     write_dynabuf.cpp
-    detail/base64.cpp
-    detail/empty_base_optimization.cpp
-    detail/get_lowest_layer.cpp
-    detail/sha1.cpp
+    base64.cpp
+    empty_base_optimization.cpp
+    get_lowest_layer.cpp
+    sha1.cpp
 )
 
 if (NOT WIN32)

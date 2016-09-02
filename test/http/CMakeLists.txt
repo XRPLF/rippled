@@ -1,11 +1,12 @@
 # Part of Beast
 
-GroupSources(extras/beast beast)
+GroupSources(extras/beast extras)
 GroupSources(include/beast beast)
 GroupSources(test/http "/")
 
 add_executable (http-tests
     ${BEAST_INCLUDES}
+    ${EXTRAS_INCLUDES}
     message_fuzz.hpp
     fail_parser.hpp
     ../../extras/beast/unit_test/main.cpp
@@ -27,7 +28,7 @@ add_executable (http-tests
     streambuf_body.cpp
     string_body.cpp
     write.cpp
-    detail/chunk_encode.cpp
+    chunk_encode.cpp
 )
 
 if (NOT WIN32)
@@ -36,6 +37,7 @@ endif()
 
 add_executable (bench-tests
     ${BEAST_INCLUDES}
+    ${EXTRAS_INCLUDES}
     nodejs_parser.hpp
     ../../extras/beast/unit_test/main.cpp
     nodejs_parser.cpp

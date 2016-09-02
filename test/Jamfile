@@ -33,10 +33,10 @@ unit-test core-tests :
     core/streambuf.cpp
     core/to_string.cpp
     core/write_dynabuf.cpp
-    core/detail/base64.cpp
-    core/detail/empty_base_optimization.cpp
-    core/detail/get_lowest_layer.cpp
-    core/detail/sha1.cpp
+    core/base64.cpp
+    core/empty_base_optimization.cpp
+    core/get_lowest_layer.cpp
+    core/sha1.cpp
     ;
 
 unit-test http-tests :
@@ -59,7 +59,7 @@ unit-test http-tests :
     http/streambuf_body.cpp
     http/string_body.cpp
     http/write.cpp
-    http/detail/chunk_encode.cpp
+    http/chunk_encode.cpp
     ;
 
 unit-test bench-tests :
@@ -75,10 +75,10 @@ unit-test websocket-tests :
     websocket/rfc6455.cpp
     websocket/stream.cpp
     websocket/teardown.cpp
-    websocket/detail/frame.cpp
-    websocket/detail/mask.cpp
-    websocket/detail/stream_base.cpp
-    websocket/detail/utf8_checker.cpp
+    websocket/frame.cpp
+    websocket/mask.cpp
+    websocket/stream_base.cpp
+    websocket/utf8_checker.cpp
     ;
 
 exe websocket-echo :

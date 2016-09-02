@@ -70,6 +70,9 @@ include_directories (include)
 file(GLOB_RECURSE BEAST_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/beast/*.hpp
     ${PROJECT_SOURCE_DIR}/include/beast/*.ipp
+)
+
+file(GLOB_RECURSE EXTRAS_INCLUDES
     ${PROJECT_SOURCE_DIR}/extras/beast/*.hpp
     ${PROJECT_SOURCE_DIR}/extras/beast/*.ipp
 )
@@ -79,5 +82,3 @@ add_subdirectory (test)
 add_subdirectory (test/core)
 add_subdirectory (test/http)
 add_subdirectory (test/websocket)
-
-#enable_testing()
