@@ -2439,6 +2439,9 @@
     <ClCompile Include="..\..\src\ripple\conditions\impl\Fulfillment.cpp">
       <Filter>ripple\conditions\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\RsaSha256.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
       <Filter>ripple\conditions\impl</Filter>
     </ClInclude>
@@ -2446,6 +2449,9 @@
       <Filter>ripple\conditions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\PreimageSha256.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\RsaSha256.h">
       <Filter>ripple\conditions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
@@ -5344,6 +5350,9 @@
       <Filter>test\conditions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
+      <Filter>test\conditions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\RsaSha256_test.cpp">
       <Filter>test\conditions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">

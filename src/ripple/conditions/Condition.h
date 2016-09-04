@@ -150,6 +150,9 @@ validate (Condition const& c)
         return (cf2 & definedFeatures) == cf2;
     }
 
+    if (c.type == condition_rsa_sha256)
+        return (c.featureBitmask == (feature_rsa_pss | feature_sha256));
+
     if (c.type == condition_ed25519)
         return (c.featureBitmask == feature_ed25519);
 
