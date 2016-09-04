@@ -141,7 +141,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     {
         result[jss::limit] = limit;
 
-        result[jss::marker] = to_string (offers.back ()->getIndex ());
+        result[jss::marker] = to_string (offers.back ()->key ());
         offers.pop_back ();
     }
 

@@ -330,8 +330,6 @@ public:
 
     ResultOfSetTypeFromSField setTypeFromSField (SField const&);
 
-    bool isValidForType ();
-    bool isFieldAllowed (SField const&);
     bool isFree () const
     {
         return mType == nullptr;
@@ -424,7 +422,6 @@ public:
 
     // these throw if the field type doesn't match, or return default values
     // if the field is optional but not present
-    std::string getFieldString (SField const& field) const;
     unsigned char getFieldU8 (SField const& field) const;
     std::uint16_t getFieldU16 (SField const& field) const;
     std::uint32_t getFieldU32 (SField const& field) const;
@@ -440,7 +437,6 @@ public:
     STPathSet const& getFieldPathSet (SField const& field) const;
     const STVector256& getFieldV256 (SField const& field) const;
     const STArray& getFieldArray (SField const& field) const;
-    const STObject& getFieldObject (SField const& field) const;
 
     /** Return the value of a field.
 
@@ -499,10 +495,8 @@ public:
     void setAccountID (SField const& field, AccountID const&);
 
     void setFieldAmount (SField const& field, STAmount const&);
-    void setFieldPathSet (SField const& field, STPathSet const&);
     void setFieldV256 (SField const& field, STVector256 const& v);
     void setFieldArray (SField const& field, STArray const& v);
-    void setFieldObject (SField const& field, STObject const& v);
 
     template <class Tag>
     void setFieldH160 (SField const& field, base_uint<160, Tag> const& v)

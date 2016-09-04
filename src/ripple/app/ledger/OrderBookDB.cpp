@@ -103,7 +103,7 @@ void OrderBookDB::update(
         {
             if (sle->getType () == ltDIR_NODE &&
                 sle->isFieldPresent (sfExchangeRate) &&
-                sle->getFieldH256 (sfRootIndex) == sle->getIndex())
+                sle->getFieldH256 (sfRootIndex) == sle->key())
             {
                 Book book;
                 book.in.currency.copyFrom(sle->getFieldH160(

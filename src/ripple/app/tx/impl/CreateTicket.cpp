@@ -105,10 +105,10 @@ CreateTicket::doApply ()
     auto viewJ = ctx_.app.journal ("View");
 
     auto result = dirAdd(view(), hint, keylet::ownerDir (account_),
-        sleTicket->getIndex (), describeOwnerDir (account_), viewJ);
+        sleTicket->key(), describeOwnerDir (account_), viewJ);
 
     JLOG(j_.trace()) <<
-        "Creating ticket " << to_string (sleTicket->getIndex ()) <<
+        "Creating ticket " << to_string (sleTicket->key()) <<
         ": " << transHuman (result.first);
 
     if (result.first == tesSUCCESS)

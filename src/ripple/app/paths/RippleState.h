@@ -59,7 +59,7 @@ public:
     uint256
     key() const
     {
-        return sle_->getIndex();
+        return sle_->key();
     }
 
     // VFALCO Take off the "get" from each function name

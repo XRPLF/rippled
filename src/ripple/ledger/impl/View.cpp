@@ -1061,14 +1061,14 @@ trustCreate (ApplyView& view,
 
     std::tie (terResult, std::ignore) = dirAdd (view,
         uLowNode, keylet::ownerDir (uLowAccountID),
-        sleRippleState->getIndex (),
+        sleRippleState->key(),
         describeOwnerDir (uLowAccountID), j);
 
     if (tesSUCCESS == terResult)
     {
         std::tie (terResult, std::ignore) = dirAdd (view,
             uHighNode, keylet::ownerDir (uHighAccountID),
-            sleRippleState->getIndex (),
+            sleRippleState->key(),
             describeOwnerDir (uHighAccountID), j);
     }
 
@@ -1156,7 +1156,7 @@ trustDelete (ApplyView& view,
         false,
         uLowNode,
         getOwnerDirIndex (uLowAccountID),
-        sleRippleState->getIndex (),
+        sleRippleState->key(),
         false,
         !bLowNode,
         j);
@@ -1169,7 +1169,7 @@ trustDelete (ApplyView& view,
             false,
             uHighNode,
             getOwnerDirIndex (uHighAccountID),
-            sleRippleState->getIndex (),
+            sleRippleState->key(),
             false,
             !bHighNode,
             j);
@@ -1188,7 +1188,7 @@ offerDelete (ApplyView& view,
 {
     if (! sle)
         return tesSUCCESS;
-    auto offerIndex = sle->getIndex ();
+    auto offerIndex = sle->key();
     auto owner = sle->getAccountID  (sfAccount);
 
     // Detect legacy directories.

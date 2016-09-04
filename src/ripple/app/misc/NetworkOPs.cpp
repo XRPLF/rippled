@@ -2901,7 +2901,7 @@ void NetworkOPsImp::getBookPage (
             }
             else
             {
-                uTipIndex = sleOfferDir->getIndex ();
+                uTipIndex = sleOfferDir->key();
                 saDirRate = amountFromQuality (getQuality (uTipIndex));
 
                 cdirFirst (view,

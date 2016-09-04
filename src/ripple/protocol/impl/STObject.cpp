@@ -164,28 +164,6 @@ STObject::setTypeFromSField (SField const& sField)
     return ret;
 }
 
-bool STObject::isValidForType ()
-{
-    auto it = v_.begin();
-    for (auto const& elem : mType->all())
-    {
-        if (it == v_.end())
-            return false;
-        if (elem->e_field != it->get().getFName())
-            return false;
-        ++it;
-    }
-    return true;
-}
-
-bool STObject::isFieldAllowed (SField const& field)
-{
-    if (mType == nullptr)
-        return true;
-
-    return mType->getIndex (field) != -1;
-}
-
 // return true = terminated with end-of-object
 bool STObject::set (SerialIter& sit, int depth)
 {
@@ -504,15 +482,6 @@ void STObject::delField (int index)
     v_.erase (v_.begin () + index);
 }
 
-std::string STObject::getFieldString (SField const& field) const
-{
-    const STBase* rf = peekAtPField (field);
-
-    if (! rf) Throw<std::runtime_error> ("Field not found");
-
-    return rf->getText ();
-}
-
 unsigned char STObject::getFieldU8 (SField const& field) const
 {
     return getFieldByValue <STUInt8> (field);
@@ -582,12 +551,6 @@ const STArray& STObject::getFieldArray (SField const& field) const
 {
     static STArray const empty{};
     return getFieldByConstRef <STArray> (field, empty);
-}
-
-const STObject& STObject::getFieldObject (SField const& field) const
-{
-    static STObject const empty{sfInvalid};
-    return getFieldByConstRef <STObject> (field, empty);
 }
 
 void
@@ -664,17 +627,7 @@ void STObject::setFieldAmount (SField const& field, STAmount const& v)
     setFieldUsingAssignment (field, v);
 }
 
-void STObject::setFieldPathSet (SField const& field, STPathSet const& v)
-{
-    setFieldUsingAssignment (field, v);
-}
-
 void STObject::setFieldArray (SField const& field, STArray const& v)
-{
-    setFieldUsingAssignment (field, v);
-}
-
-void STObject::setFieldObject (SField const& field, STObject const& v)
 {
     setFieldUsingAssignment (field, v);
 }

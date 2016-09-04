@@ -32,55 +32,54 @@ STLedgerEntry::STLedgerEntry (Keylet const& k)
     :  STObject(sfLedgerEntry)
     , key_ (k.key)
     , type_ (k.type)
-    , mMutable (true)
 {
-    mFormat =
+    auto const format =
         LedgerFormats::getInstance().findByType (type_);
-    if (mFormat == nullptr)
+
+    if (format == nullptr)
         Throw<std::runtime_error> ("invalid ledger entry type");
-    set (mFormat->elements);
+
+    set (format->elements);
+
     setFieldU16 (sfLedgerEntryType,
-        static_cast <std::uint16_t> (mFormat->getType ()));
+        static_cast <std::uint16_t> (type_));
 }
 
 STLedgerEntry::STLedgerEntry (
-    SerialIter& sit, uint256 const& index)
-    : STObject (sfLedgerEntry), key_ (index), mMutable (true)
+        SerialIter& sit,
+        uint256 const& index)
+    : STObject (sfLedgerEntry)
+    , key_ (index)
 {
     set (sit);
     setSLEType ();
 }
 
 STLedgerEntry::STLedgerEntry (
-    const Serializer& s, uint256 const& index)
-    : STObject (sfLedgerEntry), key_ (index), mMutable (true)
-{
-    SerialIter sit (s.slice());
-    set (sit);
-    setSLEType ();
-}
-
-STLedgerEntry::STLedgerEntry (
-    const STObject & object, uint256 const& index)
-    : STObject (object), key_(index),  mMutable (true)
+        STObject const& object,
+        uint256 const& index)
+    : STObject (object)
+    , key_ (index)
 {
     setSLEType ();
 }
 
 void STLedgerEntry::setSLEType ()
 {
-    mFormat = LedgerFormats::getInstance().findByType (
-        static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType)));
+    auto format = LedgerFormats::getInstance().findByType (
+        static_cast <LedgerEntryType> (
+            getFieldU16 (sfLedgerEntryType)));
 
-    if (mFormat == nullptr)
+    if (format == nullptr)
         Throw<std::runtime_error> ("invalid ledger entry type");
 
-    type_ = mFormat->getType ();
-    if (!setType (mFormat->elements))
+    type_ = format->getType ();
+
+    if (!setType (format->elements))
     {
         if (auto j = debugLog().error())
         {
-            j << "Ledger entry not valid for type " << mFormat->getName ();
+            j << "Ledger entry not valid for type " << format->getName ();
             j << "Object: " << getJson (0);
         }
 
@@ -90,10 +89,16 @@ void STLedgerEntry::setSLEType ()
 
 std::string STLedgerEntry::getFullText () const
 {
+    auto const format =
+        LedgerFormats::getInstance().findByType (type_);
+
+    if (format == nullptr)
+        Throw<std::runtime_error> ("invalid ledger entry type");
+
     std::string ret = "\"";
     ret += to_string (key_);
     ret += "\" = { ";
-    ret += mFormat->getName ();
+    ret += format->getName ();
     ret += ", ";
     ret += STObject::getFullText ();
     ret += "}";
@@ -121,23 +126,11 @@ bool STLedgerEntry::isThreadedType () const
     return getFieldIndex (sfPreviousTxnID) != -1;
 }
 
-bool STLedgerEntry::isThreaded () const
-{
-    return isFieldPresent (sfPreviousTxnID);
-}
-
-uint256 STLedgerEntry::getThreadedTransaction () const
-{
-    return getFieldH256 (sfPreviousTxnID);
-}
-
-std::uint32_t STLedgerEntry::getThreadedLedger () const
-{
-    return getFieldU32 (sfPreviousTxnLgrSeq);
-}
-
-bool STLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
-                                    uint256& prevTxID, std::uint32_t& prevLedgerID)
+bool STLedgerEntry::thread (
+    uint256 const& txID,
+    std::uint32_t ledgerSeq,
+    uint256& prevTxID,
+    std::uint32_t& prevLedgerID)
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
 

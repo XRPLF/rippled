@@ -152,7 +152,7 @@ TOfferStreamBase<TIn, TOut>::step ()
             tp{d{(*entry)[sfExpiration]}} <= expire_)
         {
             JLOG(j_.trace()) <<
-                "Removing expired offer " << entry->getIndex();
+                "Removing expired offer " << entry->key();
                 permRmOffer (entry);
             continue;
         }
@@ -165,7 +165,7 @@ TOfferStreamBase<TIn, TOut>::step ()
         if (amount.empty())
         {
             JLOG(j_.warn()) <<
-                "Removing bad offer " << entry->getIndex();
+                "Removing bad offer " << entry->key();
             permRmOffer (entry);
             offer_ = TOffer<TIn, TOut>{};
             continue;
@@ -189,12 +189,12 @@ TOfferStreamBase<TIn, TOut>::step ()
             {
                 permRmOffer (entry);
                 JLOG(j_.trace()) <<
-                    "Removing unfunded offer " << entry->getIndex();
+                    "Removing unfunded offer " << entry->key();
             }
             else
             {
                 JLOG(j_.trace()) <<
-                    "Removing became unfunded offer " << entry->getIndex();
+                    "Removing became unfunded offer " << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
             continue;
