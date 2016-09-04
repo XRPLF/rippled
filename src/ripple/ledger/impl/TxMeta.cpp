@@ -170,7 +170,7 @@ TxMeta::getAffectedAccounts() const
 
 STObject& TxMeta::getAffectedNode (SLE::ref node, SField const& type)
 {
-    uint256 index = node->getIndex ();
+    uint256 index = node->key();
     for (auto& n : mNodes)
     {
         if (n.getFieldH256 (sfLedgerIndex) == index)

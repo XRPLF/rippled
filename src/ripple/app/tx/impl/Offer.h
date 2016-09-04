@@ -120,7 +120,7 @@ public:
 
     std::string id () const
     {
-        return to_string (m_entry->getIndex());
+        return to_string (m_entry->key());
     }
 
     Issue issueIn () const;

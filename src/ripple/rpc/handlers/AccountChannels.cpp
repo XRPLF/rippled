@@ -167,7 +167,7 @@ Json::Value doAccountChannels (RPC::Context& context)
     {
         result[jss::limit] = limit;
 
-        result[jss::marker] = to_string (visitData.items.back()->getIndex());
+        result[jss::marker] = to_string (visitData.items.back()->key());
         visitData.items.pop_back ();
     }
 

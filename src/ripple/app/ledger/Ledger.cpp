@@ -346,7 +346,7 @@ Ledger::setAccepted(NetClock::time_point closeTime,
 
 bool Ledger::addSLE (SLE const& sle)
 {
-    SHAMapItem item (sle.getIndex(), sle.getSerializer());
+    SHAMapItem item (sle.key(), sle.getSerializer());
     return stateMap_->addItem(std::move(item), false, false);
 }
 
@@ -421,8 +421,6 @@ Ledger::read (Keylet const& k) const
             item->size()}, item->key());
     if (! k.check(*sle))
         return nullptr;
-    // VFALCO TODO Eliminate "immutable" runtime property
-    sle->setImmutable();
     // need move otherwise makes a copy
     // because return type is different
     return std::move(sle);
@@ -632,8 +630,6 @@ Ledger::peek (Keylet const& k) const
         SerialIter{value->data(), value->size()}, value->key());
     if (! k.check(*sle))
         return nullptr;
-    // VFALCO TODO Eliminate "immutable" runtime property
-    sle->setImmutable();
     return sle;
 }
 
