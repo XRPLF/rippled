@@ -73,6 +73,7 @@ SHAMap::snapShot (bool isMutable) const
 
     newMap.seq_ = seq_ + 1;
     newMap.root_ = root_;
+    newMap.backed_ = backed_;
 
     if ((state_ != SHAMapState::Immutable) || !isMutable)
     {
