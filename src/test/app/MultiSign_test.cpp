@@ -210,6 +210,24 @@ public:
         env(signers(alice, 1, {{bogie, 1}, {demon,1}}), ter(temDISABLED));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::account] = alice.human();
+            auto const jsmr = env.rpc("json", "submit_multisigned", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jsmr[jss::error]         == "notEnabled");
+            BEAST_EXPECT(jsmr[jss::status]        == "error");
+            BEAST_EXPECT(jsmr[jss::error_message] == "Not enabled in configuration.");
+        }
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::account] = alice.human();
+            auto const jsmr = env.rpc("json", "sign_for", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jsmr[jss::error]         == "notEnabled");
+            BEAST_EXPECT(jsmr[jss::status]        == "error");
+            BEAST_EXPECT(jsmr[jss::error_message] == "Not enabled in configuration.");
+        }
     }
 
     void test_fee ()
@@ -392,6 +410,209 @@ public:
             msig(msig::Reg{becky, beck}, msig::Reg{cheri, cher}));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+    }
+
+    void test_regularSignersUsingSubmitMulti()
+    {
+        using namespace jtx;
+        Env env(*this, features(featureMultiSign));
+        Account const alice {"alice", KeyType::secp256k1};
+        Account const becky {"becky", KeyType::ed25519};
+        Account const cheri {"cheri", KeyType::secp256k1};
+        env.fund(XRP(1000), alice, becky, cheri);
+        env.close();
+
+        // Attach signers to alice.
+        env(signers(alice, 2, {{becky, 1}, {cheri, 1}}), sig (alice));
+
+        // Give everyone regular keys.
+        Account const beck {"beck", KeyType::secp256k1};
+        env(regkey (becky, beck));
+        Account const cher {"cher", KeyType::ed25519};
+        env(regkey (cheri, cher));
+        env.close();
+
+        // Disable cheri's master key to mix things up.
+        env(fset (cheri, asfDisableMaster), sig(cheri));
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+        std::uint32_t aliceSeq;
+
+        // these represent oft-repeated setup for input json below
+        auto setup_tx = [&]() -> Json::Value {
+            Json::Value jv;
+            jv[jss::tx_json][jss::Account]         = alice.human();
+            jv[jss::tx_json][jss::TransactionType] = "AccountSet";
+            jv[jss::tx_json][jss::Fee]             = static_cast<uint32_t>(8 * baseFee);
+            jv[jss::tx_json][jss::Sequence]        = env.seq(alice);
+            jv[jss::tx_json][jss::SigningPubKey]   = "";
+            return jv;
+        };
+        auto cheri_sign = [&](Json::Value& jv) {
+            jv[jss::account]       = cheri.human();
+            jv[jss::key_type]      = "ed25519";
+            jv[jss::passphrase]    = cher.name();
+        };
+        auto becky_sign = [&](Json::Value& jv) {
+            jv[jss::account] = becky.human();
+            jv[jss::secret]  = beck.name();
+        };
+
+        {
+            // Attempt a multisigned transaction that meets the quorum.
+            // using sign_for and submit_multisigned
+            aliceSeq = env.seq (alice);
+            Json::Value jv_one = setup_tx();
+            cheri_sign(jv_one);
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            // for the second sign_for, use the returned tx_json with
+            // first signer info
+            Json::Value jv_two;
+            jv_two[jss::tx_json] = jrr[jss::tx_json];
+            becky_sign(jv_two);
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            Json::Value jv_submit;
+            jv_submit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+        }
+
+        {
+            //failure case -- SigningPubKey not empty
+            aliceSeq = env.seq (alice);
+            Json::Value jv_one = setup_tx();
+            jv_one[jss::tx_json][jss::SigningPubKey]   = strHex(alice.pk().slice());
+            cheri_sign(jv_one);
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message]  == "When multi-signing 'tx_json.SigningPubKey' must be empty.");
+        }
+
+        {
+            //failure case - bad fee
+            aliceSeq = env.seq (alice);
+            Json::Value jv_one = setup_tx();
+            jv_one[jss::tx_json][jss::Fee] = -1;
+            cheri_sign(jv_one);
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            // for the second sign_for, use the returned tx_json with
+            // first signer info
+            Json::Value jv_two;
+            jv_two[jss::tx_json] = jrr[jss::tx_json];
+            becky_sign(jv_two);
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            Json::Value jv_submit;
+            jv_submit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message]  == "Invalid Fee field.  Fees must be greater than zero.");
+        }
+
+        {
+            //failure case - bad fee v2
+            aliceSeq = env.seq (alice);
+            Json::Value jv_one = setup_tx();
+            jv_one[jss::tx_json][jss::Fee]  = alice["USD"](10).value().getFullText();
+            cheri_sign(jv_one);
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            // for the second sign_for, use the returned tx_json with
+            // first signer info
+            Json::Value jv_two;
+            jv_two[jss::tx_json] = jrr[jss::tx_json];
+            becky_sign(jv_two);
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            Json::Value jv_submit;
+            jv_submit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "internal");
+            BEAST_EXPECT(jrr[jss::error_message]  == "Internal error.");
+        }
+
+        {
+            // cheri should not be able to multisign using her master key.
+            aliceSeq = env.seq (alice);
+            Json::Value jv = setup_tx();
+            jv[jss::account]                       = cheri.human();
+            jv[jss::secret]                        = cheri.name();
+            auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "masterDisabled");
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+
+        {
+            // Unlike cheri, becky should also be able to sign using her master key
+            aliceSeq = env.seq (alice);
+            Json::Value jv_one = setup_tx();
+            cheri_sign(jv_one);
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            // for the second sign_for, use the returned tx_json with
+            // first signer info
+            Json::Value jv_two;
+            jv_two[jss::tx_json]    = jrr[jss::tx_json];
+            jv_two[jss::account]    = becky.human();
+            jv_two[jss::key_type]   = "ed25519";
+            jv_two[jss::passphrase] = becky.name();
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+
+            Json::Value jv_submit;
+            jv_submit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+        }
+
+        {
+            // check for bad or bogus accounts in the tx
+            Json::Value jv = setup_tx();
+            jv[jss::tx_json][jss::Account]         = "DEADBEEF";
+            cheri_sign(jv);
+            auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "srcActMalformed");
+
+            Account const jimmy {"jimmy"};
+            jv[jss::tx_json][jss::Account]         = jimmy.human();
+            jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "srcActNotFound");
+        }
+
+        {
+            aliceSeq = env.seq (alice);
+            Json::Value jv = setup_tx();
+            jv[jss::tx_json][sfSigners.fieldName]  = Json::Value{Json::arrayValue};
+            becky_sign(jv);
+            auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "error");
+            BEAST_EXPECT(jrr[jss::error]  == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message]  == "tx_json.Signers array may not be empty.");
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
     }
 
     void test_heterogeneousSigners()
@@ -710,7 +931,7 @@ public:
         {
             Json::Value jvResult;
             jvResult[jss::tx_blob] = strHex (stx.getSerializer().slice());
-            return env.rpc ("json", "submit", jvResult.toStyledString());
+            return env.rpc ("json", "submit", to_string(jvResult));
         };
 
         Account const alice {"alice"};
@@ -735,6 +956,18 @@ public:
             auto badSig = local.getFieldVL (sfTxnSignature);
             badSig[20] ^= 0xAA;
             local.setFieldVL (sfTxnSignature, badSig);
+            // Signature should fail.
+            auto const info = submitSTTx (local);
+            BEAST_EXPECT(info[jss::result][jss::error_exception] ==
+                    "fails local checks: Invalid signature.");
+        }
+        {
+            // Single-sign, but invalidate the sequence number.
+            JTx tx = env.jt (noop (alice), sig(alice));
+            STTx local = *(tx.stx);
+            // Flip some bits in the signature.
+            auto seq = local.getFieldU32 (sfSequence);
+            local.setFieldU32 (sfSequence, seq + 1);
             // Signature should fail.
             auto const info = submitSTTx (local);
             BEAST_EXPECT(info[jss::result][jss::error_exception] ==
@@ -822,6 +1055,20 @@ public:
         }
     }
 
+    void test_noMultiSigners()
+    {
+        using namespace jtx;
+        Env env {*this, features(featureMultiSign)};
+        Account const alice {"alice", KeyType::ed25519};
+        Account const becky {"becky", KeyType::secp256k1};
+        env.fund(XRP(1000), alice, becky);
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+        env(noop(alice), msig(becky, demon), fee(3 * baseFee), ter(tefNOT_MULTI_SIGNING));
+    }
+
+
     void run() override
     {
         test_noReserve();
@@ -832,11 +1079,13 @@ public:
         test_misorderedSigners();
         test_masterSigners();
         test_regularSigners();
+        test_regularSignersUsingSubmitMulti();
         test_heterogeneousSigners();
         test_keyDisable();
         test_regKey();
         test_txTypes();
         test_badSignatureText();
+        test_noMultiSigners();
     }
 };
 
