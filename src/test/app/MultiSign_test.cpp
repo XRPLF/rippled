@@ -214,7 +214,7 @@ public:
         {
             Json::Value jvParams;
             jvParams[jss::account] = alice.human();
-            auto const jsmr = env.rpc("json", "submit_multisigned", jvParams.toStyledString())[jss::result];
+            auto const jsmr = env.rpc("json", "submit_multisigned", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jsmr[jss::error]         == "notEnabled");
             BEAST_EXPECT(jsmr[jss::status]        == "error");
             BEAST_EXPECT(jsmr[jss::error_message] == "Not enabled in configuration.");
@@ -223,7 +223,7 @@ public:
         {
             Json::Value jvParams;
             jvParams[jss::account] = alice.human();
-            auto const jsmr = env.rpc("json", "sign_for", jvParams.toStyledString())[jss::result];
+            auto const jsmr = env.rpc("json", "sign_for", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jsmr[jss::error]         == "notEnabled");
             BEAST_EXPECT(jsmr[jss::status]        == "error");
             BEAST_EXPECT(jsmr[jss::error_message] == "Not enabled in configuration.");
@@ -465,7 +465,7 @@ public:
             aliceSeq = env.seq (alice);
             Json::Value jv_one = setup_tx();
             cheri_sign(jv_one);
-            auto jrr = env.rpc("json", "sign_for", jv_one.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -473,12 +473,12 @@ public:
             Json::Value jv_two;
             jv_two[jss::tx_json] = jrr[jss::tx_json];
             becky_sign(jv_two);
-            jrr = env.rpc("json", "sign_for", jv_two.toStyledString())[jss::result];
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc("json", "submit_multisigned", jv_submit.toStyledString())[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -490,7 +490,7 @@ public:
             Json::Value jv_one = setup_tx();
             jv_one[jss::tx_json][jss::SigningPubKey]   = strHex(alice.pk().slice());
             cheri_sign(jv_one);
-            auto jrr = env.rpc("json", "sign_for", jv_one.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message]  == "When multi-signing 'tx_json.SigningPubKey' must be empty.");
@@ -502,7 +502,7 @@ public:
             Json::Value jv_one = setup_tx();
             jv_one[jss::tx_json][jss::Fee] = -1;
             cheri_sign(jv_one);
-            auto jrr = env.rpc("json", "sign_for", jv_one.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -510,12 +510,12 @@ public:
             Json::Value jv_two;
             jv_two[jss::tx_json] = jrr[jss::tx_json];
             becky_sign(jv_two);
-            jrr = env.rpc("json", "sign_for", jv_two.toStyledString())[jss::result];
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc("json", "submit_multisigned", jv_submit.toStyledString())[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message]  == "Invalid Fee field.  Fees must be greater than zero.");
@@ -527,7 +527,7 @@ public:
             Json::Value jv_one = setup_tx();
             jv_one[jss::tx_json][jss::Fee]  = alice["USD"](10).value().getFullText();
             cheri_sign(jv_one);
-            auto jrr = env.rpc("json", "sign_for", jv_one.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -535,12 +535,12 @@ public:
             Json::Value jv_two;
             jv_two[jss::tx_json] = jrr[jss::tx_json];
             becky_sign(jv_two);
-            jrr = env.rpc("json", "sign_for", jv_two.toStyledString())[jss::result];
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc("json", "submit_multisigned", jv_submit.toStyledString())[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "internal");
             BEAST_EXPECT(jrr[jss::error_message]  == "Internal error.");
@@ -552,7 +552,7 @@ public:
             Json::Value jv = setup_tx();
             jv[jss::account]                       = cheri.human();
             jv[jss::secret]                        = cheri.name();
-            auto jrr = env.rpc("json", "sign_for", jv.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "masterDisabled");
             env.close();
@@ -560,11 +560,11 @@ public:
         }
 
         {
-            // becky should be also be able to sign using either her master key
+            // Unlike cheri, becky should also be able to sign using her master key
             aliceSeq = env.seq (alice);
             Json::Value jv_one = setup_tx();
             cheri_sign(jv_one);
-            auto jrr = env.rpc("json", "sign_for", jv_one.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             // for the second sign_for, use the returned tx_json with
@@ -574,12 +574,12 @@ public:
             jv_two[jss::account]    = becky.human();
             jv_two[jss::key_type]   = "ed25519";
             jv_two[jss::passphrase] = becky.name();
-            jrr = env.rpc("json", "sign_for", jv_two.toStyledString())[jss::result];
+            jrr = env.rpc("json", "sign_for", to_string(jv_two))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
 
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
-            jrr = env.rpc("json", "submit_multisigned", jv_submit.toStyledString())[jss::result];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "success");
             env.close();
             BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -590,13 +590,13 @@ public:
             Json::Value jv = setup_tx();
             jv[jss::tx_json][jss::Account]         = "DEADBEEF";
             cheri_sign(jv);
-            auto jrr = env.rpc("json", "sign_for", jv.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "srcActMalformed");
 
             Account const jimmy {"jimmy"};
             jv[jss::tx_json][jss::Account]         = jimmy.human();
-            jrr = env.rpc("json", "sign_for", jv.toStyledString())[jss::result];
+            jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "srcActNotFound");
         }
@@ -606,7 +606,7 @@ public:
             Json::Value jv = setup_tx();
             jv[jss::tx_json][sfSigners.fieldName]  = Json::Value{Json::arrayValue};
             becky_sign(jv);
-            auto jrr = env.rpc("json", "submit_multisigned", jv.toStyledString())[jss::result];
+            auto jrr = env.rpc("json", "submit_multisigned", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error]  == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message]  == "tx_json.Signers array may not be empty.");
@@ -931,7 +931,7 @@ public:
         {
             Json::Value jvResult;
             jvResult[jss::tx_blob] = strHex (stx.getSerializer().slice());
-            return env.rpc ("json", "submit", jvResult.toStyledString());
+            return env.rpc ("json", "submit", to_string(jvResult));
         };
 
         Account const alice {"alice"};
@@ -962,8 +962,7 @@ public:
                     "fails local checks: Invalid signature.");
         }
         {
-            // Single-sign, but invalidate the transaction.
-            // sequence number
+            // Single-sign, but invalidate the sequence number.
             JTx tx = env.jt (noop (alice), sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
