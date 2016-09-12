@@ -30,7 +30,7 @@ public:
     void
     testSetAndClear()
     {
-        testcase{"Set and clear noripple"};
+        testcase("Set and clear noripple");
 
         using namespace jtx;
         Env env{*this};
@@ -69,7 +69,7 @@ public:
     void
     testNegativeBalance()
     {
-        testcase{"Set noripple on a line with negative balance"};
+        testcase("Set noripple on a line with negative balance");
 
         using namespace jtx;
         Env env{*this};
@@ -116,7 +116,7 @@ public:
     void
     testPairwise()
     {
-        testcase{"pairwise NoRipple"};
+        testcase("pairwise NoRipple");
 
         using namespace jtx;
         Env env{*this};
@@ -154,7 +154,7 @@ public:
     void
     testDefaultRipple()
     {
-        testcase{"Set default ripple on an account and check new trustlines"};
+        testcase("Set default ripple on an account and check new trustlines");
 
         using namespace jtx;
         Env env{*this};
