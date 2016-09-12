@@ -30,54 +30,54 @@ public:
     void
     testSetAndClear()
     {
-        testcase("Set and clear noripple");
+        testcase{"Set and clear noripple"};
 
         using namespace jtx;
-        Env env(*this);
+        Env env{*this};
 
-        auto const gw = Account("gateway");
-        auto const alice = Account("alice");
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
 
         env.fund(XRP(10000), gw, alice);
 
         auto const USD = gw["USD"];
 
-        Json::Value account_gw;
-        account_gw[jss::account] = gw.human();
-        Json::Value account_alice;
-        account_alice[jss::account] = alice.human();
+        Json::Value gwJson;
+        gwJson[jss::account] = gw.human();
+        Json::Value aliceJson;
+        aliceJson[jss::account] = alice.human();
 
-        for (auto SetOrClear : {true,false})
+        for (auto setOrClear : {true,false})
         {
             // Create a trust line with no-ripple flag setting
-            env( trust(gw, USD(100), alice, SetOrClear ? tfSetNoRipple
+            env( trust(gw, USD(100), alice, setOrClear ? tfSetNoRipple
                                                        : tfClearNoRipple));
             env.close();
 
             // Check no-ripple flag on sender 'gateway'
-            auto lines = env.rpc("json", "account_lines", to_string(account_gw));
+            auto lines = env.rpc("json", "account_lines", to_string(gwJson));
             auto const& gline0 = lines[jss::result][jss::lines][0u];
-            BEAST_EXPECT(gline0[jss::no_ripple].asBool() == SetOrClear);
+            BEAST_EXPECT(gline0[jss::no_ripple].asBool() == setOrClear);
 
             // Check no-ripple peer flag on destination 'alice'
-            lines = env.rpc("json", "account_lines", to_string(account_alice));
+            lines = env.rpc("json", "account_lines", to_string(aliceJson));
             auto const& aline0 = lines[jss::result][jss::lines][0u];
-            BEAST_EXPECT(aline0[jss::no_ripple_peer].asBool() == SetOrClear);
+            BEAST_EXPECT(aline0[jss::no_ripple_peer].asBool() == setOrClear);
         }
     }
 
     void
     testNegativeBalance()
     {
-        testcase("Set noripple on a line with negative balance");
+        testcase{"Set noripple on a line with negative balance"};
 
         using namespace jtx;
-        Env env(*this);
+        Env env{*this};
 
-        auto const gw = Account("gateway");
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
 
         env.fund(XRP(10000), gw, alice, bob, carol);
 
@@ -98,16 +98,16 @@ public:
             Json::Value dest_amt;
             dest_amt[jss::currency] = "USD";
             dest_amt[jss::value] = "1";
-            dest_amt[jss::issuer] = Account("carol").human();
+            dest_amt[jss::issuer] = Account{"carol"}.human();
             return dest_amt;
         }();
 
         auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
-        BEAST_EXPECT(resp[jss::result][jss::alternatives].size()==1);
+        BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
-        Json::Value account_alice;
-        account_alice[jss::account] = alice.human();
-        auto const res = env.rpc("json", "account_lines", to_string(account_alice));
+        Json::Value aliceJson;
+        aliceJson[jss::account] = alice.human();
+        auto const res = env.rpc("json", "account_lines", to_string(aliceJson));
         auto const& lines = res[jss::result][jss::lines];
         BEAST_EXPECT(lines.size() == 1);
         BEAST_EXPECT(!lines[0u].isMember(jss::no_ripple));
@@ -116,14 +116,14 @@ public:
     void
     testPairwise()
     {
-        testcase("pairwise NoRipple");
+        testcase{"pairwise NoRipple"};
 
         using namespace jtx;
-        Env env(*this);
+        Env env{*this};
 
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
 
         env.fund(XRP(10000), alice, bob, carol);
 
@@ -141,27 +141,27 @@ public:
             Json::Value dest_amt;
             dest_amt[jss::currency] = "USD";
             dest_amt[jss::value] = "1";
-            dest_amt[jss::issuer] = Account("carol").human();
+            dest_amt[jss::issuer] = Account{"carol"}.human();
             return dest_amt;
         }();
 
         auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 0);
 
-        env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
+        env(pay(alice, carol, bob["USD"](50)), ter{tecPATH_DRY});
     }
 
     void
     testDefaultRipple()
     {
-        testcase("Set default ripple on an account and check new trustlines");
+        testcase{"Set default ripple on an account and check new trustlines"};
 
         using namespace jtx;
-        Env env(*this);
+        Env env{*this};
 
-        auto const gw = Account("gateway");
-        auto const alice = Account("alice");
-        auto const bob =   Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
 
         env.fund(XRP(10000), gw, noripple(alice, bob));
 
