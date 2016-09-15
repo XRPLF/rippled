@@ -858,3 +858,8 @@ else(NOT WIN32)
     legacy_stdio_definitions.lib Shlwapi kernel32 user32 gdi32 winspool comdlg32
     advapi32 shell32 ole32 oleaut32 uuid odbc32 odbccp32)
 endif (NOT WIN32)
+
+if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message(WARNING "Rippled requires a 64 bit target architecture.\n"
+    "The most likely cause of this warning is trying to build rippled with a 32-bit OS.")
+endif()
