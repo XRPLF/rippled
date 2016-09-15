@@ -44,6 +44,7 @@
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
 #include <cstdlib>
+#include <iostream>
 #include <utility>
 
 
@@ -168,12 +169,12 @@ static int runUnitTests(
     std::string const& argument)
 {
     using namespace beast::unit_test;
-    beast::unit_test::dstream dlog;
-    reporter r(dlog);
+    beast::unit_test::dstream dout{std::cout};
+    reporter r{dout};
     r.arg(argument);
-    bool const failed (r.run_each_if (
-        global_suites(), match_auto (pattern)));
-    if (failed)
+    bool const anyFailed = r.run_each_if(
+        global_suites(), match_auto(pattern));
+    if(anyFailed)
         return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
