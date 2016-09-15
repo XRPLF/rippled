@@ -39,8 +39,10 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <ripple/server/SimpleWriter.h>
 #include <beast/core/detail/base64.hpp>
 #include <beast/http/headers.hpp>
+#include <beast/http/string_body.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/optional.hpp>
@@ -119,9 +121,9 @@ ServerHandlerImp::onHandoff (Session& session,
 {
     if(isWebsocketUpgrade(request))
     {
-        Handoff handoff;
         if(session.port().protocol.count("wss2") > 0)
         {
+            Handoff handoff;
             auto const ws = session.websocketUpgrade();
             auto is = std::make_shared<WSInfoSub>(m_networkOPs, ws);
             is->getConsumer() = requestInboundEndpoint(
@@ -135,7 +137,9 @@ ServerHandlerImp::onHandoff (Session& session,
         }
 
         if(session.port().protocol.count("wss") > 0)
-            return handoff; // Pass to websocket
+            return {}; // Pass to websocket
+
+        return unauthorizedResponse(request);
     }
 
     if(session.port().protocol.count("peer") > 0)
@@ -143,6 +147,9 @@ ServerHandlerImp::onHandoff (Session& session,
         return app_.overlay().onHandoff(std::move(bundle),
             std::move(request), remote_address);
     }
+
+    if (session.port().protocol.count("wss2") > 0 && isStatusRequest(request))
+        return statusResponse(request);
 
     // Pass to legacy onRequest
     return {};
@@ -155,22 +162,30 @@ ServerHandlerImp::onHandoff (Session& session,
             boost::asio::ip::tcp::endpoint remote_address) ->
     Handoff
 {
-    Handoff handoff;
-    if(session.port().protocol.count("ws2") > 0 &&
-        isWebsocketUpgrade (request))
+    if(isWebsocketUpgrade(request))
     {
-        auto const ws = session.websocketUpgrade();
-        auto is = std::make_shared<WSInfoSub>(m_networkOPs, ws);
-        is->getConsumer() = requestInboundEndpoint(
-            m_resourceManager,
-                beast::IPAddressConversion::from_asio(remote_address),
-                    session.port(), is->user());
-        ws->appDefined = std::move(is);
-        ws->run();
-        handoff.moved = true;
+        if (session.port().protocol.count("ws2") > 0)
+        {
+            Handoff handoff;
+            auto const ws = session.websocketUpgrade();
+            auto is = std::make_shared<WSInfoSub>(m_networkOPs, ws);
+            is->getConsumer() = requestInboundEndpoint(
+                m_resourceManager, beast::IPAddressConversion::from_asio(
+                    remote_address), session.port(), is->user());
+            ws->appDefined = std::move(is);
+            ws->run();
+            handoff.moved = true;
+            return handoff;
+        }
+
+        return unauthorizedResponse(request);
     }
+
+    if (session.port().protocol.count("ws2") > 0 && isStatusRequest(request))
+        return statusResponse(request);
+
     // Otherwise pass to legacy onRequest or websocket
-    return handoff;
+    return {};
 }
 
 static inline
@@ -619,17 +634,81 @@ ServerHandlerImp::processRequest (Port const& port,
 // Returns `true` if the HTTP request is a Websockets Upgrade
 // http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
 bool
-ServerHandlerImp::isWebsocketUpgrade (http_request_type const& request)
+ServerHandlerImp::isWebsocketUpgrade(
+    http_request_type const& request) const
 {
     if (is_upgrade(request))
-        return request.headers["Upgrade"] == "websocket";
+        return beast::detail::ci_equal(
+            request.headers["Upgrade"], "websocket");
     return false;
+}
+
+bool
+ServerHandlerImp::isStatusRequest(
+    http_request_type const& request) const
+{
+    return request.version >= 11 && request.url == "/" &&
+        request.body.size() == 0 && request.method == "GET";
+}
+
+/*  This response is used with load balancing.
+    If the server is overloaded, status 500 is reported. Otherwise status 200
+    is reported, meaning the server can accept more connections.
+*/
+Handoff
+ServerHandlerImp::statusResponse(
+    http_request_type const& request) const
+{
+    using namespace beast::http;
+    Handoff handoff;
+    response_v1<string_body> msg;
+    std::string reason;
+    if (app_.serverOkay(reason))
+    {
+        msg.status = 200;
+        msg.reason = "OK";
+        msg.body = "<!DOCTYPE html><html><head><title>" + systemName() +
+            " Test page for rippled</title></head><body><h1>" +
+                systemName() + " Test</h1><p>This page shows rippled http(s) "
+                    "connectivity is working.</p></body></html>";
+    }
+    else
+    {
+        msg.status = 500;
+        msg.reason = "Internal Server Error";
+        msg.body = "<HTML><BODY>Server cannot accept clients: " +
+            reason + "</BODY></HTML>";
+    }
+    msg.version = request.version;
+    msg.headers.insert("Server", BuildInfo::getFullVersionString());
+    msg.headers.insert("Content-Type", "text/html");
+    prepare(msg, beast::http::connection::close);
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return handoff;
+}
+
+Handoff
+ServerHandlerImp::unauthorizedResponse(
+    http_request_type const& request) const
+{
+    using namespace beast::http;
+    Handoff handoff;
+    response_v1<string_body> msg;
+    msg.version = request.version;
+    msg.status = 401;
+    msg.reason = "Unauthorized";
+    msg.headers.insert("Server", BuildInfo::getFullVersionString());
+    msg.headers.insert("Content-Type", "text/html");
+    msg.body = "Invalid protocol.";
+    prepare(msg, beast::http::connection::close);
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return handoff;
 }
 
 // VFALCO TODO Rewrite to use beast::http::headers
 bool
 ServerHandlerImp::authorized (Port const& port,
-    std::map<std::string, std::string> const& h)
+    std::map<std::string, std::string> const& h) const
 {
     if (port.user.empty() || port.password.empty())
         return true;

@@ -19,3 +19,4 @@
 //==============================================================================
 
 #include <test/server/Server_test.cpp>
+#include <test/server/ServerStatus_test.cpp>

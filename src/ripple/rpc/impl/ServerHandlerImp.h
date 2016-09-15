@@ -149,8 +149,7 @@ public:
     void
     onStopped (Server&);
 
-    //--------------------------------------------------------------------------
-
+private:
     Json::Value
     processSession(
         std::shared_ptr<WSSession> const& session,
@@ -167,13 +166,21 @@ public:
         std::shared_ptr<JobCoro> jobCoro,
         std::string forwardedFor, std::string user);
 
-private:
     bool
-    isWebsocketUpgrade (http_request_type const& request);
+    isWebsocketUpgrade(http_request_type const& request) const;
 
     bool
-    authorized (Port const& port,
-        std::map<std::string, std::string> const& h);
+    isStatusRequest(http_request_type const& request) const;
+
+    Handoff
+    statusResponse(http_request_type const& request) const;
+
+    Handoff
+    unauthorizedResponse(http_request_type const& request) const;
+
+    bool
+    authorized (Port const& port, std::map<std::string,
+        std::string> const& h) const;
 };
 
 }
