@@ -37,8 +37,8 @@ public:
         parser_v1<false, streambuf_body, headers> p;
         streambuf sb;
         parse(ss, sb, p);
-        expect(to_string(p.get().body.data()) == "xyz");
-        expect(boost::lexical_cast<std::string>(p.get()) == s);
+        BEAST_EXPECT(to_string(p.get().body.data()) == "xyz");
+        BEAST_EXPECT(boost::lexical_cast<std::string>(p.get()) == s);
     }
 };
 

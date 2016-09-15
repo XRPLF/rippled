@@ -74,7 +74,7 @@ public:
                 Parser p;
                 error_code ec;
                 p.write(sb.data(), ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     log << to_string(sb.data()) << std::endl;
             }
     }

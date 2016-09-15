@@ -44,7 +44,7 @@ namespace detail {
 
 */
 
-template <class = void>
+template<class = void>
 std::string const&
 base64_alphabet()
 {
@@ -62,7 +62,7 @@ is_base64(unsigned char c)
     return (std::isalnum(c) || (c == '+') || (c == '/'));
 }
 
-template <class = void>
+template<class = void>
 std::string
 base64_encode (std::uint8_t const* data,
     std::size_t in_len)
@@ -112,7 +112,7 @@ base64_encode (std::uint8_t const* data,
 
 }
 
-template <class = void>
+template<class = void>
 std::string
 base64_encode (std::string const& s)
 {
@@ -120,11 +120,11 @@ base64_encode (std::string const& s)
         std::uint8_t const*> (s.data()), s.size());
 }
 
-template <class = void>
+template<class = void>
 std::string
 base64_decode(std::string const& data)
 {
-    int in_len = data.size();
+    auto in_len = data.size();
     unsigned char c3[3], c4[4];
     int i = 0;
     int j = 0;

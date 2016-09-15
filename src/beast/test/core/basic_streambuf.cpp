@@ -153,10 +153,10 @@ public:
     void
     expect_size(std::size_t n, ConstBufferSequence const& buffers)
     {
-        expect(test::size_pre(buffers) == n);
-        expect(test::size_post(buffers) == n);
-        expect(test::size_rev_pre(buffers) == n);
-        expect(test::size_rev_post(buffers) == n);
+        BEAST_EXPECT(test::size_pre(buffers) == n);
+        BEAST_EXPECT(test::size_post(buffers) == n);
+        BEAST_EXPECT(test::size_rev_pre(buffers) == n);
+        BEAST_EXPECT(test::size_rev_post(buffers) == n);
     }
 
     template<class U, class V>
@@ -173,7 +173,7 @@ public:
         using boost::asio::buffer_cast;
         using boost::asio::buffer_size;
         std::string const s = "Hello, world";
-        expect(s.size() == 12);
+        BEAST_EXPECT(s.size() == 12);
         for(std::size_t i = 1; i < 12; ++i) {
         for(std::size_t x = 1; x < 4; ++x) {
         for(std::size_t y = 1; y < 4; ++y) {
@@ -183,28 +183,28 @@ public:
             sb.commit(buffer_copy(sb.prepare(x), buffer(s.data(), x)));
             sb.commit(buffer_copy(sb.prepare(y), buffer(s.data()+x, y)));
             sb.commit(buffer_copy(sb.prepare(z), buffer(s.data()+x+y, z)));
-            expect(to_string(sb.data()) == s);
+            BEAST_EXPECT(to_string(sb.data()) == s);
             {
                 streambuf sb2(sb);
-                expect(eq(sb, sb2));
+                BEAST_EXPECT(eq(sb, sb2));
             }
             {
                 streambuf sb2;
                 sb2 = sb;
-                expect(eq(sb, sb2));
+                BEAST_EXPECT(eq(sb, sb2));
             }
             {
                 streambuf sb2(std::move(sb));
-                expect(to_string(sb2.data()) == s);
+                BEAST_EXPECT(to_string(sb2.data()) == s);
                 expect_size(0, sb.data());
                 sb = std::move(sb2);
-                expect(to_string(sb.data()) == s);
+                BEAST_EXPECT(to_string(sb.data()) == s);
                 expect_size(0, sb2.data());
             }
             self_assign(sb, sb);
-            expect(to_string(sb.data()) == s);
+            BEAST_EXPECT(to_string(sb.data()) == s);
             self_assign(sb, std::move(sb));
-            expect(to_string(sb.data()) == s);
+            BEAST_EXPECT(to_string(sb.data()) == s);
         }
         }}}
         try
@@ -226,16 +226,16 @@ public:
                 test_allocator<char, false, false, false, false>;
             using sb_type = basic_streambuf<alloc_type>;
             sb_type sb;
-            expect(sb.get_allocator().id() == 1);
+            BEAST_EXPECT(sb.get_allocator().id() == 1);
         }
         {
             using alloc_type =
                 test_allocator<char, false, false, false, false>;
             using sb_type = basic_streambuf<alloc_type>;
             sb_type sb;
-            expect(sb.get_allocator().id() == 2);
+            BEAST_EXPECT(sb.get_allocator().id() == 2);
             sb_type sb2(sb);
-            expect(sb2.get_allocator().id() == 2);
+            BEAST_EXPECT(sb2.get_allocator().id() == 2);
             sb_type sb3(sb, alloc_type{});
         }
     }
@@ -246,16 +246,16 @@ public:
         using boost::asio::buffer_size;
         {
             streambuf sb(2);
-            expect(buffer_size(sb.prepare(5)) == 5);
-            expect(buffer_size(sb.prepare(8)) == 8);
-            expect(buffer_size(sb.prepare(7)) == 7);
+            BEAST_EXPECT(buffer_size(sb.prepare(5)) == 5);
+            BEAST_EXPECT(buffer_size(sb.prepare(8)) == 8);
+            BEAST_EXPECT(buffer_size(sb.prepare(7)) == 7);
         }
         {
             streambuf sb(2);
             sb.prepare(2);
-            expect(test::buffer_count(sb.prepare(5)) == 2);
-            expect(test::buffer_count(sb.prepare(8)) == 3);
-            expect(test::buffer_count(sb.prepare(4)) == 2);
+            BEAST_EXPECT(test::buffer_count(sb.prepare(5)) == 2);
+            BEAST_EXPECT(test::buffer_count(sb.prepare(8)) == 3);
+            BEAST_EXPECT(test::buffer_count(sb.prepare(4)) == 2);
         }
     }
 
@@ -286,7 +286,7 @@ public:
         using boost::asio::buffer_cast;
         using boost::asio::buffer_size;
         std::string const s = "Hello, world";
-        expect(s.size() == 12);
+        BEAST_EXPECT(s.size() == 12);
         for(std::size_t i = 1; i < 12; ++i) {
         for(std::size_t x = 1; x < 4; ++x) {
         for(std::size_t y = 1; y < 4; ++y) {
@@ -298,78 +298,78 @@ public:
             streambuf sb(i);
             {
                 auto d = sb.prepare(z);
-                expect(buffer_size(d) == z);
+                BEAST_EXPECT(buffer_size(d) == z);
             }
             {
                 auto d = sb.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             {
                 auto d = sb.prepare(y);
-                expect(buffer_size(d) == y);
+                BEAST_EXPECT(buffer_size(d) == y);
             }
             {
                 auto d = sb.prepare(x);
-                expect(buffer_size(d) == x);
+                BEAST_EXPECT(buffer_size(d) == x);
                 sb.commit(buffer_copy(d, buffer(s.data(), x)));
             }
-            expect(sb.size() == x);
-            expect(buffer_size(sb.data()) == sb.size());
+            BEAST_EXPECT(sb.size() == x);
+            BEAST_EXPECT(buffer_size(sb.data()) == sb.size());
             {
                 auto d = sb.prepare(x);
-                expect(buffer_size(d) == x);
+                BEAST_EXPECT(buffer_size(d) == x);
             }
             {
                 auto d = sb.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             {
                 auto d = sb.prepare(z);
-                expect(buffer_size(d) == z);
+                BEAST_EXPECT(buffer_size(d) == z);
             }
             {
                 auto d = sb.prepare(y);
-                expect(buffer_size(d) == y);
+                BEAST_EXPECT(buffer_size(d) == y);
                 sb.commit(buffer_copy(d, buffer(s.data()+x, y)));
             }
             sb.commit(1);
-            expect(sb.size() == x + y);
-            expect(buffer_size(sb.data()) == sb.size());
+            BEAST_EXPECT(sb.size() == x + y);
+            BEAST_EXPECT(buffer_size(sb.data()) == sb.size());
             {
                 auto d = sb.prepare(x);
-                expect(buffer_size(d) == x);
+                BEAST_EXPECT(buffer_size(d) == x);
             }
             {
                 auto d = sb.prepare(y);
-                expect(buffer_size(d) == y);
+                BEAST_EXPECT(buffer_size(d) == y);
             }
             {
                 auto d = sb.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             {
                 auto d = sb.prepare(z);
-                expect(buffer_size(d) == z);
+                BEAST_EXPECT(buffer_size(d) == z);
                 sb.commit(buffer_copy(d, buffer(s.data()+x+y, z)));
             }
             sb.commit(2);
-            expect(sb.size() == x + y + z);
-            expect(buffer_size(sb.data()) == sb.size());
-            expect(to_string(sb.data()) == s);
+            BEAST_EXPECT(sb.size() == x + y + z);
+            BEAST_EXPECT(buffer_size(sb.data()) == sb.size());
+            BEAST_EXPECT(to_string(sb.data()) == s);
             sb.consume(t);
             {
                 auto d = sb.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
-            expect(to_string(sb.data()) == s.substr(t, std::string::npos));
+            BEAST_EXPECT(to_string(sb.data()) == s.substr(t, std::string::npos));
             sb.consume(u);
-            expect(to_string(sb.data()) == s.substr(t + u, std::string::npos));
+            BEAST_EXPECT(to_string(sb.data()) == s.substr(t + u, std::string::npos));
             sb.consume(v);
-            expect(to_string(sb.data()) == "");
+            BEAST_EXPECT(to_string(sb.data()) == "");
             sb.consume(1);
             {
                 auto d = sb.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
         }
         }}}}}
@@ -387,14 +387,14 @@ public:
         sb.prepare(1);
         expect_size(3, sb.prepare(3));
         sb.commit(2);
-        expect(test::buffer_count(sb.data()) == 4);
+        BEAST_EXPECT(test::buffer_count(sb.data()) == 4);
     }
 
     void testOutputStream()
     {
         streambuf sb;
         sb << "x";
-        expect(to_string(sb.data()) == "x");
+        BEAST_EXPECT(to_string(sb.data()) == "x");
     }
 
     void testReadSizeHelper()
@@ -402,44 +402,44 @@ public:
         using boost::asio::buffer_size;
         {
             streambuf sb(10);
-            expect(read_size_helper(sb, 0) == 0);
-            expect(read_size_helper(sb, 1) == 1);
-            expect(read_size_helper(sb, 10) == 10);
-            expect(read_size_helper(sb, 20) == 20);
-            expect(read_size_helper(sb, 1000) == 512);
+            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            BEAST_EXPECT(read_size_helper(sb, 1) == 1);
+            BEAST_EXPECT(read_size_helper(sb, 10) == 10);
+            BEAST_EXPECT(read_size_helper(sb, 20) == 20);
+            BEAST_EXPECT(read_size_helper(sb, 1000) == 512);
             sb.prepare(3);
             sb.commit(3);
-            expect(read_size_helper(sb, 10) == 7);
-            expect(read_size_helper(sb, 1000) == 7);
+            BEAST_EXPECT(read_size_helper(sb, 10) == 7);
+            BEAST_EXPECT(read_size_helper(sb, 1000) == 7);
         }
         {
             streambuf sb(1000);
-            expect(read_size_helper(sb, 0) == 0);
-            expect(read_size_helper(sb, 1) == 1);
-            expect(read_size_helper(sb, 1000) == 1000);
-            expect(read_size_helper(sb, 2000) == 1000);
+            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            BEAST_EXPECT(read_size_helper(sb, 1) == 1);
+            BEAST_EXPECT(read_size_helper(sb, 1000) == 1000);
+            BEAST_EXPECT(read_size_helper(sb, 2000) == 1000);
             sb.prepare(3);
-            expect(read_size_helper(sb, 0) == 0);
-            expect(read_size_helper(sb, 1) == 1);
-            expect(read_size_helper(sb, 1000) == 1000);
-            expect(read_size_helper(sb, 2000) == 1000);
+            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            BEAST_EXPECT(read_size_helper(sb, 1) == 1);
+            BEAST_EXPECT(read_size_helper(sb, 1000) == 1000);
+            BEAST_EXPECT(read_size_helper(sb, 2000) == 1000);
             sb.commit(3);
-            expect(read_size_helper(sb, 0) == 0);
-            expect(read_size_helper(sb, 1) == 1);
-            expect(read_size_helper(sb, 1000) == 997);
-            expect(read_size_helper(sb, 2000) == 997);
+            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            BEAST_EXPECT(read_size_helper(sb, 1) == 1);
+            BEAST_EXPECT(read_size_helper(sb, 1000) == 997);
+            BEAST_EXPECT(read_size_helper(sb, 2000) == 997);
             sb.consume(2);
-            expect(read_size_helper(sb, 0) == 0);
-            expect(read_size_helper(sb, 1) == 1);
-            expect(read_size_helper(sb, 1000) == 997);
-            expect(read_size_helper(sb, 2000) == 997);
+            BEAST_EXPECT(read_size_helper(sb, 0) == 0);
+            BEAST_EXPECT(read_size_helper(sb, 1) == 1);
+            BEAST_EXPECT(read_size_helper(sb, 1000) == 997);
+            BEAST_EXPECT(read_size_helper(sb, 2000) == 997);
         }
         {
             streambuf sb(2);
-            expect(test::buffer_count(sb.prepare(2)) == 1);
-            expect(test::buffer_count(sb.prepare(3)) == 2);
-            expect(buffer_size(sb.prepare(5)) == 5);
-            expect(read_size_helper(sb, 10) == 6);
+            BEAST_EXPECT(test::buffer_count(sb.prepare(2)) == 1);
+            BEAST_EXPECT(test::buffer_count(sb.prepare(3)) == 2);
+            BEAST_EXPECT(buffer_size(sb.prepare(5)) == 5);
+            BEAST_EXPECT(read_size_helper(sb, 10) == 6);
         }
     }
 

@@ -21,107 +21,107 @@ public:
         using str2 = static_string<2>;
         {
             str1 s1;
-            expect(s1 == "");
-            expect(s1.empty());
-            expect(s1.size() == 0);
-            expect(s1.max_size() == 1);
-            expect(s1.capacity() == 1);
-            expect(s1.begin() == s1.end());
-            expect(s1.cbegin() == s1.cend());
-            expect(s1.rbegin() == s1.rend());
-            expect(s1.crbegin() == s1.crend());
+            BEAST_EXPECT(s1 == "");
+            BEAST_EXPECT(s1.empty());
+            BEAST_EXPECT(s1.size() == 0);
+            BEAST_EXPECT(s1.max_size() == 1);
+            BEAST_EXPECT(s1.capacity() == 1);
+            BEAST_EXPECT(s1.begin() == s1.end());
+            BEAST_EXPECT(s1.cbegin() == s1.cend());
+            BEAST_EXPECT(s1.rbegin() == s1.rend());
+            BEAST_EXPECT(s1.crbegin() == s1.crend());
             try
             {
-                expect(s1.at(0) == 0);
+                BEAST_EXPECT(s1.at(0) == 0);
                 fail();
             }
             catch(std::exception const&)
             {
                 pass();
             }
-            expect(s1.data()[0] == 0);
-            expect(*s1.c_str() == 0);
-            expect(std::distance(s1.begin(), s1.end()) == 0);
-            expect(std::distance(s1.cbegin(), s1.cend()) == 0);
-            expect(std::distance(s1.rbegin(), s1.rend()) == 0);
-            expect(std::distance(s1.crbegin(), s1.crend()) == 0);
-            expect(s1.compare(s1) == 0);
-            expect(s1.to_string() == std::string{});
+            BEAST_EXPECT(s1.data()[0] == 0);
+            BEAST_EXPECT(*s1.c_str() == 0);
+            BEAST_EXPECT(std::distance(s1.begin(), s1.end()) == 0);
+            BEAST_EXPECT(std::distance(s1.cbegin(), s1.cend()) == 0);
+            BEAST_EXPECT(std::distance(s1.rbegin(), s1.rend()) == 0);
+            BEAST_EXPECT(std::distance(s1.crbegin(), s1.crend()) == 0);
+            BEAST_EXPECT(s1.compare(s1) == 0);
+            BEAST_EXPECT(s1.to_string() == std::string{});
         }
         {
             str1 const s1;
-            expect(s1 == "");
-            expect(s1.empty());
-            expect(s1.size() == 0);
-            expect(s1.max_size() == 1);
-            expect(s1.capacity() == 1);
-            expect(s1.begin() == s1.end());
-            expect(s1.cbegin() == s1.cend());
-            expect(s1.rbegin() == s1.rend());
-            expect(s1.crbegin() == s1.crend());
+            BEAST_EXPECT(s1 == "");
+            BEAST_EXPECT(s1.empty());
+            BEAST_EXPECT(s1.size() == 0);
+            BEAST_EXPECT(s1.max_size() == 1);
+            BEAST_EXPECT(s1.capacity() == 1);
+            BEAST_EXPECT(s1.begin() == s1.end());
+            BEAST_EXPECT(s1.cbegin() == s1.cend());
+            BEAST_EXPECT(s1.rbegin() == s1.rend());
+            BEAST_EXPECT(s1.crbegin() == s1.crend());
             try
             {
-                expect(s1.at(0) == 0);
+                BEAST_EXPECT(s1.at(0) == 0);
                 fail();
             }
             catch(std::exception const&)
             {
                 pass();
             }
-            expect(s1.data()[0] == 0);
-            expect(*s1.c_str() == 0);
-            expect(std::distance(s1.begin(), s1.end()) == 0);
-            expect(std::distance(s1.cbegin(), s1.cend()) == 0);
-            expect(std::distance(s1.rbegin(), s1.rend()) == 0);
-            expect(std::distance(s1.crbegin(), s1.crend()) == 0);
-            expect(s1.compare(s1) == 0);
-            expect(s1.to_string() == std::string{});
+            BEAST_EXPECT(s1.data()[0] == 0);
+            BEAST_EXPECT(*s1.c_str() == 0);
+            BEAST_EXPECT(std::distance(s1.begin(), s1.end()) == 0);
+            BEAST_EXPECT(std::distance(s1.cbegin(), s1.cend()) == 0);
+            BEAST_EXPECT(std::distance(s1.rbegin(), s1.rend()) == 0);
+            BEAST_EXPECT(std::distance(s1.crbegin(), s1.crend()) == 0);
+            BEAST_EXPECT(s1.compare(s1) == 0);
+            BEAST_EXPECT(s1.to_string() == std::string{});
         }
         {
             str1 s1;
             str1 s2("x");
-            expect(s2 == "x");
-            expect(s2[0] == 'x');
-            expect(s2.at(0) == 'x');
-            expect(s2.front() == 'x');
-            expect(s2.back() == 'x');
+            BEAST_EXPECT(s2 == "x");
+            BEAST_EXPECT(s2[0] == 'x');
+            BEAST_EXPECT(s2.at(0) == 'x');
+            BEAST_EXPECT(s2.front() == 'x');
+            BEAST_EXPECT(s2.back() == 'x');
             str1 const s3(s2);
-            expect(s3 == "x");
-            expect(s3[0] == 'x');
-            expect(s3.at(0) == 'x');
-            expect(s3.front() == 'x');
-            expect(s3.back() == 'x');
+            BEAST_EXPECT(s3 == "x");
+            BEAST_EXPECT(s3[0] == 'x');
+            BEAST_EXPECT(s3.at(0) == 'x');
+            BEAST_EXPECT(s3.front() == 'x');
+            BEAST_EXPECT(s3.back() == 'x');
             s2 = "y";
-            expect(s2 == "y");
-            expect(s3 == "x");
+            BEAST_EXPECT(s2 == "y");
+            BEAST_EXPECT(s3 == "x");
             s1 = s2;
-            expect(s1 == "y");
+            BEAST_EXPECT(s1 == "y");
             s1.clear();
-            expect(s1.empty());
-            expect(s1.size() == 0);
+            BEAST_EXPECT(s1.empty());
+            BEAST_EXPECT(s1.size() == 0);
         }
         {
             str2 s1("x");
             str1 s2(s1);
-            expect(s2 == "x");
+            BEAST_EXPECT(s2 == "x");
             str1 s3;
             s3 = s2;
-            expect(s3 == "x");
+            BEAST_EXPECT(s3 == "x");
             s1 = "xy";
-            expect(s1.size() == 2);
-            expect(s1[0] == 'x');
-            expect(s1[1] == 'y');
-            expect(s1.at(0) == 'x');
-            expect(s1.at(1) == 'y');
-            expect(s1.front() == 'x');
-            expect(s1.back() == 'y');
+            BEAST_EXPECT(s1.size() == 2);
+            BEAST_EXPECT(s1[0] == 'x');
+            BEAST_EXPECT(s1[1] == 'y');
+            BEAST_EXPECT(s1.at(0) == 'x');
+            BEAST_EXPECT(s1.at(1) == 'y');
+            BEAST_EXPECT(s1.front() == 'x');
+            BEAST_EXPECT(s1.back() == 'y');
             auto const s4 = s1;
-            expect(s4[0] == 'x');
-            expect(s4[1] == 'y');
-            expect(s4.at(0) == 'x');
-            expect(s4.at(1) == 'y');
-            expect(s4.front() == 'x');
-            expect(s4.back() == 'y');
+            BEAST_EXPECT(s4[0] == 'x');
+            BEAST_EXPECT(s4[1] == 'y');
+            BEAST_EXPECT(s4.at(0) == 'x');
+            BEAST_EXPECT(s4.at(1) == 'y');
+            BEAST_EXPECT(s4.front() == 'x');
+            BEAST_EXPECT(s4.back() == 'y');
             try
             {
                 s3 = s1;
@@ -167,87 +167,87 @@ public:
             str2 s2;
             s1 = "1";
             s2 = "22";
-            expect(s1.compare(s2) < 0);
-            expect(s2.compare(s1) > 0);
-            expect(s1 < "10");
-            expect(s2 > "1");
-            expect("10" > s1);
-            expect("1" < s2);
-            expect(s1 < "20");
-            expect(s2 > "1");
-            expect(s2 > "2");
+            BEAST_EXPECT(s1.compare(s2) < 0);
+            BEAST_EXPECT(s2.compare(s1) > 0);
+            BEAST_EXPECT(s1 < "10");
+            BEAST_EXPECT(s2 > "1");
+            BEAST_EXPECT("10" > s1);
+            BEAST_EXPECT("1" < s2);
+            BEAST_EXPECT(s1 < "20");
+            BEAST_EXPECT(s2 > "1");
+            BEAST_EXPECT(s2 > "2");
         }
         {
             str2 s1("x");
             str2 s2("x");
-            expect(s1 == s2);
-            expect(s1 <= s2);
-            expect(s1 >= s2);
-            expect(! (s1 < s2));
-            expect(! (s1 > s2));
-            expect(! (s1 != s2));
+            BEAST_EXPECT(s1 == s2);
+            BEAST_EXPECT(s1 <= s2);
+            BEAST_EXPECT(s1 >= s2);
+            BEAST_EXPECT(! (s1 < s2));
+            BEAST_EXPECT(! (s1 > s2));
+            BEAST_EXPECT(! (s1 != s2));
         }
         {
             str1 s1("x");
             str2 s2("x");
-            expect(s1 == s2);
-            expect(s1 <= s2);
-            expect(s1 >= s2);
-            expect(! (s1 < s2));
-            expect(! (s1 > s2));
-            expect(! (s1 != s2));
+            BEAST_EXPECT(s1 == s2);
+            BEAST_EXPECT(s1 <= s2);
+            BEAST_EXPECT(s1 >= s2);
+            BEAST_EXPECT(! (s1 < s2));
+            BEAST_EXPECT(! (s1 > s2));
+            BEAST_EXPECT(! (s1 != s2));
         }
         {
             str2 s("x");
-            expect(s == "x");
-            expect(s <= "x");
-            expect(s >= "x");
-            expect(! (s < "x"));
-            expect(! (s > "x"));
-            expect(! (s != "x"));
-            expect("x" == s);
-            expect("x" <= s);
-            expect("x" >= s);
-            expect(! ("x" < s));
-            expect(! ("x" > s));
-            expect(! ("x" != s));
+            BEAST_EXPECT(s == "x");
+            BEAST_EXPECT(s <= "x");
+            BEAST_EXPECT(s >= "x");
+            BEAST_EXPECT(! (s < "x"));
+            BEAST_EXPECT(! (s > "x"));
+            BEAST_EXPECT(! (s != "x"));
+            BEAST_EXPECT("x" == s);
+            BEAST_EXPECT("x" <= s);
+            BEAST_EXPECT("x" >= s);
+            BEAST_EXPECT(! ("x" < s));
+            BEAST_EXPECT(! ("x" > s));
+            BEAST_EXPECT(! ("x" != s));
         }
         {
             str2 s("x");
-            expect(s <= "y");
-            expect(s < "y");
-            expect(s != "y");
-            expect(! (s == "y"));
-            expect(! (s >= "y"));
-            expect(! (s > "x"));
-            expect("y" >= s);
-            expect("y" > s);
-            expect("y" != s);
-            expect(! ("y" == s));
-            expect(! ("y" <= s));
-            expect(! ("y" < s));
+            BEAST_EXPECT(s <= "y");
+            BEAST_EXPECT(s < "y");
+            BEAST_EXPECT(s != "y");
+            BEAST_EXPECT(! (s == "y"));
+            BEAST_EXPECT(! (s >= "y"));
+            BEAST_EXPECT(! (s > "x"));
+            BEAST_EXPECT("y" >= s);
+            BEAST_EXPECT("y" > s);
+            BEAST_EXPECT("y" != s);
+            BEAST_EXPECT(! ("y" == s));
+            BEAST_EXPECT(! ("y" <= s));
+            BEAST_EXPECT(! ("y" < s));
         }
         {
             str1 s1("x");
             str2 s2("y");
-            expect(s1 <= s2);
-            expect(s1 < s2);
-            expect(s1 != s2);
-            expect(! (s1 == s2));
-            expect(! (s1 >= s2));
-            expect(! (s1 > s2));
+            BEAST_EXPECT(s1 <= s2);
+            BEAST_EXPECT(s1 < s2);
+            BEAST_EXPECT(s1 != s2);
+            BEAST_EXPECT(! (s1 == s2));
+            BEAST_EXPECT(! (s1 >= s2));
+            BEAST_EXPECT(! (s1 > s2));
         }
         {
             str1 s1("x");
             str2 s2("xx");
-            expect(s1 < s2);
-            expect(s2 > s1);
+            BEAST_EXPECT(s1 < s2);
+            BEAST_EXPECT(s2 > s1);
         }
         {
             str1 s1("x");
             str2 s2("yy");
-            expect(s1 < s2);
-            expect(s2 > s1);
+            BEAST_EXPECT(s1 < s2);
+            BEAST_EXPECT(s2 > s1);
         }
     }
 

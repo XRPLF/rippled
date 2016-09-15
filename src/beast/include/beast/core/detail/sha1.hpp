@@ -281,10 +281,10 @@ finish(sha1_context& ctx, void* digest) noexcept
         ctx.buf[ctx.buflen++] = 0x00;
     std::uint32_t block[BLOCK_INTS];
     sha1::make_block(ctx.buf, block);
-    if (buflen > BLOCK_BYTES - 8)
+    if(buflen > BLOCK_BYTES - 8)
     {
         sha1::transform(ctx.digest, block);
-        for (size_t i = 0; i < BLOCK_INTS - 2; i++)
+        for(size_t i = 0; i < BLOCK_INTS - 2; i++)
             block[i] = 0;
     }
 

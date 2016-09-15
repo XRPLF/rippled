@@ -37,8 +37,8 @@ elif [[ $(uname -s) == "Linux" ]]; then
   num_proc_units=$(nproc)
   # Physical cores
   num_jobs=$(lscpu -p | grep -v '^#' | sort -u -t, -k 2,4 | wc -l)
-  if (("$num_proc_units" < "$num_jobs")); then
-    num_jobs=$num_proc_units
+  if ((${num_proc_units} < ${num_jobs})); then
+      num_jobs=$num_proc_units
   fi
 fi
 
@@ -82,6 +82,16 @@ function build_beast {
                -j${num_jobs}
 }
 
+function build_beast_cmake {
+    mkdir -p build
+    pushd build > /dev/null
+    cmake -DVARIANT=${VARIANT} ..
+    make -j${num_jobs}
+    mkdir -p ../bin/$VARIANT
+    find . -executable -type f -exec cp {} ../bin/$VARIANT/. \;
+    popd > /dev/null
+}
+
 function run_autobahn_test_suite {
   # Run autobahn tests
   wsecho=$(find bin -name "websocket-echo" | grep /$VARIANT/)
@@ -108,7 +118,11 @@ function run_autobahn_test_suite {
 
 ##################################### BUILD ####################################
 
-build_beast
+if [[ ${BUILD_SYSTEM:-} == cmake ]]; then
+    build_beast_cmake
+else
+    build_beast
+fi
 
 ##################################### TESTS ####################################
 
@@ -123,6 +137,7 @@ if [[ $VARIANT == "coverage" ]]; then
     run_tests_with_valgrind
     run_autobahn_test_suite
   else
+    echo "skipping autobahn tests for feature branch build"
     run_tests
   fi
 

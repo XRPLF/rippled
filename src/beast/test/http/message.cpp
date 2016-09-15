@@ -108,22 +108,22 @@ public:
         {
             Arg1 arg1;
             message<true, one_arg_body, headers>{std::move(arg1)};
-            expect(arg1.moved);
+            BEAST_EXPECT(arg1.moved);
         }
 
         {
             headers h;
             h.insert("User-Agent", "test");
             message<true, one_arg_body, headers> m{Arg1{}, h};
-            expect(h["User-Agent"] == "test");
-            expect(m.headers["User-Agent"] == "test");
+            BEAST_EXPECT(h["User-Agent"] == "test");
+            BEAST_EXPECT(m.headers["User-Agent"] == "test");
         }
         {
             headers h;
             h.insert("User-Agent", "test");
             message<true, one_arg_body, headers> m{Arg1{}, std::move(h)};
-            expect(! h.exists("User-Agent"));
-            expect(m.headers["User-Agent"] == "test");
+            BEAST_EXPECT(! h.exists("User-Agent"));
+            BEAST_EXPECT(m.headers["User-Agent"] == "test");
         }
     }
 
@@ -137,14 +137,14 @@ public:
         m2.method = "G";
         m2.body = "2";
         swap(m1, m2);
-        expect(m1.method == "G");
-        expect(m2.method.empty());
-        expect(m1.url.empty());
-        expect(m2.url == "u");
-        expect(m1.body == "2");
-        expect(m2.body == "1");
-        expect(! m1.headers.exists("h"));
-        expect(m2.headers.exists("h"));
+        BEAST_EXPECT(m1.method == "G");
+        BEAST_EXPECT(m2.method.empty());
+        BEAST_EXPECT(m1.url.empty());
+        BEAST_EXPECT(m2.url == "u");
+        BEAST_EXPECT(m1.body == "2");
+        BEAST_EXPECT(m2.body == "1");
+        BEAST_EXPECT(! m1.headers.exists("h"));
+        BEAST_EXPECT(m2.headers.exists("h"));
     }
 
     void run() override

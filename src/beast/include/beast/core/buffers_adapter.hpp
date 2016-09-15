@@ -14,10 +14,10 @@
 
 namespace beast {
 
-/** Adapts a @b `MutableBufferSequence` into a @b `Streambuf`.
+/** Adapts a @b `MutableBufferSequence` into a @b `DynamicBuffer`.
 
     This class wraps a @b `MutableBufferSequence` to meet the requirements
-    of @b `Streambuf`. Upon construction the input and output sequences are
+    of @b `DynamicBuffer`. Upon construction the input and output sequences are
     empty. A copy of the mutable buffer sequence object is stored; however,
     ownership of the underlying memory is not transferred. The caller is
     responsible for making sure that referenced memory remains valid

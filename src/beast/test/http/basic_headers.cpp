@@ -41,31 +41,45 @@ public:
     void testHeaders()
     {
         bh h1;
-        expect(h1.empty());
+        BEAST_EXPECT(h1.empty());
         fill(1, h1);
-        expect(h1.size() == 1);
+        BEAST_EXPECT(h1.size() == 1);
         bh h2;
         h2 = h1;
-        expect(h2.size() == 1);
+        BEAST_EXPECT(h2.size() == 1);
         h2.insert("2", "2");
-        expect(std::distance(h2.begin(), h2.end()) == 2);
+        BEAST_EXPECT(std::distance(h2.begin(), h2.end()) == 2);
         h1 = std::move(h2);
-        expect(h1.size() == 2);
-        expect(h2.size() == 0);
+        BEAST_EXPECT(h1.size() == 2);
+        BEAST_EXPECT(h2.size() == 0);
         bh h3(std::move(h1));
-        expect(h3.size() == 2);
-        expect(h1.size() == 0);
+        BEAST_EXPECT(h3.size() == 2);
+        BEAST_EXPECT(h1.size() == 0);
         self_assign(h3, std::move(h3));
-        expect(h3.size() == 2);
-        expect(h2.erase("Not-Present") == 0);
+        BEAST_EXPECT(h3.size() == 2);
+        BEAST_EXPECT(h2.erase("Not-Present") == 0);
     }
 
     void testRFC2616()
     {
         bh h;
+        h.insert("a", "w");
         h.insert("a", "x");
-        h.insert("a", "y");
-        expect(h["a"] == "x,y");
+        h.insert("aa", "y");
+        h.insert("b", "z");
+        BEAST_EXPECT(h.count("a") == 2);
+    }
+
+    void testErase()
+    {
+        bh h;
+        h.insert("a", "w");
+        h.insert("a", "x");
+        h.insert("aa", "y");
+        h.insert("b", "z");
+        BEAST_EXPECT(h.size() == 4);
+        h.erase("a");
+        BEAST_EXPECT(h.size() == 2);
     }
 
     void run() override

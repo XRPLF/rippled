@@ -54,14 +54,14 @@ public:
     operator()()
     {
         invoke(h_, args_,
-            index_sequence_for<Args...> ());
+            index_sequence_for<Args...>());
     }
 
     void
     operator()() const
     {
         invoke(h_, args_,
-            index_sequence_for<Args...> ());
+            index_sequence_for<Args...>());
     }
 
     friend

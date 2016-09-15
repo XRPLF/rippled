@@ -31,10 +31,10 @@ public:
     void
     expect_size(std::size_t n, ConstBufferSequence const& buffers)
     {
-        expect(test::size_pre(buffers) == n);
-        expect(test::size_post(buffers) == n);
-        expect(test::size_rev_pre(buffers) == n);
-        expect(test::size_rev_post(buffers) == n);
+        BEAST_EXPECT(test::size_pre(buffers) == n);
+        BEAST_EXPECT(test::size_post(buffers) == n);
+        BEAST_EXPECT(test::size_rev_pre(buffers) == n);
+        BEAST_EXPECT(test::size_rev_post(buffers) == n);
     }
 
     void testMatrix()
@@ -43,9 +43,9 @@ public:
         using boost::asio::const_buffer;
         char buf[12];
         std::string const s = "Hello, world";
-        expect(s.size() == sizeof(buf));
+        BEAST_EXPECT(s.size() == sizeof(buf));
         buffer_copy(buffer(buf), buffer(s));
-        expect(to_string(buffer(buf)) == s);
+        BEAST_EXPECT(to_string(buffer(buf)) == s);
         for(std::size_t i = 1; i < 4; ++i) {
         for(std::size_t j = 1; j < 4; ++j) {
         for(std::size_t x = 1; x < 4; ++x) {
@@ -58,24 +58,24 @@ public:
                 const_buffer{&buf[i], j},
                 const_buffer{&buf[i+j], k}}};
             consuming_buffers<decltype(bs)> cb(bs);
-            expect(to_string(cb) == s);
+            BEAST_EXPECT(to_string(cb) == s);
             expect_size(s.size(), cb);
             cb.consume(0);
-            expect(eq(cb, consumed_buffers(bs, 0)));
-            expect(to_string(cb) == s);
+            BEAST_EXPECT(eq(cb, consumed_buffers(bs, 0)));
+            BEAST_EXPECT(to_string(cb) == s);
             expect_size(s.size(), cb);
             cb.consume(x);
-            expect(to_string(cb) == s.substr(x));
-            expect(eq(cb, consumed_buffers(bs, x)));
+            BEAST_EXPECT(to_string(cb) == s.substr(x));
+            BEAST_EXPECT(eq(cb, consumed_buffers(bs, x)));
             cb.consume(y);
-            expect(to_string(cb) == s.substr(x+y));
-            expect(eq(cb, consumed_buffers(bs, x+y)));
+            BEAST_EXPECT(to_string(cb) == s.substr(x+y));
+            BEAST_EXPECT(eq(cb, consumed_buffers(bs, x+y)));
             cb.consume(z);
-            expect(to_string(cb) == "");
-            expect(eq(cb, consumed_buffers(bs, x+y+z)));
+            BEAST_EXPECT(to_string(cb) == "");
+            BEAST_EXPECT(eq(cb, consumed_buffers(bs, x+y+z)));
             cb.consume(1);
-            expect(to_string(cb) == "");
-            expect(eq(cb, consumed_buffers(bs, x+y+z)));
+            BEAST_EXPECT(to_string(cb) == "");
+            BEAST_EXPECT(eq(cb, consumed_buffers(bs, x+y+z)));
         }
         }}}}
     }
@@ -87,10 +87,10 @@ public:
         using boost::asio::null_buffers;
         consuming_buffers<null_buffers> cb(
             null_buffers{});
-        expect(buffer_size(cb) == 0);
+        BEAST_EXPECT(buffer_size(cb) == 0);
         consuming_buffers<null_buffers> cb2(
             null_buffers{});
-        expect(buffer_copy(cb2, cb) == 0);
+        BEAST_EXPECT(buffer_copy(cb2, cb) == 0);
     }
 
     void testIterator()
@@ -101,7 +101,7 @@ public:
         std::size_t n = 0;
         for(auto it = cb.end(); it != cb.begin(); --it)
             ++n;
-        expect(n == 3);
+        BEAST_EXPECT(n == 3);
     }
 
     void run() override

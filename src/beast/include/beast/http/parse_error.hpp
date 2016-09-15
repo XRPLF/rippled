@@ -15,6 +15,8 @@ namespace http {
 
 enum class parse_error
 {
+    success = 0,
+
     connection_closed,
 
     bad_method,

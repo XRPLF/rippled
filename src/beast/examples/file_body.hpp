@@ -23,7 +23,7 @@ struct file_body
 
     class writer
     {
-        std::uint64_t size_;
+        std::uint64_t size_ = 0;
         std::uint64_t offset_ = 0;
         std::string const& path_;
         FILE* file_ = nullptr;

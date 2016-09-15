@@ -161,19 +161,21 @@ public:
 
     friend
     void
-    teardown(fail_stream<NextLayer>& stream,
-        boost::system::error_code& ec)
+    teardown(websocket::teardown_tag,
+        fail_stream<NextLayer>& stream,
+            boost::system::error_code& ec)
     {
         if(stream.pfc_->fail(ec))
             return;
-        websocket_helpers::call_teardown(stream.next_layer(), ec);
+        beast::websocket_helpers::call_teardown(stream.next_layer(), ec);
     }
 
     template<class TeardownHandler>
     friend
     void
-    async_teardown(fail_stream<NextLayer>& stream,
-        TeardownHandler&& handler)
+    async_teardown(websocket::teardown_tag,
+        fail_stream<NextLayer>& stream,
+            TeardownHandler&& handler)
     {
         error_code ec;
         if(stream.pfc_->fail(ec))
@@ -182,7 +184,7 @@ public:
                 bind_handler(std::move(handler), ec));
             return;
         }
-        websocket_helpers::call_async_teardown(
+        beast::websocket_helpers::call_async_teardown(
             stream.next_layer(), std::forward<TeardownHandler>(handler));
     }
 };

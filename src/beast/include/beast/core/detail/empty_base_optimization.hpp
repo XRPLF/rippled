@@ -14,7 +14,7 @@
 namespace beast {
 namespace detail {
 
-template <class T>
+template<class T>
 struct empty_base_optimization_decide
     : std::integral_constant <bool,
         std::is_empty <T>::value
@@ -25,7 +25,7 @@ struct empty_base_optimization_decide
 {
 };
 
-template <
+template<
     class T,
     int UniqueID = 0,
     bool ShouldDeriveFrom =
@@ -57,7 +57,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-template <
+template<
     class T,
     int UniqueID
 >

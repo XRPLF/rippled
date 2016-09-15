@@ -12,14 +12,14 @@
 
 namespace beast {
 
-/** A @b `Streambuf` that uses multiple buffers internally.
+/** A @b `DynamicBuffer` that uses multiple buffers internally.
 
     The implementation uses a sequence of one or more character arrays
     of varying sizes. Additional character array objects are appended to
     the sequence to accommodate changes in the size of the character
     sequence.
 
-    @note Meets the requirements of @b `Streambuf`.
+    @note Meets the requirements of @b `DynamicBuffer`.
 */
 using streambuf = basic_streambuf<std::allocator<char>>;
 

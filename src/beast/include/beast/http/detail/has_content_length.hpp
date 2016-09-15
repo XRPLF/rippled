@@ -22,7 +22,7 @@ class has_content_length_value
         decltype(std::declval<U>().content_length()),
             std::uint64_t>>
     static R check(int);
-    template <class>
+    template<class>
     static std::false_type check(...);
     using type = decltype(check<T>(0));
 public:

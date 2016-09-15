@@ -920,7 +920,7 @@ build_request(boost::string_ref const& host,
     boost::string_ref const& resource, std::string& key)
 {
     http::request_v1<http::empty_body> req;
-    req.url = "/";
+    req.url = { resource.data(), resource.size() };
     req.version = 11;
     req.method = "GET";
     req.headers.insert("Host", host);

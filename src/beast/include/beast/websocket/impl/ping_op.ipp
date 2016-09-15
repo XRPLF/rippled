@@ -95,7 +95,7 @@ public:
         return op->d_->cont;
     }
 
-    template <class Function>
+    template<class Function>
     friend
     void asio_handler_invoke(Function&& f, ping_op* op)
     {

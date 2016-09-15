@@ -47,32 +47,32 @@ public:
         std::list<const_buffer> b6;
         auto bs = buffer_cat(
             b1, b2, b3, b4, b5, b6);
-        expect(buffer_size(bs) == 10);
+        BEAST_EXPECT(buffer_size(bs) == 10);
         std::vector<const_buffer> v;
         for(auto iter = make_reverse_iterator(bs.end());
                 iter != make_reverse_iterator(bs.begin()); ++iter)
             v.emplace_back(*iter);
-        expect(buffer_size(bs) == 10);
+        BEAST_EXPECT(buffer_size(bs) == 10);
         decltype(bs) bs2(bs);
         auto bs3(std::move(bs));
         bs = bs2;
         bs3 = std::move(bs2);
         {
             boost::asio::streambuf sb1, sb2;
-            expect(buffer_size(buffer_cat(
+            BEAST_EXPECT(buffer_size(buffer_cat(
                 sb1.prepare(5), sb2.prepare(7))) == 12);
             sb1.commit(5);
             sb2.commit(7);
-            expect(buffer_size(buffer_cat(
+            BEAST_EXPECT(buffer_size(buffer_cat(
                 sb1.data(), sb2.data())) == 12);
         }
         for(auto it = bs.begin(); it != bs.end(); ++it)
         {
             decltype(bs)::const_iterator copy;
             copy = it;
-            expect(copy == it);
+            BEAST_EXPECT(copy == it);
             copy = copy;
-            expect(copy == it);
+            BEAST_EXPECT(copy == it);
         }
     }
 
@@ -132,11 +132,11 @@ public:
             pass();
         }
         auto bs2 = bs;
-        expect(bs.begin() != bs2.begin());
-        expect(bs.end() != bs2.end());
+        BEAST_EXPECT(bs.begin() != bs2.begin());
+        BEAST_EXPECT(bs.end() != bs2.end());
         decltype(bs)::const_iterator it;
         decltype(bs2)::const_iterator it2;
-        expect(it == it2);
+        BEAST_EXPECT(it == it2);
     }
 
     void run() override

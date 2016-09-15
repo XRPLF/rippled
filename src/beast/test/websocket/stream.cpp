@@ -8,8 +8,8 @@
 // Test that header file is self-contained.
 #include <beast/websocket/stream.hpp>
 
-#include "websocket_async_echo_peer.hpp"
-#include "websocket_sync_echo_peer.hpp"
+#include "websocket_async_echo_server.hpp"
+#include "websocket_sync_echo_server.hpp"
 
 #include <beast/core/streambuf.hpp>
 #include <beast/core/to_string.hpp>
@@ -109,15 +109,15 @@ public:
         return false;
     }
 
-    template<class NextLayer, class Streambuf>
+    template<class NextLayer, class DynamicBuffer>
     static
     void
-    read(stream<NextLayer>& ws, opcode& op, Streambuf& sb)
+    read(stream<NextLayer>& ws, opcode& op, DynamicBuffer& db)
     {
         frame_info fi;
         for(;;)
         {
-            ws.read_frame(fi, sb);
+            ws.read_frame(fi, db);
             op = fi.op;
             if(fi.fin)
                 break;
@@ -204,7 +204,7 @@ public:
                 {
                 }
             }
-            expect(n < limit);
+            BEAST_EXPECT(n < limit);
         }
         {
             // valid
@@ -259,11 +259,11 @@ public:
                     {
                         ws.accept(boost::asio::buffer(
                             s.substr(0, i), i));
-                        expect(! ev);
+                        BEAST_EXPECTS(! ev, ev.message());
                     }
                     catch(system_error const& se)
                     {
-                        expect(se.code() == ev);
+                        BEAST_EXPECT(se.code() == ev);
                     }
                 }
             };
@@ -369,7 +369,7 @@ public:
                 }
                 catch(system_error const& se)
                 {
-                    expect(se.code() == error::response_failed);
+                    BEAST_EXPECT(se.code() == error::response_failed);
                 }
             };
         // wrong HTTP version
@@ -443,22 +443,22 @@ public:
                 error_code ec;
                 socket_type sock(ios_);
                 sock.connect(ep, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 stream<socket_type&> ws(sock);
                 ws.handshake("localhost", "/", ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 ws.write(boost::asio::buffer(v), ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 opcode op;
-                streambuf sb;
-                ws.read(op, sb, ec);
-                if(! expect(! ec, ec.message()))
+                streambuf db;
+                ws.read(op, db, ec);
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
-                expect(to_string(sb.data()) ==
-                    std::string{v.data(), v.size()});
+                BEAST_EXPECT(to_string(db.data()) ==
+                    std::string(v.data(), v.size()));
                 v.push_back(n+1);
             }
         }
@@ -469,22 +469,22 @@ public:
                 error_code ec;
                 socket_type sock(ios_);
                 sock.connect(ep, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 stream<socket_type&> ws(sock);
                 ws.handshake("localhost", "/", ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 ws.async_write(boost::asio::buffer(v), do_yield[ec]);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
                 opcode op;
-                streambuf sb;
-                ws.async_read(op, sb, do_yield[ec]);
-                if(! expect(! ec, ec.message()))
+                streambuf db;
+                ws.async_read(op, db, do_yield[ec]);
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     break;
-                expect(to_string(sb.data()) ==
-                    std::string{v.data(), v.size()});
+                BEAST_EXPECT(to_string(db.data()) ==
+                    std::string(v.data(), v.size()));
                 v.push_back(n+1);
             }
         }
@@ -544,9 +544,9 @@ public:
 
         // Read
         opcode op;
-        streambuf sb;
+        streambuf db;
         ++count;
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 --count;
@@ -561,7 +561,7 @@ public:
             {
                 ++count;
                 // Send is canceled because close received.
-                expect(ec == boost::asio::
+                BEAST_EXPECT(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
                 // Writes after close are aborted.
@@ -569,7 +569,7 @@ public:
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECT(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -583,7 +583,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 #endif
@@ -600,23 +600,23 @@ public:
         ws.write(buffer_cat(sbuf("TEXT"),
             cbuf(0x03, 0xea, 0xf0, 0x28, 0x8c, 0xbc)));
         opcode op;
-        streambuf sb;
+        streambuf db;
         std::size_t count = 0;
         // Read text message with bad utf8.
         // Causes a close to be sent, blocking writes.
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 // Read should fail with protocol error
                 ++count;
-                expect(ec == error::failed,
-                    ec.message());
+                BEAST_EXPECTS(
+                    ec == error::failed, ec.message());
                 // Reads after failure are aborted
-                ws.async_read(op, sb,
+                ws.async_read(op, db,
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -631,7 +631,7 @@ public:
             {
                 ++count;
                 // Send is canceled because close received.
-                expect(ec == boost::asio::
+                BEAST_EXPECTS(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
                 // Writes after close are aborted.
@@ -639,7 +639,7 @@ public:
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -653,7 +653,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 
@@ -668,28 +668,28 @@ public:
         ws.set_option(message_type(opcode::binary));
         ws.write(sbuf("CLOSE"));
         opcode op;
-        streambuf sb;
+        streambuf db;
         std::size_t count = 0;
         // Read a close frame.
         // Sends a close frame, blocking writes.
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 // Read should complete with error::closed
                 ++count;
-                expect(ec == error::closed,
+                BEAST_EXPECTS(ec == error::closed,
                     ec.message());
                 // Pings after a close are aborted
                 ws.async_ping("",
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
             });
-        if(! expect(run_until(ios, 100,
+        if(! BEAST_EXPECT(run_until(ios, 100,
                 [&]{ return ws.wr_close_; })))
             return;
         // Try to ping
@@ -698,7 +698,7 @@ public:
             {
                 // Pings after a close are aborted
                 ++count;
-                expect(ec == boost::asio::
+                BEAST_EXPECTS(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
                 // Subsequent calls to close are aborted
@@ -706,7 +706,7 @@ public:
                     [&](error_code ec)
                     {
                         ++count;
-                        expect(ec == boost::asio::
+                        BEAST_EXPECTS(ec == boost::asio::
                             error::operation_aborted,
                                 ec.message());
                     });
@@ -719,7 +719,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 
@@ -734,13 +734,13 @@ public:
         ws.set_option(message_type(opcode::binary));
         ws.write(sbuf("CLOSE"));
         opcode op;
-        streambuf sb;
+        streambuf db;
         std::size_t count = 0;
-        ws.async_read(op, sb,
+        ws.async_read(op, db,
             [&](error_code ec)
             {
                 ++count;
-                expect(ec == error::closed,
+                BEAST_EXPECTS(ec == error::closed,
                     ec.message());
             });
         while(! ws.wr_block_)
@@ -750,7 +750,7 @@ public:
             [&](error_code ec)
             {
                 ++count;
-                expect(ec == boost::asio::
+                BEAST_EXPECTS(ec == boost::asio::
                     error::operation_aborted,
                         ec.message());
             });
@@ -762,7 +762,7 @@ public:
                 break;
             ios.run_one();
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
         ios.run();
     }
 
@@ -777,21 +777,21 @@ public:
         ws.async_write(sbuf("CLOSE"),
             [&](error_code ec)
             {
-                expect(! ec);
+                BEAST_EXPECT(! ec);
                 ws.async_write(sbuf("PING"),
                     [&](error_code ec)
                     {
-                        expect(! ec);
+                        BEAST_EXPECT(! ec);
                     });
             });
         opcode op;
-        streambuf sb;
-        ws.async_read(op, sb,
+        streambuf db;
+        ws.async_read(op, db,
             [&](error_code ec)
             {
-                expect(ec == error::closed, ec.message());
+                BEAST_EXPECTS(ec == error::closed, ec.message());
             });
-        if(! expect(run_until(ios, 100,
+        if(! BEAST_EXPECT(run_until(ios, 100,
                 [&]{ return ios.stopped(); })))
             return;
     }
@@ -811,8 +811,8 @@ public:
                     try
                     {
                         opcode op;
-                        streambuf sb;
-                        ws.read(op, sb);
+                        streambuf db;
+                        ws.read(op, db);
                         fail();
                         return false;
                     }
@@ -823,7 +823,7 @@ public:
                     }
                     error_code ec;
                     ws.lowest_layer().connect(ep, ec);
-                    if(! expect(! ec, ec.message()))
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
                         return false;
                     ws.handshake("localhost", "/");
                     return true;
@@ -834,7 +834,7 @@ public:
                     // connect
                     error_code ec;
                     ws.lowest_layer().connect(ep, ec);
-                    if(! expect(! ec, ec.message()))
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
                         return;
                 }
                 ws.handshake("localhost", "/");
@@ -846,10 +846,10 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    read(ws, op, sb);
-                    expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    streambuf db;
+                    read(ws, op, db);
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // close, no payload
@@ -872,9 +872,9 @@ public:
                 ws.set_option(pong_callback{
                     [&](ping_data const& payload)
                     {
-                        expect(! pong);
+                        BEAST_EXPECT(! pong);
                         pong = true;
-                        expect(payload == "");
+                        BEAST_EXPECT(payload == "");
                     }});
                 ws.ping("");
                 ws.set_option(message_type(opcode::binary));
@@ -882,11 +882,11 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
-                    expect(pong == 1);
-                    expect(op == opcode::binary);
-                    expect(to_string(sb.data()) == "Hello");
+                    streambuf db;
+                    ws.read(op, db);
+                    BEAST_EXPECT(pong == 1);
+                    BEAST_EXPECT(op == opcode::binary);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(pong_callback{});
 
@@ -894,7 +894,7 @@ public:
                 ws.set_option(pong_callback{
                     [&](ping_data const& payload)
                     {
-                        expect(payload == "payload");
+                        BEAST_EXPECT(payload == "payload");
                     }});
                 ws.ping("payload");
                 ws.write_frame(false, sbuf("Hello, "));
@@ -903,10 +903,10 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
-                    expect(pong == 1);
-                    expect(to_string(sb.data()) == "Hello, World!");
+                    streambuf db;
+                    ws.read(op, db);
+                    BEAST_EXPECT(pong == 1);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
                 }
                 ws.set_option(pong_callback{});
 
@@ -916,9 +916,9 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
-                    expect(to_string(sb.data()) == "Hello");
+                    streambuf db;
+                    ws.read(op, db);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(auto_fragment_size(0));
 
@@ -930,9 +930,9 @@ public:
                     {
                         // receive echoed message
                         opcode op;
-                        streambuf sb;
-                        ws.read(op, sb);
-                        expect(to_string(sb.data()) == s);
+                        streambuf db;
+                        ws.read(op, db);
+                        BEAST_EXPECT(to_string(db.data()) == s);
                     }
                 }
 
@@ -944,10 +944,10 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.read(op, sb);
-                    expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    streambuf db;
+                    ws.read(op, db);
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // cause close
@@ -1024,7 +1024,7 @@ public:
             }
             break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void testAsyncClient(
@@ -1040,9 +1040,9 @@ public:
                 [&](error_code ev)
                 {
                     opcode op;
-                    streambuf sb;
+                    streambuf db;
                     error_code ec;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    ws.async_read(op, db, do_yield[ec]);
                     if(! ec)
                     {
                         fail();
@@ -1057,7 +1057,7 @@ public:
                     ws.lowest_layer().close(ec);
                     ec = {};
                     ws.lowest_layer().connect(ep, ec);
-                    if(! expect(! ec, ec.message()))
+                    if(! BEAST_EXPECTS(! ec, ec.message()))
                         return false;
                     ws.async_handshake("localhost", "/", do_yield[ec]);
                     if(ec)
@@ -1070,7 +1070,7 @@ public:
 
                 // connect
                 ws.lowest_layer().connect(ep, ec);
-                if(! expect(! ec, ec.message()))
+                if(! BEAST_EXPECTS(! ec, ec.message()))
                     return;
                 ws.async_handshake("localhost", "/", do_yield[ec]);
                 if(ec)
@@ -1085,12 +1085,12 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // close, no payload
@@ -1120,9 +1120,9 @@ public:
                     ws.set_option(pong_callback{
                         [&](ping_data const& payload)
                         {
-                            expect(! pong);
+                            BEAST_EXPECT(! pong);
                             pong = true;
-                            expect(payload == "");
+                            BEAST_EXPECT(payload == "");
                         }});
                     ws.async_ping("", do_yield[ec]);
                     if(ec)
@@ -1133,12 +1133,12 @@ public:
                         throw system_error{ec};
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(op == opcode::binary);
-                    expect(to_string(sb.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::binary);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                     ws.set_option(pong_callback{});
                 }
 
@@ -1147,7 +1147,7 @@ public:
                     ws.set_option(pong_callback{
                         [&](ping_data const& payload)
                         {
-                            expect(payload == "payload");
+                            BEAST_EXPECT(payload == "payload");
                         }});
                     ws.async_ping("payload", do_yield[ec]);
                     if(! ec)
@@ -1161,11 +1161,11 @@ public:
                     {
                         // receive echoed message
                         opcode op;
-                        streambuf sb;
-                        ws.async_read(op, sb, do_yield[ec]);
+                        streambuf db;
+                        ws.async_read(op, db, do_yield[ec]);
                         if(ec)
                             throw system_error{ec};
-                        expect(to_string(sb.data()) == "Hello, World!");
+                        BEAST_EXPECT(to_string(db.data()) == "Hello, World!");
                     }
                     ws.set_option(pong_callback{});
                 }
@@ -1176,11 +1176,11 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(to_string(sb.data()) == "Hello");
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
                 ws.set_option(auto_fragment_size(0));
 
@@ -1194,11 +1194,11 @@ public:
                     {
                         // receive echoed message
                         opcode op;
-                        streambuf sb;
-                        ws.async_read(op, sb, do_yield[ec]);
+                        streambuf db;
+                        ws.async_read(op, db, do_yield[ec]);
                         if(ec)
                             throw system_error{ec};
-                        expect(to_string(sb.data()) == s);
+                        BEAST_EXPECT(to_string(db.data()) == s);
                     }
                 }
 
@@ -1214,12 +1214,12 @@ public:
                 {
                     // receive echoed message
                     opcode op;
-                    streambuf sb;
-                    ws.async_read(op, sb, do_yield[ec]);
+                    streambuf db;
+                    ws.async_read(op, db, do_yield[ec]);
                     if(ec)
                         throw system_error{ec};
-                    expect(op == opcode::text);
-                    expect(to_string(sb.data()) == "Hello");
+                    BEAST_EXPECT(op == opcode::text);
+                    BEAST_EXPECT(to_string(db.data()) == "Hello");
                 }
 
                 // cause close
@@ -1325,7 +1325,7 @@ public:
             }
             break;
         }
-        expect(n < limit);
+        BEAST_EXPECT(n < limit);
     }
 
     void testAsyncWriteFrame(endpoint_type const& ep)
@@ -1336,11 +1336,11 @@ public:
             error_code ec;
             socket_type sock(ios);
             sock.connect(ep, ec);
-            if(! expect(! ec, ec.message()))
+            if(! BEAST_EXPECTS(! ec, ec.message()))
                 break;
             stream<socket_type&> ws(sock);
             ws.handshake("localhost", "/", ec);
-            if(! expect(! ec, ec.message()))
+            if(! BEAST_EXPECTS(! ec, ec.message()))
                 break;
             ws.async_write_frame(false,
                 boost::asio::null_buffers{},
@@ -1349,7 +1349,7 @@ public:
                     fail();
                 });
             ws.next_layer().cancel(ec);
-            if(! expect(! ec, ec.message()))
+            if(! BEAST_EXPECTS(! ec, ec.message()))
                 break;
             //
             // Destruction of the io_service will cause destruction
@@ -1389,7 +1389,7 @@ public:
             testBadHandshakes();
             testBadResponses();
             {
-                sync_echo_peer server(true, any);
+                sync_echo_server server(true, any);
                 auto const ep = server.local_endpoint();
             
                 //testInvokable1(ep);
@@ -1403,7 +1403,7 @@ public:
                 yield_to_mf(ep, &stream_test::testAsyncClient);
             }
             {
-                async_echo_peer server(true, any, 4);
+                async_echo_server server(true, any, 4);
                 auto const ep = server.local_endpoint();
                 testSyncClient(ep);
                 testAsyncWriteFrame(ep);

@@ -110,7 +110,7 @@ is_valid(close_code::value code)
     if(v >= 1016 && v <= 2999)
         return false;
     // not used
-    if(v >= 0 && v <= 999)
+    if(v <= 999)
         return false;
     return true;
 }
@@ -136,12 +136,12 @@ write(DynamicBuffer& db, frame_header const& fh)
     if(fh.rsv3)
         b[0] |= 0x10;
     b[1] = fh.mask ? 0x80 : 0x00;
-    if (fh.len <= 125)
+    if(fh.len <= 125)
     {
         b[1] |= fh.len;
         n = 2;
     }
-    else if (fh.len <= 65535)
+    else if(fh.len <= 65535)
     {
         b[1] |= 126;
         ::new(&b[2]) big_uint16_buf_t{

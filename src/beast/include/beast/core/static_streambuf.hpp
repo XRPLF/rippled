@@ -129,7 +129,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-/** A `Streambuf` with a fixed size internal buffer.
+/** A `DynamicBuffer` with a fixed size internal buffer.
 
     @tparam N The number of bytes in the internal buffer.
 

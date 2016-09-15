@@ -8,6 +8,7 @@
 #ifndef BEAST_HTTP_IMPL_MESSAGE_V1_IPP
 #define BEAST_HTTP_IMPL_MESSAGE_V1_IPP
 
+#include <beast/core/error.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <beast/http/detail/has_content_length.hpp>
 #include <boost/optional.hpp>
@@ -87,7 +88,11 @@ prepare_content_length(prepare_info& pi,
         std::true_type)
 {
     typename Body::writer w(msg);
-    //w.init(ec); // VFALCO This is a design problem!
+    // VFALCO This is a design problem!
+    error_code ec;
+    w.init(ec);
+    if(ec)
+        throw system_error{ec};
     pi.content_length = w.content_length();
 }
 

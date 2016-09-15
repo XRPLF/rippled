@@ -56,7 +56,7 @@ private:
         typename clock_type::time_point start = clock_type::now();
 
         explicit
-        suite_results(std::string const& name_ = "")
+        suite_results(std::string name_ = "")
             : name(std::move(name_))
         {
         }
@@ -83,7 +83,7 @@ private:
         typename clock_type::time_point start = clock_type::now();
 
         void
-        add (suite_results const& r);
+        add(suite_results const& r);
     };
 
     std::ostream& os_;
@@ -107,7 +107,7 @@ private:
 
     virtual
     void
-    on_suite_begin (suite_info const& info) override;
+    on_suite_begin(suite_info const& info) override;
 
     virtual
     void
@@ -115,7 +115,7 @@ private:
 
     virtual
     void
-    on_case_begin (std::string const& name) override;
+    on_case_begin(std::string const& name) override;
 
     virtual
     void
@@ -127,11 +127,11 @@ private:
 
     virtual
     void
-    on_fail (std::string const& reason) override;
+    on_fail(std::string const& reason) override;
 
     virtual
     void
-    on_log (std::string const& s) override;
+    on_log(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ results::add(suite_results const& r)
     cases += r.cases;
     failed += r.failed;
     auto const elapsed = clock_type::now() - r.start;
-    if (elapsed >= std::chrono::seconds{1})
+    if(elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(top.begin(),
             top.end(), elapsed,
@@ -165,13 +165,13 @@ results::add(suite_results const& r)
             {
                 return t1.second > t2;
             });
-        if (iter != top.end())
+        if(iter != top.end())
         {
-            if (top.size() == max_top)
+            if(top.size() == max_top)
                 top.resize(top.size() - 1);
             top.emplace(iter, r.name, elapsed);
         }
-        else if (top.size() < max_top)
+        else if(top.size() < max_top)
         {
             top.emplace_back(r.name, elapsed);
         }
@@ -213,11 +213,11 @@ reporter<_>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
-    if (ms < seconds{1})
+    if(ms < seconds{1})
         return std::to_string(ms.count()) + "ms";
     std::stringstream ss;
     ss << std::fixed << std::setprecision(1) <<
-        (ms.count()/1000.) << "s";
+       (ms.count()/1000.) << "s";
     return ss.str();
 }
 
@@ -241,11 +241,10 @@ void
 reporter<_>::
 on_case_begin(std::string const& name)
 {
-    case_results_ = case_results (name);
-    os_ <<
-        suite_results_.name <<
-        (case_results_.name.empty() ?
-            "" : (" " + case_results_.name)) << std::endl;
+    case_results_ = case_results(name);
+    os_ << suite_results_.name <<
+        (case_results_.name.empty() ? "" : 
+            (" " + case_results_.name)) << std::endl;
 }
 
 template<class _>
@@ -273,7 +272,7 @@ on_fail(std::string const& reason)
     ++case_results_.total;
     os_ <<
         "#" << case_results_.total << " failed" <<
-        (reason.empty() ? "" : ": ") << reason << std::endl;
+       (reason.empty() ? "" : ": ") << reason << std::endl;
 }
 
 template<class _>

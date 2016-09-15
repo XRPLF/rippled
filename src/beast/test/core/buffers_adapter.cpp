@@ -43,7 +43,7 @@ public:
         using boost::asio::mutable_buffer;
         char buf[12];
         std::string const s = "Hello, world";
-        expect(s.size() == sizeof(buf));
+        BEAST_EXPECT(s.size() == sizeof(buf));
         for(std::size_t i = 1; i < 4; ++i) {
         for(std::size_t j = 1; j < 4; ++j) {
         for(std::size_t x = 1; x < 4; ++x) {
@@ -60,83 +60,83 @@ public:
                 mutable_buffer{&buf[i], j},
                 mutable_buffer{&buf[i+j], k}}};
             buffers_adapter<decltype(bs)> ba(std::move(bs));
-            expect(ba.max_size() == sizeof(buf));
+            BEAST_EXPECT(ba.max_size() == sizeof(buf));
             {
                 auto d = ba.prepare(z);
-                expect(buffer_size(d) == z);
+                BEAST_EXPECT(buffer_size(d) == z);
             }
             {
                 auto d = ba.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             {
                 auto d = ba.prepare(y);
-                expect(buffer_size(d) == y);
+                BEAST_EXPECT(buffer_size(d) == y);
             }
             {
                 auto d = ba.prepare(x);
-                expect(buffer_size(d) == x);
+                BEAST_EXPECT(buffer_size(d) == x);
                 ba.commit(buffer_copy(d, buffer(s.data(), x)));
             }
-            expect(ba.size() == x);
-            expect(ba.max_size() == sizeof(buf) - x);
-            expect(buffer_size(ba.data()) == ba.size());
+            BEAST_EXPECT(ba.size() == x);
+            BEAST_EXPECT(ba.max_size() == sizeof(buf) - x);
+            BEAST_EXPECT(buffer_size(ba.data()) == ba.size());
             {
                 auto d = ba.prepare(x);
-                expect(buffer_size(d) == x);
+                BEAST_EXPECT(buffer_size(d) == x);
             }
             {
                 auto d = ba.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             {
                 auto d = ba.prepare(z);
-                expect(buffer_size(d) == z);
+                BEAST_EXPECT(buffer_size(d) == z);
             }
             {
                 auto d = ba.prepare(y);
-                expect(buffer_size(d) == y);
+                BEAST_EXPECT(buffer_size(d) == y);
                 ba.commit(buffer_copy(d, buffer(s.data()+x, y)));
             }
             ba.commit(1);
-            expect(ba.size() == x + y);
-            expect(ba.max_size() == sizeof(buf) - (x + y));
-            expect(buffer_size(ba.data()) == ba.size());
+            BEAST_EXPECT(ba.size() == x + y);
+            BEAST_EXPECT(ba.max_size() == sizeof(buf) - (x + y));
+            BEAST_EXPECT(buffer_size(ba.data()) == ba.size());
             {
                 auto d = ba.prepare(x);
-                expect(buffer_size(d) == x);
+                BEAST_EXPECT(buffer_size(d) == x);
             }
             {
                 auto d = ba.prepare(y);
-                expect(buffer_size(d) == y);
+                BEAST_EXPECT(buffer_size(d) == y);
             }
             {
                 auto d = ba.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             {
-                auto d = ba.prepare(z); expect(buffer_size(d) == z);
+                auto d = ba.prepare(z); BEAST_EXPECT(buffer_size(d) == z);
                 ba.commit(buffer_copy(d, buffer(s.data()+x+y, z)));
             }
             ba.commit(2);
-            expect(ba.size() == x + y + z);
-            expect(ba.max_size() == 0);
-            expect(buffer_size(ba.data()) == ba.size());
-            expect(to_string(ba.data()) == s);
+            BEAST_EXPECT(ba.size() == x + y + z);
+            BEAST_EXPECT(ba.max_size() == 0);
+            BEAST_EXPECT(buffer_size(ba.data()) == ba.size());
+            BEAST_EXPECT(to_string(ba.data()) == s);
             ba.consume(t);
             {
                 auto d = ba.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
-            expect(to_string(ba.data()) == s.substr(t, std::string::npos));
+            BEAST_EXPECT(to_string(ba.data()) == s.substr(t, std::string::npos));
             ba.consume(u);
-            expect(to_string(ba.data()) == s.substr(t + u, std::string::npos));
+            BEAST_EXPECT(to_string(ba.data()) == s.substr(t + u, std::string::npos));
             ba.consume(v);
-            expect(to_string(ba.data()) == "");
+            BEAST_EXPECT(to_string(ba.data()) == "");
             ba.consume(1);
             {
                 auto d = ba.prepare(0);
-                expect(buffer_size(d) == 0);
+                BEAST_EXPECT(buffer_size(d) == 0);
             }
             try
             {
@@ -158,9 +158,9 @@ public:
             sb_type sb;
             buffers_adapter<
                 sb_type::mutable_buffers_type> ba(sb.prepare(3));
-            expect(buffer_size(ba.prepare(3)) == 3);
+            BEAST_EXPECT(buffer_size(ba.prepare(3)) == 3);
             ba.commit(2);
-            expect(buffer_size(ba.data()) == 2);
+            BEAST_EXPECT(buffer_size(ba.data()) == 2);
         }
         {
             using sb_type = beast::streambuf;
@@ -168,13 +168,13 @@ public:
             sb.prepare(3);
             buffers_adapter<
                 sb_type::mutable_buffers_type> ba(sb.prepare(8));
-            expect(buffer_size(ba.prepare(8)) == 8);
+            BEAST_EXPECT(buffer_size(ba.prepare(8)) == 8);
             ba.commit(2);
-            expect(buffer_size(ba.data()) == 2);
+            BEAST_EXPECT(buffer_size(ba.data()) == 2);
             ba.consume(1);
             ba.commit(6);
             ba.consume(2);
-            expect(buffer_size(ba.data()) == 5);
+            BEAST_EXPECT(buffer_size(ba.data()) == 5);
             ba.consume(5);
         }
     }

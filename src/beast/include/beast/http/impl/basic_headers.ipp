@@ -9,6 +9,7 @@
 #define BEAST_HTTP_IMPL_BASIC_HEADERS_IPP
 
 #include <beast/http/detail/rfc7230.hpp>
+#include <algorithm>
 
 namespace beast {
 namespace http {
@@ -205,6 +206,18 @@ basic_headers(FwdIt first, FwdIt last)
 }
 
 template<class Allocator>
+std::size_t
+basic_headers<Allocator>::
+count(boost::string_ref const& name) const
+{
+    auto const it = set_.find(name, less{});
+    if(it == set_.end())
+        return 0;
+    auto const last = set_.upper_bound(name, less{});
+    return static_cast<std::size_t>(std::distance(it, last));
+}
+
+template<class Allocator>
 auto
 basic_headers<Allocator>::
 find(boost::string_ref const& name) const ->
@@ -221,11 +234,9 @@ boost::string_ref
 basic_headers<Allocator>::
 operator[](boost::string_ref const& name) const
 {
-    // VFALCO This none object looks sketchy
-    static boost::string_ref const none;
     auto const it = find(name);
     if(it == end())
-        return none;
+        return {};
     return it->second;
 }
 
@@ -244,15 +255,23 @@ std::size_t
 basic_headers<Allocator>::
 erase(boost::string_ref const& name)
 {
-    auto const it = set_.find(name, less{});
+    auto it = set_.find(name, less{});
     if(it == set_.end())
         return 0;
-    auto& e = *it;
-    set_.erase(set_.iterator_to(e));
-    list_.erase(list_.iterator_to(e));
-    alloc_traits::destroy(this->member(), &e);
-    alloc_traits::deallocate(this->member(), &e, 1);
-    return 1;
+    auto const last = set_.upper_bound(name, less{});
+    std::size_t n = 1;
+    for(;;)
+    {
+        auto& e = *it++;
+        set_.erase(set_.iterator_to(e));
+        list_.erase(list_.iterator_to(e));
+        alloc_traits::destroy(this->member(), &e);
+        alloc_traits::deallocate(this->member(), &e, 1);
+        if(it == last)
+            break;
+        ++n;
+    }
+    return n;
 }
 
 template<class Allocator>
@@ -262,25 +281,10 @@ insert(boost::string_ref const& name,
     boost::string_ref value)
 {
     value = detail::trim(value);
-    typename set_t::insert_commit_data d;
-    auto const result =
-        set_.insert_check(name, less{}, d);
-    if(result.second)
-    {
-        auto const p = alloc_traits::allocate(
-            this->member(), 1);
-        alloc_traits::construct(
-            this->member(), p, name, value);
-        list_.push_back(*p);
-        set_.insert_commit(*p, d);
-        return;
-    }
-    // If field already exists, insert comma
-    // separated value as per RFC2616 section 4.2
-    auto& cur = result.first->data.second;
-    cur.reserve(cur.size() + 1 + value.size());
-    cur.append(1, ',');
-    cur.append(value.data(), value.size());
+    auto const p = alloc_traits::allocate(this->member(), 1);
+    alloc_traits::construct(this->member(), p, name, value);
+    set_.insert_before(set_.upper_bound(name, less{}), *p);
+    list_.push_back(*p);
 }
 
 template<class Allocator>

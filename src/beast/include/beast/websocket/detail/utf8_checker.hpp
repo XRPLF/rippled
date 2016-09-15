@@ -131,7 +131,7 @@ utf8_checker_t<_>::write(BufferSequence const& bs)
 {
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
-    for (auto const& b : bs)
+    for(auto const& b : bs)
         if(! write(buffer_cast<void const*>(b),
                 buffer_size(b)))
             return false;

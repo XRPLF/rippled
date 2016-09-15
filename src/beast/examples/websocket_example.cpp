@@ -16,13 +16,13 @@ int main()
     // Normal boost::asio setup
     std::string const host = "echo.websocket.org";
     boost::asio::io_service ios;
-    boost::asio::ip::tcp::resolver r(ios);
-    boost::asio::ip::tcp::socket sock(ios);
+    boost::asio::ip::tcp::resolver r{ios};
+    boost::asio::ip::tcp::socket sock{ios};
     boost::asio::connect(sock,
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "80"}));
 
     // WebSocket connect and send message using beast
-    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws(sock);
+    beast::websocket::stream<boost::asio::ip::tcp::socket&> ws{sock};
     ws.handshake(host, "/");
     ws.write(boost::asio::buffer("Hello, world!"));
 

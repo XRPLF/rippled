@@ -66,7 +66,7 @@ both Boost.Asio and the WebSocket protocol specification described in
 
 
 
-[section:creating Creating the socket]
+[section:creation Creation]
 
 The interface to Beast's WebSocket implementation is a single template
 class [link beast.ref.websocket__stream `beast::websocket::stream`] which
@@ -75,24 +75,40 @@ of [link beast.types.streams.SyncStream [*`SyncReadStream`]] if synchronous
 operations are performed, or
 [link beast.types.streams.AsyncStream [*`AsyncStream`]] if asynchronous
 operations are performed, or both. Arguments supplied during construction are
-passed to next layer's constructor. Here we declare two websockets which have
-ownership of the next layer:
+passed to next layer's constructor. Here we declare a websocket stream over
+a TCP/IP socket with ownership of the socket:
 ```
 boost::asio::io_service ios;
 beast::websocket::stream<boost::asio::ip::tcp::socket> ws(ios);
-
-boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-beast::websocket::stream<
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> wss(ios, ctx);
 ```
+
+[heading Using SSL]
+
+To use WebSockets over SSL, choose an SSL stream for the next layer template
+argument when constructing the stream.
+```
+#include <beast/websocket/ssl.hpp>
+#include <beast/websocket.hpp>
+#include <boost/asio/ssl.hpp>
+
+boost::asio::io_service ios;
+boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+beast::websocket::stream<boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ws(ios, ctx);
+```
+
+[note
+    When creating websocket stream objects using SSL, it is necessary
+    to include the file `<beast/websocket/ssl.hpp>`.
+]
+
+[heading Non-owning references]
 
 For servers that can handshake in multiple protocols, it may be desired
 to wrap an object that already exists. This socket can be moved in:
 ```
     boost::asio::ip::tcp::socket&& sock;
     ...
-    beast::websocket::stream<
-        boost::asio::ip::tcp::socket> ws(std::move(sock));
+    beast::websocket::stream<boost::asio::ip::tcp::socket> ws(std::move(sock));
 ```
 
 Or, the wrapper can be constructed with a non-owning reference. In
@@ -108,8 +124,7 @@ The layer being wrapped can be accessed through the websocket's "next layer",
 permitting callers to interact directly with its interface.
 ```
     boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
-    beast::websocket::stream<
-        boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ws(ios, ctx);
+    beast::websocket::stream<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ws(ios, ctx);
     ...
     ws.next_layer().shutdown(); // ssl::stream shutdown
 ```

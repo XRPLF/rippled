@@ -482,7 +482,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -501,7 +501,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -520,7 +520,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -539,7 +539,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -557,7 +557,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -575,7 +575,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -594,7 +594,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -613,7 +613,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -630,7 +630,7 @@ private:
             decltype(std::declval<T>().on_headers(
                 std::declval<std::uint64_t>(), std::declval<error_code&>()))>>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -649,7 +649,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:
@@ -667,7 +667,7 @@ private:
                 std::declval<error_code&>()),
                     std::true_type{})>
         static R check(int);
-        template <class>
+        template<class>
         static std::false_type check(...);
         using type = decltype(check<C>(0));
     public:

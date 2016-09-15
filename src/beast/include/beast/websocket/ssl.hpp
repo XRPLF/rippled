@@ -31,7 +31,7 @@ namespace websocket {
 */
 template<class SyncStream>
 void
-teardown(
+teardown(teardown_tag,
     boost::asio::ssl::stream<SyncStream>& stream,
         error_code& ec);
 
@@ -62,7 +62,7 @@ teardown(
 template<class AsyncStream, class TeardownHandler>
 inline
 void
-async_teardown(
+async_teardown(teardown_tag,
     boost::asio::ssl::stream<AsyncStream>& stream,
         TeardownHandler&& handler);
 

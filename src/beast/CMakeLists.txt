@@ -7,7 +7,7 @@ project (Beast)
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (WIN32)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /W4 /wd4100 /D_SCL_SECURE_NO_WARNINGS=1 /D_CRT_SECURE_NO_WARNINGS=1")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /W4 /wd4100 /bigobj /D _WIN32_WINNT=0x0601 /D_SCL_SECURE_NO_WARNINGS=1 /D_CRT_SECURE_NO_WARNINGS=1")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH:NO")
 else()
     set(Boost_USE_STATIC_LIBS ON)
@@ -20,10 +20,29 @@ else()
     find_package(Threads)
 
     set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wpedantic")
+      "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wpedantic")
 endif()
 
-message ("cxx Flags: " ${CMAKE_CXX_FLAGS})
+if ("${VARIANT}" STREQUAL "coverage")
+    set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+    set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcov")
+elseif ("${VARIANT}" STREQUAL "asan")
+    set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+    set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
+elseif ("${VARIANT}" STREQUAL "usan")
+    set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fno-omit-frame-pointer")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+    set(CMAKE_BUILD_TYPE RELWITHDEBINFO)
+elseif ("${VARIANT}" STREQUAL "debug")
+    set(CMAKE_BUILD_TYPE DEBUG)
+elseif ("${VARIANT}" STREQUAL "release")
+    set(CMAKE_BUILD_TYPE RELEASE)
+endif()
 
 function(DoGroupSources curdir rootdir folder)
     file(GLOB children RELATIVE ${PROJECT_SOURCE_DIR}/${curdir} ${PROJECT_SOURCE_DIR}/${curdir}/*)
@@ -51,6 +70,9 @@ include_directories (include)
 file(GLOB_RECURSE BEAST_INCLUDES
     ${PROJECT_SOURCE_DIR}/include/beast/*.hpp
     ${PROJECT_SOURCE_DIR}/include/beast/*.ipp
+)
+
+file(GLOB_RECURSE EXTRAS_INCLUDES
     ${PROJECT_SOURCE_DIR}/extras/beast/*.hpp
     ${PROJECT_SOURCE_DIR}/extras/beast/*.ipp
 )
@@ -60,5 +82,3 @@ add_subdirectory (test)
 add_subdirectory (test/core)
 add_subdirectory (test/http)
 add_subdirectory (test/websocket)
-
-#enable_testing()

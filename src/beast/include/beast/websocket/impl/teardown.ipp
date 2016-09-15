@@ -80,7 +80,7 @@ public:
         return op->d_->cont;
     }
 
-    template <class Function>
+    template<class Function>
     friend
     void asio_handler_invoke(Function&& f,
         teardown_tcp_op* op)
@@ -128,7 +128,7 @@ operator()(error_code ec, std::size_t, bool again)
 
 inline
 void
-teardown(
+teardown(teardown_tag,
     boost::asio::ip::tcp::socket& socket,
         error_code& ec)
 {
@@ -151,7 +151,7 @@ teardown(
 template<class TeardownHandler>
 inline
 void
-async_teardown(
+async_teardown(teardown_tag,
     boost::asio::ip::tcp::socket& socket,
         TeardownHandler&& handler)
 {

@@ -15,8 +15,8 @@ int main()
     // Normal boost::asio setup
     std::string const host = "boost.org";
     boost::asio::io_service ios;
-    boost::asio::ip::tcp::resolver r(ios);
-    boost::asio::ip::tcp::socket sock(ios);
+    boost::asio::ip::tcp::resolver r{ios};
+    boost::asio::ip::tcp::socket sock{ios};
     boost::asio::connect(sock,
         r.resolve(boost::asio::ip::tcp::resolver::query{host, "http"}));
 

@@ -16,7 +16,7 @@ namespace detail {
     The interface allows for limited read only operations. Derived classes
     provide additional behavior.
 */
-template <class Container>
+template<class Container>
 class const_container
 {
 private:
