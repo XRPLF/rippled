@@ -413,3 +413,8 @@ target_link_libraries(rippled
   ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
 
 link_common_libraries(rippled)
+
+if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+  message(WARNING "Rippled requires a 64 bit target architecture.\n"
+    "The most likely cause of this warning is trying to build rippled with a 32-bit OS.")
+endif()
