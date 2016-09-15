@@ -1,0 +1,356 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:http HTTP]
+
+Beast.HTTP offers programmers simple and performant models of HTTP messages and
+their associated operations including synchronous and asynchronous reading and
+writing of messages in the HTTP/1 wire format using Boost.Asio.
+
+The HTTP protocol is described fully in
+[@https://tools.ietf.org/html/rfc7230 rfc7230]
+
+
+
+[section:motivation Motivation]
+
+The HTTP protocol is pervasive in network applications. As C++ is a logical
+choice for high performance network servers, there is great utility in solid
+building blocks for manipulating, sending, and receiving HTTP messages
+compliant with the Hypertext Transfer Protocol and the supplements that
+follow. Unfortunately reliable implementations or industry standards do not
+exist in C++.
+
+Beast.HTTP is built on Boost.Asio and uses its own robust header-only HTTP/1
+message parser modeled after the nodejs http-parser (written in C). A proposal
+to add networking functionality to the C++ standard library, based on
+Boost.Asio, is under consideration by the standards committee. Since the final
+approved networking interface for the C++ standard library will likely closely
+resemble the current interface of Boost.Asio, it is logical for Beast.HTTP to
+use Boost.Asio as its network transport.
+
+[endsect]
+
+
+
+[section:scope Scope]
+
+This library is designed to be a building block for creating higher level
+libraries. It is not designed to be end-user facing. There is no convenient
+class that implements the core of a web server, nor is there a convenient
+class to quickly perform common operations such as fetching a file or
+connecting and retrieving a document from a secure connection. These
+use-cases are important, but this library does not try to do that. Instead,
+it offers primitives that can be used to build those user-facing algorithms.
+
+A HTTP message (referred to hereafter as "message") contains request or
+response specific attributes, a series of zero or more name/value pairs
+(collectively termed "headers"), and a series of octets called the message
+body which may be zero in length. The HTTP protocol defines the client and
+server roles: clients send messages called requests and servers send back
+messages called responses. `http::message` models both requests and responses.
+Beast aims to offer this functionality:
+
+* [*Model]: Provide a universal HTTP message class model.
+
+* [*Build]: Construct a new message and manipulate its contents.
+
+* [*Parse]: Deserialize a message from a network or memory stream in HTTP/1 wire format.
+
+* [*Serialize]: Serialize a message into a network or memory stream in HTTP/1 wire format.
+
+[note The documentation which follows assumes familiarity with
+both Boost.Asio and the HTTP protocol specification described in
+[@https://tools.ietf.org/html/rfc7230 rfc7230] ]
+
+[endsect]
+
+
+
+[section:usage Usage]
+
+[note
+    Sample code and identifiers mentioned in this section are written
+    as if the following declarations are in effect:
+    ```
+    #include <beast/http.hpp>
+    using namespace beast;
+    ```
+]
+
+
+
+In the paragraphs that follow we describe the available interfaces for
+performing typical operations such as interacting with a HTTP server
+or handling simple requests. Subsequent sections cover the message model
+and its customization points in more depth, for advanced applications.
+
+[heading Declarations]
+
+To do anything, a message must be declared. The message class template
+requires at minimum, a value indicating whether the message is a request
+(versus a response), and a `Body` type. The choice of `Body` determines the
+kind of container used to represent the message body. Here we will
+declare a HTTP/1 request that has a `std::string` for the body container:
+```
+    http::message_v1<true, http::string_body> req;
+```
+
+Two type aliases are provided for notational convenience when declaring
+HTTP/1 messages. These two statements declare a request and a response
+respectively:
+```
+    http::request_v1<http::string_body> req;
+    http::response_v1<http::string_body> resp;
+```
+
+[heading Members]
+
+Message objects are default constructible, with public access to data members.
+Request and response objects have some common members, and some members unique
+to the message type. These statements set all the members in each message:
+```
+    http::request_v1<http::string_body> req;
+    req.method = "GET";
+    req.url = "/index.html";
+    req.version = 11;           // HTTP/1.1
+    req.headers.insert("User-Agent", "hello_world");
+    req.body = "";
+
+    http::response_v1<http::string_body> resp;
+    resp.status = 404;
+    resp.reason = "Not Found";
+    resp.version = 10;          // HTTP/1.0
+    resp.headers.insert("Server", "Beast.HTTP");
+    resp.body = "The requested resource was not found.";
+```
+
+[heading Headers]
+
+The `message::headers` member is a container for setting the field/value
+pairs in the message. These statements change the values of the headers
+in the message passed:
+```
+    template<class Body>
+    void set_fields(http::request_v1<Body>& req)
+    {
+        if(! req.exists("User-Agent"))
+            req.insert("User-Agent", "myWebClient");
+
+        if(req.exists("Accept-Charset"))
+            req.erase("Accept-Charset");
+
+        req.replace("Accept", "text/plain");
+    }
+```
+
+[heading Body]
+
+The `message::body` member represents the message body. Depending on the
+`Body` template argument type, this could be a writable container. The
+following types, provided by the library, are suitable choices for the
+`Body` type:
+
+* [link beast.ref.http__empty_body [*`empty_body`:]] An empty message body.
+Used in GET requests where there is no message body. Example:
+```
+    http::request_v1<http::empty_body> req;
+    req.version = 11;
+    req.method = "GET";
+    req.url = "/index.html";
+```
+
+* [link beast.ref.http__string_body [*`string_body`:]] A body with a
+`value_type` as `std::string`. Useful for quickly putting together a request
+or response with simple text in the message body (such as an error message).
+Has the same insertion complexity of `std::string`. This is the type of body
+used in the examples:
+```
+    http::response_v1<http::string_body> resp;
+    static_assert(std::is_same<decltype(resp.body), std::string>::value);
+    resp.body = "Here is the data you requested";
+```
+
+* [link beast.ref.http__streambuf_body [*`streambuf_body`:]] A body with a
+`value_type` of [link beast.ref.streambuf `streambuf`]: an efficient storage
+object which uses multiple octet arrays of varying lengths to represent data.
+
+[heading Sockets]
+
+The library provides simple free functions modeled after Boost.Asio to
+send and receive messages on TCP/IP sockets, SSL streams, or any object
+which meets the Boost.Asio type requirements (SyncReadStream, SyncWriteStream,
+AsyncReadStream, and AsyncWriteStream depending on the types of operations
+performed). To send messages synchronously, use one of the `http:write`
+functions:
+```
+    void send_request(boost::asio::ip::tcp::socket& sock)
+    {
+        http::request<http::empty_body> req;
+        req.version = 11;
+        req.method = "GET";
+        req.url = "/index.html";
+        ...
+        http::write(sock, req); // Throws exception on error
+        ...
+        // Alternatively
+        boost::system::error:code ec;
+        http::write(sock, req, ec);
+        if(ec)
+            std::cerr << "error writing http message: " << ec.message();
+    }
+```
+
+An asynchronous interface is available:
+```
+    void handle_write(boost::system::error_code);
+    ...
+    http::request_v1<http::empty_body> req;
+    ...
+    http::async_write(sock, req, std::bind(&handle_write, std::placeholders::_1));
+```
+
+When the implementation reads messages from a socket, it can read bytes lying
+after the end of the message if they are present (the alternative is to read
+a single byte at a time which is unsuitable for performance reasons). To
+store and re-use these extra bytes on subsequent messages, the read interface
+requires an additional parameter: a [link beast.types.DynamicBuffer [*`DynamicBuffer`]]
+object. This example reads a message from the socket, with the extra bytes
+stored in the streambuf parameter for use in a subsequent call to read:
+```
+    boost::asio::streambuf sb;
+    ...
+    http::response_v1<http::string_body> resp;
+    http::read(sock, sb, resp); // Throws exception on error
+    ...
+    // Alternatively
+    boost::system::error:code ec;
+    http::read(sock, sb, resp, ec);
+    if(ec)
+        std::cerr << "error reading http message: " << ec.message();
+```
+
+As with the write function, an asynchronous interface is available. The
+stream buffer parameter must remain valid until the completion handler is
+called:
+```
+    void handle_read(boost::system::error_code);
+    ...
+    boost::asio::streambuf sb;
+    http::response_v1<http::string_body> resp;
+    ...
+    http::async_read(sock, resp, std::bind(&handle_read, std::placeholders::_1));
+```
+
+An alternative to using a `boost::asio::streambuf` is to use a
+[link beast.ref.streambuf `beast::streambuf`], which meets the requirements of
+[*`DynamicBuffer`] and is optimized for performance:
+```
+    void handle_read(boost::system::error_code);
+    ...
+    beast::streambuf sb;
+    http::response_v1<http::string_body> resp;
+    http::read(sock, sb, resp);
+```
+
+The `read` implementation can use any object meeting the requirements of
+[link beast.types.DynamicBuffer [*`DynamicBuffer`]], allowing callers to define custom
+memory management strategies used by the implementation.
+
+[endsect]
+
+
+
+[section:advanced Advanced]
+
+The spectrum of hardware and software platforms which perform these typical
+HTTP operations is vast, ranging from powerful servers in large datacenters
+to tiny resource-limited embedded devices. No single concrete implementation
+of a class intended to model messages can efficiently serve all needs.
+For example, an object that minimizes resources during parsing may not be
+able to edit and change headers dynamically. A message that represents the
+message body as a disk file may support sending but not parsing. Many efficient
+and correct models of messages exist, supporting some or all of the
+operations listed above.
+
+[heading Message model]
+
+The message class template and provided Body types are suitable for casual
+library users. This section explains the message model for advanced users
+who wish to take control over aspects of the implementation. We introduce
+customization points for the header and body via class template arguments.
+This illustration shows more detail about the
+[link beast.ref.http__message [*`message`]] class template (boilerplate
+present in the actual declaration has been removed for clarity):
+
+[$images/message.png [width 580px] [height 225px]]
+
+The default constructor, move special members, and copy special members are
+all defaulted. A message is movable, copyable, or default constructible based
+on the capabilities of its template arguments.
+
+Messages modeled in this fashion are ['complete], containing all of the
+information required to perform the supported set of operations. They are
+['first-class types], returnable from functions and composable. HTTP
+requests and responses are distinct types, allowing functions to be
+overloaded on the type of message.
+
+[endsect]
+
+
+
+[section:headers Headers Type]
+
+The `Headers` type represents the field/value pairs present in every HTTP
+message. These types implement the
+[link beast.types.FieldSequence [*`FieldSequence`]]
+concept. The value type of a field sequence is an object meeting the
+requirements of [link beast.types.Field [*`Field`]]. The implementation can
+serialize any instance of `Headers` that meets the field sequence requirements.
+This example shows a function which returns `true` if the specified field
+sequence has a connect field:
+```
+template<class FieldSequence>
+bool
+has_connect(FieldSequence const& fs)
+{
+    return std::find_if(fs.begin(), fs.end(),
+        [&](auto const& field)
+        {
+            return ci_equal(field.name(), "Connect");
+        });
+}
+```
+
+[endsect]
+
+
+
+[section:body Body Type]
+
+The `Body` template argument in the `message` class must meet the
+[link beast.types.Body [*`Body`] requirements]. It provides customization
+of the data member in the message, the algorithm for parsing, and the
+algorithm for serialization:
+
+[$images/body.png [width 510px] [height 210px]]
+
+Instances of the optional nested types `writer` and `reader` perform
+serialization and deserialization of the message body. If either or
+both of these types are present, the message becomes serializable, parsable,
+or both. They model [link beast.types.Reader [*`Reader`]] and
+[link beast.types.Writer [*`Writer`]] respectively.
+
+For specialized applications, users may implement their own types which
+meet the requirements. The examples included with this library provide a
+Body implementation used to serve files in a HTTP server.
+
+[endsect]
+
+
+[endsect]
+
