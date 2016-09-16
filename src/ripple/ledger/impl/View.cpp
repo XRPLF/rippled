@@ -58,6 +58,20 @@ bool amendmentRIPD1274 (NetClock::time_point const closeTime)
     return closeTime > amendmentRIPD1274SoTime();
 }
 
+NetClock::time_point const& amendmentRIPD1298SoTime ()
+{
+    using namespace std::chrono_literals;
+    // TBD Move this date up when we know the release date
+    // Thu Jan 5, 2017 10:00:00am PDT
+    static NetClock::time_point const soTime{536954400s};
+    return soTime;
+}
+
+bool amendmentRIPD1298 (NetClock::time_point const closeTime)
+{
+    return closeTime > amendmentRIPD1298SoTime();
+}
+
 // VFALCO NOTE A copy of the other one for now
 /** Maximum number of entries in a directory page
     A change would be protocol-breaking.

@@ -338,14 +338,11 @@ transferXRP (ApplyView& view,
 NetClock::time_point const& amendmentRIPD1141SoTime ();
 bool amendmentRIPD1141 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& amendmentRIPD1141SoTime ();
-bool amendmentRIPD1141 (NetClock::time_point const closeTime);
-
 NetClock::time_point const& amendmentRIPD1274SoTime ();
 bool amendmentRIPD1274 (NetClock::time_point const closeTime);
 
-NetClock::time_point const& amendmentRIPD1274SoTime ();
-bool amendmentRIPD1274 (NetClock::time_point const closeTime);
+NetClock::time_point const& amendmentRIPD1298SoTime ();
+bool amendmentRIPD1298 (NetClock::time_point const closeTime);
 
 
 } // ripple

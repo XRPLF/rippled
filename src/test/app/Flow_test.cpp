@@ -1305,6 +1305,80 @@ struct Flow_test : public beast::unit_test::suite
             txflags(tfPartialPayment | tfNoRippleDirect));
     }
 
+    void testUnfundedOffer (bool withFix)
+    {
+        testcase(std::string("Unfunded Offer ") +
+            (withFix ? "with fix" : "without fix"));
+
+        using namespace jtx;
+        {
+            // Test reverse
+            Env env(*this, features(featureFlow));
+            auto closeTime = amendmentRIPD1298SoTime();
+            if (withFix)
+                closeTime += env.closed()->info().closeTimeResolution;
+            else
+                closeTime -= env.closed()->info().closeTimeResolution;
+            env.close(closeTime);
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(100000), alice, bob, gw);
+            env(trust(bob, USD(20)));
+
+            STAmount tinyAmt1{USD.issue(), 9000000000000000ll, -17, false,
+                false, STAmount::unchecked{}};
+            STAmount tinyAmt3{USD.issue(), 9000000000000003ll, -17, false,
+                false, STAmount::unchecked{}};
+
+            env(offer(gw, drops(9000000000), tinyAmt3));
+            env(pay(alice, bob, tinyAmt1), path(~USD),
+                sendmax(drops(9000000000)), txflags(tfNoRippleDirect));
+
+            if (withFix)
+                BEAST_EXPECT(!isOffer(env, gw, XRP(0), USD(0)));
+            else
+                BEAST_EXPECT(isOffer(env, gw, XRP(0), USD(0)));
+        }
+        {
+            // Test forward
+            Env env(*this, features(featureFlow));
+            auto closeTime = amendmentRIPD1298SoTime();
+            if (withFix)
+                closeTime += env.closed()->info().closeTimeResolution;
+            else
+                closeTime -= env.closed()->info().closeTimeResolution;
+            env.close(closeTime);
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(100000), alice, bob, gw);
+            env(trust(alice, USD(20)));
+
+            STAmount tinyAmt1{USD.issue(), 9000000000000000ll, -17, false,
+                false, STAmount::unchecked{}};
+            STAmount tinyAmt3{USD.issue(), 9000000000000003ll, -17, false,
+                false, STAmount::unchecked{}};
+
+            env(pay(gw, alice, tinyAmt1));
+
+            env(offer(gw, tinyAmt3, drops(9000000000)));
+            env(pay(alice, bob, drops(9000000000)), path(~XRP),
+                sendmax(USD(1)), txflags(tfNoRippleDirect));
+
+            if (withFix)
+                BEAST_EXPECT(!isOffer(env, gw, USD(0), XRP(0)));
+            else
+                BEAST_EXPECT(isOffer(env, gw, USD(0), XRP(0)));
+        }
+    }
+
     void run() override
     {
         testDirectStep ();
@@ -1318,6 +1392,8 @@ struct Flow_test : public beast::unit_test::suite
         testSelfPayment2();
         testSelfFundedXRPEndpoint(false);
         testSelfFundedXRPEndpoint(true);
+        testUnfundedOffer(true);
+        testUnfundedOffer(false);
     }
 };
 
