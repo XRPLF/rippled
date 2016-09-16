@@ -412,7 +412,15 @@ BookStep<TIn, TOut>::revImp (
             result.in = sum(savedIns);
             result.out = out;
             this->consumeOffer (sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
-            return false;
+
+            // When the mantissas of two iou amounts differ by less than ten, then
+            // subtracting them leaves a result of zero. This can cause the check for
+            // (stpAmt.out > remainingOut) to incorrectly think an offer will be funded
+            // after subtracting remainingIn.
+            if (amendmentRIPD1298(sb.parentCloseTime()))
+                return offer.fully_consumed();
+            else
+                return false;
         }
     };
 
@@ -561,6 +569,14 @@ BookStep<TIn, TOut>::fwdImp (
 
         remainingIn = in - result.in;
         this->consumeOffer (sb, offer, ofrAdjAmt, stpAdjAmt, ownerGivesAdj);
+
+        // When the mantissas of two iou amounts differ by less than ten, then
+        // subtracting them leaves a result of zero. This can cause the check for
+        // (stpAmt.in > remainingIn) to incorrectly think an offer will be funded
+        // after subtracting remainingIn.
+        if (amendmentRIPD1298(sb.parentCloseTime()))
+            processMore = processMore || offer.fully_consumed();
+
         return processMore;
     };
 
