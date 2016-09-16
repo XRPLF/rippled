@@ -6,6 +6,21 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.32.1-hf1
+
+The `rippled` 0.32.1-hf1 release fixes a sporadic crash on servers configured to use the new websocket implementation introduced in rippled version 0.32.1. Ripple recommends upgrading only if server operators are experiencing occasional crashing when the server is under high load.
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+**New and Updated Features**
+
+This release has no new features.
+
+**Bug fixes**
+
+Correct an issue with the new websocket implementation introduced in version 0.32.1, which could cause concurrent writes on a single websocket connection. This could result in sporadic crashes when the server was under high load.
+
+
 ## Version 0.32.1
 
 The `rippled` 0.32.1 release includes an improved version of the payment code, which we expect to be available via Amendment on Wednesday, 2016-08-24 with the name FlowV2, and a completely new implementation of the WebSocket protocol for serving clients.
