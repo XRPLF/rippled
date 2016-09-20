@@ -166,21 +166,10 @@ private:
         std::shared_ptr<JobCoro> jobCoro,
         std::string forwardedFor, std::string user);
 
-    bool
-    isWebsocketUpgrade(http_request_type const& request) const;
-
-    bool
-    isStatusRequest(http_request_type const& request) const;
-
     Handoff
     statusResponse(http_request_type const& request) const;
 
-    Handoff
-    unauthorizedResponse(http_request_type const& request) const;
 
-    bool
-    authorized (Port const& port, std::map<std::string,
-        std::string> const& h) const;
 };
 
 }

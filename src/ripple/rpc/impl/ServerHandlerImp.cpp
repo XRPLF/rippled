@@ -52,6 +52,72 @@
 
 namespace ripple {
 
+// Returns `true` if the HTTP request is a Websockets Upgrade
+// http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
+static
+bool
+isWebsocketUpgrade(
+    http_request_type const& request)
+{
+    if (is_upgrade(request))
+        return beast::detail::ci_equal(
+            request.headers["Upgrade"], "websocket");
+    return false;
+}
+
+static
+bool
+isStatusRequest(
+    http_request_type const& request)
+{
+    return request.version >= 11 && request.url == "/" &&
+            request.body.size() == 0 && request.method == "GET";
+}
+
+static
+Handoff
+unauthorizedResponse(
+    http_request_type const& request)
+{
+    using namespace beast::http;
+    Handoff handoff;
+    response_v1<string_body> msg;
+    msg.version = request.version;
+    msg.status = 401;
+    msg.reason = "Unauthorized";
+    msg.headers.insert("Server", BuildInfo::getFullVersionString());
+    msg.headers.insert("Content-Type", "text/html");
+    msg.body = "Invalid protocol.";
+    prepare(msg, beast::http::connection::close);
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return handoff;
+}
+
+// VFALCO TODO Rewrite to use beast::http::headers
+static
+bool
+authorized (
+    Port const& port,
+    std::map<std::string, std::string> const& h)
+{
+    if (port.user.empty() || port.password.empty())
+        return true;
+
+    auto const it = h.find ("authorization");
+    if ((it == h.end ()) || (it->second.substr (0, 6) != "Basic "))
+        return false;
+    std::string strUserPass64 = it->second.substr (6);
+    boost::trim (strUserPass64);
+    std::string strUserPass = beast::detail::base64_decode (strUserPass64);
+    std::string::size_type nColon = strUserPass.find (":");
+    if (nColon == std::string::npos)
+        return false;
+    std::string strUser = strUserPass.substr (0, nColon);
+    std::string strPassword = strUserPass.substr (nColon + 1);
+    return strUser == port.user && strPassword == port.password;
+}
+
+
 ServerHandlerImp::ServerHandlerImp (Application& app, Stoppable& parent,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
@@ -631,26 +697,6 @@ ServerHandlerImp::processRequest (Port const& port,
 
 //------------------------------------------------------------------------------
 
-// Returns `true` if the HTTP request is a Websockets Upgrade
-// http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
-bool
-ServerHandlerImp::isWebsocketUpgrade(
-    http_request_type const& request) const
-{
-    if (is_upgrade(request))
-        return beast::detail::ci_equal(
-            request.headers["Upgrade"], "websocket");
-    return false;
-}
-
-bool
-ServerHandlerImp::isStatusRequest(
-    http_request_type const& request) const
-{
-    return request.version >= 11 && request.url == "/" &&
-        request.body.size() == 0 && request.method == "GET";
-}
-
 /*  This response is used with load balancing.
     If the server is overloaded, status 500 is reported. Otherwise status 200
     is reported, meaning the server can accept more connections.
@@ -685,46 +731,6 @@ ServerHandlerImp::statusResponse(
     prepare(msg, beast::http::connection::close);
     handoff.response = std::make_shared<SimpleWriter>(msg);
     return handoff;
-}
-
-Handoff
-ServerHandlerImp::unauthorizedResponse(
-    http_request_type const& request) const
-{
-    using namespace beast::http;
-    Handoff handoff;
-    response_v1<string_body> msg;
-    msg.version = request.version;
-    msg.status = 401;
-    msg.reason = "Unauthorized";
-    msg.headers.insert("Server", BuildInfo::getFullVersionString());
-    msg.headers.insert("Content-Type", "text/html");
-    msg.body = "Invalid protocol.";
-    prepare(msg, beast::http::connection::close);
-    handoff.response = std::make_shared<SimpleWriter>(msg);
-    return handoff;
-}
-
-// VFALCO TODO Rewrite to use beast::http::headers
-bool
-ServerHandlerImp::authorized (Port const& port,
-    std::map<std::string, std::string> const& h) const
-{
-    if (port.user.empty() || port.password.empty())
-        return true;
-
-    auto const it = h.find ("authorization");
-    if ((it == h.end ()) || (it->second.substr (0, 6) != "Basic "))
-        return false;
-    std::string strUserPass64 = it->second.substr (6);
-    boost::trim (strUserPass64);
-    std::string strUserPass = beast::detail::base64_decode (strUserPass64);
-    std::string::size_type nColon = strUserPass.find (":");
-    if (nColon == std::string::npos)
-        return false;
-    std::string strUser = strUserPass.substr (0, nColon);
-    std::string strPassword = strUserPass.substr (nColon + 1);
-    return strUser == port.user && strPassword == port.password;
 }
 
 //------------------------------------------------------------------------------
