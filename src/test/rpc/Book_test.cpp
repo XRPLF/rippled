@@ -28,7 +28,7 @@ class Book_test : public beast::unit_test::suite
 {
 public:
     void
-    testOneSideEmptyBook()
+    testcaseOneSideEmptyBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -88,7 +88,7 @@ public:
     }
 
     void
-    testOneSideOffersInBook()
+    testcaseOneSideOffersInBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -161,7 +161,7 @@ public:
     }
 
     void
-    testBothSidesEmptyBook()
+    testcaseBothSidesEmptyBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -232,7 +232,7 @@ public:
     }
 
     void
-    testBothSidesOffersInBook()
+    testcaseBothSidesOffersInBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -320,7 +320,7 @@ public:
     }
 
     void
-    testMultipleBooksOneSideEmptyBook()
+    testcaseMultipleBooksOneSideEmptyBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -415,7 +415,7 @@ public:
     }
 
     void
-    testMultipleBooksOneSideOffersInBook()
+    testcaseMultipleBooksOneSideOffersInBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -535,7 +535,7 @@ public:
     }
 
     void
-    testMultipleBooksBothSidesEmptyBook()
+    testcaseMultipleBooksBothSidesEmptyBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -651,7 +651,7 @@ public:
     }
 
     void
-    testMultipleBooksBothSidesOffersInBook()
+    testcaseMultipleBooksBothSidesOffersInBook()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -800,13 +800,16 @@ public:
             books)[jss::status] == "success");
     }
 
-    void testTrackOffers(void)
+    void
+    testcaseTrackOffers()
     {
         using namespace jtx;
         Env env(*this);
         Account gw {"gw"};
+        Account alice {"alice"};
+        Account bob {"bob"};
         auto wsc = makeWSClient(env.app().config());
-        env.fund(XRP(20000), "alice", "bob", gw);
+        env.fund(XRP(20000), alice, bob, gw);
         env.close();
         auto USD = gw["USD"];
 
@@ -831,11 +834,11 @@ public:
 
         env(rate(gw, 1.1));
         env.close();
-        env.trust( USD(1000), "alice" );
-        env.trust( USD(1000), "bob" );
-        env(pay(gw, "alice", USD(100)));
-        env(pay(gw, "bob",   USD(50)));
-        env(offer("alice", drops(4000), USD(10)));
+        env.trust( USD(1000), alice );
+        env.trust( USD(1000), bob );
+        env(pay(gw, alice, USD(100)));
+        env(pay(gw, bob,   USD(50)));
+        env(offer(alice, drops(4000), USD(10)));
         env.close();
 
         Json::Value jvParams;
@@ -850,33 +853,32 @@ public:
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
         auto const jrOffer = jrr[jss::offers][0u];
-        BEAST_EXPECT(jrOffer[sfAccount.fieldName] == Account("alice").human());
+        BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
         BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] ==
             "1C5C34DB7DBE43E1EA72EE080416E88A87C18B2AD29BD8C4570E35FA931A0000");
-        BEAST_EXPECT(jrOffer[sfBookNode.fieldName]       == "0000000000000000");
-        BEAST_EXPECT(jrOffer[jss::Flags]                 == 0);
+        BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == "Offer");
-        BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName]      == "0000000000000000");
-        BEAST_EXPECT(jrOffer[sfSequence.fieldName]       == 3);
+        BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 3);
         BEAST_EXPECT(jrOffer[jss::TakerGets] == USD(10).value().getJson(0));
         BEAST_EXPECT(jrOffer[jss::TakerPays] == drops(4000).value().getJson(0));
         BEAST_EXPECT(jrOffer[jss::index] ==
             "2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61");
         BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
-        BEAST_EXPECT(jrOffer[jss::quality]     == "400");
+        BEAST_EXPECT(jrOffer[jss::quality] == "400");
 
         BEAST_EXPECT(wsc->findMsg(5s,
             [&](auto const& jv)
             {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == "OfferCreate" &&
-                       t[jss::TakerGets]   == USD(10).value().getJson(0) &&
+                       t[jss::TakerGets] == USD(10).value().getJson(0) &&
                        t[jss::owner_funds] == "100" &&
-                       t[jss::TakerPays]   == drops(4000).value().getJson(0);
-                return false;
+                       t[jss::TakerPays] == drops(4000).value().getJson(0);
             }));
 
-        env(offer("bob", drops(2000), USD(5)));
+        env(offer(bob, drops(2000), USD(5)));
         env.close();
 
         BEAST_EXPECT(wsc->findMsg(5s,
@@ -884,22 +886,23 @@ public:
             {
                 auto const& t = jv[jss::transaction];
                 return t[jss::TransactionType] == "OfferCreate" &&
-                       t[jss::TakerGets]   == USD(5).value().getJson(0) &&
+                       t[jss::TakerGets] == USD(5).value().getJson(0) &&
                        t[jss::owner_funds] == "50" &&
-                       t[jss::TakerPays]   == drops(2000).value().getJson(0);
-                return false;
+                       t[jss::TakerPays] == drops(2000).value().getJson(0);
             }));
 
         BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
     }
 
-    void testBookOfferErrors(void)
+    void
+    testcaseBookOfferErrors()
     {
         using namespace jtx;
         Env env(*this);
         Account gw {"gw"};
-        env.fund(XRP(10000), "alice", gw);
+        Account alice {"alice"};
+        env.fund(XRP(10000), alice, gw);
         env.close();
         auto USD = gw["USD"];
 
@@ -908,7 +911,7 @@ public:
             jvParams[jss::ledger_index] = 10u;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
 
@@ -917,7 +920,7 @@ public:
             jvParams[jss::ledger_index] = "validated";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Missing field 'taker_pays'.");
         }
@@ -928,7 +931,7 @@ public:
             jvParams[jss::taker_pays] = Json::objectValue;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Missing field 'taker_gets'.");
         }
@@ -940,7 +943,7 @@ public:
             jvParams[jss::taker_gets] = Json::objectValue;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays', not object.");
         }
@@ -952,7 +955,7 @@ public:
             jvParams[jss::taker_gets] = "not an object";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets', not object.");
         }
@@ -964,7 +967,7 @@ public:
             jvParams[jss::taker_gets] = Json::objectValue;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Missing field 'taker_pays.currency'.");
         }
@@ -976,7 +979,7 @@ public:
             jvParams[jss::taker_gets] = Json::objectValue;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays.currency', not string.");
         }
@@ -988,7 +991,7 @@ public:
             jvParams[jss::taker_gets] = Json::objectValue;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Missing field 'taker_gets.currency'.");
         }
@@ -1000,7 +1003,7 @@ public:
             jvParams[jss::taker_gets][jss::currency] = 1;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets.currency', not string.");
         }
@@ -1012,7 +1015,7 @@ public:
             jvParams[jss::taker_gets][jss::currency] = "XRP";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "srcCurMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "srcCurMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays.currency', bad currency.");
         }
@@ -1024,7 +1027,7 @@ public:
             jvParams[jss::taker_gets][jss::currency] = "NOT_VALID";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "dstAmtMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "dstAmtMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets.currency', bad currency.");
         }
@@ -1037,7 +1040,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = 1;
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets.issuer', not string.");
         }
@@ -1050,7 +1053,7 @@ public:
             jvParams[jss::taker_gets][jss::currency] = "USD";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays.issuer', not string.");
         }
@@ -1063,7 +1066,7 @@ public:
             jvParams[jss::taker_gets][jss::currency] = "USD";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "srcIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays.issuer', bad issuer.");
         }
@@ -1076,7 +1079,7 @@ public:
             jvParams[jss::taker_gets][jss::currency] = "USD";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "srcIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays.issuer', bad issuer account one.");
         }
@@ -1089,7 +1092,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human() + "DEAD";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "dstIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets.issuer', bad issuer.");
         }
@@ -1102,7 +1105,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = toBase58(noAccount());
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "dstIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets.issuer', bad issuer account one.");
         }
@@ -1111,12 +1114,12 @@ public:
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays][jss::currency] = "XRP";
-            jvParams[jss::taker_pays][jss::issuer]   = Account("alice").human();
+            jvParams[jss::taker_pays][jss::issuer]   = alice.human();
             jvParams[jss::taker_gets][jss::currency] = "USD";
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "srcIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Unneeded field 'taker_pays.issuer' "
                 "for XRP currency specification.");
@@ -1131,7 +1134,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "srcIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "srcIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
         }
@@ -1145,7 +1148,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker', not string.");
         }
@@ -1159,7 +1162,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker'.");
         }
@@ -1174,7 +1177,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "badMarket");
+            BEAST_EXPECT(jrr[jss::error] == "badMarket");
             BEAST_EXPECT(jrr[jss::error_message] == "No such market.");
         }
 
@@ -1188,7 +1191,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'limit', not unsigned integer.");
         }
@@ -1197,11 +1200,11 @@ public:
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays][jss::currency] = "USD";
-            jvParams[jss::taker_pays][jss::issuer]   = gw.human();
+            jvParams[jss::taker_pays][jss::issuer] = gw.human();
             jvParams[jss::taker_gets][jss::currency] = "USD";
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "dstIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Invalid field 'taker_gets.issuer', "
                 "expected non-XRP issuer.");
@@ -1216,7 +1219,7 @@ public:
             jvParams[jss::taker_gets][jss::issuer]   = gw.human();
             auto const jrr = env.rpc(
                 "json", "book_offers", to_string(jvParams)) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "dstIsrMalformed");
+            BEAST_EXPECT(jrr[jss::error] == "dstIsrMalformed");
             BEAST_EXPECT(jrr[jss::error_message] ==
                 "Unneeded field 'taker_gets.issuer' "
                 "for XRP currency specification.");
@@ -1224,7 +1227,8 @@ public:
 
     }
 
-    void testBookOfferLimits(void)
+    void
+    testcaseBookOfferLimits()
     {
         using namespace jtx;
         Env env(*this);
@@ -1257,21 +1261,21 @@ public:
     void
     run() override
     {
-        testOneSideEmptyBook();
-        testOneSideOffersInBook();
+        testcaseOneSideEmptyBook();
+        testcaseOneSideOffersInBook();
 
-        testBothSidesEmptyBook();
-        testBothSidesOffersInBook();
+        testcaseBothSidesEmptyBook();
+        testcaseBothSidesOffersInBook();
 
-        testMultipleBooksOneSideEmptyBook();
-        testMultipleBooksOneSideOffersInBook();
+        testcaseMultipleBooksOneSideEmptyBook();
+        testcaseMultipleBooksOneSideOffersInBook();
 
-        testMultipleBooksBothSidesEmptyBook();
-        testMultipleBooksBothSidesOffersInBook();
+        testcaseMultipleBooksBothSidesEmptyBook();
+        testcaseMultipleBooksBothSidesOffersInBook();
 
-        testTrackOffers();
-        testBookOfferErrors();
-        testBookOfferLimits();
+        testcaseTrackOffers();
+        testcaseBookOfferErrors();
+        testcaseBookOfferLimits();
     }
 };
 
