@@ -28,8 +28,9 @@ class Book_test : public beast::unit_test::suite
 {
 public:
     void
-    testcaseOneSideEmptyBook()
+    testOneSideEmptyBook()
     {
+        testcase("One Side Empty Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -50,7 +51,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 0);
             BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
@@ -88,8 +90,9 @@ public:
     }
 
     void
-    testcaseOneSideOffersInBook()
+    testOneSideOffersInBook()
     {
+        testcase("One Side Offers In Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -119,7 +122,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(jv[jss::result][jss::offers][0u][jss::TakerGets] ==
@@ -161,8 +165,9 @@ public:
     }
 
     void
-    testcaseBothSidesEmptyBook()
+    testBothSidesEmptyBook()
     {
+        testcase("Both Sides Empty Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -184,7 +189,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 0);
             BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
@@ -232,8 +238,9 @@ public:
     }
 
     void
-    testcaseBothSidesOffersInBook()
+    testBothSidesOffersInBook()
     {
+        testcase("Both Sides Offers In Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -264,7 +271,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 1);
             BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
@@ -320,8 +328,9 @@ public:
     }
 
     void
-    testcaseMultipleBooksOneSideEmptyBook()
+    testMultipleBooksOneSideEmptyBook()
     {
+        testcase("Multiple Books, One Side Empty");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -352,7 +361,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 0);
             BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
@@ -415,8 +425,9 @@ public:
     }
 
     void
-    testcaseMultipleBooksOneSideOffersInBook()
+    testMultipleBooksOneSideOffersInBook()
     {
+        testcase("Multiple Books, One Side Offers In Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -464,7 +475,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 2);
             BEAST_EXPECT(jv[jss::result][jss::offers][0u][jss::TakerGets] ==
@@ -535,8 +547,9 @@ public:
     }
 
     void
-    testcaseMultipleBooksBothSidesEmptyBook()
+    testMultipleBooksBothSidesEmptyBook()
     {
+        testcase("Multiple Books, Both Sides Empty Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -569,7 +582,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 0);
             BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
@@ -651,8 +665,9 @@ public:
     }
 
     void
-    testcaseMultipleBooksBothSidesOffersInBook()
+    testMultipleBooksBothSidesOffersInBook()
     {
+        testcase("Multiple Books, Both Sides Offers In Book");
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
@@ -703,7 +718,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
                 jv[jss::result][jss::asks].size() == 2);
             BEAST_EXPECT(jv[jss::result].isMember(jss::bids) &&
@@ -801,8 +817,9 @@ public:
     }
 
     void
-    testcaseTrackOffers()
+    testTrackOffers()
     {
+        testcase("TrackOffers");
         using namespace jtx;
         Env env(*this);
         Account gw {"gw"};
@@ -825,7 +842,8 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            if(! BEAST_EXPECT(jv[jss::status] == "success"))
+                return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
                 jv[jss::result][jss::offers].size() == 0);
             BEAST_EXPECT(! jv[jss::result].isMember(jss::asks));
@@ -834,10 +852,10 @@ public:
 
         env(rate(gw, 1.1));
         env.close();
-        env.trust( USD(1000), alice );
-        env.trust( USD(1000), bob );
+        env.trust(USD(1000), alice);
+        env.trust(USD(1000), bob);
         env(pay(gw, alice, USD(100)));
-        env(pay(gw, bob,   USD(50)));
+        env(pay(gw, bob, USD(50)));
         env(offer(alice, drops(4000), USD(10)));
         env.close();
 
@@ -847,8 +865,7 @@ public:
         jvParams[jss::ledger_index] = "validated";
         jvParams[jss::taker_gets][jss::currency] = "USD";
         jvParams[jss::taker_gets][jss::issuer] = gw.human();
-        auto const jrr =
-            env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
+        auto const jrr = wsc->invoke("book_offers", jvParams)[jss::result];
         env.close();
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
@@ -896,8 +913,9 @@ public:
     }
 
     void
-    testcaseBookOfferErrors()
+    testBookOfferErrors()
     {
+        testcase("BookOffersRPC Errors");
         using namespace jtx;
         Env env(*this);
         Account gw {"gw"};
@@ -1228,8 +1246,9 @@ public:
     }
 
     void
-    testcaseBookOfferLimits()
+    testBookOfferLimits()
     {
+        testcase("BookOffer Limits");
         using namespace jtx;
         Env env(*this);
         Account gw {"gw"};
@@ -1261,21 +1280,17 @@ public:
     void
     run() override
     {
-        testcaseOneSideEmptyBook();
-        testcaseOneSideOffersInBook();
-
-        testcaseBothSidesEmptyBook();
-        testcaseBothSidesOffersInBook();
-
-        testcaseMultipleBooksOneSideEmptyBook();
-        testcaseMultipleBooksOneSideOffersInBook();
-
-        testcaseMultipleBooksBothSidesEmptyBook();
-        testcaseMultipleBooksBothSidesOffersInBook();
-
-        testcaseTrackOffers();
-        testcaseBookOfferErrors();
-        testcaseBookOfferLimits();
+        testOneSideEmptyBook();
+        testOneSideOffersInBook();
+        testBothSidesEmptyBook();
+        testBothSidesOffersInBook();
+        testMultipleBooksOneSideEmptyBook();
+        testMultipleBooksOneSideOffersInBook();
+        testMultipleBooksBothSidesEmptyBook();
+        testMultipleBooksBothSidesOffersInBook();
+        testTrackOffers();
+        testBookOfferErrors();
+        testBookOfferLimits();
     }
 };
 
