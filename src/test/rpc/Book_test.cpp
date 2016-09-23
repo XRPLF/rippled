@@ -17,6 +17,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Indexes.h>
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
@@ -26,6 +27,25 @@ namespace test {
 
 class Book_test : public beast::unit_test::suite
 {
+    std::string getBookDir(jtx::Env & env, Issue const& in, Issue const& out)
+    {
+        std::string dir;
+        auto uBookBase = getBookBase({in, out});
+        auto uBookEnd = getQualityNext(uBookBase);
+        auto view = env.closed();
+        auto key = view->succ(uBookBase, uBookEnd);
+        if (key)
+        {
+            auto sleOfferDir = view->read(keylet::page(key.value()));
+            uint256 offerIndex;
+            unsigned int bookEntry;
+            cdirFirst(*view, sleOfferDir->key(), sleOfferDir, bookEntry, offerIndex, env.journal);
+            auto sleOffer = view->read(keylet::offer(offerIndex));
+            dir = to_string(sleOffer->getFieldH256(sfBookDirectory));
+        }
+        return dir;
+    }
+
 public:
     void
     testOneSideEmptyBook()
@@ -856,7 +876,7 @@ public:
         env.trust(USD(1000), bob);
         env(pay(gw, alice, USD(100)));
         env(pay(gw, bob, USD(50)));
-        env(offer(alice, drops(4000), USD(10)));
+        env(offer(alice, XRP(4000), USD(10)));
         env.close();
 
         Json::Value jvParams;
@@ -872,18 +892,19 @@ public:
         auto const jrOffer = jrr[jss::offers][0u];
         BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
         BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] ==
-            "1C5C34DB7DBE43E1EA72EE080416E88A87C18B2AD29BD8C4570E35FA931A0000");
+            getBookDir(env, XRP, USD.issue()));
+
         BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0000000000000000");
         BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == "Offer");
         BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0000000000000000");
         BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 3);
         BEAST_EXPECT(jrOffer[jss::TakerGets] == USD(10).value().getJson(0));
-        BEAST_EXPECT(jrOffer[jss::TakerPays] == drops(4000).value().getJson(0));
+        BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(4000).value().getJson(0));
         BEAST_EXPECT(jrOffer[jss::index] ==
             "2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61");
         BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
-        BEAST_EXPECT(jrOffer[jss::quality] == "400");
+        BEAST_EXPECT(jrOffer[jss::quality] == "400000000");
 
         BEAST_EXPECT(wsc->findMsg(5s,
             [&](auto const& jv)
@@ -892,10 +913,10 @@ public:
                 return t[jss::TransactionType] == "OfferCreate" &&
                        t[jss::TakerGets] == USD(10).value().getJson(0) &&
                        t[jss::owner_funds] == "100" &&
-                       t[jss::TakerPays] == drops(4000).value().getJson(0);
+                       t[jss::TakerPays] == XRP(4000).value().getJson(0);
             }));
 
-        env(offer(bob, drops(2000), USD(5)));
+        env(offer(bob, XRP(2000), USD(5)));
         env.close();
 
         BEAST_EXPECT(wsc->findMsg(5s,
@@ -905,7 +926,7 @@ public:
                 return t[jss::TransactionType] == "OfferCreate" &&
                        t[jss::TakerGets] == USD(5).value().getJson(0) &&
                        t[jss::owner_funds] == "50" &&
-                       t[jss::TakerPays] == drops(2000).value().getJson(0);
+                       t[jss::TakerPays] == XRP(2000).value().getJson(0);
             }));
 
         BEAST_EXPECT(wsc->invoke("unsubscribe",
