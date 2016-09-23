@@ -139,12 +139,11 @@ public:
     //
 
     virtual void getBookPage (
-        bool bUnlimited,
         std::shared_ptr<ReadView const>& lpLedger,
         Book const& book,
         AccountID const& uTakerID,
         bool const bProof,
-        const unsigned int iLimit,
+        unsigned int iLimit,
         Json::Value const& jvMarker,
         Json::Value& jvResult) = 0;
 

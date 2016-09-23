@@ -45,7 +45,7 @@ static LimitRange const accountObjects = {10, 200, 400};
 static LimitRange const accountOffers = {10, 200, 400};
 
 /** Limits for the book_offers command. */
-static LimitRange const bookOffers = {0, 0, 400};
+static LimitRange const bookOffers = {0, 300, 400};
 
 /** Limits for the no_ripple_check command. */
 static LimitRange const noRippleCheck = {10, 300, 400};

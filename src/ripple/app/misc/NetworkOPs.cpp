@@ -277,9 +277,9 @@ public:
     // Book functions.
     //
 
-    void getBookPage (bool bUnlimited, std::shared_ptr<ReadView const>& lpLedger,
+    void getBookPage (std::shared_ptr<ReadView const>& lpLedger,
                       Book const&, AccountID const& uTakerID, const bool bProof,
-                      const unsigned int iLimit,
+                      unsigned int iLimit,
                       Json::Value const& jvMarker, Json::Value& jvResult)
             override;
 
@@ -2832,14 +2832,12 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (
 // NIKB FIXME this should be looked at. There's no reason why this shouldn't
 //            work, but it demonstrated poor performance.
 //
-// FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
-    bool bUnlimited,
     std::shared_ptr<ReadView const>& lpLedger,
     Book const& book,
     AccountID const& uTakerID,
     bool const bProof,
-    const unsigned int iLimit,
+    unsigned int iLimit,
     Json::Value const& jvMarker,
     Json::Value& jvResult)
 { // CAUTION: This is the old get book page logic
@@ -2876,11 +2874,7 @@ void NetworkOPsImp::getBookPage (
     auto const rate = transferRate(view, book.out.account);
     auto viewJ = app_.journal ("View");
 
-    unsigned int left (iLimit == 0 ? 300 : iLimit);
-    if (! bUnlimited && left > 300)
-        left = 300;
-
-    while (!bDone && left-- > 0)
+    while (! bDone && iLimit-- > 0)
     {
         if (bDirectAdvance)
         {
@@ -3048,14 +3042,12 @@ void NetworkOPsImp::getBookPage (
 // This is the new code that uses the book iterators
 // It has temporarily been disabled
 
-// FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
-    bool bUnlimited,
     std::shared_ptr<ReadView const> lpLedger,
     Book const& book,
     AccountID const& uTakerID,
     bool const bProof,
-    const unsigned int iLimit,
+    unsigned int iLimit,
     Json::Value const& jvMarker,
     Json::Value& jvResult)
 {
@@ -3071,11 +3063,7 @@ void NetworkOPsImp::getBookPage (
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);
 
-    unsigned int left (iLimit == 0 ? 300 : iLimit);
-    if (! bUnlimited && left > 300)
-        left = 300;
-
-    while (left-- > 0 && obIterator.nextOffer ())
+    while (iLimit-- > 0 && obIterator.nextOffer ())
     {
 
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
