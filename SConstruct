@@ -487,6 +487,10 @@ def enable_asserts ():
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
     add_boost_and_protobuf(toolchain, env)
+    env.Append(CPPDEFINES=[
+        'BOOST_COROUTINE_NO_DEPRECATION_WARNING',
+        'BOOST_COROUTINES_NO_DEPRECATION_WARNING'
+        ])
     if is_debug_variant(variant):
         env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
 
@@ -541,7 +545,8 @@ def config_env(toolchain, variant, env):
         env.Append(CXXFLAGS=[
             '-frtti',
             '-std=c++14',
-            '-Wno-invalid-offsetof'])
+            '-Wno-invalid-offsetof'
+            ])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
 
