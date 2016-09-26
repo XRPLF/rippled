@@ -541,7 +541,9 @@ def config_env(toolchain, variant, env):
         env.Append(CXXFLAGS=[
             '-frtti',
             '-std=c++14',
-            '-Wno-invalid-offsetof'])
+            '-Wno-invalid-offsetof',
+            '-DBOOST_COROUTINE_NO_DEPRECATION_WARNING',
+            '-DBOOST_COROUTINES_NO_DEPRECATION_WARNING'])
 
         env.Append(CPPDEFINES=['_FILE_OFFSET_BITS=64'])
 

@@ -22,6 +22,8 @@
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
 
+#include <boost/format.hpp>
+
 namespace ripple {
 
 namespace test {
