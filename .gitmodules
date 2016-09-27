@@ -1,0 +1,12 @@
+[submodule "docs/docca"]
+	path = docs/docca
+	url = https://github.com/vinniefalco/docca.git
+[submodule "src/nudb/extras/beast"]
+	path = src/nudb/extras/beast
+	url = https://github.com/vinniefalco/Beast.git
+[submodule "src/nudb/extras/rocksdb"]
+	path = src/nudb/extras/rocksdb
+	url = https://github.com/facebook/rocksdb.git
+[submodule "src/nudb/doc/docca"]
+	path = src/nudb/doc/docca
+	url = https://github.com/vinniefalco/docca.git
