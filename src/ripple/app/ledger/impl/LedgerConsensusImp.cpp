@@ -230,7 +230,7 @@ LedgerConsensusImp<Traits>::mapCompleteInternal (
     TxSet_t const& map,
     bool acquired)
 {
-    auto hash = map.getID ();
+    auto const hash = map.getID ();
 
     if (acquired_.find (hash) != acquired_.end())
         return;
@@ -292,7 +292,7 @@ LedgerConsensusImp<Traits>::mapCompleteInternal (
             << " no peers were proposing it";
     }
 
-    acquired_.emplace (hash, std::move (map));
+    acquired_.emplace (hash, map);
 }
 
 template <class Traits>
@@ -604,29 +604,29 @@ bool LedgerConsensusImp<Traits>::haveConsensus ()
     // Count number of agreements/disagreements with our position
     for (auto& it : peerPositions_)
     {
-        if (!it.second.isBowOut ())
+        if (it.second.isBowOut ())
+            continue;
+
+        if (it.second.getCurrentHash () == ourPosition)
         {
-            if (it.second.getCurrentHash () == ourPosition)
-            {
-                ++agree;
-            }
-            else
-            {
-                JLOG (j_.debug()) << to_string (it.first)
-                    << " has " << to_string (it.second.getCurrentHash ());
-                ++disagree;
-                if (compares_.count(it.second.getCurrentHash()) == 0)
-                { // Make sure we have generated disputes
-                    uint256 hash = it.second.getCurrentHash();
-                    JLOG (j_.debug())
-                        << "We have not compared to " << hash;
-                    auto it1 = acquired_.find (hash);
-                    auto it2 = acquired_.find(ourPosition_->getCurrentHash ());
-                    if ((it1 != acquired_.end()) && (it2 != acquired_.end()))
-                    {
-                        compares_.insert(hash);
-                        createDisputes(it2->second, it1->second);
-                    }
+            ++agree;
+        }
+        else
+        {
+            JLOG (j_.debug()) << to_string (it.first)
+                << " has " << to_string (it.second.getCurrentHash ());
+            ++disagree;
+            if (compares_.count(it.second.getCurrentHash()) == 0)
+            { // Make sure we have generated disputes
+                uint256 hash = it.second.getCurrentHash();
+                JLOG (j_.debug())
+                    << "We have not compared to " << hash;
+                auto it1 = acquired_.find (hash);
+                auto it2 = acquired_.find(ourPosition_->getCurrentHash ());
+                if ((it1 != acquired_.end()) && (it2 != acquired_.end()))
+                {
+                    compares_.insert(hash);
+                    createDisputes(it2->second, it1->second);
                 }
             }
         }

@@ -99,9 +99,9 @@ bool hasEntry (TxID_t const&) const;
 
 bool hasEntry (Tx_t const&) const;
 
-boost::optional<Tx_t const> const getEntry (TxID_t const&) const;
+boost::optional <Tx_t const> const getEntry (TxID_t const&) const;
 
-TxSetDiff_t getDifferences(TxSet_t const&) const;
+std::map <TxID_t, bool> getDifferences(TxSet_t const&) const;
 
 ## TxSet_t::mutable_t
 

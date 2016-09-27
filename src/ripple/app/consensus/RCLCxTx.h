@@ -122,6 +122,9 @@ public:
     getDifferences (RCLTxSet const& j) const
     {
         SHAMap::Delta delta;
+
+        // Bound the work we do in case of a malicious
+        // map from a trusted validator
         map_->compare (*(j.map_), delta, 65536);
 
         std::map <uint256, bool> ret;
