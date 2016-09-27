@@ -21,6 +21,7 @@
 #include <ripple/test/WSClient.h>
 #include <ripple/test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 namespace test {
@@ -885,15 +886,14 @@ public:
         jvParams[jss::ledger_index] = "validated";
         jvParams[jss::taker_gets][jss::currency] = "USD";
         jvParams[jss::taker_gets][jss::issuer] = gw.human();
-        auto const jrr = wsc->invoke("book_offers", jvParams)[jss::result];
-        env.close();
+        auto jrr = wsc->invoke("book_offers", jvParams)[jss::result];
+
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
         auto const jrOffer = jrr[jss::offers][0u];
         BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
         BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] ==
             getBookDir(env, XRP, USD.issue()));
-
         BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0000000000000000");
         BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == "Offer");
@@ -901,8 +901,6 @@ public:
         BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 3);
         BEAST_EXPECT(jrOffer[jss::TakerGets] == USD(10).value().getJson(0));
         BEAST_EXPECT(jrOffer[jss::TakerPays] == XRP(4000).value().getJson(0));
-        BEAST_EXPECT(jrOffer[jss::index] ==
-            "2A432F386EF28151AF60885CE201CC9331FF494A163D40531A9D253C97E81D61");
         BEAST_EXPECT(jrOffer[jss::owner_funds] == "100");
         BEAST_EXPECT(jrOffer[jss::quality] == "400000000");
 
@@ -928,6 +926,25 @@ public:
                        t[jss::owner_funds] == "50" &&
                        t[jss::TakerPays] == XRP(2000).value().getJson(0);
             }));
+
+        jrr = wsc->invoke("book_offers", jvParams)[jss::result];
+
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() == 2);
+        auto const jrNextOffer = jrr[jss::offers][1u];
+        BEAST_EXPECT(jrNextOffer[sfAccount.fieldName] == bob.human());
+        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] ==
+            getBookDir(env, XRP, USD.issue()));
+        BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrNextOffer[jss::Flags] == 0);
+        BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == "Offer");
+        BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrNextOffer[sfSequence.fieldName] == 3);
+        BEAST_EXPECT(jrNextOffer[jss::TakerGets] == USD(5).value().getJson(0));
+        BEAST_EXPECT(jrNextOffer[jss::TakerPays] ==
+			XRP(2000).value().getJson(0));
+        BEAST_EXPECT(jrNextOffer[jss::owner_funds] == "50");
+        BEAST_EXPECT(jrNextOffer[jss::quality] == "400000000");
 
         BEAST_EXPECT(wsc->invoke("unsubscribe",
             books)[jss::status] == "success");
@@ -1267,22 +1284,27 @@ public:
     }
 
     void
-    testBookOfferLimits()
+    testBookOfferLimits(bool asAdmin)
     {
         testcase("BookOffer Limits");
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, [asAdmin]() {
+            auto p = std::make_unique<Config>();
+            setupConfigForUnitTests(*p);
+            if(! asAdmin)
+            {
+                (*p)["port_rpc"].set("admin","");
+                (*p)["port_ws"].set("admin","");
+            }
+            return p;
+        }());
         Account gw {"gw"};
-        env.fund(XRP(20000), gw);
+        env.fund(XRP(200000), gw);
         env.close();
         auto USD = gw["USD"];
 
-        env(offer(gw, XRP(500), USD(100)));
-        env(offer(gw, XRP(100), USD(2)));
-        env(offer(gw, XRP(500), USD(101)));
-        env(offer(gw, XRP(500), USD(99)));
-        env(offer(gw, XRP(50), USD(10)));
-        env(offer(gw, XRP(50), USD(9)));
+        for(auto i = 0; i <= RPC::Tuning::bookOffers.rmax; i++)
+            env(offer(gw, XRP(50 + 1*i), USD(1.0 + 0.1*i)));
         env.close();
 
         Json::Value jvParams;
@@ -1291,12 +1313,33 @@ public:
         jvParams[jss::taker_pays][jss::currency] = "XRP";
         jvParams[jss::taker_gets][jss::currency] = "USD";
         jvParams[jss::taker_gets][jss::issuer] = gw.human();
-        auto const jrr =
+        auto jrr =
             env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
         BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == 1);
+        BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
+
+        jvParams[jss::limit] = 0u;
+        jrr =
+            env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() == 0u);
+
+        jvParams[jss::limit] = RPC::Tuning::bookOffers.rmax + 1;
+        jrr =
+            env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() ==
+                (asAdmin ?  RPC::Tuning::bookOffers.rmax + 1 : 0u));
+
+        jvParams[jss::limit] = Json::nullValue;
+        jrr =
+            env.rpc("json", "book_offers", to_string(jvParams)) [jss::result];
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() ==
+                (asAdmin ?  RPC::Tuning::bookOffers.rdefault : 0u));
     }
+
 
     void
     run() override
@@ -1311,7 +1354,8 @@ public:
         testMultipleBooksBothSidesOffersInBook();
         testTrackOffers();
         testBookOfferErrors();
-        testBookOfferLimits();
+        testBookOfferLimits(true);
+        testBookOfferLimits(false);
     }
 };
 
