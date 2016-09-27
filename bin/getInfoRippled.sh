@@ -16,7 +16,7 @@ while getopts ":e:c:" opt; do
     esac
 done
 
-tmp_loc=$(mktemp -d /tmp/ripple_info.XXXX)
+tmp_loc=$(mktemp -d --tmpdir ripple_info.XXXX)
 cd /tmp
 chmod 751 ripple_info.*
 cd ~
@@ -24,18 +24,21 @@ echo ${tmp_loc}
 
 cleaned_conf=${tmp_loc}/cleaned_rippled_cfg.txt
 
-db=$(sed -r -e 's/\<s[a-zA-Z0-9]{28}\>/secretsecretsecretsecretmaybe/g' ${conf_file} |\
+if [[ -f ${conf_file} ]]
+then
+    db=$(sed -r -e 's/\<s[a-zA-Z0-9]{28}\>/secretsecretsecretsecretmaybe/g' ${conf_file} |\
             awk -v OUT_FILE=${cleaned_conf} '
-BEGIN {skip=0; db_path="";print > OUT_FILE}
-/^\[validation_seed\]/ {skip=1; next}
-/^\[node_seed\]/ {skip=1; next}
-/^\[.*\]/ {skip=0}
-skip==1 {next}
-save==1 {save=0;db_path=$0}
-/^\[database_path\]/ {save=1}
-{print >> OUT_FILE}
-END {print db_path}
-')
+    BEGIN {skip=0; db_path="";print > OUT_FILE}
+    /^\[validation_seed\]/ {skip=1; next}
+    /^\[node_seed\]/ {skip=1; next}
+    /^\[.*\]/ {skip=0}
+    skip==1 {next}
+    save==1 {save=0;db_path=$0}
+    /^\[database_path\]/ {save=1}
+    {print >> OUT_FILE}
+    END {print db_path}
+    ')
+fi
 
 echo "database_path: ${db}"
 df ${db} > ${tmp_loc}/db_path_df.txt
@@ -50,7 +53,13 @@ exec 3>&1 1>>${log_file} 2>&1
 
 ## Send all stdout files to /tmp
 
-${rippled_exe} server_info          > ${tmp_loc}/server_info.txt
+if [[ -x ${rippled_exe} ]]
+then
+    pgrep rippled && \
+    ${rippled_exe} --conf ${conf_file} \
+    -- server_info                  > ${tmp_loc}/server_info.txt
+fi
+
 df -h                               > ${tmp_loc}/free_disk_space.txt
 cat /proc/meminfo                   > ${tmp_loc}/amount_mem.txt
 cat /proc/swaps                     > ${tmp_loc}/swap_space.txt
@@ -70,3 +79,6 @@ done
 pushd ${tmp_loc}
 tar -czvf info-package.tar.gz *.txt *.log
 popd
+
+echo "Use the following command on your local machine to download from your rippled instance: scp <remote_rippled_username>@<remote_host>:${tmp_loc}/info-package.tar.gz <path/to/local_machine/directory>"| tee /dev/fd/3
+
