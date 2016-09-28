@@ -25,9 +25,7 @@
 #include <ripple/nodestore/impl/codec.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
-#include <ripple/beast/nudb.h>
-#include <ripple/beast/nudb/visit.h>
-#include <ripple/beast/hash/xxhasher.h>
+#include <nudb/nudb.hpp>
 #include <boost/filesystem.hpp>
 #include <cassert>
 #include <chrono>
@@ -52,13 +50,10 @@ public:
         currentType = 1
     };
 
-    using api = beast::nudb::api<
-        beast::xxhasher, nodeobject_codec>;
-
     beast::Journal journal_;
     size_t const keyBytes_;
     std::string const name_;
-    api::store db_;
+    nudb::store db_;
     std::atomic <bool> deletePath_;
     Scheduler& scheduler_;
 
@@ -78,15 +73,19 @@ public:
         auto const dp = (folder / "nudb.dat").string();
         auto const kp = (folder / "nudb.key").string ();
         auto const lp = (folder / "nudb.log").string ();
-        using beast::nudb::make_salt;
-        api::create (dp, kp, lp,
-            currentType, make_salt(), keyBytes,
-                beast::nudb::block_size(kp),
-            0.50);
         try
         {
-            if (! db_.open (dp, kp, lp, arena_alloc_size))
-                Throw<std::runtime_error> ("nodestore: open failed");
+            nudb::error_code ec;
+            nudb::create<nudb::xxhasher>(dp, kp, lp,
+                currentType, nudb::make_salt(), keyBytes,
+                    nudb::block_size(kp), 0.50, ec);
+            if(ec == nudb::errc::file_exists)
+                ec = {};
+            if(ec)
+                Throw<nudb::system_error>(ec);
+            db_.open (dp, kp, lp, ec);
+            if(ec)
+                Throw<nudb::system_error>(ec);
             if (db_.appnum() != currentType)
                 Throw<std::runtime_error> ("nodestore: unknown appnum");
         }
@@ -114,7 +113,10 @@ public:
     {
         if (db_.is_open())
         {
-            db_.close();
+            nudb::error_code ec;
+            db_.close(ec);
+            if(ec)
+                Throw<nudb::system_error>(ec);
             if (deletePath_)
             {
                 boost::filesystem::remove_all (name_);
@@ -127,10 +129,14 @@ public:
     {
         Status status;
         pno->reset();
-        if (! db_.fetch (key,
+        nudb::error_code ec;
+        db_.fetch (key,
             [key, pno, &status](void const* data, std::size_t size)
             {
-                DecodedBlob decoded (key, data, size);
+                nudb::detail::buffer bf;
+                auto const result =
+                    nodeobject_decompress(data, size, bf);
+                DecodedBlob decoded (key, result.first, result.second);
                 if (! decoded.wasOk ())
                 {
                     status = dataCorrupt;
@@ -138,10 +144,11 @@ public:
                 }
                 *pno = decoded.createObject();
                 status = ok;
-            }))
-        {
+            }, ec);
+        if(ec == nudb::error::key_not_found)
             return notFound;
-        }
+        if(ec)
+            Throw<nudb::system_error>(ec);
         return status;
     }
 
@@ -163,8 +170,13 @@ public:
     {
         EncodedBlob e;
         e.prepare (no);
-        db_.insert (e.getKey(),
-            e.getData(), e.getSize());
+        nudb::error_code ec;
+        nudb::detail::buffer bf;
+        auto const result = nodeobject_compress(
+            e.getData(), e.getSize(), bf);
+        db_.insert (e.getKey(), result.first, result.second, ec);
+        if(ec && ec != nudb::error::key_exists)
+            Throw<nudb::system_error>(ec);
     }
 
     void
@@ -204,20 +216,32 @@ public:
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
         //auto const appnum = db_.appnum();
-        db_.close();
-        api::visit (dp,
+        nudb::error_code ec;
+        db_.close(ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
+        nudb::visit(dp,
             [&](
                 void const* key, std::size_t key_bytes,
-                void const* data, std::size_t size)
+                void const* data, std::size_t size,
+                nudb::error_code&)
             {
-                DecodedBlob decoded (key, data, size);
+                nudb::detail::buffer bf;
+                auto const result =
+                    nodeobject_decompress(data, size, bf);
+                DecodedBlob decoded (key, result.first, result.second);
                 if (! decoded.wasOk ())
-                    return false;
+                {
+                    ec = make_error_code(nudb::error::missing_value);
+                    return;
+                }
                 f (decoded.createObject());
-                return true;
-            });
-        db_.open (dp, kp, lp,
-            arena_alloc_size);
+            }, nudb::no_progress{}, ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
+        db_.open(dp, kp, lp, ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
     }
 
     int
@@ -238,10 +262,18 @@ public:
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
-        db_.close();
-        api::verify (dp, kp);
-        db_.open (dp, kp, lp,
-            arena_alloc_size);
+        nudb::error_code ec;
+        db_.close(ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
+        nudb::verify_info vi;
+        nudb::verify<nudb::xxhasher>(
+            vi, dp, kp, 0, nudb::no_progress{}, ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
+        db_.open (dp, kp, lp, ec);
+        if(ec)
+            Throw<nudb::system_error>(ec);
     }
 
     /** Returns the number of file handles the backend expects to need */

@@ -278,7 +278,7 @@ endif()
 ############################################################
 
 include_directories(src src/beast src/beast/include src/beast/extras
-  src/soci/src src/soci/include)
+  src/nudb/include src/soci/src src/soci/include)
 
 if (coverage)
   add_compile_options(-fprofile-arcs -ftest-coverage)
@@ -696,7 +696,7 @@ if (WIN32 OR is_xcode OR NOT unity)
   set(non_unity_srcs ${core_srcs})
 
   foreach(curdir
-      beast/clock beast/container beast/insight beast/net beast/nudb beast/utility
+      beast/clock beast/container beast/insight beast/net beast/utility
       app basics crypto json ledger legacy net overlay peerfinder protocol rpc
       shamap server test)
     file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)

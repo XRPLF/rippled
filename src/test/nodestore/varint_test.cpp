@@ -36,15 +36,15 @@ public:
         for (auto const v : vv)
         {
             std::array<std::uint8_t,
-                detail::varint_traits<
+                varint_traits<
                     std::size_t>::max> vi;
             auto const n0 =
-                detail::write_varint(
+                write_varint(
                     vi.data(), v);
             expect (n0 > 0, "write error");
             std::size_t v1;
             auto const n1 =
-                detail::read_varint(
+                read_varint(
                     vi.data(), n0, v1);
             expect(n1 == n0, "read error");
             expect(v == v1, "wrong value");

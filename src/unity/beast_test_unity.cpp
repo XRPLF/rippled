@@ -24,10 +24,6 @@
 #include <test/beast/beast_basic_seconds_clock_test.cpp>
 #include <test/beast/beast_Debug_test.cpp>
 #include <test/beast/beast_Journal_test.cpp>
-#include <test/beast/beast_nudb_callgrind_test.cpp>
-#include <test/beast/beast_nudb_recover_test.cpp>
-#include <test/beast/beast_nudb_store_test.cpp>
-#include <test/beast/beast_nudb_verify_test.cpp>
 #include <test/beast/beast_PropertyStream_test.cpp>
 #include <test/beast/beast_tagged_integer_test.cpp>
 #include <test/beast/beast_weak_fn_test.cpp>
