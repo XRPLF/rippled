@@ -1,0 +1,89 @@
+language: cpp
+
+env:
+  global:
+    - LLVM_VERSION=3.8.0
+    # Maintenance note: to move to a new version
+    # of boost, update both BOOST_ROOT and BOOST_URL.
+    # Note that for simplicity, BOOST_ROOT's final
+    # namepart must match the folder name internal
+    # to boost's .tar.gz.
+    - LCOV_ROOT=$HOME/lcov
+    - VALGRIND_ROOT=$HOME/valgrind-install
+    - BOOST_ROOT=$HOME/boost_1_60_0
+    - BOOST_URL='http://downloads.sourceforge.net/project/boost/boost/1.60.0/boost_1_60_0.tar.gz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.60.0%2Fboost_1_60_0.tar.gz&ts=1460417589&use_mirror=netix'
+packages: &gcc5_pkgs
+  - gcc-5
+  - g++-5
+  - python-software-properties
+  - libssl-dev
+  - libffi-dev
+  - libstdc++6
+  - binutils-gold
+  # Provides a backtrace if the unittests crash
+  - gdb
+  # Needed for installing valgrind
+  - subversion
+  - automake
+  - autotools-dev
+  - libc6-dbg
+  # Needed to build rocksdb
+  - libsnappy-dev
+
+matrix:
+  include:
+    # GCC/Coverage/Autobahn
+    - compiler: gcc
+      env:
+        - GCC_VER=5
+        - VARIANT=coverage
+        - ADDRESS_MODEL=64
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+      addons: &ao_gcc5
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: *gcc5_pkgs
+
+    # Clang/UndefinedBehaviourSanitizer
+    - compiler: clang
+      env:
+        - GCC_VER=5
+        - VARIANT=usan
+        - CLANG_VER=3.8
+        - ADDRESS_MODEL=64
+        - UBSAN_OPTIONS='print_stacktrace=1'
+        - BUILD_SYSTEM=cmake
+        - PATH=$PWD/cmake/bin:$PATH
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons: *ao_gcc5
+
+    # Clang/AddressSanitizer
+    - compiler: clang
+      env:
+        - GCC_VER=5
+        - VARIANT=asan
+        - CLANG_VER=3.8
+        - ADDRESS_MODEL=64
+        - PATH=$PWD/llvm-$LLVM_VERSION/bin:$PATH
+      addons: *ao_gcc5
+
+cache:
+  directories:
+  - $BOOST_ROOT
+  - $VALGRIND_ROOT
+  - llvm-$LLVM_VERSION
+  - cmake
+
+before_install:
+  - scripts/install-dependencies.sh
+
+script:
+  - scripts/build-and-test.sh
+
+after_script:
+  - cat nohup.out || echo "nohup.out already deleted"
+
+notifications:
+  email:
+    false
