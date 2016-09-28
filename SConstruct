@@ -771,6 +771,7 @@ base.Append(CPPPATH=[
     os.path.join('src', 'beast'),
     os.path.join('src', 'beast', 'include'),
     os.path.join('src', 'beast', 'extras'),
+    os.path.join('src', 'nudb', 'include'),
     os.path.join(build_dir, 'proto'),
     os.path.join('src','soci','src'),
     os.path.join('src','soci','include'),
@@ -908,7 +909,6 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/beast/container', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/insight', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/net', '.cpp'))
-    append_sources(result, *list_sources('src/ripple/beast/nudb', '.cpp'))
     append_sources(result, *list_sources('src/ripple/beast/utility', '.cpp'))
     append_sources(result, *list_sources('src/ripple/app', '.cpp'))
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
@@ -1219,7 +1219,13 @@ for key, value in aliases.iteritems():
 vcxproj = base.VSProject(
     os.path.join('Builds', 'VisualStudio2015', 'RippleD'),
     source = [],
-    VSPROJECT_ROOT_DIRS = ['src/beast', 'src/beast/include', 'src/beast/extras', 'src', '.'],
+    VSPROJECT_ROOT_DIRS = [
+        'build/',
+        'src/beast/extras',
+        'src/beast/include',
+        'src/nudb/include',
+        'src',
+        '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)
 

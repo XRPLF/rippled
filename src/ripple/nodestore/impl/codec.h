@@ -21,8 +21,7 @@
 #define RIPPLE_NODESTORE_CODEC_H_INCLUDED
 
 #include <ripple/basics/contract.h>
-#include <ripple/beast/nudb/common.h>
-#include <ripple/beast/nudb/detail/field.h>
+#include <nudb/detail/field.hpp>
 #include <ripple/nodestore/impl/varint.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -34,8 +33,6 @@
 
 namespace ripple {
 namespace NodeStore {
-
-namespace detail {
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
@@ -63,14 +60,14 @@ snappy_decompress (void const* in,
     if (! snappy::GetUncompressedLength(
             reinterpret_cast<char const*>(in),
                 in_size, &result.second))
-        Throw<beast::nudb::codec_error> (
+        Throw<std::runtime_error> (
             "snappy decompress");
     void* const out = bf(result.second);
     result.first = out;
     if (! snappy::RawUncompress(
         reinterpret_cast<char const*>(in), in_size,
             reinterpret_cast<char*>(out)))
-        Throw<beast::nudb::codec_error> (
+        Throw<std::runtime_error> (
             "snappy decompress");
     return result;
 }
@@ -80,15 +77,15 @@ std::pair<void const*, std::size_t>
 lz4_decompress (void const* in,
     std::size_t in_size, BufferFactory&& bf)
 {
-    using beast::nudb::codec_error;
-    using namespace beast::nudb::detail;
+    using std::runtime_error;
+    using namespace nudb::detail;
     std::pair<void const*, std::size_t> result;
     std::uint8_t const* p = reinterpret_cast<
         std::uint8_t const*>(in);
     auto const n = read_varint(
         p, in_size, result.second);
     if (n == 0)
-        Throw<codec_error> (
+        Throw<std::runtime_error> (
             "lz4 decompress");
     void* const out = bf(result.second);
     result.first = out;
@@ -96,7 +93,7 @@ lz4_decompress (void const* in,
         reinterpret_cast<char const*>(in) + n,
             reinterpret_cast<char*>(out),
                 result.second) + n != in_size)
-        Throw<codec_error> (
+        Throw<std::runtime_error> (
             "lz4 decompress");
     return result;
 }
@@ -106,8 +103,8 @@ std::pair<void const*, std::size_t>
 lz4_compress (void const* in,
     std::size_t in_size, BufferFactory&& bf)
 {
-    using beast::nudb::codec_error;
-    using namespace beast::nudb::detail;
+    using std::runtime_error;
+    using namespace nudb::detail;
     std::pair<void const*, std::size_t> result;
     std::array<std::uint8_t, varint_traits<
         std::size_t>::max> vi;
@@ -124,7 +121,7 @@ lz4_compress (void const* in,
             reinterpret_cast<char*>(out + n),
                 in_size);
     if (out_size == 0)
-        Throw<codec_error> (
+        Throw<std::runtime_error> (
             "lz4 compress");
     result.second = n + out_size;
     return result;
@@ -146,8 +143,7 @@ std::pair<void const*, std::size_t>
 nodeobject_decompress (void const* in,
     std::size_t in_size, BufferFactory&& bf)
 {
-    using beast::nudb::codec_error;
-    using namespace beast::nudb::detail;
+    using namespace nudb::detail;
 
     std::uint8_t const* p = reinterpret_cast<
         std::uint8_t const*>(in);
@@ -155,7 +151,7 @@ nodeobject_decompress (void const* in,
     auto const vn = read_varint(
         p, in_size, type);
     if (vn == 0)
-        Throw<codec_error> (
+        Throw<std::runtime_error> (
             "nodeobject decompress");
     p += vn;
     in_size -= vn;
@@ -180,7 +176,7 @@ nodeobject_decompress (void const* in,
         auto const hs =
             field<std::uint16_t>::size; // Mask
         if (in_size < hs + 32)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: short inner node");
         istream is(p, in_size);
         std::uint16_t mask;
@@ -193,9 +189,10 @@ nodeobject_decompress (void const* in,
         write<std::uint32_t>(os, 0);
         write<std::uint32_t>(os, 0);
         write<std::uint8_t> (os, hotUNKNOWN);
-        write<std::uint32_t>(os, HashPrefix::innerNode);
+        write<std::uint32_t>(os,
+            static_cast<std::uint32_t>(HashPrefix::innerNode));
         if (mask == 0)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: empty inner node");
         std::uint16_t bit = 0x8000;
         for (int i = 16; i--; bit >>= 1)
@@ -203,7 +200,7 @@ nodeobject_decompress (void const* in,
             if (mask & bit)
             {
                 if (in_size < 32)
-                    Throw<codec_error> (
+                    Throw<std::runtime_error> (
                         "nodeobject codec: short inner node");
                 std::memcpy(os.data(32), is(32), 32);
                 in_size -= 32;
@@ -214,14 +211,14 @@ nodeobject_decompress (void const* in,
             }
         }
         if (in_size > 0)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: long inner node");
         break;
     }
     case 3: // full v1 inner node
     {
         if (in_size != 16 * 32) // hashes
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: short full inner node");
         istream is(p, in_size);
         result.second = 525;
@@ -231,7 +228,8 @@ nodeobject_decompress (void const* in,
         write<std::uint32_t>(os, 0);
         write<std::uint32_t>(os, 0);
         write<std::uint8_t> (os, hotUNKNOWN);
-        write<std::uint32_t>(os, HashPrefix::innerNode);
+        write<std::uint32_t>(os,
+            static_cast<std::uint32_t>(HashPrefix::innerNode));
         write(os, is(512), 512);
         break;
     }
@@ -240,7 +238,7 @@ nodeobject_decompress (void const* in,
         auto const hs =
             field<std::uint16_t>::size; // Mask size
         if (in_size < hs + 65)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: short inner node");
         istream is(p, in_size);
         std::uint16_t mask;
@@ -256,9 +254,10 @@ nodeobject_decompress (void const* in,
         write<std::uint32_t>(os, 0);
         write<std::uint32_t>(os, 0);
         write<std::uint8_t> (os, hotUNKNOWN);
-        write<std::uint32_t>(os, HashPrefix::innerNodeV2);
+        write<std::uint32_t>(os,
+            static_cast<std::uint32_t>(HashPrefix::innerNodeV2));
         if (mask == 0)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: empty inner node");
         std::uint16_t bit = 0x8000;
         for (int i = 16; i--; bit >>= 1)
@@ -266,7 +265,7 @@ nodeobject_decompress (void const* in,
             if (mask & bit)
             {
                 if (in_size < 32)
-                    Throw<codec_error> (
+                    Throw<std::runtime_error> (
                         "nodeobject codec: short inner node");
                 std::memcpy(os.data(32), is(32), 32);
                 in_size -= 32;
@@ -278,12 +277,12 @@ nodeobject_decompress (void const* in,
         }
         write<std::uint8_t>(os, depth);
         if (in_size < (depth+1)/2)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: short inner node");
         std::memcpy(os.data((depth+1)/2), is((depth+1)/2), (depth+1)/2);
         in_size -= (depth+1)/2;
         if (in_size > 0)
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: long inner node");
         break;
     }
@@ -295,7 +294,7 @@ nodeobject_decompress (void const* in,
         in_size -= 1;
         result.second = 525 + 1 + (depth+1)/2;
         if (in_size != 16 * 32 + (depth+1)/2) // hashes and common
-            Throw<codec_error> (
+            Throw<std::runtime_error> (
                 "nodeobject codec: short full inner node");
         void* const out = bf(result.second);
         result.first = out;
@@ -303,14 +302,15 @@ nodeobject_decompress (void const* in,
         write<std::uint32_t>(os, 0);
         write<std::uint32_t>(os, 0);
         write<std::uint8_t> (os, hotUNKNOWN);
-        write<std::uint32_t>(os, HashPrefix::innerNodeV2);
+        write<std::uint32_t>(os,
+            static_cast<std::uint32_t>(HashPrefix::innerNodeV2));
         write(os, is(512), 512);
         write<std::uint8_t>(os, depth);
         write(os, is((depth+1)/2), (depth+1)/2);
         break;
     }
     default:
-        Throw<codec_error> (
+        Throw<std::runtime_error> (
             "nodeobject codec: bad type=" +
                 std::to_string(type));
     };
@@ -336,8 +336,8 @@ std::pair<void const*, std::size_t>
 nodeobject_compress (void const* in,
     std::size_t in_size, BufferFactory&& bf)
 {
-    using beast::nudb::codec_error;
-    using namespace beast::nudb::detail;
+    using std::runtime_error;
+    using namespace nudb::detail;
 
     std::size_t type = 1;
     // Check for inner node v1
@@ -529,8 +529,6 @@ nodeobject_compress (void const* in,
     return result;
 }
 
-} // detail
-
 // Modifies an inner node to erase the ledger
 // sequence and type information so the codec
 // verification can pass.
@@ -539,8 +537,7 @@ template <class = void>
 void
 filter_inner (void* in, std::size_t in_size)
 {
-    using beast::nudb::codec_error;
-    using namespace beast::nudb::detail;
+    using namespace nudb::detail;
 
     // Check for inner node
     if (in_size == 525)
@@ -563,106 +560,6 @@ filter_inner (void* in, std::size_t in_size)
         }
     }
 }
-
-//------------------------------------------------------------------------------
-
-class snappy_codec
-{
-public:
-    template <class... Args>
-    explicit
-    snappy_codec(Args&&... args)
-    {
-    }
-
-    char const*
-    name() const
-    {
-        return "snappy";
-    }
-
-    template <class BufferFactory>
-    std::pair<void const*, std::size_t>
-    compress (void const* in,
-        std::size_t in_size, BufferFactory&& bf) const
-    {
-        return snappy_compress(in, in_size, bf);
-    }
-
-    template <class BufferFactory>
-    std::pair<void const*, std::size_t>
-    decompress (void const* in,
-        std::size_t in_size, BufferFactory&& bf) const
-    {
-        return snappy_decompress(in, in_size, bf);
-    }
-};
-
-class lz4_codec
-{
-public:
-    template <class... Args>
-    explicit
-    lz4_codec(Args&&... args)
-    {
-    }
-
-    char const*
-    name() const
-    {
-        return "lz4";
-    }
-
-    template <class BufferFactory>
-    std::pair<void const*, std::size_t>
-    decompress (void const* in,
-        std::size_t in_size, BufferFactory&& bf) const
-    {
-        return lz4_compress(in, in_size, bf);
-    }
-
-    template <class BufferFactory>
-    std::pair<void const*, std::size_t>
-    compress (void const* in,
-        std::size_t in_size, BufferFactory&& bf) const
-    {
-        return lz4_compress(in, in_size, bf);
-    }
-};
-
-class nodeobject_codec
-{
-public:
-    template <class... Args>
-    explicit
-    nodeobject_codec(Args&&... args)
-    {
-    }
-
-    char const*
-    name() const
-    {
-        return "nodeobject";
-    }
-
-    template <class BufferFactory>
-    std::pair<void const*, std::size_t>
-    decompress (void const* in,
-        std::size_t in_size, BufferFactory&& bf) const
-    {
-        return detail::nodeobject_decompress(
-            in, in_size, bf);
-    }
-
-    template <class BufferFactory>
-    std::pair<void const*, std::size_t>
-    compress (void const* in,
-        std::size_t in_size, BufferFactory&& bf) const
-    {
-        return detail::nodeobject_compress(
-            in, in_size, bf);
-    }
-};
 
 } // NodeStore
 } // ripple
