@@ -691,7 +691,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
 
     }
 
-    mLedgerConsensus->timerEntry ();
+    mLedgerConsensus->timerEntry (app_.timeKeeper().closeTime());
 
     setHeartbeatTimer ();
 }
@@ -1486,10 +1486,10 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
             m_ledgerMaster.getClosedLedger()->info().hash);
 
     mConsensus->startRound (
+        app_.timeKeeper().closeTime(),
         *mLedgerConsensus,
         networkClosed,
-        prevLedger,
-        closingInfo.closeTime);
+        prevLedger);
 
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
@@ -1507,7 +1507,8 @@ void NetworkOPsImp::processTrustedProposal (
 {
     mConsensus->storeProposal (proposal, node);
 
-    if (mLedgerConsensus->peerPosition (*proposal))
+    if (mLedgerConsensus->peerPosition (
+        app_.timeKeeper().closeTime(), *proposal))
         app_.overlay().relay(*set, proposal->getSuppressionID());
     else
         JLOG(m_journal.info()) << "Not relaying trusted proposal";
@@ -1531,7 +1532,9 @@ NetworkOPsImp::mapComplete (
 
     // We acquired it because consensus asked us to
     if (fromAcquire)
-        mLedgerConsensus->gotMap (RCLTxSet{map});
+        mLedgerConsensus->gotMap (
+            app_.timeKeeper().closeTime(),
+            RCLTxSet{map});
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
@@ -2679,7 +2682,9 @@ std::uint32_t NetworkOPsImp::acceptLedger (
     // FIXME Could we improve on this and remove the need for a specialized
     // API in LedgerConsensus?
     beginConsensus (m_ledgerMaster.getClosedLedger()->info().hash);
-    mLedgerConsensus->simulate (consensusDelay);
+    mLedgerConsensus->simulate (
+        app_.timeKeeper().closeTime(),
+        consensusDelay);
     return m_ledgerMaster.getCurrentLedger ()->info().seq;
 }
 

@@ -113,9 +113,9 @@ public:
         @param previousConvergeTime how long the last round took (ms)
     */
     void startRound (
+        Time_t const& now,
         LgrID_t const& prevLCLHash,
         std::shared_ptr<Ledger const> const& prevLedger,
-        Time_t closeTime,
         int previousProposers,
         std::chrono::milliseconds previousConvergeTime) override;
 
@@ -136,12 +136,14 @@ public:
 
       @param map      the transaction set.
     */
-    void gotMap (TxSet_t const& map) override;
+    void gotMap (
+        Time_t const& now,
+        TxSet_t const& map) override;
 
     /**
       On timer call the correct handler for each state.
     */
-    void timerEntry () override;
+    void timerEntry (Time_t const& now) override;
 
     /**
       A server has taken a new position, adjust our tracking
@@ -150,9 +152,12 @@ public:
       @param newPosition the new position
       @return            true if we should do delayed relay of this position.
     */
-    bool peerPosition (Pos_t const& newPosition) override;
+    bool peerPosition (
+        Time_t const& now,
+        Pos_t const& newPosition) override;
 
     void simulate(
+        Time_t const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay) override;
 
     /**
@@ -301,6 +306,7 @@ private:
 
     NodeID_t ourID_;
     State state_;
+    Time_t now_;
 
     // The wall time this ledger closed
     Time_t closeTime_;

@@ -76,10 +76,10 @@ public:
     virtual
     void
     startRound (
+        NetClock::time_point now,
         LedgerConsensus<RCLCxTraits>& consensus,
         LedgerHash const &prevLCLHash,
-        std::shared_ptr<Ledger const> const& previousLedger,
-        NetClock::time_point closeTime) = 0;
+        std::shared_ptr<Ledger const> const& prevLedger) = 0;
 
     /** Specified the network time when the last ledger closed */
     virtual

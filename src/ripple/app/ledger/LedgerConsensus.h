@@ -56,16 +56,16 @@ public:
 
     virtual LgrID_t getLCL () = 0;
 
-    virtual void gotMap (TxSet_t const& map) = 0;
+    virtual void gotMap (Time_t const& now, TxSet_t const& map) = 0;
 
-    virtual void timerEntry () = 0;
+    virtual void timerEntry (Time_t const& now) = 0;
 
-    virtual bool peerPosition (Pos_t const& position) = 0;
+    virtual bool peerPosition (Time_t const& now, Pos_t const& position) = 0;
 
     virtual void startRound (
+        Time_t const& now,
         LgrID_t const& prevLCLHash,
         std::shared_ptr<Ledger const> const& prevLedger,
-        Time_t closeTime,
         int previousProposers,
         std::chrono::milliseconds previousConvergeTime) = 0;
 
@@ -79,6 +79,7 @@ public:
         consensus process.
     */
     virtual void simulate (
+        Time_t const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay) = 0;
 };
 

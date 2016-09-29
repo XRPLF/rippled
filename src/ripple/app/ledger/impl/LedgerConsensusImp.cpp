@@ -71,7 +71,6 @@ LedgerConsensusImp<Traits>::LedgerConsensusImp (
     , feeVote_ (feeVote)
     , ourID_ (calcNodeID (app.nodeIdentity().first))
     , state_ (State::open)
-    , closeTime_ {}
     , valPublic_ (app_.config().VALIDATION_PUB)
     , valSecret_ (app_.config().VALIDATION_PRIV)
     , consensusFail_ (false)
@@ -297,9 +296,12 @@ LedgerConsensusImp<Traits>::mapCompleteInternal (
 
 template <class Traits>
 void LedgerConsensusImp<Traits>::gotMap (
+    Time_t const& now,
     TxSet_t const& map)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
+
+    now_ = now;
 
     try
     {
@@ -462,17 +464,19 @@ void LedgerConsensusImp<Traits>::handleLCL (LgrID_t const& lclHash)
     JLOG (j_.info()) <<
         "Have the consensus ledger " << prevLedgerHash_;
     startRound (
+        now_,
         lclHash,
         buildLCL,
-        closeTime_,
         previousProposers_,
         previousRoundTime_);
 }
 
 template <class Traits>
-void LedgerConsensusImp<Traits>::timerEntry ()
+void LedgerConsensusImp<Traits>::timerEntry (Time_t const& now)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
+
+    now_ = now;
 
     try
     {
@@ -547,11 +551,10 @@ void LedgerConsensusImp<Traits>::statePreClose ()
             ? previousLedger_->info().closeTime // use consensus timing
             : consensus_.getLastCloseTime(); // use the time we saw
 
-        auto now = app_.timeKeeper().closeTime();
-        if (now >= closeTime)
-            sinceClose = now - closeTime;
+        if (now_ >= closeTime)
+            sinceClose = now_ - closeTime;
         else
-            sinceClose = -milliseconds{closeTime - now};
+            sinceClose = -milliseconds{closeTime - now_};
     }
 
     auto const idleInterval = std::max<seconds>(LEDGER_IDLE_INTERVAL,
@@ -659,11 +662,15 @@ bool LedgerConsensusImp<Traits>::haveConsensus ()
 }
 
 template <class Traits>
-bool LedgerConsensusImp<Traits>::peerPosition (Pos_t const& newPosition)
+bool LedgerConsensusImp<Traits>::peerPosition (
+    Time_t const& now,
+    Pos_t const& newPosition)
 {
     auto const peerID = newPosition.getNodeID ();
 
     std::lock_guard<std::recursive_mutex> _(lock_);
+
+    now_ = now;
 
     if (newPosition.getPrevLedger() != prevLedgerHash_)
     {
@@ -757,11 +764,13 @@ bool LedgerConsensusImp<Traits>::peerPosition (Pos_t const& newPosition)
 
 template <class Traits>
 void LedgerConsensusImp<Traits>::simulate (
+    Time_t const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::lock_guard<std::recursive_mutex> _(lock_);
 
     JLOG (j_.info()) << "Simulating consensus";
+    now_ = now;
     closeLedger ();
     roundTime_ = consensusDelay.value_or(100ms);
     beginAccept (true);
@@ -814,8 +823,7 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
     {
         // Build the new last closed ledger
         auto buildLCL = std::make_shared<Ledger>(
-            *previousLedger_,
-            app_.timeKeeper().closeTime());
+            *previousLedger_, now_);
         auto const v2_enabled = buildLCL->rules().enabled(featureSHAMapV2);
         auto v2_transition = false;
         if (v2_enabled && !buildLCL->stateMap().is_v2())
@@ -910,7 +918,7 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
     {
         // Build validation
         auto v = std::make_shared<STValidation> (newLCLHash,
-            consensus_.validationTimestamp(app_.timeKeeper().now()),
+            consensus_.validationTimestamp(now_),
             valPublic_, proposing_);
         v->setFieldU32 (sfLedgerSequence, sharedLCL->info().seq);
         addLoad(v);  // Our network load
@@ -1155,7 +1163,7 @@ void LedgerConsensusImp<Traits>::leaveConsensus ()
 {
     if (ourPosition_ && ! ourPosition_->isBowOut ())
     {
-        ourPosition_->bowOut(app_.timeKeeper().closeTime());
+        ourPosition_->bowOut(now_);
         propose();
     }
     proposing_ = false;
@@ -1294,7 +1302,7 @@ LedgerConsensusImp<Traits>::makeInitialPosition () ->
             initialLedger->info().parentHash,
             setHash,
             closeTime_,
-            app_.timeKeeper().closeTime()});
+            now_});
 }
 
 template <class Traits>
@@ -1371,9 +1379,8 @@ template <class Traits>
 void LedgerConsensusImp<Traits>::updateOurPositions ()
 {
     // Compute a cutoff time
-    auto peerCutoff = app_.timeKeeper().closeTime();
-    auto ourCutoff = peerCutoff - PROPOSE_INTERVAL;
-    peerCutoff -= PROPOSE_FRESHNESS;
+    auto peerCutoff = now_ - PROPOSE_FRESHNESS;
+    auto ourCutoff = now_ - PROPOSE_INTERVAL;
 
     // Verify freshness of peer positions and compute close times
     std::map<NetClock::time_point, int> closeTimes;
@@ -1529,8 +1536,8 @@ void LedgerConsensusImp<Traits>::updateOurPositions ()
             << closeTime.time_since_epoch().count()
             << ", tx " << newHash;
 
-        if (ourPosition_->changePosition (newHash, closeTime,
-            app_.timeKeeper().closeTime()))
+        if (ourPosition_->changePosition (
+            newHash, closeTime, now_))
         {
             if (proposing_)
                 propose ();
@@ -1573,7 +1580,7 @@ void LedgerConsensusImp<Traits>::playbackProposals ()
 
     for (auto& proposal : proposals)
     {
-        if (peerPosition (proposal))
+        if (peerPosition (now_, proposal))
         {
             // Now that we know this proposal
             // is useful, relay it
@@ -1587,7 +1594,7 @@ void LedgerConsensusImp<Traits>::closeLedger ()
 {
     state_ = State::establish;
     consensusStartTime_ = std::chrono::steady_clock::now ();
-    closeTime_ = app_.timeKeeper().closeTime();
+    closeTime_ = now_;
     consensus_.setLastCloseTime(closeTime_);
     statusChange (protocol::neCLOSING_LEDGER, *previousLedger_);
     ledgerMaster_.applyHeldTransactions ();
@@ -1628,9 +1635,9 @@ void LedgerConsensusImp<Traits>::endConsensus (bool correctLCL)
 
 template <class Traits>
 void LedgerConsensusImp<Traits>::startRound (
+    Time_t const& now,
     LgrID_t const& prevLCLHash,
     std::shared_ptr<Ledger const> const& prevLedger,
-    Time_t closeTime,
     int previousProposers,
     std::chrono::milliseconds previousConvergeTime)
 {
@@ -1643,7 +1650,8 @@ void LedgerConsensusImp<Traits>::startRound (
     }
 
     state_ = State::open;
-    closeTime_ = closeTime;
+    now_ = now;
+    closeTime_ = now;
     prevLedgerHash_ = prevLCLHash;
     previousLedger_ = prevLedger;
     ourPosition_.reset();
@@ -1718,7 +1726,7 @@ void LedgerConsensusImp<Traits>::startRound (
     {
         // We may be falling behind, don't wait for the timer
         // consider closing the ledger immediately
-        timerEntry ();
+        timerEntry (now_);
     }
 
 }

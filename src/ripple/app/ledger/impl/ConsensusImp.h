@@ -61,10 +61,10 @@ public:
 
     void
     startRound (
+        NetClock::time_point now,
         LedgerConsensus<RCLCxTraits>& ledgerConsensus,
         LedgerHash const& prevLCLHash,
-        std::shared_ptr<Ledger const> const& previousLedger,
-        NetClock::time_point closeTime) override;
+        std::shared_ptr<Ledger const> const& previousLedger) override;
 
     void
     setLastCloseTime (NetClock::time_point t) override;

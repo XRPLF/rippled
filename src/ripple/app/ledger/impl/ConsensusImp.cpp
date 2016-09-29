@@ -76,15 +76,15 @@ ConsensusImp::makeLedgerConsensus (
 
 void
 ConsensusImp::startRound (
+    NetClock::time_point now,
     LedgerConsensus<RCLCxTraits>& consensus,
     LedgerHash const &prevLCLHash,
-    std::shared_ptr<Ledger const> const& previousLedger,
-    NetClock::time_point closeTime)
+    std::shared_ptr<Ledger const> const& prevLedger)
 {
     consensus.startRound (
+        now,
         prevLCLHash,
-        previousLedger,
-        closeTime,
+        prevLedger,
         lastCloseProposers_,
         lastCloseConvergeTook_);
 }
