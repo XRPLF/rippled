@@ -18,15 +18,15 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/beast/hash/xxhasher.h>
 #include <ripple/basics/contract.h>
 #include <ripple/nodestore/impl/codec.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/nudb/create.h>
-#include <ripple/beast/nudb/detail/format.h>
 #include <ripple/beast/unit_test.h>
+#include <nudb/create.hpp>
+#include <nudb/detail/format.hpp>
+#include <nudb/xxhasher.hpp>
 #include <beast/core/detail/ci_char_traits.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
@@ -304,8 +304,8 @@ public:
     {
         testcase(beast::unit_test::abort_on_fail) << arg();
 
-        using namespace beast::nudb;
-        using namespace beast::nudb::detail;
+        using namespace nudb;
+        using namespace nudb::detail;
 
         pass();
         auto const args = parse_args(arg());
@@ -354,8 +354,7 @@ public:
         auto const from_path = args.at("from");
         auto const to_path = args.at("to");
 
-        using hash_type = beast::xxhasher;
-        using codec_type = nodeobject_codec;
+        using hash_type = nudb::xxhasher;
         auto const bulk_size = 64 * 1024 * 1024;
         float const load_factor = 0.5;
 
@@ -395,12 +394,17 @@ public:
         dh.key_size = 32;
 
         native_file df;
-        df.create(file_mode::append, dp);
+        error_code ec;
+        df.create(file_mode::append, dp, ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
         bulk_writer<native_file> dw(
             df, 0, bulk_size);
         {
             {
-                auto os = dw.prepare(dat_file_header::size);
+                auto os = dw.prepare(dat_file_header::size, ec);
+                if (ec)
+                    Throw<nudb::system_error>(ec);
                 write(os, dh);
             }
             rocksdb::ReadOptions options;
@@ -410,7 +414,6 @@ public:
                 db->NewIterator(options));
 
             buffer buf;
-            codec_type codec;
             for (it->SeekToFirst (); it->Valid (); it->Next())
             {
                 if (it->key().size() != 32)
@@ -424,12 +427,12 @@ public:
                     new char[size]);
                 std::memcpy(clean.get(), data, size);
                 filter_inner(clean.get(), size);
-                auto const out = codec.compress(
+                auto const out = nodeobject_compress(
                     clean.get(), size, buf);
                 // Verify codec correctness
                 {
                     buffer buf2;
-                    auto const check = codec.decompress(
+                    auto const check = nodeobject_decompress(
                         out.first, out.second, buf2);
                     BEAST_EXPECT(check.second == size);
                     BEAST_EXPECT(std::memcmp(
@@ -439,7 +442,9 @@ public:
                 auto os = dw.prepare(
                     field<uint48_t>::size + // Size
                     32 +                    // Key
-                    out.second);
+                    out.second, ec);
+                if (ec)
+                    Throw<nudb::system_error>(ec);
                 write<uint48_t>(os, out.second);
                 std::memcpy(os.data(32), key, 32);
                 std::memcpy(os.data(out.second),
@@ -447,14 +452,17 @@ public:
                 ++nitems;
                 nbytes += size;
             }
-            dw.flush();
+            dw.flush(ec);
+            if (ec)
+                Throw<nudb::system_error>(ec);
         }
         db.reset();
         log <<
             "Import data: " << detail::fmtdur(
                 std::chrono::steady_clock::now() - start);
-        auto const df_size =
-            df.actual_size();
+        auto const df_size = df.size(ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
         // Create key file
         key_file_header kh;
         kh.version = currentVersion;
@@ -470,13 +478,17 @@ public:
             kh.block_size) * load_factor));
         kh.modulus = ceil_pow2(kh.buckets);
         native_file kf;
-        kf.create(file_mode::append, kp);
+        kf.create(file_mode::append, kp, ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
         buffer buf(kh.block_size);
         {
             std::memset(buf.get(), 0, kh.block_size);
             ostream os(buf.get(), kh.block_size);
             write(os, kh);
-            kf.write(0, buf.get(), kh.block_size);
+            kf.write(0, buf.get(), kh.block_size, ec);
+            if (ec)
+                Throw<nudb::system_error>(ec);
         }
         // Build contiguous sequential sections of the
         // key file using multiple passes over the data.
@@ -518,14 +530,18 @@ public:
                 // Data Record or Spill Record
                 std::size_t size;
                 auto is = r.prepare(
-                    field<uint48_t>::size); // Size
+                    field<uint48_t>::size, ec); // Size
+                if (ec)
+                    Throw<nudb::system_error>(ec);
                 read<uint48_t>(is, size);
                 if (size > 0)
                 {
                     // Data Record
                     is = r.prepare(
                         dh.key_size +           // Key
-                        size);                  // Data
+                        size, ec);                  // Data
+                    if (ec)
+                        Throw<nudb::system_error>(ec);
                     std::uint8_t const* const key =
                         is.data(dh.key_size);
                     auto const h = hash<hash_type>(
@@ -538,7 +554,9 @@ public:
                         continue;
                     bucket b(kh.block_size, buf.get() +
                         (n - b0) * kh.block_size);
-                    maybe_spill(b, dw);
+                    maybe_spill(b, dw, ec);
+                    if (ec)
+                        Throw<nudb::system_error>(ec);
                     b.insert(offset, size, h);
                 }
                 else
@@ -546,16 +564,24 @@ public:
                     // VFALCO Should never get here
                     // Spill Record
                     is = r.prepare(
-                        field<std::uint16_t>::size);
+                        field<std::uint16_t>::size, ec);
+                    if (ec)
+                        Throw<nudb::system_error>(ec);
                     read<std::uint16_t>(is, size);  // Size
-                    r.prepare(size); // skip
+                    r.prepare(size, ec); // skip
+                    if (ec)
+                        Throw<nudb::system_error>(ec);
                 }
             }
             kf.write((b0 + 1) * kh.block_size,
-                buf.get(), bn * kh.block_size);
+                buf.get(), bn * kh.block_size, ec);
+            if (ec)
+                Throw<nudb::system_error>(ec);
             ++npass;
         }
-        dw.flush();
+        dw.flush(ec);
+        if (ec)
+            Throw<nudb::system_error>(ec);
         p.finish(log);
     }
 };
@@ -566,187 +592,6 @@ BEAST_DEFINE_TESTSUITE(import,NodeStore,ripple);
 
 //------------------------------------------------------------------------------
 
-class rekey_test : public beast::unit_test::suite
-{
-public:
-    void
-    run() override
-    {
-        testcase(beast::unit_test::abort_on_fail) << arg();
+} // NodeStore
+} // ripple
 
-        using namespace beast::nudb;
-        using namespace beast::nudb::detail;
-
-        pass();
-        auto const args = parse_args(arg());
-        bool usage = args.empty();
-
-        if (! usage &&
-            args.find("path") == args.end())
-        {
-            log <<
-                "Missing parameter: path";
-            usage = true;
-        }
-        if (! usage &&
-            args.find("items") == args.end())
-        {
-            log <<
-                "Missing parameter: items";
-            usage = true;
-        }
-        if (! usage &&
-            args.find("buffer") == args.end())
-        {
-            log <<
-                "Missing parameter: buffer";
-            usage = true;
-        }
-
-        if (usage)
-        {
-            log <<
-                "Usage:\n" <<
-                "--unittest-arg=path=<path>,items=<items>,buffer=<buffer>\n" <<
-                "path:   NuDB path to rekey (without the .dat)\n" <<
-                "items:  Number of items in the .dat file\n" <<
-                "buffer: Buffer size (bigger is faster)\n" <<
-                "NuDB key file must not already exist.";
-            return;
-        }
-
-        std::size_t const buffer_size =
-            std::stoull(args.at("buffer"));
-        auto const path = args.at("path");
-        std::size_t const items =
-            std::stoull(args.at("items"));
-
-        using hash_type = beast::xxhasher;
-        auto const bulk_size = 64 * 1024 * 1024;
-        float const load_factor = 0.5;
-
-        auto const dp = path + ".dat";
-        auto const kp = path + ".key";
-
-        log <<
-            "path:   " << path << "\n"
-            "items:  " << items << "\n"
-            "buffer: " << buffer_size;
-
-        // Create data file with values
-        native_file df;
-        df.open(file_mode::append, dp);
-        dat_file_header dh;
-        read(df, dh);
-        auto const df_size = df.actual_size();
-        bulk_writer<native_file> dw(
-            df, df_size, bulk_size);
-
-        // Create key file
-        key_file_header kh;
-        kh.version = currentVersion;
-        kh.uid = dh.uid;
-        kh.appnum = dh.appnum;
-        kh.key_size = 32;
-        kh.salt = make_salt();
-        kh.pepper = pepper<hash_type>(kh.salt);
-        kh.block_size = block_size(kp);
-        kh.load_factor = std::min<std::size_t>(
-            65536.0 * load_factor, 65535);
-        kh.buckets = std::ceil(items / (bucket_capacity(
-            kh.block_size) * load_factor));
-        kh.modulus = ceil_pow2(kh.buckets);
-        native_file kf;
-        kf.create(file_mode::append, kp);
-        buffer buf(kh.block_size);
-        {
-            std::memset(buf.get(), 0, kh.block_size);
-            ostream os(buf.get(), kh.block_size);
-            write(os, kh);
-            kf.write(0, buf.get(), kh.block_size);
-        }
-        // Build contiguous sequential sections of the
-        // key file using multiple passes over the data.
-        //
-        auto const buckets = std::max<std::size_t>(1,
-            buffer_size / kh.block_size);
-        buf.reserve(buckets * kh.block_size);
-        auto const passes =
-            (kh.buckets + buckets - 1) / buckets;
-        log <<
-            "buckets: " << kh.buckets << "\n"
-            "data:    " << df_size << "\n"
-            "passes:  " << passes;
-        progress p(df_size * passes);
-        std::size_t npass = 0;
-        for (std::size_t b0 = 0; b0 < kh.buckets;
-                b0 += buckets)
-        {
-            auto const b1 = std::min(
-                b0 + buckets, kh.buckets);
-            // Buffered range is [b0, b1)
-            auto const bn = b1 - b0;
-            // Create empty buckets
-            for (std::size_t i = 0; i < bn; ++i)
-            {
-                bucket b(kh.block_size,
-                    buf.get() + i * kh.block_size,
-                        empty);
-            }
-            // Insert all keys into buckets
-            // Iterate Data File
-            bulk_reader<native_file> r(
-                df, dat_file_header::size,
-                    df_size, bulk_size);
-            while (! r.eof())
-            {
-                auto const offset = r.offset();
-                // Data Record or Spill Record
-                std::size_t size;
-                auto is = r.prepare(
-                    field<uint48_t>::size); // Size
-                read<uint48_t>(is, size);
-                if (size > 0)
-                {
-                    // Data Record
-                    is = r.prepare(
-                        dh.key_size +           // Key
-                        size);                  // Data
-                    std::uint8_t const* const key =
-                        is.data(dh.key_size);
-                    auto const h = hash<hash_type>(
-                        key, dh.key_size, kh.salt);
-                    auto const n = bucket_index(
-                        h, kh.buckets, kh.modulus);
-                    p(log,
-                        npass * df_size + r.offset());
-                    if (n < b0 || n >= b1)
-                        continue;
-                    bucket b(kh.block_size, buf.get() +
-                        (n - b0) * kh.block_size);
-                    maybe_spill(b, dw);
-                    b.insert(offset, size, h);
-                }
-                else
-                {
-                    // VFALCO Should never get here
-                    // Spill Record
-                    is = r.prepare(
-                        field<std::uint16_t>::size);
-                    read<std::uint16_t>(is, size);  // Size
-                    r.prepare(size); // skip
-                }
-            }
-            kf.write((b0 + 1) * kh.block_size,
-                buf.get(), bn * kh.block_size);
-            ++npass;
-        }
-        dw.flush();
-        p.finish(log);
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(rekey,NodeStore,ripple);
-
-}
-}

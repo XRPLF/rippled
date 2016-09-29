@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;BOOST_NO_AUTO_PTR;DEBUG;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NOMINMAX;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\nudb\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4503;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -124,7 +124,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;BOOST_NO_AUTO_PTR;DEBUG;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NOMINMAX;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\nudb\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4503;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -161,7 +161,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;BOOST_NO_AUTO_PTR;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NDEBUG;NOMINMAX;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\nudb\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4503;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
@@ -196,7 +196,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_USLEEP=1;SOCI_CXX_C11=1;_WIN32_WINNT=0x6000;BOOST_NO_AUTO_PTR;DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER;NDEBUG;NOMINMAX;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\beast\extras;..\..\src\beast\include;..\..\src\nudb\include;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\soci\include;..\..\src\soci\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800;4244;4267;4503;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <FloatingPointModel>Precise</FloatingPointModel>
@@ -508,6 +508,86 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\lz4\lib\xxhash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\basic_store.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\concepts.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\create.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\arena.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\bucket.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\buffer.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\bulkio.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\cache.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\endian.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\field.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\format.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\gentex.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\mutex.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\pool.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\stream.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\detail\xxhash.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\error.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\file.hpp">
+    </ClInclude>
+    <None Include="..\..\src\nudb\include\nudb\impl\basic_store.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\create.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\error.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\posix_file.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\recover.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\rekey.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\verify.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\visit.ipp">
+    </None>
+    <None Include="..\..\src\nudb\include\nudb\impl\win32_file.ipp">
+    </None>
+    <ClInclude Include="..\..\src\nudb\include\nudb\native_file.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\nudb.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\posix_file.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\progress.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\recover.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\rekey.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\store.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\type_traits.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\verify.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\version.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\visit.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\win32_file.hpp">
+    </ClInclude>
+    <ClInclude Include="..\..\src\nudb\include\nudb\xxhasher.hpp">
     </ClInclude>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\compiler\importer.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1641,56 +1721,6 @@
     <ClInclude Include="..\..\src\ripple\beast\net\IPAddressV6.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\net\IPEndpoint.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\api.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\common.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\create.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\arena.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\bucket.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\buffer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\bulkio.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\cache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\field.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\format.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\gentex.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\pool.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\detail\stream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\file.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\identity.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\posix_file.h">
-    </ClInclude>
-    <None Include="..\..\src\ripple\beast\nudb\README.md">
-    </None>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\recover.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\store.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\test\common.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\test\fail_file.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\verify.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\visit.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\beast\nudb\win32_file.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\rfc2616.h">
     </ClInclude>
@@ -4437,22 +4467,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\beast\beast_Journal_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\beast\beast_nudb_callgrind_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\beast\beast_nudb_recover_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\beast\beast_nudb_store_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\beast\beast_nudb_verify_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
