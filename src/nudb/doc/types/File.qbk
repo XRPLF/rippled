@@ -1,0 +1,159 @@
+[/
+    Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+
+    Distributed under the Boost Software License, Version 1.0. (See accompanying
+    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+]
+
+[section:File File]
+
+The [*File] concept abstracts access to files in the underlying file system.
+Two implementations are provided, one for the Win32 API and the other for
+POSIX compliant systems. The [link nudb.ref.nudb__native_file native_file] type
+alias is automatically set to either [link nudb.ref.nudb__win32_file win32_file]
+or [link nudb.ref.nudb__posix_file posix_file] as appropriate.
+
+To support interfaces other than Win32 or POSIX, callers may provide their
+own [*File] type that meets these requirements. The unit test code also provides
+its own [*File] type which causes simulated operating system file failures
+to exercise all failure paths in the implementation.
+
+In the table below:
+
+* `X` denotes a [*File] type
+* `a` and `b` denote values of type `X`
+* `c` denotes a (possibly const) value of type `X`
+* `m` denotes a value of type [link nudb.ref.nudb__file_mode file_mode]
+* `f` denotes a value of type [link nudb.ref.nudb__path_type path_type]
+* `q` denotes a value of type `void*`
+* `p` denotes a value of type `void const*`
+* `ec` denotes a value of type [link nudb.ref.nudb__error_code error_code]
+
+
+* `o` denotes a value of type `std::uint64_t`
+* `n` denotes a value of type `std::size_t`
+
+[table File requirements
+[[operation] [type] [semantics, pre/post-conditions]]
+[
+    [`X a{std::move(b)}`]
+    [ ]
+    [
+        `X` is `MoveConstructible`
+    ]
+]
+[
+    [`c.is_open()`]
+    [`bool`]
+    [
+        Returns `true` if `c` refers to an open file.
+    ]
+]
+[
+    [`a.close()`]
+    [ ]
+    [
+        If `a` refers to an open file, closes the file. Does nothing if
+        `a` does not refer to an open file. After this call, `a.open()`
+        will return `false`.
+    ]
+]
+[
+    [`a.create(m,f,ec)`]
+    [ ]
+    [
+        Attempts to create a file at the path specified by `f`, and
+        open it with the mode specified by `m`. If an error occurs,
+        `ec` is set to the system specific error code. If no error
+        occurs, a subsequent call to `a.is_open()` will return `true`.
+        Undefined behavior if `a` already refers to an open file.
+    ]
+]
+[
+    [`a.open(m,f,ec)`]
+    [ ]
+    [
+        Attempts to open the file at the path specified by `f`. If
+        an error occurs, `ec` is set to the system specific error
+        code. If no error occurs, a subsequent call to `a.is_open()`
+        will return `true`. Undefined behavior if `a` already refers
+        to an open file.
+    ]
+]
+[
+    [`X::erase(f,ec)`]
+    [ ]
+    [
+        Attempts to delete the file at the path specified by `f`.
+        If an error occurs, `ec` is set to the system specific error
+        code.
+    ]
+]
+[
+    [`c.size(ec)`]
+    [ `std::uint64_t` ]
+    [
+        Returns the size of the file in bytes. This value is also equal to
+        lowest byte offset for which a read will always return a
+        [link nudb.ref.nudb__error short_read] error. Undefined
+        behavior if `a` does not refer to an open file.
+    ]
+]
+[
+    [`a.read(o,p,n,ec)`]
+    [ ]
+    [
+        Attempts to read `n` bytes from the open file referred to by `a`,
+        starting at offset `o`, and storing the results in the memory
+        pointed to by `p`, which must be at least of size `n` bytes.
+        If an error occurs, `ec` is set to the system specific error
+        code. Undefined behavior if `a` does not refer to an open file.
+    ]
+]
+[
+    [`a.write(o,q,n,ec)`]
+    [ ]
+    [
+        Attempts to write `n` bytes to the open file referred to by `a`
+        and opened with a write mode, starting at offset `o`, and storing
+        the results in the memory pointed to by `p`, which must be at
+        least of size `n` bytes. If an error occurs, `ec` is set to the
+        system specific error code. Undefined behavior if `a` does not
+        refer to an open file.
+    ]
+]
+[
+    [`a.sync(ec)`]
+    [ ]
+    [
+        Attempts to synchronize the file on disk. This instructs the
+        operating system to ensure that any data which resides in caches
+        or buffers is fully written to the underlying storage device
+        before this call returns. If an error occurs, `ec` is set to the
+        system specific error code. Undefined behavior if `a` does not
+        refer to an open file.
+
+        NuDB's database integrity guarantees are only valid if the
+        implementation of `sync` assures that all data is fully written
+        to the underlying file before the call returns.
+    ]
+]
+[
+    [`a.trunc(o,ec)`]
+    [ ]
+    [
+        Attempts to change the size of the open file referred to by `a`
+        and opened with a write mode, to the size in bytes specified
+        by `o`. If an error occurs, `ec` is set to the system specific
+        error code. Undefined behavior if `a` does not refer to an open
+        file. After a successful call, `a.size(ec)` will return `o`.
+
+        NuDB's database integrity guarantees are only valid if the
+        implementation of `trunc` assures that subsequent calls to
+        `size` will return `o`, even if the program is terminated or the
+        device is taken offline before calling `size`.
+    ]
+]
+]
+
+[endsect]
