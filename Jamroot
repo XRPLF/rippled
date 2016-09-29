@@ -1,0 +1,93 @@
+#
+# Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+
+import os ;
+import feature ;
+import boost ;
+
+boost.use-project ;
+
+variant coverage
+  :
+    debug
+  :
+    <cxxflags>"-fprofile-arcs -ftest-coverage"
+    <linkflags>"-lgcov"
+  ;
+
+variant asan
+  :
+    release
+  :
+    <cxxflags>"-fsanitize=address -fno-omit-frame-pointer"
+    <linkflags>"-fsanitize=address"
+  ;
+
+variant msan
+  :
+    debug
+  :
+    <cxxflags>"-fsanitize=memory -fno-omit-frame-pointer -fsanitize-memory-track-origins=2 -fsanitize-memory-use-after-dtor"
+    <linkflags>"-fsanitize=memory"
+  ;
+
+variant usan
+  :
+    debug
+  :
+    <cxxflags>"-fsanitize=undefined -fno-omit-frame-pointer"
+    <linkflags>"-fsanitize=undefined"
+  ;
+
+project nudb
+  : requirements
+    <include>./extras
+    <include>./extras/beast/extras
+    <include>./include
+    #<use>/boost//headers
+    <library>/boost/system//boost_system
+    <library>/boost/thread//boost_thread
+    <library>/boost/filesystem//boost_filesystem
+    <library>/boost/program_options//boost_program_options
+    <define>BOOST_ALL_NO_LIB=1
+    <define>BOOST_SYSTEM_NO_DEPRECATED=1
+    <threading>multi
+    <link>static
+    <runtime-link>shared
+    <debug-symbols>on
+    <toolset>gcc:<cxxflags>-std=c++11
+    <toolset>gcc:<cxxflags>-Wno-unused-variable
+    <toolset>clang:<cxxflags>-std=c++11
+    <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
+    <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
+    <toolset>msvc:<cxxflags>-bigobj
+    <os>LINUX:<define>_XOPEN_SOURCE=600
+    <os>LINUX:<define>_GNU_SOURCE=1
+    <os>SOLARIS:<define>_XOPEN_SOURCE=500
+    <os>SOLARIS:<define>__EXTENSIONS__
+    <os>SOLARIS:<library>socket
+    <os>SOLARIS:<library>nsl
+    <os>NT:<define>_WIN32_WINNT=0x0601
+    <os>NT,<toolset>cw:<library>ws2_32
+    <os>NT,<toolset>cw:<library>mswsock
+    <os>NT,<toolset>gcc:<library>ws2_32
+    <os>NT,<toolset>gcc:<library>mswsock
+    <os>NT,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
+    <os>HPUX,<toolset>gcc:<define>_XOPEN_SOURCE_EXTENDED
+    <os>HPUX:<library>ipv6
+    <os>QNXNTO:<library>socket
+    <os>HAIKU:<library>network
+  : usage-requirements
+      <include>.
+  :
+    build-dir bin
+  ;
+
+build-project bench ;
+build-project examples ;
+build-project test ;
+build-project tools ;
