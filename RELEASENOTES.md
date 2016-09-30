@@ -6,6 +6,55 @@ run a `rippled` server, visit https://ripple.com/build/rippled-setup/
 
 # Releases
 
+## Version 0.33.0
+
+The `rippled` 0.33.0 release includes an improved version of the payment code, which we expect to be activated via Amendment on Wednesday, 2016-10-20 with the name [Flow](https://ripple.com/build/amendments/#flow). We are also introducing XRP Payment Channels, a new structure in the ledger designed to support [Interledger Protocol](https://interledger.org/) trust lines as balances get substantial, which we expect to be activated via Amendment on a future date (TBA) with the name [PayChan](https://ripple.com/build/amendments/#paychan). Lastly, we will be introducing changes to the hash tree structure that rippled uses to represent a ledger, which we expect to be available via Amendment on a future date (TBA) with the name [SHAMapV2](https://ripple.com/build/amendments/#shamapv2).
+
+You can [update to the new version](https://ripple.com/build/rippled-setup/#updating-rippled) on Red Hat Enterprise Linux 7 or CentOS 7 using yum. For other platforms, please [compile the new version from source](https://wiki.ripple.com/Rippled_build_instructions).
+
+** New and Updated Features **
+
+A fixed version of the new payment processing engine, which we initially announced on Friday, 2016-07-29, is expected to be available via Amendment on Wednesday, 2016-10-20 with the name [Flow](https://ripple.com/build/amendments/#flow). The new payments code adds no new features, but improves efficiency and robustness in payment handling.
+
+The Flow code may occasionally produce slightly different results than the old payment processing engine due to the effects of floating point rounding.
+
+We will be introducing changes to the hash tree structure that rippled uses to represent a ledger, which we expect to be activated via Amendment on a future date (TBA) with the name [SHAMapV2](https://ripple.com/build/amendments/#shamapv2). The new structure is more compact and efficient than the previous version. This affects how ledger hashes are calculated, but has no other user-facing consequences. The activation of the SHAMapV2 amendment will require brief scheduled allowable downtime, while the changes to the hash tree structure are propagated by the network. We will keep the community updated as we progress towards this date (TBA).
+
+In an effort to make RCL more scalable and to support Interledger Protocol (ILP) trust lines as balances get more substantial, we’re introducing XRP Payment Channels, a new structure in the ledger, which we expect to be available via Amendment on a future date (TBA) with the name [PayChan](https://ripple.com/build/amendments/#paychan).
+
+XRP Payment Channels permit scalable, intermittent, off-ledger settlement of ILP trust lines for high volume payments flowing in a single direction. For bidirectional channels, an XRP Payment Channel can be used in each direction. The recipient can claim any unpaid balance at any time. The owner can top off the channel as needed. The owner must wait out a delay to close the channel to give the recipient a chance to supply any claims. The total amount paid increases monotonically as newer claims are issued.
+
+The initial concept behind payment channels was discussed as early as 2011 and the first implementation was done by Mike Hearn in bitcoinj. Recent work being done by Lightning Network has showcased examples of the many use cases for payment channels. The introduction of XRP Payment Channels allows for a more efficient integration between RCL and ILP to further support enterprise use cases for high volume payments.
+
+Added `getInfoRippled.sh` support script to gather health check for rippled servers [RIPD-1284]
+
+The `account_info` command can now return information about queued transactions - [RIPD-1205]
+
+Automatically-provided sequence numbers now consider the transaction queue - [RIPD-1206]
+
+The `server_info` and `server_state` commands now include the queue-related escalated fee factor in the load_factor field of the response - [RIPD-1207]
+
+A transaction with a high transaction cost can now cause transactions from the same sender queued in front of it to get into the open ledger if the transaction costs are high enough on average across all such transactions. - [RIPD-1246]
+
+Reorganization: Move `LoadFeeTrack` to app/tx and clean up functions - [RIPD-956]
+
+Reorganization: unit test source files -  [RIPD-1132]
+
+Reorganization: NuDB stand-alone repository - [RIPD-1163]
+
+Reorganization: Add `BEAST_EXPECT` to Beast - [RIPD-1243]
+
+Reorganization: Beast 64-bit CMake/Bjam target on Windows - [RIPD-1262]
+
+** Bug Fixes **
+
+`PaymentSandbox::balanceHook` can return the wrong issuer, which could cause the transfer fee to be incorrectly by-passed in rare circumstances. [RIPD-1274, #1827]
+
+Prevent concurrent write operations in websockets [#1806]
+
+Add HTTP status page for new websocket implementation [#1855]
+
+
 ## Version 0.32.1
 
 The `rippled` 0.32.1 release includes an improved version of the payment code, which we expect to be available via Amendment on Wednesday, 2016-08-24 with the name FlowV2, and a completely new implementation of the WebSocket protocol for serving clients.
