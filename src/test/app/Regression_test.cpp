@@ -19,6 +19,7 @@
 #include <ripple/test/jtx.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 
@@ -199,12 +200,33 @@ struct Regression_test : public beast::unit_test::suite
         }
     }
 
+    void testJsonInvalid()
+    {
+        using namespace jtx;
+        using boost::asio::buffer;
+        testcase("jsonInvalid");
+
+        std::string const request = R"json({"command":"path_find","id":19,"subcommand":"create","source_account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","destination_account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","destination_amount":"1000000","source_currencies":[{"currency":"0000000000000000000000000000000000000000"},{"currency":"0000000000000000000000005553440000000000"},{"currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004254430000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004555520000000000"},{"currency":"0000000000000000000000004554480000000000"},{"currency":"0000000000000000000000004A50590000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"000000000000000000000000434E590000000000"},{"currency":"0000000000000000000000004742490000000000"},{"issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","currency":"0000000000000000000000004341440000000000"}]})json";
+
+
+        Json::Value jvRequest;
+        Json::Reader jrReader;
+
+
+        std::vector<boost::asio::const_buffer> buffers;
+        buffers.emplace_back(buffer(request, 1024));
+        buffers.emplace_back(buffer(request.data() + 1024, request.length() - 1024));
+        BEAST_EXPECT(jrReader.parse(jvRequest, buffers) &&
+            jvRequest && jvRequest.isObject());
+    }
+
     void run() override
     {
         testOffer1();
         testLowBalanceDestroy();
         testSecp256r1key();
         testFeeEscalationAutofill();
+        testJsonInvalid();
     }
 };
 
