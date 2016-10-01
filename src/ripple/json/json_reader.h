@@ -176,13 +176,11 @@ bool
 Reader::parse(Value& root, BufferSequence const& bs)
 {
     using namespace boost::asio;
+    std::string s;
+    s.reserve (buffer_size(bs));
     for (auto const& b : bs)
-    {
-        auto begin = buffer_cast<const char*>(b);
-        if(! parse(begin, begin + buffer_size(b), root))
-            return false;
-    }
-    return true;
+        s.append(buffer_cast<char const*>(b), buffer_size(b));
+    return parse(s, root);
 }
 
 /** \brief Read from 'sin' into 'root'.
