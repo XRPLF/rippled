@@ -322,6 +322,27 @@ if (WIN32 OR is_xcode OR NOT unity)
     # $<OR:$<CONFIG:Debug>,$<CONFIG:Release>>)
 endif()
 
+if (WIN32 OR is_xcode)
+  # Documentation sources
+  prepend(doc_srcs
+    docs/
+    Jamfile.v2
+    boostbook.dtd
+    index.xml
+    main.qbk
+    quickref.xml
+    reference.xsl
+    source.dox)
+
+  set_property(
+    SOURCE ${doc_srcs}
+    APPEND
+    PROPERTY HEADER_FILE_ONLY
+    true)
+    # Doesn't work
+    # $<OR:$<CONFIG:Debug>,$<CONFIG:Release>>)
+endif()
+
 ############################################################
 
 add_with_props(rippled_src src/ripple/unity/soci.cpp
@@ -401,9 +422,27 @@ endif()
 
 if (WIN32 OR is_xcode)
   group_sources(src)
+  group_sources(docs)
 endif()
 
 add_executable(rippled ${rippled_src} ${PROTO_HDRS})
+
+find_program(
+  B2_EXE
+  NAMES b2
+  PATHS ENV BOOST_ROOT
+  DOC "Location of the b2 build executable from Boost")
+if(${B2_EXE} STREQUAL "b2-NOTFOUND")
+  message(WARNING
+    "Boost b2 executable not found. docs target will not be buildable")
+endif()
+add_custom_target(docs
+  COMMAND "./makeqbk.sh"
+  COMMAND ${B2_EXE}
+  BYPRODUCTS "${CMAKE_SOURCE_DIR}/docs/html/index.html"
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/docs"
+  SOURCES "${doc_srcs}"
+  )
 
 create_build_folder(rippled)
 
