@@ -54,7 +54,7 @@ sign (STObject& st, HashPrefix const& prefix,
 */
 bool
 verify (STObject const& st, HashPrefix const& prefix,
-    PublicKey const& pk, bool mustBeFullyCanonical,
+    PublicKey const& pk,
         SF_Blob const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */

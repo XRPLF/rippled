@@ -114,11 +114,11 @@ public:
         st[sfSigningPubKey] = spk;
 
         sign(st, HashPrefix::manifest, stype, ssk);
-        BEAST_EXPECT(verify(st, HashPrefix::manifest, spk, true));
+        BEAST_EXPECT(verify(st, HashPrefix::manifest, spk));
 
         sign(st, HashPrefix::manifest, type, sk, sfMasterSignature);
         BEAST_EXPECT(verify(
-            st, HashPrefix::manifest, pk, true, sfMasterSignature));
+            st, HashPrefix::manifest, pk, sfMasterSignature));
 
         if (broken)
         {
