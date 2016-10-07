@@ -36,8 +36,7 @@ sign (STObject& st, HashPrefix const& prefix,
 
 bool
 verify (STObject const& st, HashPrefix const& prefix,
-        PublicKey const& pk, bool mustBeFullyCanonical,
-        SF_Blob const& sigField)
+    PublicKey const& pk, SF_Blob const& sigField)
 {
     auto const sig = get(st, sigField);
     if (! sig)

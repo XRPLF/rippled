@@ -100,11 +100,11 @@ bool Manifest::verify () const
     STObject st (sfGeneric);
     SerialIter sit (serialized.data (), serialized.size ());
     st.set (sit);
-    if (! ripple::verify (st, HashPrefix::manifest, signingKey, true))
+    if (! ripple::verify (st, HashPrefix::manifest, signingKey))
         return false;
 
     return ripple::verify (
-        st, HashPrefix::manifest, masterKey, true, sfMasterSignature);
+        st, HashPrefix::manifest, masterKey, sfMasterSignature);
 }
 
 uint256 Manifest::hash () const
