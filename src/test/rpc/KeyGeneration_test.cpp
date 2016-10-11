@@ -37,6 +37,8 @@ struct key_strings
     char const* master_key;
     char const* master_seed;
     char const* master_seed_hex;
+    char const* private_key;
+    char const* private_key_hex;
     char const* public_key;
     char const* public_key_hex;
     char const* secret_key_hex;
@@ -55,6 +57,8 @@ static key_strings const secp256k1_strings =
     common::master_key,
     common::master_seed,
     common::master_seed_hex,
+    "p9HSyr2tfoFn2Tsfj2Q7Ffx4VvDBc8G7F6YMuAMYodkxqWjq2fJ",
+    "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
     "aBQxK2YFNqzmAaXNczYcjqDjfiKkLsJUizsr1UBf44RCF8FHdrmX",
     "038AAE247B2344B1837FBED8F57389C8C11774510A3F7D784F2A09F0CB6843236C",
     "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
@@ -66,6 +70,8 @@ static key_strings const ed25519_strings =
     common::master_key,
     common::master_seed,
     common::master_seed_hex,
+    "pwrrkQHKrLSNASo1odWpHd3qMEtJrUqeyG7cJNBNPbM7LeNig4U",
+    "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
     "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
     "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
     "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
@@ -86,6 +92,8 @@ public:
         BEAST_EXPECT(result.isMember (jss::master_key));
         BEAST_EXPECT(result.isMember (jss::master_seed));
         BEAST_EXPECT(result.isMember (jss::master_seed_hex));
+        BEAST_EXPECT(result.isMember (jss::private_key));
+        BEAST_EXPECT(result.isMember (jss::private_key_hex));
         BEAST_EXPECT(result.isMember (jss::public_key));
         BEAST_EXPECT(result.isMember (jss::public_key_hex));
         BEAST_EXPECT(result.isMember (jss::key_type));
@@ -111,6 +119,8 @@ public:
         expectEquals (result[jss::master_key], s.master_key);
         expectEquals (result[jss::master_seed], s.master_seed);
         expectEquals (result[jss::master_seed_hex], s.master_seed_hex);
+        expectEquals (result[jss::private_key], s.private_key);
+        expectEquals (result[jss::private_key_hex], s.private_key_hex);
         expectEquals (result[jss::public_key], s.public_key);
         expectEquals (result[jss::public_key_hex], s.public_key_hex);
         expectEquals (result[jss::key_type],
@@ -274,6 +284,9 @@ public:
         testcase ("keypairForSignature - " +
             (keyType ? *keyType : "no key_type"));
 
+        auto const privateKey = parseBase58<SecretKey>(
+            TokenType::TOKEN_ACCOUNT_SECRET, strings.private_key);
+        BEAST_EXPECT(privateKey);
         auto const publicKey = parseBase58<PublicKey>(
             TokenType::TOKEN_ACCOUNT_PUBLIC, strings.public_key);
         BEAST_EXPECT(publicKey);
@@ -289,6 +302,7 @@ public:
                 BEAST_EXPECT(! contains_error (error));
                 BEAST_EXPECT(ret.first.size() != 0);
                 BEAST_EXPECT(ret.first == publicKey);
+                BEAST_EXPECT(ret.second == privateKey);
             }
 
             {
@@ -300,6 +314,7 @@ public:
                 BEAST_EXPECT(! contains_error (error));
                 BEAST_EXPECT(ret.first.size() != 0);
                 BEAST_EXPECT(ret.first == publicKey);
+                BEAST_EXPECT(ret.second == privateKey);
             }
 
             {
@@ -311,6 +326,7 @@ public:
                 BEAST_EXPECT(! contains_error (error));
                 BEAST_EXPECT(ret.first.size() != 0);
                 BEAST_EXPECT(ret.first == publicKey);
+                BEAST_EXPECT(ret.second == privateKey);
             }
 
             keyType.emplace ("secp256k1");
@@ -327,6 +343,7 @@ public:
             BEAST_EXPECT(! contains_error (error));
             BEAST_EXPECT(ret.first.size() != 0);
             BEAST_EXPECT(ret.first == publicKey);
+            BEAST_EXPECT(ret.second == privateKey);
         }
 
         {
@@ -340,6 +357,7 @@ public:
             BEAST_EXPECT(! contains_error (error));
             BEAST_EXPECT(ret.first.size() != 0);
             BEAST_EXPECT(ret.first == publicKey);
+            BEAST_EXPECT(ret.second == privateKey);
         }
 
         {
@@ -353,6 +371,7 @@ public:
             BEAST_EXPECT(! contains_error (error));
             BEAST_EXPECT(ret.first.size() != 0);
             BEAST_EXPECT(ret.first == publicKey);
+            BEAST_EXPECT(ret.second == privateKey);
         }
     }
 
