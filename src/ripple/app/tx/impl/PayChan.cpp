@@ -26,8 +26,8 @@
 #include <ripple/protocol/st.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/Sign.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/XRPAmount.h>
 #include <ripple/ledger/View.h>
@@ -37,86 +37,88 @@ namespace ripple {
 /*
     PaymentChannel
 
-        Payment channels permit off-ledger checkpoints of XRP payments flowing
-        in a single direction. A channel sequesters the owner's XRP in its own
-        ledger entry. The owner can authorize the recipient to claim up to a
-        given balance by giving the receiver a signed message (off-ledger). The
-        recipient can use this signed message to claim any unpaid balance while
-        the channel remains open. The owner can top off the line as needed. If
-        the channel has not paid out all its funds, the owner must wait out a
-        delay to close the channel to give the recipient a chance to supply any
-        claims. The recipient can close the channel at any time. Any transaction
-        that touches the channel after the expiration time will close the
-        channel. The total amount paid increases monotonically as newer claims
-        are issued. When the channel is closed any remaining balance is returned
-        to the owner. Channels are intended to permit intermittent off-ledger
-        settlement of ILP trust lines as balances get substantial. For
-        bidirectional channels, a payment channel can be used in each direction.
+        Payment channels permit off-ledger XRP payments flowing between two
+        accounts in both directions. A channel sequesters the participants' XRP
+        in its own ledger entry. The participants can authorize the counterparty
+        to claim up to a given amount by giving the receiver a signed message
+        (off-ledger). The recipient can use this signed message to settle the
+        channel balance. A participant can authorize a payment amount exceeding
+        their channel balance as long as the difference between the two sides'
+        authorized payments does not exceed the respective channel balance.
+        Payment amounts can be netted by subtracting both by the lower amount
+        and incrementing the sequence number on the authorized payments (off-
+        ledger).
+        Either participant can top off their channel balance as needed. When
+        submitting a channel claim, the participant must wait out a delay to
+        close the channel to give the counterparty a chance to supply any
+        additional claims. Any transaction that touches the channel after the
+        expiration time will close the channel. When the channel is closed any
+        remaining balance is returned to the owners.
 
     PaymentChannelCreate
 
-        Create a unidirectional channel. The parameters are:
+        Create a bidirectional XRP payment channel. The parameters are:
         Destination
-            The recipient at the end of the channel.
+            The other channel participant.
         Amount
-            The amount of XRP to deposit in the channel immediately.
-        SettleDelay
-            The amount of time everyone but the recipient must wait for a
-            superior claim.
+            The amount of XRP to deposit in the channel from the transaction
+            signer immediately.
         PublicKey
             The key that will sign claims against the channel.
+        DstPublicKey
+            The key that will be used by the other channel participant to sign
+            claims against the channel.
+        SettleDelay
+            The amount of time everyone must wait after a claim for a superior
+            claim.
         CancelAfter (optional)
-            Any channel transaction that touches this channel after the
-            `CancelAfter` time will close it.
-        DestinationTag (optional)
-            Destination tags allow the different accounts inside of a Hosted
-            Wallet to be mapped back onto the Ripple ledger. The destination tag
-            tells the server to which account in the Hosted Wallet the funds are
-            intended to go to. Required if the destination has lsfRequireDestTag
-            set.
-        SourceTag (optional)
-            Source tags allow the different accounts inside of a Hosted Wallet
-            to be mapped back onto the Ripple ledger. Source tags are similar to
-            destination tags but are for the channel owner to identify their own
-            transactions.
+            Do not honor any claims after the `CancelAfter` time if no claims
+            were submitted beforehand.
 
     PaymentChannelFund
 
-        Add additional funds to the payment channel. Only the channel owner may
-        use this transaction. The parameters are:
+        Add additional funds to the payment channel. Either channel participant
+        may use this transaction. The parameters are:
         Channel
             The 256-bit ID of the channel.
         Amount
             The amount of XRP to add.
-        Expiration (optional)
-            Time the channel closes. The transaction will fail if the expiration
-            times does not satisfy the SettleDelay constraints.
 
     PaymentChannelClaim
 
-        Place a claim against an existing channel. The parameters are:
+        Place a claim against an existing channel. A successful claim will
+        cause the channel to close after the settle delay unless a subsequent
+        claim is submitted. The parameters are:
         Channel
             The 256-bit ID of the channel.
-        Balance (optional)
-            The total amount of XRP delivered after this claim is processed (optional, not
-            needed if just closing).
-        Amount (optional)
-            The amount of XRP the signature is for (not needed if equal to Balance or just
-            closing the line).
-        Signature (optional)
-            Authorization for the balance above, signed by the owner (optional,
-            not needed if closing or owner is performing the transaction). The
-            signature if for the following message: CLM\0 followed by the
-            256-bit channel ID, and a 64-bit integer drops.
-        PublicKey (optional)
-           The public key that made the signature (optional, required if a signature
-           is present)
-        Flags
-            tfCloseChannel
-                Request that the channel be closed
-            tfRenewChannel
-                Request that the channel's expiration be reset. Only the owner
-                may renew a channel.
+        ChannelClaims
+            Claim from one or both of the channel participants. Claim parameters
+            are:
+            Channel
+                The 256-bit ID of the channel.
+            Amount
+                The amount of XRP the signature is for.
+            Sequence
+                Sequence incremented by channel participants for amount resets
+                off ledger
+            PublicKey
+               The public key that made the signature
+            Signature
+                Authorization for the amount above. The signature is for the
+                following message: CLM\0 prefix followed by a serialized
+                ChannelClaim object.
+            SourceTag (optional)
+                Source tags allow the different accounts inside of a Hosted Wallet
+                to be mapped back onto the Ripple ledger. Source tags are similar to
+                destination tags but are for the channel owner to identify their own
+                transactions.
+            DestinationTag (optional)
+                Destination tags allow the different accounts inside of a Hosted
+                Wallet to be mapped back onto the Ripple ledger. The destination
+                tag tells the server to which account in the Hosted Wallet the
+                funds are intended to go to. Required if the destination has
+                lsfRequireDestTag set.
+            InvoiceID (optional)
 
 */
 
@@ -130,23 +132,34 @@ closeChannel (
     uint256 const& key,
     beast::Journal j)
 {
-    AccountID const src = (*slep)[sfAccount];
-    // Remove PayChan from owner directory
+    STArray const& chanMembers (slep->getFieldArray (sfChannelMembers));
+
+    // Remove PayChan from owner directories
+    for (auto const member : chanMembers)
     {
-        auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete (view, true, page, keylet::ownerDir (src).key,
+        auto const owner = member[sfAccount];
+        auto const page = member[sfOwnerNode];
+        TER const ter = dirDelete (view, true, page, keylet::ownerDir (owner).key,
             key, false, page == 0, j);
         if (!isTesSuccess (ter))
             return ter;
     }
 
-    // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek (keylet::account (src));
-    assert ((*slep)[sfAmount] >= (*slep)[sfBalance]);
-    (*sle)[sfBalance] =
-        (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    (*sle)[sfOwnerCount] = (*sle)[sfOwnerCount] - 1;
-    view.update (sle);
+    auto const sle0 = view.peek (keylet::account (chanMembers[0][sfAccount]));
+    auto const sle1 = view.peek (keylet::account (chanMembers[1][sfAccount]));
+
+    (*sle0)[sfOwnerCount] = (*sle0)[sfOwnerCount] - 1;
+
+    // Settle channel claims
+    auto diff = chanMembers[0][sfAmount] - chanMembers[1][sfAmount];
+
+    (*sle0)[sfBalance] =
+        (*sle0)[sfBalance] + chanMembers[0][sfBalance] - diff;
+    (*sle1)[sfBalance] =
+        (*sle1)[sfBalance] + chanMembers[1][sfBalance] + diff;
+
+    view.update (sle0);
+    view.update (sle1);
 
     // Remove PayChan from ledger
     view.erase (slep);
@@ -168,7 +181,8 @@ PayChanCreate::preflight (PreflightContext const& ctx)
     if (!isXRP (ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
 
-    if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
+    if (ctx.tx[sfAccount] == ctx.tx[sfDestination] ||
+            ctx.tx[sfPublicKey] == ctx.tx[sfDstPublicKey])
         return temDST_IS_SRC;
 
     return preflight2 (ctx);
@@ -179,6 +193,9 @@ PayChanCreate::preclaim(PreclaimContext const &ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const sle = ctx.view.read (keylet::account (account));
+
+    if ((*sle)[sfFlags] & lsfDisallowXRP)
+        return tecNO_TARGET;
 
     // Check reserve and funds availability
     {
@@ -200,9 +217,6 @@ PayChanCreate::preclaim(PreclaimContext const &ctx)
         auto const sled = ctx.view.read (keylet::account (dst));
         if (!sled)
             return tecNO_DST;
-        if (((*sled)[sfFlags] & lsfRequireDestTag) &&
-            !ctx.tx[~sfDestinationTag])
-            return tecDST_TAG_NEEDED;
         if ((*sled)[sfFlags] & lsfDisallowXRP)
             return tecNO_TARGET;
     }
@@ -220,30 +234,47 @@ PayChanCreate::doApply()
     // Create PayChan in ledger
     auto const slep = std::make_shared<SLE> (
         keylet::payChan (account, dst, (*sle)[sfSequence] - 1));
-    // Funds held in this channel
-    (*slep)[sfAmount] = ctx_.tx[sfAmount];
-    // Amount channel has already paid
-    (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed ();
-    (*slep)[sfAccount] = account;
-    (*slep)[sfDestination] = dst;
-    (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
-    (*slep)[sfPublicKey] = ctx_.tx[sfPublicKey];
-    (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
-    (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
-    (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
-    ctx_.view ().insert (slep);
+    STArray chanMembers {sfChannelMembers, 2};
 
-    // Add PayChan to owner directory
+    auto makeChanMember = [&chanMembers, &slep, this] (
+        AccountID const& account,
+        STAmount const& amount,
+        Slice const& pk)
     {
+        chanMembers.emplace_back (sfChannelMember);
+        auto& m = chanMembers.back();
+        m[sfBalance] = amount;
+        m[sfAccount] = account;
+        m[sfPublicKey] = pk;
+        m[sfAmount] = XRPAmount{beast::zero};
+        m[sfSequence] = 0;
+
+        // Add PayChan to owner directory
         uint64_t page;
         auto result = dirAdd (ctx_.view (), page, keylet::ownerDir (account),
             slep->key (), describeOwnerDir (account),
             ctx_.app.journal ("View"));
-        if (!isTesSuccess (result.first))
-            return result.first;
-        (*slep)[sfOwnerNode] = page;
-    }
+        if (isTesSuccess (result.first))
+            m[sfOwnerNode] = page;
+
+        return result.first;
+    };
+
+    auto ret =
+        makeChanMember (account, ctx_.tx[sfAmount], ctx_.tx[sfPublicKey]);
+    if (!isTesSuccess (ret))
+        return ret;
+
+    ret = makeChanMember (dst, XRPAmount{beast::zero}, ctx_.tx[sfDstPublicKey]);
+    if (!isTesSuccess (ret))
+        return ret;
+
+    slep->setFieldArray (sfChannelMembers, chanMembers);
+    (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
+    (*slep)[~sfExpiration] = ctx_.tx[~sfCancelAfter];
+
+    ctx_.view ().insert (slep);
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
@@ -279,37 +310,26 @@ PayChanFund::doApply()
     if (!slep)
         return tecNO_ENTRY;
 
-    AccountID const src = (*slep)[sfAccount];
     auto const txAccount = ctx_.tx[sfAccount];
     auto const expiration = (*slep)[~sfExpiration];
 
+    if (expiration)
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
             ctx_.view ().info ().parentCloseTime.time_since_epoch ().count ();
-        if ((cancelAfter && closeTime >= *cancelAfter) ||
-            (expiration && closeTime >= *expiration))
+        if (closeTime >= *expiration)
             return closeChannel (
                 slep, ctx_.view (), k.key, ctx_.app.journal ("View"));
     }
 
-    if (src != txAccount)
-        // only the owner can add funds or extend
+    auto chanMembers = slep->getFieldArray (sfChannelMembers);
+
+    auto const i = (chanMembers[0].getAccountID (sfAccount) == txAccount)
+        ? 0 : 1;
+
+    // only channel members can add funds
+    if (i == 1 && chanMembers[1].getAccountID (sfAccount) != txAccount)
         return tecNO_PERMISSION;
-
-    if (auto extend = ctx_.tx[~sfExpiration])
-    {
-        auto minExpiration =
-            ctx_.view ().info ().parentCloseTime.time_since_epoch ().count () +
-                (*slep)[sfSettleDelay];
-        if (expiration && *expiration < minExpiration)
-            minExpiration = *expiration;
-
-        if (*extend < minExpiration)
-            return temBAD_EXPIRATION;
-        (*slep)[~sfExpiration] = *extend;
-        ctx_.view ().update (slep);
-    }
 
     auto const sle = ctx_.view ().peek (keylet::account (txAccount));
 
@@ -326,7 +346,8 @@ PayChanFund::doApply()
             return tecUNFUNDED;
     }
 
-    (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
+    chanMembers[i][sfBalance] = chanMembers[i][sfBalance] + ctx_.tx[sfAmount];
+    slep->setFieldArray (sfChannelMembers, chanMembers);
     ctx_.view ().update (slep);
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
@@ -348,41 +369,36 @@ PayChanClaim::preflight (PreflightContext const& ctx)
     if (!isTesSuccess (ret))
         return ret;
 
-    auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP (*bal) || *bal <= beast::zero))
-        return temBAD_AMOUNT;
+    auto const& claims = ctx.tx.getFieldArray (sfChannelClaims);
 
-    auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP (*amt) || *amt <= beast::zero))
-        return temBAD_AMOUNT;
-
-    if (bal && amt && *bal > *amt)
-        return tecNO_PERMISSION;
-
-    auto const flags = ctx.tx.getFlags ();
-    if ((flags & tfClose) && (flags & tfRenew))
+    if (claims.size() > 2)
         return temMALFORMED;
 
-    if (auto const sig = ctx.tx[~sfSignature])
+    if (claims.size() == 2)
     {
-        if (!(ctx.tx[~sfPublicKey] && bal))
+        if (claims[0][sfPublicKey] == claims[1][sfPublicKey])
+            return temMALFORMED;
+
+        if (claims[0][sfSequence] != claims[1][sfSequence])
+            return temBAD_SEQUENCE;
+    }
+
+    for (auto const& claim : claims)
+    {
+        if ((claim.getFName() != sfChannelClaim))
+            return temMALFORMED;
+
+        auto const amt = claim[sfAmount];
+        if (!isXRP (amt) || amt < beast::zero)
+            return temBAD_AMOUNT;
+
+        if (claim[sfPayChannel] != ctx.tx[sfPayChannel])
             return temMALFORMED;
 
         // Check the signature
-        // The signature isn't needed if txAccount == src, but if it's
-        // present, check it
-
-        auto const reqBalance = bal->xrp ();
-        auto const authAmt = amt ? amt->xrp() : reqBalance;
-
-        if (reqBalance > authAmt)
-            return tecNO_PERMISSION;
-
-        Keylet const k (ltPAYCHAN, ctx.tx[sfPayChannel]);
-        PublicKey const pk (ctx.tx[sfPublicKey]);
-        Serializer msg;
-        serializePayChanAuthorization (msg, k.key, authAmt);
-        if (!verify (pk, msg.slice (), *sig, /*canonical*/ true))
+        PublicKey const pk (claim[sfPublicKey]);
+        if (!verify (
+                claim, HashPrefix::paymentChannelClaim, pk, /*canonical*/ true))
             return temBAD_SIGNATURE;
     }
 
@@ -395,89 +411,96 @@ PayChanClaim::doApply()
     Keylet const k (ltPAYCHAN, ctx_.tx[sfPayChannel]);
     auto const slep = ctx_.view ().peek (k);
     if (!slep)
-        return tecNO_TARGET;
+        return tecNO_ENTRY;
 
-    AccountID const src = (*slep)[sfAccount];
-    AccountID const dst = (*slep)[sfDestination];
-    AccountID const txAccount = ctx_.tx[sfAccount];
+    auto chanMembers = slep->getFieldArray (sfChannelMembers);
+    auto const& txClaims = ctx_.tx.getFieldArray (sfChannelClaims);
+    bool const thirdPartySubmission =
+        chanMembers[0].getAccountID (sfAccount) != ctx_.tx[sfAccount] &&
+        chanMembers[1].getAccountID (sfAccount) != ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
+    if (curExpiration)
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
             ctx_.view ().info ().parentCloseTime.time_since_epoch ().count ();
-        if ((cancelAfter && closeTime >= *cancelAfter) ||
-            (curExpiration && closeTime >= *curExpiration))
+        if (closeTime >= *curExpiration)
             return closeChannel (
                 slep, ctx_.view (), k.key, ctx_.app.journal ("View"));
-    }
 
-    if (txAccount != src && txAccount != dst)
+        // PayChanClaim without a claim does nothing if
+        // the channel has a pending expiration
+        if (txClaims.empty ())
+            return tecNO_PERMISSION;
+    }
+    // third party must have claim if the channel has not expired
+    else if (thirdPartySubmission && txClaims.empty ())
         return tecNO_PERMISSION;
 
-    if (ctx_.tx[~sfBalance])
+    bool submittedOwnClaim = false;
+
+    if (! txClaims.empty ())
     {
-        auto const chanBalance = slep->getFieldAmount (sfBalance).xrp ();
-        auto const chanFunds = slep->getFieldAmount (sfAmount).xrp ();
-        auto const reqBalance = ctx_.tx[sfBalance].xrp ();
+        std::array<STAmount, 2> amounts {
+            chanMembers[0][sfAmount],
+            chanMembers[1][sfAmount]};
 
-        if (txAccount == dst && !ctx_.tx[~sfSignature])
-            return temBAD_SIGNATURE;
+        std::array<std::uint32_t, 2> sequences {
+            chanMembers[0][sfSequence],
+            chanMembers[1][sfSequence]};
 
-        if (ctx_.tx[~sfSignature])
+        for (auto const& txClaim : txClaims)
         {
-            PublicKey const pk ((*slep)[sfPublicKey]);
-            if (ctx_.tx[sfPublicKey] != pk)
+            auto const i =
+                txClaim[sfPublicKey] == chanMembers[0][sfPublicKey] ? 0 : 1;
+
+            if (i == 1 && txClaim[sfPublicKey] != chanMembers[1][sfPublicKey])
                 return temBAD_SIGNER;
+
+            if (txClaim[sfSequence] < chanMembers[i][sfSequence])
+                return tefPAST_SEQ;
+
+            if (txClaim[sfSequence] == chanMembers[i][sfSequence] &&
+                    txClaim[sfAmount] <= chanMembers[i][sfAmount])
+                return tefPAST_SEQ;
+
+            amounts[i] = txClaim[sfAmount];
+            sequences[i] = txClaim[sfSequence];
+
+            if (ctx_.tx[sfAccount] == chanMembers[i].getAccountID (sfAccount))
+                submittedOwnClaim = true;
         }
 
-        if (reqBalance > chanFunds)
+        // Cannot submit single claim with higher sequence
+        if (sequences[0] != sequences[1])
+            return terPRE_SEQ;
+
+        if (chanMembers[0][sfBalance] < (amounts[0] - amounts[1]) ||
+            chanMembers[1][sfBalance] < (amounts[1] - amounts[0]))
             return tecUNFUNDED_PAYMENT;
 
-        if (reqBalance <= chanBalance)
-            // nothing requested
-            return tecUNFUNDED_PAYMENT;
+        for (auto const& i : {0, 1})
+        {
+            chanMembers[i][sfAmount] = amounts[i];
+            chanMembers[i][sfSequence] = sequences[i];
+        }
 
-        auto const sled = ctx_.view ().peek (keylet::account (dst));
-        if (!sled)
-            return terNO_ACCOUNT;
-
-        if (txAccount == src && ((*sled)[sfFlags] & lsfDisallowXRP))
-            return tecNO_TARGET;
-
-        (*slep)[sfBalance] = ctx_.tx[sfBalance];
-        XRPAmount const reqDelta = reqBalance - chanBalance;
-        assert (reqDelta >= beast::zero);
-        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        ctx_.view ().update (sled);
-        ctx_.view ().update (slep);
+        slep->setFieldArray (sfChannelMembers, chanMembers);
     }
 
-    if (ctx_.tx.getFlags () & tfRenew)
+    // Do not start the settle delay if third party submits claim.
+    // Do not reset settle delay if there is already an expiration,
+    // and a channel member submits only their own claim.
+    // This prevents a participant from perpetually keeping the channel open.
+    if ((! thirdPartySubmission || curExpiration) &&
+        (! curExpiration || ! submittedOwnClaim || txClaims.size() == 2))
     {
-        if (src != txAccount)
-            return tecNO_PERMISSION;
-        (*slep)[~sfExpiration] = boost::none;
-        ctx_.view ().update (slep);
-    }
-
-    if (ctx_.tx.getFlags () & tfClose)
-    {
-        // Channel will close immediately if dry or the receiver closes
-        if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
-            return closeChannel (
-                slep, ctx_.view (), k.key, ctx_.app.journal ("View"));
-
-        auto const settleExpiration =
+        (*slep)[~sfExpiration] =
             ctx_.view ().info ().parentCloseTime.time_since_epoch ().count () +
                 (*slep)[sfSettleDelay];
-
-        if (!curExpiration || *curExpiration > settleExpiration)
-        {
-            (*slep)[~sfExpiration] = settleExpiration;
-            ctx_.view ().update (slep);
-        }
     }
+
+    ctx_.view ().update (slep);
 
     return tesSUCCESS;
 }

@@ -447,6 +447,7 @@ extern SF_Blob const sfCreateCode;
 extern SF_Blob const sfMemoType;
 extern SF_Blob const sfMemoData;
 extern SF_Blob const sfMemoFormat;
+extern SF_Blob const sfDstPublicKey;
 
 // variable length (uncommon)
 extern SF_Blob const sfProof;
@@ -480,6 +481,8 @@ extern SField const sfMemo;
 extern SField const sfSignerEntry;
 extern SField const sfSigner;
 extern SField const sfMajority;
+extern SField const sfChannelMember;
+extern SField const sfChannelClaim;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -492,6 +495,8 @@ extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
 extern SField const sfMajorities;
+extern SField const sfChannelMembers;
+extern SField const sfChannelClaims;
 
 //------------------------------------------------------------------------------
 

@@ -61,7 +61,6 @@ public:
         add (rpcBAD_SECRET,            "badSecret",         "Secret does not match account.");
         add (rpcBAD_SEED,              "badSeed",           "Disallowed seed.");
         add (rpcBAD_SYNTAX,            "badSyntax",         "Syntax error.");
-        add (rpcCHANNEL_MALFORMED,     "channelMalformed",  "Payment channel is malformed.");
         add (rpcCHANNEL_AMT_MALFORMED, "channelAmtMalformed","Payment channel amount is malformed.");
         add (rpcCOMMAND_MISSING,       "commandMissing",    "Missing command entry.");
         add (rpcDST_ACT_MALFORMED,     "dstActMalformed",   "Destination account is malformed.");

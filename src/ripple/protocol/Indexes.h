@@ -93,7 +93,7 @@ getSignerListIndex (AccountID const& account);
 //------------------------------------------------------------------------------
 
 /* VFALCO TODO
-    For each of these operators that take just the uin256 and
+    For each of these operators that take just the uint256 and
     only attach the LedgerEntryType, we can comment out that
     operator to see what breaks, and those call sites are
     candidates for having the Keylet either passed in a a

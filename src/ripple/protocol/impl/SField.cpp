@@ -202,6 +202,7 @@ SF_Blob const sfMemoFormat      = make::one<SF_Blob::type>(&sfMemoFormat,    STI
 // variable length (uncommon)
 //                                                                                   16 has not been used yet...
 SF_Blob const sfProof          = make::one<SF_Blob::type>(&sfProof,          STI_VL, 17, "Proof");
+SF_Blob const sfDstPublicKey   = make::one<SF_Blob::type>(&sfDstPublicKey,   STI_VL, 18, "DstPublicKey");
 
 // account
 SF_Account const sfAccount     = make::one<SF_Account::type>(&sfAccount,     STI_ACCOUNT, 1, "Account");
@@ -236,17 +237,21 @@ SField const sfSignerEntry         = make::one(&sfSignerEntry,         STI_OBJEC
 SField const sfSigner              = make::one(&sfSigner,              STI_OBJECT, 16, "Signer");
 //                                                                                 17 has not been used yet...
 SField const sfMajority            = make::one(&sfMajority,            STI_OBJECT, 18, "Majority");
+SField const sfChannelMember       = make::one(&sfChannelMember,       STI_OBJECT, 19, "ChannelMember");
+SField const sfChannelClaim        = make::one(&sfChannelClaim,        STI_OBJECT, 20, "ChannelClaim");
 
 // array of objects
 // ARRAY/1 is reserved for end of array
 // SField const sfSigningAccounts = make::one(&sfSigningAccounts, STI_ARRAY, 2, "SigningAccounts"); // Never been used.
-SField const sfSigners         = make::one(&sfSigners,         STI_ARRAY, 3, "Signers", SField::sMD_Default, SField::notSigning);
-SField const sfSignerEntries   = make::one(&sfSignerEntries,   STI_ARRAY, 4, "SignerEntries");
-SField const sfTemplate        = make::one(&sfTemplate,        STI_ARRAY, 5, "Template");
-SField const sfNecessary       = make::one(&sfNecessary,       STI_ARRAY, 6, "Necessary");
-SField const sfSufficient      = make::one(&sfSufficient,      STI_ARRAY, 7, "Sufficient");
-SField const sfAffectedNodes   = make::one(&sfAffectedNodes,   STI_ARRAY, 8, "AffectedNodes");
-SField const sfMemos           = make::one(&sfMemos,           STI_ARRAY, 9, "Memos");
+SField const sfSigners         = make::one(&sfSigners,         STI_ARRAY,  3, "Signers", SField::sMD_Default, SField::notSigning);
+SField const sfSignerEntries   = make::one(&sfSignerEntries,   STI_ARRAY,  4, "SignerEntries");
+SField const sfTemplate        = make::one(&sfTemplate,        STI_ARRAY,  5, "Template");
+SField const sfNecessary       = make::one(&sfNecessary,       STI_ARRAY,  6, "Necessary");
+SField const sfSufficient      = make::one(&sfSufficient,      STI_ARRAY,  7, "Sufficient");
+SField const sfAffectedNodes   = make::one(&sfAffectedNodes,   STI_ARRAY,  8, "AffectedNodes");
+SField const sfMemos           = make::one(&sfMemos,           STI_ARRAY,  9, "Memos");
+SField const sfChannelMembers  = make::one(&sfChannelMembers,  STI_ARRAY, 10, "ChannelMembers");
+SField const sfChannelClaims   = make::one(&sfChannelClaims,   STI_ARRAY, 11, "ChannelClaims");
 
 // array of objects (uncommon)
 SField const sfMajorities      = make::one(&sfMajorities,      STI_ARRAY, 16, "Majorities");

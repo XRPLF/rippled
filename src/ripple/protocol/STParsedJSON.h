@@ -37,8 +37,11 @@ public:
             Does not throw.
         @param name The name of the JSON field, used in diagnostics.
         @param json The JSON-RPC to parse.
+        @param type The type to parse the object as.
+        If not specified the value defaults to `sfGeneric`.
     */
-    STParsedJSONObject (std::string const& name, Json::Value const& json);
+    STParsedJSONObject (std::string const& name, Json::Value const& json,
+        SField const& type=sfGeneric);
 
     STParsedJSONObject () = delete;
     STParsedJSONObject (STParsedJSONObject const&) = delete;

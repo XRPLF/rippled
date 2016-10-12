@@ -36,22 +36,24 @@ void addChannel (Json::Value& jsonLines, SLE const& line)
 {
     Json::Value& jDst (jsonLines.append (Json::objectValue));
     jDst[jss::channel_id] = to_string (line.key ());
-    jDst[jss::account] = to_string (line[sfAccount]);
-    jDst[jss::destination_account] = to_string (line[sfDestination]);
-    jDst[jss::amount] = line[sfAmount].getText ();
-    jDst[jss::balance] = line[sfBalance].getText ();
-    PublicKey const pk (line[sfPublicKey]);
-    jDst[jss::public_key] = toBase58 (TokenType::TOKEN_ACCOUNT_PUBLIC, pk);
-    jDst[jss::public_key_hex] = strHex (pk);
+    jDst["ChannelClaims"] = Json::Value (Json::arrayValue);
+    auto members = line.getFieldArray (sfChannelMembers);
+    for (auto const member : members)
+    {
+        Json::Value jMember;
+        jMember[jss::account] = to_string (member[sfAccount]);
+        jMember[jss::balance] = member[sfBalance].getText ();
+        jMember[jss::amount] = member[sfAmount].getText ();
+        jMember[jss::seq] = member[sfSequence];
+        PublicKey const pk (member[sfPublicKey]);
+        jMember[jss::public_key] =
+            toBase58 (TokenType::TOKEN_ACCOUNT_PUBLIC, pk);
+        jMember[jss::public_key_hex] = strHex (pk);
+        jDst[jss::members].append (std::move(jMember));
+    }
     jDst[jss::settle_delay] = line[sfSettleDelay];
     if (auto const& v = line[~sfExpiration])
         jDst[jss::expiration] = *v;
-    if (auto const& v = line[~sfCancelAfter])
-        jDst[jss::cancel_after] = *v;
-    if (auto const& v = line[~sfSourceTag])
-        jDst[jss::source_tag] = *v;
-    if (auto const& v = line[~sfDestinationTag])
-        jDst[jss::destination_tag] = *v;
 }
 
 // {
@@ -148,11 +150,18 @@ Json::Value doAccountChannels (RPC::Context& context)
             startAfter, startHint, reserve,
         [&visitData](std::shared_ptr<SLE const> const& sleCur)
         {
-
-            if (sleCur && sleCur->getType () == ltPAYCHAN &&
-                (! visitData.hasDst ||
-                 visitData.raDstAccount == (*sleCur)[sfDestination]))
+            if (sleCur && sleCur->getType () == ltPAYCHAN)
             {
+                if (visitData.hasDst)
+                {
+                    auto members = sleCur->getFieldArray (sfChannelMembers);
+                    for (auto const member : members)
+                    {
+                        if (member[sfAccount] != visitData.accountID &&
+                            member[sfAccount] != visitData.raDstAccount)
+                            return false;
+                    }
+                }
                 visitData.items.emplace_back (sleCur);
                 return true;
             }

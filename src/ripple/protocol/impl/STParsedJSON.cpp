@@ -864,10 +864,11 @@ static boost::optional <detail::STVar> parseArray (
 
 STParsedJSONObject::STParsedJSONObject (
     std::string const& name,
-    Json::Value const& json)
+    Json::Value const& json,
+    SField const& type)
 {
     using namespace STParsedJSONDetail;
-    object = parseObject (name, json, sfGeneric, 0, error);
+    object = parseObject (name, json, type, 0, error);
 }
 
 //------------------------------------------------------------------------------

@@ -3168,9 +3168,6 @@
     <ClInclude Include="..\..\src\ripple\protocol\LedgerFormats.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\PayChan.h">
-      <Filter>ripple\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Protocol.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>
