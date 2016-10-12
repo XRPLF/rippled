@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/ledger/AbstractFetchPackContainer.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerHistory.h>
@@ -61,6 +62,7 @@ struct LedgerReplay
 //
 class LedgerMaster
     : public Stoppable
+    , public AbstractFetchPackContainer
 {
 public:
     explicit
@@ -234,7 +236,7 @@ public:
 
     bool getFetchPack (
         uint256 const& hash,
-        Blob& data);
+        Blob& data) override;
 
     void makeFetchPack (
         std::weak_ptr<Peer> const& wPeer,

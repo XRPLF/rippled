@@ -290,7 +290,8 @@ bool InboundLedger::tryLocal ()
         }
         else
         {
-            TransactionStateSF filter(app_);
+            TransactionStateSF filter(mLedger->txMap().family(),
+                app_.getLedgerMaster());
 
             if (mLedger->txMap().fetchRoot (
                 SHAMapHash{mLedger->info().txHash}, &filter))
@@ -316,7 +317,8 @@ bool InboundLedger::tryLocal ()
             return true;
         }
 
-        AccountStateSF filter(app_);
+        AccountStateSF filter(mLedger->stateMap().family(),
+            app_.getLedgerMaster());
 
         if (mLedger->stateMap().fetchRoot (
             SHAMapHash{mLedger->info().accountHash}, &filter))
@@ -607,7 +609,8 @@ void InboundLedger::trigger (std::shared_ptr<Peer> const& peer, TriggerReason re
         }
         else
         {
-            AccountStateSF filter(app_);
+            AccountStateSF filter(mLedger->stateMap().family(),
+                app_.getLedgerMaster());
 
             // Release the lock while we process the large state map
             sl.unlock();
@@ -680,7 +683,8 @@ void InboundLedger::trigger (std::shared_ptr<Peer> const& peer, TriggerReason re
         }
         else
         {
-            TransactionStateSF filter(app_);
+            TransactionStateSF filter(mLedger->txMap().family(),
+                app_.getLedgerMaster());
 
             auto nodes = mLedger->txMap().getMissingNodes (
                 missingNodesFind, &filter);
@@ -849,21 +853,23 @@ bool InboundLedger::takeTxNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     auto nodeIDit = nodeIDs.cbegin ();
     auto nodeDatait = data.begin ();
-    TransactionStateSF tFilter(app_);
+    TransactionStateSF filter(mLedger->txMap().family(),
+        app_.getLedgerMaster());
 
     while (nodeIDit != nodeIDs.cend ())
     {
         if (nodeIDit->isRoot ())
         {
             san += mLedger->txMap().addRootNode (
-                SHAMapHash{mLedger->info().txHash}, makeSlice(*nodeDatait), snfWIRE, &tFilter);
+                SHAMapHash{mLedger->info().txHash},
+                    makeSlice(*nodeDatait), snfWIRE, &filter);
             if (!san.isGood())
                 return false;
         }
         else
         {
             san +=  mLedger->txMap().addKnownNode (
-                *nodeIDit, makeSlice(*nodeDatait), &tFilter);
+                *nodeIDit, makeSlice(*nodeDatait), &filter);
             if (!san.isGood())
                 return false;
         }
@@ -919,14 +925,16 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
 
     auto nodeIDit = nodeIDs.cbegin ();
     auto nodeDatait = data.begin ();
-    AccountStateSF tFilter(app_);
+    AccountStateSF filter(mLedger->stateMap().family(),
+        app_.getLedgerMaster());
 
     while (nodeIDit != nodeIDs.cend ())
     {
         if (nodeIDit->isRoot ())
         {
             san += mLedger->stateMap().addRootNode (
-                SHAMapHash{mLedger->info().accountHash}, makeSlice(*nodeDatait), snfWIRE, &tFilter);
+                SHAMapHash{mLedger->info().accountHash},
+                    makeSlice(*nodeDatait), snfWIRE, &filter);
             if (!san.isGood ())
             {
                 JLOG (m_journal.warn()) <<
@@ -937,7 +945,7 @@ bool InboundLedger::takeAsNode (const std::vector<SHAMapNodeID>& nodeIDs,
         else
         {
             san += mLedger->stateMap().addKnownNode (
-                *nodeIDit, makeSlice(*nodeDatait), &tFilter);
+                *nodeIDit, makeSlice(*nodeDatait), &filter);
             if (!san.isGood ())
             {
                 JLOG (m_journal.warn()) <<
@@ -981,9 +989,10 @@ bool InboundLedger::takeAsRootNode (Slice const& data, SHAMapAddNode& san)
         return false;
     }
 
-    AccountStateSF tFilter(app_);
+    AccountStateSF filter(mLedger->stateMap().family(),
+        app_.getLedgerMaster());
     san += mLedger->stateMap().addRootNode (
-        SHAMapHash{mLedger->info().accountHash}, data, snfWIRE, &tFilter);
+        SHAMapHash{mLedger->info().accountHash}, data, snfWIRE, &filter);
     return san.isGood();
 }
 
@@ -1004,9 +1013,10 @@ bool InboundLedger::takeTxRootNode (Slice const& data, SHAMapAddNode& san)
         return false;
     }
 
-    TransactionStateSF tFilter(app_);
+    TransactionStateSF filter(mLedger->txMap().family(),
+        app_.getLedgerMaster());
     san += mLedger->txMap().addRootNode (
-        SHAMapHash{mLedger->info().txHash}, data, snfWIRE, &tFilter);
+        SHAMapHash{mLedger->info().txHash}, data, snfWIRE, &filter);
     return san.isGood();
 }
 
@@ -1024,7 +1034,8 @@ InboundLedger::getNeededHashes ()
 
     if (!mHaveState)
     {
-        AccountStateSF filter(app_);
+        AccountStateSF filter(mLedger->stateMap().family(),
+            app_.getLedgerMaster());
         for (auto const& h : neededStateHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
@@ -1034,7 +1045,8 @@ InboundLedger::getNeededHashes ()
 
     if (!mHaveTransactions)
     {
-        TransactionStateSF filter(app_);
+        TransactionStateSF filter(mLedger->txMap().family(),
+            app_.getLedgerMaster());
         for (auto const& h : neededTxHashes (4, &filter))
         {
             ret.push_back (std::make_pair (

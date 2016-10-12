@@ -1311,6 +1311,9 @@
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\AbstractFetchPackContainer.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>

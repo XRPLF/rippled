@@ -17,30 +17,31 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
-#include <ripple/app/ledger/AccountStateSF.h>
+#ifndef RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
+#define RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
+
+#include <ripple/basics/base_uint.h>
+#include <ripple/basics/Blob.h>
 
 namespace ripple {
 
-AccountStateSF::AccountStateSF(Family& f, AbstractFetchPackContainer& fp)
-    : f_(f)
-    , fp_(fp)
+/** An interface facilitating retrieval of fetch packs without
+    an application or ledgermaster object.
+*/
+class AbstractFetchPackContainer
 {
-}
+public:
+    virtual ~AbstractFetchPackContainer() = default;
 
-void AccountStateSF::gotNode (bool fromFilter,
-                              SHAMapHash const& nodeHash,
-                              Blob&& nodeData,
-                              SHAMapTreeNode::TNType) const
-{
-    f_.db().store(hotACCOUNT_NODE, std::move(nodeData),
-        nodeHash.as_uint256());
-}
+    /** Retrieves partial ledger data of the coresponding hash from peers.`
 
-bool AccountStateSF::haveNode (SHAMapHash const& nodeHash,
-                               Blob& nodeData) const
-{
-    return fp_.getFetchPack(nodeHash.as_uint256(), nodeData);
-}
+        @param nodeHash The 256-bit hash of the data to fetch.
+        @param nodeData The data retrieved.
+        @return `true` If the hash associated data was found.
+    */
+    virtual bool getFetchPack(uint256 const& nodeHash, Blob& nodeData) = 0;
+};
 
 } // ripple
+
+#endif
