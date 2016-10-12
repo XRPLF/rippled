@@ -236,41 +236,39 @@ PayChanCreate::doApply()
         keylet::payChan (account, dst, (*sle)[sfSequence] - 1));
 
     STArray chanMembers {sfChannelMembers, 2};
-    chanMembers.push_back (STObject (sfChannelMember));
-    STObject& member1 = chanMembers.back ();
-    member1[sfBalance] = ctx_.tx[sfAmount];
-    member1[sfAccount] = account;
-    member1[sfPublicKey] = ctx_.tx[sfPublicKey];
-    member1[sfAmount] = XRPAmount{beast::zero};
-    member1[sfSequence] = 0;
 
-    chanMembers.push_back (STObject (sfChannelMember));
-    STObject& member2 = chanMembers.back ();
-    member2[sfBalance] = XRPAmount{beast::zero};
-    member2[sfAccount] = dst;
-    member2[sfPublicKey] = ctx_.tx[sfDstPublicKey];
-    member2[sfAmount] = XRPAmount{beast::zero};
-    member2[sfSequence] = 0;
-
-    // Add PayChan to owner directories
+    auto makeChanMember = [&chanMembers, &slep, this] (
+        AccountID const& account,
+        STAmount const& amount,
+        Slice const& pk)
     {
+        chanMembers.emplace_back (sfChannelMember);
+        auto& m = chanMembers.back();
+        m[sfBalance] = amount;
+        m[sfAccount] = account;
+        m[sfPublicKey] = pk;
+        m[sfAmount] = XRPAmount{beast::zero};
+        m[sfSequence] = 0;
+
+        // Add PayChan to owner directory
         uint64_t page;
         auto result = dirAdd (ctx_.view (), page, keylet::ownerDir (account),
             slep->key (), describeOwnerDir (account),
             ctx_.app.journal ("View"));
-        if (!isTesSuccess (result.first))
-            return result.first;
-        member1[sfOwnerNode] = page;
+        if (isTesSuccess (result.first))
+            m[sfOwnerNode] = page;
 
-        auto const sled = ctx_.view ().peek (keylet::account (dst));
-        result = dirAdd (ctx_.view (), page, keylet::ownerDir (dst),
-            slep->key (), describeOwnerDir (dst),
-            ctx_.app.journal ("View"));
-        if (!isTesSuccess (result.first))
-            return result.first;
-        member2[sfOwnerNode] = page;
-        ctx_.view ().update (sled);
-    }
+        return result.first;
+    };
+
+    auto ret =
+        makeChanMember (account, ctx_.tx[sfAmount], ctx_.tx[sfPublicKey]);
+    if (!isTesSuccess (ret))
+        return ret;
+
+    ret = makeChanMember (dst, XRPAmount{beast::zero}, ctx_.tx[sfDstPublicKey]);
+    if (!isTesSuccess (ret))
+        return ret;
 
     slep->setFieldArray (sfChannelMembers, chanMembers);
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
@@ -373,6 +371,9 @@ PayChanClaim::preflight (PreflightContext const& ctx)
 
     auto const& claims = ctx.tx.getFieldArray (sfChannelClaims);
 
+    if (claims.size() > 2)
+        return temMALFORMED;
+
     if (claims.size() == 2)
     {
         if (claims[0][sfPublicKey] == claims[1][sfPublicKey])
@@ -440,11 +441,11 @@ PayChanClaim::doApply()
 
     if (! txClaims.empty ())
     {
-        std::vector<STAmount> amounts {
+        std::array<STAmount, 2> amounts {
             chanMembers[0][sfAmount],
             chanMembers[1][sfAmount]};
 
-        std::vector<std::uint32_t> sequences {
+        std::array<std::uint32_t, 2> sequences {
             chanMembers[0][sfSequence],
             chanMembers[1][sfSequence]};
 

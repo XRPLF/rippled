@@ -597,16 +597,10 @@ private:
 
         if (reader.parse (jvParams[1u].asString (), jvClaim))
         {
-            try
-            {
-                auto const drops = std::stoul (
-                    jvClaim[jss::Amount].asString ());
-                (void)drops;  // just used for error checking
-            }
-            catch (std::exception const&)
-            {
+            STAmount amount;
+            if (! amountFromJsonNoThrow (amount, jvClaim[jss::Amount]) ||
+                    ! isXRP(amount))
                 return rpcError (rpcCHANNEL_AMT_MALFORMED);
-            }
 
             Json::Value jvRequest;
             jvRequest[jss::secret] = jvParams[0u].asString ();
@@ -627,16 +621,10 @@ private:
             Json::Reader reader;
             if (reader.parse (jvParams[0u].asString (), jvClaim))
             {
-                try
-                {
-                    auto const drops = std::stoul (
-                        jvClaim[jss::Amount].asString ());
-                    (void)drops;  // just used for error checking
-                }
-                catch (std::exception const&)
-                {
+                STAmount amount;
+                if (! amountFromJsonNoThrow (amount, jvClaim[jss::Amount]) ||
+                        ! isXRP(amount))
                     return rpcError (rpcCHANNEL_AMT_MALFORMED);
-                }
 
                 Json::Value jvRequest;
                 jvRequest[jss::tx_json] = jvClaim;

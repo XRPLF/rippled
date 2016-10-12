@@ -455,6 +455,25 @@ struct PayChan_test : public beast::unit_test::suite
             env (claim (bob, chan), ter (tecNO_PERMISSION));
         }
         {
+            // Cannot submit two claims from single signer
+            auto const newClaim = signClaim (alice.sk (), makeClaim (
+                alice.pk (), chan, XRP (500), 0));
+            env (claim (bob, chan, newClaim, newClaim), ter (temMALFORMED));
+        }
+        {
+            // Cannot submit more than two claims
+            auto const aliceClaim = signClaim (alice.sk (), makeClaim (
+                alice.pk (), chan, XRP (500), 0));
+            auto const bobClaim = signClaim (bob.sk (), makeClaim (
+                bob.pk (), chan, XRP (500), 0));
+
+            auto tripleClaim = claim (bob, chan, aliceClaim, bobClaim);
+            Json::Value jvClaim3;
+            jvClaim3["ChannelClaim"] = bobClaim;
+            tripleClaim["ChannelClaims"].append (jvClaim3);
+            env (tripleClaim, ter (temMALFORMED));
+        }
+        {
             // Try to claim more than available
             auto const preAmount =
                 channelAmount (*env.current (), chan, alice);
@@ -766,11 +785,12 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT (
                 r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
         }
+
+        auto const secretKey = toBase58 (
+            TokenType::TOKEN_ACCOUNT_SECRET, alice.sk());
         {
             // Verify chan1 auth
             auto const claim = makeClaim (pk, chan1, XRP (1000), 1);
-            auto const secretKey = toBase58 (
-                TokenType::TOKEN_ACCOUNT_SECRET, alice.sk());
             auto rv = env.rpc (
                 "channel_authorize", secretKey, to_string(claim))[jss::result];
             BEAST_EXPECT(rv[jss::status] == "success");
@@ -784,15 +804,26 @@ struct PayChan_test : public beast::unit_test::suite
             rv = env.rpc (
                 "channel_verify", to_string(signedClaim))[jss::result];
             BEAST_EXPECT (!rv[jss::signature_verified].asBool ());
-
+        }
+        {
             // Do not authorize bad claim
             auto badClaim = makeClaim (pk, chan1, XRP (1000), 1);
             badClaim["BogusField"] = 1;
-            rv = env.rpc (
+            auto const rv = env.rpc (
                 "channel_authorize", secretKey, to_string(badClaim))[jss::result];
             BEAST_EXPECT (rv[jss::status] == "error");
             BEAST_EXPECT (
                 rv[jss::error_message] == "Field 'claim.BogusField' is unknown.");
+        }
+        {
+            // Do not authorize bad amount
+            auto const badClaim = makeClaim (pk, chan1, alice["USD"] (100), 1);
+            auto const rv = env.rpc (
+                "channel_authorize", secretKey, to_string(badClaim))[jss::result];
+            BEAST_EXPECT (rv[jss::status] == "error");
+            BEAST_EXPECT (
+                rv[jss::request][jss::error_message] ==
+                "Payment channel amount is malformed.");
         }
     }
 
