@@ -75,11 +75,12 @@ void ConsensusTransSetSF::gotNode (
     }
 }
 
-bool ConsensusTransSetSF::haveNode (
-    SHAMapHash const& nodeHash, Blob& nodeData) const
+boost::optional<Blob>
+ConsensusTransSetSF::getNode (SHAMapHash const& nodeHash) const
 {
+    Blob nodeData;
     if (m_nodeCache.retrieve (nodeHash, nodeData))
-        return true;
+        return nodeData;
 
     auto txn = app_.getMasterTransaction().fetch(nodeHash.as_uint256(), false);
 
@@ -93,10 +94,10 @@ bool ConsensusTransSetSF::haveNode (
         txn->getSTransaction ()->add (s);
         assert(sha512Half(s.slice()) == nodeHash.as_uint256());
         nodeData = s.peekData ();
-        return true;
+        return nodeData;
     }
 
-    return false;
+    return boost::none;
 }
 
 } // ripple

@@ -20,8 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
 #define RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
+#include <ripple/app/ledger/AbstractFetchPackContainer.h>
 #include <ripple/shamap/SHAMapSyncFilter.h>
+#include <ripple/shamap/Family.h>
 
 namespace ripple {
 
@@ -31,11 +32,11 @@ class AccountStateSF
     : public SHAMapSyncFilter
 {
 private:
-    Application& app_;
+    Family& f_;
+    AbstractFetchPackContainer& fp_;
 
 public:
-    explicit
-    AccountStateSF (Application& app);
+    AccountStateSF(Family&, AbstractFetchPackContainer&);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -43,8 +44,8 @@ public:
                   Blob&& nodeData,
                   SHAMapTreeNode::TNType) const override;
 
-    bool haveNode (SHAMapHash const& nodeHash,
-                   Blob& nodeData) const override;
+    boost::optional<Blob>
+    getNode(SHAMapHash const& nodeHash) const override;
 };
 
 } // ripple

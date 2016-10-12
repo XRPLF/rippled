@@ -40,8 +40,9 @@ public:
                           Blob&& nodeData,
                           SHAMapTreeNode::TNType type) const = 0;
 
-    virtual bool haveNode (SHAMapHash const& nodeHash,
-                           Blob& nodeData) const = 0;
+    virtual
+    boost::optional<Blob>
+    getNode(SHAMapHash const& nodeHash) const = 0;
 };
 
 }
