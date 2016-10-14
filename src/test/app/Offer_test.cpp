@@ -882,9 +882,9 @@ public:
         auto const USD = gw["USD"];
         auto const BTC = gw["BTC"];
 
-        auto const gw_initial_balance {1149999730};
-        auto const alice_initial_balance {499946999680};
-        auto const bob_initial_balance {10199999920};
+        auto const gw_initial_balance = 1149999730;
+        auto const alice_initial_balance = 499946999680;
+        auto const bob_initial_balance = 10199999920;
         auto const small_amount =
             STAmount{ bob["USD"].issue(), UINT64_C(2710505431213761), -33};
 
