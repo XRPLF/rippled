@@ -29,6 +29,7 @@
 #include <test/rpc/KeyGeneration_test.cpp>
 #include <test/rpc/LedgerClosed_test.cpp>
 #include <test/rpc/LedgerData_test.cpp>
+#include <test/rpc/LedgerRPC_test.cpp>
 #include <test/rpc/LedgerRequestRPC_test.cpp>
 #include <test/rpc/NoRipple_test.cpp>
 #include <test/rpc/RobustTransaction_test.cpp>
