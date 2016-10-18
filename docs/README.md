@@ -25,7 +25,24 @@ Install these dependencies:
 
 ### MacOS
 
-Under construction
+1. Install doxygen:
+  * Use homebrew to install: `brew install doxygen`.  The executable will be
+    installed in `/usr/local/bin` which is already in your path.
+  * Alternatively, install from here: [doxygen](http://www.stack.nl/~dimitri/doxygen/download.html).
+    You'll then need to make doxygen available to your command line.  You can
+    do this by adding a symbolic link from `/usr/local/bin` to the doxygen
+    executable.  For example, `$ ln -s /Applications/Doxygen.app/Contents/Resources/doxygen /usr/local/bin/doxygen`
+2. Install [Boost](http://www.boost.org/users/download/)
+  1. Extract the compressed file contents to your (new) `$BOOST_ROOT` location.
+  2. Open a command prompt or shell in the `$BOOST_ROOT`.
+  3. `$ ./bootstrap.bat`
+  4. (Optional, if you also plan to build rippled)
+     `$ ./b2 toolset=clang threading=multi runtime-link=static  link=static
+     cxxflags="-stdlib=libc++" linkflags="-stdlib=libc++" adress-model=64`
+  5. If it is not already there, add your `$BOOST_ROOT` to your environment
+     `$PATH`.  This makes the `b2` command available to the command line.
+3. That should be all that's required.  In OS X 10.11, at least, libxml2 and
+   libxslt come pre-installed.
 
 ### Linux
 
