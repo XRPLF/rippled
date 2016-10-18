@@ -18,14 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/Log.h>
 #include <ripple/test/jtx.h>
-#include <ripple/test/jtx/Account.h>
 #include <ripple/test/WSClient.h>
 #include <ripple/ledger/tests/PathSet.h>
-#include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
@@ -82,8 +77,20 @@ class Offer_test : public beast::unit_test::suite
         return env.rpc ("json", "ledger_entry", to_string(jvParams))[jss::result];
     };
 
+    static auto
+    getBookOffers(jtx::Env & env, Issue const& taker_pays, Issue const& taker_gets)
+    {
+        Json::Value jvbp;
+        jvbp[jss::ledger_index] = "current";
+        jvbp[jss::taker_pays][jss::currency] = to_string(taker_pays.currency);
+        jvbp[jss::taker_pays][jss::issuer] = to_string(taker_pays.account);
+        jvbp[jss::taker_gets][jss::currency] = to_string(taker_gets.currency);
+        jvbp[jss::taker_gets][jss::issuer] = to_string(taker_gets.account);
+        return env.rpc("json", "book_offers", to_string(jvbp)) [jss::result];
+    }
+
 public:
-    void testcaseRmFundedOffer ()
+    void testRmFundedOffer ()
     {
         testcase ("Incorrect Removal of Funded Offers");
 
@@ -142,7 +149,7 @@ public:
             isOffer (env, carol, BTC (49), XRP (49)));
     }
 
-    void testcaseCanceledOffer ()
+    void testCanceledOffer ()
     {
         testcase ("Removing Canceled Offers");
 
@@ -172,7 +179,7 @@ public:
         BEAST_EXPECT(isOffer (env, alice, XRP (300), USD (100)) &&
             !isOffer (env, alice, XRP (500), USD (100)));
 
-        // Test canceling non-existant offer.
+        // Test canceling non-existent offer.
         env (offer (alice, XRP (400), USD (200)),
              json (jss::OfferSequence, firstOfferSeq),
              require (offers (alice, 2)));
@@ -197,7 +204,7 @@ public:
         BEAST_EXPECT(!isOffer (env, alice, XRP (222), USD (111)));
     }
 
-    void testcaseTinyPayment ()
+    void testTinyPayment ()
     {
         testcase ("Tiny payments");
 
@@ -239,7 +246,7 @@ public:
         }
     }
 
-    void testcaseXRPTinyPayment ()
+    void testXRPTinyPayment ()
     {
         testcase ("XRP Tiny payments");
 
@@ -343,7 +350,7 @@ public:
         }
     }
 
-    void testcaseEnforceNoRipple ()
+    void testEnforceNoRipple ()
     {
         testcase ("Enforce No Ripple");
 
@@ -410,7 +417,7 @@ public:
     }
 
     void
-    testcaseInsufficientReserve ()
+    testInsufficientReserve ()
     {
         testcase ("Insufficient Reserve");
 
@@ -513,7 +520,7 @@ public:
     }
 
     void
-    testcaseFillModes ()
+    testFillModes ()
     {
         testcase ("Fill Modes");
 
@@ -623,7 +630,7 @@ public:
     }
 
     void
-    testcaseMalformed()
+    testMalformed()
     {
         testcase ("Malformed Detection");
 
@@ -717,7 +724,7 @@ public:
     }
 
     void
-    testcaseExpiration()
+    testExpiration()
     {
         testcase ("Offer Expiration");
 
@@ -790,7 +797,7 @@ public:
     }
 
     void
-    testcaseUnfundedCross()
+    testUnfundedCross()
     {
         testcase ("Unfunded Crossing");
 
@@ -851,26 +858,114 @@ public:
     }
 
     void
-    testcaseSelfCross()
+    testSelfCross(bool use_partner)
     {
-        testcase ("Self-crossing");
+        testcase (std::string("Self-crossing") +
+            (use_partner ? ", with partner account" : ""));
 
         using namespace jtx;
 
         auto const gw = Account {"gateway"};
+        auto const partner = Account {"partner"};
         auto const USD = gw["USD"];
         auto const BTC = gw["BTC"];
 
         Env env {*this};
         env.fund (XRP (10000), gw);
-        env (offer (gw, BTC (500), USD (100)));
-        env (offer (gw, USD (100), BTC (500)));
-        env.close ();
+        if (use_partner)
+        {
+            env.fund (XRP (10000), partner);
+            env (trust (partner, USD (100)));
+            env (trust (partner, BTC (500)));
+            env (pay (gw, partner, USD(100)));
+            env (pay (gw, partner, BTC(500)));
+        }
+        auto const& account_to_test = use_partner ? partner : gw;
+
+		env.close();
+        env.require (offers (account_to_test, 0));
+
+        // PART 1:
+        // we will make two offers that can be used to bridge BTC to USD
+        // through XRP
+        env (offer (account_to_test, BTC (250), XRP (1000)),
+                 offers (account_to_test, 1));
+
+        // validate that the book now shows a BTC for XRP offer
+        BEAST_EXPECT(isOffer(env, account_to_test, BTC(250), XRP(1000)));
+
+        auto const secondLegSeq = env.seq(account_to_test);
+        env (offer (account_to_test, XRP(1000), USD (50)),
+                 offers (account_to_test, 2));
+
+        // validate that the book also shows a XRP for USD offer
+        BEAST_EXPECT(isOffer(env, account_to_test, XRP(1000), USD(50)));
+
+        // now make an offer that will cross and autobridge, meaning
+        // the outstanding offers will be taken leaving us with none
+        env (offer (account_to_test, USD (50), BTC (250)));
+
+        // NOTE :
+        // at this point, all offers are expected to be consumed.
+        // alas, they are not because of bug in the current autobridging
+        // implementation (to be replaced in the not-so-distant future).
+        // The current implementation (bug) leaves an empty offer in the second
+        // leg of the bridge. validate the current behavior as-is and expect
+        // this test to be changed in the future.
+        env.require (offers (account_to_test, 1));
+
+        auto jrr = getBookOffers(env, USD, BTC);
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+        jrr = getBookOffers(env, BTC, XRP);
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+        BEAST_EXPECT(isOffer(env, account_to_test, XRP(0), USD(0)));
+
+        // cancel that lingering second offer so that it doesn't interfere with the
+        // next set of offers we test. this will not be needed once the bridging
+        // bug is fixed
+        Json::Value cancelOffer;
+        cancelOffer[jss::Account] = account_to_test.human();
+        cancelOffer[jss::OfferSequence] = secondLegSeq;
+        cancelOffer[jss::TransactionType] = "OfferCancel";
+        env (cancelOffer);
+        env.require (offers (account_to_test, 0));
+
+        // PART 2:
+        // simple direct crossing  BTC to USD and then USD to BTC which causes
+        // the first offer to be replaced
+        env (offer (account_to_test, BTC (250), USD (50)),
+                 offers (account_to_test, 1));
+
+        // validate that the book shows one BTC for USD offer and no USD for
+        // BTC offers
+        BEAST_EXPECT(isOffer(env, account_to_test, BTC(250), USD(50)));
+
+        jrr = getBookOffers(env, USD, BTC);
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+        // this second offer would self-cross directly, so it causes the first
+        // offer by the same owner/taker to be removed
+        env (offer (account_to_test, USD (50), BTC (250)),
+                 offers (account_to_test, 1));
+
+        // validate that we now have just the second offer...the first was removed
+        jrr = getBookOffers(env, BTC, USD);
+        BEAST_EXPECT(jrr[jss::offers].isArray());
+        BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+        BEAST_EXPECT(isOffer(env, account_to_test, USD(50), BTC(250)));
     }
 
     void
-    testcaseNegativeBalance()
+    testNegativeBalance()
     {
+        // This test creates an offer test for negative balance
+        // with transfer fees and miniscule funds.
         testcase ("Negative Balance");
 
         using namespace jtx;
@@ -882,6 +977,8 @@ public:
         auto const USD = gw["USD"];
         auto const BTC = gw["BTC"];
 
+        // these *interesting* amounts were taken
+        // from the original JS test that was ported here
         auto const gw_initial_balance = 1149999730;
         auto const alice_initial_balance = 499946999680;
         auto const bob_initial_balance = 10199999920;
@@ -903,10 +1000,13 @@ public:
 
         env (offer (alice, USD (50), XRP (150000)));
 
+        // unfund the offer
         env (pay (alice, gw, USD (100)));
 
+        // drop the trust line (set to 0)
         env (trust (gw, alice["USD"] (0)));
 
+        // verify balances
         auto jrr = ledgerEntryState (env, alice, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
 
@@ -915,8 +1015,10 @@ public:
             jrr[jss::node][sfBalance.fieldName][jss::value] ==
                 "-2710505431213761e-33");
 
+        // create crossing offer
         env (offer (bob, XRP (2000), USD (1)));
 
+        // verify balances again
         jrr = ledgerEntryState (env, alice, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
         jrr = ledgerEntryRoot (env, alice);
@@ -937,7 +1039,7 @@ public:
     }
 
     void
-    testcaseOfferCrossWithXRP(bool reverse_order)
+    testOfferCrossWithXRP(bool reverse_order)
     {
         testcase (std::string("Offer Crossing with XRP, ") +
                 (reverse_order ? "Reverse" : "Normal") +
@@ -994,7 +1096,7 @@ public:
     }
 
     void
-    testcaseOfferCrossWithLimitOverride()
+    testOfferCrossWithLimitOverride()
     {
         testcase ("Offer Crossing with Limit Override");
 
@@ -1039,7 +1141,7 @@ public:
     }
 
     void
-    testcaseOfferAcceptThenCancel()
+    testOfferAcceptThenCancel()
     {
         testcase ("Offer Accept then Cancel.");
 
@@ -1066,7 +1168,7 @@ public:
     }
 
     void
-    testcaseOfferCancelPastAndFuture()
+    testOfferCancelPastAndFuture()
     {
 
         testcase ("Offer Cancel Past and Future Sequence.");
@@ -1096,7 +1198,7 @@ public:
     }
 
     void
-    testcaseCurrencyConversionEntire()
+    testCurrencyConversionEntire()
     {
         testcase ("Currency Conversion: Entire Offer");
 
@@ -1156,7 +1258,7 @@ public:
     }
 
     void
-    testcaseCurrencyConversionIntoDebt()
+    testCurrencyConversionIntoDebt()
     {
         testcase ("Currency Conversion: Offerer Into Debt");
 
@@ -1184,7 +1286,7 @@ public:
     }
 
     void
-    testcaseCurrencyConversionInParts()
+    testCurrencyConversionInParts()
     {
         testcase ("Currency Conversion: In Parts");
 
@@ -1208,14 +1310,18 @@ public:
 
         env (pay (alice, alice, XRP (200)), sendmax (USD (100)));
 
+        // The previous payment reduced the remaining offer amount by 200 XRP
         auto jro = ledgerEntryOffer (env, bob, bobOfferSeq);
         BEAST_EXPECT(
             jro[jss::node][jss::TakerGets] == XRP (300).value ().getText ());
         BEAST_EXPECT(
             jro[jss::node][jss::TakerPays] == USD (60).value ().getJson (0));
 
+        // the balance between alice and gw is 160 USD..200 less the 40 taken
+        // by the offer
         auto jrr = ledgerEntryState (env, alice, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-160");
+        // alice now has 200 more XRP from the payment
         jrr = ledgerEntryRoot (env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
@@ -1225,18 +1331,29 @@ public:
                 env.current ()->fees ().base * 2)
         );
 
+        // bob got 40 USD from partial consumption of the offer
         jrr = ledgerEntryState (env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-40");
 
+        // Alice converts USD to XRP which should fail
+        // due to PartialPayment.
         env (pay (alice, alice, XRP (600)), sendmax (USD (100)),
             ter(tecPATH_PARTIAL));
 
+        // Alice converts USD to XRP, should succeed because
+        // we permit partial payment
         env (pay (alice, alice, XRP (600)), sendmax (USD (100)),
             txflags (tfPartialPayment));
 
+        // Verify the offer was consumed
         jro = ledgerEntryOffer (env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
 
+        // verify balances look right after the partial payment
+        // only 300 XRP should be have been payed since that's all
+        // that remained in the offer from bob. The alice balance is now
+        // 100 USD because another 60 USD were transferred to bob in the second
+        // payment
         jrr = ledgerEntryState (env, alice, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-100");
         jrr = ledgerEntryRoot (env, alice);
@@ -1249,12 +1366,14 @@ public:
                 env.current ()->fees ().base * 4)
         );
 
+        // bob now has 100 USD - 40 from the first payment and 60 from the
+        // second (partial) payment
         jrr = ledgerEntryState (env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-100");
     }
 
     void
-    testcaseCrossCurrencyStartXRP()
+    testCrossCurrencyStartXRP()
     {
         testcase ("Cross Currency Payment: Start with XRP");
 
@@ -1293,7 +1412,7 @@ public:
     }
 
     void
-    testcaseCrossCurrencyEndXRP()
+    testCrossCurrencyEndXRP()
     {
         testcase ("Cross Currency Payment: End with XRP");
 
@@ -1340,7 +1459,7 @@ public:
     }
 
     void
-    testcaseCrossCurrencyBridged()
+    testCrossCurrencyBridged()
     {
         testcase ("Cross Currency Payment: Bridged");
 
@@ -1404,7 +1523,7 @@ public:
     }
 
     void
-    testcaseOfferFeesConsumeFunds()
+    testOfferFeesConsumeFunds()
     {
         testcase ("Offer Fees Consume Funds");
 
@@ -1457,7 +1576,7 @@ public:
     }
 
     void
-    testcaseOfferCreateThenCross()
+    testOfferCreateThenCross()
     {
         testcase ("Offer Create, then Cross");
 
@@ -1492,7 +1611,7 @@ public:
     }
 
     void
-    testcaseSellFlagBasic()
+    testSellFlagBasic()
     {
         testcase ("Offer tfSell: Basic Sell");
 
@@ -1533,7 +1652,7 @@ public:
     }
 
     void
-    testcaseSellFlagExceedLimit()
+    testSellFlagExceedLimit()
     {
         testcase ("Offer tfSell: 2x Sell Exceed Limit");
 
@@ -1576,7 +1695,7 @@ public:
     }
 
     void
-    testcaseGatewayCrossCurrency()
+    testGatewayCrossCurrency()
     {
         testcase ("Client Issue #535: Gateway Cross Currency");
 
@@ -1639,34 +1758,35 @@ public:
 
     void run ()
     {
-        testcaseCanceledOffer ();
-        testcaseRmFundedOffer ();
-        testcaseTinyPayment ();
-        testcaseXRPTinyPayment ();
-        testcaseEnforceNoRipple ();
-        testcaseInsufficientReserve ();
-        testcaseFillModes ();
-        testcaseMalformed ();
-        testcaseExpiration ();
-        testcaseUnfundedCross ();
-        testcaseSelfCross ();
-        testcaseNegativeBalance();
-        testcaseOfferCrossWithXRP(true);
-        testcaseOfferCrossWithXRP(false);
-        testcaseOfferCrossWithLimitOverride();
-        testcaseOfferAcceptThenCancel();
-        testcaseOfferCancelPastAndFuture();
-        testcaseCurrencyConversionEntire();
-        testcaseCurrencyConversionIntoDebt();
-        testcaseCurrencyConversionInParts();
-        testcaseCrossCurrencyStartXRP();
-        testcaseCrossCurrencyEndXRP();
-        testcaseCrossCurrencyBridged();
-        testcaseOfferFeesConsumeFunds();
-        testcaseOfferCreateThenCross();
-        testcaseSellFlagBasic();
-        testcaseSellFlagExceedLimit();
-        testcaseGatewayCrossCurrency();
+        testCanceledOffer ();
+        testRmFundedOffer ();
+        testTinyPayment ();
+        testXRPTinyPayment ();
+        testEnforceNoRipple ();
+        testInsufficientReserve ();
+        testFillModes ();
+        testMalformed ();
+        testExpiration ();
+        testUnfundedCross ();
+        testSelfCross (false);
+        testSelfCross (true);
+        testNegativeBalance ();
+        testOfferCrossWithXRP (true);
+        testOfferCrossWithXRP (false);
+        testOfferCrossWithLimitOverride ();
+        testOfferAcceptThenCancel ();
+        testOfferCancelPastAndFuture ();
+        testCurrencyConversionEntire ();
+        testCurrencyConversionIntoDebt ();
+        testCurrencyConversionInParts ();
+        testCrossCurrencyStartXRP ();
+        testCrossCurrencyEndXRP ();
+        testCrossCurrencyBridged ();
+        testOfferFeesConsumeFunds ();
+        testOfferCreateThenCross ();
+        testSellFlagBasic ();
+        testSellFlagExceedLimit ();
+        testGatewayCrossCurrency ();
     }
 };
 
