@@ -28,7 +28,7 @@ The tests are written in a declarative style:
   Each case has an entry in the `path_finding_cases` object
   The key translates to a `suite(key, {...})`
   The `{...}` passed in is compiled into a setup/teardown for the `ledger` and
-  into a bunch of `test` invokations for the `paths_expected`
+  into a bunch of `test` invocations for the `paths_expected`
     
     - aliases are used throughout for easier reading
 
