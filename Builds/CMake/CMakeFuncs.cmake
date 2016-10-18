@@ -294,10 +294,13 @@ macro(find_pthread)
 endmacro()
 
 macro(find_openssl openssl_min)
-  if (APPLE)
-    # swd TBD fixme
-    file(GLOB OPENSSL_ROOT_DIR /usr/local/Cellar/openssl/*)
-    # set(OPENSSL_ROOT_DIR /usr/local/Cellar/openssl)
+  if (APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
+    find_program(HOMEBREW brew)
+    if (NOT HOMEBREW STREQUAL "HOMEBREW-NOTFOUND")
+      execute_process(COMMAND brew --prefix openssl
+        OUTPUT_VARIABLE OPENSSL_ROOT_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
   endif()
 
   if (WIN32)

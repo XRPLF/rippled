@@ -385,11 +385,13 @@ def config_base(env):
         except KeyError:
             pass
     elif Beast.system.osx:
-        OSX_OPENSSL_ROOT = '/usr/local/Cellar/openssl/'
-        most_recent = sorted(os.listdir(OSX_OPENSSL_ROOT))[-1]
-        openssl = os.path.join(OSX_OPENSSL_ROOT, most_recent)
-        env.Prepend(CPPPATH='%s/include' % openssl)
-        env.Prepend(LIBPATH=['%s/lib' % openssl])
+        try:
+            openssl = subprocess.check_output(['brew', '--prefix','openssl'],
+                                              stderr=subprocess.STDOUT).strip()
+            env.Prepend(CPPPATH='%s/include' % openssl)
+            env.Prepend(LIBPATH=['%s/lib' % openssl])
+        except:
+            pass
         if not 'vcxproj' in COMMAND_LINE_TARGETS:
             env.Append(CPPDEFINES=['NO_LOG_UNHANDLED_EXCEPTIONS'])
 
