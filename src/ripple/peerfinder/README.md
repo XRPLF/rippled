@@ -109,7 +109,7 @@ tuned heuristics. The fields are as follows:
   fractional part up or down using a uniform random number generated at
   program startup. This allows the outdegree of the overlay network to be
   controlled with fractional precision, ensuring that all inbound network
-  connection slots are not consumed (which would it difficult for new
+  connection slots are not consumed (which would make it difficult for new
   participants to enter the network).
 
 Here's an example of how the network might be structured with a fractional
