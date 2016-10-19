@@ -44,8 +44,8 @@ public:
                   Blob&& nodeData,
                   SHAMapTreeNode::TNType) const override;
 
-    bool haveNode (SHAMapHash const& nodeHash,
-                   Blob& nodeData) const override;
+    boost::optional<Blob>
+    getNode(SHAMapHash const& nodeHash) const override;
 };
 
 } // ripple

@@ -1779,17 +1779,18 @@ LedgerMaster::addFetchPack (
     fetch_packs_.canonicalize (hash, data);
 }
 
-bool
+boost::optional<Blob>
 LedgerMaster::getFetchPack (
-    uint256 const& hash,
-    Blob& data)
+    uint256 const& hash)
 {
-    if (!fetch_packs_.retrieve (hash, data))
-        return false;
-
-    fetch_packs_.del (hash, false);
-
-    return hash == sha512Half(makeSlice(data));
+    Blob data;
+    if (fetch_packs_.retrieve(hash, data))
+    {
+        fetch_packs_.del(hash, false);
+        if (hash == sha512Half(makeSlice(data)))
+            return data;
+    }
+    return boost::none;
 }
 
 void

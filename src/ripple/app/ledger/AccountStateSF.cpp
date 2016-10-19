@@ -37,10 +37,10 @@ void AccountStateSF::gotNode (bool fromFilter,
         nodeHash.as_uint256());
 }
 
-bool AccountStateSF::haveNode (SHAMapHash const& nodeHash,
-                               Blob& nodeData) const
+boost::optional<Blob>
+AccountStateSF::getNode(SHAMapHash const& nodeHash) const
 {
-    return fp_.getFetchPack(nodeHash.as_uint256(), nodeData);
+    return fp_.getFetchPack(nodeHash.as_uint256());
 }
 
 } // ripple

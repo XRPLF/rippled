@@ -306,15 +306,14 @@ SHAMap::checkFilter(SHAMapHash const& hash,
                     SHAMapSyncFilter* filter) const
 {
     std::shared_ptr<SHAMapAbstractNode> node;
-    Blob nodeData;
-    if (filter->haveNode (hash, nodeData))
+    if (auto nodeData = filter->getNode (hash))
     {
         node = SHAMapAbstractNode::make(
-            makeSlice(nodeData), 0, snfPREFIX, hash, true, f_.journal ());
+            makeSlice(*nodeData), 0, snfPREFIX, hash, true, f_.journal ());
         if (node)
         {
             filter->gotNode (true, hash,
-                std::move(nodeData), node->getType ());
+                std::move(*nodeData), node->getType ());
             if (backed_)
                 canonicalize (hash, node);
         }

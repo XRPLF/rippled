@@ -234,9 +234,8 @@ public:
         uint256 const& hash,
         std::shared_ptr<Blob>& data);
 
-    bool getFetchPack (
-        uint256 const& hash,
-        Blob& data) override;
+    boost::optional<Blob>
+    getFetchPack (uint256 const& hash) override;
 
     void makeFetchPack (
         std::weak_ptr<Peer> const& wPeer,

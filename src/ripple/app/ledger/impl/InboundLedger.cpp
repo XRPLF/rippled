@@ -246,20 +246,19 @@ bool InboundLedger::tryLocal ()
 
         if (!node)
         {
-            Blob data;
-
-            if (!app_.getLedgerMaster ().getFetchPack (mHash, data))
+            auto data = app_.getLedgerMaster().getFetchPack(mHash);
+            if (! data)
                 return false;
 
             JLOG (m_journal.trace()) <<
                 "Ledger header found in fetch pack";
 
             mLedger = std::make_shared<Ledger> (
-                deserializeHeader (makeSlice(data), true),
+                deserializeHeader (makeSlice(*data), true),
                 app_.family());
 
             app_.getNodeStore ().store (
-                hotLEDGER, std::move (data), mHash);
+                hotLEDGER, std::move (*data), mHash);
         }
         else
         {

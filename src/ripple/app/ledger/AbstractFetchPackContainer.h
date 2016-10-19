@@ -22,6 +22,7 @@
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/Blob.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -36,10 +37,10 @@ public:
     /** Retrieves partial ledger data of the coresponding hash from peers.`
 
         @param nodeHash The 256-bit hash of the data to fetch.
-        @param nodeData The data retrieved.
-        @return `true` If the hash associated data was found.
+        @return boost::none if the hash isn't cached,
+            otherwise, the hash associated data.
     */
-    virtual bool getFetchPack(uint256 const& nodeHash, Blob& nodeData) = 0;
+    virtual boost::optional<Blob> getFetchPack(uint256 const& nodeHash) = 0;
 };
 
 } // ripple

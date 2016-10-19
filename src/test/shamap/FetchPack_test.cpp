@@ -66,17 +66,16 @@ public:
         {
         }
 
-        bool haveNode (SHAMapHash const& nodeHash,
-            Blob& nodeData) const override
+        boost::optional<Blob>
+        getNode (SHAMapHash const& nodeHash) const override
         {
             Map::iterator it = mMap.find (nodeHash);
             if (it == mMap.end ())
             {
                 JLOG(mJournal.fatal()) << "Test filter missing node";
-                return false;
+                return boost::none;
             }
-            nodeData = it->second;
-            return true;
+            return it->second;
         }
 
         Map& mMap;

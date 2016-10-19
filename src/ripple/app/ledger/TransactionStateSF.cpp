@@ -40,10 +40,10 @@ void TransactionStateSF::gotNode (bool fromFilter,
         std::move (nodeData), nodeHash.as_uint256());
 }
 
-bool TransactionStateSF::haveNode (SHAMapHash const& nodeHash,
-                                   Blob& nodeData) const
+boost::optional<Blob>
+TransactionStateSF::getNode(SHAMapHash const& nodeHash) const
 {
-    return fp_.getFetchPack(nodeHash.as_uint256(), nodeData);
+    return fp_.getFetchPack(nodeHash.as_uint256());
 }
 
 } // ripple
