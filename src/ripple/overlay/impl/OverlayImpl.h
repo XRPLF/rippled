@@ -235,10 +235,19 @@ public:
     for_each (UnaryFunc&& f)
     {
         std::lock_guard <decltype(mutex_)> lock (mutex_);
-        for (auto const& e : ids_)
+
+        // Iterate over a copy of the peer list because peer
+        // destruction can invalidate iterators.
+        std::vector<std::weak_ptr<PeerImp>> wp;
+        wp.reserve(ids_.size());
+
+        for (auto& x : ids_)
+            wp.push_back(x.second);
+
+        for (auto& w : wp)
         {
-            if (auto sp = e.second.lock())
-                f(std::move(sp));
+            if (auto p = w.lock())
+                f(std::move(p));
         }
     }
 
