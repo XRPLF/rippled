@@ -52,7 +52,7 @@ class DatumInContext(object):
     """
     Represents a datum along a path from a context.
 
-    Essentially a zipper but with a structure represented by JsonPath, 
+    Essentially a zipper but with a structure represented by JSONPath, 
     and where the context is more of a parent pointer than a proper 
     representation of the context.
 
