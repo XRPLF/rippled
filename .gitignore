@@ -93,3 +93,4 @@ Builds/VisualStudio2015/*.sdf
 
 # MSVC
 *.pdb
+.vs/
