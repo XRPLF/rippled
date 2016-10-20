@@ -5193,6 +5193,9 @@
     <ClCompile Include="..\..\src\test\app\SetRegularKey_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\SetTrust_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\SHAMapStore_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
