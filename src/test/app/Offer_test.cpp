@@ -882,7 +882,7 @@ public:
         }
         auto const& account_to_test = use_partner ? partner : gw;
 
-		env.close();
+        env.close();
         env.require (offers (account_to_test, 0));
 
         // PART 1:
@@ -907,11 +907,11 @@ public:
 
         // NOTE :
         // at this point, all offers are expected to be consumed.
-        // alas, they are not because of bug in the current autobridging
+        // alas, they are not - because of bug in the current autobridging
         // implementation (to be replaced in the not-so-distant future).
-        // The current implementation (bug) leaves an empty offer in the second
-        // leg of the bridge. validate the current behavior as-is and expect
-        // this test to be changed in the future.
+        // The current implementation (incorrect) leaves an empty offer in the
+        // second leg of the bridge. validate the current behavior as-is and
+        // expect this test to be changed in the future.
         env.require (offers (account_to_test, 1));
 
         auto jrr = getBookOffers(env, USD, BTC);
