@@ -264,6 +264,7 @@ JSS ( marker );                     // in/out: AccountTx, AccountOffers,
 JSS ( master_key );                 // out: WalletPropose
 JSS ( master_seed );                // out: WalletPropose
 JSS ( master_seed_hex );            // out: WalletPropose
+JSS ( master_signature );           // out: pubManifest
 JSS ( max_ledger );                 // in/out: LedgerCleaner
 JSS ( max_queue_size );             // out: TxQ
 JSS ( max_spend_drops );            // out: AccountInfo

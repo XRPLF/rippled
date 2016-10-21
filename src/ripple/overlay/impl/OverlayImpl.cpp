@@ -497,7 +497,7 @@ OverlayImpl::setupValidatorKeyManifests (BasicConfig const& config,
     if (! validation_manifest.lines().empty())
     {
         std::string s;
-        s.reserve (188);
+        s.reserve (Manifest::textLength);
         for (auto const& line : validation_manifest.lines())
             s += beast::rfc2616::trim(line);
         if (auto mo = make_Manifest (beast::detail::base64_decode(s)))

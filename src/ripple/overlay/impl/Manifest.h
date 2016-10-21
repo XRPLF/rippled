@@ -85,6 +85,8 @@ namespace ripple {
 
 struct Manifest
 {
+    static std::size_t constexpr textLength = 288;
+
     std::string serialized;
     PublicKey masterKey;
     PublicKey signingKey;
