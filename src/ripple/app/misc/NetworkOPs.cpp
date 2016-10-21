@@ -1564,11 +1564,14 @@ void NetworkOPsImp::pubManifest (Manifest const& mo)
     {
         Json::Value jvObj (Json::objectValue);
 
-        jvObj [jss::type]        = "manifestReceived";
-        jvObj [jss::master_key]  = toBase58(TokenType::TOKEN_NODE_PUBLIC, mo.masterKey);
-        jvObj [jss::signing_key] = toBase58(TokenType::TOKEN_NODE_PUBLIC, mo.signingKey);
-        jvObj [jss::seq]         = Json::UInt (mo.sequence);
-        jvObj [jss::signature]   = strHex (mo.getSignature ());
+        jvObj [jss::type]             = "manifestReceived";
+        jvObj [jss::master_key]       = toBase58(
+            TokenType::TOKEN_NODE_PUBLIC, mo.masterKey);
+        jvObj [jss::signing_key]      = toBase58(
+            TokenType::TOKEN_NODE_PUBLIC, mo.signingKey);
+        jvObj [jss::seq]              = Json::UInt (mo.sequence);
+        jvObj [jss::signature]        = strHex (mo.getSignature ());
+        jvObj [jss::master_signature] = strHex (mo.getMasterSignature ());
 
         for (auto i = mSubManifests.begin (); i != mSubManifests.end (); )
         {
@@ -2043,7 +2046,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             if (! validation_manifest.lines().empty())
             {
                 std::string s;
-                s.reserve (188);
+                s.reserve (Manifest::textLength);
                 for (auto const& line : validation_manifest.lines())
                     s += beast::rfc2616::trim(line);
                 if (auto mo = make_Manifest (beast::detail::base64_decode(s)))
