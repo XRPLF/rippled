@@ -47,10 +47,7 @@ public:
 
 /** Returns a client operating through WebSockets/S. */
 std::unique_ptr<WSClient>
-makeWSClient(Config const& cfg);
-
-std::unique_ptr<WSClient>
-makeWS2Client(Config const& cfg);
+makeWSClient(Config const& cfg, bool v2 = true);
 
 } // test
 } // ripple

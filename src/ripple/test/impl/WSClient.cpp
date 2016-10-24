@@ -254,15 +254,9 @@ private:
 };
 
 std::unique_ptr<WSClient>
-makeWSClient(Config const& cfg)
+makeWSClient(Config const& cfg, bool v2)
 {
-    return std::make_unique<WSClientImpl>(cfg, false);
-}
-
-std::unique_ptr<WSClient>
-makeWS2Client(Config const& cfg)
-{
-    return std::make_unique<WSClientImpl>(cfg, true);
+    return std::make_unique<WSClientImpl>(cfg, v2);
 }
 
 } // test
