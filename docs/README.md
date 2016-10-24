@@ -1,5 +1,11 @@
 # Building documentation
 
+## Specifying Files
+
+To specify the source files for which to build documentation, modify `INPUT`
+and its related fields in `docs/source.dox`. Note that the `INPUT` paths are
+relative to the `docs/` directory.
+
 ## Install Dependencies
 
 ### Windows
@@ -46,7 +52,11 @@ Install these dependencies:
 
 ### Linux
 
-Under construction
+1. Install [Docker](https://docs.docker.com/engine/installation/)
+2. Build Docker image. From the rippled root folder:
+```
+sudo docker build -t rippled-docs docs/
+```
 
 ## Setup project submodules
 
@@ -56,9 +66,19 @@ Under construction
 
 ## Do it
 
+### Windows & MacOS
+
 From the rippled root folder:
 ```
 cd docs
 ./makeqbk.sh && b2
+```
+The output will be in `docs/html`.
+
+### Linux
+
+From the rippled root folder:
+```
+sudo docker run -v $PWD:/opt/rippled --rm rippled-docs
 ```
 The output will be in `docs/html`.
