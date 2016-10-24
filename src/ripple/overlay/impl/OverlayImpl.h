@@ -234,18 +234,15 @@ public:
     void
     for_each (UnaryFunc&& f)
     {
-        std::vector<std::weak_ptr<PeerImp>> wp;
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
 
-        // We make a copy of the list of peers to avoid having
-        // `ids_` modified during iteration.
-        {
-            std::lock_guard <decltype(mutex_)> lock (mutex_);
-            wp.reserve(ids_.size());
-            for (auto& x : ids_)
-                wp.push_back(x.second);
-        }
-        
-        for(auto& w : wp)
+        std::vector<std::weak_ptr<PeerImp>> wp;
+        wp.reserve(ids_.size());
+
+        for (auto& x : ids_)
+            wp.push_back(x.second);
+
+        for (auto& w : wp)
         {
             if (auto p = w.lock())
                 f(std::move(p));
