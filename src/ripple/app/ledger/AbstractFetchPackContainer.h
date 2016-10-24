@@ -37,7 +37,7 @@ public:
     /** Retrieves partial ledger data of the coresponding hash from peers.`
 
         @param nodeHash The 256-bit hash of the data to fetch.
-        @return boost::none if the hash isn't cached,
+        @return `boost::none` if the hash isn't cached,
             otherwise, the hash associated data.
     */
     virtual boost::optional<Blob> getFetchPack(uint256 const& nodeHash) = 0;
