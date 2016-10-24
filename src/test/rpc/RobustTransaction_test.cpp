@@ -108,6 +108,15 @@ public:
                         ff["Balance"] == "10002000000";
                 }));
         }
+
+        {
+            // RPC unsubscribe to transactions stream
+            Json::Value jv;
+            jv[jss::streams] = Json::arrayValue;
+            jv[jss::streams].append("transactions");
+            jv = wsc->invoke("unsubscribe", jv);
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
     }
 
     /*
@@ -193,12 +202,14 @@ public:
         }
 
         {
-            // RPC subscribe to ledger stream
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
-            jv[jss::streams].append("ledger");
-            jv = wsc->invoke("subscribe", jv);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            {
+                // RPC subscribe to ledger stream
+                Json::Value jv;
+                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams].append("ledger");
+                jv = wsc->invoke("subscribe", jv);
+                BEAST_EXPECT(jv[jss::status] == "success");
+            }
 
             // Close ledgers
             for(auto i = 0; i < 8; ++i)
@@ -215,18 +226,28 @@ public:
                         return jv[jss::type] == "ledgerClosed";
                     }));
             }
+
+            {
+                // RPC unsubscribe to ledger stream
+                Json::Value jv;
+                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams].append("ledger");
+                jv = wsc->invoke("unsubscribe", jv);
+                BEAST_EXPECT(jv[jss::status] == "success");
+            }
         }
 
         {
             // Disconnect, reconnect
             wsc = makeWSClient(env.app().config());
-
-            // RPC subscribe to ledger stream
-            Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
-            jv[jss::streams].append("ledger");
-            jv = wsc->invoke("subscribe", jv);
-            BEAST_EXPECT(jv[jss::status] == "success");
+            {
+                // RPC subscribe to ledger stream
+                Json::Value jv;
+                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams].append("ledger");
+                jv = wsc->invoke("subscribe", jv);
+                BEAST_EXPECT(jv[jss::status] == "success");
+            }
 
             // Close ledgers
             for (auto i = 0; i < 2; ++i)
@@ -242,6 +263,15 @@ public:
                     {
                         return jv[jss::type] == "ledgerClosed";
                     }));
+            }
+
+            {
+                // RPC unsubscribe to ledger stream
+                Json::Value jv;
+                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams].append("ledger");
+                jv = wsc->invoke("unsubscribe", jv);
+                BEAST_EXPECT(jv[jss::status] == "success");
             }
         }
 
@@ -302,6 +332,16 @@ public:
                     return jv[jss::transaction][jss::TransactionType] ==
                         "AccountSet";
                 }));
+        }
+
+        {
+            // RPC unsubscribe to accounts_proposed stream
+            Json::Value jv;
+            jv[jss::accounts_proposed] = Json::arrayValue;
+            jv[jss::accounts_proposed].append(
+                Account("alice").human());
+            jv = wsc->invoke("unsubscribe", jv);
+            BEAST_EXPECT(jv[jss::status] == "success");
         }
     }
 
