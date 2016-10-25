@@ -105,6 +105,10 @@ WARN_LOGFILE           =
 INPUT                  = \
 \
     ../src/ripple/protocol/STObject.h \
+    ../src/ripple/protocol/JsonFields.h \
+    ../src/ripple/test/AbstractClient.h \
+    ../src/ripple/test/JSONRPCClient.h \
+    ../src/ripple/test/WSClient.h \
 
 
 INPUT_ENCODING         = UTF-8

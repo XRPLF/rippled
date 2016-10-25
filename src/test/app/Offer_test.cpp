@@ -1744,6 +1744,12 @@ public:
         auto jrr = wsc->invoke("submit", payment);
         BEAST_EXPECT(jrr[jss::status] == "success");
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jrr.isMember(jss::jsonrpc) && jrr[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jrr.isMember(jss::ripplerpc) && jrr[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jrr.isMember(jss::id) && jrr[jss::id] == 5);
+        }
 
         jrr = ledgerEntryState (env, alice, gw, "XTS");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-101");

@@ -262,11 +262,6 @@ SHAMap::fetchNodeFromDB (SHAMapHash const& hash) const
                     {
                         auto root =  std::dynamic_pointer_cast<SHAMapInnerNode>(root_);
                         assert(root);
-if (!root->isEmpty())
-{
-    std::cerr << "isv2 = " << isv2 << '\n';
-    std::cerr << "is_v2() = " << is_v2() << '\n';
-}
                         assert(root->isEmpty());
                         if (isv2)
                         {

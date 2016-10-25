@@ -404,7 +404,9 @@ ServerHandlerImp::processSession(
 
     // Requests without "command" are invalid.
     Json::Value jr(Json::objectValue);
-    if (! jv.isMember (jss::command))
+    if ((!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
+        (jv.isMember(jss::command) && jv.isMember(jss::method) &&
+         jv[jss::command].asString() != jv[jss::method].asString()))
     {
         jr[jss::type] = jss::response;
         jr[jss::status] = jss::error;
@@ -412,13 +414,19 @@ ServerHandlerImp::processSession(
         jr[jss::request] = jv;
         if (jv.isMember (jss::id))
             jr[jss::id]  = jv[jss::id];
+        if (jv.isMember(jss::jsonrpc))
+            jr[jss::jsonrpc] = jv[jss::jsonrpc];
+        if (jv.isMember(jss::jsonrpc))
+            jr[jss::ripplerpc] = jv[jss::ripplerpc];
 
         is->getConsumer().charge(Resource::feeInvalidRPC);
         return jr;
     }
 
     Resource::Charge loadType = Resource::feeReferenceRPC;
-    auto required = RPC::roleRequired(jv[jss::command].asString());
+    auto required = RPC::roleRequired(jv.isMember(jss::command) ?
+                                      jv[jss::command].asString() :
+                                      jv[jss::method].asString());
     auto role = requestRole(
         required,
         session->port(),
@@ -475,6 +483,10 @@ ServerHandlerImp::processSession(
 
     if (jv.isMember(jss::id))
         jr[jss::id] = jv[jss::id];
+    if (jv.isMember(jss::jsonrpc))
+        jr[jss::jsonrpc] = jv[jss::jsonrpc];
+    if (jv.isMember(jss::jsonrpc))
+        jr[jss::ripplerpc] = jv[jss::ripplerpc];
     jr[jss::type] = jss::response;
     return jr;
 }
@@ -539,8 +551,8 @@ ServerHandlerImp::processRequest (Port const& port,
     //
     // VFALCO NOTE Except that "id" isn't included in the following errors.
     //
-    Json::Value const& id = jsonRPC ["id"];
-    Json::Value const& method = jsonRPC ["method"];
+    Json::Value const& id = jsonRPC [jss::id];
+    Json::Value const& method = jsonRPC [jss::method];
 
     if (! method) {
         HTTPReply (400, "Null method", output, rpcJ);
@@ -555,12 +567,12 @@ ServerHandlerImp::processRequest (Port const& port,
     /* ---------------------------------------------------------------------- */
     auto role = Role::FORBID;
     auto required = RPC::roleRequired(id.asString());
-    if (jsonRPC.isMember("params") &&
-        jsonRPC["params"].isArray() &&
-        jsonRPC["params"].size() > 0 &&
-        jsonRPC["params"][Json::UInt(0)].isObject())
+    if (jsonRPC.isMember(jss::params) &&
+        jsonRPC[jss::params].isArray() &&
+        jsonRPC[jss::params].size() > 0 &&
+        jsonRPC[jss::params][Json::UInt(0)].isObject())
     {
-        role = requestRole(required, port, jsonRPC["params"][Json::UInt(0)],
+        role = requestRole(required, port, jsonRPC[jss::params][Json::UInt(0)],
             remoteIPAddress, user);
     }
     else
@@ -671,6 +683,12 @@ ServerHandlerImp::processRequest (Port const& port,
 
     Json::Value reply (Json::objectValue);
     reply[jss::result] = std::move (result);
+    if (jsonRPC.isMember(jss::jsonrpc))
+        reply[jss::jsonrpc] = jsonRPC[jss::jsonrpc];
+    if (jsonRPC.isMember(jss::ripplerpc))
+        reply[jss::ripplerpc] = jsonRPC[jss::ripplerpc];
+    if (jsonRPC.isMember(jss::id))
+        reply[jss::id] = jsonRPC[jss::id];
     auto response = to_string (reply);
 
     rpc_time_.notify (static_cast <beast::insight::Event::value_type> (

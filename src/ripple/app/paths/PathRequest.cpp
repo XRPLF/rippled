@@ -434,8 +434,8 @@ int PathRequest::parseJson (Json::Value const& jvParams)
         }
     }
 
-    if (jvParams.isMember ("id"))
-        jvId = jvParams["id"];
+    if (jvParams.isMember (jss::id))
+        jvId = jvParams[jss::id];
 
     return PFR_PJ_NOCHANGE;
 }
@@ -649,7 +649,7 @@ Json::Value PathRequest::doUpdate(
     newStatus[jss::full_reply] = ! fast;
 
     if (jvId)
-        newStatus["id"] = jvId;
+        newStatus[jss::id] = jvId;
 
     bool loaded = app_.getFeeTrack().isLoadedLocal();
 

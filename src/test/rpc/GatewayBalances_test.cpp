@@ -86,6 +86,12 @@ public:
 
         auto jv = wsc->invoke("gateway_balances", qry);
         expect(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            expect(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
 
         auto const& result = jv[jss::result];
         expect(result[jss::account] == alice.human());
