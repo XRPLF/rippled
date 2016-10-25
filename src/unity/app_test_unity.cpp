@@ -38,6 +38,7 @@
 #include <test/app/SusPay_test.cpp>
 #include <test/app/Taker_test.cpp>
 #include <test/app/Transaction_ordering_test.cpp>
+#include <test/app/TrustAndBalance_test.cpp>
 #include <test/app/TxQ_test.cpp>
 #include <test/app/ValidatorList_test.cpp>
 #include <test/app/SetTrust_test.cpp>

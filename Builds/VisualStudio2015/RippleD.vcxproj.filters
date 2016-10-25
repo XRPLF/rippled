@@ -5256,6 +5256,9 @@
     <ClCompile Include="..\..\src\test\app\Transaction_ordering_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\TrustAndBalance_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\TxQ_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
