@@ -56,8 +56,8 @@ public:
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "0"; // NOT an integer
             auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
-            BEAST_EXPECT(jrr[jss::status]        == "error");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerIndexMalformed");
         }
 
@@ -66,16 +66,16 @@ public:
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 10u;
             auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
-            BEAST_EXPECT(jrr[jss::status]        == "error");
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
 
         {
             // arbitrary text is converted to 0.
             auto const jrr = env.rpc("ledger", "arbitrary_text") [jss::result];
-            BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
-            BEAST_EXPECT(jrr[jss::status]        == "error");
+            BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
 
@@ -89,8 +89,7 @@ public:
         Env env {*this};
 
         env.close();
-        env.close();
-        BEAST_EXPECT(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->info().seq == 4);
 
         {
             // arbitrary text is converted to 0.
@@ -116,8 +115,7 @@ public:
         Env env {*this};
 
         env.close();
-        env.close();
-        BEAST_EXPECT(env.current()->info().seq == 5);
+        BEAST_EXPECT(env.current()->info().seq == 4);
 
         {
             // arbitrary text is converted to 0.
@@ -133,7 +131,6 @@ public:
 
         Env env {*this};
 
-        env.close();
         env.close();
 
         Json::Value jvParams;
@@ -153,14 +150,13 @@ public:
         Env env { *this, makeNonAdminConfig() };
 
         env.close();
-        env.close();
 
         Json::Value jvParams;
         jvParams[jss::ledger_index] = 3u;
         jvParams[jss::full] = true;
         auto const jrr = env.rpc ( "json", "ledger", to_string(jvParams) ) [jss::result];
-        BEAST_EXPECT(jrr[jss::error]         == "noPermission");
-        BEAST_EXPECT(jrr[jss::status]        == "error");
+        BEAST_EXPECT(jrr[jss::error] == "noPermission");
+        BEAST_EXPECT(jrr[jss::status] == "error");
         BEAST_EXPECT(jrr[jss::error_message] == "You don't have permission for this command.");
     }
 
@@ -171,7 +167,6 @@ public:
 
         Env env {*this};
 
-        env.close();
         env.close();
 
         Json::Value jvParams;
@@ -220,8 +215,8 @@ public:
         jvParams[jss::account_root] = std::string(alice.human()).replace(0, 2, 2, 'x');
         jvParams[jss::ledger_hash] = jrr[jss::ledger_hash];
         jrr = env.rpc ( "json", "ledger_entry", to_string(jvParams) ) [jss::result];
-        BEAST_EXPECT(jrr[jss::error]         == "malformedAddress");
-        BEAST_EXPECT(jrr[jss::status]        == "error");
+        BEAST_EXPECT(jrr[jss::error] == "malformedAddress");
+        BEAST_EXPECT(jrr[jss::status] == "error");
         BEAST_EXPECT(jrr[jss::error_message] == Json::nullValue);
     }
 
@@ -240,8 +235,8 @@ public:
         jvParams[jss::account_root] = Account("bob").human();
         jvParams[jss::ledger_hash] = jrr[jss::ledger_hash];
         jrr = env.rpc ( "json", "ledger_entry", to_string(jvParams) ) [jss::result];
-        BEAST_EXPECT(jrr[jss::error]         == "entryNotFound");
-        BEAST_EXPECT(jrr[jss::status]        == "error");
+        BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::status] == "error");
         BEAST_EXPECT(jrr[jss::error_message] == Json::nullValue);
     }
 
