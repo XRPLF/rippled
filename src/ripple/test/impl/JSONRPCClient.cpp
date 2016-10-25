@@ -16,11 +16,11 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <BeastConfig.h>
 #include <ripple/test/JSONRPCClient.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/server/Port.h>
 #include <beast/http/message_v1.hpp>
 #include <beast/http/streambuf_body.hpp>
@@ -76,12 +76,14 @@ class JSONRPCClient : public AbstractClient
     boost::asio::ip::tcp::socket stream_;
     beast::streambuf bin_;
     beast::streambuf bout_;
+    unsigned rpc_version_;
 
 public:
     explicit
-    JSONRPCClient(Config const& cfg)
+    JSONRPCClient(Config const& cfg, unsigned rpc_version)
         : ep_(getEndpoint(cfg))
         , stream_(ios_)
+        , rpc_version_(rpc_version)
     {   
         stream_.connect(ep_);
     }
@@ -115,10 +117,16 @@ public:
             ep_.address().to_string() + ":" + std::to_string(ep_.port()));
         {
             Json::Value jr;
-            jr["method"] = cmd;
+            jr[jss::method] = cmd;
+            if (rpc_version_ == 2)
+            {
+                jr[jss::jsonrpc] = "2.0";
+                jr[jss::ripplerpc] = "2.0";
+                jr[jss::id] = 5;
+            }
             if(params)
             {
-                Json::Value& ja = jr["params"] = Json::arrayValue;
+                Json::Value& ja = jr[jss::params] = Json::arrayValue;
                 ja.append(params);
             }
             req.body = to_string(jr);
@@ -138,12 +146,17 @@ public:
             jv["status"] = jv["result"]["status"];
         return jv;
     }
+
+    unsigned version() const override
+    {
+        return rpc_version_;
+    }
 };
 
 std::unique_ptr<AbstractClient>
-makeJSONRPCClient(Config const& cfg)
+makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
 {
-    return std::make_unique<JSONRPCClient>(cfg);
+    return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
 } // test

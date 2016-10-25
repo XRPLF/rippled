@@ -537,9 +537,21 @@ Env::st (JTx const& jt)
 Json::Value
 Env::do_rpc(std::vector<std::string> const& args)
 {
-    auto const jv = cmdLineToJSONRPC(args, journal);
-    return client().invoke(jv["method"].asString(),
-        jv["params"][0U]);
+    auto jv = cmdLineToJSONRPC(args, journal);
+    if (!jv.isMember(jss::jsonrpc))
+    {
+        jv[jss::jsonrpc] = "2.0";
+        jv[jss::ripplerpc] = "2.0";
+        jv[jss::id] = 5;
+    }
+    auto response = client().invoke(jv[jss::method].asString(), jv[jss::params][0U]);
+    if (jv.isMember(jss::jsonrpc))
+    {
+        response[jss::jsonrpc] = jv[jss::jsonrpc];
+        response[jss::ripplerpc] = jv[jss::ripplerpc];
+        response[jss::id] = jv[jss::id];
+    }
+    return response;
 }
 
 } // jtx

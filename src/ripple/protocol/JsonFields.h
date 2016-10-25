@@ -213,6 +213,7 @@ JSS ( ip );                         // in: Connect, out: OverlayImpl
 JSS ( issuer );                     // in: RipplePathFind, Subscribe,
                                     //     Unsubscribe, BookOffers
                                     // out: paths/Node, STPathSet, STAmount
+JSS ( jsonrpc );                    // json version
 JSS ( key );                        // out: WalletSeed
 JSS ( key_type );                   // in/out: WalletPropose, TransactionSign
 JSS ( latency );                    // out: PeerImp
@@ -350,6 +351,7 @@ JSS ( response );                   // websocket
 JSS ( result );                     // RPC
 JSS ( ripple_lines );               // out: NetworkOPs
 JSS ( ripple_state );               // in: LedgerEntr
+JSS ( ripplerpc );                  // ripple RPC version
 JSS ( role );                       // out: Ping.cpp
 JSS ( rt_accounts );                // in: Subscribe, Unsubscribe
 JSS ( sanity );                     // out: PeerImp
