@@ -38,10 +38,12 @@ namespace ripple {
 #define SF_TRUSTED      0x10    // comes from trusted source
 // Private flags, used internally in apply.cpp.
 // Do not attempt to read, set, or reuse.
-#define SF_PRIVATE1     0x100
-#define SF_PRIVATE2     0x200
-#define SF_PRIVATE3     0x400
-#define SF_PRIVATE4     0x800
+#define SF_PRIVATE1     0x0100
+#define SF_PRIVATE2     0x0200
+#define SF_PRIVATE3     0x0400
+#define SF_PRIVATE4     0x0800
+#define SF_PRIVATE5     0x1000
+#define SF_PRIVATE6     0x2000
 
 /** Routing table for objects identified by hash.
 
