@@ -447,10 +447,12 @@ extern SF_Blob const sfCreateCode;
 extern SF_Blob const sfMemoType;
 extern SF_Blob const sfMemoData;
 extern SF_Blob const sfMemoFormat;
-extern SF_Blob const sfMasterSignature;
 
 // variable length (uncommon)
-extern SF_Blob const sfProof;
+extern SF_Blob const sfFulfillment;
+extern SF_Blob const sfCondition;
+extern SF_Blob const sfMasterSignature;
+
 // account
 extern SF_Account const sfAccount;
 extern SF_Account const sfOwner;

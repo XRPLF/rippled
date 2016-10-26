@@ -62,6 +62,10 @@ public:
     TER
     preflight (PreflightContext const& ctx);
 
+    static
+    std::uint64_t
+    calculateBaseFee (PreclaimContext const& ctx);
+
     TER
     doApply() override;
 };

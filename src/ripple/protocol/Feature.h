@@ -44,6 +44,7 @@ extern uint256 const featureCompareFlowV1V2;
 extern uint256 const featureSHAMapV2;
 extern uint256 const featurePayChan;
 extern uint256 const featureFlow;
+extern uint256 const featureCryptoConditions;
 
 } // ripple
 
