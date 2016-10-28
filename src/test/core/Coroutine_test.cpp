@@ -68,18 +68,18 @@ public:
         auto& jq = env.app().getJobQueue();
         jq.setThreadCount(0, false);
         gate g1, g2;
-        std::shared_ptr<JobCoro> jc;
+        std::shared_ptr<JobQueue::Coro> c;
         jq.postCoro(jtCLIENT, "Coroutine-Test",
-            [&](auto const& jcr)
+            [&](auto const& cr)
             {
-                jc = jcr;
+                c = cr;
                 g1.signal();
-                jc->yield();
+                c->yield();
                 g2.signal();
             });
         BEAST_EXPECT(g1.wait_for(5s));
-        jc->join();
-        jc->post();
+        c->join();
+        c->post();
         BEAST_EXPECT(g2.wait_for(5s));
     }
 
@@ -93,10 +93,10 @@ public:
         jq.setThreadCount(0, false);
         gate g;
         jq.postCoro(jtCLIENT, "Coroutine-Test",
-            [&](auto const& jc)
+            [&](auto const& c)
             {
-                jc->post();
-                jc->yield();
+                c->post();
+                c->yield();
                 g.signal();
             });
         BEAST_EXPECT(g.wait_for(5s));
@@ -111,7 +111,7 @@ public:
         auto& jq = env.app().getJobQueue();
         jq.setThreadCount(0, true);
         static int const N = 4;
-        std::array<std::shared_ptr<JobCoro>, N> a;
+        std::array<std::shared_ptr<JobQueue::Coro>, N> a;
 
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
@@ -131,33 +131,33 @@ public:
         for(int i = 0; i < N; ++i)
         {
             jq.postCoro(jtCLIENT, "Coroutine-Test",
-                [&, id = i](auto const& jc)
+                [&, id = i](auto const& c)
                 {
-                    a[id] = jc;
+                    a[id] = c;
                     g.signal();
-                    jc->yield();
+                    c->yield();
 
                     this->BEAST_EXPECT(*lv == -1);
                     *lv = id;
                     this->BEAST_EXPECT(*lv == id);
                     g.signal();
-                    jc->yield();
+                    c->yield();
 
                     this->BEAST_EXPECT(*lv == id);
                 });
             BEAST_EXPECT(g.wait_for(5s));
             a[i]->join();
         }
-        for(auto const& jc : a)
+        for(auto const& c : a)
         {
-            jc->post();
+            c->post();
             BEAST_EXPECT(g.wait_for(5s));
-            jc->join();
+            c->join();
         }
-        for(auto const& jc : a)
+        for(auto const& c : a)
         {
-            jc->post();
-            jc->join();
+            c->post();
+            c->join();
         }
 
         jq.addJob(jtCLIENT, "LocalValue-Test",

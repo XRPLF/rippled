@@ -2415,6 +2415,9 @@
     <ClInclude Include="..\..\src\ripple\core\ConfigSections.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <None Include="..\..\src\ripple\core\Coro.ipp">
+      <Filter>ripple\core</Filter>
+    </None>
     <ClInclude Include="..\..\src\ripple\core\DatabaseCon.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
@@ -2475,12 +2478,6 @@
     <ClInclude Include="..\..\src\ripple\core\Job.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\JobCoro.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
-    <None Include="..\..\src\ripple\core\JobCoro.ipp">
-      <Filter>ripple\core</Filter>
-    </None>
     <ClInclude Include="..\..\src\ripple\core\JobQueue.h">
       <Filter>ripple\core</Filter>
     </ClInclude>

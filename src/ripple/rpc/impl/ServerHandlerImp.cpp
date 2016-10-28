@@ -316,9 +316,9 @@ ServerHandlerImp::onRequest (Session& session)
     }
 
     m_jobQueue.postCoro(jtCLIENT, "RPC-Client",
-        [this, detach = session.detach()](std::shared_ptr<JobCoro> jc)
+        [this, detach = session.detach()](std::shared_ptr<JobQueue::Coro> c)
         {
-            processSession(detach, jc);
+            processSession(detach, c);
         });
 }
 
@@ -358,10 +358,10 @@ ServerHandlerImp::onWSMessage(
 
     m_jobQueue.postCoro(jtCLIENT, "WS-Client",
         [this, session = std::move(session),
-            jv = std::move(jv)](auto const& jc)
+            jv = std::move(jv)](auto const& c)
         {
             auto const jr =
-                this->processSession(session, jc, jv);
+                this->processSession(session, c, jv);
             auto const s = to_string(jr);
             auto const n = s.length();
             beast::streambuf sb(n);
@@ -392,7 +392,7 @@ ServerHandlerImp::onStopped (Server&)
 Json::Value
 ServerHandlerImp::processSession(
     std::shared_ptr<WSSession> const& session,
-        std::shared_ptr<JobCoro> const& coro,
+        std::shared_ptr<JobQueue::Coro> const& coro,
             Json::Value const& jv)
 {
     auto is = std::static_pointer_cast<WSInfoSub> (session->appDefined);
@@ -482,13 +482,13 @@ ServerHandlerImp::processSession(
 // Run as a coroutine.
 void
 ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
-    std::shared_ptr<JobCoro> jobCoro)
+    std::shared_ptr<JobQueue::Coro> coro)
 {
     processRequest (
         session->port(), buffers_to_string(
             session->request().body.data()),
                 session->remoteAddress().at_port (0),
-                    makeOutput (*session), jobCoro,
+                    makeOutput (*session), coro,
         [&]
         {
             auto const iter =
@@ -517,7 +517,7 @@ ServerHandlerImp::processSession (std::shared_ptr<Session> const& session,
 void
 ServerHandlerImp::processRequest (Port const& port,
     std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
-        Output&& output, std::shared_ptr<JobCoro> jobCoro,
+        Output&& output, std::shared_ptr<JobQueue::Coro> coro,
         std::string forwardedFor, std::string user)
 {
     auto rpcJ = app_.journal ("RPC");
@@ -650,7 +650,7 @@ ServerHandlerImp::processRequest (Port const& port,
     auto const start (std::chrono::high_resolution_clock::now ());
 
     RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-        app_.getLedgerMaster(), usage, role, jobCoro, InfoSub::pointer(),
+        app_.getLedgerMaster(), usage, role, coro, InfoSub::pointer(),
         {user, forwardedFor}};
     Json::Value result;
     RPC::doCommand (context, result);

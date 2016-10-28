@@ -20,8 +20,7 @@
 #ifndef RIPPLE_RPC_SERVERHANDLERIMP_H_INCLUDED
 #define RIPPLE_RPC_SERVERHANDLERIMP_H_INCLUDED
 
-#include <ripple/core/Job.h>
-#include <ripple/core/JobCoro.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/rpc/impl/WSInfoSub.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
@@ -153,17 +152,17 @@ private:
     Json::Value
     processSession(
         std::shared_ptr<WSSession> const& session,
-            std::shared_ptr<JobCoro> const& coro,
+            std::shared_ptr<JobQueue::Coro> const& coro,
                 Json::Value const& jv);
 
     void
     processSession (std::shared_ptr<Session> const&,
-        std::shared_ptr<JobCoro> jobCoro);
+        std::shared_ptr<JobQueue::Coro> coro);
 
     void
     processRequest (Port const& port, std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress, Output&&,
-        std::shared_ptr<JobCoro> jobCoro,
+        std::shared_ptr<JobQueue::Coro> coro,
         std::string forwardedFor, std::string user);
 
     Handoff

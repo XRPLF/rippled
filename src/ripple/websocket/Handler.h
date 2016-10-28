@@ -308,9 +308,9 @@ public:
     {
         app_.getJobQueue().postCoro(jtCLIENT, "WSClient",
             [this, cpClient]
-            (auto const& jc)
+            (auto const& c)
             {
-                this->do_messages(jc, cpClient);
+                this->do_messages(c, cpClient);
             });
     }
 
@@ -348,7 +348,7 @@ public:
             message_job("command", cpClient);
     }
 
-    void do_messages (std::shared_ptr<JobCoro> const& jc,
+    void do_messages (std::shared_ptr<JobQueue::Coro> const& c,
         connection_ptr const& cpClient)
     {
         wsc_ptr ptr;
@@ -374,7 +374,7 @@ public:
             if (! msg)
                 return;
 
-            do_message(jc, cpClient, ptr, *msg);
+            do_message(c, cpClient, ptr, *msg);
         }
 
         if (ptr->checkMessage ())
@@ -382,7 +382,7 @@ public:
     }
 
     void
-    do_message (std::shared_ptr<JobCoro> const& jc,
+    do_message (std::shared_ptr<JobQueue::Coro> const& c,
         const connection_ptr cpClient, wsc_ptr conn,
             const std::string& message)
     {
@@ -415,7 +415,7 @@ public:
         {
             using namespace std::chrono;
             auto const start = high_resolution_clock::now();
-            auto buffer = to_string(conn->invokeCommand(jvRequest, jc));
+            auto buffer = to_string(conn->invokeCommand(jvRequest, c));
             rpc_time_.notify (
                 static_cast <beast::insight::Event::value_type> (
                     duration_cast <milliseconds> (

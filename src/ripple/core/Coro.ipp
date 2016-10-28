@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_JOBCOROINL_H_INCLUDED
-#define RIPPLE_CORE_JOBCOROINL_H_INCLUDED
+#ifndef RIPPLE_CORE_COROINL_H_INCLUDED
+#define RIPPLE_CORE_COROINL_H_INCLUDED
 
 namespace ripple {
 
 template <class F>
-JobCoro::JobCoro(detail::JobCoro_create_t, JobQueue& jq, JobType type,
+JobQueue::Coro::
+Coro(Coro_create_t, JobQueue& jq, JobType type,
     std::string const& name, F&& f)
     : jq_(jq)
     , type_(type)
@@ -44,14 +45,16 @@ JobCoro::JobCoro(detail::JobCoro_create_t, JobQueue& jq, JobType type,
 }
 
 inline
-JobCoro::~JobCoro()
+JobQueue::Coro::
+~Coro()
 {
     assert(finished_);
 }
 
 inline
 void
-JobCoro::yield() const
+JobQueue::Coro::
+yield() const
 {
     {
         std::lock_guard<std::mutex> lock(jq_.m_mutex);
@@ -62,7 +65,8 @@ JobCoro::yield() const
 
 inline
 void
-JobCoro::post()
+JobQueue::Coro::
+post()
 {
     {
         std::lock_guard<std::mutex> lk(mutex_run_);
@@ -91,7 +95,8 @@ JobCoro::post()
 
 inline
 void
-JobCoro::join()
+JobQueue::Coro::
+join()
 {
     std::unique_lock<std::mutex> lk(mutex_run_);
     cv_.wait(lk,

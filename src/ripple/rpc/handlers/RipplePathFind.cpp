@@ -56,11 +56,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
         lpLedger = context.ledgerMaster.getClosedLedger();
 
         jvResult = context.app.getPathRequests().makeLegacyPathRequest (
-            request, std::bind(&JobCoro::post, context.jobCoro),
+            request, std::bind(&JobQueue::Coro::post, context.coro),
                 context.consumer, lpLedger, context.params);
         if (request)
         {
-            context.jobCoro->yield();
+            context.coro->yield();
             jvResult = request->doStatus (context.params);
         }
 

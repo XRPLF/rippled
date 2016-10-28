@@ -24,7 +24,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/JobCoro.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCErr.h>
@@ -97,7 +97,7 @@ public:
     boost::optional <std::string>  getMessage ();
     bool checkMessage ();
     Json::Value invokeCommand (Json::Value const& jvRequest,
-        std::shared_ptr<JobCoro> jobCoro);
+        std::shared_ptr<JobQueue::Coro> coro);
 
     // Generically implemented per version.
     void setPingTimer ();
@@ -243,7 +243,7 @@ ConnectionImpl <WebSocket>::getMessage ()
 
 template <class WebSocket>
 Json::Value ConnectionImpl <WebSocket>::invokeCommand (
-    Json::Value const& jvRequest, std::shared_ptr<JobCoro> jobCoro)
+    Json::Value const& jvRequest, std::shared_ptr<JobQueue::Coro> coro)
 {
     if (getConsumer().disconnect ())
     {
@@ -287,7 +287,7 @@ Json::Value ConnectionImpl <WebSocket>::invokeCommand (
     {
         RPC::Context context {app_.journal ("RPCHandler"), jvRequest,
             app_, loadType, m_netOPs, app_.getLedgerMaster(), getConsumer(),
-                role, jobCoro, this->shared_from_this(),
+                role, coro, this->shared_from_this(),
                     {m_user, m_forwardedFor}};
         RPC::doCommand (context, jvResult[jss::result]);
     }

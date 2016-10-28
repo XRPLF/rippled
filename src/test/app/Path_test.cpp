@@ -233,7 +233,7 @@ public:
             [&](auto const& coro)
             {
                 context.params = std::move (params);
-                context.jobCoro = coro;
+                context.coro = coro;
                 RPC::doCommand (context, result);
                 g.signal();
             });
@@ -303,7 +303,7 @@ public:
             {
                 context.params = rpf(Account("alice"), Account("bob"),
                     RPC::Tuning::max_src_cur);
-                context.jobCoro = coro;
+                context.coro = coro;
                 RPC::doCommand(context, result);
                 g.signal();
             });
@@ -316,7 +316,7 @@ public:
             {
                 context.params = rpf(Account("alice"), Account("bob"),
                     RPC::Tuning::max_src_cur + 1);
-                context.jobCoro = coro;
+                context.coro = coro;
                 RPC::doCommand(context, result);
                 g.signal();
             });
@@ -330,7 +330,7 @@ public:
             [&](auto const& coro)
             {
                 context.params = rpf(Account("alice"), Account("bob"), 0);
-                context.jobCoro = coro;
+                context.coro = coro;
                 RPC::doCommand(context, result);
                 g.signal();
             });
@@ -343,7 +343,7 @@ public:
             [&](auto const& coro)
             {
                 context.params = rpf(Account("alice"), Account("bob"), 0);
-                context.jobCoro = coro;
+                context.coro = coro;
                 RPC::doCommand(context, result);
                 g.signal();
             });
