@@ -1784,6 +1784,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\ConfigSections.h">
     </ClInclude>
+    <None Include="..\..\src\ripple\core\Coro.ipp">
+    </None>
     <ClInclude Include="..\..\src\ripple\core\DatabaseCon.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\DeadlineTimer.h">
@@ -1880,10 +1882,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\JobCoro.h">
-    </ClInclude>
-    <None Include="..\..\src\ripple\core\JobCoro.ipp">
-    </None>
     <ClInclude Include="..\..\src\ripple\core\JobQueue.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\JobTypeData.h">
