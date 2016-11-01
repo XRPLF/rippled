@@ -1958,7 +1958,7 @@ getPeerWithTree (OverlayImpl& ov,
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
-    ov.for_each([&](std::shared_ptr<PeerImp> const&& p)
+    ov.for_each([&](std::shared_ptr<PeerImp>&& p)
     {
         if (p->hasTxSet(rootHash) && p.get() != skip)
         {
@@ -1986,7 +1986,7 @@ getPeerWithLedger (OverlayImpl& ov,
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
-    ov.for_each([&](std::shared_ptr<PeerImp> const&& p)
+    ov.for_each([&](std::shared_ptr<PeerImp>&& p)
     {
         if (p->hasLedger(ledgerHash, ledger) &&
                 p.get() != skip)

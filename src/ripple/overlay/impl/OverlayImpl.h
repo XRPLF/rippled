@@ -236,6 +236,8 @@ public:
     {
         std::lock_guard <decltype(mutex_)> lock (mutex_);
 
+        // Iterate over a copy of the peer list because peer
+        // destruction can invalidate iterators.
         std::vector<std::weak_ptr<PeerImp>> wp;
         wp.reserve(ids_.size());
 
