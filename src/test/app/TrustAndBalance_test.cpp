@@ -197,9 +197,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env.require (balance (bob, alice["USD"](-600)));
 
         // bob sends past limit
-        env (pay (bob, alice, bob["USD"](1)), ter(tecPATH_DRY),
-            balance(bob, alice["USD"](-600)));
-
+        env (pay (bob, alice, bob["USD"](1)), ter(tecPATH_DRY));
         env.require (balance (bob, alice["USD"](-600)));
     }
 
@@ -284,7 +282,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
     void
     testWithPath ()
     {
-        testcase ("Payments With Xfer Fee");
+        testcase ("Payments With Paths and Fees");
         using namespace test::jtx;
 
         Env env {*this};
