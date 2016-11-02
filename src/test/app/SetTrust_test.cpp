@@ -18,6 +18,7 @@
 //==============================================================================
 #include <ripple/test/jtx.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/JsonFields.h>
 
 namespace ripple {
 
