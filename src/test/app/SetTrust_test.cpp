@@ -31,9 +31,10 @@ public:
 
     void testFreeTrustlines(bool thirdLineCreatesLE, bool createOnHighAcct)
     {
-        testcase(std::string("Allow two free trust lines before requiring reserve; third line ") +
-            (thirdLineCreatesLE ? "creates ledger entry" : "adds to existing ledgerr entry")
-                + " creator is " + (createOnHighAcct ? "high" : "low") + " account ");
+        if (thirdLineCreatesLE)
+            testcase("Allow two free trustlines");
+        else
+            testcase("Dynamic reserve for trustline");
 
         using namespace jtx;
         Env env(*this);
@@ -62,23 +63,25 @@ public:
         if (thirdLineCreatesLE)
         {
             // creator does not have enough for the third trust line
-            env(trust(creator, assistor["USD"](100)), ter(tecNO_LINE_INSUF_RESERVE), require(lines(creator, 2)));
+            env(trust(creator, assistor["USD"](100)),
+                ter(tecNO_LINE_INSUF_RESERVE), require(lines(creator, 2)));
         }
         else
         {
-            // First establish opposite trust direction from assistor; creator participating in 3 trust lines
-            env(trust(assistor,  creator["USD"](100)), require(lines(creator,3)));
+            // First establish opposite trust direction from assistor
+            env(trust(assistor,creator["USD"](100)), require(lines(creator,3)));
 
-            // creator does not have enough to create the other direction on the existing trust line ledger entry
-            env(trust(creator, assistor["USD"](100)), ter(tecINSUF_RESERVE_LINE));
+            // creator does not have enough to create the other direction on
+            //the existing trust line ledger entry
+            env(trust(creator,assistor["USD"](100)),ter(tecINSUF_RESERVE_LINE));
         }
 
         // Fund creator additional amount to cover
-        env(pay(env.master, creator, STAmount{ threelineReserve - baseReserve }));
+        env(pay(env.master,creator,STAmount{ threelineReserve - baseReserve }));
 
         if (thirdLineCreatesLE)
         {
-            env(trust(creator, assistor["USD"](100)), require(lines(creator, 3)));
+            env(trust(creator,assistor["USD"](100)),require(lines(creator, 3)));
         }
         else
         {
@@ -119,35 +122,41 @@ public:
         env.fund(XRP(10000), gw, alice);
 
         // Require valid tf flags
-        for (std::uint64_t badFlag = 1u ; badFlag <= std::numeric_limits<std::uint32_t>::max(); badFlag *= 2)
+        for (std::uint64_t badFlag = 1u ;
+            badFlag <= std::numeric_limits<std::uint32_t>::max(); badFlag *= 2)
         {
             if( badFlag & tfTrustSetMask)
-                env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)), ter(temINVALID_FLAG));
+                env(trust(alice, gw["USD"](100),
+                    static_cast<std::uint32_t>(badFlag)), ter(temINVALID_FLAG));
         }
 
         // trust amount can't be XRP
         env(trust_explicit_amt(alice, drops(10000)), ter(temBAD_LIMIT));
 
         // trust amount can't be badCurrency IOU
-        env(trust_explicit_amt(alice, gw[ to_string(badCurrency())](100)), ter(temBAD_CURRENCY));
+        env(trust_explicit_amt(alice, gw[ to_string(badCurrency())](100)),
+            ter(temBAD_CURRENCY));
 
         // trust amount can't be negative
         env(trust(alice, gw["USD"](-1000)), ter(temBAD_LIMIT));
 
         // trust amount can't be from invalid issuer
-        env(trust_explicit_amt(alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100 }), ter(temDST_NEEDED));
+        env(trust_explicit_amt(alice, STAmount{Issue{to_currency("USD"),
+            noAccount()}, 100 }), ter(temDST_NEEDED));
 
         // trust cannot be to self
         env(trust(alice, alice["USD"](100)), ter(temDST_IS_SRC));
 
-        // tfSetAuth flag should not be set if not required by account lsfRequireAuth
+        // tfSetAuth flag should not be set if not required by lsfRequireAuth
         env(trust(alice, gw["USD"](100), tfSetfAuth), ter(tefNO_AUTH_REQUIRED));
     }
 
     void testModifyQualityOfTrustline(bool createQuality, bool createOnHighAcct)
     {
-        testcase(std::string("SetTrust ") + (createQuality ? "creates" : "removes") + " quality of trustline for "
-        + (createOnHighAcct ? "high" : "low" ) +  " account" );
+        testcase << "SetTrust " << (createQuality ? "creates" : "removes")
+            << " quality of trustline for "
+            << (createOnHighAcct ? "high" : "low" )
+            << " account" ;
 
         using namespace jtx;
         Env env{ *this };
@@ -180,8 +189,10 @@ public:
             auto quality = exists ? 1000 : 0;
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 1);
-            BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_in] == quality);
-            BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_out] == quality);
+            BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_in]
+                == quality);
+            BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_out]
+                == quality);
         };
 
 
@@ -198,7 +209,8 @@ public:
         testFreeTrustlines(true, false);
         testFreeTrustlines(false, true);
         testFreeTrustlines(false, true);
-        // true, true case doesn't matter since creating a trustline ledger entry requires reserve from the creator
+        // true, true case doesn't matter since creating a trustline ledger
+        // entry requires reserve from the creator
         // independent of hi/low account ids for endpoints
         testMalformedTransaction();
         testModifyQualityOfTrustline(false, false);
