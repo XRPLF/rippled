@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,20 +17,31 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
+#define RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
 
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/FeeVoteImpl.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/misc/NetworkOPs.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/misc/Validations.cpp>
+#include <beast/http/message.hpp>
+#include <beast/http/string_body.hpp>
 
-#include <ripple/app/misc/impl/AccountTxPaging.cpp>
-#include <ripple/app/misc/impl/AmendmentTable.cpp>
-#include <ripple/app/misc/impl/LoadFeeTrack.cpp>
-#include <ripple/app/misc/impl/Manifest.cpp>
-#include <ripple/app/misc/impl/Transaction.cpp>
-#include <ripple/app/misc/impl/TxQ.cpp>
-#include <ripple/app/misc/impl/ValidatorList.cpp>
-#include <ripple/app/misc/impl/ValidatorSite.cpp>
+namespace ripple {
+
+namespace detail {
+
+using response_type =
+    beast::http::response<beast::http::string_body>;
+
+class Work
+{
+public:
+    virtual ~Work() = default;
+
+    virtual void run() = 0;
+
+    virtual void cancel() = 0;
+};
+
+} // detail
+
+} // ripple
+
+#endif

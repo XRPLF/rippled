@@ -1037,6 +1037,14 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\CanonicalTXSet.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\Work.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\WorkBase.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\WorkPlain.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\WorkSSL.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\FeeVote.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\FeeVoteImpl.cpp">
@@ -1079,6 +1087,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorSite.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\LoadFeeTrack.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\Manifest.h">
@@ -1110,6 +1122,8 @@
     <ClInclude Include="..\..\src\ripple\app\misc\Validations.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\ValidatorSite.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -4274,6 +4288,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\app\ValidatorList_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\ValidatorSite_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
