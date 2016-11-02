@@ -64,6 +64,7 @@ struct ConfigSection
 #define SECTION_WEBSOCKET_PING_FREQ     "websocket_ping_frequency"
 #define SECTION_VALIDATOR_KEYS          "validator_keys"
 #define SECTION_VALIDATOR_LIST_KEYS     "validator_list_keys"
+#define SECTION_VALIDATOR_LIST_SITES    "validator_list_sites"
 #define SECTION_VALIDATORS              "validators"
 #define SECTION_VALIDATION_MANIFEST     "validation_manifest"
 #define SECTION_VETO_AMENDMENTS         "veto_amendments"
