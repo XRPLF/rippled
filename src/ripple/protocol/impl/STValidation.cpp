@@ -134,7 +134,7 @@ Blob STValidation::getSignature () const
     return getFieldVL (sfSignature);
 }
 
-Blob STValidation::getSigned () const
+Blob STValidation::getSerialized () const
 {
     Serializer s;
     add (s);

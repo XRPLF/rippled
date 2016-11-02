@@ -39,6 +39,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <boost/container/flat_set.hpp>
 
 namespace beast {
 
@@ -324,6 +325,18 @@ template <class Hasher, class Key, class Hash, class Pred, class Alloc>
 void
 hash_append(Hasher& h, std::unordered_set<Key, Hash, Pred, Alloc> const& s);
 
+template <class Hasher, class Key, class Compare, class Alloc>
+std::enable_if_t
+<
+    !is_contiguously_hashable<Key, Hasher>::value
+>
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept;
+template <class Hasher, class Key, class Compare, class Alloc>
+std::enable_if_t
+<
+    is_contiguously_hashable<Key, Hasher>::value
+>
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept;
 template <class Hasher, class T0, class T1, class ...T>
 void
 hash_append (Hasher& h, T0 const& t0, T1 const& t1, T const& ...t) noexcept;
@@ -421,6 +434,25 @@ hash_append(Hasher& h, std::array<T, N> const& a) noexcept
         hash_append(h, t);
 }
 
+template <class Hasher, class Key, class Compare, class Alloc>
+std::enable_if_t
+<
+    !is_contiguously_hashable<Key, Hasher>::value
+>
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
+{
+    for (auto const& t : v)
+        hash_append(h, t);
+}
+template <class Hasher, class Key, class Compare, class Alloc>
+std::enable_if_t
+<
+    is_contiguously_hashable<Key, Hasher>::value
+>
+hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
+{
+    h(&(v.begin()), v.size()*sizeof(Key));
+}
 // tuple
 
 namespace detail

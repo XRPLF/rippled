@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <test/jtx/BasicNetwork.h>
+#include <test/csf/BasicNetwork.h>
 #include <ripple/beast/unit_test.h>
 #include <set>
 #include <vector>
 
 namespace ripple {
 namespace test {
+
 
 class BasicNetwork_test : public beast::unit_test::suite
 {
@@ -87,8 +88,7 @@ public:
         pv.emplace_back(0);
         pv.emplace_back(1);
         pv.emplace_back(2);
-        BasicNetwork<Peer*> net;
-        BEAST_EXPECT(net.rand(0, 1) == 0);
+        csf::BasicNetwork<Peer*> net;
         BEAST_EXPECT(! net.connect(&pv[0], &pv[0]));
         BEAST_EXPECT(net.connect(&pv[0], &pv[1], 1s));
         BEAST_EXPECT(net.connect(&pv[1], &pv[2], 1s));

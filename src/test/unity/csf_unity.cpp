@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
+    Copyright (c) 2012-2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,39 +17,7 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_CONSENSUS_RCLCXTRAITS_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_RCLCXTRAITS_H_INCLUDED
+#include <BeastConfig.h>
 
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/base_uint.h>
-
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/RippleLedgerHash.h>
-
-#include <ripple/app/consensus/RCLCxPos.h>
-#include <ripple/app/consensus/RCLCxTx.h>
-
-namespace ripple {
-
-// Consensus traits class
-// For adapting consensus to RCL
-
-class RCLCxTraits
-{
-public:
-
-    using Time_t    = NetClock::time_point;
-
-    using Pos_t     = RCLCxPos;
-    using TxSet_t   = RCLTxSet;
-    using Tx_t      = RCLCxTx;
-
-    using LgrID_t   = LedgerHash;
-    using TxID_t    = uint256;
-    using TxSetID_t = uint256;
-    using NodeID_t  = NodeID;
-};
-
-}
-
-#endif
+#include <test/csf/BasicNetwork_test.cpp>
+#include <test/csf/impl/UNL.cpp>
