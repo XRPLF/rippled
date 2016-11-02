@@ -508,7 +508,7 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
         }
         {
-            // load validator list keys from config
+            // load validator list sites and keys from config
             Config c;
             std::string toLoad(R"rippleConfig(
 [validator_list_sites]
@@ -520,10 +520,37 @@ trustthesevalidators.gov
 )rippleConfig");
             c.loadFromString (toLoad);
             BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ()[0] ==
+                    "ripplevalidators.com");
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ()[1] ==
+                    "trustthesevalidators.gov");
+            BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 1);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ()[0] ==
                     "021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566");
+        }
+        {
+            // load should throw if [validator_list_sites] is configured but
+            // [validator_list_keys] is not
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "[validator_list_keys] config section is missing";
+            try {
+                c.loadFromString (toLoad);
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load from specified [validators_file] absolute path
@@ -535,6 +562,8 @@ trustthesevalidators.gov
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -550,6 +579,8 @@ trustthesevalidators.gov
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file") == valFileName);
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -567,6 +598,8 @@ trustthesevalidators.gov
             BEAST_EXPECT(c.legacy ("validators_file") == valFilePath);
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
             BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
@@ -579,6 +612,8 @@ trustthesevalidators.gov
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file").empty ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -597,6 +632,8 @@ trustthesevalidators.gov
             auto& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -632,11 +669,14 @@ trustthesevalidators.gov
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 15);
             BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 4);
+            BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 3);
         }
         {
-            // load should throw if [validators], [validator_keys] are missing
-            // from rippled cfg and validators file
+            // load should throw if [validators], [validator_keys] and
+            // [validator_list_keys] are missing from rippled cfg and
+            // validators file
             Config c;
             boost::format cc ("[validators_file]\n%1%\n");
             std::string error;

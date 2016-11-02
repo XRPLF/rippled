@@ -64,6 +64,7 @@ class TransactionMaster;
 class TxQ;
 class Validations;
 class ValidatorList;
+class ValidatorSite;
 class Cluster;
 
 class DatabaseCon;
@@ -121,6 +122,7 @@ public:
     virtual Overlay&                overlay () = 0;
     virtual TxQ&                    getTxQ() = 0;
     virtual ValidatorList&          validators () = 0;
+    virtual ValidatorSite&          validatorSites () = 0;
     virtual ManifestCache&          validatorManifests () = 0;
     virtual ManifestCache&          publisherManifests () = 0;
     virtual Cluster&                cluster () = 0;

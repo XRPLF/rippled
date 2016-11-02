@@ -112,6 +112,9 @@
     <Filter Include="ripple\app\misc">
       <UniqueIdentifier>{5A1509B2-871B-A7AC-1E60-544D3F398741}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\misc\detail">
+      <UniqueIdentifier>{2919FCCC-A707-22B8-FFB4-89494A8AC070}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\misc\impl">
       <UniqueIdentifier>{C4BDB9F8-7DB7-E304-D286-098085D5D16E}</UniqueIdentifier>
     </Filter>
@@ -1497,6 +1500,18 @@
     <ClInclude Include="..\..\src\ripple\app\misc\CanonicalTXSet.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\Work.h">
+      <Filter>ripple\app\misc\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\WorkBase.h">
+      <Filter>ripple\app\misc\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\WorkPlain.h">
+      <Filter>ripple\app\misc\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\detail\WorkSSL.h">
+      <Filter>ripple\app\misc\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\FeeVote.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
@@ -1531,6 +1546,9 @@
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorList.cpp">
+      <Filter>ripple\app\misc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\misc\impl\ValidatorSite.cpp">
       <Filter>ripple\app\misc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\LoadFeeTrack.h">
@@ -1570,6 +1588,9 @@
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\misc\ValidatorList.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\ValidatorSite.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
@@ -4972,6 +4993,9 @@
       <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\app\ValidatorList_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\app\ValidatorSite_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\basics\base_uint_test.cpp">
