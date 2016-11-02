@@ -278,12 +278,6 @@ private:
     */
     void closeLedger ();
 
-    /**
-      If we missed a consensus round, we may be missing a validation.
-      This will send an older owed validation if we previously missed it.
-    */
-    void checkOurValidation ();
-
     /** We have a new LCL and must accept it */
     void beginAccept (bool synchronous);
 
