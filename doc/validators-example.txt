@@ -23,13 +23,20 @@
 #    n9KorY8QtTdRx7TVDpwnG9NvyxsDwHUKUEeDLY3AkiGncVaSXZi5
 #    n9MqiExBcoG19UXwoLjBJnhsxEhAZMuWwJDRdkyDz1EkEkwzQTNt
 #
+# [validator_list_sites]
 #
+#   List of URIs serving lists of recommended validators.
+#
+#   Examples:
+#    https://ripple.com/validators
+#    http://127.0.0.1:8000
 #
 # [validator_list_keys]
 #
 #   List of keys belonging to trusted validator list publishers.
-#   Validator lists will only be considered if the list is accompanied by a
-#   valid signature from a trusted publisher key.
+#   Validator lists fetched from configured sites will only be considered
+#   if the list is accompanied by a valid signature from a trusted
+#   publisher key.
 #   Validator list keys should be hex-encoded.
 #
 #   Examples:

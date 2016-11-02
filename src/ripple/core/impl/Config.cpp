@@ -503,6 +503,13 @@ void Config::loadFromString (std::string const& fileContents)
             if (valKeyEntries)
                 section (SECTION_VALIDATOR_KEYS).append (*valKeyEntries);
 
+            auto valSiteEntries = getIniFileSection(
+                iniFile,
+                SECTION_VALIDATOR_LIST_SITES);
+
+            if (valSiteEntries)
+                section (SECTION_VALIDATOR_LIST_SITES).append (*valSiteEntries);
+
             auto valListKeys = getIniFileSection(
                 iniFile,
                 SECTION_VALIDATOR_LIST_KEYS);
@@ -523,6 +530,14 @@ void Config::loadFromString (std::string const& fileContents)
         // Consolidate [validator_keys] and [validators]
         section (SECTION_VALIDATORS).append (
             section (SECTION_VALIDATOR_KEYS).lines ());
+
+        if (! section (SECTION_VALIDATOR_LIST_SITES).lines().empty() &&
+            section (SECTION_VALIDATOR_LIST_KEYS).lines().empty())
+        {
+            Throw<std::runtime_error> (
+                "[" + std::string(SECTION_VALIDATOR_LIST_KEYS) +
+                "] config section is missing");
+        }
     }
 
     {

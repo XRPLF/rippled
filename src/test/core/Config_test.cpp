@@ -300,6 +300,10 @@ nHUhG1PgAG8H8myUENypM35JgfqXAKNQvRVVAFDRzJrny5eZN8d5
 nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
 nHUPDdcdb2Y5DZAJne4c2iabFuAP3F34xZUgYQT2NH7qfkdapgnz
 
+[validator_list_sites]
+recommendedripplevalidators.com
+moreripplevalidators.net
+
 [validator_list_keys]
 03E74EE14CB525AFBB9F1B7D86CD58ECC4B91452294B42AB4E78F260BD905C091D
 030775A669685BD6ABCEBD80385921C7851783D991A8055FD21D2F3966C96F1B56
@@ -527,18 +531,49 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 5);
         }
         {
-            // load validator list keys from config
+            // load validator list sites and keys from config
             Config c;
             std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
 )rippleConfig");
             c.loadFromString (toLoad);
             BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ()[0] ==
+                    "ripplevalidators.com");
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ()[1] ==
+                    "trustthesevalidators.gov");
+            BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 1);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ()[0] ==
                     "021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566");
+        }
+        {
+            // load should throw if [validator_list_sites] is configured but
+            // [validator_list_keys] is not
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "[validator_list_keys] config section is missing";
+            try {
+                c.loadFromString (toLoad);
+            } catch (std::runtime_error& e) {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load from specified [validators_file] absolute path
@@ -550,6 +585,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -567,6 +604,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             BEAST_EXPECT(c.legacy ("validators_file") == valFileName);
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
             BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
@@ -583,6 +622,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             BEAST_EXPECT(c.legacy ("validators_file") == valFilePath);
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
             BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
+            BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
         {
@@ -596,6 +637,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             auto const& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file").empty ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -614,6 +657,8 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             auto const& c (rcg.config ());
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 8);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 2);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 2);
         }
@@ -635,6 +680,10 @@ n9LdgEtkmGB9E2h3K4Vp7iGUaKuq23Zr32ehxiU8FWY7xoxbWTSA
 nHB1X37qrniVugfQcuBTAjswphC1drx7QjFFojJPZwKHHnt8kU7v
 nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
 
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
 )rippleConfig");
@@ -645,6 +694,8 @@ nHUkAWDR4cB8AgPg7VXMX6et8xRTQb2KJfgv1aBEXozwrawRKgMB
             c.loadFromString (boost::str (cc % vtg.validatorsFile ()));
             BEAST_EXPECT(c.legacy ("validators_file") == vtg.validatorsFile ());
             BEAST_EXPECT(c.section (SECTION_VALIDATORS).values ().size () == 15);
+            BEAST_EXPECT(
+                c.section (SECTION_VALIDATOR_LIST_SITES).values ().size () == 4);
             BEAST_EXPECT(
                 c.section (SECTION_VALIDATOR_LIST_KEYS).values ().size () == 3);
         }
