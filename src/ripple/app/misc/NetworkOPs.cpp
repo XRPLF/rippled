@@ -21,15 +21,14 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/consensus/Consensus.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/app/consensus/RCLCxTraits.h>
-#include <ripple/app/ledger/Consensus.h>
-#include <ripple/app/ledger/LedgerConsensus.h>
+#include <ripple/app/consensus/RCLConsensus.h>
 #include <ripple/app/ledger/AcceptedLedger.h>
 #include <ripple/app/ledger/InboundLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -222,9 +221,14 @@ public:
         , m_amendmentBlocked (false)
         , m_heartbeatTimer (this)
         , m_clusterTimer (this)
-        , mConsensus (make_Consensus (app_.config(), app_.logs()))
-        , mLedgerConsensus (mConsensus->makeLedgerConsensus (
-            app, app.getInboundTransactions(), ledgerMaster, *m_localTX))
+        , mConsensus (std::make_shared<RCLConsensus>(app,
+            make_FeeVote(setup_FeeVote (app_.config().section ("voting")),
+                                        app_.logs().journal("FeeVote")),
+            ledgerMaster,
+            *m_localTX,
+            app.getInboundTransactions(),
+            stopwatch(),
+            app_.logs().journal("LedgerConsensus")))
         , m_ledgerMaster (ledgerMaster)
         , m_job_queue (job_queue)
         , m_standalone (standalone)
@@ -308,7 +312,7 @@ public:
 
     // Ledger proposal/close functions.
     void processTrustedProposal (
-        LedgerProposal::pointer proposal,
+        RCLCxPeerPos::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
         NodeID const &node) override;
 
@@ -372,18 +376,14 @@ public:
     }
     void setAmendmentBlocked () override;
     void consensusViewChange () override;
-    void setLastCloseTime (NetClock::time_point t) override
-    {
-        mConsensus->setLastCloseTime(t);
-    }
     PublicKey const& getValidationPublicKey () const override
     {
-        return mLedgerConsensus->getValidationPublicKey ();
+        return mConsensus->getValidationPublicKey ();
     }
     void setValidationKeys (
         SecretKey const& valSecret, PublicKey const& valPublic) override
     {
-        mLedgerConsensus->setValidationKeys (valSecret, valPublic);
+        mConsensus->setValidationKeys (valSecret, valPublic);
     }
     Json::Value getConsensusInfo () override;
     Json::Value getServerInfo (bool human, bool admin) override;
@@ -560,8 +560,7 @@ private:
     DeadlineTimer m_heartbeatTimer;
     DeadlineTimer m_clusterTimer;
 
-    std::unique_ptr<Consensus> mConsensus;
-    std::shared_ptr<LedgerConsensus<RCLCxTraits>> mLedgerConsensus;
+    std::shared_ptr<RCLConsensus> mConsensus;
 
     LedgerMaster& m_ledgerMaster;
     std::shared_ptr<InboundLedger> mAcquiringLedger;
@@ -700,7 +699,8 @@ void NetworkOPsImp::processHeartbeatTimer ()
                     << "Node count (" << numPeers << ") "
                     << "has fallen below quorum (" << m_network_quorum << ").";
             }
-
+            // We do not call mConsensus->timerEntry until there
+            // are enough peers providing meaningful inputs to consensus
             setHeartbeatTimer ();
 
             return;
@@ -722,7 +722,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
 
     }
 
-    mLedgerConsensus->timerEntry ();
+    mConsensus->timerEntry (app_.timeKeeper().closeTime());
 
     setHeartbeatTimer ();
 }
@@ -776,12 +776,12 @@ void NetworkOPsImp::processClusterTimer ()
 
 std::string NetworkOPsImp::strOperatingMode () const
 {
-    if (mMode == omFULL)
+    if (mMode == omFULL && mConsensus->haveCorrectLCL())
     {
-        if (mConsensus->isProposing ())
+        if (mConsensus->proposing ())
             return "proposing";
 
-        if (mConsensus->isValidating ())
+        if (mConsensus->validating ())
             return "validating";
     }
 
@@ -1282,8 +1282,7 @@ void NetworkOPsImp::tryStartConsensus ()
         }
     }
 
-    if (mMode != omDISCONNECTED)
-        beginConsensus (networkClosed);
+    beginConsensus (networkClosed);
 }
 
 bool NetworkOPsImp::checkLastClosedLedger (
@@ -1522,10 +1521,9 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
         app_.getValidations().getCurrentPublicKeys ());
 
     mConsensus->startRound (
-        *mLedgerConsensus,
+        app_.timeKeeper().closeTime(),
         networkClosed,
-        prevLedger,
-        closingInfo.closeTime);
+        prevLedger);
 
     JLOG(m_journal.debug()) << "Initiating consensus engine";
     return true;
@@ -1533,18 +1531,19 @@ bool NetworkOPsImp::beginConsensus (uint256 const& networkClosed)
 
 uint256 NetworkOPsImp::getConsensusLCL ()
 {
-    return mLedgerConsensus->getLCL ();
+    return mConsensus->LCL ();
 }
 
 void NetworkOPsImp::processTrustedProposal (
-    LedgerProposal::pointer proposal,
+    RCLCxPeerPos::pointer peerPos,
     std::shared_ptr<protocol::TMProposeSet> set,
     NodeID const& node)
 {
-    mConsensus->storeProposal (proposal, node);
+    mConsensus->storeProposal (peerPos, node);
 
-    if (mLedgerConsensus->peerPosition (*proposal))
-        app_.overlay().relay(*set, proposal->getSuppressionID());
+    if (mConsensus->peerProposal (
+        app_.timeKeeper().closeTime(), peerPos->proposal()))
+        app_.overlay().relay(*set, peerPos->getSuppressionID());
     else
         JLOG(m_journal.info()) << "Not relaying trusted proposal";
 }
@@ -1567,7 +1566,9 @@ NetworkOPsImp::mapComplete (
 
     // We acquired it because consensus asked us to
     if (fromAcquire)
-        mLedgerConsensus->gotMap (RCLTxSet{map});
+        mConsensus->gotTxSet (
+            app_.timeKeeper().closeTime(),
+            RCLTxSet{map});
 }
 
 void NetworkOPsImp::endConsensus (bool correctLCL)
@@ -1647,7 +1648,7 @@ NetworkOPsImp::ServerFeeSummary::operator !=(NetworkOPsImp::ServerFeeSummary con
        em.is_initialized() != b.em.is_initialized())
             return true;
 
-    if(em)
+    if(em && b.em)
     {
         return (em->minFeeLevel != b.em->minFeeLevel ||
                 em->expFeeLevel != b.em->expFeeLevel ||
@@ -2113,7 +2114,7 @@ bool NetworkOPsImp::recvValidation (
 
 Json::Value NetworkOPsImp::getConsensusInfo ()
 {
-    return mLedgerConsensus->getJson (true);
+    return mConsensus->getJson (true);
 }
 
 Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
@@ -2175,17 +2176,17 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     {
         lastClose[jss::converge_time_s] =
             std::chrono::duration<double>{
-                mConsensus->getLastCloseDuration()}.count();
+                mConsensus->getLastConvergeDuration()}.count();
     }
     else
     {
         lastClose[jss::converge_time] =
-                Json::Int (mConsensus->getLastCloseDuration().count());
+                Json::Int (mConsensus->getLastConvergeDuration().count());
     }
 
     info[jss::last_close] = lastClose;
 
-    //  info[jss::consensus] = mLedgerConsensus->getJson();
+    //  info[jss::consensus] = mConsensus->getJson();
 
     if (admin)
         info[jss::load] = m_job_queue.getJson ();
@@ -2757,9 +2758,11 @@ std::uint32_t NetworkOPsImp::acceptLedger (
         Throw<std::runtime_error> ("Operation only possible in STANDALONE mode.");
 
     // FIXME Could we improve on this and remove the need for a specialized
-    // API in LedgerConsensus?
+    // API in Consensus?
     beginConsensus (m_ledgerMaster.getClosedLedger()->info().hash);
-    mLedgerConsensus->simulate (consensusDelay);
+    mConsensus->simulate (
+        app_.timeKeeper().closeTime(),
+        consensusDelay);
     return m_ledgerMaster.getCurrentLedger ()->info().seq;
 }
 

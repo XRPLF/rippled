@@ -949,6 +949,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
     append_sources(result, *list_sources('src/ripple/conditions', '.cpp'))
     append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/consensus', '.cpp'))
     append_sources(result, *list_sources('src/ripple/json', '.cpp'))
     append_sources(result, *list_sources('src/ripple/ledger', '.cpp'))
     append_sources(result, *list_sources('src/ripple/legacy', '.cpp'))
@@ -963,6 +964,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/basics', '.cpp'))
     append_sources(result, *list_sources('src/test/beast', '.cpp'))
     append_sources(result, *list_sources('src/test/conditions', '.cpp'))
+    append_sources(result, *list_sources('src/test/consensus', '.cpp'))
     append_sources(result, *list_sources('src/test/core', '.cpp'))
     append_sources(result, *list_sources('src/test/json', '.cpp'))
     append_sources(result, *list_sources('src/test/ledger', '.cpp'))
@@ -974,6 +976,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/server', '.cpp'))
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
     append_sources(result, *list_sources('src/test/jtx', '.cpp'))
+    append_sources(result, *list_sources('src/test/csf', '.cpp'))    
 
 
     if use_shp(toolchain):
@@ -1003,12 +1006,14 @@ def get_unity_sources(toolchain):
         'src/ripple/beast/unity/beast_insight_unity.cpp',
         'src/ripple/beast/unity/beast_net_unity.cpp',
         'src/ripple/beast/unity/beast_utility_unity.cpp',
+        'src/ripple/unity/app_consensus.cpp',
         'src/ripple/unity/app_ledger.cpp',
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
         'src/ripple/unity/app_paths.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/conditions.cpp',
+        'src/ripple/unity/consensus.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
         'src/ripple/unity/crypto.cpp',
@@ -1024,6 +1029,7 @@ def get_unity_sources(toolchain):
         'src/test/unity/app_test_unity.cpp',
         'src/test/unity/basics_test_unity.cpp',
         'src/test/unity/beast_test_unity.cpp',
+    	'src/test/unity/consensus_test_unity.cpp',
         'src/test/unity/core_test_unity.cpp',
         'src/test/unity/conditions_test_unity.cpp',
         'src/test/unity/json_test_unity.cpp',
@@ -1035,7 +1041,8 @@ def get_unity_sources(toolchain):
         'src/test/unity/rpc_test_unity.cpp',
         'src/test/unity/server_test_unity.cpp',
         'src/test/unity/shamap_test_unity.cpp',
-        'src/test/unity/support_unity.cpp'
+        'src/test/unity/jtx_unity.cpp',
+        'src/test/unity/csf_unity.cpp'
     )
 
     if use_shp(toolchain):

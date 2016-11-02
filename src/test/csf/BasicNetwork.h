@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_BASICNETWORK_H_INCLUDED
-#define RIPPLE_TEST_BASICNETWORK_H_INCLUDED
+#ifndef RIPPLE_TEST_CSF_BASICNETWORK_H_INCLUDED
+#define RIPPLE_TEST_CSF_BASICNETWORK_H_INCLUDED
 
 #include <ripple/basics/qalloc.h>
 #include <ripple/beast/clock/manual_clock.h>
@@ -35,14 +35,13 @@
 #include <cassert>
 #include <cstdint>
 #include <iomanip>
-#include <random>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
 namespace ripple {
 namespace test {
-
+namespace csf {
 /** Peer to peer network simulator.
 
     The network is formed from a set of Peer objects representing
@@ -73,8 +72,8 @@ namespace test {
 
     After creating the Peer set, constructing the network,
     and establishing connections, the caller uses one or more
-    of the step, step_one, step_for, and step_until functions
-    to iterate the network,
+    of the step, step_one, step_for, step_until and step_while
+    functions to iterate the network,
 
     Peer Requirements:
 
@@ -263,7 +262,6 @@ private:
     // VFALCO This is an ugly wart, aged containers
     //        want a non-const reference to a clock.
     clock_type mutable clock_;
-    std::mt19937_64 rng_;
     std::unordered_map<Peer, links_type> links_;
 
 public:
@@ -271,10 +269,6 @@ public:
     BasicNetwork& operator= (BasicNetwork const&) = delete;
 
     BasicNetwork();
-
-    /** A source of pseudo-random numbers. */
-    std::mt19937_64&
-    rng();
 
     /** Return the allocator. */
     qalloc const&
@@ -290,14 +284,6 @@ public:
     */
     time_point
     now() const;
-
-    /** Return a random integer in range [0, n) */
-    std::size_t
-    rand (std::size_t n);
-
-    /** Return a random integer in range [first, last) */
-    std::size_t
-    rand (std::size_t first, std::size_t last);
 
     /** Connect two peers.
 
@@ -446,6 +432,23 @@ public:
     */
     bool
     step();
+
+    /** Run the network while a condition is true.
+
+        Function takes no arguments and will be called
+        repeatedly after each message is processed to
+        decide whether to continue.
+
+        Effects:
+
+            The clock is advanced to the time
+            of the last delivered message.
+
+        @return `true` if any message was processed.
+    */
+    template <class Function>
+    bool
+    step_while(Function && func);
 
     /** Run the network until the specified time.
 
@@ -685,14 +688,6 @@ BasicNetwork<Peer>::BasicNetwork()
 
 template <class Peer>
 inline
-std::mt19937_64&
-BasicNetwork<Peer>::rng()
-{
-    return rng_;
-}
-
-template <class Peer>
-inline
 qalloc const&
 BasicNetwork<Peer>::alloc() const
 {
@@ -715,24 +710,6 @@ BasicNetwork<Peer>::now() const ->
     time_point
 {
     return clock_.now();
-}
-
-template <class Peer>
-inline
-std::size_t
-BasicNetwork<Peer>::rand(std::size_t n)
-{
-    return std::uniform_int_distribution<
-        std::size_t>(0, n - 1)(rng_);
-}
-
-template <class Peer>
-inline
-std::size_t
-BasicNetwork<Peer>::rand(
-    std::size_t first, std::size_t last)
-{
-    return first + rand(last - first);
 }
 
 template <class Peer>
@@ -858,6 +835,17 @@ BasicNetwork<Peer>::step()
 }
 
 template <class Peer>
+template <class Function>
+bool
+BasicNetwork<Peer>::step_while(Function && f)
+{
+    bool ran = false;
+    while (f() && step_one())
+        ran = true;
+    return ran;
+}
+
+template <class Peer>
 bool
 BasicNetwork<Peer>::step_until(
     time_point const& until)
@@ -922,6 +910,7 @@ BasicNetwork<Peer>::bfs(
     }
 }
 
+} // csf
 } // test
 } // ripple
 

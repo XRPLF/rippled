@@ -819,9 +819,19 @@
     </ClInclude>
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPos.h">
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLConsensus.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLConsensus.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTraits.h">
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
     </ClInclude>
@@ -851,21 +861,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\BookListeners.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\Consensus.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
@@ -883,17 +883,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerTiming.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -933,8 +923,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerHistory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -944,14 +932,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerHolder.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerMaster.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerProposal.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
     </ClInclude>
@@ -1840,6 +1820,18 @@
     <ClInclude Include="..\..\src\ripple\conditions\impl\PreimageSha256.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\Consensus.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\ConsensusProposal.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\consensus\LedgerTiming.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
     </ClInclude>
@@ -3143,6 +3135,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\app_consensus.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
@@ -3170,6 +3166,10 @@
     <ClCompile Include="..\..\src\ripple\unity\beast.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\conditions.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\consensus.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -4397,6 +4397,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\Consensus_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -4425,6 +4433,28 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\csf.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\BasicNetwork.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\BasicNetwork_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\csf\impl\UNL.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\csf\Ledger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Peer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Sim.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Tx.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\UNL.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\test\json\json_value_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -4453,12 +4483,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\test\jtx\balance.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\test\jtx\BasicNetwork.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\jtx\BasicNetwork_test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\test\jtx\basic_prop.h">
     </ClInclude>
     <ClInclude Include="..\..\src\test\jtx\delivermin.h">
@@ -4931,11 +4955,23 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\consensus_test_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\unity\core_test_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\csf_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\unity\json_test_unity.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\jtx_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
@@ -4974,10 +5010,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\shamap_test_unity.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\unity\support_unity.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>

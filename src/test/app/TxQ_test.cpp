@@ -20,7 +20,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/app/ledger/LedgerConsensus.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGER_LEDGERPROPOSAL_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERPROPOSAL_H_INCLUDED
+#ifndef RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
+#define RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>
@@ -27,105 +27,84 @@
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/beast/hash/hash_append.h>
+#include <ripple/consensus/ConsensusProposal.h>
 #include <chrono>
 #include <cstdint>
 #include <string>
 
 namespace ripple {
 
-class LedgerProposal
-    : public CountedObject <LedgerProposal>
+/** A peer's signed, proposed position for use in RCLConsensus.
+
+    Carries a ConsensusProposal signed by a peer.
+*/
+class RCLCxPeerPos
+    : public CountedObject <RCLCxPeerPos>
 {
-private:
-    // A peer initial joins the consensus process
-    static std::uint32_t const seqJoin = 0;
-
-    // A peer wants to bow out and leave the consensus process
-    static std::uint32_t const seqLeave = 0xffffffff;
-
 public:
-    static char const* getCountedObjectName () { return "LedgerProposal"; }
-
-    using pointer = std::shared_ptr<LedgerProposal>;
+    static char const* getCountedObjectName () { return "RCLCxPeerPos"; }
+    using pointer = std::shared_ptr<RCLCxPeerPos>;
     using ref = const pointer&;
 
-    // proposal from peer
-    LedgerProposal (
-        uint256 const& prevLgr,
-        std::uint32_t proposeSeq,
-        uint256 const& propose,
-        NetClock::time_point closeTime,
-        NetClock::time_point now,
+    //< The type of the proposed position
+    using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
+
+
+    /** Constructor
+
+        Constructs a signed peer position.
+
+        @param publicKey Public key of the peer
+        @param signature Signature provided with the proposal
+        @param suppress ????
+        @param proposal The consensus proposal
+    */
+
+    RCLCxPeerPos (
         PublicKey const& publicKey,
-        NodeID const& nodeID,
         Slice const& signature,
-        uint256 const& suppress);
+        uint256 const& suppress,
+        Proposal && proposal);
 
-    // Our own proposal:
-    LedgerProposal (
-        uint256 const& prevLedger,
-        uint256 const& position,
-        NetClock::time_point closeTime,
-        NetClock::time_point now);
-
+    //! Create the signing hash for the proposal
     uint256 getSigningHash () const;
+
+    //! Verify the signing hash of the proposal
     bool checkSign () const;
 
-    NodeID const& getPeerID () const
+    //! Signature of the proposal (not necessarily verified)
+    Slice getSignature () const
     {
-        return mPeerID;
+        return signature_;
     }
-    uint256 const& getCurrentHash () const
-    {
-        return mCurrentHash;
-    }
-    uint256 const& getPrevLedger () const
-    {
-        return mPreviousLedger;
-    }
+
+    //! Public key of peer that sent the proposal
     PublicKey const& getPublicKey () const
     {
         return publicKey_;
     }
+
+    //! ?????
     uint256 const& getSuppressionID () const
     {
         return mSuppression;
     }
-    std::uint32_t getProposeSeq () const
+
+    //! The consensus proposal
+    Proposal const & proposal() const
     {
-        return mProposeSeq;
-    }
-    NetClock::time_point getCloseTime () const
-    {
-        return mCloseTime;
-    }
-    NetClock::time_point getSeenTime () const
-    {
-        return mTime;
-    }
-    Blob const& getSignature () const
-    {
-        return signature_;
-    }
-    bool isInitial () const
-    {
-        return mProposeSeq == seqJoin;
-    }
-    bool isBowOut () const
-    {
-        return mProposeSeq == seqLeave;
+        return proposal_;
     }
 
-    bool isStale (NetClock::time_point cutoff) const
+    /// @cond Ignore
+    //! Add a conversion operator to conform to the Consensus interface
+    operator Proposal const &() const
     {
-        return mTime <= cutoff;
+        return proposal_;
     }
+    /// @endcond
 
-    bool changePosition (
-        uint256 const& newPosition,
-        NetClock::time_point newCloseTime,
-        NetClock::time_point now);
-    void bowOut (NetClock::time_point now);
+    //! JSON representation of proposal
     Json::Value getJson () const;
 
 private:
@@ -135,21 +114,16 @@ private:
     {
         using beast::hash_append;
         hash_append(h, HashPrefix::proposal);
-        hash_append(h, std::uint32_t(mProposeSeq));
-        hash_append(h, mCloseTime);
-        hash_append(h, mPreviousLedger);
-        hash_append(h, mCurrentHash);
+        hash_append(h, std::uint32_t(proposal().proposeSeq()));
+        hash_append(h, proposal().closeTime());
+        hash_append(h, proposal().prevLedger());
+        hash_append(h, proposal().position());
     }
 
-    uint256 mPreviousLedger, mCurrentHash, mSuppression;
-    NetClock::time_point mCloseTime;
-    std::uint32_t mProposeSeq;
-
+    Proposal proposal_;
+    uint256 mSuppression;
     PublicKey publicKey_;
-    NodeID mPeerID;
-    Blob signature_;
-
-    NetClock::time_point mTime;
+    Buffer signature_;
 };
 
 /** Calculate a unique identifier for a signed proposal.
@@ -160,6 +134,13 @@ private:
     present. Recipients of the proposal will inject the last closed ledger in
     order to validate the signature. If the last closed ledger is left out, then
     it is considered as all zeroes for the purposes of signing.
+
+    @param proposeHash The hash of the proposed position
+    @param previousLedger The hash of the ledger the proposal is based upon
+    @param proposeSeq Sequence number of the proposal
+    @param closeTime Close time of the proposal
+    @param publicKey Signer's public key
+    @param signature Proposal signature
 */
 uint256 proposalUniqueId (
         uint256 const& proposeHash,

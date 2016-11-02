@@ -23,7 +23,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <memory>
@@ -150,7 +150,7 @@ public:
     //--------------------------------------------------------------------------
 
     // ledger proposal/close functions
-    virtual void processTrustedProposal (LedgerProposal::pointer proposal,
+    virtual void processTrustedProposal (RCLCxPeerPos::pointer peerPos,
         std::shared_ptr<protocol::TMProposeSet> set,
             NodeID const& node) = 0;
 
@@ -174,9 +174,6 @@ public:
     virtual bool isAmendmentBlocked () = 0;
     virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
-
-    // FIXME(NIKB): Remove the need for this function
-    virtual void setLastCloseTime (NetClock::time_point t) = 0;
     virtual PublicKey const& getValidationPublicKey () const = 0;
     virtual void setValidationKeys (
         SecretKey const& valSecret, PublicKey const& valPublic) = 0;

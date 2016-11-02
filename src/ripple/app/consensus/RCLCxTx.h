@@ -23,108 +23,160 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/shamap/SHAMap.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
 
 namespace ripple {
 
-// Transactions, as seen by the consensus code in the rippled app
+/** Represents a transaction in RCLConsensus.
+
+    RCLCxTx is a thin wrapper over the SHAMapItem that corresponds to the
+    transaction.
+*/
 class RCLCxTx
 {
 public:
+    //! Unique identifier/hash of transaction
+    using ID = uint256;
 
-    RCLCxTx (SHAMapItem const& txn) : txn_ (txn)
+    /** Constructor
+
+        @param txn The transaction to wrap
+    */
+    RCLCxTx(SHAMapItem const& txn) : tx_{ txn }
     { }
 
-    uint256 const& getID() const
+    //! The unique identifier/hash of the transaction
+    ID const&
+    id() const
     {
-        return txn_.key ();
+        return tx_.key ();
     }
 
-    SHAMapItem const& txn() const
-    {
-        return txn_;
-    }
-
-protected:
-
-    SHAMapItem const txn_;
+    //! The SHAMapItem that represents the transaction.
+    SHAMapItem const tx_;
 };
 
-class RCLTxSet;
+/** Represents a set of transactions in RCLConsensus.
 
-class MutableRCLTxSet
-{
-public:
-
-    MutableRCLTxSet (RCLTxSet const&);
-
-    bool
-    addEntry (RCLCxTx const& p)
-    {
-        return map_->addItem (
-            SHAMapItem {p.getID(), p.txn().peekData()},
-            true, false);
-    }
-
-    bool
-    removeEntry (uint256 const& entry)
-    {
-        return map_->delItem (entry);
-    }
-
-    std::shared_ptr <SHAMap> const& map() const
-    {
-        return map_;
-    }
-
-protected:
-
-    std::shared_ptr <SHAMap> map_;
-};
-
-// Sets of transactions
-// as seen by the consensus code in the rippled app
+    RCLTxSet is a thin wrapper over a SHAMap that stores the set of
+    transactions.
+*/
 class RCLTxSet
 {
 public:
+    //! Unique identifier/hash of the set of transactions
+    using ID = uint256;
+    //! The type that corresponds to a single transaction
+    using Tx = RCLCxTx;
 
-    using mutable_t = MutableRCLTxSet;
-
-    RCLTxSet (std::shared_ptr<SHAMap> map) :
-        map_ (std::move(map))
+    //< Provide a mutable view of a TxSet
+    class MutableTxSet
     {
-        assert (map_);
+        friend class RCLTxSet;
+        //! The SHAMap representing the transactions.
+        std::shared_ptr <SHAMap> map_;
+
+    public:
+        MutableTxSet(RCLTxSet const & src)
+            : map_{ src.map_->snapShot(true) }
+        {
+
+        }
+
+        /** Insert a new transaction into the set.
+
+        @param t The transaction to insert.
+        @return Whether the transaction took place.
+        */
+        bool
+        insert(Tx const& t)
+        {
+            return map_->addItem(
+                SHAMapItem{ t.id(), t.tx_.peekData() },
+                true, false);
+        }
+
+        /** Remove a transaction from the set.
+
+        @param entry The ID of the transaction to remove.
+        @return Whether the transaction was removed.
+        */
+        bool
+        erase(Tx::ID const& entry)
+        {
+            return map_->delItem(entry);
+        }
+    };
+
+    /** Constructor
+
+        @param m SHAMap to wrap
+    */
+    RCLTxSet (std::shared_ptr<SHAMap> m)
+        : map_{ std::move(m) }
+    {
+        assert(map_);
     }
 
-    RCLTxSet (MutableRCLTxSet const& set) :
-        map_ (set.map()->snapShot (false))
-    { }
+    /** Constructor from a previosly created MutableTxSet
 
-    bool hasEntry (uint256 const& entry) const
+        @param m MutableTxSet that will become fixed
+     */
+    RCLTxSet(MutableTxSet const & m)
+        : map_{m.map_->snapShot(false)}
+    {
+
+    }
+
+    /** Test if a transaction is in the set.
+
+        @param entry The ID of transaction to test.
+        @return Whether the transaction is in the set.
+    */
+    bool
+    exists(Tx::ID const& entry) const
     {
         return map_->hasItem (entry);
     }
 
-    boost::optional <RCLCxTx const>
-    getEntry (uint256 const& entry) const
+    /** Lookup a transaction.
+
+        @param entry The ID of the transaction to find.
+        @return A shared pointer to the SHAMapItem.
+
+        @note Since find may not succeed, this returns a
+              `std::shared_ptr<const SHAMapItem>` rather than a Tx, which
+              cannot refer to a missing transaction.  The generic consensus
+              code use the shared_ptr semantics to know whether the find
+              was succesfully and properly creates a Tx as needed.
+    */
+    std::shared_ptr<const SHAMapItem> const &
+    find(Tx::ID const& entry) const
     {
-        auto item = map_->peekItem (entry);
-        if (item)
-            return RCLCxTx(*item);
-        return boost::none;
+        return map_->peekItem (entry);
     }
 
-    uint256 getID() const
+    //! The unique ID/hash of the transaction set
+    ID
+    id() const
     {
         return map_->getHash().as_uint256();
     }
 
-    std::map <uint256, bool>
-    getDifferences (RCLTxSet const& j) const
+    /** Find transactions not in common between this and another transaction set.
+
+        @param j The set to compare with
+        @return Map of transactions in this set and `j` but not both. The key
+                is the transaction ID and the value is a bool of the transaction
+                exists in this set.
+    */
+    std::map<Tx::ID, bool>
+    compare (RCLTxSet const& j) const
     {
         SHAMap::Delta delta;
 
         // Bound the work we do in case of a malicious
-        // map from a trusted validator
+        // map_ from a trusted validator
         map_->compare (*(j.map_), delta, 65536);
 
         std::map <uint256, bool> ret;
@@ -138,19 +190,9 @@ public:
         return ret;
     }
 
-    std::shared_ptr<SHAMap> const& map() const
-    {
-        return map_;
-    }
-
-protected:
-
+    //! The SHAMap representing the transactions.
     std::shared_ptr <SHAMap> map_;
 };
-
-inline MutableRCLTxSet::MutableRCLTxSet (RCLTxSet const& set)
-    : map_ (set.map()->snapShot (true))
-{ }
 
 }
 #endif
