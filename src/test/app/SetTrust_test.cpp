@@ -27,12 +27,12 @@ class SetTrust_test : public beast::unit_test::suite
 {
 public:
 
+
     void testFreeTrustlines(bool thirdLineCreatesLE, bool createOnHighAcct)
     {
-        using namespace std::string_literals;
-        testcase("Allow two free trust lines before requiring reserve; third line is " +
-            (thirdLineCreatesLE ? "created"s : "added to existing"s)
-                + " creator is " + (createOnHighAcct ? "high" : "low") + " account )");
+        testcase(std::string("Allow two free trust lines before requiring reserve; third line ") +
+            (thirdLineCreatesLE ? "creates ledger entry" : "adds to existing ledgerr entry")
+                + " creator is " + (createOnHighAcct ? "high" : "low") + " account ");
 
         using namespace jtx;
         Env env(*this);
@@ -65,12 +65,13 @@ public:
         }
         else
         {
-            // First establish opposite trust direction from gwC; creator participating in 3 trust lines
+            // First establish opposite trust direction from assistor; creator participating in 3 trust lines
             env(trust(assistor,  creator["USD"](100)), require(lines(creator,3)));
 
-            // creator does not have enough to create the other direction of an existing trust line
+            // creator does not have enough to create the other direction on the existing trust line ledger entry
             env(trust(creator, assistor["USD"](100)), ter(tecINSUF_RESERVE_LINE));
         }
+
         // Fund creator additional amount to cover
         env(pay(env.master, creator, STAmount{ threelineReserve - baseReserve }));
 
@@ -82,8 +83,9 @@ public:
         {
             env(trust(creator, assistor["USD"](100)),require(lines(creator,3)));
 
-            auto const lines = env.rpc ("json", "account_lines",
-                R"({"account": ")" + creator.human() + R"("})");
+            Json::Value jv;
+            jv["account"] = creator.human();
+            auto const lines = env.rpc("json","account_lines", to_string(jv));
             // Verify that all lines have 100 limit from creator
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 3);
@@ -121,6 +123,7 @@ public:
             if( badFlag & tfTrustSetMask)
                 env(trust(alice, gw["USD"](100), static_cast<std::uint32_t>(badFlag)), ter(temINVALID_FLAG));
         }
+
         // trust amount can't be XRP
         env(trust_explicit_amt(alice, drops(10000)), ter(temBAD_LIMIT));
 
@@ -142,9 +145,8 @@ public:
 
     void testModifyQualityOfTrustline(bool createQuality, bool createOnHighAcct)
     {
-        using namespace std::string_literals;
-        testcase("SetTrust " + (createQuality ? "creates"s : "removes"s) + " quality of trustline for "
-        + (createOnHighAcct ? "high"s : "low"s ) +  " account" );
+        testcase(std::string("SetTrust ") + (createQuality ? "creates" : "removes") + " quality of trustline for "
+        + (createOnHighAcct ? "high" : "low" ) +  " account" );
 
         using namespace jtx;
         Env env{ *this };
@@ -171,8 +173,9 @@ public:
 
         auto check_quality = [&](const bool exists)
         {
-            auto const lines = env.rpc ("json", "account_lines",
-                R"({"account": ")" + toAcct.human() + R"("})");
+            Json::Value jv;
+            jv["account"] = toAcct.human();
+            auto const lines = env.rpc("json","account_lines", to_string(jv));
             auto quality = exists ? 1000 : 0;
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 1);
@@ -194,7 +197,7 @@ public:
         testFreeTrustlines(true, false);
         testFreeTrustlines(false, true);
         testFreeTrustlines(false, true);
-        // true, true case doesn't matter since creating a trustline LE requires reserve from the creator
+        // true, true case doesn't matter since creating a trustline ledger entry requires reserve from the creator
         // independent of hi/low account ids for endpoints
         testMalformedTransaction();
         testModifyQualityOfTrustline(false, false);
