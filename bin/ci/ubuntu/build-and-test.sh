@@ -19,7 +19,7 @@ if [[ ${BUILD:-scons} == "cmake" ]]; then
   mkdir -p "build/${CMAKE_TARGET}"
   pushd "build/${CMAKE_TARGET}"
   cmake ../.. -Dtarget=$CMAKE_TARGET
-  make -j${NUM_PROCESSORS:-2} ${APP}
+  cmake --build . -- -j${NUM_PROCESSORS:-2}
   popd
   export APP_PATH="$PWD/build/${CMAKE_TARGET}/${APP}"
   echo "using APP_PATH: $APP_PATH"
