@@ -232,6 +232,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         env.require (balance (alice, gw["AUD"](0)));
         env.require (balance (bob, gw["AUD"](1)));
+        env.require (balance (gw, bob["AUD"](-1)));
 
         if(with_rate)
         {
@@ -249,6 +250,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         env.require (balance (alice, gw["AUD"](0.5)));
         env.require (balance (bob, gw["AUD"](with_rate ? 0.45 : 0.5)));
+        env.require (balance (gw, bob["AUD"](with_rate ? -0.45 : -0.5)));
 
         if (subscribe)
         {
@@ -459,7 +461,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
             pay (env.master, alice, XRP(10000)),
             json(sfInvoiceID.fieldName, "DEADBEEF"));
         jv[jss::tx_blob] = strHex (tx.stx->getSerializer().slice());
-        auto jrr = env.rpc ("json", "submit", to_string(jv)) [jss::result];
+        auto jrr = wsc->invoke("submit", jv) [jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");
         BEAST_EXPECT(jrr[jss::tx_json][sfInvoiceID.fieldName] ==
             "0000000000000000"
