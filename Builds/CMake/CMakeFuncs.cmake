@@ -147,6 +147,11 @@ macro(setup_build_cache)
     set(CMAKE_CONFIGURATION_TYPES
       DebugClassic
       ReleaseClassic)
+    if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+      set(CMAKE_BUILD_TYPE DebugClassic)
+    elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+      set(CMAKE_BUILD_TYPE ReleaseClassic)
+    endif()
   endif()
 
   set(CMAKE_CONFIGURATION_TYPES

@@ -99,12 +99,19 @@ setup_build_cache()
 project(rippled)
 
 if(nonunity)
-  set(CMAKE_CXX_FLAGS_DEBUGCLASSIC ${CMAKE_CXX_FLAGS_DEBUG})
-  set(CMAKE_CXX_FLAGS_RELEASECLASSIC ${CMAKE_CXX_FLAGS_RELEASE})
-  set(CMAKE_EXE_LINKER_FLAGS_DEBUGCLASSIC
-    ${CMAKE_EXE_LINKER_FLAGS_DEBUG})
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASECLASSIC
-    ${CMAKE_EXE_LINKER_FLAGS_RELEASE})
+    get_cmake_property(allvars VARIABLES)
+    string(REGEX MATCHALL "[^;]*(DEBUG|RELEASE)[^;]*" matchvars "${allvars}")
+    foreach(var IN LISTS matchvars)
+        string(REGEX REPLACE "(DEBUG|RELEASE)" "\\1CLASSIC" newvar ${var})
+        set(${newvar} ${${var}})
+    endforeach()
+
+    get_cmake_property(allvars CACHE_VARIABLES)
+    string(REGEX MATCHALL "[^;]*(DEBUG|RELEASE)[^;]*" matchvars "${allvars}")
+    foreach(var IN LISTS matchvars)
+        string(REGEX REPLACE "(DEBUG|RELEASE)" "\\1CLASSIC" newvar ${var})
+        set(${newvar} ${${var}} CACHE STRING "Copied from ${var}")
+    endforeach()
 endif()
 
 determine_build_type()
@@ -157,173 +164,159 @@ set(soci_extra_includes
   -I"${CMAKE_SOURCE_DIR}/"src/soci/include/private
   -I"${CMAKE_SOURCE_DIR}/"src/sqlite)
 
-if (WIN32 OR is_xcode OR unity)
-  prepend(beast_unity_srcs
-    src/ripple/beast/unity/
-    beast_insight_unity.cpp
-    beast_net_unity.cpp
-    beast_utility_unity.cpp)
+############################################################
 
-  prepend(ripple_unity_srcs
-    src/ripple/unity/
-    app_ledger.cpp
-    app_main.cpp
-    app_misc.cpp
-    app_paths.cpp
-    app_tx.cpp
-    core.cpp
-    basics.cpp
-    crypto.cpp
-    ledger.cpp
-    net.cpp
-    overlay.cpp
-    peerfinder.cpp
-    json.cpp
-    protocol.cpp
-    rpcx.cpp
-    shamap.cpp
-    server.cpp
-    test.cpp)
-  
-  prepend(test_unity_srcs 
-    src/unity/
-    app_test_unity.cpp
-    basics_test_unity.cpp
-    beast_test_unity.cpp
-    core_test_unity.cpp
-    json_test_unity.cpp
-    ledger_test_unity.cpp
-    overlay_test_unity.cpp
-    peerfinder_test_unity.cpp
-    protocol_test_unity.cpp
-    resource_test_unity.cpp
-    rpc_test_unity.cpp
-    server_test_unity.cpp
-    shamap_test_unity.cpp
-    test_unity.cpp)
-    
-  list(APPEND rippled_src ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
- 
-  
+# Unity sources
+prepend(beast_unity_srcs
+src/ripple/beast/unity/
+beast_insight_unity.cpp
+beast_net_unity.cpp
+beast_utility_unity.cpp)
 
-  add_with_props(rippled_src src/unity/nodestore_test_unity.cpp
-    -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
-    -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
-    -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
-    ${rocks_db_system_header})
-  
-  add_with_props(rippled_src src/ripple/unity/nodestore.cpp
-    -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
-    -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
-    -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
-    ${rocks_db_system_header})
+prepend(ripple_unity_srcs
+src/ripple/unity/
+app_ledger.cpp
+app_main.cpp
+app_misc.cpp
+app_paths.cpp
+app_tx.cpp
+core.cpp
+basics.cpp
+crypto.cpp
+ledger.cpp
+net.cpp
+overlay.cpp
+peerfinder.cpp
+json.cpp
+protocol.cpp
+rpcx.cpp
+shamap.cpp
+server.cpp
+test.cpp)
 
-  add_with_props(rippled_src src/ripple/unity/soci_ripple.cpp ${soci_extra_includes})
+prepend(test_unity_srcs
+src/unity/
+app_test_unity.cpp
+basics_test_unity.cpp
+beast_test_unity.cpp
+core_test_unity.cpp
+json_test_unity.cpp
+ledger_test_unity.cpp
+overlay_test_unity.cpp
+peerfinder_test_unity.cpp
+protocol_test_unity.cpp
+resource_test_unity.cpp
+rpc_test_unity.cpp
+server_test_unity.cpp
+shamap_test_unity.cpp
+test_unity.cpp)
 
-  list(APPEND ripple_unity_srcs ${beast_unity_srcs} ${test_unity_srcs}
-    src/ripple/unity/nodestore.cpp
-    src/ripple/unity/soci_ripple.cpp
-    src/unity/nodestore_test_unity.cpp)
+list(APPEND rippled_src_unity ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
 
-  set_property(
-    SOURCE ${ripple_unity_srcs}
-    APPEND
-    PROPERTY HEADER_FILE_ONLY
-    ${nonunity})
-  # Doesn't work
-  # $<OR:$<CONFIG:DebugClassic>,$<CONFIG:ReleaseClassic>>)
+add_with_props(rippled_src_unity src/unity/nodestore_test_unity.cpp
+-I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
+-I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
+-I"${CMAKE_SOURCE_DIR}/"src/snappy/config
+${rocks_db_system_header})
 
-endif ()
+add_with_props(rippled_src_unity src/ripple/unity/nodestore.cpp
+-I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
+-I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
+-I"${CMAKE_SOURCE_DIR}/"src/snappy/config
+${rocks_db_system_header})
 
-if (WIN32 OR is_xcode OR NOT unity)
-  # Rippled
-  file(GLOB_RECURSE core_srcs src/ripple/core/*.cpp)
-  add_with_props(rippled_src "${core_srcs}"
+add_with_props(rippled_src_unity src/ripple/unity/soci_ripple.cpp ${soci_extra_includes})
+
+list(APPEND ripple_unity_srcs ${beast_unity_srcs} ${test_unity_srcs}
+src/ripple/unity/nodestore.cpp
+src/ripple/unity/soci_ripple.cpp
+src/unity/nodestore_test_unity.cpp)
+
+############################################################
+
+# Non-unity sources
+file(GLOB_RECURSE core_srcs src/ripple/core/*.cpp)
+add_with_props(rippled_src_nonunity "${core_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/soci/src/core
     -I"${CMAKE_SOURCE_DIR}/"src/sqlite)
 
-  set(non_unity_srcs ${core_srcs})
+set(non_unity_srcs ${core_srcs})
 
-  foreach(curdir
-      beast/clock
-      beast/container
-      beast/insight
-      beast/net
-      beast/utility
-      app
-      basics
-      crypto
-      json
-      ledger
-      legacy
-      net
-      overlay
-      peerfinder
-      protocol
-      rpc
-      server
-      shamap
-      test)
+foreach(curdir
+        beast/clock
+        beast/container
+        beast/insight
+        beast/net
+        beast/utility
+        app
+        basics
+        crypto
+        json
+        ledger
+        legacy
+        net
+        overlay
+        peerfinder
+        protocol
+        rpc
+        server
+        shamap
+        test)
     file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)
-    list(APPEND rippled_src "${cursrcs}")
+    list(APPEND rippled_src_nonunity "${cursrcs}")
     list(APPEND non_unity_srcs "${cursrcs}")
-  endforeach()
+endforeach()
 
-  file(GLOB_RECURSE nodestore_srcs src/ripple/nodestore/*.cpp
+file(GLOB_RECURSE nodestore_srcs src/ripple/nodestore/*.cpp
     src/test/nodestore/*.cpp)
 
-  add_with_props(rippled_src "${nodestore_srcs}"
+add_with_props(rippled_src_nonunity "${nodestore_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
     ${rocks_db_system_header})
-  
-  list(APPEND non_unity_srcs "${nodestore_srcs}")
-  
 
-  file(GLOB_RECURSE test_srcs src/test/*.cpp)
-  add_with_props("${test_srcs}"
+list(APPEND non_unity_srcs "${nodestore_srcs}")
+
+file(GLOB_RECURSE test_srcs src/test/*.cpp)
+add_with_props(rippled_src_nonunity "${test_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
     ${rocks_db_system_header})
-  
-  list(APPEND non_unity_srcs "${test_srcs}")
-  list(APPEND rippled_src "${test_srcs}")
 
-  file(GLOB_RECURSE rippled_headers src/*.h src/*.hpp)
-  foreach(curdir
-      beast/asio
-      beast/core
-      beast/crypto
-      beast/cxx17
-      beast/hash
-      proto
-      resource
-      validators
-      websocket)
-    file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)
-    list(APPEND rippled_headers "${cursrcs}")
-  endforeach()
-  list(APPEND rippled_src "${rippled_headers}")
+list(APPEND non_unity_srcs "${test_srcs}")
 
-  # Properties
-  set_property(
-    SOURCE ${non_unity_srcs}
-    APPEND
-    PROPERTY HEADER_FILE_ONLY
-    ${unity})
-  set_property(
-    SOURCE ${rippled_headers}
-    APPEND
-    PROPERTY HEADER_FILE_ONLY
-    true)
-    # Doesn't work
-    # $<OR:$<CONFIG:Debug>,$<CONFIG:Release>>)
+if(WIN32 OR is_xcode)
+    # Rippled headers. Only needed for IDEs.
+    file(GLOB_RECURSE rippled_headers src/*.h src/*.hpp)
+    list(APPEND rippled_headers Builds/CMake/CMakeFuncs.cmake)
+    foreach(curdir
+            beast/asio
+            beast/core
+            beast/crypto
+            beast/cxx17
+            beast/hash
+            proto
+            resource
+            validators
+            websocket)
+        file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)
+        list(APPEND rippled_headers "${cursrcs}")
+    endforeach()
+    list(APPEND rippled_src_nonunity "${rippled_headers}")
+
+    set_property(
+        SOURCE ${rippled_headers}
+        APPEND
+        PROPERTY HEADER_FILE_ONLY
+        true)
+        # Doesn't work
+        # $<OR:$<CONFIG:Debug>,$<CONFIG:Release>>)
 endif()
 
 if (WIN32 OR is_xcode)
-  # Documentation sources
+  # Documentation sources. Only needed for IDEs.
   prepend(doc_srcs
     docs/
     Jamfile.v2
@@ -345,7 +338,7 @@ endif()
 
 ############################################################
 
-add_with_props(rippled_src src/ripple/unity/soci.cpp
+add_with_props(rippled_src_all src/ripple/unity/soci.cpp
   ${soci_extra_includes})
 
 if (NOT is_msvc)
@@ -354,7 +347,7 @@ else()
   unset(no_unused_w)
 endif()
 
-add_with_props(rippled_src src/ripple/unity/secp256k1.cpp
+add_with_props(rippled_src_all src/ripple/unity/secp256k1.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/secp256k1
   ${no_unused_w}
   )
@@ -368,7 +361,7 @@ foreach(cursrc
     src/ripple/unity/resource.cpp
     src/ripple/unity/websocket02.cpp)
 
-  add_with_props(rippled_src ${cursrc}
+  add_with_props(rippled_src_all ${cursrc}
     ${rocks_db_system_header}
     )
 
@@ -380,16 +373,10 @@ else()
   unset(extra_props)
 endif()
 
-add_with_props(rippled_src src/sqlite/sqlite_unity.c
+add_with_props(rippled_src_all src/sqlite/sqlite_unity.c
   ${extra_props})
 
-if (NOT is_msvc)
-  set_source_files_properties(src/ripple/unity/beastc.c
-    PROPERTIES COMPILE_FLAGS
-    -Wno-array-bounds)
-endif()
-
-add_with_props(rippled_src src/ripple/unity/ed25519.c
+add_with_props(rippled_src_all src/ripple/unity/ed25519.c
   -I"${CMAKE_SOURCE_DIR}/"src/ed25519-donna)
 
 if (is_gcc)
@@ -398,7 +385,7 @@ else()
   unset(no_init_w)
 endif()
 
-add_with_props(rippled_src src/ripple/unity/rocksdb.cpp
+add_with_props(rippled_src_all src/ripple/unity/rocksdb.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2
   -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
@@ -409,23 +396,40 @@ if (NOT is_msvc)
   set(no_unused_w -Wno-unused-function)
 endif()
 
-add_with_props(rippled_src src/ripple/unity/snappy.cpp
+add_with_props(rippled_src_all src/ripple/unity/snappy.cpp
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
   -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
   ${no_unused_w})
 
 if (APPLE AND is_clang)
-  list(APPEND rippled_src src/ripple/unity/beastobjc.mm)
+  list(APPEND rippled_src_all src/ripple/unity/beastobjc.mm)
 endif()
+
+list(APPEND rippled_src_unity "${rippled_src_all}")
+list(APPEND rippled_src_nonunity "${rippled_src_all}")
 
 ############################################################
 
 if (WIN32 OR is_xcode)
   group_sources(src)
   group_sources(docs)
+  group_sources(Builds)
 endif()
 
-add_executable(rippled ${rippled_src} ${PROTO_HDRS})
+if(unity)
+    add_executable(rippled ${rippled_src_unity} ${PROTO_HDRS})
+    add_executable(rippled_classic EXCLUDE_FROM_ALL ${rippled_src_nonunity} ${PROTO_HDRS})
+    set(other_target rippled_classic)
+else()
+    add_executable(rippled ${rippled_src_nonunity} ${PROTO_HDRS})
+    add_executable(rippled_unity EXCLUDE_FROM_ALL ${rippled_src_unity} ${PROTO_HDRS})
+    set(other_target rippled_unity)
+endif()
+list(APPEND targets "rippled")
+list(APPEND targets ${other_target})
+# Not the same as EXCLUDE_FROM_ALL. Prevents Visual Studio from building the
+# other_target when the user builds the solution (default when pressing <F7>)
+set_property(TARGET ${other_target} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD true)
 
 find_program(
   B2_EXE
@@ -444,14 +448,14 @@ add_custom_target(docs
   SOURCES "${doc_srcs}"
   )
 
-create_build_folder(rippled)
-
 set_startup_project(rippled)
 
-target_link_libraries(rippled
-  ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
+foreach(target IN LISTS targets)
+    target_link_libraries(${target}
+      ${OPENSSL_LIBRARIES} ${PROTOBUF_LIBRARIES} ${SANITIZER_LIBRARIES})
 
-link_common_libraries(rippled)
+    link_common_libraries(${target})
+endforeach()
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
   message(WARNING "Rippled requires a 64 bit target architecture.\n"

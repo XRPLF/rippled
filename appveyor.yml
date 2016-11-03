@@ -23,6 +23,7 @@ environment:
   #   target: msvc.debug
   - build: cmake
     target: msvc.debug
+    buildconfig: Debug
 
 os: Visual Studio 2015
 
@@ -88,7 +89,7 @@ build_script:
           New-Item -ItemType Directory -Force -Path "build/$cmake_target"
           Push-Location "build/$cmake_target"
           cmake -G"Visual Studio 14 2015 Win64" -Dtarget="$cmake_target" ../..
-          msbuild /m "rippled.vcxproj"
+          cmake --build . --config $env:buildconfig
           Pop-Location
         }
 
@@ -102,7 +103,7 @@ after_build:
         }
         else
         {
-          $exe="build/$cmake_target/Debug/rippled"
+          $exe="build/$cmake_target/$env:buildconfig/rippled"
         }
         "Exe is at $exe"
 
