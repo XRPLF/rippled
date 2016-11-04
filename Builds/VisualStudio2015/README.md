@@ -17,7 +17,7 @@ software components:
 * [Google Protocol Buffers Compiler](README.md#install-google-protocol-buffers-compiler)
 * (Optional) [Python and Scons](README.md#optional-install-python-and-scons)
 * [OpenSSL Library](README.md#install-openssl)
-* [Boost 1.59 library](README.md#build-boost)
+* [Boost library](README.md#build-boost)
 * [Node.js](README.md#install-nodejs)
 
 ## Install Software
@@ -84,8 +84,8 @@ for Visual Studio 2015 support.
 [Download OpenSSL.](http://slproweb.com/products/Win32OpenSSL.html)
 There will be four variants available:
 
-1. 64-bit. Use this if you are running 64-bit windows. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d".
-2. 64-bit light - Don't use this. It is missing files needed to build rippled. As of this writing, the link is called: "Win64 OpenSSL v1.0.2d Light"
+1. 64-bit. Use this if you are running 64-bit windows. As of this writing, the link is called: "Win64 OpenSSL v1.0.2j".
+2. 64-bit light - Don't use this. It is missing files needed to build rippled. As of this writing, the link is called: "Win64 OpenSSL v1.0.2j Light"
 
 Run the installer, and choose an appropriate location for your OpenSSL
 installation. In this guide we use **C:\lib\OpenSSL-Win64** as the
@@ -108,8 +108,13 @@ unpacking it, open a **Developer Command Prompt** for
 Visual Studio, change to the directory containing boost, then
 bootstrap the build tools:
 
+(As of this writing, the most recent version of boost is 1.62.0, which
+will unpack into a directory named `boost_1_62_0`. For higher versions
+of boost, adjust the directories provided in these examples as
+appropriate.)
+
 ```powershell
-cd C:\lib\boost_1_59_0
+cd C:\lib\boost_1_62_0
 bootstrap
 ```
 
@@ -119,7 +124,7 @@ affected by changes in outside files. Therefore, it is necessary to build the
 required boost static libraries using this command:
 
 ```powershell
-bjam --toolset=msvc-14.0 --build-type=complete variant=debug,release link=static runtime-link=static address-model=64
+bjam --toolset=msvc-14.0 address-model=64 architecture=x86 link=static threading=multi runtime-link=shared,static stage --stagedir=stage64
 ```
 
 Building the boost libraries may take considerable time. When the build process
@@ -161,7 +166,7 @@ git checkout master
 ### Configure Library Paths
 
 Open the solution file located at **Builds/Visual Studio 2015/ripple.sln**
-and select the "View->Other Windows->Property Manager" to bring up the Property Manager.
+and select the "View->Property Manager" to bring up the Property Manager.
 Expand the *debug | x64* section and
 double click the *Microsoft.Cpp.x64.user* property sheet to bring up the
 *Property Pages* dialog. These are global properties applied to all
