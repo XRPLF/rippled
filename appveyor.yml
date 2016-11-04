@@ -6,15 +6,20 @@ environment:
   # that it's a small download. We also use appveyor's free cache, avoiding fees
   # downloading from S3 each time. 
   # TODO: script to create this package.
-  RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/rippled_deps15.01.zip
+  RIPPLED_DEPS_PATH: rippled_deps15.02
+  RIPPLED_DEPS_URL: https://ripple.github.io/Downloads/appveyor/%RIPPLED_DEPS_PATH%.zip
 
   # Other dependencies we just download each time.
-  PIP_URL: https://bootstrap.pypa.io/get-pip.py
+  PIP_PATH: get-pip.py
+  PIP_URL: https://bootstrap.pypa.io/%PIP_PATH%
+  # The % in this URL messes up variable substition, so any updates will
+  # need to update both PYWIN32_PATH and PYWIN32_URL
+  PYWIN32_PATH: pywin32-220.win-amd64-py2.7.exe
   PYWIN32_URL: https://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe
 
   # Scons honours these environment variables, setting the include/lib paths.
-  BOOST_ROOT: C:/rippled_deps15.01/boost
-  OPENSSL_ROOT: C:/rippled_deps15.01/openssl
+  BOOST_ROOT: C:/%RIPPLED_DEPS_PATH%/boost
+  OPENSSL_ROOT: C:/%RIPPLED_DEPS_PATH%/openssl
 
   matrix:
   # This build works, but our current Appveyor config runs matrix builds
@@ -27,10 +32,13 @@ environment:
 
 os: Visual Studio 2015
 
-# At the end of each successful build we cache this directory. It must be less
-# than 100MB total compressed.
+# At the end of each successful build we cache this directory.
+# https://www.appveyor.com/docs/build-cache/
+# Resulting archive should not exceed 100 MB.
 cache:
-  - "C:\\rippled_deps15.01"
+  - 'C:\%RIPPLED_DEPS_PATH%'
+  - '%PIP_PATH%'
+  - '%PYWIN32_PATH%'
 
 # This means we'll download a zip of the branch we want, rather than the full
 # history.
@@ -38,31 +46,36 @@ shallow_clone: true
 
 install:
   # We want easy_install, python and protoc.exe on PATH.
-  - SET PATH=%PYTHON%;%PYTHON%/Scripts;C:/rippled_deps15.01;%PATH%
+  - SET PATH=%PYTHON%;%PYTHON%/Scripts;C:/%RIPPLED_DEPS_PATH%;%PATH%
 
   # `ps` prefix means the command is executed by powershell.
   - ps: |
         if ($env:build -eq "scons") {
-          Start-FileDownload $env:PIP_URL
-          Start-FileDownload $env:PYWIN32_URL
-
+          if(-not(Test-Path $env:PIP_PATH)) {
+            echo "Download from $env:PIP_URL"
+            Start-FileDownload $env:PIP_URL
+          }
+          if(-not(Test-Path $env:PYWIN32_PATH)) {
+            echo "Download from $env:PYWIN32_URL"
+            Start-FileDownload $env:PYWIN32_URL
+          }
         }
   - bin/ci/windows/install-dependencies.bat
 
   # Download dependencies if appveyor didn't restore them from the cache.
   # Use 7zip to unzip.
   - ps: |
-        if (-not(Test-Path 'C:/rippled_deps15.01')) {
+        if (-not(Test-Path 'C:/$env:RIPPLED_DEPS_PATH')) {
             echo "Download from $env:RIPPLED_DEPS_URL"
             Start-FileDownload "$env:RIPPLED_DEPS_URL"
-            7z x rippled_deps15.01.zip -oC:\ -y > $null
+            7z x "$($env:RIPPLED_DEPS_PATH).zip" -oC:\ -y > $null
         }
 
   # Newer DEPS include a versions file.
   # Dump it so we can verify correct behavior.
   - ps: |
-        if (Test-Path 'C:/rippled_deps15.01/versions.txt') {
-          cat 'C:/rippled_deps15.01/versions.txt'
+        if (Test-Path "C:/$env:RIPPLED_DEPS_PATH/versions.txt") {
+          cat "C:/$env:RIPPLED_DEPS_PATH/versions.txt"
         }
 
 # TODO: This is giving me grief
@@ -89,7 +102,7 @@ build_script:
           New-Item -ItemType Directory -Force -Path "build/$cmake_target"
           Push-Location "build/$cmake_target"
           cmake -G"Visual Studio 14 2015 Win64" -Dtarget="$cmake_target" ../..
-          cmake --build . --config $env:buildconfig
+          cmake --build . --config $env:buildconfig -- -m
           Pop-Location
         }
 

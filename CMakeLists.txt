@@ -133,7 +133,10 @@ special_build_flags()
 
 ############################################################
 
-find_boost(
+use_boost(
+  # resist the temptation to alphabetize these. coroutine
+  # must come before context.
+  chrono
   coroutine
   context
   date_time
@@ -143,11 +146,11 @@ find_boost(
   system
   thread)
 
-find_pthread()
+use_pthread()
 
-find_openssl(${openssl_min})
+use_openssl(${openssl_min})
 
-find_protobuf()
+use_protobuf()
 
 setup_build_boilerplate()
 

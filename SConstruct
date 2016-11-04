@@ -463,9 +463,15 @@ def add_boost_and_protobuf(toolchain, env):
         br_cands = ['CLANG_BOOST_ROOT'] if toolchain == 'clang' else []
         br_cands.append('BOOST_ROOT')
         BOOST_ROOT = os.path.normpath(get_environ_value(br_cands))
-        env.Append(LIBPATH=[
-            os.path.join(BOOST_ROOT, 'stage', 'lib'),
-            ])
+        stage64_path = os.path.join(BOOST_ROOT, 'stage64', 'lib')
+        if os.path.exists(stage64_path):
+          env.Append(LIBPATH=[
+              stage64_path,
+              ])
+        else:
+          env.Append(LIBPATH=[
+              os.path.join(BOOST_ROOT, 'stage', 'lib'),
+              ])
         env['BOOST_ROOT'] = BOOST_ROOT
         if toolchain in ['gcc', 'clang']:
             env.Append(CCFLAGS=['-isystem' + env['BOOST_ROOT']])
@@ -587,6 +593,9 @@ def config_env(toolchain, variant, env):
                     ])
 
         boost_libs = [
+            # resist the temptation to alphabetize these. coroutine
+            # must come before context.
+            'boost_chrono',
             'boost_coroutine',
             'boost_context',
             'boost_date_time',
@@ -603,9 +612,13 @@ def config_env(toolchain, variant, env):
         else:
             # We prefer static libraries for boost
             if env.get('BOOST_ROOT'):
+                static_libs64 = ['%s/stage64/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
+                               l in boost_libs]
                 static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
                                l in boost_libs]
-                if all(os.path.exists(f) for f in static_libs):
+                if all(os.path.exists(f) for f in static_libs64):
+                    boost_libs = [File(f) for f in static_libs64]
+                elif all(os.path.exists(f) for f in static_libs):
                     boost_libs = [File(f) for f in static_libs]
             env.Append(LIBS=boost_libs)
 
