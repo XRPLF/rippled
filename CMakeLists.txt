@@ -232,14 +232,6 @@ src/ripple/unity/nodestore.cpp
 src/ripple/unity/soci_ripple.cpp
 src/unity/nodestore_test_unity.cpp)
 
-#  set_property(
-#    SOURCE ${ripple_unity_srcs}
-#    APPEND
-#    PROPERTY HEADER_FILE_ONLY
-#    ${nonunity})
-# Doesn't work
-# $<OR:$<CONFIG:DebugClassic>,$<CONFIG:ReleaseClassic>>)
-
 ############################################################
 
 # Non-unity sources
@@ -294,13 +286,6 @@ add_with_props(rippled_src_nonunity "${test_srcs}"
     ${rocks_db_system_header})
 
 list(APPEND non_unity_srcs "${test_srcs}")
-
-# Properties
-#  set_property(
-#    SOURCE ${non_unity_srcs}
-#    APPEND
-#    PROPERTY HEADER_FILE_ONLY
-#    ${unity})
 
 if(WIN32 OR is_xcode)
     # Rippled headers. Only needed for IDEs.
