@@ -52,14 +52,11 @@ class Ticket_test : public beast::unit_test::suite
         bool other_target = false,
         bool expiration = false)
     {
+        using namespace std::string_literals;
         auto const& tx = env.tx ()->getJson (0);
         bool is_cancel = tx[jss::TransactionType] == "TicketCancel";
 
         auto const& jvm = env.meta ()->getJson (0);
-        BEAST_EXPECT(jvm.isMember (sfAffectedNodes.fieldName));
-        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
-        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].size() ==
-            (is_cancel && other_target) ? 4 : 3);
         std::array<Json::Value, 4> retval;
 
         // these are the affected nodes that we expect for
@@ -72,24 +69,33 @@ class Ticket_test : public beast::unit_test::suite
         if (is_cancel && other_target)
         {
             expected_nodes = {
-                {0, sfModifiedNode.fieldName, "AccountRoot"},
-                {expiration ? 2: 1, sfModifiedNode.fieldName, "AccountRoot"},
-                {expiration ? 1: 2, sfDeletedNode.fieldName, "Ticket"},
-                {3, sfDeletedNode.fieldName, "DirectoryNode"}
+                std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
+                std::make_tuple(
+                    expiration ? 2: 1, sfModifiedNode.fieldName, "AccountRoot"s),
+                std::make_tuple(
+                    expiration ? 1: 2, sfDeletedNode.fieldName, "Ticket"s),
+                std::make_tuple(3, sfDeletedNode.fieldName, "DirectoryNode"s)
             };
         }
         else
         {
             expected_nodes = {
-                {0, sfModifiedNode.fieldName, "AccountRoot"},
-                {1,
-                 is_cancel ? sfDeletedNode.fieldName : sfCreatedNode.fieldName,
-                 "Ticket"},
-                {2,
-                 is_cancel ? sfDeletedNode.fieldName : sfCreatedNode.fieldName,
-                 "DirectoryNode"}
+                std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
+                std::make_tuple(1,
+                    is_cancel ?
+                        sfDeletedNode.fieldName : sfCreatedNode.fieldName,
+                    "Ticket"s),
+                std::make_tuple(2,
+                    is_cancel ?
+                        sfDeletedNode.fieldName : sfCreatedNode.fieldName,
+                 "DirectoryNode"s)
             };
         }
+
+        BEAST_EXPECT(jvm.isMember (sfAffectedNodes.fieldName));
+        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
+        BEAST_EXPECT(
+            jvm[sfAffectedNodes.fieldName].size() == expected_nodes.size());
 
         // verify the actual metadata against the expected
         for (auto const& it : expected_nodes)
@@ -216,7 +222,6 @@ class Ticket_test : public beast::unit_test::suite
         env (jv);
         auto crd = checkTicketMeta (env);
         auto const& jacctd = crd[0];
-        auto const& jticketd = crd[1];
         BEAST_EXPECT(jacctd[sfFinalFields.fieldName][jss::Sequence] == 3);
         BEAST_EXPECT(
             jacctd[sfFinalFields.fieldName][sfOwnerCount.fieldName] == 0);
