@@ -35,11 +35,10 @@ class Ticket_test : public beast::unit_test::suite
     ///
     /// @param env current jtx env (meta will be extracted from it)
     ///
-    /// @param is_cancel flag to indicate whether the latest tx was a ticket
-    /// create or ticket cancel: this determines the some of the node names
-    /// that are extracted
+    /// @param other_target flag to indicate whether a Target different
+    /// from the Account was specified for the ticket (when created)
     ///
-    /// @param expiration flag to indicate a cancelation with expiration which
+    /// @param expiration flag to indicate a cancellation with expiration which
     /// causes two of the affected nodes to be swapped (in order).
     ///
     /// @retval std::array size 4 of json object values representing
@@ -119,11 +118,7 @@ class Ticket_test : public beast::unit_test::suite
         Env env {*this};
 
         env (ticket::create (env.master), ter(temDISABLED));
-
-        auto jv = ticket::create (env.master);
-        jv[jss::TransactionType] = "TicketCancel";
-        jv[sfTicketID.fieldName] = idOne;
-        env (jv, ter (temDISABLED));
+        env (ticket::cancel (env.master, idOne), ter (temDISABLED));
     }
 
     void testTicketCancelNonexistent ()
@@ -132,11 +127,7 @@ class Ticket_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env {*this, features (featureTickets)};
-
-        auto jv = ticket::create (env.master);
-        jv[jss::TransactionType] = "TicketCancel";
-        jv[sfTicketID.fieldName] = idOne;
-        env (jv, ter (tecNO_ENTRY));
+        env (ticket::cancel (env.master, idOne), ter (tecNO_ENTRY));
     }
 
     void testTicketCreatePreflightFail ()
@@ -147,12 +138,7 @@ class Ticket_test : public beast::unit_test::suite
         Env env {*this, features (featureTickets)};
 
         env (ticket::create (env.master), fee (XRP (-1)), ter (temBAD_FEE));
-
-        auto jv = ticket::create (env.master);
-        jv[jss::TransactionType] = "TicketCancel";
-        jv[sfTicketID.fieldName] = idOne;
-
-        env (jv, fee (XRP (-1)), ter (temBAD_FEE));
+        env (ticket::cancel (env.master, idOne), fee (XRP (-1)), ter (temBAD_FEE));
     }
 
     void testTicketCreateNonexistent ()
@@ -216,10 +202,7 @@ class Ticket_test : public beast::unit_test::suite
             env.master.human());
 
         // cancel
-        auto jv = ticket::create (env.master);
-        jv[jss::TransactionType] = "TicketCancel";
-        jv[sfTicketID.fieldName] = jticket[sfLedgerIndex.fieldName];
-        env (jv);
+        env (ticket::cancel(env.master, jticket[sfLedgerIndex.fieldName].asString()));
         auto crd = checkTicketMeta (env);
         auto const& jacctd = crd[0];
         BEAST_EXPECT(jacctd[sfFinalFields.fieldName][jss::Sequence] == 3);
@@ -255,7 +238,10 @@ class Ticket_test : public beast::unit_test::suite
         // create and verify
         env (ticket::create (env.master, alice));
         auto cr = checkTicketMeta (env, true);
+        auto const& jacct = cr[0];
         auto const& jticket = cr[1];
+        BEAST_EXPECT(
+            jacct[sfFinalFields.fieldName][sfOwnerCount.fieldName] == 1);
         BEAST_EXPECT(jticket[sfLedgerEntryType.fieldName] == "Ticket");
         BEAST_EXPECT(jticket[sfLedgerIndex.fieldName] ==
             "C231BA31A0E13A4D524A75F990CE0D6890B800FF1AE75E51A2D33559547AC1A2");
@@ -266,12 +252,12 @@ class Ticket_test : public beast::unit_test::suite
         BEAST_EXPECT(jticket[sfNewFields.fieldName][jss::Sequence] == 2);
 
         // cancel using the target account
-        auto jv = ticket::create (alice);
-        jv[jss::TransactionType] = "TicketCancel";
-        jv[sfTicketID.fieldName] = jticket[sfLedgerIndex.fieldName];
-        env (jv);
+        env (ticket::cancel(alice, jticket[sfLedgerIndex.fieldName].asString()));
         auto crd = checkTicketMeta (env, true);
+        auto const& jacctd = crd[0];
         auto const& jdir = crd[2];
+        BEAST_EXPECT(
+            jacctd[sfFinalFields.fieldName][sfOwnerCount.fieldName] == 0);
         BEAST_EXPECT(jdir[sfLedgerIndex.fieldName] ==
             jticket[sfLedgerIndex.fieldName]);
         BEAST_EXPECT(jdir[sfFinalFields.fieldName][jss::Account] ==
@@ -378,9 +364,7 @@ class Ticket_test : public beast::unit_test::suite
         env.close ();
 
         // now try to cancel with alice account, which should not work
-        auto jv = ticket::create (alice);
-        jv[jss::TransactionType] = "TicketCancel";
-        jv[sfTicketID.fieldName] = jticket[sfLedgerIndex.fieldName];
+        auto jv = ticket::cancel(alice, jticket[sfLedgerIndex.fieldName].asString());
         env (jv, ter (tecNO_PERMISSION));
 
         // advance the ledger time to as to trigger expiration

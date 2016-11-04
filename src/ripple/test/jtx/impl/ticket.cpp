@@ -46,6 +46,16 @@ create (Account const& account,
 
 } // detail
 
+Json::Value
+cancel(Account const& account, std::string const & ticketId)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = "TicketCancel";
+    jv[jss::Account] = account.human();
+    jv["TicketID"] = ticketId;
+    return jv;
+}
+
 } // ticket
 
 } // jtx

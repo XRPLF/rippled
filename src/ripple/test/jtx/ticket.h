@@ -97,8 +97,8 @@ create (Account const& account,
 }
 
 /** Cancel a ticket */
-//Json::Value
-//cancel (Account const& account,
+Json::Value
+cancel(Account const& account, std::string const & ticketId);
 
 } // ticket
 
