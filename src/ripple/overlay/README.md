@@ -138,7 +138,7 @@ Content-Type: application/json
     followed by the dotted major and minor protocol version number. For
     responses the value must be a single element matching one of the elements
     provided in the corresponding request field. If the server does not
-    understand any of the requested protocols, 
+    understand any of the requested protocols, the request is rejected.
 
 * `Connection`
 
