@@ -299,6 +299,7 @@ macro(find_pthread)
   if (NOT WIN32)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads)
+    add_compile_options(${CMAKE_THREAD_LIBS_INIT})
   endif()
 endmacro()
 
