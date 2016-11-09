@@ -364,8 +364,13 @@ start_timer()
 {
     // Max seconds without completing a message
     static constexpr std::chrono::seconds timeout{30};
+    static constexpr std::chrono::seconds timeoutLocal{3};
     error_code ec;
-    timer_.expires_from_now(timeout, ec);
+    timer_.expires_from_now(
+        remote_endpoint().address().to_string() == "127.0.0.1" ?
+            timeoutLocal :
+            timeout,
+        ec);
     if(ec)
         return fail(ec, "start_timer");
     timer_.async_wait(strand_.wrap(std::bind(
