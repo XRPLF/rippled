@@ -64,7 +64,8 @@ protected:
         bufferSize = 4 * 1024,
 
         // Max seconds without completing a message
-        timeoutSeconds = 30
+        timeoutSeconds = 30,
+        timeoutSecondsLocal = 3 //used for localhost clients
     };
 
     struct buffer
@@ -277,7 +278,12 @@ BaseHTTPPeer<Handler, Impl>::
 start_timer()
 {
     error_code ec;
-    timer_.expires_from_now(std::chrono::seconds(timeoutSeconds), ec);
+    timer_.expires_from_now(
+        std::chrono::seconds(
+            remote_address_.address().is_loopback() ?
+                timeoutSecondsLocal :
+                timeoutSeconds),
+        ec);
     if(ec)
         return fail(ec, "start_timer");
     timer_.async_wait(strand_.wrap(std::bind(
@@ -318,6 +324,7 @@ do_read(yield_context do_yield)
 {
     complete_ = false;
     error_code ec;
+    start_timer();
     beast::http::async_read(impl().stream_,
         read_buf_, message_, do_yield[ec]);
     // VFALCO What if the connection was closed?

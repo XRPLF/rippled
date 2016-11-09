@@ -109,6 +109,15 @@ class WSClientImpl : public WSClient
 
     unsigned rpc_version_;
 
+    void cleanup()
+    {
+        error_code ec;
+        ws_.close({}, ec);
+        stream_.close(ec);
+        work_ = boost::none;
+        thread_.join();
+    }
+
 public:
     WSClientImpl(Config const& cfg, bool v2, unsigned rpc_version)
         : work_(ios_)
@@ -118,21 +127,26 @@ public:
         , ws_(stream_)
         , rpc_version_(rpc_version)
     {
-        auto const ep = getEndpoint(cfg, v2);
-        stream_.connect(ep);
-        ws_.handshake(ep.address().to_string() +
-            ":" + std::to_string(ep.port()), "/");
-        ws_.async_read(op_, rb_,
-            strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
-                this, beast::asio::placeholders::error)));
+        try
+        {
+            auto const ep = getEndpoint(cfg, v2);
+            stream_.connect(ep);
+            ws_.handshake(ep.address().to_string() +
+                ":" + std::to_string(ep.port()), "/");
+            ws_.async_read(op_, rb_,
+                strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
+                    this, beast::asio::placeholders::error)));
+        }
+        catch(std::exception&)
+        {
+            cleanup();
+            Rethrow();
+        }
     }
 
     ~WSClientImpl() override
     {
-        ws_.close({});
-        stream_.close();
-        work_ = boost::none;
-        thread_.join();
+        cleanup();
     }
 
     Json::Value

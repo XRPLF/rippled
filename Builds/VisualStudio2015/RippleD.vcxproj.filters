@@ -25,6 +25,9 @@
     <Filter Include="beast\http\impl">
       <UniqueIdentifier>{932F732F-F09E-5C50-C8A1-D62342CCAA1F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\test">
+      <UniqueIdentifier>{0ED4CDBE-296D-2599-04B3-095BFD1668A4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="beast\unit_test">
       <UniqueIdentifier>{2762284D-66E5-8B48-1F8E-67116DB1FC6B}</UniqueIdentifier>
     </Filter>
@@ -542,6 +545,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
       <Filter>.</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\extras\beast\test\yield_to.hpp">
+      <Filter>beast\test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\amount.hpp">
       <Filter>beast\unit_test</Filter>
