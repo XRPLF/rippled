@@ -171,9 +171,9 @@ See: [here](https://ripple.com/wiki/Rippled_build_instructions#Building)
 
 ## Unit Tests (Recommended)
 
-rippled builds a set of unittest into the server executable. To run these unit
-tests after building, pass the `--unittests` option to the compiled `rippled`
-executable.
+rippled builds a set of unit tests into the server executable. To run these unit
+tests after building, pass the `--unittest` option to the compiled `rippled`
+executable. The executable will exit after running the unit tests.
 
 ## System Tests (Recommended)
 
