@@ -205,6 +205,7 @@ enum TER
     tecDST_TAG_NEEDED           = 143,
     tecINTERNAL                 = 144,
     tecOVERSIZE                 = 145,
+    tecCRYPTOCONDITION_ERROR    = 146
 };
 
 inline bool isTelLocal(TER x)

@@ -85,7 +85,7 @@ LedgerFormats::LedgerFormats ()
         SOElement (sfAccount,           SOE_REQUIRED) <<
         SOElement (sfDestination,       SOE_REQUIRED) <<
         SOElement (sfAmount,            SOE_REQUIRED) <<
-        SOElement (sfDigest,            SOE_OPTIONAL) <<
+        SOElement (sfCondition,         SOE_OPTIONAL) <<
         SOElement (sfCancelAfter,       SOE_OPTIONAL) <<
         SOElement (sfFinishAfter,       SOE_OPTIONAL) <<
         SOElement (sfSourceTag,         SOE_OPTIONAL) <<

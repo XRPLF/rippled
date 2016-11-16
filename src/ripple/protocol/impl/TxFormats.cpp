@@ -69,7 +69,7 @@ TxFormats::TxFormats ()
     add ("SuspendedPaymentCreate", ttSUSPAY_CREATE) <<
         SOElement (sfDestination,       SOE_REQUIRED) <<
         SOElement (sfAmount,            SOE_REQUIRED) <<
-        SOElement (sfDigest,            SOE_OPTIONAL) <<
+        SOElement (sfCondition,         SOE_OPTIONAL) <<
         SOElement (sfCancelAfter,       SOE_OPTIONAL) <<
         SOElement (sfFinishAfter,       SOE_OPTIONAL) <<
         SOElement (sfDestinationTag,    SOE_OPTIONAL);
@@ -77,9 +77,8 @@ TxFormats::TxFormats ()
     add ("SuspendedPaymentFinish", ttSUSPAY_FINISH) <<
         SOElement (sfOwner,               SOE_REQUIRED) <<
         SOElement (sfOfferSequence,       SOE_REQUIRED) <<
-        SOElement (sfMethod,              SOE_OPTIONAL) <<
-        SOElement (sfDigest,              SOE_OPTIONAL) <<
-        SOElement (sfProof,               SOE_OPTIONAL);
+        SOElement (sfFulfillment,         SOE_OPTIONAL) <<
+        SOElement (sfCondition,           SOE_OPTIONAL);
 
     add ("SuspendedPaymentCancel", ttSUSPAY_CANCEL) <<
         SOElement (sfOwner,               SOE_REQUIRED) <<

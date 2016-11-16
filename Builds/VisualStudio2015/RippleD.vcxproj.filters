@@ -193,6 +193,12 @@
     <Filter Include="ripple\beast\utility\src">
       <UniqueIdentifier>{C94B6C51-E253-633B-0AA8-8D18CD695D5E}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\conditions">
+      <UniqueIdentifier>{44E216F9-ACFD-B770-C6C9-BFFAD162566D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\conditions\impl">
+      <UniqueIdentifier>{155DC1A3-8A60-BC74-A7E4-1AC1A679FFF9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\core">
       <UniqueIdentifier>{235DCF23-2CF8-4F03-1A54-C159823A7E8D}</UniqueIdentifier>
     </Filter>
@@ -447,6 +453,9 @@
     </Filter>
     <Filter Include="test\beast">
       <UniqueIdentifier>{8B0B95AC-5386-EE34-AA85-E1C7974E6E93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\conditions">
+      <UniqueIdentifier>{F421E9A0-BB69-E638-F7AC-A3BD9B7D4827}</UniqueIdentifier>
     </Filter>
     <Filter Include="test\core">
       <UniqueIdentifier>{26D7F11B-5BF1-54BC-8BF5-D45F68A6A408}</UniqueIdentifier>
@@ -2409,6 +2418,42 @@
     <ClInclude Include="..\..\src\ripple\beast\xor_shift_engine.h">
       <Filter>ripple\beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\Condition.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\Ed25519.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\Fulfillment.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\impl\base64.h">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\Condition.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\Ed25519.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\Fulfillment.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\conditions\impl\RsaSha256.cpp">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\conditions\impl\utils.h">
+      <Filter>ripple\conditions\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\PrefixSha256.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\PreimageSha256.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\conditions\RsaSha256.h">
+      <Filter>ripple\conditions</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
@@ -3939,6 +3984,9 @@
     <ClCompile Include="..\..\src\ripple\unity\beast.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\conditions.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -5295,6 +5343,18 @@
     <ClCompile Include="..\..\src\test\beast\SemanticVersion_test.cpp">
       <Filter>test\beast</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\Ed25519_test.cpp">
+      <Filter>test\conditions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\PrefixSha256_test.cpp">
+      <Filter>test\conditions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\PreimageSha256_test.cpp">
+      <Filter>test\conditions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\conditions\RsaSha256_test.cpp">
+      <Filter>test\conditions</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
@@ -5506,6 +5566,9 @@
       <Filter>unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\unity\beast_test_unity.cpp">
+      <Filter>unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unity\conditions_test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\unity\core_test_unity.cpp">

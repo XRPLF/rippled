@@ -17,35 +17,9 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
-#define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
+#include <BeastConfig.h>
 
-#include <ripple/basics/base_uint.h>
-#include <string>
-
-namespace ripple {
-
-/** Convert feature description to feature id. */
-/** @{ */
-uint256
-feature (std::string const& name);
-
-uint256
-feature (const char* name);
-/** @} */
-
-extern uint256 const featureMultiSign;
-extern uint256 const featureTickets;
-extern uint256 const featureSusPay;
-extern uint256 const featureTrustSetAuth;
-extern uint256 const featureFeeEscalation;
-extern uint256 const featureOwnerPaysFee;
-extern uint256 const featureCompareFlowV1V2;
-extern uint256 const featureSHAMapV2;
-extern uint256 const featurePayChan;
-extern uint256 const featureFlow;
-extern uint256 const featureCryptoConditions;
-
-} // ripple
-
-#endif
+#include <ripple/conditions/impl/Condition.cpp>
+#include <ripple/conditions/impl/Fulfillment.cpp>
+#include <ripple/conditions/impl/Ed25519.cpp>
+#include <ripple/conditions/impl/RsaSha256.cpp>
