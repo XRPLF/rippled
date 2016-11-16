@@ -86,9 +86,10 @@ private:
             flags_ |= flagsToSet;
         }
 
-        std::set <PeerShortID>& peekPeers()
+        /** Return set of peers we've relayed to and reset tracking */
+        std::set<PeerShortID> releasePeerSet()
         {
-            return peers_;
+            return std::move(peers_);
         }
 
         /** Determines if this item should be relayed.
