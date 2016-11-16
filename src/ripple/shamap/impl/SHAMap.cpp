@@ -192,13 +192,13 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
         if (stack != nullptr)
             stack->push({inNode, nodeID});
 
-        auto const inner = std::static_pointer_cast<SHAMapInnerNode>(std::move(inNode));
         if (isv2)
         {
             auto n = std::static_pointer_cast<SHAMapInnerNodeV2>(inNode);
             if (!n->has_common_prefix(id))
                 return nullptr;
         }
+        auto const inner = std::static_pointer_cast<SHAMapInnerNode>(inNode);
         auto const branch = nodeID.selectBranch (id);
         if (inner->isEmptyBranch (branch))
             return nullptr;
