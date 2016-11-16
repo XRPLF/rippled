@@ -71,6 +71,9 @@ Requires version 2.3.0 or later
 brew install scons
 ```
 
+`brew` will generally install the latest stable version of any package, which
+will satisfy the scons minimum version requirement for rippled.
+
 ### Install Package Config
 
 ```
@@ -96,8 +99,11 @@ make -j 4
 sudo make install
 ```
 
-If you have installed `protobuf` via brew, the simplest way to avoid conflicts is
-likely to just uninstall it.
+If you have installed `protobuf` via brew - either directly or indirectly as a
+dependency of some other package - this is likely to conflict with our specific
+version requirements. The simplest way to avoid conflicts is to uninstall it.
+`brew ls --versions protobuf` will list any versions of protobuf
+you currently have installed.
 
 ### Install OpenSSL
 
@@ -113,8 +119,6 @@ Download [a release](https://sourceforge.net/projects/boost/files/boost/1.61.0/b
 
 Extract it to a folder, making note of where, open a terminal, then:
 
-Then do:
-
 ```
 ./bootstrap.sh ./b2 toolset=clang threading=multi runtime-link=static link=static cxxflags="-stdlib=libc++" linkflags="-stdlib=libc++" address-model=64
 ```
@@ -127,7 +131,8 @@ to the root of the extracted directory.
 From the terminal
 
 ```
-git clone git@github.com:ripple/rippled.git cd rippled
+git clone git@github.com:ripple/rippled.git
+cd rippled
 ```
 
 Choose the master branch or one of the tagged releases listed on
@@ -163,6 +168,12 @@ scons
 ```
 
 See: [here](https://ripple.com/wiki/Rippled_build_instructions#Building)
+
+## Unit Tests (Recommended)
+
+rippled builds a set of unittest into the server executable. To run these unit
+tests after building, pass the `--unittests` option to the compiled `rippled`
+executable.
 
 ## System Tests (Recommended)
 
