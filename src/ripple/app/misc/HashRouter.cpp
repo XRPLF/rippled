@@ -104,7 +104,7 @@ HashRouter::shouldRelay (uint256 const& key)
     if (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))
         return boost::none;
 
-    return std::move(s.releasePeerSet());
+    return s.releasePeerSet();
 }
 
 } // ripple

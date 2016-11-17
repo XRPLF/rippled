@@ -85,7 +85,7 @@ private:
         }
 
         /** Return set of peers we've relayed to and reset tracking */
-        std::set <PeerShortID> releasePeerSet()
+        std::set<PeerShortID> releasePeerSet()
         {
             return std::move(peers_);
         }
