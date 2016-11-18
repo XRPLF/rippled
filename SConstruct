@@ -123,9 +123,9 @@ import time
 import glob
 import SCons.Action
 
-if (platform.architecture()[0] != '64bit'):
+if (not platform.machine().endswith('64')):
     print('Warning: Detected {} architecture. Rippled requires a 64-bit OS.'.format(
-          platform.architecture()[0]));
+          platform.machine()));
 
 sys.path.append(os.path.join('src', 'ripple', 'beast', 'site_scons'))
 sys.path.append(os.path.join('src', 'ripple', 'site_scons'))
