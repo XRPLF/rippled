@@ -22,7 +22,6 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/ThreadEntry.h>
-#include <ripple/websocket/WebSocket.h>
 #include <ripple/beast/core/Thread.h>
 #include <condition_variable>
 #include <memory>

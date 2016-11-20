@@ -38,7 +38,6 @@
 #include <ripple/json/to_string.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/websocket/WebSocket.h>
 
 #include <boost/asio.hpp>
 #include <beast/core/placeholders.hpp>

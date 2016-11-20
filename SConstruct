@@ -1162,7 +1162,6 @@ for tu_style in ['classic', 'unity']:
                 'src/ripple/unity/protobuf.cpp',
                 'src/ripple/unity/ripple.proto.cpp',
                 'src/ripple/unity/resource.cpp',
-                'src/ripple/unity/websocket02.cpp',
                 **cc_flags
             )
 

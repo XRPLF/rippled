@@ -23,13 +23,6 @@
 
 namespace ripple {
 
-// Detects legacy websockets only.
-bool
-Port::websockets() const
-{
-    return protocol.count("ws") > 0 || protocol.count("wss") > 0;
-}
-
 bool
 Port::secure() const
 {

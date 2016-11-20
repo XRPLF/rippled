@@ -173,15 +173,12 @@ ports (std::vector<Port> const& ports)
     ports_.reserve(ports.size());
     for(auto const& port : ports)
     {
-        if (! port.websockets())
+        ports_.push_back(port);
+        if(auto sp = ios_.emplace<Door<Handler>>(handler_,
+            io_service_, ports_.back(), j_))
         {
-            ports_.push_back(port);
-            if(auto sp = ios_.emplace<Door<Handler>>(handler_,
-                io_service_, ports_.back(), j_))
-            {
-                list_.push_back(sp);
-                sp->run();
-            }
+            list_.push_back(sp);
+            sp->run();
         }
     }
 }
