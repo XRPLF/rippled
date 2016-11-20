@@ -230,7 +230,8 @@ ServerHandlerImp::onHandoff (Session& session,
 {
     if(isWebsocketUpgrade(request))
     {
-        if (session.port().protocol.count("ws2") > 0)
+        if (session.port().protocol.count("ws2") > 0 ||
+            session.port().protocol.count("ws") > 0)
         {
             Handoff handoff;
             auto const ws = session.websocketUpgrade();
@@ -247,7 +248,9 @@ ServerHandlerImp::onHandoff (Session& session,
         return unauthorizedResponse(request);
     }
 
-    if (session.port().protocol.count("ws2") > 0 && isStatusRequest(request))
+    if ((session.port().protocol.count("ws") > 0 ||
+         session.port().protocol.count("ws2") > 0) &&
+       isStatusRequest(request))
         return statusResponse(request);
 
     // Otherwise pass to legacy onRequest or websocket
@@ -812,14 +815,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         Throw<std::exception> ();
     }
     p.protocol = parsed.protocol;
-    if (p.websockets() &&
-        (parsed.protocol.count("peer") > 0 ||
-        parsed.protocol.count("http") > 0 ||
-        parsed.protocol.count("https") > 0))
-    {
-        log << "Invalid protocol combination in [" << p.name << "]\n";
-        Throw<std::exception> ();
-    }
 
     p.user = parsed.user;
     p.password = parsed.password;

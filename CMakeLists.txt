@@ -364,8 +364,7 @@ foreach(cursrc
     src/ripple/unity/lz4.c
     src/ripple/unity/protobuf.cpp
     src/ripple/unity/ripple.proto.cpp
-    src/ripple/unity/resource.cpp
-    src/ripple/unity/websocket02.cpp)
+    src/ripple/unity/resource.cpp)
 
   add_with_props(rippled_src_all ${cursrc}
     ${rocks_db_system_header}

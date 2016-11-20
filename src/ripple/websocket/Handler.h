@@ -27,7 +27,6 @@
 #include <ripple/server/Port.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/websocket/Connection.h>
-#include <ripple/websocket/WebSocket.h>
 #include <boost/unordered_map.hpp>
 #include <memory>
 

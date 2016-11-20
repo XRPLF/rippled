@@ -496,45 +496,6 @@
     <Filter Include="unity">
       <UniqueIdentifier>{82E1AA93-0E6B-39FA-4212-EB820AD49028}</UniqueIdentifier>
     </Filter>
-    <Filter Include="websocketpp_02">
-      <UniqueIdentifier>{96CE200F-2670-323E-3B37-B90DBC0EDA11}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src">
-      <UniqueIdentifier>{F8AB02B2-963F-3603-F464-0F21FA68FCAC}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\base64">
-      <UniqueIdentifier>{501A6161-8A33-38CE-56C3-9BF562176203}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\http">
-      <UniqueIdentifier>{ACBC47C2-F5D7-7D00-ACC4-ED7EC42B9554}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\logger">
-      <UniqueIdentifier>{6BFDB1B7-6AD2-52F0-6851-E72A8B9A8F3C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\md5">
-      <UniqueIdentifier>{BE37898E-0798-F0C7-B9B4-EC9BB1CB8FE5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\messages">
-      <UniqueIdentifier>{CDAF20A9-224A-94F3-55EC-C13B3A969D6D}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\processors">
-      <UniqueIdentifier>{179D65E8-3D52-DCD3-4C0D-AD9A87039FE5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\rng">
-      <UniqueIdentifier>{B7501613-27F7-BFF7-1E9E-465140052BD6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\roles">
-      <UniqueIdentifier>{09E38496-7F85-DAF3-3CEE-2DD1D9E3C650}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\sha1">
-      <UniqueIdentifier>{05BAD506-ECFC-0CC2-A74D-2A7A133A2D7A}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\sockets">
-      <UniqueIdentifier>{434F8C7A-64F7-576D-BEB4-A9572EE5EBFA}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="websocketpp_02\src\utf8_validator">
-      <UniqueIdentifier>{DF1D4976-54C2-8ED6-B5E5-08C3420A12CA}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\build\proto\ripple.pb.cc">
@@ -4065,34 +4026,10 @@
     <ClCompile Include="..\..\src\ripple\unity\test.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Connection.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Handler.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\MakeServer.cpp">
-      <Filter>ripple\websocket</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Server.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\WebSocket.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\WebSocket02.cpp">
-      <Filter>ripple\websocket</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
       <Filter>ripple\websocket</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
@@ -5616,110 +5553,5 @@
     <ClCompile Include="..\..\src\unity\test_unity.cpp">
       <Filter>unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
-      <Filter>websocketpp_02\src\base64</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\base64\base64.h">
-      <Filter>websocketpp_02\src\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\common.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\connection.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\endpoint.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\http\constants.hpp">
-      <Filter>websocketpp_02\src\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\http\parser.hpp">
-      <Filter>websocketpp_02\src\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\logger\logger.hpp">
-      <Filter>websocketpp_02\src\logger</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\md5\md5.c">
-      <Filter>websocketpp_02\src\md5</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\md5\md5.h">
-      <Filter>websocketpp_02\src\md5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\md5\md5.hpp">
-      <Filter>websocketpp_02\src\md5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\messages\control.hpp">
-      <Filter>websocketpp_02\src\messages</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\messages\data.cpp">
-      <Filter>websocketpp_02\src\messages</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\messages\data.hpp">
-      <Filter>websocketpp_02\src\messages</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\network_utilities.cpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\network_utilities.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi.hpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\processors\hybi_header.cpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_header.hpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_legacy.hpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\processors\hybi_util.cpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_util.hpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\processor.hpp">
-      <Filter>websocketpp_02\src\processors</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\rng\blank_rng.hpp">
-      <Filter>websocketpp_02\src\rng</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\roles\server.hpp">
-      <Filter>websocketpp_02\src\roles</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\sha1\sha1.cpp">
-      <Filter>websocketpp_02\src\sha1</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\sha1\sha1.h">
-      <Filter>websocketpp_02\src\sha1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\shared_const_buffer.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\sockets\autotls.hpp">
-      <Filter>websocketpp_02\src\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\sockets\socket_base.hpp">
-      <Filter>websocketpp_02\src\sockets</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\uri.cpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\uri.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\utf8_validator\utf8_validator.hpp">
-      <Filter>websocketpp_02\src\utf8_validator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\websocketpp.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\websocket_frame.hpp">
-      <Filter>websocketpp_02\src</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1107,25 +1107,6 @@ bool ApplicationImp::setup()
         serverHandler_->setup (setup, m_journal);
     }
 
-    // Create websocket servers.
-    for (auto const& port : serverHandler_->setup().ports)
-    {
-        if (! port.websockets())
-            continue;
-        auto server = websocket::makeServer (
-            {*this, port, *m_resourceManager, getOPs(), m_journal, *config_,
-                *m_collectorManager});
-        if (!server)
-        {
-            JLOG(m_journal.fatal()) << "Could not create Websocket for [" <<
-                port.name << "]";
-            return false;
-        }
-        websocketServers_.emplace_back (std::move (server));
-    }
-
-    //----------------------------------------------------------------------
-
     // Begin connecting to network.
     if (!config_->standalone())
     {

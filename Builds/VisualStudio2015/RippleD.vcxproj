@@ -3464,27 +3464,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\websocket02.cpp">
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Connection.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Handler.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\MakeServer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\Server.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\WebSocket.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\websocket\WebSocket02.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\WebSocket02.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -4928,84 +4910,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\websocketpp_02\src\base64\base64.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\base64\base64.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\common.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\connection.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\endpoint.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\http\constants.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\http\parser.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\logger\logger.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\md5\md5.c">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\md5\md5.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\md5\md5.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\messages\control.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\messages\data.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\messages\data.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\network_utilities.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\network_utilities.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\processors\hybi_header.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_header.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_legacy.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\processors\hybi_util.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\hybi_util.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\processors\processor.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\rng\blank_rng.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\roles\server.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\sha1\sha1.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\sha1\sha1.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\shared_const_buffer.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\sockets\autotls.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\sockets\socket_base.hpp">
-    </ClInclude>
-    <ClCompile Include="..\..\src\websocketpp_02\src\uri.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\websocketpp_02\src\uri.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\utf8_validator\utf8_validator.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\websocketpp.hpp">
-    </ClInclude>
-    <ClInclude Include="..\..\src\websocketpp_02\src\websocket_frame.hpp">
-    </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
