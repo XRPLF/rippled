@@ -338,7 +338,7 @@ function test_cant_connect (port_conf, protocol, done) {
       setTimeout(function () {
         assert.equal(ws.readyState, 0);
         done_once();
-      }, 20);
+      }, 200);
     }
 
     ws.onerror = ws.onclose = function (m) {
