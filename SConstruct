@@ -1178,7 +1178,7 @@ for tu_style in ['classic', 'unity']:
                 cc_flags = {}
 
             object_builder.add_source_files(
-                'src/ripple/unity/ed25519.c',
+                'src/ripple/unity/ed25519_donna.c',
                 CPPPATH=[
                     'src/ed25519-donna',
                 ]
