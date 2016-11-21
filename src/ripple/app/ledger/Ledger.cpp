@@ -186,7 +186,11 @@ public:
 
 //------------------------------------------------------------------------------
 
-Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
+Ledger::Ledger (
+        create_genesis_t,
+        Config const& config,
+        std::vector<uint256> const& amendments,
+        Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         family, SHAMap::version{1}))
@@ -205,6 +209,14 @@ Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     sle->setAccountID (sfAccount, id);
     sle->setFieldAmount (sfBalance, info_.drops);
     rawInsert(sle);
+
+    if (! amendments.empty())
+    {
+        auto const sle = std::make_shared<SLE>(keylet::amendments());
+        sle->setFieldV256 (sfAmendments, STVector256{amendments});
+        rawInsert(sle);
+    }
+
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
     setImmutable(config);
 }

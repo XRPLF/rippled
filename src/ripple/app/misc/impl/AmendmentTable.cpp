@@ -199,6 +199,9 @@ public:
     std::vector <uint256>
     doValidation (std::set<uint256> const& enabledAmendments) override;
 
+    std::vector <uint256>
+    getDesired () override;
+
     std::map <uint256, std::uint32_t>
     doVoting (
         NetClock::time_point closeTime,
@@ -384,6 +387,31 @@ AmendmentTableImpl::doValidation (
         {
             if (e.second.supported && ! e.second.vetoed &&
                 (enabled.count (e.first) == 0))
+            {
+                amendments.push_back (e.first);
+            }
+        }
+    }
+
+    if (!amendments.empty())
+        std::sort (amendments.begin (), amendments.end ());
+
+    return amendments;
+}
+
+std::vector <uint256>
+AmendmentTableImpl::getDesired ()
+{
+    // Get the list of amendments we support and do not
+    // veto
+    std::vector <uint256> amendments;
+    amendments.reserve (amendmentMap_.size());
+
+    {
+        std::lock_guard <std::mutex> sl (mutex_);
+        for (auto const& e : amendmentMap_)
+        {
+            if (e.second.supported && ! e.second.vetoed)
             {
                 amendments.push_back (e.first);
             }

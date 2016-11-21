@@ -152,7 +152,8 @@ class View_test
         Config config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger>(
-                create_genesis, config, env.app().family());
+                create_genesis, config,
+                std::vector<uint256>{}, env.app().family());
         auto const ledger =
             std::make_shared<Ledger>(
                 *genesis,
@@ -417,7 +418,8 @@ class View_test
         Config config;
         std::shared_ptr<Ledger const> const genesis =
             std::make_shared<Ledger> (
-                create_genesis, config, env.app().family());
+                create_genesis, config,
+                std::vector<uint256>{}, env.app().family());
         auto const ledger = std::make_shared<Ledger>(
             *genesis,
             env.app().timeKeeper().closeTime());
@@ -751,7 +753,8 @@ class View_test
             Config config;
             std::shared_ptr<Ledger const> const genesis =
                 std::make_shared<Ledger>(
-                    create_genesis, config, env.app().family());
+                    create_genesis, config,
+                    std::vector<uint256>{}, env.app().family());
             auto const ledger =
                 std::make_shared<Ledger>(
                     *genesis,
