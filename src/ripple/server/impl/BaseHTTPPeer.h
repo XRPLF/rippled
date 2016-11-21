@@ -280,7 +280,7 @@ start_timer()
     error_code ec;
     timer_.expires_from_now(
         std::chrono::seconds(
-            remote_address_.address().to_string() == "127.0.0.1" ?
+            remote_address_.address().is_loopback() ?
                 timeoutSecondsLocal :
                 timeoutSeconds),
         ec);

@@ -367,9 +367,7 @@ start_timer()
     static constexpr std::chrono::seconds timeoutLocal{3};
     error_code ec;
     timer_.expires_from_now(
-        remote_endpoint().address().to_string() == "127.0.0.1" ?
-            timeoutLocal :
-            timeout,
+        remote_endpoint().address().is_loopback() ? timeoutLocal : timeout,
         ec);
     if(ec)
         return fail(ec, "start_timer");
