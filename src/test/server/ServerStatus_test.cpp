@@ -387,7 +387,6 @@ class ServerStatus_test :
         // keep trying to read until it gives up (by timeout)
         async_read(sock, sb, resp, yield[ec]);
         BEAST_EXPECT(ec);
-        BEAST_EXPECTS(ec.message() == "End of file", ec.message());
     };
 
     void
@@ -418,12 +417,6 @@ class ServerStatus_test :
                     resp,
                     ec);
                 BEAST_EXPECT(ec);
-                BEAST_EXPECTS(
-                    ec.message() == (
-                        client_protocol == "https" ?
-                        "unknown protocol" :
-                        "End of file"),
-                    ec.message());
         }
         else
         {
@@ -434,12 +427,6 @@ class ServerStatus_test :
                     resp,
                     ec);
                 BEAST_EXPECT(ec);
-                BEAST_EXPECTS(
-                    ec.message() == (
-                        client_protocol == "wss2" ?
-                        "unknown protocol" :
-                        "End of file"),
-                    ec.message());
         }
     }
 
