@@ -157,7 +157,7 @@ SemanticVersion::SemanticVersion (std::string const& version)
         throw std::invalid_argument ("invalid version string");
 }
 
-bool SemanticVersion::parse (std::string const& input, bool debug)
+bool SemanticVersion::parse (std::string const& input)
 {
     // May not have leading or trailing whitespace
     auto left_iter = std::find_if_not (input.begin (), input.end (),

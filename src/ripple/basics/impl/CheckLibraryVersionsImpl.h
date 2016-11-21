@@ -21,8 +21,6 @@
 #define RIPPLE_BASICS_CHECKLIBRARYVERSIONSIMPL_H_INCLUDED
 
 #include <ripple/basics/CheckLibraryVersions.h>
-#include <boost/version.hpp>
-#include <openssl/opensslv.h>
 
 namespace ripple {
 namespace version {
@@ -30,19 +28,19 @@ namespace version {
 /** Both Boost and OpenSSL have integral version numbers. */
 using VersionNumber = unsigned long long;
 
-/** Minimal required boost version. */
-extern const char boostMinimal[];
+std::string
+boostVersion(VersionNumber boostVersion);
 
-/** Minimal required OpenSSL version. */
-extern const char openSSLMinimal[];
+std::string
+openSSLVersion(VersionNumber openSSLVersion);
 
-std::string boostVersion(VersionNumber boostVersion = BOOST_VERSION);
-std::string openSSLVersion(
-    VersionNumber openSSLVersion = OPENSSL_VERSION_NUMBER);
+void checkVersion(
+    std::string name,
+    std::string required,
+    std::string actual);
 
-void checkVersion(std::string name, std::string required, std::string actual);
-void checkBoost(std::string version = boostVersion());
-void checkOpenSSL(std::string version = openSSLVersion());
+void checkBoost(std::string version);
+void checkOpenSSL(std::string version);
 
 }  // namespace version
 }  // namespace ripple

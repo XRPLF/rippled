@@ -52,7 +52,7 @@ public:
         The parsing is as strict as possible.
         @return `true` if the string was parsed.
     */
-    bool parse (std::string const& input, bool debug = false);
+    bool parse (std::string const& input);
 
     /** Produce a string from semantic version components. */
     std::string print () const;

@@ -27,51 +27,26 @@ namespace version {
 
 struct CheckLibraryVersions_test : beast::unit_test::suite
 {
-    void print_message()
+    void testBadOpenSSL()
     {
-        log << "ssl minimal: " << openSSLMinimal << "\n"
-            << "ssl actual:  " << openSSLVersion() << "\n"
-            << "boost minimal: " << boostMinimal << "\n"
-            << "boost actual:  " << boostVersion() << "\n"
-            << std::flush;
+        testcase ("Out-of-Date OpenSSL");
+        except ([&]{ checkOpenSSL("0.9.8-o"); });
+        except ([&]{ checkOpenSSL("1.0.1-d"); });
+        except ([&]{ checkOpenSSL("1.0.2-c"); });
     }
 
-    void test_bad_ssl()
+    void testBadBoost()
     {
-        std::string error;
-        try {
-            checkOpenSSL(openSSLVersion(0x0090819fL));
-        } catch (std::runtime_error& e) {
-            error = e.what();
-        }
-        auto expectedError = "Your OpenSSL library is out of date.\n"
-          "Your version: 0.9.8-o\n"
-          "Required version: ";
-        unexpected(error.find(expectedError) != 0, error);
+        testcase ("Out-of-Date Boost");
+        except ([&]{ checkBoost ("1.54.0"); });
     }
-
-    void test_bad_boost()
-    {
-        std::string error;
-        try {
-            checkBoost(boostVersion(105400));
-        } catch (std::runtime_error& e) {
-            error = e.what();
-        }
-        auto expectedError = "Your Boost library is out of date.\n"
-          "Your version: 1.54.0\n"
-          "Required version: ";
-        unexpected(error.find(expectedError) != 0, error);
-    }
-
 
     void run()
     {
-        print_message();
-        checkLibraryVersions();
+        unexcept ([&]{ checkLibraryVersions(); });
 
-        test_bad_ssl();
-        test_bad_boost();
+        testBadOpenSSL();
+        testBadBoost();
     }
 };
 
