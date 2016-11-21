@@ -288,7 +288,7 @@ Ledger::Ledger (Ledger const& prevLedger,
         prevLedger.info_.closeTimeResolution,
         getCloseAgree(prevLedger.info()), info_.seq);
 
-    if (stateMap_->get_version() == SHAMap::version{2})
+    if (stateMap_->is_v2())
     {
         info_.closeFlags |= sLCF_SHAMapV2;
     }
