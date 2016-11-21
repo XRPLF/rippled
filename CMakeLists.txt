@@ -382,7 +382,7 @@ endif()
 add_with_props(rippled_src_all src/sqlite/sqlite_unity.c
   ${extra_props})
 
-add_with_props(rippled_src_all src/ripple/unity/ed25519.c
+add_with_props(rippled_src_all src/ripple/unity/ed25519_donna.c
   -I"${CMAKE_SOURCE_DIR}/"src/ed25519-donna)
 
 if (is_gcc)

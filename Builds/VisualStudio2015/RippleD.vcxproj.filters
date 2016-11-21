@@ -3993,7 +3993,7 @@
     <ClCompile Include="..\..\src\ripple\unity\crypto.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\ed25519.c">
+    <ClCompile Include="..\..\src\ripple\unity\ed25519_donna.c">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\json.cpp">
