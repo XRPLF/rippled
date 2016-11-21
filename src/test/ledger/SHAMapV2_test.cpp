@@ -43,7 +43,6 @@ class SHAMapV2_test : public beast::unit_test::suite
 
         auto ledger =
             std::make_shared<Ledger>(create_genesis, config,
-
                 amendments_v, env.app().family());
         BEAST_EXPECT(! getSHAMapV2 (ledger->info()));
         BEAST_EXPECT(ledger->stateMap().get_version() == SHAMap::version{1});

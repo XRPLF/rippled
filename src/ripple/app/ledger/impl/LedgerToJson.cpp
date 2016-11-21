@@ -81,6 +81,21 @@ void fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 }
 
 template <class Object>
+void fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+{
+    if (! closed)
+        json[jss::closed] = false;
+    else
+    {
+        json[jss::closed] = true;
+
+        Serializer s;
+        addRaw (info, s);
+        json[jss::ledger_data] = strHex (s.peekData ());
+    }
+}
+
+template <class Object>
 void fillJsonTx (Object& json, LedgerFill const& fill)
 {
     auto&& txns = setArray (json, jss::transactions);
@@ -164,7 +179,10 @@ void fillJson (Object& json, LedgerFill const& fill)
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
     auto bFull = isFull(fill);
-    fillJson(json, !fill.ledger.open(), fill.ledger.info(), bFull);
+    if (isBinary(fill))
+        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
+    else
+        fillJson(json, !fill.ledger.open(), fill.ledger.info(), bFull);
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);
