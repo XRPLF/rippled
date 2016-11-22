@@ -555,7 +555,7 @@ public:
                 beast::Thread::setCurrentThreadName("io_service");
                 this->io_service_.run();
             }))
-        , context_(make_SSLContext())
+        , context_(make_SSLContext(""))
     {
     }
 

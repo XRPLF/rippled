@@ -216,6 +216,7 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
     set(port.ssl_key, "ssl_key", section);
     set(port.ssl_cert, "ssl_cert", section);
     set(port.ssl_chain, "ssl_chain", section);
+    set(port.ssl_ciphers, "ssl_ciphers", section);
 }
 
 } // ripple
