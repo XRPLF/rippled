@@ -1074,7 +1074,7 @@ setup_Overlay (BasicConfig const& config)
 {
     Overlay::Setup setup;
     auto const& section = config.section("overlay");
-    setup.context = make_SSLContext();
+    setup.context = make_SSLContext("");
     setup.expire = get<bool>(section, "expire", false);
 
     set (setup.ipLimit, "ip_limit", section);
