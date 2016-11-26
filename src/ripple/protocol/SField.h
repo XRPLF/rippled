@@ -237,6 +237,70 @@ public:
         fieldMeta = c;
     }
 
+    static Json::Value allFieldsJson ();
+
+    Json::Value toJson () const
+    {
+        Json::Value p(Json::objectValue);
+        p["name"] = jsonName;
+
+        std::string type = "";
+        switch (fieldType) {
+            case STI_UINT16:
+                type = "UInt16";
+                break;
+            case STI_UINT32:
+                type = "UInt32";
+                break;
+            case STI_UINT64:
+                type = "UInt64";
+                break;
+            case STI_HASH128:
+                type = "Hash128";
+                break;
+            case STI_HASH256:
+                type = "Hash256";
+                break;
+            case STI_AMOUNT:
+                type = "Amount";
+                break;
+            case STI_VL:
+                type = "Blob";
+                break;
+            case STI_ACCOUNT:
+                type = "AccountID";
+                break;
+            case STI_OBJECT:
+                type = "STObject";
+                break;
+            case STI_ARRAY:
+                type = "STArray";
+                break;
+            case STI_UINT8:
+                type = "UInt8";
+                break;
+            case STI_HASH160:
+                type = "Hash160";
+                break;
+            case STI_PATHSET:
+                type = "PathSet";
+                break;
+            case STI_VECTOR256:
+                type = "Vector256";
+                break;
+            default:
+                // TODO:
+                type = "Unknown(ordinal=" + std::to_string(fieldType) + ")";
+                break;
+        }
+
+        p["type"] = type;
+        p["ordinal"] = fieldValue;
+        p["isSigningField"] = isSigningField() && isBinary();
+        p["isBinary"] = isBinary();
+        return p;
+    }
+
     bool shouldInclude (bool withSigningField) const
     {
         return (fieldValue < 256) &&

@@ -409,4 +409,17 @@ SField::getField (std::string const& fieldName)
     return sfInvalid;
 }
 
+Json::Value SField::allFieldsJson ()
+{
+    Json::Value all(Json::arrayValue);
+    for (auto const& pair : knownCodeToField)
+    {
+        if (pair.second->isBinary())
+        {
+            Json::Value& obj (all.append ( pair.second->toJson() ));
+        }
+    }
+    return all;
+}
+
 } // ripple

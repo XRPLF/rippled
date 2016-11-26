@@ -22,12 +22,14 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/st.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/protocol/TER.h>
 #include <ripple/json/to_string.h>
 #include <ripple/beast/unit_test.h>
 #include <test/jtx.h>
 
 #include <memory>
 #include <type_traits>
+#include <fstream>
 
 namespace ripple {
 
@@ -645,6 +647,94 @@ public:
     }
 };
 
+class ProtocolJson_test : public beast::unit_test::suite
+{
+public:
+    std::string
+    requirementString(SOE_Flags flags)
+    {
+        std::string requirement = "";
+        switch (flags) {
+            case SOE_REQUIRED:
+                requirement = "REQUIRED";
+                break;
+            case SOE_OPTIONAL:
+                requirement = "OPTIONAL";
+                break;
+            case SOE_DEFAULT:
+                requirement = "DEFAULT";
+                break;
+            default:
+                break;
+        }
+        return requirement;
+    }
+
+    template<typename Type>
+    Json::Value
+    formatsJson(const KnownFormats<Type>& formats)
+    {
+        auto array = Json::Value(Json::arrayValue);
+        // Hacky, but avoids altering KnownFormats classes
+        for (int o = ((1 << 16) * -1); o < (1 << 16); o++)
+        {
+            auto format = formats.findByType(static_cast<Type>(o));
+            if (format != nullptr)
+            {
+                auto& tx = array.append(Json::objectValue);
+                tx["name"] = format->getName();
+                tx["ordinal"] = o;
+                auto& fields = tx["fields"] = Json::Value(Json::arrayValue);
+
+                for (auto& p : format->elements.all()) {
+                    auto& field = fields.append(Json::arrayValue);
+                    field.append(p->e_field.jsonName);
+                    field.append(requirementString(p->flags));
+                }
+            }
+        }
+        return array;
+    }
+    
+    Json::Value
+    engineResults() {
+        auto engineResults = Json::Value(Json::objectValue);
+        for (int i = static_cast<int>(telLOCAL_ERROR); i < 256; ++i)
+        {
+            std::string name(""), desc("");
+            auto ter = static_cast<TER>(i);
+            if (transResultInfo(ter, name, desc))
+            {
+                auto& resultObj = engineResults[name] = 
+                                    Json::Value(Json::objectValue);
+                resultObj["ordinal"] = i;
+                resultObj["description"] = desc;
+            }
+        }
+        return engineResults;
+    }
+
+    void
+    run()
+    {
+        testcase("ProtocolJson");
+        Json::Value protocol (Json::objectValue);
+
+        protocol["fields"] = SField::allFieldsJson();
+        protocol["transactions"] =
+            formatsJson<TxType>(TxFormats::getInstance());
+        protocol["ledgerEntries"] =
+            formatsJson<LedgerEntryType>(LedgerFormats::getInstance());
+            
+        protocol["engineResults"] = engineResults();
+        std::ofstream outfile ("protocol.json",std::ofstream::binary);
+        outfile << protocol << std::endl;
+        outfile.close();
+        pass();
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(STObject,protocol,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(ProtocolJson,protocol,ripple);
 
 } // ripple
