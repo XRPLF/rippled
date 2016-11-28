@@ -46,8 +46,8 @@ if [[ ${APP} == "rippled" ]]; then
   export APP_ARGS="--unittest"
   # Only report on src/ripple files
   export LCOV_FILES="*/src/ripple/*"
-  # Exclude */src/ripple/test directory
-  export LCOV_EXCLUDE_FILES="*/src/ripple/test/*"
+  # Nothing to explicitly exclude
+  export LCOV_EXCLUDE_FILES="LCOV_NO_EXCLUDE"
 else
   : ${APP_ARGS:=}
   : ${LCOV_FILES:="*/src/*"}

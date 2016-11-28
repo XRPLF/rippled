@@ -20,11 +20,11 @@
 #include <BeastConfig.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/json_writer.h>
-#include <ripple/rpc/tests/TestOutputSuite.test.h>
+#include <test/json/TestOutputSuite.h>
 
 namespace Json {
 
-struct Output_test : ripple::RPC::TestOutputSuite
+struct Output_test : ripple::test::TestOutputSuite
 {
     void runTest (std::string const& name, std::string const& valueDesc)
     {

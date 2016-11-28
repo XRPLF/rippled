@@ -22,7 +22,7 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/basics/contract.h>
-#include <ripple/basics/TestSuite.h>
+#include <test/support/TestSuite.h>
 #include <ripple/basics/BasicConfig.h>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>

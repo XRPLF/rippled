@@ -18,8 +18,8 @@
 #include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/test/jtx.h>
-#include <ripple/test/WSClient.h>
+#include <test/support/jtx.h>
+#include <test/support/WSClient.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {

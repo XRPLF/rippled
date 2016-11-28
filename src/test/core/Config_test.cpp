@@ -21,7 +21,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/basics/TestSuite.h>
+#include <test/support/TestSuite.h>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <fstream>

@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>

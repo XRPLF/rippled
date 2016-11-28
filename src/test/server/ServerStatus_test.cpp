@@ -20,9 +20,9 @@
 #include <BeastConfig.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/test/jtx.h>
-#include <ripple/test/WSClient.h>
-#include <ripple/test/JSONRPCClient.h>
+#include <test/support/jtx.h>
+#include <test/support/WSClient.h>
+#include <test/support/JSONRPCClient.h>
 #include <ripple/core/DeadlineTimer.h>
 #include <beast/core/to_string.hpp>
 #include <beast/http.hpp>

@@ -24,13 +24,13 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/basics/TestSuite.h>
+#include <test/support/TestSuite.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/st.h>
-#include <ripple/test/jtx.h>
-#include <ripple/test/jtx/ticket.h>
+#include <test/support/jtx.h>
+#include <test/support/jtx/ticket.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

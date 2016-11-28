@@ -16,7 +16,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 #include <ripple/ledger/Directory.h>
 
 namespace ripple {

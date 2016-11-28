@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
-#include <ripple/shamap/tests/common.h>
+#include <test/shamap/common.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/random.h>

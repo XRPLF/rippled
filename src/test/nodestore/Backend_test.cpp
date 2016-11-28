@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/unity/rocksdb.h>
-#include <ripple/nodestore/tests/Base.test.h>
+#include <test/nodestore/TestBase.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/beast/utility/temp_dir.h>

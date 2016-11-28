@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
-#include <ripple/test/WSClient.h>
+#include <test/support/WSClient.h>
 
 namespace ripple {
 

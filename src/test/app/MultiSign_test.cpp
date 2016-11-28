@@ -18,7 +18,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>     // jss:: definitions
 #include <ripple/protocol/Feature.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 
 namespace ripple {
 namespace test {

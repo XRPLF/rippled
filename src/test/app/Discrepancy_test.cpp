@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
-#include <ripple/test/jtx/Env.h>
+#include <test/support/jtx.h>
+#include <test/support/jtx/Env.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/JsonFields.h>

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>

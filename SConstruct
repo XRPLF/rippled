@@ -949,14 +949,10 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/rpc', '.cpp'))
     append_sources(result, *list_sources('src/ripple/shamap', '.cpp'))
     append_sources(result, *list_sources('src/ripple/server', '.cpp'))
-    append_sources(result, *list_sources('src/ripple/test', '.cpp'))
-    append_sources(result, 
-        'src/test/BasicNetwork_test.cpp',
-        'src/test/Env_test.cpp',
-        'src/test/WSClient_test.cpp')
     append_sources(result, *list_sources('src/test/app', '.cpp'))
     append_sources(result, *list_sources('src/test/basics', '.cpp'))
     append_sources(result, *list_sources('src/test/beast', '.cpp'))
+    append_sources(result, *list_sources('src/test/conditions', '.cpp'))
     append_sources(result, *list_sources('src/test/core', '.cpp'))
     append_sources(result, *list_sources('src/test/json', '.cpp'))
     append_sources(result, *list_sources('src/test/ledger', '.cpp'))
@@ -967,6 +963,8 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/rpc', '.cpp'))
     append_sources(result, *list_sources('src/test/server', '.cpp'))
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
+    append_sources(result, *list_sources('src/test/support', '.cpp'))
+
     
     if use_shp(toolchain):
         cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
@@ -1013,22 +1011,21 @@ def get_unity_sources(toolchain):
         'src/ripple/unity/rpcx.cpp',
         'src/ripple/unity/shamap.cpp',
         'src/ripple/unity/server.cpp',
-        'src/ripple/unity/test.cpp',
-        'src/unity/app_test_unity.cpp',
-        'src/unity/basics_test_unity.cpp',
-        'src/unity/beast_test_unity.cpp',
-        'src/unity/core_test_unity.cpp',
-        'src/unity/conditions_test_unity.cpp',
-        'src/unity/json_test_unity.cpp',
-        'src/unity/ledger_test_unity.cpp',
-        'src/unity/overlay_test_unity.cpp',
-        'src/unity/peerfinder_test_unity.cpp',
-        'src/unity/protocol_test_unity.cpp',
-        'src/unity/resource_test_unity.cpp',
-        'src/unity/rpc_test_unity.cpp',
-        'src/unity/server_test_unity.cpp',
-        'src/unity/shamap_test_unity.cpp',
-        'src/unity/test_unity.cpp'
+        'src/test/unity/app_test_unity.cpp',
+        'src/test/unity/basics_test_unity.cpp',
+        'src/test/unity/beast_test_unity.cpp',
+        'src/test/unity/core_test_unity.cpp',
+        'src/test/unity/conditions_test_unity.cpp',
+        'src/test/unity/json_test_unity.cpp',
+        'src/test/unity/ledger_test_unity.cpp',
+        'src/test/unity/overlay_test_unity.cpp',
+        'src/test/unity/peerfinder_test_unity.cpp',
+        'src/test/unity/protocol_test_unity.cpp',
+        'src/test/unity/resource_test_unity.cpp',
+        'src/test/unity/rpc_test_unity.cpp',
+        'src/test/unity/server_test_unity.cpp',
+        'src/test/unity/shamap_test_unity.cpp',
+        'src/test/unity/support_unity.cpp'
     )
 
     if use_shp(toolchain):
@@ -1039,7 +1036,7 @@ def get_unity_sources(toolchain):
     append_sources(
         result,
         'src/ripple/unity/nodestore.cpp',
-        'src/unity/nodestore_test_unity.cpp',
+        'src/test/unity/nodestore_test_unity.cpp',
         CPPPATH=[
             'src/rocksdb2/include',
             'src/snappy/snappy',
@@ -1274,10 +1271,10 @@ def do_count(target, source, env):
                     path = os.path.join(parent, path)
                     r = os.path.splitext(path)
                     if r[1] in suffixes:
-                        if r[0].endswith('.test'):
+                        if r[0].endswith('_test'):
                             yield os.path.normpath(path)
         return list(_iter(base))
-    testfiles = list_testfiles(os.path.join('src', 'ripple'), env.get('CPPSUFFIXES'))
+    testfiles = list_testfiles(os.path.join('src', 'test'), env.get('CPPSUFFIXES'))
     lines = 0
     for f in testfiles:
         lines = lines + sum(1 for line in open(f))

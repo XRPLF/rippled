@@ -17,8 +17,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/test/WSClient.h>
-#include <ripple/test/jtx.h>
+#include <test/support/WSClient.h>
+#include <test/support/jtx.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {

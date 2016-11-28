@@ -32,7 +32,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/to_string.h>
-#include <ripple/beast/unit_test.h>
 #include <boost/format.hpp>
 #include <array>
 #include <memory>

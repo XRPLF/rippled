@@ -19,12 +19,12 @@
 
 #include <BeastConfig.h>
 #include <ripple/json/Object.h>
-#include <ripple/rpc/tests/TestOutputSuite.test.h>
+#include <test/json/TestOutputSuite.h>
 #include <ripple/beast/unit_test.h>
 
 namespace Json {
 
-class JsonObject_test : public ripple::RPC::TestOutputSuite
+class JsonObject_test : public ripple::test::TestOutputSuite
 {
     void setup (std::string const& testName)
     {

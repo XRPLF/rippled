@@ -229,9 +229,6 @@
     <Filter Include="ripple\ledger\impl">
       <UniqueIdentifier>{EA35E0D0-6876-9DC8-10FA-1E6A0486C574}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\ledger\tests">
-      <UniqueIdentifier>{D5A85FA6-148D-DA25-5DAA-C59504C18F26}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\net">
       <UniqueIdentifier>{6649BD29-BE86-723F-501A-045E39310112}</UniqueIdentifier>
     </Filter>
@@ -246,9 +243,6 @@
     </Filter>
     <Filter Include="ripple\nodestore\impl">
       <UniqueIdentifier>{9D691DE1-17A1-5989-3E2E-F69B3E43152F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\nodestore\tests">
-      <UniqueIdentifier>{3FDC73B9-A9C7-3533-FD40-E4032B9FA9FB}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\overlay">
       <UniqueIdentifier>{51E817F6-DC2E-045A-9009-37E3D16D0990}</UniqueIdentifier>
@@ -289,9 +283,6 @@
     <Filter Include="ripple\rpc\impl">
       <UniqueIdentifier>{93AC3675-D183-4DB4-021E-8F4CA1586866}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\rpc\tests">
-      <UniqueIdentifier>{84FF17C5-6A81-FF13-548E-59940FE0060E}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\server">
       <UniqueIdentifier>{8A61DBF7-69CB-9043-8312-D44C40EC6AE9}</UniqueIdentifier>
     </Filter>
@@ -303,27 +294,6 @@
     </Filter>
     <Filter Include="ripple\shamap\impl">
       <UniqueIdentifier>{92AC870A-6B4B-9CD5-4F7F-648C72CFA0D3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\shamap\tests">
-      <UniqueIdentifier>{F0AEA72D-7030-C8C7-1E34-1029BBD56886}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\test">
-      <UniqueIdentifier>{B25F5854-84AE-1CBD-DFFC-6515DD055652}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\test\impl">
-      <UniqueIdentifier>{CF7F0C3F-3D61-7764-BA8B-5FF38018425C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\test\jtx">
-      <UniqueIdentifier>{A21A3B94-5C44-3746-4F10-6FF8FF990CE3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\test\jtx\impl">
-      <UniqueIdentifier>{27D70888-7145-691C-0E0A-E511EB3A80A2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\test\mao">
-      <UniqueIdentifier>{94B5035A-6D4A-E4FC-DB50-E7E804DC9F13}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\test\mao\impl">
-      <UniqueIdentifier>{23DE6C05-81D2-7471-D9BB-3AA1D49DE429}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
@@ -493,8 +463,26 @@
     <Filter Include="test\shamap">
       <UniqueIdentifier>{2E37F2EA-49FC-1F02-C3EA-D7EB608603A1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="unity">
-      <UniqueIdentifier>{82E1AA93-0E6B-39FA-4212-EB820AD49028}</UniqueIdentifier>
+    <Filter Include="test\support">
+      <UniqueIdentifier>{EAFC737C-277F-7D41-3A99-8B752EB7D534}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\support\impl">
+      <UniqueIdentifier>{3195322A-2CFC-904C-A6AA-1B60F8E5490D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\support\jtx">
+      <UniqueIdentifier>{E6B36A4D-232C-FA63-7B5A-24ADE91F0F32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\support\jtx\impl">
+      <UniqueIdentifier>{F9870E4C-E01C-B734-1475-92401F8766BF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\support\mao">
+      <UniqueIdentifier>{52F836F7-261B-9EA5-8DC4-02E4B010F4D3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\support\mao\impl">
+      <UniqueIdentifier>{2AB83499-A4F2-EDED-BC79-6DC296EE9D8A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\unity">
+      <UniqueIdentifier>{4FD99791-5191-0BFF-8D77-19500238E44E}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1911,9 +1899,6 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\Sustain.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\basics\impl\TestSuite.test.cpp">
-      <Filter>ripple\basics\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\ThreadName.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -1975,9 +1960,6 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\TestSuite.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
@@ -2703,9 +2685,6 @@
     <ClInclude Include="..\..\src\ripple\ledger\Sandbox.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\ledger\tests\PathSet.h">
-      <Filter>ripple\ledger\tests</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\TxMeta.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
@@ -2831,9 +2810,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
       <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\tests\Base.test.h">
-      <Filter>ripple\nodestore\tests</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
@@ -3603,9 +3579,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\tests\TestOutputSuite.test.h">
-      <Filter>ripple\rpc\tests</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handoff.h">
       <Filter>ripple\server</Filter>
     </ClInclude>
@@ -3714,221 +3687,8 @@
     <ClInclude Include="..\..\src\ripple\shamap\SHAMapTreeNode.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\shamap\tests\common.h">
-      <Filter>ripple\shamap\tests</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\AbstractClient.h">
-      <Filter>ripple\test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\BasicNetwork.h">
-      <Filter>ripple\test</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\test\impl\JSONRPCClient.cpp">
-      <Filter>ripple\test\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\impl\ManualTimeKeeper.cpp">
-      <Filter>ripple\test\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\impl\WSClient.cpp">
-      <Filter>ripple\test\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\test\JSONRPCClient.h">
-      <Filter>ripple\test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx.h">
-      <Filter>ripple\test</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\Account.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\amount.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\balance.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\basic_prop.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\delivermin.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\Env.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\Env_ss.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\fee.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\flags.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\Account.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\amount.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\balance.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\delivermin.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\Env.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\fee.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\flags.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\jtx_json.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\memo.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\multisign.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\offer.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\owners.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\paths.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\pay.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\quality2.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\rate.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\regkey.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\sendmax.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\seq.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\sig.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\tag.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\ticket.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\trust.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\txflags.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\test\jtx\impl\utility.cpp">
-      <Filter>ripple\test\jtx\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\test\jtx\JTx.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\jtx_json.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\memo.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\multisign.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\noop.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\offer.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\owners.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\paths.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\pay.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\prop.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\quality.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\rate.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\regkey.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\require.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\requires.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\sendmax.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\seq.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\sig.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\tag.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\tags.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\ter.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\ticket.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\trust.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\txflags.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\jtx\utility.h">
-      <Filter>ripple\test\jtx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\ManualTimeKeeper.h">
-      <Filter>ripple\test</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\test\mao\impl\Net.cpp">
-      <Filter>ripple\test\mao\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\test\mao\Net.h">
-      <Filter>ripple\test\mao</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\test\WSClient.h">
-      <Filter>ripple\test</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
@@ -4021,9 +3781,6 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\unity\test.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
@@ -5214,9 +4971,6 @@
     <ClCompile Include="..\..\src\test\app\ValidatorList_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\BasicNetwork_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\test\basics\base_uint_test.cpp">
       <Filter>test\basics</Filter>
     </ClCompile>
@@ -5325,9 +5079,6 @@
     <ClCompile Include="..\..\src\test\core\Workers_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\Env_test.cpp">
-      <Filter>test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\test\json\json_value_test.cpp">
       <Filter>test\json</Filter>
     </ClCompile>
@@ -5337,6 +5088,9 @@
     <ClCompile Include="..\..\src\test\json\Output_test.cpp">
       <Filter>test\json</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\json\TestOutputSuite.h">
+      <Filter>test\json</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\test\json\Writer_test.cpp">
       <Filter>test\json</Filter>
     </ClCompile>
@@ -5373,6 +5127,9 @@
     <ClCompile Include="..\..\src\test\nodestore\import_test.cpp">
       <Filter>test\nodestore</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\nodestore\TestBase.h">
+      <Filter>test\nodestore</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\test\nodestore\Timing_test.cpp">
       <Filter>test\nodestore</Filter>
     </ClCompile>
@@ -5505,6 +5262,9 @@
     <ClCompile Include="..\..\src\test\server\Server_test.cpp">
       <Filter>test\server</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\shamap\common.h">
+      <Filter>test\shamap</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\test\shamap\FetchPack_test.cpp">
       <Filter>test\shamap</Filter>
     </ClCompile>
@@ -5514,56 +5274,278 @@
     <ClCompile Include="..\..\src\test\shamap\SHAMap_test.cpp">
       <Filter>test\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\test\WSClient_test.cpp">
-      <Filter>test</Filter>
+    <ClInclude Include="..\..\src\test\support\AbstractClient.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\BasicNetwork.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\support\BasicNetwork_test.cpp">
+      <Filter>test\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\app_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\Env_test.cpp">
+      <Filter>test\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\basics_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\impl\JSONRPCClient.cpp">
+      <Filter>test\support\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\beast_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\impl\ManualTimeKeeper.cpp">
+      <Filter>test\support\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\conditions_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\impl\WSClient.cpp">
+      <Filter>test\support\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\core_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClInclude Include="..\..\src\test\support\JSONRPCClient.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\Account.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\amount.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\balance.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\basic_prop.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\delivermin.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\Env.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\Env_ss.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\fee.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\flags.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\Account.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\json_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\amount.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\ledger_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\balance.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\nodestore_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\delivermin.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\overlay_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\Env.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\peerfinder_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\fee.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\protocol_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\flags.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\resource_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\jtx_json.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\rpc_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\memo.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\server_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\multisign.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\shamap_test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\offer.cpp">
+      <Filter>test\support\jtx\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\unity\test_unity.cpp">
-      <Filter>unity</Filter>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\owners.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\paths.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\pay.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\quality2.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\rate.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\regkey.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\sendmax.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\seq.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\sig.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\tag.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\ticket.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\trust.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\txflags.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\support\jtx\impl\utility.cpp">
+      <Filter>test\support\jtx\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\support\jtx\JTx.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\jtx_json.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\memo.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\multisign.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\noop.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\offer.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\owners.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\paths.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\pay.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\prop.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\quality.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\rate.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\regkey.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\require.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\requires.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\sendmax.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\seq.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\sig.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\tag.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\tags.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\ter.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\ticket.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\trust.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\txflags.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\jtx\utility.h">
+      <Filter>test\support\jtx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\ManualTimeKeeper.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\support\mao\impl\Net.cpp">
+      <Filter>test\support\mao\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\support\mao\Net.h">
+      <Filter>test\support\mao</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\PathSet.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\TestSuite.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\support\WSClient.h">
+      <Filter>test\support</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\support\WSClient_test.cpp">
+      <Filter>test\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\app_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\basics_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\beast_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\conditions_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\core_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\json_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\ledger_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\nodestore_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\overlay_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\peerfinder_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\protocol_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\resource_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\rpc_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\server_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\shamap_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\support_unity.cpp">
+      <Filter>test\unity</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

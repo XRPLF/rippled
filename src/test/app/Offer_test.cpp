@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
-#include <ripple/test/WSClient.h>
-#include <ripple/ledger/tests/PathSet.h>
+#include <test/support/jtx.h>
+#include <test/support/WSClient.h>
+#include <test/support/PathSet.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/Quality.h>

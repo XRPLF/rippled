@@ -195,11 +195,10 @@ json.cpp
 protocol.cpp
 rpcx.cpp
 shamap.cpp
-server.cpp
-test.cpp)
+server.cpp)
 
 prepend(test_unity_srcs
-src/unity/
+src/test/unity/
 app_test_unity.cpp
 basics_test_unity.cpp
 beast_test_unity.cpp
@@ -214,11 +213,11 @@ resource_test_unity.cpp
 rpc_test_unity.cpp
 server_test_unity.cpp
 shamap_test_unity.cpp
-test_unity.cpp)
+support_unity.cpp)
 
 list(APPEND rippled_src_unity ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
 
-add_with_props(rippled_src_unity src/unity/nodestore_test_unity.cpp
+add_with_props(rippled_src_unity src/test/unity/nodestore_test_unity.cpp
 -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
 -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy
 -I"${CMAKE_SOURCE_DIR}/"src/snappy/config
@@ -235,7 +234,7 @@ add_with_props(rippled_src_unity src/ripple/unity/soci_ripple.cpp ${soci_extra_i
 list(APPEND ripple_unity_srcs ${beast_unity_srcs} ${test_unity_srcs}
 src/ripple/unity/nodestore.cpp
 src/ripple/unity/soci_ripple.cpp
-src/unity/nodestore_test_unity.cpp)
+src/test/unity/nodestore_test_unity.cpp)
 
 ############################################################
 
@@ -266,8 +265,7 @@ foreach(curdir
         protocol
         rpc
         server
-        shamap
-        test)
+        shamap)
     file(GLOB_RECURSE cursrcs src/ripple/${curdir}/*.cpp)
     list(APPEND rippled_src_nonunity "${cursrcs}")
     list(APPEND non_unity_srcs "${cursrcs}")
@@ -284,7 +282,28 @@ add_with_props(rippled_src_nonunity "${nodestore_srcs}"
 
 list(APPEND non_unity_srcs "${nodestore_srcs}")
 
-file(GLOB_RECURSE test_srcs src/test/*.cpp)
+# unit test sources
+foreach(curdir
+        app
+        basics
+        beast
+        conditions
+        core
+        json
+        ledger
+        nodestore
+        overlay
+        peerfinder
+        protocol
+        resource
+        rpc
+        server
+        shamap
+        support)
+    file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
+    list(APPEND test_srcs "${cursrcs}")
+endforeach()
+
 add_with_props(rippled_src_nonunity "${test_srcs}"
     -I"${CMAKE_SOURCE_DIR}/"src/rocksdb2/include
     -I"${CMAKE_SOURCE_DIR}/"src/snappy/snappy

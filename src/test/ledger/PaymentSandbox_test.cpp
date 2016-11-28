@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/tests/PathSet.h>
+#include <test/support/PathSet.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/AmountConversions.h>
 

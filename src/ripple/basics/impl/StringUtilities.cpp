@@ -23,7 +23,6 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/unit_test.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/regex.hpp>

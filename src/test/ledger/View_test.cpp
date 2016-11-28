@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/ledger/OpenView.h>

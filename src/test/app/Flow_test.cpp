@@ -16,14 +16,14 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/test/jtx.h>
+#include <test/support/jtx.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/Sandbox.h>
-#include <ripple/ledger/tests/PathSet.h>
+#include <test/support/PathSet.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
 namespace ripple {

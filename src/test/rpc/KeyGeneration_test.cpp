@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/TestSuite.h>
+#include <test/support/TestSuite.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_writer.h>
 #include <ripple/protocol/ErrorCodes.h>

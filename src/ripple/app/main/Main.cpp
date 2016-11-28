@@ -38,9 +38,11 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/core/Time.h>
-#include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Debug.h>
 #include <beast/unit_test/dstream.hpp>
+#include <beast/unit_test/global_suites.hpp>
+#include <beast/unit_test/match.hpp>
+#include <beast/unit_test/reporter.hpp>
 #include <google/protobuf/stubs/common.h>
 #include <boost/program_options.hpp>
 #include <cstdlib>

@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/shamap/SHAMap.h>
-#include <ripple/shamap/tests/common.h>
+#include <test/shamap/common.h>
 #include <ripple/basics/Blob.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/unit_test.h>

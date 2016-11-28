@@ -20,8 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/json/Output.h>
 #include <ripple/json/Writer.h>
-#include <ripple/beast/unit_test.h>
 #include <stack>
+#include <set>
 
 namespace Json {
 
