@@ -5352,6 +5352,9 @@
     <ClCompile Include="..\..\src\test\ledger\PendingSaves_test.cpp">
       <Filter>test\ledger</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\ledger\SHAMapV2_test.cpp">
+      <Filter>test\ledger</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\ledger\SkipList_test.cpp">
       <Filter>test\ledger</Filter>
     </ClCompile>
