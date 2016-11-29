@@ -709,7 +709,6 @@ OverlayImpl::onManifests (
 
     JLOG(journal.debug()) << "TMManifest, " << n << (n == 1 ? " item" : " items");
 
-    bool const history = m->history ();
     for (std::size_t i = 0; i < n; ++i)
     {
         auto& s = m->list ().Get (i).stobject ();
@@ -741,18 +740,7 @@ OverlayImpl::onManifests (
                 convert (serialized, rawData);
                 *db << sql, soci::use (rawData);
                 tr.commit ();
-            }
 
-            if (history)
-            {
-                // Historical manifests are sent on initial peer connections.
-                // They do not need to be forwarded to other peers.
-                hashRouter.shouldRelay (hash);
-                continue;
-            }
-
-            if (result == ManifestDisposition::accepted)
-            {
                 protocol::TMManifests o;
                 o.add_list ()->set_stobject (s);
 
