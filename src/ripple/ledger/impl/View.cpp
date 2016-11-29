@@ -61,8 +61,9 @@ bool amendmentRIPD1274 (NetClock::time_point const closeTime)
 NetClock::time_point const& amendmentRIPD1298SoTime ()
 {
     using namespace std::chrono_literals;
-    // Fri Dec 2, 2016 10:00:00am PST
-    static NetClock::time_point const soTime{534016800s};
+    // Wed Dec 21, 2016 10:00:00am PST
+    static NetClock::time_point const soTime{535658400s};
+
     return soTime;
 }
 
