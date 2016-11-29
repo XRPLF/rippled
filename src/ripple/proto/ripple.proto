@@ -44,9 +44,9 @@ message TMManifest
 message TMManifests
 {
     repeated TMManifest list = 1;
+
     // The manifests sent when a peer first connects to another peer are `history`.
-    // The receiving peer does not forward them.
-    optional bool history = 2 [default = false];
+    optional bool history = 2 [deprecated=true];
 }
 
 //------------------------------------------------------------------------------
