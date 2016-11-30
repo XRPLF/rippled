@@ -112,9 +112,9 @@ namespace ripple {
            The public key that made the signature (optional, required if a signature
            is present)
         Flags
-            tfCloseChannel
+            tfClose
                 Request that the channel be closed
-            tfRenewChannel
+            tfRenew
                 Request that the channel's expiration be reset. Only the owner
                 may renew a channel.
 
