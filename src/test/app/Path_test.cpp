@@ -71,6 +71,13 @@ stpath_append_one (STPath& st,
 
 void
 stpath_append_one (STPath& st,
+    STPathElement const& pe)
+{
+    st.push_back(pe);
+}
+
+void
+stpath_append_one (STPath& st,
     jtx::BookSpec const& book)
 {
     st.push_back(STPathElement({
@@ -171,6 +178,14 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
     return jv;
 }
 
+// Issue path element
+auto IPE(Issue const& iss)
+{
+    return STPathElement (
+        STPathElement::typeCurrency | STPathElement::typeIssuer,
+        xrpAccount (), iss.currency, iss.account);
+};
+
 //------------------------------------------------------------------------------
 
 class Path_test : public beast::unit_test::suite
@@ -205,11 +220,11 @@ public:
         }
     };
 
-    std::tuple <STPathSet, STAmount, STAmount>
-    find_paths(jtx::Env& env,
+    auto find_paths_request(jtx::Env& env,
         jtx::Account const& src, jtx::Account const& dst,
             STAmount const& saDstAmount,
-                boost::optional<STAmount> const& saSendMax = boost::none)
+                boost::optional<STAmount> const& saSendMax = boost::none,
+                    boost::optional<Currency> const& saSrcCurrency = boost::none)
     {
         using namespace jtx;
 
@@ -224,8 +239,15 @@ public:
         params[jss::source_account] = toBase58 (src);
         params[jss::destination_account] = toBase58 (dst);
         params[jss::destination_amount] = saDstAmount.getJson(0);
-        if (saSendMax)
+        if(saSendMax)
             params[jss::send_max] = saSendMax->getJson(0);
+        if(saSrcCurrency)
+        {
+            auto& sc = params[jss::source_currencies] = Json::arrayValue;
+            Json::Value j = Json::objectValue;
+            j[jss::currency] = to_string(saSrcCurrency.value());
+            sc.append(j);
+        }
 
         Json::Value result;
         gate g;
@@ -239,6 +261,19 @@ public:
             });
 
         BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(! result.isMember(jss::error));
+        return result;
+    }
+
+    std::tuple <STPathSet, STAmount, STAmount>
+    find_paths(jtx::Env& env,
+        jtx::Account const& src, jtx::Account const& dst,
+            STAmount const& saDstAmount,
+                boost::optional<STAmount> const& saSendMax = boost::none,
+                    boost::optional<Currency> const& saSrcCurrency = boost::none)
+    {
+        Json::Value result = find_paths_request(env, src, dst, saDstAmount,
+            saSendMax, saSrcCurrency);
         BEAST_EXPECT(! result.isMember(jss::error));
 
         STAmount da;
@@ -864,6 +899,457 @@ public:
             Account("bob")["USD"].issue())) == nullptr);
     }
 
+    void path_find_01()
+    {
+        testcase("Path Find: XRP -> XRP and XRP -> IOU");
+        using namespace jtx;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account A3 {"A3"};
+        Account G1 {"G1"};
+        Account G2 {"G2"};
+        Account G3 {"G3"};
+        Account M1 {"M1"};
+
+        env.fund(XRP(100000), A1);
+        env.fund(XRP(10000), A2);
+        env.fund(XRP(1000), A3, G1, G2, G3, M1);
+        env.close();
+
+        env.trust(G1["XYZ"](5000), A1);
+        env.trust(G3["ABC"](5000), A1);
+        env.trust(G2["XYZ"](5000), A2);
+        env.trust(G3["ABC"](5000), A2);
+        env.trust(A2["ABC"](1000), A3);
+        env.trust(G1["XYZ"](100000), M1);
+        env.trust(G2["XYZ"](100000), M1);
+        env.trust(G3["ABC"](100000), M1);
+        env.close();
+
+        env(pay(G1, A1, G1["XYZ"](3500)));
+        env(pay(G3, A1, G3["ABC"](1200)));
+        env(pay(G2, M1, G2["XYZ"](25000)));
+        env(pay(G3, M1, G3["ABC"](25000)));
+        env.close();
+
+        env(offer(M1, G1["XYZ"](1000), G2["XYZ"](1000)));
+        env(offer(M1, XRP(10000), G3["ABC"](1000)));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        {
+            auto const& send_amt = XRP(10);
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
+                boost::none, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
+        }
+
+        {
+            // no path should exist for this since dest account
+            // does not exist.
+            auto const& send_amt = XRP(200);
+            std::tie(st, sa, da) = find_paths(env, A1, Account{"A0"}, send_amt,
+                boost::none, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
+        }
+
+        {
+            auto const& send_amt = G3["ABC"](10);
+            std::tie(st, sa, da) = find_paths(env, A2, G3, send_amt,
+                boost::none, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRP(100)));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]))));
+        }
+
+        {
+            auto const& send_amt = A2["ABC"](1);
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
+                boost::none, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRP(10)));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3)));
+        }
+
+        {
+            auto const& send_amt = A3["ABC"](1);
+            std::tie(st, sa, da) = find_paths(env, A1, A3, send_amt,
+                boost::none, xrpCurrency());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRP(10)));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3, A2)));
+        }
+    }
+
+    void path_find_02()
+    {
+        testcase("Path Find: non-XRP -> XRP");
+        using namespace jtx;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account G3 {"G3"};
+        Account M1 {"M1"};
+
+        env.fund(XRP(1000), A1, A2, G3);
+        env.fund(XRP(11000), M1);
+        env.close();
+
+        env.trust(G3["ABC"](1000), A1, A2);
+        env.trust(G3["ABC"](100000), M1);
+        env.close();
+
+        env(pay(G3, A1, G3["ABC"](1000)));
+        env(pay(G3, A2, G3["ABC"](1000)));
+        env(pay(G3, M1, G3["ABC"](1200)));
+        env.close();
+
+        env(offer(M1, G3["ABC"](1000), XRP(10000)));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        auto const& send_amt = XRP(10);
+        std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
+            boost::none, A2["ABC"].currency);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, A1["ABC"](1)));
+        BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
+    }
+
+    void path_find_03()
+    {
+        testcase("Path Find: CNY");
+        using namespace jtx;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account A3 {"A3"};
+        Account SRC {"SRC"};
+        Account GATEWAY_DST {"GATEWAY_DST"};
+        Account MONEY_MAKER_1 {"MONEY_MAKER_1"};
+        Account MONEY_MAKER_2 {"MONEY_MAKER_2"};
+
+        env.fund(XRP(4999.999898), SRC);
+        env.fund(XRP(10846.168060), GATEWAY_DST);
+        env.fund(XRP(4291.430036), MONEY_MAKER_1);
+        env.fund(XRP(106839.375770), MONEY_MAKER_2);
+        env.fund(XRP(1240.997150), A1);
+        env.fund(XRP(14115.046893), A2);
+        env.fund(XRP(512087.883181), A3);
+        env.close();
+
+        env.trust(MONEY_MAKER_1["CNY"](1001), MONEY_MAKER_2);
+        env.trust(GATEWAY_DST["CNY"](1001), MONEY_MAKER_2);
+        env.trust(MONEY_MAKER_1["CNY"](1000000), A1);
+        env.trust(MONEY_MAKER_1["BTC"](10000), A1);
+        env.trust(GATEWAY_DST["USD"](1000), A1);
+        env.trust(GATEWAY_DST["CNY"](1000), A1);
+        env.trust(MONEY_MAKER_1["CNY"](3000), A2);
+        env.trust(GATEWAY_DST["CNY"](3000), A2);
+        env.trust(MONEY_MAKER_1["CNY"](10000), A3);
+        env.trust(GATEWAY_DST["CNY"](10000), A3);
+        env.close();
+
+        env(pay(MONEY_MAKER_1, MONEY_MAKER_2,
+            STAmount{ MONEY_MAKER_1["CNY"].issue(), UINT64_C(3599), -13}));
+        env(pay(GATEWAY_DST, MONEY_MAKER_2,
+            GATEWAY_DST["CNY"](137.6852546843001)));
+        env(pay(MONEY_MAKER_1, A1,
+            STAmount{ MONEY_MAKER_1["CNY"].issue(), UINT64_C(119761), -13}));
+        env(pay(GATEWAY_DST, A1, GATEWAY_DST["CNY"](33.047994)));
+        env(pay(MONEY_MAKER_1, A2, MONEY_MAKER_1["CNY"](209.3081873019994)));
+        env(pay(GATEWAY_DST, A2, GATEWAY_DST["CNY"](694.6251706504019)));
+        env(pay(MONEY_MAKER_1, A3, MONEY_MAKER_1["CNY"](23.617050013581)));
+        env(pay(GATEWAY_DST, A3, GATEWAY_DST["CNY"](70.999614649799)));
+        env.close();
+
+        env(offer(MONEY_MAKER_2, XRP(1), GATEWAY_DST["CNY"](1)));
+        env(offer(MONEY_MAKER_2, GATEWAY_DST["CNY"](1), XRP(1)));
+        env(offer(MONEY_MAKER_2, GATEWAY_DST["CNY"](318000), XRP(53000)));
+        env(offer(MONEY_MAKER_2, XRP(209), MONEY_MAKER_2["CNY"](4.18)));
+        env(offer(MONEY_MAKER_2, MONEY_MAKER_1["CNY"](990000), XRP(10000)));
+        env(offer(MONEY_MAKER_2, MONEY_MAKER_1["CNY"](9990000), XRP(10000)));
+        env(offer(MONEY_MAKER_2, GATEWAY_DST["CNY"](8870000), XRP(10000)));
+        env(offer(MONEY_MAKER_2, XRP(232), MONEY_MAKER_2["CNY"](5.568)));
+        env(offer(A2, XRP(2000), MONEY_MAKER_1["CNY"](66.8)));
+        env(offer(A2, XRP(1200), GATEWAY_DST["CNY"](42)));
+        env(offer(A2, MONEY_MAKER_1["CNY"](43.2), XRP(900)));
+        env(offer(A3, MONEY_MAKER_1["CNY"](2240), XRP(50000)));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        auto const& send_amt = GATEWAY_DST["CNY"](10.1);
+        std::tie(st, sa, da) = find_paths(env, SRC, GATEWAY_DST, send_amt,
+            boost::none, xrpCurrency());
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, XRP(288.571429)));
+        BEAST_EXPECT(same(st,
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A3),
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, MONEY_MAKER_2),
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A2),
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A1)
+        ));
+    }
+
+    void path_find_04()
+    {
+        testcase("Path Find: Bitstamp and SnapSwap, liquidity with no offers");
+        using namespace jtx;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account G1BS {"G1BS"};
+        Account G2SW {"G2SW"};
+        Account M1 {"M1"};
+
+        env.fund(XRP(1000), G1BS, G2SW, A1, A2);
+        env.fund(XRP(11000), M1);
+        env.close();
+
+        env.trust(G1BS["HKD"](2000), A1);
+        env.trust(G2SW["HKD"](2000), A2);
+        env.trust(G1BS["HKD"](100000), M1);
+        env.trust(G2SW["HKD"](100000), M1);
+        env.close();
+
+        env(pay(G1BS, A1, G1BS["HKD"](1000)));
+        env(pay(G2SW, A2, G2SW["HKD"](1000)));
+        // SnapSwap wants to be able to set trust line quality settings so they
+        // can charge a fee when transactions ripple across. Liquidity
+        // provider, via trusting/holding both accounts
+        env(pay(G1BS, M1, G1BS["HKD"](1200)));
+        env(pay(G2SW, M1, G2SW["HKD"](5000)));
+        env.close();
+
+        STPathSet st;
+        STAmount sa, da;
+
+        {
+            auto const& send_amt = A2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
+                boost::none, A2["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G1BS, M1, G2SW)));
+        }
+
+        {
+            auto const& send_amt = A1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A2, A1, send_amt,
+                boost::none, A1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A2["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G2SW, M1, G1BS)));
+        }
+
+        {
+            auto const& send_amt = A2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, G1BS, A2, send_amt,
+                boost::none, A1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G1BS["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(M1, G2SW)));
+        }
+
+        {
+            auto const& send_amt = M1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, M1, G1BS, send_amt,
+                boost::none, A1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, M1["HKD"](10)));
+            BEAST_EXPECT(st.empty());
+        }
+
+        {
+            auto const& send_amt = A1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, G2SW, A1, send_amt,
+                boost::none, A1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G2SW["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(M1, G1BS)));
+        }
+
+    }
+
+    void path_find_05()
+    {
+        testcase("Path Find: non-XRP -> non-XRP, same currency");
+        using namespace jtx;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account A3 {"A3"};
+        Account A4 {"A4"};
+        Account G1 {"G1"};
+        Account G2 {"G2"};
+        Account G3 {"G3"};
+        Account G4 {"G4"};
+        Account M1 {"M1"};
+        Account M2 {"M2"};
+
+        env.fund(XRP(1000), A1, A2, A3, G1, G2, G3, G4);
+        env.fund(XRP(10000), A4);
+        env.fund(XRP(11000), M1, M2);
+        env.close();
+
+        env.trust(G1["HKD"](2000), A1);
+        env.trust(G2["HKD"](2000), A2);
+        env.trust(G1["HKD"](2000), A3);
+        env.trust(G1["HKD"](100000), M1);
+        env.trust(G2["HKD"](100000), M1);
+        env.trust(G1["HKD"](100000), M2);
+        env.trust(G2["HKD"](100000), M2);
+        env.close();
+
+        env(pay(G1, A1, G1["HKD"](1000)));
+        env(pay(G2, A2, G2["HKD"](1000)));
+        env(pay(G1, A3, G1["HKD"](1000)));
+        env(pay(G1, M1, G1["HKD"](1200)));
+        env(pay(G2, M1, G2["HKD"](5000)));
+        env(pay(G1, M2, G1["HKD"](1200)));
+        env(pay(G2, M2, G2["HKD"](5000)));
+        env.close();
+
+        env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
+        env(offer(M2, XRP(10000), G2["HKD"](1000)));
+        env(offer(M2, G1["HKD"](1000), XRP(10000)));
+
+        STPathSet st;
+        STAmount sa, da;
+
+        {
+            //A) Borrow or repay --
+            //  Source -> Destination (repay source issuer)
+            auto const& send_amt = G1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A1, G1, send_amt,
+                boost::none, G1["HKD"].currency);
+            BEAST_EXPECT(st.empty());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+        }
+
+        {
+            //A2) Borrow or repay --
+            //  Source -> Destination (repay destination issuer)
+            auto const& send_amt = A1["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A1, G1, send_amt,
+                boost::none, G1["HKD"].currency);
+            BEAST_EXPECT(st.empty());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+        }
+
+        {
+            //B) Common gateway --
+            //  Source -> AC -> Destination
+            auto const& send_amt = A3["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A1, A3, send_amt,
+                boost::none, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G1)));
+        }
+
+        {
+            //C) Gateway to gateway --
+            //  Source -> OB -> Destination
+            auto const& send_amt = G2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, G1, G2, send_amt,
+                boost::none, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+            BEAST_EXPECT(same(st,
+                stpath(IPE(G2["HKD"])),
+                stpath(M1),
+                stpath(M2),
+                stpath(IPE(xrpIssue()), IPE(G2["HKD"]))
+            ));
+        }
+
+        {
+            //D) User to unlinked gateway via order book --
+            //  Source -> AC -> OB -> Destination
+            auto const& send_amt = G2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A1, G2, send_amt,
+                boost::none, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st,
+                stpath(G1, M1),
+                stpath(G1, M2),
+                stpath(G1, IPE(G2["HKD"])),
+                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]))
+            ));
+        }
+
+        {
+            //I4) XRP bridge" --
+            //  Source -> AC -> OB to XRP -> OB from XRP -> AC -> Destination
+            auto const& send_amt = A2["HKD"](10);
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
+                boost::none, G1["HKD"].currency);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st,
+                stpath(G1, M1, G2),
+                stpath(G1, M2, G2),
+                stpath(G1, IPE(G2["HKD"]), G2),
+                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]), G2)
+            ));
+        }
+    }
+
+    void path_find_06()
+    {
+        testcase("Path Find: non-XRP -> non-XRP, same currency)");
+        using namespace jtx;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account A3 {"A3"};
+        Account G1 {"G1"};
+        Account G2 {"G2"};
+        Account M1 {"M1"};
+
+        env.fund(XRP(11000), M1);
+        env.fund(XRP(1000), A1, A2, A3, G1, G2);
+        env.close();
+
+        env.trust(G1["HKD"](2000), A1);
+        env.trust(G2["HKD"](2000), A2);
+        env.trust(A2["HKD"](2000), A3);
+        env.trust(G1["HKD"](100000), M1);
+        env.trust(G2["HKD"](100000), M1);
+        env.close();
+
+        env(pay(G1, A1, G1["HKD"](1000)));
+        env(pay(G2, A2, G2["HKD"](1000)));
+        env(pay(G1, M1, G1["HKD"](5000)));
+        env(pay(G2, M1, G2["HKD"](5000)));
+        env.close();
+
+        env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
+
+        //E) Gateway to user
+        //  Source -> OB -> AC -> Destination
+        auto const& send_amt = A2["HKD"](10);
+        STPathSet st;
+        STAmount sa, da;
+        std::tie(st, sa, da) = find_paths(env, G1, A2, send_amt,
+            boost::none, G1["HKD"].currency);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+        BEAST_EXPECT(same(st,
+            stpath(M1, G2),
+            stpath(IPE(G2["HKD"]), G2)));
+    }
+
     void
     run()
     {
@@ -886,6 +1372,19 @@ public:
         trust_auto_clear_trust_normal_clear();
         trust_auto_clear_trust_auto_clear();
         xrp_to_xrp();
+
+        // The following path_find_NN tests are data driven tests
+        // that were originally implemented in js/coffee and migrated
+        // here. The quantities and currencies used are taken directly from
+        // those legacy tests, which in some cases probably represented
+        // customer use cases.
+
+        path_find_01();
+        path_find_02();
+        path_find_03();
+        path_find_04();
+        path_find_05();
+        path_find_06();
     }
 };
 
