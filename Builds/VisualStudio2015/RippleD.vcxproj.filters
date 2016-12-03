@@ -5313,6 +5313,9 @@
     <ClCompile Include="..\..\src\test\core\Coroutine_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\core\DeadlineTimer_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\SociDB_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>

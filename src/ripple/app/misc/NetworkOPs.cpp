@@ -628,7 +628,8 @@ void NetworkOPsImp::setHeartbeatTimer ()
 
 void NetworkOPsImp::setClusterTimer ()
 {
-    m_clusterTimer.setExpiration (10.0);
+    using namespace std::chrono_literals;
+    m_clusterTimer.setExpiration (10s);
 }
 
 void NetworkOPsImp::onDeadlineTimer (DeadlineTimer& timer)
