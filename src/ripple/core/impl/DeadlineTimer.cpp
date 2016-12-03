@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/core/DeadlineTimer.h>
 #include <ripple/core/ThreadEntry.h>
+#include <ripple/beast/clock/chrono_util.h>
 #include <ripple/beast/core/Thread.h>
 #include <algorithm>
 #include <cassert>
@@ -59,11 +60,13 @@ public:
     // However, an extra notification may still happen due to concurrency.
     //
     void activate (DeadlineTimer& timer,
-        double secondsRecurring, beast::RelativeTime const& when)
+        duration recurring,
+        time_point when)
     {
-        assert (secondsRecurring >= 0);
+        using namespace std::chrono_literals;
+        assert (recurring >= 0ms);
 
-        std::lock_guard <std::recursive_mutex> lock (m_mutex);
+        std::lock_guard <std::recursive_mutex> lock {m_mutex};
 
         if (timer.m_isActive)
         {
@@ -72,8 +75,8 @@ public:
             timer.m_isActive = false;
         }
 
-        timer.m_secondsRecurring = secondsRecurring;
-        timer.m_notificationTime = when;
+        timer.recurring_ = recurring;
+        timer.notificationTime_ = when;
 
         insertSorted (timer);
         timer.m_isActive = true;
@@ -86,7 +89,7 @@ public:
     //
     void deactivate (DeadlineTimer& timer)
     {
-        std::lock_guard <std::recursive_mutex> lock (m_mutex);
+        std::lock_guard <std::recursive_mutex> lock {m_mutex};
 
         if (timer.m_isActive)
         {
@@ -106,16 +109,16 @@ public:
 
     void runImpl ()
     {
+        using namespace std::chrono;
         while (! threadShouldExit ())
         {
-            beast::RelativeTime const currentTime (
-                beast::RelativeTime::fromStartup ());
+            auto const currentTime = time_point_cast<duration>(clock::now());
 
-            double seconds (0);
-            DeadlineTimer* timer (nullptr);
+            auto nextDeadline = currentTime;
+            DeadlineTimer* timer {nullptr};
 
             {
-                std::lock_guard <std::recursive_mutex> lock (m_mutex);
+                std::lock_guard <std::recursive_mutex> lock {m_mutex};
 
                 // See if a timer expired
                 if (! m_items.empty ())
@@ -123,18 +126,18 @@ public:
                     timer = &m_items.front ();
 
                     // Has this timer expired?
-                    if (timer->m_notificationTime <= currentTime)
+                    if (timer->notificationTime_ <= currentTime)
                     {
                         // Expired, remove it from the list.
                         assert (timer->m_isActive);
                         m_items.pop_front ();
 
                         // Is the timer recurring?
-                        if (timer->m_secondsRecurring > 0)
+                        if (timer->recurring_ > 0ms)
                         {
                             // Yes so set the timer again.
-                            timer->m_notificationTime =
-                                currentTime + timer->m_secondsRecurring;
+                            timer->notificationTime_ =
+                                currentTime + timer->recurring_;
 
                             // Put it back into the list as active
                             insertSorted (*timer);
@@ -145,18 +148,18 @@ public:
                             timer->m_isActive = false;
                         }
 
+                        // NOTE!  Called *inside* lock!
                         timer->m_listener->onDeadlineTimer (*timer);
 
                         // re-loop
-                        seconds = -1;
+                        nextDeadline = currentTime - 1s;
                     }
                     else
                     {
-                        seconds = (
-                            timer->m_notificationTime - currentTime).inSeconds ();
+                        nextDeadline = timer->notificationTime_;
 
                         // Can't be zero and come into the else clause.
-                        assert (seconds != 0);
+                        assert (nextDeadline > currentTime);
 
                         // Don't call the listener
                         timer = nullptr;
@@ -166,16 +169,19 @@ public:
 
             // Note that we have released the lock here.
 
-            if (seconds > 0)
+            if (nextDeadline > currentTime)
             {
                 // Wait until interrupt or next timer.
                 //
-                int const milliSeconds (std::max (
-                    static_cast <int> (seconds * 1000 + 0.5), 1));
-                assert (milliSeconds > 0);
-                wait (milliSeconds);
+                auto const waitCountMilliSeconds = nextDeadline - currentTime;
+                static_assert(
+                    std::ratio_equal<decltype(waitCountMilliSeconds)::period,
+                    std::milli>::value,
+                    "Call to wait() requires units of milliseconds.");
+
+                wait (static_cast<int>(waitCountMilliSeconds.count()));
             }
-            else if (seconds == 0)
+            else if (nextDeadline == currentTime)
             {
                 // Wait until interrupt
                 //
@@ -195,11 +201,11 @@ public:
     {
         if (! m_items.empty ())
         {
-            Items::iterator before = m_items.begin ();
+            Items::iterator before {m_items.begin()};
 
             for (;;)
             {
-                if (before->m_notificationTime >= timer.m_notificationTime)
+                if (before->notificationTime_ >= timer.notificationTime_)
                 {
                     m_items.insert (before, timer);
                     break;
@@ -243,24 +249,24 @@ void DeadlineTimer::cancel ()
     Manager::instance().deactivate (*this);
 }
 
-void DeadlineTimer::setExpiration (double secondsUntilDeadline)
+void DeadlineTimer::setExpiration (std::chrono::milliseconds delay)
 {
-    assert (secondsUntilDeadline != 0);
+    using namespace std::chrono;
+    assert (delay > 0ms);
 
-    beast::RelativeTime const when (
-        beast::RelativeTime::fromStartup() + secondsUntilDeadline);
+    auto const when = time_point_cast<duration>(clock::now() + delay);
 
-    Manager::instance().activate (*this, 0, when);
+    Manager::instance().activate (*this, 0ms, when);
 }
 
-void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
+void DeadlineTimer::setRecurringExpiration (std::chrono::milliseconds interval)
 {
-    assert (secondsUntilDeadline != 0);
+    using namespace std::chrono;
+    assert (interval > 0ms);
 
-    beast::RelativeTime const when (
-        beast::RelativeTime::fromStartup() + secondsUntilDeadline);
+    auto const when = time_point_cast<duration>(clock::now() + interval);
 
-    Manager::instance().activate (*this, secondsUntilDeadline, when);
+    Manager::instance().activate (*this, interval, when);
 }
 
-} // beast
+} // ripple
