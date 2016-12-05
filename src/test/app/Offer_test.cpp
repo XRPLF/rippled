@@ -21,7 +21,9 @@
 #include <ripple/test/jtx.h>
 #include <ripple/test/WSClient.h>
 #include <ripple/ledger/tests/PathSet.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/Quality.h>
 
 namespace ripple {
 namespace test {
@@ -1756,6 +1758,126 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-101");
     }
 
+    void testTickSize ()
+    {
+        testcase ("Tick Size");
+
+        using namespace jtx;
+
+        // Try to set tick size without enabling feature
+        {
+            Env env {*this};
+            auto const gw = Account {"gateway"};
+            env.fund (XRP(10000), gw);
+
+            auto txn = noop(gw);
+            txn[sfTickSize.fieldName] = 0;
+            env(txn, ter(temDISABLED));
+        }
+
+        // Try to set tick size out of range
+        {
+            Env env {*this, features (featureTickSize)};
+            auto const gw = Account {"gateway"};
+            env.fund (XRP(10000), gw);
+
+            auto txn = noop(gw);
+            txn[sfTickSize.fieldName] = Quality::minTickSize - 1;
+            env(txn, ter (temBAD_TICK_SIZE));
+
+            txn[sfTickSize.fieldName] = Quality::minTickSize;
+            env(txn);
+            BEAST_EXPECT ((*env.le(gw))[sfTickSize]
+                == Quality::minTickSize);
+
+            txn = noop (gw);
+            txn[sfTickSize.fieldName] = Quality::maxTickSize;
+            env(txn);
+            BEAST_EXPECT (! env.le(gw)->isFieldPresent (sfTickSize));
+
+            txn = noop (gw);
+            txn[sfTickSize.fieldName] = Quality::maxTickSize - 1;
+            env(txn);
+            BEAST_EXPECT ((*env.le(gw))[sfTickSize]
+                == Quality::maxTickSize - 1);
+
+            txn = noop (gw);
+            txn[sfTickSize.fieldName] = Quality::maxTickSize + 1;
+            env(txn, ter (temBAD_TICK_SIZE));
+
+            txn[sfTickSize.fieldName] = 0;
+            env(txn, tesSUCCESS);
+            BEAST_EXPECT (! env.le(gw)->isFieldPresent (sfTickSize));
+        }
+
+        Env env {*this, features (featureTickSize)};
+        auto const gw = Account {"gateway"};
+        auto const alice = Account {"alice"};
+        auto const XTS = gw["XTS"];
+        auto const XXX = gw["XXX"];
+
+        env.fund (XRP (10000), gw, alice);
+
+        {
+            // Gateway sets its tick size to 5
+            auto txn = noop(gw);
+            txn[sfTickSize.fieldName] = 5;
+            env(txn);
+            BEAST_EXPECT ((*env.le(gw))[sfTickSize] == 5);
+        }
+
+        env (trust (alice, XTS (1000)));
+        env (trust (alice, XXX (1000)));
+
+        env (pay (gw, alice, alice["XTS"] (100)));
+        env (pay (gw, alice, alice["XXX"] (100)));
+
+        env (offer (alice, XTS (10), XXX (30)));
+        env (offer (alice, XTS (30), XXX (10)));
+        env (offer (alice, XTS (10), XXX (30)),
+            json(jss::Flags, tfSell));
+        env (offer (alice, XTS (30), XXX (10)),
+            json(jss::Flags, tfSell));
+
+        std::map <std::uint32_t, std::pair<STAmount, STAmount>> offers;
+        forEachItem (*env.current(), alice,
+            [&](std::shared_ptr<SLE const> const& sle)
+        {
+            if (sle->getType() == ltOFFER)
+                offers.emplace((*sle)[sfSequence],
+                    std::make_pair((*sle)[sfTakerPays],
+                        (*sle)[sfTakerGets]));
+        });
+
+        // first offer
+        auto it = offers.begin();
+        BEAST_EXPECT (it != offers.end());
+        BEAST_EXPECT (it->second.first == XTS(10) &&
+            it->second.second == XXX(30));
+
+        // second offer
+        ++it;
+        BEAST_EXPECT (it != offers.end());
+        BEAST_EXPECT (it->second.first == XTS(30) &&
+            it->second.second == XXX(9.9999));
+
+        // third offer
+        ++it;
+        BEAST_EXPECT (it != offers.end());
+        BEAST_EXPECT (it->second.first == XTS(10) &&
+            it->second.second == XXX(30));
+
+        // fourth offer
+        // exact TakerPays is XTS(1/.033333)
+        ++it;
+        BEAST_EXPECT (it != offers.end());
+        BEAST_EXPECT (it->second.first > XTS(30.0003) &&
+            it->second.first < XTS(30.0004) &&
+            it->second.second == XXX(10));
+
+        BEAST_EXPECT (++it == offers.end());
+    }
+
     void run ()
     {
         testCanceledOffer ();
@@ -1787,6 +1909,7 @@ public:
         testSellFlagBasic ();
         testSellFlagExceedLimit ();
         testGatewayCrossCurrency ();
+        testTickSize ();
     }
 };
 

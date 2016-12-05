@@ -33,6 +33,7 @@ TxFormats::TxFormats ()
         << SOElement (sfTransferRate,        SOE_OPTIONAL)
         << SOElement (sfSetFlag,             SOE_OPTIONAL)
         << SOElement (sfClearFlag,           SOE_OPTIONAL)
+        << SOElement (sfTickSize,            SOE_OPTIONAL)
         ;
 
     add ("TrustSet", ttTRUST_SET)

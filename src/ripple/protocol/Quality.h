@@ -124,6 +124,9 @@ public:
     // have lower unsigned integer representations.
     using value_type = std::uint64_t;
 
+    static const int minTickSize = 3;
+    static const int maxTickSize = 16;
+
 private:
     value_type m_value;
 
@@ -169,6 +172,12 @@ public:
     {
         return amountFromQuality (m_value);
     }
+
+    /** Returns the quality rounded down to the specified number
+        of decimal digits.
+    */
+    Quality
+    round (int tickSize) const;
 
     /** Returns the scaled amount with in capped.
         Math is avoided if the result is exact. The output is clamped

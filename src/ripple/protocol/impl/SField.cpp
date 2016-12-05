@@ -82,6 +82,9 @@ SF_U8 const sfCloseResolution   = make::one<SF_U8::type>(&sfCloseResolution,   S
 SF_U8 const sfMethod            = make::one<SF_U8::type>(&sfMethod,            STI_UINT8, 2, "Method");
 SF_U8 const sfTransactionResult = make::one<SF_U8::type>(&sfTransactionResult, STI_UINT8, 3, "TransactionResult");
 
+// 8-bit integers (uncommon)
+SF_U8 const sfTickSize          = make::one<SF_U8::type>(&sfTickSize,          STI_UINT8, 16, "TickSize");
+
 // 16-bit integers
 SF_U16 const sfLedgerEntryType = make::one<SF_U16::type>(&sfLedgerEntryType, STI_UINT16, 1, "LedgerEntryType", SField::sMD_Never);
 SF_U16 const sfTransactionType = make::one<SF_U16::type>(&sfTransactionType, STI_UINT16, 2, "TransactionType");

@@ -123,6 +123,7 @@ bool transResultInfo (TER code, std::string& token, std::string& text)
         { temUNCERTAIN,              { "temUNCERTAIN",             "In process of determining result. Never returned."                             } },
         { temUNKNOWN,                { "temUNKNOWN",               "The transaction requires logic that is not implemented yet."                   } },
         { temDISABLED,               { "temDISABLED",              "The transaction requires logic that is currently disabled."                    } },
+        { temBAD_TICK_SIZE,          { "temBAD_TICK_SIZE",         "Malformed: Tick size out of range."                                            } },
 
         { terRETRY,                  { "terRETRY",                 "Retry transaction."                                                            } },
         { terFUNDS_SPENT,            { "terFUNDS_SPENT",           "Can't set password, password set funds already spent."                         } },

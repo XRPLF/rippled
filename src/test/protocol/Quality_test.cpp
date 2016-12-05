@@ -239,6 +239,28 @@ public:
     }
 
     void
+    test_round()
+    {
+        testcase ("round");
+
+        Quality q (0x59148191fb913522ull);      // 57719.63525051682
+        BEAST_EXPECT(q.round(3).rate().getText() == "57700");
+        BEAST_EXPECT(q.round(4).rate().getText() == "57710");
+        BEAST_EXPECT(q.round(5).rate().getText() == "57719");
+        BEAST_EXPECT(q.round(6).rate().getText() == "57719.6");
+        BEAST_EXPECT(q.round(7).rate().getText() == "57719.63");
+        BEAST_EXPECT(q.round(8).rate().getText() == "57719.635");
+        BEAST_EXPECT(q.round(9).rate().getText() == "57719.6352");
+        BEAST_EXPECT(q.round(10).rate().getText() == "57719.63525");
+        BEAST_EXPECT(q.round(11).rate().getText() == "57719.63525");
+        BEAST_EXPECT(q.round(12).rate().getText() == "57719.6352505");
+        BEAST_EXPECT(q.round(13).rate().getText() == "57719.63525051");
+        BEAST_EXPECT(q.round(14).rate().getText() == "57719.635250516");
+        BEAST_EXPECT(q.round(15).rate().getText() == "57719.6352505168");
+        BEAST_EXPECT(q.round(16).rate().getText() == "57719.63525051682");
+    }
+
+    void
     test_comparisons()
     {
         testcase ("comparisons");
@@ -320,6 +342,7 @@ public:
         test_ceil_in ();
         test_ceil_out ();
         test_raw ();
+        test_round ();
     }
 };
 
