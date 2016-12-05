@@ -60,8 +60,8 @@ public:
     // However, an extra notification may still happen due to concurrency.
     //
     void activate (DeadlineTimer& timer,
-        std::chrono::milliseconds recurring,
-        std::chrono::steady_clock::time_point when)
+        duration recurring,
+        time_point when)
     {
         using namespace std::chrono_literals;
         assert (recurring >= 0ms);
@@ -109,10 +109,10 @@ public:
 
     void runImpl ()
     {
-        using namespace std::chrono_literals;
+        using namespace std::chrono;
         while (! threadShouldExit ())
         {
-            auto const currentTime = std::chrono::steady_clock::now();
+            auto const currentTime = time_point_cast<duration>(clock::now());
 
             auto nextDeadline = currentTime;
             DeadlineTimer* timer {nullptr};
@@ -173,12 +173,13 @@ public:
             {
                 // Wait until interrupt or next timer.
                 //
-                int const waitCountMilliSeconds {std::max (
-                    ceil<std::chrono::duration<int, std::milli>> (
-                        nextDeadline - currentTime).count(), 1)};
+                auto const waitCountMilliSeconds = nextDeadline - currentTime;
+                static_assert(
+                    std::ratio_equal<decltype(waitCountMilliSeconds)::period,
+                    std::milli>::value,
+                    "Call to wait() requires units of milliseconds.");
 
-                assert (waitCountMilliSeconds > 0);
-                wait (waitCountMilliSeconds);
+                wait (static_cast<int>(waitCountMilliSeconds.count()));
             }
             else if (nextDeadline == currentTime)
             {
@@ -250,20 +251,20 @@ void DeadlineTimer::cancel ()
 
 void DeadlineTimer::setExpiration (std::chrono::milliseconds delay)
 {
-    using namespace std::chrono_literals;
+    using namespace std::chrono;
     assert (delay > 0ms);
 
-    auto const when = std::chrono::steady_clock::now() + delay;
+    auto const when = time_point_cast<duration>(clock::now() + delay);
 
     Manager::instance().activate (*this, 0ms, when);
 }
 
 void DeadlineTimer::setRecurringExpiration (std::chrono::milliseconds interval)
 {
-    using namespace std::chrono_literals;
+    using namespace std::chrono;
     assert (interval > 0ms);
 
-    auto const when = std::chrono::steady_clock::now() + interval;
+    auto const when = time_point_cast<duration>(clock::now() + interval);
 
     Manager::instance().activate (*this, interval, when);
 }

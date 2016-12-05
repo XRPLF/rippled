@@ -31,6 +31,10 @@ class DeadlineTimer
     : public beast::List <DeadlineTimer>::Node
 {
 public:
+    using clock = std::chrono::steady_clock;
+    using duration = std::chrono::milliseconds;
+    using time_point = std::chrono::time_point<clock, duration>;
+
     /** Listener for a deadline timer.
 
         The listener is called on an auxiliary thread. It is suggested
@@ -42,7 +46,7 @@ public:
     class Listener
     {
     public:
-        virtual void onDeadlineTimer (DeadlineTimer&) { }
+        virtual void onDeadlineTimer (DeadlineTimer&) = 0;
     };
 
 public:
@@ -69,7 +73,7 @@ public:
         @param delay duration until the timer will send a notification.
                      This must be greater than zero.
     */
-    void setExpiration (std::chrono::milliseconds delay);
+    void setExpiration (duration delay);
 
     /** Set the timer to go off repeatedly with the specified frequency.
         If the timer is already active, this will reset it.
@@ -78,7 +82,7 @@ public:
         @param interval duration until the timer will send a notification.
                         This must be greater than zero.
     */
-    void setRecurringExpiration (std::chrono::milliseconds interval);
+    void setRecurringExpiration (duration interval);
 
     /** Equality comparison.
         Timers are equal if they have the same address.
@@ -99,8 +103,9 @@ private:
 
     Listener* const m_listener;
     bool m_isActive;
-    std::chrono::steady_clock::time_point notificationTime_;
-    std::chrono::milliseconds recurring_; // > 0ms if recurring.
+
+    time_point notificationTime_;
+    duration recurring_; // > 0ms if recurring.
 };
 
 }
