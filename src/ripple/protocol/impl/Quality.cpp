@@ -120,4 +120,36 @@ composed_quality (Quality const& lhs, Quality const& rhs)
     return Quality ((stored_exponent << (64 - 8)) | stored_mantissa);
 }
 
+Quality
+Quality::round (int digits) const
+{
+    // Modulus for mantissa
+    static const std::uint64_t mod[17] = {
+        /* 0 */ 10000000000000000,
+        /* 1 */  1000000000000000,
+        /* 2 */   100000000000000,
+        /* 3 */    10000000000000,
+        /* 4 */     1000000000000,
+        /* 5 */      100000000000,
+        /* 6 */       10000000000,
+        /* 7 */        1000000000,
+        /* 8 */         100000000,
+        /* 9 */          10000000,
+        /* 10 */          1000000,
+        /* 11 */           100000,
+        /* 12 */            10000,
+        /* 13 */             1000,
+        /* 14 */              100,
+        /* 15 */               10,
+        /* 16 */                1,
+    };
+
+    auto exponent = m_value >> (64 - 8);
+    auto mantissa = m_value & 0x00ffffffffffffffULL;
+    mantissa += mod[digits] - 1;
+    mantissa -= (mantissa % mod[digits]);
+
+    return Quality{(exponent << (64 - 8)) | mantissa};
+}
+
 }

@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/st.h>
+#include <ripple/protocol/Quality.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/Sandbox.h>
@@ -680,7 +681,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
     // end up on the books.
-    auto const uRate = getRate (saTakerGets, saTakerPays);
+    auto uRate = getRate (saTakerGets, saTakerPays);
 
     auto viewJ = ctx_.app.journal("View");
 
@@ -722,6 +723,58 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     if (result == tesSUCCESS)
     {
+        // If a tick size applies, round the offer to the tick size
+        auto const& uPaysIssuerID = saTakerPays.getIssuer ();
+        auto const& uGetsIssuerID = saTakerGets.getIssuer ();
+
+        std::uint8_t uTickSize = Quality::maxTickSize;
+        if (!isXRP (uPaysIssuerID))
+        {
+            auto const sle =
+                view.read(keylet::account(uPaysIssuerID));
+            if (sle && sle->isFieldPresent (sfTickSize))
+                uTickSize = std::min (uTickSize,
+                    (*sle)[sfTickSize]);
+        }
+        if (!isXRP (uGetsIssuerID))
+        {
+            auto const sle =
+                view.read(keylet::account(uGetsIssuerID));
+            if (sle && sle->isFieldPresent (sfTickSize))
+                uTickSize = std::min (uTickSize,
+                    (*sle)[sfTickSize]);
+        }
+        if (uTickSize < Quality::maxTickSize)
+        {
+            auto const rate =
+                Quality{saTakerGets, saTakerPays}.round
+                    (uTickSize).rate();
+
+            // We round the side that's not exact,
+            // just as if the offer happened to execute
+            // at a slightly better (for the placer) rate
+            if (bSell)
+            {
+                // this is a sell, round taker pays
+                saTakerPays = multiply (
+                    saTakerGets, rate, saTakerPays.issue());
+            }
+            else
+            {
+                // this is a buy, round taker gets
+                saTakerGets = divide (
+                    saTakerPays, rate, saTakerGets.issue());
+            }
+            if (! saTakerGets || ! saTakerPays)
+            {
+                JLOG (j_.debug()) <<
+                    "Offer rounded to zero";
+                return { result, true };
+            }
+
+            uRate = getRate (saTakerGets, saTakerPays);
+        }
+
         // We reverse pays and gets because during crossing we are taking.
         Amounts const taker_amount (saTakerGets, saTakerPays);
 

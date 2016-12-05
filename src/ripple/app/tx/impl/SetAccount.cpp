@@ -124,6 +124,23 @@ SetAccount::preflight (PreflightContext const& ctx)
         }
     }
 
+    // TickSize
+    if (tx.isFieldPresent (sfTickSize))
+    {
+        if (!ctx.rules.enabled(featureTickSize,
+            ctx.app.config().features))
+            return temDISABLED;
+
+        auto uTickSize = tx[sfTickSize];
+        if (uTickSize &&
+            ((uTickSize < Quality::minTickSize) ||
+            (uTickSize > Quality::maxTickSize)))
+        {
+            JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
+            return temBAD_TICK_SIZE;
+        }
+    }
+
     if (auto const mk = tx[~sfMessageKey])
     {
         if (mk->size() && ! publicKeyType ({mk->data(), mk->size()}))
@@ -442,6 +459,24 @@ SetAccount::doApply ()
         {
             JLOG(j_.trace()) << "set transfer rate";
             sle->setFieldU32 (sfTransferRate, uRate);
+        }
+    }
+
+    //
+    // TickSize
+    //
+    if (ctx_.tx.isFieldPresent (sfTickSize))
+    {
+        auto uTickSize = ctx_.tx[sfTickSize];
+        if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
+        {
+            JLOG(j_.trace()) << "unset tick size";
+            sle->makeFieldAbsent (sfTickSize);
+        }
+        else
+        {
+            JLOG(j_.trace()) << "set tick size";
+            sle->setFieldU8 (sfTickSize, uTickSize);
         }
     }
 

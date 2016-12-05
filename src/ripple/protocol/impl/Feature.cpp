@@ -56,5 +56,6 @@ uint256 const featureSHAMapV2 = feature("SHAMapV2");
 uint256 const featurePayChan = feature("PayChan");
 uint256 const featureFlow = feature("Flow");
 uint256 const featureCryptoConditions = feature("CryptoConditions");
+uint256 const featureTickSize = feature("TickSize");
 
 } // ripple
