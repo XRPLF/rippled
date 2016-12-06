@@ -135,7 +135,7 @@ closeChannel (
     {
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete (view, true, page, keylet::ownerDir (src).key,
-            key, false, page == 0, j);
+            key, false, false, j);
         if (!isTesSuccess (ter))
             return ter;
     }

@@ -80,7 +80,7 @@ CancelTicket::doApply ()
 
     auto viewJ = ctx_.app.journal ("View");
     TER const result = dirDelete (ctx_.view (), false, hint,
-        getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0), viewJ);
+        getOwnerDirIndex (ticket_owner), ticketId, false, false, viewJ);
 
     adjustOwnerCount(view(), view().peek(
         keylet::account(ticket_owner)), -1, viewJ);

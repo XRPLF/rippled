@@ -482,7 +482,7 @@ SusPayFinish::doApply()
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
             page, keylet::ownerDir(account).key,
-                k.key, false, page == 0, ctx_.app.journal ("View"));
+                k.key, false, false, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
     }
@@ -550,7 +550,7 @@ SusPayCancel::doApply()
         auto const page = (*slep)[sfOwnerNode];
         TER const ter = dirDelete(ctx_.view(), true,
             page, keylet::ownerDir(account).key,
-                k.key, false, page == 0, ctx_.app.journal ("View"));
+                k.key, false, false, ctx_.app.journal ("View"));
         if (! isTesSuccess(ter))
             return ter;
     }

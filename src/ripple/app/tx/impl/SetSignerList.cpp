@@ -294,7 +294,7 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
 
     auto viewJ = ctx_.app.journal ("View");
     TER const result  = dirDelete(ctx_.view(), false, hint,
-        ownerDirKeylet.key, signerListKeylet.key, false, (hint == 0), viewJ);
+        ownerDirKeylet.key, signerListKeylet.key, false, false, viewJ);
 
     if (result == tesSUCCESS)
         adjustOwnerCount(view(),

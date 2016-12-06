@@ -20,6 +20,7 @@
 #include <BeastConfig.h>
 
 #include <ripple/ledger/impl/ApplyStateTable.cpp>
+#include <ripple/ledger/impl/ApplyView.cpp>
 #include <ripple/ledger/impl/ApplyViewBase.cpp>
 #include <ripple/ledger/impl/ApplyViewImpl.cpp>
 #include <ripple/ledger/impl/BookDirs.cpp>

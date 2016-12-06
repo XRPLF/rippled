@@ -30,6 +30,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/types.h>
 
 namespace ripple {
@@ -563,7 +564,7 @@ void removeUnfundedOffers (ApplyView& view, std::vector<uint256> const& offers, 
         {
             // offer is unfunded
             offerDelete (view, sleOffer, viewJ);
-            if (++removed == 1000)
+            if (++removed == unfundedOfferRemoveLimit)
                 return;
         }
     }
@@ -622,7 +623,7 @@ Transactor::operator()()
     bool didApply = isTesSuccess (terResult);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp ();
 
-    if (ctx_.size() > 5200)
+    if (ctx_.size() > oversizeMetaDataCap)
         terResult = tecOVERSIZE;
 
     if ((terResult == tecOVERSIZE) ||

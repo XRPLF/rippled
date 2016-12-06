@@ -241,7 +241,7 @@ dirAdd (ApplyView& view,
 TER
 dirDelete (ApplyView& view,
     const bool           bKeepRoot,
-    const std::uint64_t& uNodeDir,      // Node item is mentioned in.
+    std::uint64_t        uNodeDir,      // Node item is mentioned in.
     uint256 const&       uRootIndex,
     uint256 const&       uLedgerIndex,  // Item being deleted
     const bool           bStable,

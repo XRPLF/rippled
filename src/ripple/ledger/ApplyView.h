@@ -195,22 +195,74 @@ public:
 
     //--------------------------------------------------------------------------
 
+   /** Add an entry to a directory
+
+        @param directory the base of the directory
+        @param key the entry to insert
+        @param strictOrder keep entries in order of insertion
+        @param describe callback to add required entries to a new page
+    */
+    /** @{ */
+    std::pair<bool, std::uint64_t>
+    dirInsert (
+        Keylet const& directory,
+        uint256 const& key,
+        bool strictOrder,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+
+    std::pair<bool, std::uint64_t>
+    dirInsert (
+        Keylet const& directory,
+        Keylet const& key,
+        bool strictOrder,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+    /** @} */
+
+    /** Removes an entry from a directory
+
+        @param directory the base of the directory
+        @param page the page number for this page
+        @param key the entry to remove
+        @param keepRoot if deleting the last entry, don't
+                        delete the directory itself.
+
+        Effects:
+            Removes one or more pages, potentially removing
+            the directory itself.
+    */
+    /** @{ */
+    bool
+    dirRemove (
+        Keylet const& directory,
+        std::uint64_t page,
+        uint256 const& key,
+        bool keepRoot);
+
+    bool
+    dirRemove (
+        Keylet const& directory,
+        std::uint64_t page,
+        Keylet const& key,
+        bool keepRoot);
+    /** @} */
+
+    //--------------------------------------------------------------------------
+
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
-    virtual void
+    virtual
+    void
     creditHook (AccountID const& from,
         AccountID const& to,
         STAmount const& amount,
-        STAmount const& preCreditBalance)
-    {
-    }
+        STAmount const& preCreditBalance);
 
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual
-    void adjustOwnerCountHook (AccountID const& account,
-        std::uint32_t cur, std::uint32_t next)
-    {};
+    void
+    adjustOwnerCountHook (AccountID const& account,
+        std::uint32_t cur, std::uint32_t next);
 
 };
 
