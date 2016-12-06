@@ -106,9 +106,9 @@ INPUT                  = \
 \
     ../src/ripple/protocol/STObject.h \
     ../src/ripple/protocol/JsonFields.h \
-    ../src/ripple/test/AbstractClient.h \
-    ../src/ripple/test/JSONRPCClient.h \
-    ../src/ripple/test/WSClient.h \
+    ../src/test/support/AbstractClient.h \
+    ../src/test/support/JSONRPCClient.h \
+    ../src/test/support/WSClient.h \
 
 
 INPUT_ENCODING         = UTF-8
