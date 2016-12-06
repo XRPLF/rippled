@@ -173,7 +173,7 @@ public:
         return amountFromQuality (m_value);
     }
 
-    /** Returns the quality rounded down to the specified number
+    /** Returns the quality rounded up to the specified number
         of decimal digits.
     */
     Quality

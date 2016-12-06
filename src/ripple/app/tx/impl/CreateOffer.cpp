@@ -747,22 +747,22 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
         if (uTickSize < Quality::maxTickSize)
         {
             auto const rate =
-                Quality{saTakerPays, saTakerGets}.round
+                Quality{saTakerGets, saTakerPays}.round
                     (uTickSize).rate();
 
             // We round the side that's not exact,
-            // just as if your offer happened to execute
+            // just as if the offer happened to execute
             // at a slightly better (for the placer) rate
             if (bSell)
             {
                 // this is a sell, round the amount we pay
-                saTakerPays = divide (
+                saTakerPays = multiply (
                     saTakerGets, rate, saTakerPays.issue());
             }
             else
             {
                 // this is a buy, round the amount we get
-                saTakerGets = multiply (
+                saTakerGets = divide (
                     saTakerPays, rate, saTakerGets.issue());
             }
             if (! saTakerGets || ! saTakerPays)

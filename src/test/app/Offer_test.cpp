@@ -1853,26 +1853,26 @@ public:
         auto it = offers.begin();
         BEAST_EXPECT (it != offers.end());
         BEAST_EXPECT (it->second.first == XTS(10) &&
-            it->second.second == XXX(30));
+            it->second.second < XXX(30) &&
+            it->second.second > XXX(29.9994));
 
         // second offer
         ++it;
         BEAST_EXPECT (it != offers.end());
         BEAST_EXPECT (it->second.first == XTS(30) &&
-            it->second.second == XXX(9.9999));
+            it->second.second == XXX(10));
 
         // third offer
         ++it;
         BEAST_EXPECT (it != offers.end());
-        BEAST_EXPECT (it->second.first == XTS(10) &&
+        BEAST_EXPECT (it->second.first == XTS(10.0002) &&
             it->second.second == XXX(30));
 
         // fourth offer
         // exact TakerPays is XTS(1/.033333)
         ++it;
         BEAST_EXPECT (it != offers.end());
-        BEAST_EXPECT (it->second.first > XTS(30.0003) &&
-            it->second.first < XTS(30.0004) &&
+        BEAST_EXPECT (it->second.first == XTS(30) &&
             it->second.second == XXX(10));
 
         BEAST_EXPECT (++it == offers.end());

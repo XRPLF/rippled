@@ -146,6 +146,7 @@ Quality::round (int digits) const
 
     auto exponent = m_value >> (64 - 8);
     auto mantissa = m_value & 0x00ffffffffffffffULL;
+    mantissa += mod[digits] - 1;
     mantissa -= (mantissa % mod[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
