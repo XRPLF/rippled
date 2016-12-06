@@ -49,8 +49,9 @@ public:
         virtual void onDeadlineTimer (DeadlineTimer&) = 0;
     };
 
-public:
     /** Create a deadline timer with the specified listener attached.
+
+        @param listener pointer to Listener that is called at the deadline.
     */
     explicit DeadlineTimer (Listener* listener);
 
@@ -75,7 +76,7 @@ public:
     */
     void setExpiration (duration delay);
 
-    /** Set the timer to go off repeatedly with the specified frequency.
+    /** Set the timer to go off repeatedly with the specified period.
         If the timer is already active, this will reset it.
         @note If the timer is already active, the old one might go off
               before this function returns.
