@@ -31,8 +31,9 @@ class DeadlineTimer
     : public beast::List <DeadlineTimer>::Node
 {
 public:
-    using clock = std::chrono::steady_clock;
-    using duration = std::chrono::milliseconds;
+    using clock = std::chrono::steady_clock;     ///< DeadlineTimer clock.
+    using duration = std::chrono::milliseconds;  ///< DeadlineTimer duration.
+    /** DeadlineTimer time_point. */
     using time_point = std::chrono::time_point<clock, duration>;
 
     /** Listener for a deadline timer.
@@ -46,17 +47,22 @@ public:
     class Listener
     {
     public:
+        /** Entry point called by DeadlineTimer when a deadline elapses. */
         virtual void onDeadlineTimer (DeadlineTimer&) = 0;
     };
 
-public:
     /** Create a deadline timer with the specified listener attached.
+
+        @param listener pointer to Listener that is called at the deadline.
     */
     explicit DeadlineTimer (Listener* listener);
 
+    /// @cond INTERNAL
     DeadlineTimer (DeadlineTimer const&) = delete;
     DeadlineTimer& operator= (DeadlineTimer const&) = delete;
+    /// @endcond
 
+    /** Destructor. */
     ~DeadlineTimer ();
 
     /** Cancel all notifications.
@@ -75,7 +81,7 @@ public:
     */
     void setExpiration (duration delay);
 
-    /** Set the timer to go off repeatedly with the specified frequency.
+    /** Set the timer to go off repeatedly with the specified period.
         If the timer is already active, this will reset it.
         @note If the timer is already active, the old one might go off
               before this function returns.
