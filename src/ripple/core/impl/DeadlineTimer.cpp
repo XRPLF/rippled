@@ -20,34 +20,62 @@
 #include <BeastConfig.h>
 #include <ripple/core/DeadlineTimer.h>
 #include <ripple/core/ThreadEntry.h>
-#include <ripple/beast/clock/chrono_util.h>
-#include <ripple/beast/core/Thread.h>
-#include <algorithm>
+#include <ripple/basics/contract.h>
 #include <cassert>
+#include <condition_variable>
 #include <mutex>
+#include <thread>
 
 namespace ripple {
 
 class DeadlineTimer::Manager
-    : protected beast::Thread
 {
 private:
     using Items = beast::List <DeadlineTimer>;
 
-public:
-    Manager () : beast::Thread ("DeadlineTimer::Manager")
+    // Use RAII to manage our recursion counter.
+    //
+    // NOTE: Creation of any lock(mutex_) should be immediately followed
+    // by constructing a named CountRecursion.  Otherwise the mutex recursion
+    // tracking will be faulty.
+    class CountRecursion
     {
-        startThread ();
+        int& counter_;
+
+    public:
+        CountRecursion (CountRecursion const&) = delete;
+        CountRecursion& operator=(CountRecursion const&) = delete;
+
+        explicit CountRecursion (int& counter)
+        : counter_ {counter}
+        {
+            ++counter_;
+        }
+
+        ~CountRecursion()
+        {
+            --counter_;
+        }
+    };
+
+    Manager ()
+    {
+        thread_ = std::thread {&Manager::run, this};
     }
 
     ~Manager ()
     {
-        signalThreadShouldExit ();
-        notify ();
-        waitForThreadToExit ();
+        {
+            std::lock_guard<std::recursive_mutex> lock {mutex_};
+            CountRecursion c {recursionCount_};
+            shouldExit_ = true;
+            wakeup_.notify_one();
+        }
+        thread_.join();
         assert (m_items.empty ());
     }
 
+public:
     static
     Manager&
     instance()
@@ -66,7 +94,8 @@ public:
         using namespace std::chrono_literals;
         assert (recurring >= 0ms);
 
-        std::lock_guard <std::recursive_mutex> lock {m_mutex};
+        std::lock_guard <std::recursive_mutex> lock {mutex_};
+        CountRecursion c {recursionCount_};
 
         if (timer.m_isActive)
         {
@@ -81,7 +110,7 @@ public:
         insertSorted (timer);
         timer.m_isActive = true;
 
-        notify ();
+        wakeup_.notify_one();
     }
 
     // Okay to call this on an inactive timer.
@@ -89,7 +118,8 @@ public:
     //
     void deactivate (DeadlineTimer& timer)
     {
-        std::lock_guard <std::recursive_mutex> lock {m_mutex};
+        std::lock_guard <std::recursive_mutex> lock {mutex_};
+        CountRecursion c {recursionCount_};
 
         if (timer.m_isActive)
         {
@@ -97,11 +127,11 @@ public:
 
             timer.m_isActive = false;
 
-            notify ();
+            wakeup_.notify_one();
         }
     }
 
-    void run () override
+    void run ()
     {
         threadEntry (
             this, &Manager::runImpl, "DeadlineTimer::Manager::run()");
@@ -110,20 +140,22 @@ public:
     void runImpl ()
     {
         using namespace std::chrono;
-        while (! threadShouldExit ())
+        bool shouldExit = true;
+
+        do
         {
-            auto const currentTime = time_point_cast<duration>(clock::now());
-
-            auto nextDeadline = currentTime;
-            DeadlineTimer* timer {nullptr};
-
             {
-                std::lock_guard <std::recursive_mutex> lock {m_mutex};
+                auto const currentTime =
+                    time_point_cast<duration>(clock::now());
+                auto nextDeadline = currentTime;
+
+                std::unique_lock <std::recursive_mutex> lock {mutex_};
+                CountRecursion c {recursionCount_};
 
                 // See if a timer expired
-                if (! m_items.empty ())
+                if (!shouldExit_ && !m_items.empty ())
                 {
-                    timer = &m_items.front ();
+                    DeadlineTimer* const timer = &m_items.front ();
 
                     // Has this timer expired?
                     if (timer->notificationTime_ <= currentTime)
@@ -148,7 +180,10 @@ public:
                             timer->m_isActive = false;
                         }
 
-                        // NOTE!  Called *inside* lock!
+                        // Given the current code structure this call must
+                        // happen inside the lock.  Once the lock is released
+                        // the timer might be canceled and it would be invalid
+                        // to call timer->m_listener.
                         timer->m_listener->onDeadlineTimer (*timer);
 
                         // re-loop
@@ -156,44 +191,75 @@ public:
                     }
                     else
                     {
+                        // Timer has not yet expired.
                         nextDeadline = timer->notificationTime_;
 
                         // Can't be zero and come into the else clause.
                         assert (nextDeadline > currentTime);
-
-                        // Don't call the listener
-                        timer = nullptr;
                     }
                 }
-            }
 
-            // Note that we have released the lock here.
+                if (!shouldExit_)
+                {
+                    // It's bad news to invoke std::condition_variable_any
+                    // wait() or wait_until() on a recursive_mutex if the
+                    // recursion depth is greater than one.  That's because
+                    // wait() and wait_until() will only release one level
+                    // of lock.
+                    //
+                    // We believe that the lock recursion depth can only be
+                    // one at this point in the code, given the current code
+                    // structure (December 2016).  Here's why:
+                    //
+                    //  1. The DeadlineTimer::Manager runs exclusively on its
+                    //     own dedicated thread. This is the only thread where
+                    //     wakeup_.wait() or wakeup_.wait_until() are called.
+                    //
+                    //  2. So in order for the recursive_mutex to be called
+                    //     recursively, it must result from the call through
+                    //     timer->m_listener->onDeadlineTimer (*timer).
+                    //
+                    //  3. Any callback into DeadlineTimer from a Listener
+                    //     may do one of two things: a call to activate() or
+                    //     a call to deactivate(). Either of these will invoke
+                    //     the lock recursively. Then they both invoke
+                    //     condition_variable_any wakeup_.notify_one() under
+                    //     the recursive lock. Then they release the recursive
+                    //     lock. Once this local lock release occurs the
+                    //     recursion depth should be back to one.
+                    //
+                    //  4. So, once the Listener callback completes then the
+                    //     recursive_lock is no longer recursively held. That
+                    //     means when we enter the wakeup_.wait() or the
+                    //     wakeup_.wait_until() the lock is never held
+                    //     recursively.
+                    //
+                    // In case that analysis is, or becomes, incorrect the
+                    // following LogicError should fire.
+                    if (recursionCount_ != 1)
+                        LogicError ("DeadlineTimer mutex recursion violation.");
 
-            if (nextDeadline > currentTime)
-            {
-                // Wait until interrupt or next timer.
-                //
-                auto const waitCountMilliSeconds = nextDeadline - currentTime;
-                static_assert(
-                    std::ratio_equal<decltype(waitCountMilliSeconds)::period,
-                    std::milli>::value,
-                    "Call to wait() requires units of milliseconds.");
+                    if (nextDeadline > currentTime)
+                        // Wake up at the next deadline or next notify.
+                        // Cast to clock::duration to work around VS-2015 bug.
+                        // Harmless on other platforms.
+                        wakeup_.wait_until (lock,
+                            time_point_cast<clock::duration>(nextDeadline));
 
-                wait (static_cast<int>(waitCountMilliSeconds.count()));
-            }
-            else if (nextDeadline == currentTime)
-            {
-                // Wait until interrupt
-                //
-                wait ();
-            }
-            else
-            {
-                // Do not wait. This can happen if the recurring timer duration
-                // is extremely short, or if a listener wastes too much time in
-                // their callback.
-            }
-        }
+                    else if (nextDeadline == currentTime)
+                        // There is no deadline.  Wake up at the next notify.
+                        wakeup_.wait (lock);
+
+                    else;
+                        // Do not wait. This can happen if the recurring
+                        // timer duration is extremely short or if a listener
+                        // burns lots of time in their callback.
+                }
+                // shouldExit is used outside the lock.
+                shouldExit = shouldExit_;
+            } // Note that we release the lock here.
+
+        } while (!shouldExit);
     }
 
     // Caller is responsible for locking
@@ -227,7 +293,12 @@ public:
     }
 
 private:
-    std::recursive_mutex m_mutex;
+    std::recursive_mutex mutex_;
+    std::condition_variable_any wakeup_;  // Works with std::recursive_mutex.
+    std::thread thread_;
+    bool shouldExit_ {false};
+    int recursionCount_ {0};
+
     Items m_items;
 };
 
