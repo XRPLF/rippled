@@ -402,6 +402,8 @@ ServerHandlerImp::processSession(
     if (is->getConsumer().disconnect())
     {
         session->close();
+        // FIX: This rpcError is not delivered since the session
+        // was just closed.
         return rpcError(rpcSLOW_DOWN);
     }
 
@@ -438,6 +440,7 @@ ServerHandlerImp::processSession(
         is->user());
     if (Role::FORBID == role)
     {
+        loadType = Resource::feeInvalidRPC;
         jr[jss::result] = rpcError (rpcFORBIDDEN);
     }
     else
@@ -550,26 +553,12 @@ ServerHandlerImp::processRequest (Port const& port,
         }
     }
 
-    // Parse id now so errors from here on will have the id
-    //
-    // VFALCO NOTE Except that "id" isn't included in the following errors.
-    //
-    Json::Value const& id = jsonRPC [jss::id];
+    /* ---------------------------------------------------------------------- */
+    // Determine role/usage so we can charge for invalid requests
     Json::Value const& method = jsonRPC [jss::method];
 
-    if (! method) {
-        HTTPReply (400, "Null method", output, rpcJ);
-        return;
-    }
-
-    if (!method.isString ()) {
-        HTTPReply (400, "method is not string", output, rpcJ);
-        return;
-    }
-
-    /* ---------------------------------------------------------------------- */
     auto role = Role::FORBID;
-    auto required = RPC::roleRequired(id.asString());
+    auto required = RPC::roleRequired(method.asString());
     if (jsonRPC.isMember(jss::params) &&
         jsonRPC[jss::params].isArray() &&
         jsonRPC[jss::params].size() > 0 &&
@@ -582,16 +571,6 @@ ServerHandlerImp::processRequest (Port const& port,
     {
         role = requestRole(required, port, Json::objectValue,
             remoteIPAddress, user);
-    }
-
-    /**
-     * Clear header-assigned values if not positively identified from a
-     * secure_gateway.
-     */
-    if (role != Role::IDENTIFIED)
-    {
-        forwardedFor.clear();
-        user.clear();
     }
 
     Resource::Consumer usage;
@@ -610,9 +589,31 @@ ServerHandlerImp::processRequest (Port const& port,
         }
     }
 
+    if (role == Role::FORBID)
+    {
+        usage.charge(Resource::feeInvalidRPC);
+        HTTPReply (403, "Forbidden", output, rpcJ);
+        return;
+    }
+
+    if (! method)
+    {
+        usage.charge(Resource::feeInvalidRPC);
+        HTTPReply (400, "Null method", output, rpcJ);
+        return;
+    }
+
+    if (! method.isString ())
+    {
+        usage.charge(Resource::feeInvalidRPC);
+        HTTPReply (400, "method is not string", output, rpcJ);
+        return;
+    }
+
     std::string strMethod = method.asString ();
     if (strMethod.empty())
     {
+        usage.charge(Resource::feeInvalidRPC);
         HTTPReply (400, "method is empty", output, rpcJ);
         return;
     }
@@ -630,6 +631,7 @@ ServerHandlerImp::processRequest (Port const& port,
 
     else if (!params.isArray () || params.size() != 1)
     {
+        usage.charge(Resource::feeInvalidRPC);
         HTTPReply (400, "params unparseable", output, rpcJ);
         return;
     }
@@ -638,20 +640,20 @@ ServerHandlerImp::processRequest (Port const& port,
         params = std::move (params[0u]);
         if (!params.isObject())
         {
+            usage.charge(Resource::feeInvalidRPC);
             HTTPReply (400, "params unparseable", output, rpcJ);
             return;
         }
     }
 
-    // VFALCO TODO Shouldn't we handle this earlier?
-    //
-    if (role == Role::FORBID)
+    /**
+     * Clear header-assigned values if not positively identified from a
+     * secure_gateway.
+     */
+    if (role != Role::IDENTIFIED)
     {
-        // VFALCO TODO Needs implementing
-        // FIXME Needs implementing
-        // XXX This needs rate limiting to prevent brute forcing password.
-        HTTPReply (403, "Forbidden", output, rpcJ);
-        return;
+        forwardedFor.clear();
+        user.clear();
     }
 
     JLOG(m_journal.debug()) << "Query: " << strMethod << params;
@@ -684,6 +686,10 @@ ServerHandlerImp::processRequest (Port const& port,
         result[jss::status]  = jss::success;
     }
 
+    usage.charge (loadType);
+    if (usage.warn())
+        result[jss::warning] = jss::load;
+
     Json::Value reply (Json::objectValue);
     reply[jss::result] = std::move (result);
     if (jsonRPC.isMember(jss::jsonrpc))
@@ -702,7 +708,6 @@ ServerHandlerImp::processRequest (Port const& port,
         response.size ()));
 
     response += '\n';
-    usage.charge (loadType);
 
     if (auto stream = m_journal.debug())
     {

@@ -27,6 +27,7 @@
 #include <beast/core/placeholders.hpp>
 #include <beast/core/streambuf.hpp>
 #include <beast/websocket.hpp>
+
 #include <condition_variable>
 
 #include <ripple/beast/unit_test.h>
@@ -97,6 +98,8 @@ class WSClientImpl : public WSClient
     beast::websocket::opcode op_;
     beast::streambuf rb_;
 
+    bool peerClosed_ = false;
+
     // synchronize destructor
     bool b0_ = false;
     std::mutex m0_;
@@ -112,7 +115,8 @@ class WSClientImpl : public WSClient
     void cleanup()
     {
         error_code ec;
-        ws_.close({}, ec);
+		if(!peerClosed_)
+        	ws_.close({}, ec);
         stream_.close(ec);
         work_ = boost::none;
         thread_.join();
@@ -255,7 +259,12 @@ private:
     on_read_msg(error_code const& ec)
     {
         if(ec)
+        {
+            if(ec == beast::websocket::error::closed)
+               peerClosed_ = true;
             return;
+        }
+
         Json::Value jv;
         Json::Reader jr;
         jr.parse(buffer_string(rb_.data()), jv);

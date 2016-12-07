@@ -33,6 +33,7 @@
 #include <test/rpc/LedgerRequestRPC_test.cpp>
 #include <test/rpc/NoRipple_test.cpp>
 #include <test/rpc/RobustTransaction_test.cpp>
+#include <test/rpc/RPCOverload_test.cpp>
 #include <test/rpc/ServerInfo_test.cpp>
 #include <test/rpc/Status_test.cpp>
 #include <test/rpc/Subscribe_test.cpp>

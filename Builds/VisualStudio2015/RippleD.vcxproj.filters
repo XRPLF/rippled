@@ -5262,6 +5262,9 @@
     <ClCompile Include="..\..\src\test\rpc\RobustTransaction_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\rpc\RPCOverload_test.cpp">
+      <Filter>test\rpc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\rpc\ServerInfo_test.cpp">
       <Filter>test\rpc</Filter>
     </ClCompile>
