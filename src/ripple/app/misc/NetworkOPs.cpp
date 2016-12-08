@@ -1391,8 +1391,6 @@ bool NetworkOPsImp::checkLastClosedLedger (
 
     if (consensus)
     {
-        clearNeedNetworkLedger ();
-
         // FIXME: If this rewinds the ledger sequence, or has the same sequence, we
         // should update the status on any stored transactions in the invalidated
         // ledgers.
