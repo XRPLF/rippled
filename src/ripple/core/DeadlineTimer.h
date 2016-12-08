@@ -20,7 +20,6 @@
 #ifndef RIPPLE_CORE_DEADLINETIMER_H_INCLUDED
 #define RIPPLE_CORE_DEADLINETIMER_H_INCLUDED
 
-#include <ripple/beast/core/RelativeTime.h>
 #include <ripple/beast/core/List.h>
 #include <chrono>
 
@@ -32,6 +31,10 @@ class DeadlineTimer
     : public beast::List <DeadlineTimer>::Node
 {
 public:
+    using clock = std::chrono::steady_clock;
+    using duration = std::chrono::milliseconds;
+    using time_point = std::chrono::time_point<clock, duration>;
+
     /** Listener for a deadline timer.
 
         The listener is called on an auxiliary thread. It is suggested
@@ -43,11 +46,12 @@ public:
     class Listener
     {
     public:
-        virtual void onDeadlineTimer (DeadlineTimer&) { }
+        virtual void onDeadlineTimer (DeadlineTimer&) = 0;
     };
 
-public:
     /** Create a deadline timer with the specified listener attached.
+
+        @param listener pointer to Listener that is called at the deadline.
     */
     explicit DeadlineTimer (Listener* listener);
 
@@ -67,30 +71,19 @@ public:
         If the timer is already active, this will reset it.
         @note If the timer is already active, the old one might go off
               before this function returns.
-        @param secondsUntilDeadline The number of seconds until the timer
-                                    will send a notification. This must be
-                                    greater than zero.
+        @param delay duration until the timer will send a notification.
+                     This must be greater than zero.
     */
-    /** @{ */
-    void setExpiration (double secondsUntilDeadline);
+    void setExpiration (duration delay);
 
-    template <class Rep, class Period>
-    void setExpiration (std::chrono::duration <Rep, Period> const& amount)
-    {
-        setExpiration (std::chrono::duration_cast <
-            std::chrono::duration <double>> (amount).count ());
-    }
-    /** @} */
-
-    /** Set the timer to go off repeatedly with the specified frequency.
+    /** Set the timer to go off repeatedly with the specified period.
         If the timer is already active, this will reset it.
         @note If the timer is already active, the old one might go off
               before this function returns.
-        @param secondsUntilDeadline The number of seconds until the timer
-                                    will send a notification. This must be
-                                    greater than zero.
+        @param interval duration until the timer will send a notification.
+                        This must be greater than zero.
     */
-    void setRecurringExpiration (double secondsUntilDeadline);
+    void setRecurringExpiration (duration interval);
 
     /** Equality comparison.
         Timers are equal if they have the same address.
@@ -111,8 +104,9 @@ private:
 
     Listener* const m_listener;
     bool m_isActive;
-    beast::RelativeTime m_notificationTime;
-    double m_secondsRecurring; // non zero if recurring
+
+    time_point notificationTime_;
+    duration recurring_; // > 0ms if recurring.
 };
 
 }
