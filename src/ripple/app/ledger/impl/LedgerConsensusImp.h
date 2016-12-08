@@ -355,6 +355,10 @@ private:
     hash_set<NodeID_t> deadNodes_;
     beast::Journal j_;
 
+    // The timestamp of the last validation we used, in network time. This is
+    // only used for our own validations.
+    Time_t lastValidationTime_;
+
     bool firstRound_;
 };
 

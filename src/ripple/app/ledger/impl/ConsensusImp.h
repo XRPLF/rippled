@@ -74,19 +74,10 @@ public:
     void
     setProposing (bool p, bool v);
 
-    STValidation::ref
-    getLastValidation () const;
-
-    void
-    setLastValidation (STValidation::ref v);
-
     void
     newLCL (
         int proposers,
         std::chrono::milliseconds convergeTime);
-
-    NetClock::time_point
-    validationTimestamp (NetClock::time_point vt);
 
     std::vector <RCLCxPos>
     getStoredProposals (uint256 const& previousLedger);
@@ -98,18 +89,11 @@ private:
     bool proposing_;
     bool validating_;
 
-    // A pointer to the last validation that we issued
-    STValidation::pointer lastValidation_;
-
     // The number of proposers who participated in the last ledger close
     int lastCloseProposers_;
 
     // How long the last ledger close took, in milliseconds
     std::chrono::milliseconds lastCloseConvergeTook_;
-
-    // The timestamp of the last validation we used, in network time. This is
-    // only used for our own validations.
-    NetClock::time_point lastValidationTimestamp_;
 
     Consensus::Proposals storedProposals_;
 

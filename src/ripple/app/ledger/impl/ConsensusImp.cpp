@@ -34,7 +34,6 @@ ConsensusImp::ConsensusImp (
     , validating_ (false)
     , lastCloseProposers_ (0)
     , lastCloseConvergeTook_ (LEDGER_IDLE_INTERVAL)
-    , lastValidationTimestamp_ (0s)
 {
 }
 
@@ -95,18 +94,6 @@ ConsensusImp::setProposing (bool p, bool v)
     validating_ = v;
 }
 
-STValidation::ref
-ConsensusImp::getLastValidation () const
-{
-    return lastValidation_;
-}
-
-void
-ConsensusImp::setLastValidation (STValidation::ref v)
-{
-    lastValidation_ = v;
-}
-
 void
 ConsensusImp::newLCL (
     int proposers,
@@ -114,16 +101,6 @@ ConsensusImp::newLCL (
 {
     lastCloseProposers_ = proposers;
     lastCloseConvergeTook_ = convergeTime;
-}
-
-NetClock::time_point
-ConsensusImp::validationTimestamp (NetClock::time_point vt)
-{
-    if (vt <= lastValidationTimestamp_)
-        vt = lastValidationTimestamp_ + 1s;
-
-    lastValidationTimestamp_ = vt;
-    return vt;
 }
 
 void

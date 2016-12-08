@@ -82,6 +82,7 @@ LedgerConsensusImp<Traits>::LedgerConsensusImp (
     , previousProposers_ (0)
     , previousRoundTime_ (0)
     , j_ (app.journal ("LedgerConsensus"))
+    , lastValidationTime_(0s)
     , firstRound_(true)
 {
     JLOG (j_.debug()) << "Creating consensus object";
@@ -918,9 +919,13 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
     if (validating_ && ! consensusFail_)
     {
         // Build validation
+        auto validationTime = now_;
+        if (validationTime <= lastValidationTime_)
+            validationTime = lastValidationTime_ + 1s;
+        lastValidationTime_ = validationTime;
+
         auto v = std::make_shared<STValidation> (newLCLHash,
-            consensus_.validationTimestamp(now_),
-            valPublic_, proposing_);
+            validationTime, valPublic_, proposing_);
         v->setFieldU32 (sfLedgerSequence, sharedLCL->info().seq);
         addLoad(v);  // Our network load
 
@@ -937,7 +942,6 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
         // suppress it if we receive it - FIXME: wrong suppression
         app_.getHashRouter ().addSuppression (signingHash);
         app_.getValidations ().addValidation (v, "local");
-        consensus_.setLastValidation (v);
         Blob validation = v->getSigned ();
         protocol::TMValidation val;
         val.set_validation (&validation[0], validation.size ());
