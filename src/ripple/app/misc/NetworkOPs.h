@@ -175,9 +175,6 @@ public:
     virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
 
-    // FIXME(NIKB): Remove the need for this function
-    virtual void setLastCloseTime (NetClock::time_point t) = 0;
-
     virtual Json::Value getConsensusInfo () = 0;
     virtual Json::Value getServerInfo (bool human, bool admin) = 0;
     virtual void clearLedgerFetch () = 0;

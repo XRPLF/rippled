@@ -67,9 +67,6 @@ public:
         std::shared_ptr<Ledger const> const& previousLedger) override;
 
     void
-    setLastCloseTime (NetClock::time_point t) override;
-
-    void
     storeProposal (
         LedgerProposal::ref proposal,
         NodeID const& nodeID) override;
@@ -90,9 +87,6 @@ public:
 
     NetClock::time_point
     validationTimestamp (NetClock::time_point vt);
-
-    NetClock::time_point
-    getLastCloseTime () const;
 
     std::vector <RCLCxPos>
     getStoredProposals (uint256 const& previousLedger);
@@ -116,9 +110,6 @@ private:
     // The timestamp of the last validation we used, in network time. This is
     // only used for our own validations.
     NetClock::time_point lastValidationTimestamp_;
-
-    // The last close time
-    NetClock::time_point lastCloseTime_;
 
     Consensus::Proposals storedProposals_;
 

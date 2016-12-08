@@ -35,7 +35,6 @@ ConsensusImp::ConsensusImp (
     , lastCloseProposers_ (0)
     , lastCloseConvergeTook_ (LEDGER_IDLE_INTERVAL)
     , lastValidationTimestamp_ (0s)
-    , lastCloseTime_ (0s)
 {
 }
 
@@ -125,18 +124,6 @@ ConsensusImp::validationTimestamp (NetClock::time_point vt)
 
     lastValidationTimestamp_ = vt;
     return vt;
-}
-
-NetClock::time_point
-ConsensusImp::getLastCloseTime () const
-{
-    return lastCloseTime_;
-}
-
-void
-ConsensusImp::setLastCloseTime (NetClock::time_point t)
-{
-    lastCloseTime_ = t;
 }
 
 void

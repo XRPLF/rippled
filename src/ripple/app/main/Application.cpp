@@ -1266,7 +1266,6 @@ ApplicationImp::startGenesisLedger()
         *genesis, timeKeeper().closeTime());
     next->updateSkipList ();
     next->setImmutable (*config_);
-    m_networkOPs->setLastCloseTime (next->info().closeTime);
     openLedger_.emplace(next, cachedSLEs_,
         logs_->journal("OpenLedger"));
     m_ledgerMaster->storeLedger(next);
@@ -1576,7 +1575,6 @@ bool ApplicationImp::loadOldLedger (
         m_ledgerMaster->switchLCL (loadLedger);
         loadLedger->setValidated();
         m_ledgerMaster->setFullLedger(loadLedger, true, false);
-        m_networkOPs->setLastCloseTime (loadLedger->info().closeTime);
         openLedger_.emplace(loadLedger, cachedSLEs_,
             logs_->journal("OpenLedger"));
 

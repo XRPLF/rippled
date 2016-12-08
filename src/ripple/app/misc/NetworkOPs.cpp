@@ -350,10 +350,7 @@ public:
     }
     void setAmendmentBlocked () override;
     void consensusViewChange () override;
-    void setLastCloseTime (NetClock::time_point t) override
-    {
-        mConsensus->setLastCloseTime(t);
-    }
+
     Json::Value getConsensusInfo () override;
     Json::Value getServerInfo (bool human, bool admin) override;
     void clearLedgerFetch () override;

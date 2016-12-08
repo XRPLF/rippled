@@ -81,11 +81,6 @@ public:
         LedgerHash const &prevLCLHash,
         std::shared_ptr<Ledger const> const& prevLedger) = 0;
 
-    /** Specified the network time when the last ledger closed */
-    virtual
-    void
-    setLastCloseTime (NetClock::time_point t) = 0;
-
     virtual
     void
     storeProposal (

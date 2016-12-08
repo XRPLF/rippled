@@ -82,6 +82,7 @@ LedgerConsensusImp<Traits>::LedgerConsensusImp (
     , previousProposers_ (0)
     , previousRoundTime_ (0)
     , j_ (app.journal ("LedgerConsensus"))
+    , firstRound_(true)
 {
     JLOG (j_.debug()) << "Creating consensus object";
 }
@@ -547,14 +548,14 @@ void LedgerConsensusImp<Traits>::statePreClose ()
             && (previousLedger_->info().closeTime !=
                 (previousLedger_->info().parentCloseTime + 1s));
 
-        auto closeTime = previousCloseCorrect
+        auto lastCloseTime = previousCloseCorrect
             ? previousLedger_->info().closeTime // use consensus timing
-            : consensus_.getLastCloseTime(); // use the time we saw
+            : closeTime_; // use the time we saw internally
 
-        if (now_ >= closeTime)
-            sinceClose = now_ - closeTime;
+        if (now_ >= lastCloseTime )
+            sinceClose = now_ - lastCloseTime ;
         else
-            sinceClose = -milliseconds{closeTime - now_};
+            sinceClose = -milliseconds{lastCloseTime  - now_};
     }
 
     auto const idleInterval = std::max<seconds>(LEDGER_IDLE_INTERVAL,
@@ -1595,7 +1596,6 @@ void LedgerConsensusImp<Traits>::closeLedger ()
     state_ = State::establish;
     consensusStartTime_ = std::chrono::steady_clock::now ();
     closeTime_ = now_;
-    consensus_.setLastCloseTime(closeTime_);
     statusChange (protocol::neCLOSING_LEDGER, *previousLedger_);
     ledgerMaster_.applyHeldTransactions ();
     takeInitialPosition ();
@@ -1649,9 +1649,15 @@ void LedgerConsensusImp<Traits>::startRound (
         return;
     }
 
+    if (firstRound_)
+    {
+        // take our initial view of closeTime_ from the seed ledger
+        closeTime_ = prevLedger->info().closeTime;
+        firstRound_ = false;
+    }
+
     state_ = State::open;
     now_ = now;
-    closeTime_ = now;
     prevLedgerHash_ = prevLCLHash;
     previousLedger_ = prevLedger;
     ourPosition_.reset();

@@ -308,7 +308,7 @@ private:
     State state_;
     Time_t now_;
 
-    // The wall time this ledger closed
+    // The wall time we last closed a ledger
     Time_t closeTime_;
 
     LgrID_t prevLedgerHash_;
@@ -354,6 +354,8 @@ private:
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
     beast::Journal j_;
+
+    bool firstRound_;
 };
 
 //------------------------------------------------------------------------------
