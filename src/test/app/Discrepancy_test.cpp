@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-extern char const* ledgerXRPDiscrepancy;
+extern std::array<char const*,20> ledgerXRPDiscrepancyData;
 
 class Discrepancy_test : public beast::unit_test::suite
 {
@@ -47,17 +47,16 @@ class Discrepancy_test : public beast::unit_test::suite
         // create a temporary path to write DB files to and
         // our starting ledger data
         auto path  = boost::filesystem::temp_directory_path(ec);
-        log << "OUR TEMP: " << path << std::endl;
         BEAST_EXPECTS(!ec, ec.message());
         path /= boost::filesystem::unique_path("%%%%-%%%%-%%%%-%%%%", ec);
-        log << "OUR TEMP 2: " << path << std::endl;
         BEAST_EXPECTS(!ec, ec.message());
         boost::filesystem::create_directories(path, ec);
         BEAST_EXPECTS(!ec, ec.message());
 
         auto ledgerFile = path / "ledgerdata.json";
         std::ofstream o (ledgerFile.string(), std::ios::out | std::ios::trunc);
-        o << ledgerXRPDiscrepancy;
+        for(auto p : ledgerXRPDiscrepancyData)
+            o << p;
         o.close();
 
         {
@@ -151,7 +150,9 @@ public:
 BEAST_DEFINE_TESTSUITE (Discrepancy, app, ripple);
 
 // STARTUP ledger data used to configure testXRPDiscrepancy
-char const* ledgerXRPDiscrepancy = R"LEDGER(
+// because of limitations on max char* data size, this is
+// split into chunks smaller than 16k bytes
+char const* ld_01 = R"LDGER01(
 {
     "accepted": true,
     "accountState": [
@@ -353,6 +354,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
                 "value": "185251.2635928249"
             },
             "Flags": 65536,
+)LDGER01";
+
+char const* ld_02 = R"LDGER02(
             "HighLimit": {
                 "currency": "JPY",
                 "issuer": "rMAz5ZnK73nyNUL4foAvaxdreczCkG3vA6",
@@ -554,6 +558,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
         {
             "Account": "rhTUpdUStwn7wPnzNMjHEfFgQacPC5eop1",
             "Balance": "24162624472",
+)LDGER02";
+
+char const* ld_03 = R"LDGER03(
             "Flags": 0,
             "LedgerEntryType": "AccountRoot",
             "OwnerCount": 3,
@@ -754,6 +761,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "Flags": 1114112,
             "HighLimit": {
                 "currency": "JPY",
+)LDGER03";
+
+char const* ld_04 = R"LDGER04(
                 "issuer": "rMAz5ZnK73nyNUL4foAvaxdreczCkG3vA6",
                 "value": "0"
             },
@@ -954,6 +964,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
         },
         {
             "Account": "rpW8wvWYx1SZbYKJVXt9A7rtayPgULa11B",
+)LDGER04";
+
+char const* ld_05 = R"LDGER05(
             "Balance": "99999976",
             "Flags": 0,
             "LedgerEntryType": "AccountRoot",
@@ -1154,6 +1167,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             },
             "index": "50C33C456676E0AF7B69397CFEE6612B59F9D294B2C7995023C2B8B748226F4A"
         },
+)LDGER05";
+
+char const* ld_06 = R"LDGER06(
         {
             "Account": "ra64fg3awuMmrXcVjdDbYzTLFGcWKW1FPc",
             "Balance": "27307741032",
@@ -1354,6 +1370,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             },
             "index": "6B79A8D89C4E369336D21ECA23A724A5B1E30DBE2344F66141444165FBE1270F"
         },
+)LDGER06";
+
+char const* ld_07 = R"LDGER07(
         {
             "Account": "rho8mvSESSmVPkF4UiyF8pTJBGMcVx2Uv1",
             "BookDirectory": "BCF012C63E83DAF510C7B6B27FE1045CF913B0CF94049AB04F0AA87BEE538000",
@@ -1554,6 +1573,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "PreviousTxnLgrSeq": 5909024,
             "Sequence": 507,
             "TakerGets": "10000000000",
+)LDGER07";
+
+char const* ld_08 = R"LDGER08(
             "TakerPays": {
                 "currency": "JPY",
                 "issuer": "rMAz5ZnK73nyNUL4foAvaxdreczCkG3vA6",
@@ -1754,6 +1776,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "PreviousTxnID": "1D1C9CA6C7432D3F6EC520DE130CC1F156C3E732BF11173B6EBD9FC0865ED485",
             "PreviousTxnLgrSeq": 5909028,
             "Sequence": 508,
+)LDGER08";
+
+char const* ld_09 = R"LDGER09(
             "TakerGets": "10000000000",
             "TakerPays": {
                 "currency": "JPY",
@@ -1954,6 +1979,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "OwnerNode": "0000000000000000",
             "PreviousTxnID": "6CBB344CFBCC0EA1F3DE27CA9F955D3065EA5A930093888E41060449BD80A74E",
             "PreviousTxnLgrSeq": 6032581,
+)LDGER09";
+
+char const* ld_10 = R"LDGER10(
             "Sequence": 578,
             "TakerGets": "2000000000",
             "TakerPays": {
@@ -2154,6 +2182,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "index": "A58F531945492C5270C9D364632996C152E12516EC235EE7DF1133876E23BBA0"
         },
         {
+)LDGER10";
+
+char const* ld_11 = R"LDGER11(
             "Flags": 0,
             "Indexes": [
                 "7280EDED4E1FA80C6E5F86D07A70F0E704B1B637F994DC3152FCC7248F5DAB6B",
@@ -2354,6 +2385,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "HighLimit": {
                 "currency": "CNY",
                 "issuer": "rEcnyLQD7LXPqTTRG3cXgzcK1C3TDkuUWb",
+)LDGER11";
+
+char const* ld_12 = R"LDGER12(
                 "value": "3012"
             },
             "HighNode": "0000000000000000",
@@ -2554,6 +2588,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "LedgerEntryType": "DirectoryNode",
             "RootIndex": "BCF012C63E83DAF510C7B6B27FE1045CF913B0CF94049AB04E1AEA1C83351F08",
             "TakerGetsCurrency": "0000000000000000000000000000000000000000",
+)LDGER12";
+
+char const* ld_13 = R"LDGER13(
             "TakerGetsIssuer": "0000000000000000000000000000000000000000",
             "TakerPaysCurrency": "0000000000000000000000004A50590000000000",
             "TakerPaysIssuer": "E5C92828261DBAAC933B6309C6F5C72AF020AFD4",
@@ -2754,6 +2791,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "TakerGetsCurrency": "0000000000000000000000000000000000000000",
             "TakerGetsIssuer": "0000000000000000000000000000000000000000",
             "TakerPaysCurrency": "0000000000000000000000004A50590000000000",
+)LDGER13";
+
+char const* ld_14 = R"LDGER14(
             "TakerPaysIssuer": "E5C92828261DBAAC933B6309C6F5C72AF020AFD4",
             "index": "BCF012C63E83DAF510C7B6B27FE1045CF913B0CF94049AB04F04CBD15E726000"
         },
@@ -2954,6 +2994,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "TakerPaysCurrency": "0000000000000000000000004A50590000000000",
             "TakerPaysIssuer": "E5C92828261DBAAC933B6309C6F5C72AF020AFD4",
             "index": "BCF012C63E83DAF510C7B6B27FE1045CF913B0CF94049AB04F11B1489AFB4000"
+)LDGER14";
+
+char const* ld_15 = R"LDGER15(
         },
         {
             "ExchangeRate": "4F138A388A43C000",
@@ -3154,6 +3197,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "PreviousTxnID": "B05CCFEA9993A64E63BEC6E091A4F944219675CC83680B4E0F62A80BA819D4F1",
             "PreviousTxnLgrSeq": 6220958,
             "Sequence": 540,
+)LDGER15";
+
+char const* ld_16 = R"LDGER16(
             "index": "BD3C577B91B0A927B7E6509ECC4F00B828C6690071D7E505DB6E67BE2508A4B1"
         },
         {
@@ -3354,6 +3400,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
         {
             "Account": "rpRzczN3gPxXMRzqMR98twVsH63xATHUb7",
             "Balance": "1741748232",
+)LDGER16";
+
+char const* ld_17 = R"LDGER17(
             "Flags": 0,
             "LedgerEntryType": "AccountRoot",
             "OwnerCount": 24,
@@ -3554,6 +3603,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
             "LedgerEntryType": "Offer",
             "OwnerNode": "0000000000000000",
             "PreviousTxnID": "472F2591748F8BFBD8F2185A2875AB67C07F21EC5A7114A87D3F5FADDE61B3C8",
+)LDGER17";
+
+char const* ld_18 = R"LDGER18(
             "PreviousTxnLgrSeq": 6060770,
             "Sequence": 339,
             "TakerGets": "12000000000",
@@ -3754,6 +3806,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
         },
         {
             "Account": "rUQwWJBVPBbEQ6CoaoJKeGH8HDWDwysERb",
+)LDGER18";
+
+char const* ld_19 = R"LDGER19(
             "Balance": "188214736897",
             "Flags": 0,
             "LedgerEntryType": "AccountRoot",
@@ -3954,6 +4009,9 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
                 "issuer": "rMAz5ZnK73nyNUL4foAvaxdreczCkG3vA6",
                 "value": "5000"
             },
+)LDGER19";
+
+char const* ld_20 = R"LDGER20(
             "index": "F984915B0302CE07E061BC46C82574C37E49B6BF138C5AF092F779F0EE75C3FF"
         },
         {
@@ -4019,6 +4077,13 @@ char const* ledgerXRPDiscrepancy = R"LEDGER(
     "transactions": []
 }
 
-)LEDGER";
+)LDGER20";
+
+std::array<char const*,20> ledgerXRPDiscrepancyData ={{
+    ld_01, ld_02, ld_03, ld_04, ld_05,
+    ld_06, ld_07, ld_08, ld_09, ld_10,
+    ld_11, ld_12, ld_13, ld_14, ld_15,
+    ld_16, ld_17, ld_18, ld_19, ld_20
+}};
 
 }  // ripple
