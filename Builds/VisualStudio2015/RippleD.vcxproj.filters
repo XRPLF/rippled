@@ -5151,6 +5151,9 @@
     <ClCompile Include="..\..\src\test\app\Flow_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\app\Freeze_test.cpp">
+      <Filter>test\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\app\HashRouter_test.cpp">
       <Filter>test\app</Filter>
     </ClCompile>
