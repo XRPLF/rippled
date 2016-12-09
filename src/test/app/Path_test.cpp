@@ -178,13 +178,6 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
     return jv;
 }
 
-// test helper
-bool checkArraySize(Json::Value const& val, unsigned int size)
-{
-    return val.isArray() &&
-           val.size() == size;
-}
-
 // Issue path element
 auto IPE(Issue const& iss)
 {
@@ -947,7 +940,7 @@ public:
         STAmount sa, da;
 
         {
-			auto const& send_amt = XRP(10);
+            auto const& send_amt = XRP(10);
             std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
                 boost::none, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
