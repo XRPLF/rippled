@@ -71,6 +71,13 @@ stpath_append_one (STPath& st,
 
 void
 stpath_append_one (STPath& st,
+    STPathElement const& pe)
+{
+    st.push_back(pe);
+}
+
+void
+stpath_append_one (STPath& st,
     jtx::BookSpec const& book)
 {
     st.push_back(STPathElement({
@@ -178,123 +185,13 @@ bool checkArraySize(Json::Value const& val, unsigned int size)
            val.size() == size;
 }
 
-using verify_paths =
-    std::vector<std::vector<std::pair<ripple::Issue, jtx::Account>>>;
-
-// compares expected paths (pairs of Issue/Account) with
-// json output from path_find
-bool
-check_paths(
-    Json::Value const& jvr,
-    std::string & err,
-    jtx::PrettyAmount const& dst_amt,
-    boost::optional<jtx::PrettyAmount> const& src_amount = boost::none,
-    boost::optional<verify_paths> const& paths = boost::none)
+// Issue path element
+auto IPE(Issue const& iss)
 {
-    if(jvr[jss::destination_amount] != dst_amt.value().getJson(0))
-    {
-        err = "destination amount mismatch";
-        return false;
-    }
-
-    if(paths)
-    {
-        if(! checkArraySize(jvr[jss::alternatives], 1))
-        {
-            err = "alternatives not singular";
-            return false;
-        }
-
-        auto const& alt = jvr[jss::alternatives][0u];
-        if(src_amount &&
-           alt[jss::source_amount] != src_amount.value().value().getJson(0))
-        {
-            err = "source amount mismatch";
-            return false;
-        }
-
-        if(paths.value().empty())
-        {
-            if(! checkArraySize(alt[jss::paths_computed], 0))
-            {
-                err = "paths_computed not empty";
-                return false;
-            }
-        }
-        else
-        {
-            if(! checkArraySize(alt[jss::paths_computed],
-                    paths.value().size()))
-            {
-                err = "paths_computed size incorrect";
-                return false;
-            }
-
-            for (unsigned m = 0; m < paths.value().size(); ++m)
-            {
-                auto const& vp = paths.value()[m];
-                auto const& pcv = alt[jss::paths_computed][m];
-
-                if(! checkArraySize(pcv, vp.size()))
-                {
-                    err =
-                        std::string("paths_computed unexpected size at index ")
-                        + std::to_string(m);
-                    return false;
-                }
-
-                for (unsigned n = 0; n < vp.size(); ++n)
-                {
-                    auto const& item = vp[n];
-                    if(item.second == jtx::Account{})
-                    {
-                        if(pcv[n][jss::currency] !=
-                           to_string(item.first.currency))
-                        {
-                            err = "currency mismatch for path item "
-                                + std::to_string(m)
-                                + "-"
-                                + std::to_string(n);
-                            return false;
-                        }
-
-                        if(item.first != xrpIssue() &&
-                           pcv[n][jss::issuer] !=
-                               toBase58(item.first.account))
-                        {
-                             err = "issuer mismatch for path item "
-                                + std::to_string(m)
-                                + "-"
-                                + std::to_string(n);
-                             return false;
-                        }
-                    }
-                    else
-                    {
-                        if(pcv[n][jss::account] != item.second.human())
-                        {
-                             err = "account mismatch for path item "
-                                + std::to_string(m)
-                                + "-"
-                                + std::to_string(n);
-                             return false;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        if(! checkArraySize(jvr[jss::alternatives], 0))
-        {
-            err = "alternatives not empty";
-            return false;
-        }
-    }
-
-    return true;
-}
+    return STPathElement (
+        STPathElement::typeCurrency | STPathElement::typeIssuer,
+        xrpAccount (), iss.currency, iss.account);
+};
 
 //------------------------------------------------------------------------------
 
@@ -1011,7 +908,7 @@ public:
 
     void path_find_01()
     {
-        testcase("Path Tests #1 (XRP -> XRP) and #2 (XRP -> IOU)");
+        testcase("Path Find: XRP -> XRP and XRP -> IOU");
         using namespace jtx;
         Env env(*this);
         Account A1 {"A1"};
@@ -1046,77 +943,58 @@ public:
         env(offer(M1, G1["XYZ"](1000), G2["XYZ"](1000)));
         env(offer(M1, XRP(10000), G3["ABC"](1000)));
 
-        std::string fail_message;
+        STPathSet st;
+        STAmount sa, da;
+
         {
 			auto const& send_amt = XRP(10);
-            auto jrr = find_paths_request(env, A1, A2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
                 boost::none, xrpCurrency());
-            BEAST_EXPECTS(check_paths(jrr, fail_message, send_amt),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
         }
 
         {
             // no path should exist for this since dest account
             // does not exist.
             auto const& send_amt = XRP(200);
-            auto jrr = find_paths_request(env, A1, Account{"A0"}, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, Account{"A0"}, send_amt,
                 boost::none, xrpCurrency());
-            BEAST_EXPECTS(check_paths(jrr, fail_message, send_amt),
-                fail_message);
-
-            BEAST_EXPECT(jrr[jss::destination_account] == Account{"A0"}.human());
-            BEAST_EXPECT(jrr[jss::source_account] == A1.human());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(st.empty());
         }
 
         {
             auto const& send_amt = G3["ABC"](10);
-            auto jrr = find_paths_request(env, A2, G3, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A2, G3, send_amt,
                 boost::none, xrpCurrency());
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, XRP(100),
-                    {{
-                        {{
-                            std::make_pair(G3["ABC"], Account{})
-                        }}
-                     }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRP(100)));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]))));
         }
 
         {
             auto const& send_amt = A2["ABC"](1);
-            auto jrr = find_paths_request(env, A1, A2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
                 boost::none, xrpCurrency());
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, XRP(10),
-                    {{
-                        {{
-                            std::make_pair(G3["ABC"], Account{}),
-                            std::make_pair(noIssue(), G3)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRP(10)));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3)));
         }
 
         {
             auto const& send_amt = A3["ABC"](1);
-            auto jrr = find_paths_request(env, A1, A3, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, A3, send_amt,
                 boost::none, xrpCurrency());
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, XRP(10),
-                    {{
-                        {{
-                            std::make_pair(G3["ABC"], Account{}),
-                            std::make_pair(noIssue(), G3),
-                            std::make_pair(noIssue(), A2)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, XRP(10)));
+            BEAST_EXPECT(same(st, stpath(IPE(G3["ABC"]), G3, A2)));
         }
     }
 
     void path_find_02()
     {
-        testcase("Path Tests #3 (non-XRP to XRP)");
+        testcase("Path Find: non-XRP -> XRP");
         using namespace jtx;
         Env env(*this);
         Account A1 {"A1"};
@@ -1139,24 +1017,20 @@ public:
 
         env(offer(M1, G3["ABC"](1000), XRP(10000)));
 
-        std::string fail_message;
+        STPathSet st;
+        STAmount sa, da;
+
         auto const& send_amt = XRP(10);
-        auto jrr = find_paths_request(env, A1, A2, send_amt,
+        std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
             boost::none, A2["ABC"].currency);
-        BEAST_EXPECTS(
-            check_paths(jrr, fail_message, send_amt, A1["ABC"](1),
-                {{
-                    {{
-                        std::make_pair(noIssue(), G3),
-                        std::make_pair(xrpIssue(), Account{})
-                    }}
-                }}),
-            fail_message);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, A1["ABC"](1)));
+        BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
     }
 
     void path_find_03()
     {
-        testcase("CNY");
+        testcase("Path Find: CNY");
         using namespace jtx;
         Env env(*this);
         Account A1 {"A1"};
@@ -1214,40 +1088,25 @@ public:
         env(offer(A2, MONEY_MAKER_1["CNY"](43.2), XRP(900)));
         env(offer(A3, MONEY_MAKER_1["CNY"](2240), XRP(50000)));
 
-        std::string fail_message;
+        STPathSet st;
+        STAmount sa, da;
+
         auto const& send_amt = GATEWAY_DST["CNY"](10.1);
-        auto jrr = find_paths_request(env, SRC, GATEWAY_DST, send_amt,
+        std::tie(st, sa, da) = find_paths(env, SRC, GATEWAY_DST, send_amt,
             boost::none, xrpCurrency());
-        BEAST_EXPECTS(
-            check_paths(jrr, fail_message, send_amt, XRP(288.571429),
-                {{
-                    {{
-                        std::make_pair(MONEY_MAKER_1["CNY"], Account{}),
-                        std::make_pair(noIssue(), MONEY_MAKER_1),
-                        std::make_pair(noIssue(), A3)
-                    }},
-                    {{
-                        std::make_pair(MONEY_MAKER_1["CNY"], Account{}),
-                        std::make_pair(noIssue(), MONEY_MAKER_1),
-                        std::make_pair(noIssue(), MONEY_MAKER_2)
-                    }},
-                    {{
-                        std::make_pair(MONEY_MAKER_1["CNY"], Account{}),
-                        std::make_pair(noIssue(), MONEY_MAKER_1),
-                        std::make_pair(noIssue(), A2)
-                    }},
-                    {{
-                        std::make_pair(MONEY_MAKER_1["CNY"], Account{}),
-                        std::make_pair(noIssue(), MONEY_MAKER_1),
-                        std::make_pair(noIssue(), A1)
-                    }}
-                }}),
-            fail_message);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, XRP(288.571429)));
+        BEAST_EXPECT(same(st,
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A3),
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, MONEY_MAKER_2),
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A2),
+            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A1)
+        ));
     }
 
     void path_find_04()
     {
-        testcase("Bitstamp and SnapSwap accounts, liquidity with no offers");
+        testcase("Path Find: Bitstamp and SnapSwap, liquidity with no offers");
         using namespace jtx;
         Env env(*this);
         Account A1 {"A1"};
@@ -1275,84 +1134,59 @@ public:
         env(pay(G2SW, M1, G2SW["HKD"](5000)));
         env.close();
 
-        std::string fail_message;
+        STPathSet st;
+        STAmount sa, da;
+
         {
             auto const& send_amt = A2["HKD"](10);
-            auto jrr = find_paths_request(env, A1, A2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
                 boost::none, A2["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A1["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), G1BS),
-                            std::make_pair(noIssue(), M1),
-                            std::make_pair(noIssue(), G2SW)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G1BS, M1, G2SW)));
         }
 
         {
             auto const& send_amt = A1["HKD"](10);
-            auto jrr = find_paths_request(env, A2, A1, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A2, A1, send_amt,
                 boost::none, A1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A2["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), G2SW),
-                            std::make_pair(noIssue(), M1),
-                            std::make_pair(noIssue(), G1BS)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A2["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G2SW, M1, G1BS)));
         }
 
         {
             auto const& send_amt = A2["HKD"](10);
-            auto jrr = find_paths_request(env, G1BS, A2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, G1BS, A2, send_amt,
                 boost::none, A1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, G1BS["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), M1),
-                            std::make_pair(noIssue(), G2SW)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G1BS["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(M1, G2SW)));
         }
 
         {
             auto const& send_amt = M1["HKD"](10);
-            auto jrr = find_paths_request(env, M1, G1BS, send_amt,
+            std::tie(st, sa, da) = find_paths(env, M1, G1BS, send_amt,
                 boost::none, A1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, M1["HKD"](10),
-                    {{ }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, M1["HKD"](10)));
+            BEAST_EXPECT(st.empty());
         }
 
         {
             auto const& send_amt = A1["HKD"](10);
-            auto jrr = find_paths_request(env, G2SW, A1, send_amt,
+            std::tie(st, sa, da) = find_paths(env, G2SW, A1, send_amt,
                 boost::none, A1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, G2SW["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), M1),
-                            std::make_pair(noIssue(), G1BS)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G2SW["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(M1, G1BS)));
         }
 
     }
 
     void path_find_05()
     {
-        testcase("Path Tests #4 (non-XRP to non-XRP, same currency)");
+        testcase("Path Find: non-XRP -> non-XRP, same currency");
         using namespace jtx;
         Env env(*this);
         Account A1 {"A1"};
@@ -1393,141 +1227,94 @@ public:
         env(offer(M2, XRP(10000), G2["HKD"](1000)));
         env(offer(M2, G1["HKD"](1000), XRP(10000)));
 
-        std::string fail_message;
+        STPathSet st;
+        STAmount sa, da;
+
         {
             //A) Borrow or repay --
             //  Source -> Destination (repay source issuer)
             auto const& send_amt = G1["HKD"](10);
-            auto jrr = find_paths_request(env, A1, G1, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, G1, send_amt,
                 boost::none, G1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A1["HKD"](10),
-                    {{ }}),
-                fail_message);
+            BEAST_EXPECT(st.empty());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
         }
 
         {
             //A2) Borrow or repay --
             //  Source -> Destination (repay destination issuer)
             auto const& send_amt = A1["HKD"](10);
-            auto jrr = find_paths_request(env, A1, G1, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, G1, send_amt,
                 boost::none, G1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A1["HKD"](10),
-                    {{ }}),
-                fail_message);
+            BEAST_EXPECT(st.empty());
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
         }
 
         {
             //B) Common gateway --
             //  Source -> AC -> Destination
             auto const& send_amt = A3["HKD"](10);
-            auto jrr = find_paths_request(env, A1, A3, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, A3, send_amt,
                 boost::none, G1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A1["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), G1)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st, stpath(G1)));
         }
 
         {
             //C) Gateway to gateway --
             //  Source -> OB -> Destination
             auto const& send_amt = G2["HKD"](10);
-            auto jrr = find_paths_request(env, G1, G2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, G1, G2, send_amt,
                 boost::none, G1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, G1["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(G2["HKD"], Account{})
-                        }},
-                        {{
-                            std::make_pair(noIssue(), M1)
-                        }},
-                        {{
-                            std::make_pair(noIssue(), M2)
-                        }},
-                        {{
-                            std::make_pair(xrpIssue(), Account{}),
-                            std::make_pair(G2["HKD"], Account{}),
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+            BEAST_EXPECT(same(st,
+                stpath(IPE(G2["HKD"])),
+                stpath(M1),
+                stpath(M2),
+                stpath(IPE(xrpIssue()), IPE(G2["HKD"]))
+            ));
         }
 
         {
             //D) User to unlinked gateway via order book --
             //  Source -> AC -> OB -> Destination
             auto const& send_amt = G2["HKD"](10);
-            auto jrr = find_paths_request(env, A1, G2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, G2, send_amt,
                 boost::none, G1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A1["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(noIssue(), M1)
-                        }},
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(noIssue(), M2)
-                        }},
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(G2["HKD"], Account{})
-                        }},
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(xrpIssue(), Account{}),
-                            std::make_pair(G2["HKD"], Account{})
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st,
+                stpath(G1, M1),
+                stpath(G1, M2),
+                stpath(G1, IPE(G2["HKD"])),
+                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]))
+            ));
         }
 
         {
             //I4) XRP bridge" --
             //  Source -> AC -> OB to XRP -> OB from XRP -> AC -> Destination
             auto const& send_amt = A2["HKD"](10);
-            auto jrr = find_paths_request(env, A1, A2, send_amt,
+            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt,
                 boost::none, G1["HKD"].currency);
-            BEAST_EXPECTS(
-                check_paths(jrr, fail_message, send_amt, A1["HKD"](10),
-                    {{
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(noIssue(), M1),
-                            std::make_pair(noIssue(), G2)
-                        }},
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(noIssue(), M2),
-                            std::make_pair(noIssue(), G2)
-                        }},
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(G2["HKD"], Account{}),
-                            std::make_pair(noIssue(), G2)
-                        }},
-                        {{
-                            std::make_pair(noIssue(), G1),
-                            std::make_pair(xrpIssue(), Account{}),
-                            std::make_pair(G2["HKD"], Account{}),
-                            std::make_pair(noIssue(), G2)
-                        }}
-                    }}),
-                fail_message);
+            BEAST_EXPECT(equal(da, send_amt));
+            BEAST_EXPECT(equal(sa, A1["HKD"](10)));
+            BEAST_EXPECT(same(st,
+                stpath(G1, M1, G2),
+                stpath(G1, M2, G2),
+                stpath(G1, IPE(G2["HKD"]), G2),
+                stpath(G1, IPE(xrpIssue()), IPE(G2["HKD"]), G2)
+            ));
         }
     }
 
     void path_find_06()
     {
-        testcase("Path Tests #2 (non-XRP to non-XRP, same currency)");
+        testcase("Path Find: non-XRP -> non-XRP, same currency)");
         using namespace jtx;
         Env env(*this);
         Account A1 {"A1"};
@@ -1556,26 +1343,18 @@ public:
 
         env(offer(M1, G1["HKD"](1000), G2["HKD"](1000)));
 
-        std::string fail_message;
-
         //E) Gateway to user
         //  Source -> OB -> AC -> Destination
         auto const& send_amt = A2["HKD"](10);
-        auto jrr = find_paths_request(env, G1, A2, send_amt,
+        STPathSet st;
+        STAmount sa, da;
+        std::tie(st, sa, da) = find_paths(env, G1, A2, send_amt,
             boost::none, G1["HKD"].currency);
-        BEAST_EXPECTS(
-            check_paths(jrr, fail_message, send_amt, G1["HKD"](10),
-                {{
-                    {{
-                        std::make_pair(noIssue(), M1),
-                        std::make_pair(noIssue(), G2)
-                    }},
-                    {{
-                        std::make_pair(G2["HKD"], Account{}),
-                        std::make_pair(noIssue(), G2)
-                    }}
-                }}),
-            fail_message);
+        BEAST_EXPECT(equal(da, send_amt));
+        BEAST_EXPECT(equal(sa, G1["HKD"](10)));
+        BEAST_EXPECT(same(st,
+            stpath(M1, G2),
+            stpath(IPE(G2["HKD"]), G2)));
     }
 
     void
