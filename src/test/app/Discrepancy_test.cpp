@@ -25,6 +25,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
 #include <boost/filesystem.hpp>
+#include <boost/scope_exit.hpp>
 #include <ripple/basics/StringUtilities.h>
 
 namespace ripple {
@@ -60,6 +61,10 @@ class Discrepancy_test : public beast::unit_test::suite
         o.close();
 
         {
+            BOOST_SCOPE_EXIT( (&path) (&ec) ) {
+                boost::filesystem::remove_all(path, ec);
+            } BOOST_SCOPE_EXIT_END
+
             Env env(*this, [&]()
                 {
                     auto p = std::make_unique<Config>();
@@ -69,7 +74,6 @@ class Discrepancy_test : public beast::unit_test::suite
                     p->legacy("database_path", path.string());
                     return p;
                 }());
-
 
             Json::Value jrq;
             jrq[jss::id] = 1;
@@ -99,10 +103,10 @@ class Discrepancy_test : public beast::unit_test::suite
             jrq2[jss::transaction] = hash;
             jrq2[jss::id] = 3;
             jrr = env.rpc ("json", "tx", to_string(jrq2))[jss::result];
-            uint64_t fee = jrr[jss::Fee].asUInt();
+            uint64_t fee { jrr[jss::Fee].asUInt() };
             auto meta = jrr[jss::meta];
-            auto sumPrev = UINT64_C(0);
-            auto sumFinal = UINT64_C(0);
+            uint64_t sumPrev {0};
+            uint64_t sumFinal {0};
             for(auto const& an : meta[sfAffectedNodes.fieldName])
             {
                 Json::Value node;
@@ -135,9 +139,6 @@ class Discrepancy_test : public beast::unit_test::suite
             // fee charged
             BEAST_EXPECT(sumPrev-sumFinal == fee);
         }
-
-        boost::filesystem::remove_all(path, ec);
-        BEAST_EXPECTS(!ec, ec.message());
     }
 
 public:
