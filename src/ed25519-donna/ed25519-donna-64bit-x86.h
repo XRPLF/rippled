@@ -2,7 +2,13 @@
 
 #define HAVE_GE25519_SCALARMULT_BASE_CHOOSE_NIELS
 
-DONNA_NOINLINE static void
+#if defined(__clang__) || defined (__GNUC__)
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+#else
+# define ATTRIBUTE_NO_SANITIZE_ADDRESS
+#endif
+
+ATTRIBUTE_NO_SANITIZE_ADDRESS DONNA_NOINLINE static void
 ge25519_scalarmult_base_choose_niels(ge25519_niels *t, const uint8_t table[256][96], uint32_t pos, signed char b) {
 	int64_t breg = (int64_t)b;
 	uint64_t sign = (uint64_t)breg >> 63;
