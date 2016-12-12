@@ -194,7 +194,11 @@ public:
     void async_shutdown (ShutdownHandler handler)
     {
         if (isSecure ())
+        {
             mSocket->async_shutdown (handler);
+            async_write(boost::asio::null_buffers{},
+                [this](...) {lowest_layer().close();});
+        }
         else
         {
             error_code ec;
