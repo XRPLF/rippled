@@ -755,13 +755,13 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
             // at a slightly better (for the placer) rate
             if (bSell)
             {
-                // this is a sell, round the amount we pay
+                // this is a sell, round taker pays
                 saTakerPays = multiply (
                     saTakerGets, rate, saTakerPays.issue());
             }
             else
             {
-                // this is a buy, round the amount we get
+                // this is a buy, round taker gets
                 saTakerGets = divide (
                     saTakerPays, rate, saTakerGets.issue());
             }
