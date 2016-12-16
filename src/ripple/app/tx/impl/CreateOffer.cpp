@@ -876,8 +876,8 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
         // Add offer to order book, using the original rate
         // before any crossing occured.
-        auto dir = keylet::quality (keylet::book (book), uRate);
-        bool bookExisted = static_cast<bool>(view.peek (dir));
+        auto const dir = keylet::quality (keylet::book (book), uRate);
+        bool const bookExisted = static_cast<bool>(view.peek (dir));
 
         std::tie(success, uBookNode) = view.dirInsert(
             dir, offer_index, true, [&](SLE::ref sle)
