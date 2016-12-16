@@ -29,7 +29,7 @@ scons: done building targets.
 
 * Build a docker image called rippled-builder as defined in DOCKER_PLAY_ROOT/RippledBuilder/Dockerfile. 
 
-Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).**
 
 If the rippled-builder image already exists skip this step.
 
@@ -76,7 +76,7 @@ DOCKER_PLAY_ROOT/rdde start [name - default: standalone]
 
 * Build a docker image called rippled-runner based on DOCKER_PLAY_ROOT/RippledRunner/Dockerfile. 
 
-Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).**
 
 If the rippled-runner image already exists skip this step.
 
@@ -87,7 +87,7 @@ If the rippled-runner image already exists skip this step.
 
 **This setup allow you to reuse the same container to run rippled after any build.**
 
-If the container already exists then start it if not started already. The container will start rippled.
+If the container already exists (and not started already) then start it. The container will start rippled.
 
 * NOTE : following files/directories are ignored in rippled repo : 
   * rippled.cfg
@@ -133,7 +133,7 @@ DOCKER_PLAY_ROOT/rdde test
 
 * Build a docker image called rippled-tester based on DOCKER_PLAY_ROOT/RippledTester/Dockerfile. 
 
-Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).**
 
 If the rippled-tester image already exists skip this step.
 
