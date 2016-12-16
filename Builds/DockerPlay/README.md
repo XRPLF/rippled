@@ -70,13 +70,13 @@ DOCKER_PLAY_ROOT/rdde start [name - default: standalone]
 
   * look if DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/rippled.cfg exists. If not will copy DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/rippled.tpl.cfg in to DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/rippled.cfg. 
 
-**If DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/rippled.tpl.cfg doesn't exist then script exit with error.**
+    **If DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/rippled.tpl.cfg doesn't exist then script exit with error.**
 
   * look if DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/validators.txt exists if not will copy  RIPPLED_REPO_ROOT/doc/validators-example.txt to DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/validators.txt
 
 * Build a docker image called rippled-runner based on DOCKER_PLAY_ROOT/RippledRunner/Dockerfile. 
 
-Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
 
 If the rippled-runner image already exists skip this step.
 
@@ -133,7 +133,7 @@ DOCKER_PLAY_ROOT/rdde test
 
 * Build a docker image called rippled-tester based on DOCKER_PLAY_ROOT/RippledTester/Dockerfile. 
 
-Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
 
 If the rippled-tester image already exists skip this step.
 
@@ -141,6 +141,7 @@ If the rippled-tester image already exists skip this step.
   * RIPPLED_REPO_ROOT:/RIPPLED:rw
 
 **This setup allow you to reuse the same container to test rippled after any build.**
+
 If the container already exists then start it. The container will install node dependencies modules if not done already and run rippled unit tests.
 
 ### TODO :
