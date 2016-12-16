@@ -270,13 +270,13 @@ SusPayCreate::doApply()
 
     // Add SusPay to owner directory
     {
-        uint64_t page;
-        auto result = dirAdd(ctx_.view(), page,
+        // FIXME: SortedOwnerDirPages
+        auto const result = ctx_.view().dirInsert(
             keylet::ownerDir(account), slep->key(),
-            describeOwnerDir(account), ctx_.app.journal ("View"));
-        if (! isTesSuccess(result.first))
-            return result.first;
-        (*slep)[sfOwnerNode] = page;
+            true, describeOwnerDir(account));
+        if (!result.first)
+            return tecDIR_FULL;
+        (*slep)[sfOwnerNode] = result.second;
     }
 
     // Deduct owner's balance, increment owner count
@@ -478,14 +478,10 @@ SusPayFinish::doApply()
     AccountID const account = (*slep)[sfAccount];
 
     // Remove SusPay from owner directory
-    {
-        auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account).key,
-                k.key, false, false, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
-    }
+    if (!ctx_.view().dirRemove(
+            keylet::ownerDir(account), (*slep)[sfOwnerNode],
+            k, true))
+        return tefBAD_LEDGER;
 
     // NOTE: These payments cannot be used to fund accounts
 
@@ -546,14 +542,10 @@ SusPayCancel::doApply()
     AccountID const account = (*slep)[sfAccount];
 
     // Remove SusPay from owner directory
-    {
-        auto const page = (*slep)[sfOwnerNode];
-        TER const ter = dirDelete(ctx_.view(), true,
-            page, keylet::ownerDir(account).key,
-                k.key, false, false, ctx_.app.journal ("View"));
-        if (! isTesSuccess(ter))
-            return ter;
-    }
+    if (!ctx_.view().dirRemove(
+            keylet::ownerDir(account), (*slep)[sfOwnerNode],
+            k, true))
+        return tefBAD_LEDGER;
 
     // Transfer amount back to owner, decrement owner count
     auto const sle = ctx_.view().peek(

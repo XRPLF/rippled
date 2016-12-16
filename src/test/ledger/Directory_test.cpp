@@ -47,6 +47,34 @@ struct Directory_test : public beast::unit_test::suite
         return code;
     }
 
+    // Insert n empty pages, numbered [0, ... n - 1], in the
+    // specified directory:
+    void
+    makePages(
+        Sandbox& sb,
+        uint256 const& base,
+        std::uint64_t n)
+    {
+        for (std::uint64_t i = 0; i < n; ++i)
+        {
+            auto p = std::make_shared<SLE>(keylet::page(base, i));
+
+            p->setFieldV256 (sfIndexes, STVector256{});
+
+            if (i + 1 == n)
+                p->setFieldU64 (sfIndexNext, 0);
+            else
+                p->setFieldU64 (sfIndexNext, i + 1);
+
+            if (i == 0)
+                p->setFieldU64 (sfIndexPrevious, n - 1);
+            else
+                p->setFieldU64 (sfIndexPrevious, i - 1);
+
+            sb.insert (p);
+        }
+    }
+
     void testDirectoryWithoutPageOrdering()
     {
         testcase ("Directory Insertion Without Page Ordering");
@@ -79,11 +107,11 @@ struct Directory_test : public beast::unit_test::suite
             auto const dir = Dir(*env.current(),
                 keylet::ownerDir(bob));
 
-            auto iter = std::begin(dir);
+            auto iter = dir.begin();
 
             BEAST_EXPECT(iter->get()->getFieldAmount(sfTakerPays) == USD(100));
             BEAST_EXPECT(iter->get()->getFieldAmount(sfTakerGets) == XRP(100));
-            BEAST_EXPECT(std::next(iter) == std::end(dir));
+            BEAST_EXPECT(++iter == dir.end());
         }
 
         // Check Alice's directory: it should contain one
@@ -274,13 +302,103 @@ struct Directory_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testEmptyChain()
+    {
+        testcase("Empty Chain on Delete");
+
+        using namespace jtx;
+        Env env{*this};
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        uint256 base;
+        base.SetHex("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
+
+        uint256 item;
+        item.SetHex("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
+
+        {
+            // Create a chain of three pages:
+            Sandbox sb(env.closed().get(), tapNONE);
+            makePages (sb, base, 3);
+
+            // Insert an item in the middle page:
+            {
+                auto p = sb.peek (keylet::page(base, 1));
+                BEAST_EXPECT(p);
+
+                STVector256 v;
+                v.push_back (item);
+                p->setFieldV256 (sfIndexes, v);
+                sb.update(p);
+            }
+
+            // Now, try to delete the item from the middle
+            // page. This should cause all pages to be deleted:
+            BEAST_EXPECT (sb.dirRemove (keylet::page(base, 0), 1, keylet::unchecked(item), false));
+            BEAST_EXPECT (!sb.peek(keylet::page(base, 2)));
+            BEAST_EXPECT (!sb.peek(keylet::page(base, 1)));
+            BEAST_EXPECT (!sb.peek(keylet::page(base, 0)));
+        }
+
+        {
+            // Create a chain of four pages:
+            Sandbox sb(env.closed().get(), tapNONE);
+            makePages (sb, base, 4);
+
+            // Now add items on pages 1 and 2:
+            {
+                auto p1 = sb.peek (keylet::page(base, 1));
+                BEAST_EXPECT(p1);
+
+                STVector256 v1;
+                v1.push_back (~item);
+                p1->setFieldV256 (sfIndexes, v1);
+                sb.update(p1);
+
+                auto p2 = sb.peek (keylet::page(base, 2));
+                BEAST_EXPECT(p2);
+
+                STVector256 v2;
+                v2.push_back (item);
+                p2->setFieldV256 (sfIndexes, v2);
+                sb.update(p2);
+            }
+
+            // Now, try to delete the item from page 2.
+            // This should cause pages 2 and 3 to be
+            // deleted:
+            BEAST_EXPECT (sb.dirRemove (keylet::page(base, 0), 2, keylet::unchecked(item), false));
+            BEAST_EXPECT (!sb.peek(keylet::page(base, 3)));
+            BEAST_EXPECT (!sb.peek(keylet::page(base, 2)));
+
+            auto p1 = sb.peek(keylet::page(base, 1));
+            BEAST_EXPECT (p1);
+            BEAST_EXPECT (p1->getFieldU64 (sfIndexNext) == 0);
+            BEAST_EXPECT (p1->getFieldU64 (sfIndexPrevious) == 0);
+
+            auto p0 = sb.peek(keylet::page(base, 0));
+            BEAST_EXPECT (p0);
+            BEAST_EXPECT (p0->getFieldU64 (sfIndexNext) == 1);
+            BEAST_EXPECT (p0->getFieldU64 (sfIndexPrevious) == 1);
+        }
+    }
+
     void run() override
     {
         testDirectoryWithoutPageOrdering();
         testDirIsEmpty();
         testRipd1353();
+        testEmptyChain();
     }
 };
+
+BEAST_DEFINE_TESTSUITE(Directory,ledger,ripple);
 
 }
 }

@@ -25,26 +25,6 @@
 
 namespace ripple {
 
-void
-ApplyView::creditHook (
-    AccountID const& from,
-    AccountID const& to,
-    STAmount const& amount,
-    STAmount const& preCreditBalance)
-{
-}
-
-// Called when the owner count changes
-// This is required to support PaymentSandbox
-void
-ApplyView::adjustOwnerCountHook (
-    AccountID const& account,
-    std::uint32_t cur,
-    std::uint32_t next)
-{
-
-}
-
 std::pair<bool, std::uint64_t>
 ApplyView::dirInsert (
     Keylet const& directory,
@@ -68,7 +48,6 @@ ApplyView::dirInsert (
         root->setFieldV256 (sfIndexes, v);
 
         insert (root);
-
         return { true, 0 };
     }
 
@@ -79,7 +58,6 @@ ApplyView::dirInsert (
     if (page)
     {
         node = peek (keylet::page(directory, page));
-
         if (!node)
             LogicError ("Directory chain: root back-pointer broken.");
     }
@@ -89,31 +67,27 @@ ApplyView::dirInsert (
     // If there's space, we use it:
     if (indexes.size () < dirNodeMaxEntries)
     {
-        // If we're not maintaining strict order, then
-        // sort entries lexicographically.
         if (!strictOrder)
         {
-            auto v = indexes.value();
-
             // We can't use std::lower_bound here because
-            // existing pages may not be sorted
-            auto pos = std::find_if(v.begin(), v.end(),
+            // existing pages may not be fully sorted.
+            auto pos = std::find_if(indexes.begin(), indexes.end(),
                 [&key](uint256 const& item)
                 {
                     return key < item;
                 });
 
-            if (pos != v.end() && key == *pos)
+            if (pos != indexes.end() && key == *pos)
                 LogicError ("dirInsert: double insertion");
 
-            v.insert (pos, key);
-            indexes = v;
+            indexes.insert (pos, key);
         }
         else
             indexes.push_back(key);
 
         node->setFieldV256 (sfIndexes, indexes);
         update(node);
+
         return { true, page };
     }
 
@@ -121,18 +95,17 @@ ApplyView::dirInsert (
     if (++page == 0)
         return { false, 0 };
 
-    // Insert the new key:
-    indexes.clear();
-    indexes.push_back (key);
-
     // We are about to create a new node; we'll link it to
     // the chain first:
-
     node->setFieldU64 (sfIndexNext, page);
     update(node);
 
     root->setFieldU64 (sfIndexPrevious, page);
     update(root);
+
+    // Insert the new key:
+    indexes.clear();
+    indexes.push_back (key);
 
     node = std::make_shared<SLE>(keylet::page(directory, page));
     node->setFieldH256 (sfRootIndex, directory.key);
@@ -170,6 +143,8 @@ ApplyView::dirRemove (
     if (!node)
         return false;
 
+    std::uint64_t constexpr rootPage = 0;
+
     {
         auto entries = node->getFieldV256(sfIndexes);
 
@@ -198,7 +173,7 @@ ApplyView::dirRemove (
     // treated specially: it can never be deleted even if
     // it is empty, unless we plan on removing the entire
     // directory.
-    if (currPage == 0)
+    if (currPage == rootPage)
     {
         if (nextPage == currPage && prevPage != currPage)
             LogicError ("Directory chain: fwd link broken");
@@ -254,11 +229,9 @@ ApplyView::dirRemove (
     // middle of the list, or at the end. Unlink it first
     // and then check if that leaves the list with only a
     // root:
-
     auto prev = peek(keylet::page(directory, prevPage));
     if (!prev)
         LogicError ("Directory chain: fwd link broken.");
-
     // Fix previous to point to its new next.
     prev->setFieldU64(sfIndexNext, nextPage);
     update (prev);
@@ -266,7 +239,6 @@ ApplyView::dirRemove (
     auto next = peek(keylet::page(directory, nextPage));
     if (!next)
         LogicError ("Directory chain: rev link broken.");
-
     // Fix next to point to its new previous.
     next->setFieldU64(sfIndexPrevious, prevPage);
     update(next);
@@ -274,9 +246,33 @@ ApplyView::dirRemove (
     // The page is no longer linked. Delete it.
     erase(node);
 
+    // Check whether the next page is the last page and, if
+    // so, whether it's empty. If it is, delete it.
+    if (nextPage != rootPage &&
+        next->getFieldU64 (sfIndexNext) == rootPage &&
+        next->getFieldV256 (sfIndexes).empty())
+    {
+        // Since next doesn't point to the root, it
+        // can't be pointing to prev.
+        erase(next);
+
+        // The previous page is now the last page:
+        prev->setFieldU64(sfIndexNext, rootPage);
+        update (prev);
+
+        // And the root points to the the last page:
+        auto root = peek(keylet::page(directory, rootPage));
+        if (!root)
+            LogicError ("Directory chain: root link broken.");
+        root->setFieldU64(sfIndexPrevious, prevPage);
+        update (root);
+
+        nextPage = rootPage;
+    }
+
     // If we're not keeping the root, then check to see if
     // it's left empty. If so, delete it as well.
-    if (!keepRoot && nextPage == 0 && prevPage == 0)
+    if (!keepRoot && nextPage == rootPage && prevPage == rootPage)
     {
         if (prev->getFieldV256 (sfIndexes).empty())
             erase(prev);

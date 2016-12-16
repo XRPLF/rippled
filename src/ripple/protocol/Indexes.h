@@ -141,6 +141,11 @@ static fees_t const fees {};
 struct book_t
 {
     Keylet operator()(Book const& b) const;
+
+    Keylet operator()(uint256 const& key) const
+    {
+        return { ltDIR_NODE, key };
+    }
 };
 static book_t const book {};
 

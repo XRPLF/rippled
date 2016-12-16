@@ -69,32 +69,31 @@ class Ticket_test : public beast::unit_test::suite
         {
             expected_nodes = {
                 std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
-                std::make_tuple(
-                    expiration ? 2: 1, sfModifiedNode.fieldName, "AccountRoot"s),
-                std::make_tuple(
-                    expiration ? 1: 2, sfDeletedNode.fieldName, "Ticket"s),
-                std::make_tuple(3, sfDeletedNode.fieldName, "DirectoryNode"s)
+                std::make_tuple(expiration ? 2: 1, sfModifiedNode.fieldName, "AccountRoot"s),
+                std::make_tuple(expiration ? 1: 2, sfDeletedNode.fieldName, "Ticket"s),
+                std::make_tuple(3, sfModifiedNode.fieldName, "DirectoryNode"s),
+            };
+        }
+        else if (is_cancel)
+        {
+            expected_nodes = {
+                std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
+                std::make_tuple(1, sfDeletedNode.fieldName, "Ticket"s),
+                std::make_tuple(2, sfModifiedNode.fieldName, "DirectoryNode"s)
             };
         }
         else
         {
             expected_nodes = {
                 std::make_tuple(0, sfModifiedNode.fieldName, "AccountRoot"s),
-                std::make_tuple(1,
-                    is_cancel ?
-                        sfDeletedNode.fieldName : sfCreatedNode.fieldName,
-                    "Ticket"s),
-                std::make_tuple(2,
-                    is_cancel ?
-                        sfDeletedNode.fieldName : sfCreatedNode.fieldName,
-                 "DirectoryNode"s)
+                std::make_tuple(1, sfCreatedNode.fieldName, "Ticket"s),
+                std::make_tuple(2, sfCreatedNode.fieldName, "DirectoryNode"s)
             };
         }
 
         BEAST_EXPECT(jvm.isMember (sfAffectedNodes.fieldName));
         BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].isArray());
-        BEAST_EXPECT(
-            jvm[sfAffectedNodes.fieldName].size() == expected_nodes.size());
+        BEAST_EXPECT(jvm[sfAffectedNodes.fieldName].size() == expected_nodes.size());
 
         // verify the actual metadata against the expected
         for (auto const& it : expected_nodes)
@@ -102,6 +101,7 @@ class Ticket_test : public beast::unit_test::suite
             auto const& idx = std::get<0>(it);
             auto const& field = std::get<1>(it);
             auto const& type = std::get<2>(it);
+
             BEAST_EXPECT(jvm[sfAffectedNodes.fieldName][idx].isMember(field));
             retval[idx] = jvm[sfAffectedNodes.fieldName][idx][field];
             BEAST_EXPECT(retval[idx][sfLedgerEntryType.fieldName] == type);

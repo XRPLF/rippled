@@ -180,6 +180,22 @@ public:
         return mValue.erase (position);
     }
 
+    std::vector<uint256>::iterator
+    insert(
+        std::vector<uint256>::iterator pos,
+        uint256 const& value)
+    {
+        return mValue.insert (pos, value);
+    }
+
+    std::vector<uint256>::iterator
+    insert(
+        std::vector<uint256>::const_iterator pos,
+        uint256 const& value)
+    {
+        return mValue.insert (pos, value);
+    }
+
     void
     clear () noexcept
     {

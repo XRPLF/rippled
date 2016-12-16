@@ -100,27 +100,27 @@ CreateTicket::doApply ()
             sleTicket->setAccountID (sfTarget, target_account);
     }
 
-    std::uint64_t hint;
+    auto const result = view().dirInsert(
+        keylet::ownerDir (account_),
+        sleTicket->key(),
+        true, // FIXME: SortedOwnerDirectories
+        describeOwnerDir (account_));
 
-    auto viewJ = ctx_.app.journal ("View");
-
-    auto result = dirAdd(view(), hint, keylet::ownerDir (account_),
-        sleTicket->key(), describeOwnerDir (account_), viewJ);
-
-    JLOG(j_.trace()) <<
-        "Creating ticket " << to_string (sleTicket->key()) <<
-        ": " << transHuman (result.first);
-
-    if (result.first == tesSUCCESS)
+    if (!result.first)
     {
-        sleTicket->setFieldU64(sfOwnerNode, hint);
-
-        // If we succeeded, the new entry counts agains the
-        // creator's reserve.
-        adjustOwnerCount(view(), sle, 1, viewJ);
+        JLOG(j_.trace()) <<
+            "Failed to insert ticket " << to_string (sleTicket->key()) <<
+            " into owner directory for " << account_;
+        return tecDIR_FULL;
     }
 
-    return result.first;
+    sleTicket->setFieldU64(sfOwnerNode, result.second);
+
+    // If we succeeded, the new entry counts agains the
+    // creator's reserve.
+    adjustOwnerCount(view(), sle, 1, ctx_.app.journal ("View"));
+
+    return tesSUCCESS;
 }
 
 }

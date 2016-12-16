@@ -76,17 +76,17 @@ CancelTicket::doApply ()
     if (!authorized)
         return tecNO_PERMISSION;
 
-    std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
-
-    auto viewJ = ctx_.app.journal ("View");
-    TER const result = dirDelete (ctx_.view (), false, hint,
-        getOwnerDirIndex (ticket_owner), ticketId, false, false, viewJ);
+    auto const success = ctx_.view ().dirRemove (
+        keylet::ownerDir(ticket_owner),
+        sleTicket->getFieldU64 (sfOwnerNode),
+        ticketId,
+        true);
 
     adjustOwnerCount(view(), view().peek(
-        keylet::account(ticket_owner)), -1, viewJ);
+        keylet::account(ticket_owner)), -1, ctx_.app.journal ("View"));
     ctx_.view ().erase (sleTicket);
 
-    return result;
+    return success ? tesSUCCESS : tefBAD_LEDGER;
 }
 
 }

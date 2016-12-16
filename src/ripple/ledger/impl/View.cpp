@@ -750,65 +750,12 @@ describeOwnerDir(AccountID const& account)
     };
 }
 
-std::pair<TER, bool>
-dirAdd (ApplyView& view,
-    std::uint64_t&                          uNodeDir,
-    Keylet const&                           dir,
-    uint256 const&                          uLedgerIndex,
-    std::function<void (SLE::ref)>          fDescriber,
-    beast::Journal j)
-{
-    bool existed = static_cast<bool>(view.peek (dir));
-    bool success;
-
-    std::tie(success, uNodeDir) = view.dirInsert (
-        dir, uLedgerIndex, true, fDescriber);
-
-    if (success)
-        return { tesSUCCESS, !existed };
-
-    return { tecDIR_FULL, false };
-}
-
-static
-boost::optional<std::uint64_t>
-findPage (
-    ApplyView& view,
-    Keylet const& directory,
-    uint256 const& item)
-{
-    // Attempt to find the page that contains the item we need:
-    Dir dir(view, directory);
-
-    auto iter = dir.begin();
-    auto pageId = iter.page();
-
-    std::size_t pageNum = 0;
-
-    // Emulate the old behavior: the code searched in the
-    // first 20 pages. We do the same.
-    while (iter != dir.end())
-    {
-        if (iter.page().key != pageId.key)
-        {
-            if (pageNum++ == 20)
-                break;
-            pageId = iter.page();
-        }
-
-        if (iter.index() == item)
-            return pageNum;
-    }
-
-    return boost::none;
-}
-
 // Ledger must be in a state for this to work.
 TER
 dirDelete (ApplyView& view,
     const bool                      bKeepRoot,      // --> True, if we never completely clean up, after we overflow the root node.
     std::uint64_t                   uNodeDir,       // --> Node containing entry.
-    uint256 const&                  uRootIndex,     // --> The index of the base of the directory.  Nodes are based off of this.
+    Keylet const&                   root,           // --> The base of the directory.  Nodes are based off of this.
     uint256 const&                  uLedgerIndex,   // --> Value to remove from directory.
     const bool                      bStable,        // --> True, not to change relative order of entries.
     const bool                      bSoft,          // --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
@@ -816,18 +763,34 @@ dirDelete (ApplyView& view,
 {
     // Emulate the old semantics: if uNodeDir isn't hard
     // and fast and there's no page number, search for the
-    // item:
+    // item in the first 20 pages:
     if (bSoft && uNodeDir == 0)
     {
-        auto page = findPage (view, keylet::unchecked(uRootIndex), uLedgerIndex);
-        if (!page)
+        // Attempt to find the page that contains the item we need:
+        Dir dir(view, root);
+
+        auto iter = dir.begin();
+        auto pageId = iter.page();
+        bool found = false;
+
+        while (!found && iter != dir.end())
+        {
+            if (iter.page().key != pageId.key)
+            {
+                if (uNodeDir++ == 20)
+                    return tefBAD_LEDGER;
+                pageId = iter.page();
+            }
+
+            found = (iter.index() == uLedgerIndex);
+        }
+
+        if (!found)
             return tefBAD_LEDGER;
-        uNodeDir = *page;
     }
 
-    if (view.dirRemove (keylet::unchecked(uRootIndex), uNodeDir, uLedgerIndex, bKeepRoot))
+    if (view.dirRemove (root, uNodeDir, uLedgerIndex, bKeepRoot))
         return tesSUCCESS;
-
     return tefBAD_LEDGER;
 }
 
@@ -860,25 +823,25 @@ trustCreate (ApplyView& view,
         ltRIPPLE_STATE, uIndex);
     view.insert (sleRippleState);
 
-    std::uint64_t   uLowNode;
-    std::uint64_t   uHighNode;
+    std::uint64_t uLowNode;
+    std::uint64_t uHighNode;
 
-    TER terResult;
+    bool success;
 
-    std::tie (terResult, std::ignore) = dirAdd (view,
-        uLowNode, keylet::ownerDir (uLowAccountID),
-        sleRippleState->key(),
-        describeOwnerDir (uLowAccountID), j);
+    // FIXME: SortedOwnerDirPages
+    std::tie (success, uLowNode) = view.dirInsert (
+        keylet::ownerDir (uLowAccountID), sleRippleState->key(),
+        true, describeOwnerDir (uLowAccountID));
 
-    if (tesSUCCESS == terResult)
+    if (success)
     {
-        std::tie (terResult, std::ignore) = dirAdd (view,
-            uHighNode, keylet::ownerDir (uHighAccountID),
-            sleRippleState->key(),
-            describeOwnerDir (uHighAccountID), j);
+        // FIXME: SortedOwnerDirPages
+        std::tie (success, uHighNode) = view.dirInsert (
+            keylet::ownerDir (uHighAccountID), sleRippleState->key(),
+            true, describeOwnerDir (uHighAccountID));
     }
 
-    if (tesSUCCESS == terResult)
+    if (success)
     {
         const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
         const bool bSetHigh = bSrcHigh ^ bSetDst;
@@ -939,7 +902,7 @@ trustCreate (ApplyView& view,
             uDstAccountID, saBalance, saBalance.zeroed());
     }
 
-    return terResult;
+    return success ? tesSUCCESS : tecDIR_FULL;
 }
 
 TER
@@ -961,7 +924,7 @@ trustDelete (ApplyView& view,
     terResult   = dirDelete(view,
         false,
         uLowNode,
-        getOwnerDirIndex (uLowAccountID),
+        keylet::ownerDir (uLowAccountID),
         sleRippleState->key(),
         false,
         !bLowNode,
@@ -974,7 +937,7 @@ trustDelete (ApplyView& view,
         terResult   = dirDelete (view,
             false,
             uHighNode,
-            getOwnerDirIndex (uHighAccountID),
+            keylet::ownerDir (uHighAccountID),
             sleRippleState->key(),
             false,
             !bHighNode,
@@ -1002,13 +965,13 @@ offerDelete (ApplyView& view,
     // Detect legacy directories.
     bool bOwnerNode = sle->isFieldPresent (sfOwnerNode);
     std::uint64_t uOwnerNode = sle->getFieldU64 (sfOwnerNode);
-    uint256 uDirectory = sle->getFieldH256 (sfBookDirectory);
     std::uint64_t uBookNode  = sle->getFieldU64 (sfBookNode);
 
     TER terResult  = dirDelete (view, false, uOwnerNode,
-        getOwnerDirIndex (owner), offerIndex, false, !bOwnerNode, j);
+        keylet::ownerDir(owner), offerIndex, false, !bOwnerNode, j);
     TER terResult2 = dirDelete (view, false, uBookNode,
-        uDirectory, offerIndex, true, false, j);
+        keylet::book(sle->getFieldH256 (sfBookDirectory)),
+        offerIndex, true, false, j);
 
     if (tesSUCCESS == terResult)
         adjustOwnerCount(view, view.peek(

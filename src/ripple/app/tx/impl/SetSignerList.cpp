@@ -235,26 +235,29 @@ SetSignerList::replaceSignerList ()
     view().insert (signerList);
     writeSignersToSLE (signerList);
 
-    auto viewJ = ctx_.app.journal ("View");
     // Add the signer list to the account's directory.
-    std::uint64_t hint;
+    // FIXME: SortedOwnerDirPages
+    auto result = ctx_.view ().dirInsert(
+        ownerDirKeylet, signerListKeylet,
+        true, describeOwnerDir (account_));
 
-    auto result = dirAdd(ctx_.view (), hint, ownerDirKeylet,
-        signerListKeylet.key, describeOwnerDir (account_), viewJ);
-
-    JLOG(j_.trace()) << "Create signer list for account " <<
-        toBase58(account_) << ": " << transHuman (result.first);
-
-    if (result.first == tesSUCCESS)
+    if (!result.first)
     {
-        signerList->setFieldU64 (sfOwnerNode, hint);
-
-        // If we succeeded, the new entry counts against the
-        // creator's reserve.
-        adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+        JLOG(j_.warn()) <<
+            "Failed to create signer list for account " << toBase58(account_);
+        return tecDIR_FULL;
     }
 
-    return result.first;
+    JLOG(j_.trace()) <<
+        "Created signer list for account " << toBase58(account_);
+
+    signerList->setFieldU64 (sfOwnerNode, result.second);
+
+    // If we succeeded, the new entry counts against the
+    // creator's reserve.
+    adjustOwnerCount(view(), sle, addedOwnerCount, ctx_.app.journal ("View"));
+
+    return tesSUCCESS;
 }
 
 TER
@@ -290,19 +293,18 @@ SetSignerList::removeSignersFromLedger (Keylet const& accountKeylet,
     int const removeFromOwnerCount = ownerCountDelta (actualList.size()) * -1;
 
     // Remove the node from the account directory.
-    auto const hint = (*signers)[sfOwnerNode];
+    auto const result  = ctx_.view().dirRemove(
+        ownerDirKeylet, (*signers)[sfOwnerNode],
+        signerListKeylet, false);
 
-    auto viewJ = ctx_.app.journal ("View");
-    TER const result  = dirDelete(ctx_.view(), false, hint,
-        ownerDirKeylet.key, signerListKeylet.key, false, false, viewJ);
-
-    if (result == tesSUCCESS)
-        adjustOwnerCount(view(),
-            view().peek(accountKeylet), removeFromOwnerCount, viewJ);
+    if (result)
+        adjustOwnerCount(
+            view(), view().peek(accountKeylet),
+            removeFromOwnerCount, ctx_.app.journal ("View"));
 
     ctx_.view().erase (signers);
 
-    return result;
+    return result ? tesSUCCESS : tefBAD_LEDGER;
 }
 
 void
