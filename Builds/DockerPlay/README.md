@@ -1,4 +1,4 @@
-# DockerDevEnv : what is this ? 
+# DockerPlay : what is this ? 
 
 As a lucky Debian Jessie user some of us are missing an impotant stack to play with rippled from the sources : gcc5. Instead of hacking our working station (and potentially break it) we can setup a rippled development environment thanks docker. 
 
@@ -32,12 +32,13 @@ If the rippled-builder image already exists skip this step.
 
 * Run a container called rippled-builder with following volume: 
   * RIPPLED_REPO_ROOT:/RIPPLED:rw
+**This setup allow you to reuse the same container to build rippled after any source file changes.**
 If the container already exists then start it. The container will build rippled and stop.
 
 * When done and if no error you will find your fresh rippled binary in RIPPLED_REPO_ROOT/build.
 
 
-## Start your fresh rippled
+## Start your fresh Rippled
 
 ### Short bootstrap : 
 ```
@@ -71,21 +72,22 @@ If the rippled-runner image already exists skip this step.
   * RIPPLED_REPO_ROOT/build/:/RIPPLED/bin:ro
   * DOCKER_PLAY_ROOT/RippledRunner/etc/<name>:/RIPPLED/etc:ro
   * DOCKER_PLAY_ROOT/RippledRunner/data/<name>:/RIPPLED/data:rw
+**This setup allow you to reuse the same container to run rippled after any build.**
 If the container already exists then start it if not started already. The container will start rippled.
 
 * NOTE : following files/directories are ignored in rippled repo : 
   * rippled.cfg
   * validators.txt
-  * Builds/DockerPlay/RippledRunner/data/*!standalone
-  * Builds/DockerPlay/RippledRunner/etc/*!standalone
+  * Builds/DockerPlay/RippledRunner/data/*/db
+  * Builds/DockerPlay/RippledRunner/data/*/log
 
 
 ### TODO :
 
 * customize rippled starting parameters thanks docker environment variables.
-* setup dedicated docker network for multi rippled testing environment.
+* use docker-compose to setup multi rippled testing environment. 
 
-## Stop your fresh rippled
+## Stop your fresh Rippled
 
 ### Short bootstrap : 
 ```
@@ -95,7 +97,7 @@ DOCKER_PLAY_ROOT/rdde stop <name - default: standalone>
 ### Behind the scene : 
 Simply stop rippled-<name - default: standalone> container. To remove the container use docker rm command...
 
-## Test your fresh rippled
+## Test your fresh Rippled
 
 ### Short bootstrap : 
 ```
@@ -120,6 +122,7 @@ If the rippled-tester image already exists skip this step.
 
 * Run a container called rippled-tester with following volume
   * RIPPLED_REPO_ROOT:/RIPPLED:rw
+**This setup allow you to reuse the same container to test rippled after any build.**
 If the container already exists then start it. The container will install node dependencies modules if not done already and run rippled unit tests.
 
 ### TODO :
