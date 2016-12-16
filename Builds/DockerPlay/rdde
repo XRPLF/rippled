@@ -1,0 +1,167 @@
+#!/bin/sh
+
+OS=`uname`
+
+if [ "$OS" != "Linux" ]; then
+    echo "Unfortunately your $OS is currently not supported..."
+    exit 1
+fi
+
+which docker > /dev/null
+if [ $? -ne 0 ]; then
+    echo "$0 needs docker... Exit."
+    exit 1
+fi
+
+docker ps -a > /dev/null
+if [ $? -ne 0 ]; then
+    echo "$0 needs working docker... Check if docker daemon is started or your rights. Exit."
+    exit 1
+fi
+
+DIRNAME=`dirname "$0"`
+locateRepoRoot() {
+    if [ "x$REPO_ROOT" = "x" ]; then
+      # In POSIX shells, CDPATH may cause cd to write to stdout
+      (unset CDPATH) >/dev/null 2>&1 && unset CDPATH
+      REPO_ROOT=`cd "$DIRNAME/../.."; pwd`
+    fi
+
+    if [ ! -d "$REPO_ROOT/src" ]; then
+        echo "REPO_ROOT is not valid: $REPO_ROOT"
+	exit 1
+    fi
+}
+
+case "$1" in
+    build)
+        locateRepoRoot
+
+        IS_RIPPLED_BUILDER_READY=`docker ps -a | grep rippled-builder | wc -l`
+        if [ $IS_RIPPLED_BUILDER_READY -eq 0 ]; then
+
+            IS_RIPPLED_BUILDER_IMG_READY=`docker images | grep rippled-builder | wc -l`
+            if [ $IS_RIPPLED_BUILDER_IMG_READY -eq 0 ]; then
+                cd $REPO_ROOT/Builds/DockerPlay/RippledBuilder
+                docker build -t rippled-builder .
+            fi
+            docker run -ti -v $REPO_ROOT:/RIPPLED:rw --name=rippled-builder rippled-builder
+
+        else
+
+            docker start rippled-builder 
+            docker logs -f --tail 0 rippled-builder 
+
+        fi
+        ;;
+
+    start)
+        locateRepoRoot
+
+        NAME=$2
+        if [ "x$NAME" = "x" ]; then
+            NAME=standalone
+        fi
+
+        if [ ! -f $REPO_ROOT/build/rippled ]; then
+            echo "Rippled has not been built ! Run rdde build before rdde start..."
+            exit 1
+        fi
+
+        if [ ! -f $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.cfg ]; then
+            if [ -f $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.tpl.cfg ]; then
+                echo "Copying $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.tpl.cfg to $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.cfg..."
+                cp $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.tpl.cfg $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.cfg 
+            else
+                echo "No config file ($REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.cfg) nor config template ($REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/rippled.tpl.cfg) for rippled $NAME instance... Exit."
+                exit 1
+            fi
+        fi
+
+        if [ ! -f $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/validators.txt ]; then
+            echo "Copying $REPO_ROOT/doc/validators-example.txt to $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/validators.txt..."
+            cp $REPO_ROOT/doc/validators-example.txt $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME/validators.txt
+        fi
+
+        IS_RIPPLED_RUNNER_READY=`docker ps -a | grep rippled-$NAME | wc -l`
+        if [ $IS_RIPPLED_RUNNER_READY -eq 0 ]; then
+
+            IS_RIPPLED_RUNNER_IMG_READY=`docker images | grep rippled-runner | wc -l`
+            if [ $IS_RIPPLED_RUNNER_IMG_READY -eq 0 ]; then
+                cd $REPO_ROOT/Builds/DockerPlay/RippledRunner
+                docker build -t rippled-runner .
+            fi
+
+            docker run -d -v $REPO_ROOT/build:/RIPPLED/bin:ro -v $REPO_ROOT/Builds/DockerPlay/RippledRunner/etc/$NAME:/RIPPLED/etc:ro -v $REPO_ROOT/Builds/DockerPlay/RippledRunner/data/$NAME:/RIPPLED/data:rw --hostname=rippled-$NAME --name=rippled-$NAME rippled-runner
+            docker logs -f --tail 0 rippled-$NAME
+
+        else
+
+            IS_RIPPLED_RUNNER_STARTED=`docker ps | grep rippled-$NAME | wc -l`
+            if [ $IS_RIPPLED_RUNNER_STARTED -ne 0 ]; then
+                echo "rippled-$NAME is already started..."
+                exit 1
+            fi
+            docker start rippled-$NAME
+            docker logs -f --tail 0 rippled-$NAME
+
+        fi
+        ;;
+
+    stop)
+        locateRepoRoot
+
+        NAME=$2
+        if [ "x$NAME" = "x" ]; then
+            NAME=standalone
+        fi
+
+        IS_RIPPLED_RUNNER_STARTED=`docker ps | grep rippled-$NAME | wc -l`
+        if [ $IS_RIPPLED_RUNNER_STARTED -ne 0 ]; then
+            docker stop rippled-standalone
+        else
+            echo "rippled-$NAME is already stopped..."
+            exit 1
+        fi
+        ;;
+    test)
+        locateRepoRoot
+
+        if [ ! -f $REPO_ROOT/build/rippled ]; then
+            echo "Rippled has not been built ! Run rdde build before rdde start..."
+            exit 1
+        fi
+
+        IS_RIPPLED_TESTER_READY=`docker ps -a | grep rippled-tester | wc -l`
+        if [ $IS_RIPPLED_TESTER_READY -eq 0 ]; then
+
+            IS_RIPPLED_TESTER_IMG_READY=`docker images | grep rippled-tester | wc -l`
+            if [ $IS_RIPPLED_TESTER_IMG_READY -eq 0 ]; then
+                cd $REPO_ROOT/Builds/DockerPlay/RippledTester
+                docker build -t rippled-tester .
+            fi
+
+            docker run -d -v $REPO_ROOT/:/RIPPLED:rw --hostname=rippled-tester --name=rippled-tester rippled-tester
+            docker logs -f --tail 0 rippled-tester
+
+        else
+
+            IS_RIPPLED_TESTER_STARTED=`docker ps | grep rippled-tester | wc -l`
+            if [ $IS_RIPPLED_TESTER_STARTED -ne 0 ]; then
+                echo "rippled-tester is already started..."
+                exit 1
+            fi
+            docker start rippled-tester
+            docker logs -f --tail 0 rippled-tester
+
+        fi        
+
+        ;;
+    *)
+        echo "Usage: $0 {build|start|stop|test}"
+        echo ""
+        echo "OPTIONS:"
+        echo "\t start <rippled name - default: standalone>"
+        echo "\t stop <rippled name - default: standalone> "
+        exit 1
+esac
