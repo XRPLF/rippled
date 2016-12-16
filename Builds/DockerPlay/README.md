@@ -1,6 +1,6 @@
 # DockerPlay : what is this ?
 
-As a lucky Debian Jessie user some of us are missing an impotant stack to play with rippled from the sources : gcc5. Instead of hacking our working station (and potentially break it) we can setup a rippled development environment thanks docker. 
+As a lucky Debian Jessie users some of us are missing an impotant stack to play with rippled from the sources : gcc5. Instead of hacking our working station (and potentially break it) we can setup a rippled development environment thanks docker. 
 
 Basic idea: being able to edit rippled source files with our favorite tools and then build, test and run rippled inside docker containers. 
 
@@ -12,6 +12,7 @@ Basic idea: being able to edit rippled source files with our favorite tools and 
   * We will define DOCKER_PLAY_ROOT as RIPPLED_REPO_ROOT/Builds/DockerPlay.
 
 # How to play ?
+
 
 ## Build Rippled from scratch
 
@@ -29,18 +30,19 @@ scons: done building targets.
 
 * Build a docker image called rippled-builder as defined in DOCKER_PLAY_ROOT/RippledBuilder/Dockerfile. 
 
-**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).**
+**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000,1000) but you're free to change the Dockerfile to fit your environment).**
 
 If the rippled-builder image already exists skip this step.
 
 * Run a container called rippled-builder with following volume: 
   * RIPPLED_REPO_ROOT:/RIPPLED:rw
 
-**This setup allow you to reuse the same container to build rippled after any source file changes.**
+**This setup allows you to reuse the same container to build rippled after any source file changes.**
 
 If the container already exists then start it. The container will build rippled and stop.
 
 * When done and if no error you will find your fresh rippled binary in RIPPLED_REPO_ROOT/build.
+
 
 
 ## Start your fresh Rippled
@@ -62,9 +64,11 @@ DOCKER_PLAY_ROOT/rdde start [name - default: standalone]
 
 * If no rippled file found in RIPPLED_REPO_ROOT/build directory exit.
 
+
 * If you do not provide a name provided for your rippled instance default is "standalone". In such case rdde will :
   * look if DOCKER_PLAY_ROOT/RippledRunner/etc/standalone/rippled.cfg exists if not will copy DOCKER_PLAY_ROOT/RippledRunner/etc/standalone/rippled.tpl.cfg in to DOCKER_PLAY_ROOT/RippledRunner/etc/standalone/rippled.cfg.
   * look if DOCKER_PLAY_ROOT/RippledRunner/etc/standalone/validators.txt exists if not will copy RIPPLED_REPO_ROOT/doc/validators-example.txt to DOCKER_PLAY_ROOT/RippledRunner/etc/$NAME/validators.txt
+
 
 * If you do provide a name for your rippled instance the script behavior will not change so much but you will have to provides configuration template yourself at least. In such case rdde script will : 
 
@@ -74,9 +78,10 @@ DOCKER_PLAY_ROOT/rdde start [name - default: standalone]
 
   * look if DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/validators.txt exists if not will copy  RIPPLED_REPO_ROOT/doc/validators-example.txt to DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]/validators.txt
 
+
 * Build a docker image called rippled-runner based on DOCKER_PLAY_ROOT/RippledRunner/Dockerfile. 
 
-**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).**
+**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000,1000) but you're free to change the Dockerfile to fit your environment).**
 
 If the rippled-runner image already exists skip this step.
 
@@ -85,9 +90,9 @@ If the rippled-runner image already exists skip this step.
   * DOCKER_PLAY_ROOT/RippledRunner/etc/\[name\]:/RIPPLED/etc:ro
   * DOCKER_PLAY_ROOT/RippledRunner/data/\[name\]:/RIPPLED/data:rw
 
-**This setup allow you to reuse the same container to run rippled after any build.**
+**This setup allows you to reuse the same container to run rippled after any build.**
 
-If the container already exists (and not started already) then start it. The container will start rippled.
+If the container already exists (and not started already) then start it. The container will start rippled with provided configuration.
 
 * NOTE : following files/directories are ignored in rippled repo : 
   * rippled.cfg
@@ -100,6 +105,8 @@ If the container already exists (and not started already) then start it. The con
 
 * customize rippled starting parameters thanks docker environment variables.
 * use docker-compose to setup multi rippled testing environment. 
+
+
 
 ## Stop your fresh Rippled
 
@@ -133,14 +140,14 @@ DOCKER_PLAY_ROOT/rdde test
 
 * Build a docker image called rippled-tester based on DOCKER_PLAY_ROOT/RippledTester/Dockerfile. 
 
-**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).**
+**Also notice a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000,1000) but you're free to change the Dockerfile to fit your environment).**
 
 If the rippled-tester image already exists skip this step.
 
 * Run a container called rippled-tester with following volume
   * RIPPLED_REPO_ROOT:/RIPPLED:rw
 
-**This setup allow you to reuse the same container to test rippled after any build.**
+**This setup allows you to reuse the same container to test rippled after any build.**
 
 If the container already exists then start it. The container will install node dependencies modules if not done already and run rippled unit tests.
 
