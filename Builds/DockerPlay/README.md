@@ -27,13 +27,17 @@ scons: done building targets.
 
 ### Behind the scene :
 
-* Build a docker image called rippled-builder as defined in DOCKER_PLAY_ROOT/RippledBuilder/Dockerfile. Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,git)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+* Build a docker image called rippled-builder as defined in DOCKER_PLAY_ROOT/RippledBuilder/Dockerfile. 
+
+Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+
 If the rippled-builder image already exists skip this step.
 
 * Run a container called rippled-builder with following volume: 
   * RIPPLED_REPO_ROOT:/RIPPLED:rw
 
 **This setup allow you to reuse the same container to build rippled after any source file changes.**
+
 If the container already exists then start it. The container will build rippled and stop.
 
 * When done and if no error you will find your fresh rippled binary in RIPPLED_REPO_ROOT/build.
@@ -63,18 +67,26 @@ DOCKER_PLAY_ROOT/rdde start <name - default: standalone>
   * look if DOCKER_PLAY_ROOT/RippledRunner/etc/standalone/validators.txt exists if not will copy RIPPLED_REPO_ROOT/doc/validators-example.txt to DOCKER_PLAY_ROOT/RippledRunner/etc/$NAME/validators.txt
 
 * If you do provide a name for your rippled instance the script behavior will not change so much but you will have to provides configuration template yourself at least. In such case rdde script will : 
-  * look if DOCKER_PLAY_ROOT/RippledRunner/etc/<name>/rippled.cfg exists. If not will copy DOCKER_PLAY_ROOT/RippledRunner/etc/<name>/rippled.tpl.cfg in to DOCKER_PLAY_ROOT/RippledRunner/etc/standalone/rippled.cfg. If DOCKER_PLAY_ROOT/RippledRunner/etc/<name>/rippled.tpl.cfg doesn't exist then script exit with error.
-  * look if DOCKER_PLAY_ROOT/RippledRunner/etc/<name>/validators.txt exists if not will copy  RIPPLED_REPO_ROOT/doc/validators-example.txt to DOCKER_PLAY_ROOT/RippledRunner/etc/$NAME/validators.txt
 
-* Build a docker image called rippled-runner based on DOCKER_PLAY_ROOT/RippledRunner/Dockerfile. Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,git)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+  * look if DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>/rippled.cfg exists. If not will copy DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>/rippled.tpl.cfg in to DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>/rippled.cfg. 
+
+**If DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>/rippled.tpl.cfg doesn't exist then script exit with error.**
+
+  * look if DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>/validators.txt exists if not will copy  RIPPLED_REPO_ROOT/doc/validators-example.txt to DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>/validators.txt
+
+* Build a docker image called rippled-runner based on DOCKER_PLAY_ROOT/RippledRunner/Dockerfile. 
+
+Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+
 If the rippled-runner image already exists skip this step.
 
 * Run a container called rippled-<name - default: standalone> with following volume:
   * RIPPLED_REPO_ROOT/build/:/RIPPLED/bin:ro
-  * DOCKER_PLAY_ROOT/RippledRunner/etc/<name>:/RIPPLED/etc:ro
-  * DOCKER_PLAY_ROOT/RippledRunner/data/<name>:/RIPPLED/data:rw
+  * DOCKER_PLAY_ROOT/RippledRunner/etc/\<name\>:/RIPPLED/etc:ro
+  * DOCKER_PLAY_ROOT/RippledRunner/data/\<name\>:/RIPPLED/data:rw
 
 **This setup allow you to reuse the same container to run rippled after any build.**
+
 If the container already exists then start it if not started already. The container will start rippled.
 
 * NOTE : following files/directories are ignored in rippled repo : 
@@ -97,7 +109,7 @@ DOCKER_PLAY_ROOT/rdde stop <name - default: standalone>
 ```
 
 ### Behind the scene : 
-Simply stop rippled-<name - default: standalone> container. To remove the container use docker rm command...
+Simply stop rippled-\<name - default: standalone\> container. To remove the container use docker rm command...
 
 ## Test your fresh Rippled
 
@@ -119,7 +131,10 @@ DOCKER_PLAY_ROOT/rdde test
 
 * If no rippled file found in RIPPLED_REPO_ROOT/build directory exit.
 
-* Build a docker image called rippled-tester based on DOCKER_PLAY_ROOT/RippledTester/Dockerfile. Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,git)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+* Build a docker image called rippled-tester based on DOCKER_PLAY_ROOT/RippledTester/Dockerfile. 
+
+Also notice a rippled user is created to fit your host user uid/gid (Debian users has generally (uid,gid)=(1000:1000) but you're free to change the Dockerfile to fit your environment).
+
 If the rippled-tester image already exists skip this step.
 
 * Run a container called rippled-tester with following volume
