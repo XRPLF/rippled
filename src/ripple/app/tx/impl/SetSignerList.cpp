@@ -251,7 +251,7 @@ SetSignerList::replaceSignerList ()
     JLOG(j_.trace()) <<
         "Created signer list for account " << toBase58(account_);
 
-    signerList->setFieldU64 (sfOwnerNode, result.second);
+    (*signerList)[sfOwnerNode] = result.second;
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.

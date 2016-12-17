@@ -751,7 +751,8 @@ describeOwnerDir(AccountID const& account)
 }
 
 // Ledger must be in a state for this to work.
-TER
+static
+bool
 dirDelete (ApplyView& view,
     const bool                      bKeepRoot,      // --> True, if we never completely clean up, after we overflow the root node.
     std::uint64_t                   uNodeDir,       // --> Node containing entry.
@@ -912,45 +913,31 @@ trustDelete (ApplyView& view,
             AccountID const& uHighAccountID,
                  beast::Journal j)
 {
-    // Detect legacy dirs.
-    bool        bLowNode    = sleRippleState->isFieldPresent (sfLowNode);
-    bool        bHighNode   = sleRippleState->isFieldPresent (sfHighNode);
-    std::uint64_t uLowNode    = sleRippleState->getFieldU64 (sfLowNode);
-    std::uint64_t uHighNode   = sleRippleState->getFieldU64 (sfHighNode);
-    TER         terResult;
-
     JLOG (j.trace())
         << "trustDelete: Deleting ripple line: low";
-    terResult   = dirDelete(view,
-        false,
-        uLowNode,
-        keylet::ownerDir (uLowAccountID),
-        sleRippleState->key(),
-        false,
-        !bLowNode,
-        j);
 
-    if (tesSUCCESS == terResult)
+    bool success = dirDelete(view, false,
+        sleRippleState->getFieldU64 (sfLowNode),
+        keylet::ownerDir (uLowAccountID),
+        sleRippleState->key(), false,
+        !sleRippleState->isFieldPresent (sfLowNode), j);
+
+    if (success)
     {
         JLOG (j.trace())
                 << "trustDelete: Deleting ripple line: high";
-        terResult   = dirDelete (view,
-            false,
-            uHighNode,
+        success = dirDelete (view, false,
+            sleRippleState->getFieldU64 (sfHighNode),
             keylet::ownerDir (uHighAccountID),
-            sleRippleState->key(),
-            false,
-            !bHighNode,
-            j);
+            sleRippleState->key(), false,
+            !sleRippleState->isFieldPresent (sfHighNode), j);
     }
 
     JLOG (j.trace()) << "trustDelete: Deleting ripple line: state";
     view.erase(sleRippleState);
 
-    return terResult;
+    return success ? tesSUCCESS : tefBAD_LEDGER;
 }
-
-
 
 TER
 offerDelete (ApplyView& view,
@@ -959,28 +946,26 @@ offerDelete (ApplyView& view,
 {
     if (! sle)
         return tesSUCCESS;
-    auto offerIndex = sle->key();
-    auto owner = sle->getAccountID  (sfAccount);
 
-    // Detect legacy directories.
-    bool bOwnerNode = sle->isFieldPresent (sfOwnerNode);
-    std::uint64_t uOwnerNode = sle->getFieldU64 (sfOwnerNode);
-    std::uint64_t uBookNode  = sle->getFieldU64 (sfBookNode);
+    auto const& offerIndex = sle->key();
+    auto owner = (*sle)[sfAccount];
 
-    TER terResult  = dirDelete (view, false, uOwnerNode,
-        keylet::ownerDir(owner), offerIndex, false, !bOwnerNode, j);
-    TER terResult2 = dirDelete (view, false, uBookNode,
+    // We detect legacy entries which may not have an owner node
+    auto success1 = dirDelete (view, false,
+        sle->getFieldU64 (sfOwnerNode), keylet::ownerDir(owner),
+        offerIndex, false, !sle->isFieldPresent (sfOwnerNode), j);
+    auto success2 = dirDelete (view, false,
+        sle->getFieldU64 (sfBookNode),
         keylet::book(sle->getFieldH256 (sfBookDirectory)),
         offerIndex, true, false, j);
 
-    if (tesSUCCESS == terResult)
+    if (success1)
         adjustOwnerCount(view, view.peek(
             keylet::account(owner)), -1, j);
 
     view.erase(sle);
 
-    return (terResult == tesSUCCESS) ?
-        terResult2 : terResult;
+    return (success1 && success2) ? tesSUCCESS : tefBAD_LEDGER;
 }
 
 // Direct send w/o fees:

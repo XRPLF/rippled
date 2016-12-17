@@ -114,7 +114,7 @@ CreateTicket::doApply ()
         return tecDIR_FULL;
     }
 
-    sleTicket->setFieldU64(sfOwnerNode, result.second);
+    (*sleTicket)[sfOwnerNode] = result.second;
 
     // If we succeeded, the new entry counts agains the
     // creator's reserve.

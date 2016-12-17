@@ -230,7 +230,7 @@ public:
         std::function<void(std::shared_ptr<SLE> const&)> describe);
     /** @} */
 
-    /** Removes an entry from a directory
+    /** Remove an entry from a directory
 
         @param directory the base of the directory
         @param page the page number for this page
@@ -242,7 +242,7 @@ public:
                 false otherwise.
 
         Effects:
-            Removes one or more pages, potentially removing
+            Removes zero or more pages, potentially removing
             the directory itself.
     */
     /** @{ */

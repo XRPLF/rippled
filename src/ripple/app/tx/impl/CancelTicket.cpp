@@ -77,10 +77,8 @@ CancelTicket::doApply ()
         return tecNO_PERMISSION;
 
     auto const success = ctx_.view ().dirRemove (
-        keylet::ownerDir(ticket_owner),
-        sleTicket->getFieldU64 (sfOwnerNode),
-        ticketId,
-        true);
+        keylet::ownerDir(ticket_owner), (*sleTicket)[sfOwnerNode],
+        ticketId, true);
 
     adjustOwnerCount(view(), view().peek(
         keylet::account(ticket_owner)), -1, ctx_.app.journal ("View"));
