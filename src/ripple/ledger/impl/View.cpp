@@ -72,14 +72,6 @@ bool amendmentRIPD1298 (NetClock::time_point const closeTime)
     return closeTime > amendmentRIPD1298SoTime();
 }
 
-// VFALCO NOTE A copy of the other one for now
-/** Maximum number of entries in a directory page
-    A change would be protocol-breaking.
-*/
-#ifndef DIR_NODE_MAX
-#define DIR_NODE_MAX  32
-#endif
-
 //------------------------------------------------------------------------------
 //
 // Observers
@@ -952,7 +944,7 @@ offerDelete (ApplyView& view,
 
     // We detect legacy entries which may not have an owner node
     auto success1 = dirDelete (view, false,
-        sle->getFieldU64 (sfOwnerNode), keylet::ownerDir(owner),
+        (*sle)[sfOwnerNode], keylet::ownerDir(owner),
         offerIndex, false, !sle->isFieldPresent (sfOwnerNode), j);
     auto success2 = dirDelete (view, false,
         sle->getFieldU64 (sfBookNode),
