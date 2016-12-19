@@ -217,108 +217,6 @@ void LedgerConsensusImp<Traits>::shareSet (TxSet_t const& set)
         set.map_, false);
 }
 
-// Called when:
-// 1) We take our initial position
-// 2) We take a new position
-// 3) We acquire a position a validator took
-//
-// We store it, notify peers that we have it,
-// and update our tracking if any validators currently
-// propose it
-template <class Traits>
-void
-LedgerConsensusImp<Traits>::mapCompleteInternal (
-    TxSet_t const& map,
-    bool acquired)
-{
-    auto const hash = map.id ();
-
-    if (acquired_.find (hash) != acquired_.end())
-        return;
-
-    if (acquired)
-    {
-        JLOG (j_.trace()) << "We have acquired txs " << hash;
-    }
-
-    // We now have a map that we did not have before
-
-    if (! acquired)
-    {
-        // If we generated this locally,
-        // put the map where others can get it
-        // If we acquired it, it's already shared
-        shareSet (map);
-    }
-
-    if (! ourPosition_)
-    {
-        JLOG (j_.debug())
-            << "Not creating disputes: no position yet.";
-    }
-    else if (ourPosition_->isBowOut ())
-    {
-        JLOG (j_.warn())
-            << "Not creating disputes: not participating.";
-    }
-    else if (hash == ourPosition_->position ())
-    {
-        JLOG (j_.debug())
-            << "Not creating disputes: identical position.";
-    }
-    else
-    {
-        // Our position is not the same as the acquired position
-        // create disputed txs if needed
-        createDisputes (*ourSet_, map);
-        compares_.insert(hash);
-    }
-
-    // Adjust tracking for each peer that takes this position
-    std::vector<NodeID> peers;
-    for (auto& it : peerPositions_)
-    {
-        if (it.second.position () == hash)
-            peers.push_back (it.second.nodeID ());
-    }
-
-    if (!peers.empty ())
-    {
-        adjustCount (map, peers);
-    }
-    else if (acquired)
-    {
-        JLOG (j_.warn())
-            << "By the time we got the map " << hash
-            << " no peers were proposing it";
-    }
-
-    acquired_.emplace (hash, map);
-}
-
-template <class Traits>
-void LedgerConsensusImp<Traits>::gotMap (
-    Time_t const& now,
-    TxSet_t const& map)
-{
-    std::lock_guard<std::recursive_mutex> _(lock_);
-
-    now_ = now;
-
-    try
-    {
-        mapCompleteInternal (map, true);
-    }
-    catch (SHAMapMissingNode const& mn)
-    {
-        // This should never happen
-        leaveConsensus();
-        JLOG (j_.error()) <<
-            "Missing node processing complete map " << mn;
-        Rethrow();
-    }
-}
-
 template <class Traits>
 bool LedgerConsensusImp<Traits>::haveConsensus ()
 {
@@ -384,20 +282,6 @@ bool LedgerConsensusImp<Traits>::haveConsensus ()
     return true;
 }
 
-template <class Traits>
-void LedgerConsensusImp<Traits>::simulate (
-    Time_t const& now,
-    boost::optional<std::chrono::milliseconds> consensusDelay)
-{
-    std::lock_guard<std::recursive_mutex> _(lock_);
-
-    JLOG (j_.info()) << "Simulating consensus";
-    now_ = now;
-    closeLedger ();
-    roundTime_ = consensusDelay.value_or(100ms);
-    beginAccept (true);
-    JLOG (j_.info()) << "Simulation complete";
-}
 
 template <class Traits>
 void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
@@ -822,108 +706,6 @@ void LedgerConsensusImp<Traits>::statusChange (
     JLOG (j_.trace()) << "send status change to peer";
 }
 
-template <class Traits>
-auto
-LedgerConsensusImp<Traits>::makeInitialPosition () ->
-    std::pair <TxSet_t, Pos_t>
-{
-    // Tell the ledger master not to acquire the ledger we're probably building
-    ledgerMaster_.setBuildingLedger (previousLedger_->info().seq + 1);
-
-    auto initialLedger = app_.openLedger().current();
-
-    auto initialSet = std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION, app_.family(), SHAMap::version{1});
-    initialSet->setUnbacked ();
-
-    // Build SHAMap containing all transactions in our open ledger
-    for (auto const& tx : initialLedger->txs)
-    {
-        Serializer s (2048);
-        tx.first->add(s);
-        initialSet->addItem (
-            SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
-    }
-
-    // Add pseudo-transactions to the set
-    if ((app_.config().standalone() || (proposing_ && haveCorrectLCL_))
-            && ((previousLedger_->info().seq % 256) == 0))
-    {
-        // previous ledger was flag ledger, add pseudo-transactions
-        auto const validations =
-            app_.getValidations().getValidations (
-                previousLedger_->info().parentHash);
-
-        auto const count = std::count_if (
-            validations.begin(), validations.end(),
-            [](auto const& v)
-            {
-                return v.second->isTrusted();
-            });
-
-        if (count >= ledgerMaster_.getMinValidations())
-        {
-            feeVote_.doVoting (
-                previousLedger_,
-                validations,
-                initialSet);
-            app_.getAmendmentTable ().doVoting (
-                previousLedger_,
-                validations,
-                initialSet);
-        }
-    }
-
-    // Now we need an immutable snapshot
-    initialSet = initialSet->snapShot(false);
-    auto setHash = initialSet->getHash().as_uint256();
-
-    return std::make_pair<RCLTxSet, Pos_t> (
-        std::move (initialSet),
-        LedgerProposal {
-            initialLedger->info().parentHash,
-            setHash,
-            closeTime_,
-            now_,
-            ourID_});
-}
-
-template <class Traits>
-void LedgerConsensusImp<Traits>::takeInitialPosition()
-{
-    auto pair = makeInitialPosition();
-    auto const& initialSet = pair.first;
-    auto const& initialPos = pair.second;
-    assert (initialSet.id() == initialPos.position());
-
-    ourPosition_ = initialPos;
-    ourSet_ = initialSet;
-
-    for (auto& it : disputes_)
-    {
-        it.second.setOurVote (initialSet.exists (it.first));
-    }
-
-    // When we take our initial position,
-    // we need to create any disputes required by our position
-    // and any peers who have already taken positions
-    compares_.emplace (initialSet.id());
-    for (auto& it : peerPositions_)
-    {
-        auto hash = it.second.position();
-        auto iit (acquired_.find (hash));
-        if (iit != acquired_.end ())
-        {
-            if (compares_.emplace (hash).second)
-                createDisputes (initialSet, iit->second);
-        }
-    }
-
-    mapCompleteInternal (initialSet, false);
-
-    if (proposing_)
-        propose ();
-}
 
 /** How many of the participants must agree to reach a given threshold?
 
@@ -1128,18 +910,6 @@ void LedgerConsensusImp<Traits>::updateOurPositions ()
             mapCompleteInternal (*ourSet, false);
         }
     }
-}
-
-
-template <class Traits>
-void LedgerConsensusImp<Traits>::closeLedger ()
-{
-    state_ = State::establish;
-    consensusStartTime_ = std::chrono::steady_clock::now ();
-    closeTime_ = now_;
-    statusChange (protocol::neCLOSING_LEDGER, *previousLedger_);
-    ledgerMaster_.applyHeldTransactions ();
-    takeInitialPosition ();
 }
 
 template <class Traits>

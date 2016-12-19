@@ -33,6 +33,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/basics/CountedObject.h>
+#include <ripple/overlay/Message.h>
 
 namespace ripple {
 
@@ -141,7 +142,7 @@ private:
     hasOpenTransactions() const;
 
     /**
-	    @param h The hash of the ledger of interest
+        @param h The hash of the ledger of interest
         @return the number of proposers that validated a ledger
     */
     int
@@ -154,14 +155,21 @@ private:
     void
     propose (LedgerProposal const& position);
 
+    /** Share the given tx set with peers.
+
+        @param set The TxSet to share.
+    */
+    void
+    share (RCLTxSet const& set);
+
     /** Get the last closed ledger (LCL) seen on the network
 
         @param currentLedger Current ledger used in consensus
-		@param priorLedger Prior ledger used in consensus
-		@param believedCorrect Whether consensus believes currentLedger is LCL
+        @param priorLedger Prior ledger used in consensus
+        @param believedCorrect Whether consensus believes currentLedger is LCL
 
-		@return The hash of the last closed network
-	 */
+        @return The hash of the last closed network
+     */
     uint256
     getLCL (
         uint256 const& currentLedger,
@@ -169,7 +177,46 @@ private:
         bool believedCorrect);
 
 
+    /** Notification that the ledger has closed.
+
+       @param ledger the ledger we are changing to
+       @param haveCorrectLCL whether we believe this is the correct LCL
+    */
+    void
+    onClose(RCLCxLedger const & ledger, bool haveCorrectLCL);
+
+     /** Create our initial position of transactions to accept in this round
+         of consensus.
+
+          @param prevLedger The ledger the transactions apply to
+          @param isProposing Whether we are currently proposing
+          @param isCorrectLCL Whether we have the correct LCL
+          @param closeTime When we believe the ledger closed
+          @param now The current network adjusted time
+
+          @return Pair of (i)  transactions we believe are in the ledger
+                          (ii) the corresponding proposal of those transactions
+                               to send to peers
+     */
+    std::pair <RCLTxSet, LedgerProposal>
+    makeInitialPosition (
+        RCLCxLedger const & prevLedger,
+        bool isProposing,
+        bool isCorrectLCL,
+        NetClock::time_point closeTime,
+        NetClock::time_point now);
+
     //!-------------------------------------------------------------------------
+
+    /** Notify peers of a consensus state change
+
+        @param ne Event type for notification
+        @param ledger The ledger at the time of the state change
+        @param haveCorrectLCL Whether we believ we have the correct LCL.
+    */
+    void
+    notify(protocol::NodeEvent ne, RCLCxLedger const & ledger, bool haveCorrectLCL);
+
     Application& app_;
     std::unique_ptr <FeeVote> feeVote_;
     LedgerMaster & ledgerMaster_;

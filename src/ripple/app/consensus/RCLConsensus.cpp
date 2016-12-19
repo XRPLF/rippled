@@ -26,6 +26,8 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/overlay/predicates.h>
+#include <ripple/app/misc/AmendmentTable.h>
 
 namespace ripple {
 
@@ -201,6 +203,13 @@ RCLConsensus::propose (LedgerProposal const& position)
     app_.overlay().send(prop);
 }
 
+void
+RCLConsensus::share (RCLTxSet const& set)
+{
+    app_.getInboundTransactions().giveSet (set.id(),
+        set.map_, false);
+}
+
 boost::optional<RCLTxSet>
 RCLConsensus::acquireTxSet(LedgerProposal const & position)
 {
@@ -262,6 +271,127 @@ RCLConsensus::getLCL (
     }
 
     return netLgr;
+}
+
+
+void
+RCLConsensus::onClose(RCLCxLedger const & ledger, bool haveCorrectLCL)
+{
+    notify(protocol::neCLOSING_LEDGER, ledger, haveCorrectLCL);
+}
+
+std::pair <RCLTxSet, LedgerProposal>
+RCLConsensus::makeInitialPosition (RCLCxLedger const & prevLedgerT,
+        bool proposing,
+        bool correctLCL,
+        NetClock::time_point closeTime,
+        NetClock::time_point now)
+{
+    auto& ledgerMaster = app_.getLedgerMaster();
+    auto const &prevLedger = prevLedgerT.ledger_;
+    ledgerMaster.applyHeldTransactions ();
+
+    // Tell the ledger master not to acquire the ledger we're probably building
+    ledgerMaster.setBuildingLedger (prevLedger->info().seq + 1);
+
+    auto initialLedger = app_.openLedger().current();
+
+    auto initialSet = std::make_shared <SHAMap> (
+        SHAMapType::TRANSACTION, app_.family(), SHAMap::version{1});
+    initialSet->setUnbacked ();
+
+    // Build SHAMap containing all transactions in our open ledger
+    for (auto const& tx : initialLedger->txs)
+    {
+        Serializer s (2048);
+        tx.first->add(s);
+        initialSet->addItem (
+            SHAMapItem (tx.first->getTransactionID(), std::move (s)), true, false);
+    }
+
+    // Add pseudo-transactions to the set
+    if ((app_.config().standalone() || (proposing && correctLCL))
+            && ((prevLedger->info().seq % 256) == 0))
+    {
+        // previous ledger was flag ledger, add pseudo-transactions
+        auto const validations =
+            app_.getValidations().getValidations (
+                prevLedger->info().parentHash);
+
+        auto const count = std::count_if (
+            validations.begin(), validations.end(),
+            [](auto const& v)
+            {
+                return v.second->isTrusted();
+            });
+
+        if (count >= ledgerMaster.getMinValidations())
+        {
+            feeVote_->doVoting (
+                prevLedger,
+                validations,
+                initialSet);
+            app_.getAmendmentTable ().doVoting (
+                prevLedger,
+                validations,
+                initialSet);
+        }
+    }
+
+    // Now we need an immutable snapshot
+    initialSet = initialSet->snapShot(false);
+    auto setHash = initialSet->getHash().as_uint256();
+
+    return std::make_pair<RCLTxSet, LedgerProposal> (
+        std::move (initialSet),
+        LedgerProposal {
+            initialLedger->info().parentHash,
+            setHash,
+            closeTime,
+            now,
+            nodeID_ });
+}
+
+void
+RCLConsensus::notify(
+    protocol::NodeEvent ne,
+    RCLCxLedger const & ledger,
+    bool haveCorrectLCL)
+{
+
+    protocol::TMStatusChange s;
+
+    if (!haveCorrectLCL)
+        s.set_newevent (protocol::neLOST_SYNC);
+    else
+    	s.set_newevent(ne);
+
+    s.set_ledgerseq (ledger.seq());
+    s.set_networktime (app_.timeKeeper().now().time_since_epoch().count());
+    s.set_ledgerhashprevious(ledger.parentID().begin (),
+        std::decay_t<decltype(ledger.parentID())>::bytes);
+    s.set_ledgerhash (ledger.id().begin (),
+        std::decay_t<decltype(ledger.id())>::bytes);
+
+    std::uint32_t uMin, uMax;
+    if (! ledgerMaster_.getFullValidatedRange (uMin, uMax))
+    {
+        uMin = 0;
+        uMax = 0;
+    }
+    else
+    {
+        // Don't advertise ledgers we're not willing to serve
+        std::uint32_t early = ledgerMaster_.getEarliestFetch ();
+        if (uMin < early)
+           uMin = early;
+    }
+    s.set_firstseq (uMin);
+    s.set_lastseq (uMax);
+    app_.overlay ().foreach (send_always (
+        std::make_shared <Message> (
+            s, protocol::mtSTATUS_CHANGE)));
+    JLOG (j_.trace()) << "send status change to peer";
 }
 
 }

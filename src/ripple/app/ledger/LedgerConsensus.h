@@ -56,20 +56,6 @@ public:
 
     virtual LgrID_t getLCL () = 0;
 
-    virtual void gotMap (Time_t const& now, TxSet_t const& map) = 0;
-
-    /** Simulate the consensus process without any network traffic.
-
-        The end result, is that consensus begins and completes as if everyone
-        had agreed with whatever we propose.
-
-        This function is only called from the rpc "ledger_accept" path with the
-        server in standalone mode and SHOULD NOT be used during the normal
-        consensus process.
-    */
-    virtual void simulate (
-        Time_t const& now,
-        boost::optional<std::chrono::milliseconds> consensusDelay) = 0;
 };
 
 } // ripple

@@ -115,6 +115,34 @@ public:
     void
     timerEntry (NetTime_t const& now);
 
+    /**
+        Process a transaction set, typically acquired from the network
+        @param now The network adjusted time
+        @param txSet the transaction set
+    */
+    void
+    gotTxSet (
+        NetTime_t const& now,
+        TxSet_t const& txSet);
+
+    /** Simulate the consensus process without any network traffic.
+
+         The end result, is that consensus begins and completes as if everyone
+         had agreed with whatever we propose.
+
+         This function is only called from the rpc "ledger_accept" path with the
+         server in standalone mode and SHOULD NOT be used during the normal
+         consensus process.
+
+         @param now The current network adjusted time.
+         @param consensusDelay (Optional) duration to delay between closing and
+                                accepting the ledger. Uses 100ms if unspecified.
+    */
+    void
+    simulate(
+        NetTime_t const& now,
+        boost::optional<std::chrono::milliseconds> consensusDelay);
+
     /* @return the ID/hash of the last closed ledger */
     typename Ledger_t::ID
     LCL()
@@ -211,12 +239,37 @@ private:
     void
     stateEstablish ();
 
+    /** Close the open ledger and establish initial position.
+    */
+    void
+    closeLedger ();
+
+    /** Take an initial position on the consensus set.
+    */
+    void
+    takeInitialPosition ();
 
     /** Revoke our outstanding proposal, if any, and cease proposing at least
         until this round ends.
     */
     void
     leaveConsensus ();
+
+    /** Process complete transaction set.
+
+        Called when:
+          * We take our initial position
+          * We take a new position
+          * We acquire a position a validator took
+
+       We store it, notify peers that we have it, and update our tracking if
+       any validators currently propose it.
+
+      @param txSet      the transaction set.
+      @param acquired true if we have acquired the transaction set.
+    */
+    void
+    gotTxSetInternal ( TxSet_t const& txSet, bool acquired);
 
     /** @return The Derived class that implements the CRTP requirements.
     */
@@ -309,7 +362,8 @@ Consensus<Derived, Traits>::Consensus (
 }
 
 template <class Derived, class Traits>
-void Consensus<Derived, Traits>::startRound (
+void
+Consensus<Derived, Traits>::startRound (
     NetTime_t const& now,
     typename Ledger_t::ID const& prevLCLHash,
     Ledger_t const & prevLedger)
@@ -401,7 +455,8 @@ void Consensus<Derived, Traits>::startRound (
 }
 
 template <class Derived, class Traits>
-bool Consensus<Derived, Traits>::peerProposal (
+bool
+Consensus<Derived, Traits>::peerProposal (
     NetTime_t const& now,
     Proposal_t const& newPosition)
 {
@@ -561,6 +616,46 @@ Consensus<Derived, Traits>::timerEntry (NetTime_t const& now)
     }
 }
 
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::gotTxSet (
+    NetTime_t const& now,
+    TxSet_t const& txSet)
+{
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
+    now_ = now;
+
+    try
+    {
+        gotTxSetInternal (txSet, true);
+    }
+    catch (typename Traits::MissingTxException_t const& mn)
+    {
+        // This should never happen
+        leaveConsensus();
+        JLOG (j_.error()) <<
+            "Missing node processing complete map " << mn;
+        Rethrow();
+    }
+}
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::simulate (
+    NetTime_t const& now,
+    boost::optional<std::chrono::milliseconds> consensusDelay)
+{
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
+    JLOG (j_.info()) << "Simulating consensus";
+    now_ = now;
+    closeLedger ();
+    roundTime_ = consensusDelay.value_or(100ms);
+    beginAccept (true);
+    JLOG (j_.info()) << "Simulation complete";
+}
+
 // Handle a change in the LCL during a consensus round
 template <class Derived, class Traits>
 void
@@ -610,7 +705,8 @@ Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
 
 
 template <class Derived, class Traits>
-void Consensus<Derived, Traits>::checkLCL ()
+void
+Consensus<Derived, Traits>::checkLCL ()
 {
     auto netLgr = impl().getLCL (
         prevLedgerHash_,
@@ -739,7 +835,131 @@ Consensus<Derived, Traits>::stateEstablish ()
 
 
 template <class Derived, class Traits>
-void Consensus<Derived, Traits>::leaveConsensus ()
+void
+Consensus<Derived, Traits>::closeLedger ()
+{
+    state_ = State::establish;
+    consensusStartTime_ = clock_.now ();
+    closeTime_ = now_;
+
+    impl().onClose (previousLedger_, haveCorrectLCL_);
+
+    takeInitialPosition ();
+}
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::takeInitialPosition()
+{
+    auto pair = impl().makeInitialPosition(previousLedger_, proposing_,
+       haveCorrectLCL_,  closeTime_, now_ );
+    auto const& initialSet = pair.first;
+    auto const& initialPos = pair.second;
+    assert (initialSet.id() == initialPos.position());
+
+    ourPosition_ = initialPos;
+    ourSet_ = initialSet;
+
+    for (auto& it : disputes_)
+    {
+        it.second.setOurVote (initialSet.exists (it.first));
+    }
+
+    // When we take our initial position,
+    // we need to create any disputes required by our position
+    // and any peers who have already taken positions
+    compares_.emplace (initialSet.id());
+    for (auto& it : peerProposals_)
+    {
+        auto pos = it.second.position();
+        auto iit (acquired_.find (pos));
+        if (iit != acquired_.end ())
+        {
+            if (compares_.emplace (pos).second)
+                createDisputes (initialSet, iit->second);
+        }
+    }
+
+    gotTxSetInternal (initialSet, false);
+
+    if (proposing_)
+        impl().propose (*ourPosition_);
+}
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::gotTxSetInternal (
+    TxSet_t const& txSet,
+    bool acquired)
+{
+    auto const hash = txSet.id();
+
+    if (acquired_.find (hash) != acquired_.end())
+        return;
+
+    if (acquired)
+    {
+        JLOG (j_.trace()) << "We have acquired txs " << hash;
+    }
+
+    // We now have a txSet that we did not have before
+
+    if (! acquired)
+    {
+        // If we generated this locally,
+        // put the txSet where others can get it
+        // If we acquired it, it's already shared
+        impl().share (txSet);
+    }
+
+    if (! ourPosition_)
+    {
+        JLOG (j_.debug())
+            << "Not creating disputes: no position yet.";
+    }
+    else if (ourPosition_->isBowOut ())
+    {
+        JLOG (j_.warn())
+            << "Not creating disputes: not participating.";
+    }
+    else if (hash == ourPosition_->position ())
+    {
+        JLOG (j_.debug())
+            << "Not creating disputes: identical position.";
+    }
+    else
+    {
+        // Our position is not the same as the acquired position
+        // create disputed txs if needed
+        createDisputes (*ourSet_, txSet);
+        compares_.insert(hash);
+    }
+
+    // Adjust tracking for each peer that takes this position
+    std::vector<NodeID_t> peers;
+    for (auto& it : peerProposals_)
+    {
+        if (it.second.position () == hash)
+            peers.push_back (it.second.nodeID ());
+    }
+
+    if (!peers.empty ())
+    {
+        adjustCount (txSet, peers);
+    }
+    else if (acquired)
+    {
+        JLOG (j_.warn())
+            << "By the time we got the map " << hash
+            << " no peers were proposing it";
+    }
+
+    acquired_.emplace (hash, txSet);
+}
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::leaveConsensus ()
 {
     if (ourPosition_ && ! ourPosition_->isBowOut ())
     {

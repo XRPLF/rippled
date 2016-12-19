@@ -99,47 +99,11 @@ public:
     /* The hash of the last closed ledger */
     LgrID_t getLCL () override;
 
-    /**
-      We have a complete transaction set, typically acquired from the network
-
-      @param map      the transaction set.
-    */
-    void gotMap (
-        Time_t const& now,
-        TxSet_t const& map) override;
-
-    void simulate(
-        Time_t const& now,
-        boost::optional<std::chrono::milliseconds> consensusDelay) override;
-
-    /**
-      Put a transaction set where peers can find it
-    */
-    void shareSet (TxSet_t const&);
-
 private:
 
     /** Check if we've reached consensus */
     bool haveConsensus ();
 
-    /**
-      Check if our last closed ledger matches the network's.
-      This tells us if we are still in sync with the network.
-      This also helps us if we enter the consensus round with
-      the wrong ledger, to leave it with the correct ledger so
-      that we can participate in the next round.
-    */
-    void checkLCL ();
-
-    /**
-      We have a complete transaction set, typically acquired from the network
-
-      @param map      the transaction set.
-      @param acquired true if we have acquired the transaction set.
-    */
-    void mapCompleteInternal (
-        TxSet_t const& map,
-        bool acquired);
 
     /** We have a new last closed ledger, process it. Final accept logic
 
@@ -184,25 +148,12 @@ private:
     */
     void statusChange (protocol::NodeEvent event, ReadView const& ledger);
 
-    /** Determine our initial proposed transaction set based on
-        our open ledger
-    */
-    std::pair <TxSet_t, Pos_t> makeInitialPosition();
-
-    /** Take an initial position on what we think the consensus set should be
-    */
-    void takeInitialPosition ();
 
     /**
        Called while trying to avalanche towards consensus.
        Adjusts our positions to try to agree with other validators.
     */
     void updateOurPositions ();
-
-    /** We have just decided to close the ledger. Start the consensus timer,
-       stash the close time, inform peers, and take a position
-    */
-    void closeLedger ();
 
     /** We have a new LCL and must accept it */
     void beginAccept (bool synchronous);
