@@ -21,6 +21,8 @@
 #include <ripple/app/consensus/RCLConsensus.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/InboundLedgers.h>
 
 namespace ripple {
 
@@ -70,6 +72,41 @@ RCLConsensus::getMode ()
         propose = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
     }
     return { propose, validate };
+}
+
+boost::optional<RCLCxLedger>
+RCLConsensus::acquireLedger(LedgerHash const & ledger)
+{
+
+    // we need to switch the ledger we're working from
+    auto buildLCL = ledgerMaster_.getLedgerByHash(ledger);
+    if (! buildLCL)
+    {
+        if (acquiringLedger_ != ledger)
+        {
+            // need to start acquiring the correct consensus LCL
+            JLOG (j_.warn()) <<
+                "Need consensus ledger " << ledger;
+
+            // Tell the ledger acquire system that we need the consensus ledger
+            acquiringLedger_ = ledger;
+
+            auto app = &app_;
+            auto hash = acquiringLedger_;
+            app_.getJobQueue().addJob (
+                jtADVANCE, "getConsensusLedger",
+                [app, hash] (Job&) {
+                    app->getInboundLedgers().acquire(
+                        hash, 0, InboundLedger::fcCONSENSUS);
+                });
+        }
+        return boost::none;
+    }
+
+    assert (!buildLCL->open() && buildLCL->isImmutable ());
+    assert (buildLCL->info().hash == ledger);
+
+    return RCLCxLedger(buildLCL);
 }
 
 }

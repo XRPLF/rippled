@@ -147,6 +147,15 @@ public:
     }
 
 private:
+
+    /** Change our view of the last closed ledger
+
+        @param lgrId The ID of the last closed ledger to switch to.
+    */
+    void
+    handleLCL (typename Ledger_t::ID const& lgrId);
+
+
     Derived &
 	impl()
 	{
@@ -324,8 +333,58 @@ void Consensus<Derived, Traits>::startRound (
         // consider closing the ledger immediately
         timerEntry (now_);
     }
+}
+
+
+// Handle a change in the LCL during a consensus round
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
+{
+    assert (lgrId != prevLedgerHash_ ||
+            previousLedger_.id() != lgrId);
+
+    if (prevLedgerHash_ != lgrId)
+    {
+        // first time switching to this ledger
+        prevLedgerHash_ = lgrId;
+
+        if (haveCorrectLCL_ && proposing_ && ourPosition_)
+        {
+            JLOG (j_.info()) << "Bowing out of consensus";
+            leaveConsensus();
+        }
+
+        // Stop proposing because we are out of sync
+        proposing_ = false;
+        peerProposals_.clear ();
+        disputes_.clear ();
+        compares_.clear ();
+        closeTimes_.clear ();
+        deadNodes_.clear ();
+        // To get back in sync:
+        playbackProposals ();
+    }
+
+    if (previousLedger_.id() == prevLedgerHash_)
+        return;
+
+    // we need to switch the ledger we're working from
+    if (auto buildLCL = impl().acquireLedger(prevLedgerHash_))
+    {
+        JLOG (j_.info()) <<
+        "Have the consensus ledger " << prevLedgerHash_;
+
+        startRound (now_, lgrId, *buildLCL);
+    }
+    else
+    {
+            haveCorrectLCL_ = false;
+    }
+
 
 }
+
 
 } // ripple
 

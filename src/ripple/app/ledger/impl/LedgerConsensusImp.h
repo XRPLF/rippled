@@ -158,13 +158,6 @@ private:
     void checkLCL ();
 
     /**
-      Change our view of the last closed ledger
-
-      @param lclHash Hash of the last closed ledger.
-    */
-    void handleLCL (LgrID_t const& lclHash);
-
-    /**
       We have a complete transaction set, typically acquired from the network
 
       @param map      the transaction set.

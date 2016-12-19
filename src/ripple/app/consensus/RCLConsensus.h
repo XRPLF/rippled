@@ -89,6 +89,17 @@ private:
     std::pair <bool, bool>
     getMode ();
 
+    /** Attempt to acquire a specific ledger.  If not available, asynchronously
+		acquires from the network.
+
+		@param ledger The ID/hash of the ledger acquire
+		@return Optional ledger, will be seated if we locally had the ledger
+	 */
+    boost::optional<RCLCxLedger>
+    acquireLedger(LedgerHash const & ledger);
+
+    //!-------------------------------------------------------------------------
+
     Application& app_;
     std::unique_ptr <FeeVote> feeVote_;
     LedgerMaster & ledgerMaster_;
