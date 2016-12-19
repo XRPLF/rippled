@@ -118,18 +118,18 @@ ConsensusImp::storeProposal (
     props.push_back (proposal);
 }
 
-std::vector <RCLCxPos>
+std::vector <LedgerProposal>
 ConsensusImp::getStoredProposals (uint256 const& prevLedger)
 {
 
-    std::vector <RCLCxPos> ret;
+    std::vector <LedgerProposal> ret;
 
     {
         std::lock_guard <std::mutex> _(lock_);
 
         for (auto const& it : storedProposals_)
             for (auto const& prop : it.second)
-                if (prop->getPrevLedger() == prevLedger)
+                if (prop->prevLedger() == prevLedger)
                     ret.emplace_back (*prop);
     }
 

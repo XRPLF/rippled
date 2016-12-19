@@ -1335,9 +1335,6 @@
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPos.h">
-      <Filter>ripple\app\consensus</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTraits.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
@@ -2458,6 +2455,9 @@
       <Filter>ripple\conditions</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\Consensus.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\ConsensusProposal.h">
       <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">

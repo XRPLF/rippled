@@ -26,7 +26,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 
-#include <ripple/app/consensus/RCLCxPos.h>
+#include <ripple/app/ledger/LedgerProposal.h>
 #include <ripple/app/consensus/RCLCxTx.h>
 
 namespace ripple {
@@ -40,7 +40,7 @@ public:
 
     using Time_t    = NetClock::time_point;
 
-    using Pos_t     = RCLCxPos;
+    using Pos_t     = LedgerProposal;
     using TxSet_t   = RCLTxSet;
     using Tx_t      = RCLCxTx;
 

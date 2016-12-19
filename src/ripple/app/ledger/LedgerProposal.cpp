@@ -38,14 +38,9 @@ LedgerProposal::LedgerProposal (
         NodeID const& nodeID,
         Slice const& signature,
         uint256 const& suppression)
-    : mPreviousLedger (pLgr)
-    , mCurrentHash (tx)
+    : Base{ pLgr, seq, tx, closeTime, now, nodeID }
     , mSuppression (suppression)
-    , mCloseTime (closeTime)
-    , mProposeSeq (seq)
     , publicKey_ (publicKey)
-    , mPeerID (nodeID)
-    , mTime (now)
 {
     signature_.resize (signature.size());
     std::memcpy(signature_.data(),
@@ -58,12 +53,9 @@ LedgerProposal::LedgerProposal (
         uint256 const& prevLgr,
         uint256 const& position,
         NetClock::time_point closeTime,
-        NetClock::time_point now)
-    : mPreviousLedger (prevLgr)
-    , mCurrentHash (position)
-    , mCloseTime (closeTime)
-    , mProposeSeq (seqJoin)
-    , mTime (now)
+        NetClock::time_point now,
+        NodeID const& nodeID)
+    : Base{ prevLgr, position, closeTime, now, nodeID }
 {
 }
 
@@ -71,10 +63,10 @@ uint256 LedgerProposal::getSigningHash () const
 {
     return sha512Half(
         HashPrefix::proposal,
-        std::uint32_t(mProposeSeq),
-        mCloseTime.time_since_epoch().count(),
-        mPreviousLedger,
-        mCurrentHash);
+        std::uint32_t(proposeSeq()),
+        closeTime().time_since_epoch().count(),
+        prevLedger(),
+        position());
 }
 
 bool LedgerProposal::checkSign () const
@@ -86,39 +78,9 @@ bool LedgerProposal::checkSign () const
         false);
 }
 
-bool LedgerProposal::changePosition (
-    uint256 const& newPosition,
-    NetClock::time_point closeTime,
-    NetClock::time_point now)
-{
-    if (mProposeSeq == seqLeave)
-        return false;
-
-    mCurrentHash    = newPosition;
-    mCloseTime      = closeTime;
-    mTime           = now;
-    ++mProposeSeq;
-    return true;
-}
-
-void LedgerProposal::bowOut (NetClock::time_point now)
-{
-    mTime           = now;
-    mProposeSeq     = seqLeave;
-}
-
 Json::Value LedgerProposal::getJson () const
 {
-    Json::Value ret = Json::objectValue;
-    ret[jss::previous_ledger] = to_string (mPreviousLedger);
-
-    if (mProposeSeq != seqLeave)
-    {
-        ret[jss::transaction_hash] = to_string (mCurrentHash);
-        ret[jss::propose_seq] = mProposeSeq;
-    }
-
-    ret[jss::close_time] = mCloseTime.time_since_epoch().count();
+    auto ret = Base::getJson();
 
     if (publicKey_.size())
         ret[jss::peer_id] =  toBase58 (

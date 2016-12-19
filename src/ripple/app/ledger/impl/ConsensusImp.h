@@ -79,7 +79,7 @@ public:
         int proposers,
         std::chrono::milliseconds convergeTime);
 
-    std::vector <RCLCxPos>
+    std::vector <LedgerProposal>
     getStoredProposals (uint256 const& previousLedger);
 
 private:
