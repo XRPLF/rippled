@@ -102,35 +102,6 @@ private:
     */
     void accept (TxSet_t const& set);
 
-    /**
-      Compare two proposed transaction sets and create disputed
-        transctions structures for any mismatches
-
-      @param m1 One transaction set
-      @param m2 The other transaction set
-    */
-    void createDisputes (TxSet_t const& m1,
-                         TxSet_t const& m2);
-
-    /**
-      Add a disputed transaction (one that at least one node wants
-      in the consensus set and at least one node does not) to our tracking
-
-      @param tx   The disputed transaction
-    */
-    void addDisputedTransaction (Tx_t const& tx);
-
-    /**
-      Adjust the votes on all disputed transactions based
-        on the set of peers taking this position
-
-      @param map   A disputed position
-      @param peers peers which are taking the position map
-    */
-    void adjustCount (TxSet_t const& map,
-        std::vector<NodeID_t> const& peers);
-
-
     /** Send a node status change message to our directly connected peers
 
       @param event   The event which caused the status change.  This is

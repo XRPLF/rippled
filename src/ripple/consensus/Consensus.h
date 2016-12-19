@@ -259,6 +259,31 @@ private:
     void
     takeInitialPosition ();
 
+    /** Compare two proposed transaction sets and create disputed
+        transctions structures for any mismatches
+
+        @param m1 One transaction set
+        @param m2 The other transaction set
+    */
+    void
+    createDisputes (TxSet_t const& m1, TxSet_t const& m2);
+
+    /** Add a disputed transaction (one that at least one node wants
+        in the consensus set and at least one node does not) to our tracking
+
+        @param tx The disputed transaction
+    */
+    void
+    addDisputedTransaction (Tx_t const& tx);
+
+    /** Adjust the votes on all disputed transactions based
+        on the set of peers taking this position
+
+        @param txSet A disputed position
+        @param peers Peers which are taking the position txSet
+    */
+    void adjustCount (TxSet_t const& txSet, std::vector<NodeID_t> const& peers);
+
     /** Revoke our outstanding proposal, if any, and cease proposing at least
         until this round ends.
     */
@@ -1082,6 +1107,82 @@ Consensus<Derived, Traits>::gotTxSetInternal (
     acquired_.emplace (hash, txSet);
 }
 
+template <class Derived, class Traits>
+void Consensus<Derived, Traits>::createDisputes (
+    TxSet_t const& m1,
+    TxSet_t const& m2)
+{
+    if (m1.id() == m2.id())
+        return;
+
+    JLOG (j_.debug()) << "createDisputes "
+        << m1.id() << " to " << m2.id();
+    auto differences = m1.compare (m2);
+
+    int dc = 0;
+    // for each difference between the transactions
+    for (auto& id : differences)
+    {
+        ++dc;
+        // create disputed transactions (from the ledger that has them)
+        assert (
+            (id.second && m1.find(id.first) && !m2.find(id.first)) ||
+            (!id.second && !m1.find(id.first) && m2.find(id.first))
+        );
+        if (id.second)
+            addDisputedTransaction (*m1.find (id.first));
+        else
+            addDisputedTransaction (*m2.find (id.first));
+    }
+    JLOG (j_.debug()) << dc << " differences found";
+}
+
+template <class Derived, class Traits>
+void Consensus<Derived, Traits>::addDisputedTransaction (
+    Tx_t const& tx)
+{
+    auto txID = tx.id();
+
+    if (disputes_.find (txID) != disputes_.end ())
+        return;
+
+    JLOG (j_.debug()) << "Transaction "
+        << txID << " is disputed";
+
+    bool ourVote = false;
+
+    // Update our vote on the disputed transaction
+    if (ourSet_)
+        ourVote = ourSet_->exists (txID);
+
+    Dispute_t dtx {tx, ourVote, j_};
+
+    // Update all of the peer's votes on the disputed transaction
+    for (auto& pit : peerProposals_)
+    {
+        auto cit (acquired_.find (pit.second.position ()));
+
+        if (cit != acquired_.end ())
+            dtx.setVote (pit.first,
+                cit->second.exists (txID));
+    }
+
+    impl().relay(dtx);
+
+    disputes_.emplace (txID, std::move (dtx));
+}
+
+template <class Derived, class Traits>
+void Consensus<Derived, Traits>::adjustCount (TxSet_t const& txSet,
+    std::vector<NodeID_t> const& peers)
+{
+    for (auto& it : disputes_)
+    {
+        bool setHas = txSet.exists (it.first);
+        for (auto const& pit : peers)
+            it.second.setVote (pit, setHas);
+    }
+}
 template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::leaveConsensus ()

@@ -52,8 +52,6 @@ public:
 
     virtual ~LedgerConsensus() = default;
 
-    virtual Json::Value getJson (bool full) = 0;
-
     virtual LgrID_t getLCL () = 0;
 
 };

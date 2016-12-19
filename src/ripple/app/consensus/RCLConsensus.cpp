@@ -28,6 +28,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/misc/HashRouter.h>
 
 namespace ripple {
 
@@ -170,6 +171,25 @@ RCLConsensus::relay(LedgerProposal const & proposal)
     app_.overlay().relay (prop, proposal.getSuppressionID ());
 }
 
+void
+RCLConsensus::relay(DisputedTx <RCLCxTx, NodeID> const & dispute)
+{
+     // If we didn't relay this transaction recently, relay it to all peers
+    auto const & tx = dispute.tx();
+    if (app_.getHashRouter ().shouldRelay (tx.id()))
+    {
+        auto const slice = tx.tx_.slice();
+
+        protocol::TMTransaction msg;
+        msg.set_rawtransaction (slice.data(), slice.size());
+        msg.set_status (protocol::tsNEW);
+        msg.set_receivetimestamp (
+            app_.timeKeeper().now().time_since_epoch().count());
+        app_.overlay ().foreach (send_always (
+            std::make_shared<Message> (
+                msg, protocol::mtTRANSACTION)));
+    }
+}
 void
 RCLConsensus::propose (LedgerProposal const& position)
 {

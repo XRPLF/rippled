@@ -125,6 +125,15 @@ private:
     void
     relay(LedgerProposal const & proposal);
 
+    /** Relay disputed transacction to peers.
+
+        Only relay if the provided transaction hasn't been shared recently.
+
+        @param tx The disputed transaction to relay.
+    */
+    void
+    relay(DisputedTx <RCLCxTx, NodeID> const & dispute);
+
      /** Acquire the transaction set associated with a proposal.
 
          If the transaction set is not available locally, will attempt acquire it
