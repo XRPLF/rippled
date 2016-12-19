@@ -193,6 +193,16 @@ public:
         return haveCorrectLCL_;
     }
 
+    /** Get the Json state of the consensus process.
+
+        Called by the consensus_info RPC.
+
+        @param full True if verbose response desired.
+        @return     The Json state.
+    */
+    Json::Value
+    getJson (bool full) const;
+
 private:
 
     /** Change our view of the last closed ledger
@@ -654,6 +664,121 @@ Consensus<Derived, Traits>::simulate (
     roundTime_ = consensusDelay.value_or(100ms);
     beginAccept (true);
     JLOG (j_.info()) << "Simulation complete";
+}
+
+template <class Derived, class Traits>
+Json::Value
+Consensus<Derived, Traits>::getJson (bool full) const
+{
+    using std::to_string;
+    using Int = Json::Value::Int;
+
+    Json::Value ret (Json::objectValue);
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
+    ret["proposing"] = proposing_;
+    ret["validating"] = validating_;
+    ret["proposers"] = static_cast<int> (peerProposals_.size ());
+
+    if (haveCorrectLCL_)
+    {
+        ret["synched"] = true;
+        ret["ledger_seq"] = previousLedger_.seq() + 1;
+        ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
+    }
+    else
+        ret["synched"] = false;
+
+    switch (state_)
+    {
+    case State::open:
+        ret["state"] = "open";
+        break;
+
+    case State::establish:
+        ret["state"] = "consensus";
+        break;
+
+    case State::processing:
+        ret["state"] = "processing";
+        break;
+
+    case State::accepted:
+        ret["state"] = "accepted";
+        break;
+    }
+
+    int v = disputes_.size ();
+
+    if ((v != 0) && !full)
+        ret["disputes"] = v;
+
+    if (ourPosition_)
+        ret["our_position"] = ourPosition_->getJson ();
+
+    if (full)
+    {
+        ret["current_ms"] = static_cast<Int>(roundTime_.count());
+        ret["close_percent"] = closePercent_;
+        ret["close_resolution"] = static_cast<Int>(closeResolution_.count());
+        ret["have_time_consensus"] = haveCloseTimeConsensus_;
+        ret["previous_proposers"] = previousProposers_;
+        ret["previous_mseconds"] =
+            static_cast<Int>(previousRoundTime_.count());
+
+        if (! peerProposals_.empty ())
+        {
+            Json::Value ppj (Json::objectValue);
+
+            for (auto& pp : peerProposals_)
+            {
+                ppj[to_string (pp.first)] = pp.second.getJson ();
+            }
+            ret["peer_positions"] = std::move(ppj);
+        }
+
+        if (! acquired_.empty ())
+        {
+            Json::Value acq (Json::arrayValue);
+            for (auto& at : acquired_)
+            {
+                acq.append (to_string (at.first));
+            }
+            ret["acquired"] = std::move(acq);
+        }
+
+        if (! disputes_.empty ())
+        {
+            Json::Value dsj (Json::objectValue);
+            for (auto& dt : disputes_)
+            {
+                dsj[to_string (dt.first)] = dt.second.getJson ();
+            }
+            ret["disputes"] = std::move(dsj);
+        }
+
+        if (! closeTimes_.empty ())
+        {
+            Json::Value ctj (Json::objectValue);
+            for (auto& ct : closeTimes_)
+            {
+                ctj[std::to_string(ct.first.time_since_epoch().count())] = ct.second;
+            }
+            ret["close_times"] = std::move(ctj);
+        }
+
+        if (! deadNodes_.empty ())
+        {
+            Json::Value dnj (Json::arrayValue);
+            for (auto const& dn : deadNodes_)
+            {
+                dnj.append (to_string (dn));
+            }
+            ret["dead_nodes"] = std::move(dnj);
+        }
+    }
+
+    return ret;
 }
 
 // Handle a change in the LCL during a consensus round

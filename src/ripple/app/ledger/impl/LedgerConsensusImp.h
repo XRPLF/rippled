@@ -87,15 +87,6 @@ public:
         LedgerMaster& ledgerMaster,
         FeeVote& feeVote);
 
-    /**
-      Get the Json state of the consensus process.
-      Called by the consensus_info RPC.
-
-      @param full True if verbose response desired.
-      @return     The Json state.
-    */
-    Json::Value getJson (bool full) override;
-
     /* The hash of the last closed ledger */
     LgrID_t getLCL () override;
 
