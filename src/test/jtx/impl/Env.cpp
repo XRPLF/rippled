@@ -30,7 +30,7 @@
 #include <test/jtx/utility.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/contract.h>

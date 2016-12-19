@@ -211,6 +211,9 @@
     <Filter Include="ripple\conditions\impl">
       <UniqueIdentifier>{155DC1A3-8A60-BC74-A7E4-1AC1A679FFF9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\consensus">
+      <UniqueIdentifier>{75481992-909B-CAA9-859B-91F15AFD2AD0}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\core">
       <UniqueIdentifier>{235DCF23-2CF8-4F03-1A54-C159823A7E8D}</UniqueIdentifier>
     </Filter>
@@ -1320,6 +1323,15 @@
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
       <Filter>protobuf\vsprojects</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLConsensus.cpp">
+      <Filter>ripple\app\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLConsensus.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPos.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
@@ -1371,9 +1383,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\DisputedTx.h">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
@@ -1393,9 +1402,6 @@
       <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerTiming.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerToJson.cpp">
@@ -1453,9 +1459,6 @@
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
@@ -2450,6 +2453,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\conditions\RsaSha256.h">
       <Filter>ripple\conditions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\Consensus.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\consensus\DisputedTx.h">
+      <Filter>ripple\consensus</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\consensus\LedgerTiming.cpp">
+      <Filter>ripple\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\consensus\LedgerTiming.h">
+      <Filter>ripple\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Config.h">
       <Filter>ripple\core</Filter>
@@ -3741,6 +3756,9 @@
     <ClInclude Include="..\..\src\ripple\shamap\TreeNodeCache.h">
       <Filter>ripple\shamap</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\app_consensus.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app_ledger.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -3763,6 +3781,9 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\conditions.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\consensus.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">

@@ -939,6 +939,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/ripple/basics', '.cpp'))
     append_sources(result, *list_sources('src/ripple/conditions', '.cpp'))
     append_sources(result, *list_sources('src/ripple/crypto', '.cpp'))
+    append_sources(result, *list_sources('src/ripple/consensus', '.cpp'))
     append_sources(result, *list_sources('src/ripple/json', '.cpp'))
     append_sources(result, *list_sources('src/ripple/ledger', '.cpp'))
     append_sources(result, *list_sources('src/ripple/legacy', '.cpp'))
@@ -993,12 +994,14 @@ def get_unity_sources(toolchain):
         'src/ripple/beast/unity/beast_insight_unity.cpp',
         'src/ripple/beast/unity/beast_net_unity.cpp',
         'src/ripple/beast/unity/beast_utility_unity.cpp',
+        'src/ripple/unity/app_consensus.cpp',
         'src/ripple/unity/app_ledger.cpp',
         'src/ripple/unity/app_main.cpp',
         'src/ripple/unity/app_misc.cpp',
         'src/ripple/unity/app_paths.cpp',
         'src/ripple/unity/app_tx.cpp',
         'src/ripple/unity/conditions.cpp',
+        'src/ripple/unity/consensus.cpp',
         'src/ripple/unity/core.cpp',
         'src/ripple/unity/basics.cpp',
         'src/ripple/unity/crypto.cpp',

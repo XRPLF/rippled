@@ -44,6 +44,11 @@ All types must be copy constructible and assignable.
   which transactions it has and provide the actual transaction data.
   If non-const, it can be modified.
 
+
+* `Callback_t`
+  Supplies the callouts that the consensus logic makes to request
+  information or inform of changes.
+
 ## `Pos_t`
 
 Represents a position taken by a validator during a consensus round.
@@ -113,3 +118,38 @@ TxSet_t::mutable_t (TxSet_t const &);
 bool addEntry (Tx_t const&);
 
 bool removeEntry (TxID_t const&);
+
+
+## Callback_t
+
+Must provide the following functions the consensus algorithm may need toinvoke
+
+std::pair <LgrID_t, bool> getLCL (boost::optional<LgrID_t>);
+Returns the current LCL ID and whether or not that ledger is available.
+Takes an optional favored ledger
+
+void consensusViewChange ();
+Reports a change in the view of the consensus process
+
+bool anyTX ();
+Returns true if there are any pending transactions in the open ledger
+
+int getNodesAfter (LgrID_t const&);
+Returns the number of trusted validators that have passed the specified
+ledger
+
+doAccept
+
+newTX
+
+newProposal
+
+newStatus
+
+makeInitialPosition
+
+replayProposals
+
+relayProposal
+
+validationCheck

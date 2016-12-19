@@ -21,7 +21,7 @@
 #include <ripple/app/consensus/RCLCxTraits.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -213,8 +213,8 @@ template <class Traits>
 void LedgerConsensusImp<Traits>::shareSet (TxSet_t const& set)
 {
     // Temporary until Consensus refactor is complete
-    inboundTransactions_.giveSet (set.getID(),
-        set.map(), false);
+    inboundTransactions_.giveSet (set.id(),
+        set.map_, false);
 }
 
 // Called when:
@@ -231,7 +231,7 @@ LedgerConsensusImp<Traits>::mapCompleteInternal (
     TxSet_t const& map,
     bool acquired)
 {
-    auto const hash = map.getID ();
+    auto const hash = map.id ();
 
     if (acquired_.find (hash) != acquired_.end())
         return;
@@ -752,7 +752,7 @@ bool LedgerConsensusImp<Traits>::peerPosition (
         {
             for (auto& it : disputes_)
                 it.second.setVote (peerID,
-                    ait->second.hasEntry (it.first));
+                    ait->second.exists (it.first));
         }
         else
         {
@@ -814,12 +814,12 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
         << "Report: Prev = " << prevLedgerHash_
         << ":" << previousLedger_->info().seq;
     JLOG (j_.debug())
-        << "Report: TxSt = " << set.getID ()
+        << "Report: TxSt = " << set.id ()
         << ", close " << closeTime.time_since_epoch().count()
         << (closeTimeCorrect ? "" : "X");
 
     // Put transactions into a deterministic, but unpredictable, order
-    CanonicalTXSet retriableTxs (set.getID());
+    CanonicalTXSet retriableTxs (set.id());
 
     std::shared_ptr<Ledger const> sharedLCL;
     {
@@ -982,7 +982,7 @@ void LedgerConsensusImp<Traits>::accept (TxSet_t const& set)
                         << " not get in";
 
                     RCLCxTx cTxn {it.second.tx()};
-                    SerialIter sit (cTxn.txn().slice());
+                    SerialIter sit (cTxn.tx_.slice());
 
                     auto txn = std::make_shared<STTx const>(sit);
 
@@ -1078,12 +1078,12 @@ void LedgerConsensusImp<Traits>::createDisputes (
     TxSet_t const& m1,
     TxSet_t const& m2)
 {
-    if (m1.getID() == m2.getID())
+    if (m1.id() == m2.id())
         return;
 
     JLOG (j_.debug()) << "createDisputes "
-        << m1.getID() << " to " << m2.getID();
-    auto differences = m1.getDifferences (m2);
+        << m1.id() << " to " << m2.id();
+    auto differences = m1.compare (m2);
 
     int dc = 0;
     // for each difference between the transactions
@@ -1092,13 +1092,13 @@ void LedgerConsensusImp<Traits>::createDisputes (
         ++dc;
         // create disputed transactions (from the ledger that has them)
         assert (
-            (id.second && m1.getEntry(id.first) && !m2.getEntry(id.first)) ||
-            (!id.second && !m1.getEntry(id.first) && m2.getEntry(id.first))
+            (id.second && m1.find(id.first) && !m2.find(id.first)) ||
+            (!id.second && !m1.find(id.first) && m2.find(id.first))
         );
         if (id.second)
-            addDisputedTransaction (*m1.getEntry (id.first));
+            addDisputedTransaction (*m1.find(id.first));
         else
-            addDisputedTransaction (*m2.getEntry (id.first));
+            addDisputedTransaction (*m2.find(id.first));
     }
     JLOG (j_.debug()) << dc << " differences found";
 }
@@ -1107,7 +1107,7 @@ template <class Traits>
 void LedgerConsensusImp<Traits>::addDisputedTransaction (
     Tx_t const& tx)
 {
-    auto txID = tx.getID();
+    auto txID = tx.id();
 
     if (disputes_.find (txID) != disputes_.end ())
         return;
@@ -1119,7 +1119,7 @@ void LedgerConsensusImp<Traits>::addDisputedTransaction (
 
     // Update our vote on the disputed transaction
     if (ourSet_)
-        ourVote = ourSet_->hasEntry (txID);
+        ourVote = ourSet_->exists (txID);
 
     Dispute_t txn {tx, ourVote, j_};
 
@@ -1130,13 +1130,13 @@ void LedgerConsensusImp<Traits>::addDisputedTransaction (
 
         if (cit != acquired_.end ())
             txn.setVote (pit.first,
-                cit->second.hasEntry (txID));
+                cit->second.exists (txID));
     }
 
     // If we didn't relay this transaction recently, relay it to all peers
     if (app_.getHashRouter ().shouldRelay (txID))
     {
-        auto const slice = tx.txn().slice();
+        auto const slice = tx.tx_.slice();
 
         protocol::TMTransaction msg;
         msg.set_rawtransaction (slice.data(), slice.size());
@@ -1157,7 +1157,7 @@ void LedgerConsensusImp<Traits>::adjustCount (TxSet_t const& map,
 {
     for (auto& it : disputes_)
     {
-        bool setHas = map.hasEntry (it.first);
+        bool setHas = map.exists (it.first);
         for (auto const& pit : peers)
             it.second.setVote (pit, setHas);
     }
@@ -1316,20 +1316,20 @@ void LedgerConsensusImp<Traits>::takeInitialPosition()
     auto pair = makeInitialPosition();
     auto const& initialSet = pair.first;
     auto const& initialPos = pair.second;
-    assert (initialSet.getID() == initialPos.getCurrentHash());
+    assert (initialSet.id() == initialPos.getCurrentHash());
 
     ourPosition_ = initialPos;
     ourSet_ = initialSet;
 
     for (auto& it : disputes_)
     {
-        it.second.setOurVote (initialSet.hasEntry (it.first));
+        it.second.setOurVote (initialSet.exists (it.first));
     }
 
     // When we take our initial position,
     // we need to create any disputes required by our position
     // and any peers who have already taken positions
-    compares_.emplace (initialSet.getID());
+    compares_.emplace (initialSet.id());
     for (auto& it : peerPositions_)
     {
         auto hash = it.second.getCurrentHash();
@@ -1417,7 +1417,7 @@ void LedgerConsensusImp<Traits>::updateOurPositions ()
 
     // Update votes on disputed transactions
     {
-        boost::optional <typename TxSet_t::mutable_t> changedSet;
+        boost::optional <TxSet_t> changedSet;
         for (auto& it : disputes_)
         {
             // Because the threshold for inclusion increases,
@@ -1430,12 +1430,12 @@ void LedgerConsensusImp<Traits>::updateOurPositions ()
                 if (it.second.getOurVote ())
                 {
                     // now a yes
-                    changedSet->addEntry (it.second.tx());
+                    changedSet->insert (it.second.tx());
                 }
                 else
                 {
                     // now a no
-                    changedSet->removeEntry (it.first);
+                    changedSet->erase (it.first);
                 }
             }
         }
@@ -1529,7 +1529,7 @@ void LedgerConsensusImp<Traits>::updateOurPositions ()
 
     if (ourSet)
     {
-        auto newHash = ourSet->getID();
+        auto newHash = ourSet->id();
 
         // Setting ourSet_ here prevents mapCompleteInternal
         // from checking for new disputes. But we only changed
@@ -1778,7 +1778,7 @@ applyTransactions (
 {
     auto j = app.journal ("LedgerConsensus");
 
-    auto& set = *(cSet.map());
+    auto& set = *(cSet.map_);
     CanonicalTXSet retriableTxs (set.getHash().as_uint256());
 
     for (auto const& item : set)

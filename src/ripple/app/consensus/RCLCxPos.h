@@ -27,8 +27,6 @@
 
 namespace ripple {
 
-// A position taken during a consensus round
-// As seen by the RCL consensus process
 class RCLCxPos
 {
 

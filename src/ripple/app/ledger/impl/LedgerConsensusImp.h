@@ -23,7 +23,7 @@
 #include <BeastConfig.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/impl/ConsensusImp.h>
-#include <ripple/app/ledger/impl/DisputedTx.h>
+#include <ripple/consensus/DisputedTx.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
@@ -76,7 +76,7 @@ public:
     using typename Traits::TxID_t;
     using typename Traits::TxSetID_t;
     using typename Traits::NodeID_t;
-    using Dispute_t = DisputedTx <Traits>;
+    using Dispute_t = DisputedTx <Tx_t, NodeID_t>;
 
     /**
      * The result of applying a transaction to a ledger.
