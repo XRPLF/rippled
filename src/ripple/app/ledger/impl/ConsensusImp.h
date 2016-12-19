@@ -36,43 +36,11 @@ class ConsensusImp
     : public Consensus
 {
 public:
-    ConsensusImp (FeeVote::Setup const& voteSetup, Logs& logs);
-
-    ~ConsensusImp () = default;
-
-    bool
-    isProposing () const override;
-
-    bool
-    isValidating () const override;
-
-    int
-    getLastCloseProposers () const override;
-
-    std::chrono::milliseconds
-    getLastCloseDuration () const override;
-
-    std::shared_ptr<LedgerConsensus<RCLCxTraits>>
-    makeLedgerConsensus (
-        Application& app,
-        InboundTransactions& inboundTransactions,
-        LedgerMaster& ledgerMaster,
-        LocalTxs& localTxs) override;
-
-    void
-    startRound (
-        NetClock::time_point now,
-        LedgerConsensus<RCLCxTraits>& ledgerConsensus,
-        LedgerHash const& prevLCLHash,
-        std::shared_ptr<Ledger const> const& previousLedger) override;
 
     void
     storeProposal (
         LedgerProposal::ref proposal,
         NodeID const& nodeID) override;
-
-    void
-    setProposing (bool p, bool v);
 
     void
     newLCL (
@@ -83,17 +51,6 @@ public:
     getStoredProposals (uint256 const& previousLedger);
 
 private:
-    beast::Journal journal_;
-    std::unique_ptr <FeeVote> feeVote_;
-
-    bool proposing_;
-    bool validating_;
-
-    // The number of proposers who participated in the last ledger close
-    int lastCloseProposers_;
-
-    // How long the last ledger close took, in milliseconds
-    std::chrono::milliseconds lastCloseConvergeTook_;
 
     Consensus::Proposals storedProposals_;
 

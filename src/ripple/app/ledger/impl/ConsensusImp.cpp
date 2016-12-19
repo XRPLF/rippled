@@ -24,75 +24,7 @@
 
 namespace ripple {
 
-ConsensusImp::ConsensusImp (
-        FeeVote::Setup const& voteSetup,
-        Logs& logs)
-    : journal_ (logs.journal("Consensus"))
-    , feeVote_ (make_FeeVote (voteSetup,
-        logs.journal("FeeVote")))
-    , proposing_ (false)
-    , validating_ (false)
-    , lastCloseProposers_ (0)
-    , lastCloseConvergeTook_ (LEDGER_IDLE_INTERVAL)
-{
-}
 
-bool
-ConsensusImp::isProposing () const
-{
-    return proposing_;
-}
-
-bool
-ConsensusImp::isValidating () const
-{
-    return validating_;
-}
-
-int
-ConsensusImp::getLastCloseProposers () const
-{
-    return lastCloseProposers_;
-}
-
-std::chrono::milliseconds
-ConsensusImp::getLastCloseDuration () const
-{
-    return lastCloseConvergeTook_;
-}
-
-std::shared_ptr<LedgerConsensus<RCLCxTraits>>
-ConsensusImp::makeLedgerConsensus (
-    Application& app,
-    InboundTransactions& inboundTransactions,
-    LedgerMaster& ledgerMaster,
-    LocalTxs& localTxs)
-{
-    return make_LedgerConsensus (app, *this,
-        inboundTransactions, localTxs, ledgerMaster, *feeVote_);
-}
-
-void
-ConsensusImp::startRound (
-    NetClock::time_point now,
-    LedgerConsensus<RCLCxTraits>& consensus,
-    LedgerHash const &prevLCLHash,
-    std::shared_ptr<Ledger const> const& prevLedger)
-{
-    consensus.startRound (
-        now,
-        prevLCLHash,
-        prevLedger,
-        lastCloseProposers_,
-        lastCloseConvergeTook_);
-}
-
-void
-ConsensusImp::setProposing (bool p, bool v)
-{
-    proposing_ = p;
-    validating_ = v;
-}
 
 void
 ConsensusImp::newLCL (
@@ -134,14 +66,6 @@ ConsensusImp::getStoredProposals (uint256 const& prevLedger)
     }
 
     return ret;
-}
-
-std::unique_ptr <Consensus>
-make_Consensus (Config const& config, Logs& logs)
-{
-    return std::make_unique<ConsensusImp> (
-        setup_FeeVote (config.section ("voting")),
-        logs);
 }
 
 }

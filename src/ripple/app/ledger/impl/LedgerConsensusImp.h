@@ -48,24 +48,6 @@ class LedgerConsensusImp
     , public std::enable_shared_from_this <LedgerConsensusImp<Traits>>
     , public CountedObject <LedgerConsensusImp<Traits>>
 {
-private:
-    enum class State
-    {
-        // We haven't closed our ledger yet, but others might have
-        open,
-
-        // Establishing consensus
-        establish,
-
-        // We have closed on a transaction set and are
-        // processing the new ledger
-        processing,
-
-        // We have accepted / validated a new last closed ledger
-        // and need to start a new round
-        accepted,
-    };
-
 public:
 
     using typename Traits::Time_t;
@@ -104,20 +86,6 @@ public:
         LocalTxs& localtx,
         LedgerMaster& ledgerMaster,
         FeeVote& feeVote);
-
-    /**
-        @param prevLCLHash The hash of the Last Closed Ledger (LCL).
-        @param previousLedger Best guess of what the LCL was.
-        @param closeTime Closing time point of the LCL.
-        @param previousProposers the number of participants in the last round
-        @param previousConvergeTime how long the last round took (ms)
-    */
-    void startRound (
-        Time_t const& now,
-        LgrID_t const& prevLCLHash,
-        std::shared_ptr<Ledger const> const& prevLedger,
-        int previousProposers,
-        std::chrono::milliseconds previousConvergeTime) override;
 
     /**
       Get the Json state of the consensus process.
@@ -296,68 +264,6 @@ private:
     NetClock::time_point effectiveCloseTime(NetClock::time_point closeTime);
 
 private:
-    Application& app_;
-    ConsensusImp& consensus_;
-    InboundTransactions& inboundTransactions_;
-    LocalTxs& localTX_;
-    LedgerMaster& ledgerMaster_;
-    FeeVote& feeVote_;
-    std::recursive_mutex lock_;
-
-    NodeID_t ourID_;
-    State state_;
-    Time_t now_;
-
-    // The wall time we last closed a ledger
-    Time_t closeTime_;
-
-    LgrID_t prevLedgerHash_;
-    LgrID_t acquiringLedger_;
-
-    std::shared_ptr<Ledger const> previousLedger_;
-    boost::optional<Pos_t> ourPosition_;
-    boost::optional<TxSet_t> ourSet_;
-    PublicKey valPublic_;
-    SecretKey valSecret_;
-    bool proposing_, validating_, haveCorrectLCL_, consensusFail_;
-
-    // How much time has elapsed since the round started
-    std::chrono::milliseconds roundTime_;
-
-    // How long the close has taken, expressed as a percentage of the time that
-    // we expected it to take.
-    int closePercent_;
-
-    NetClock::duration closeResolution_;
-
-    bool haveCloseTimeConsensus_;
-
-    std::chrono::steady_clock::time_point consensusStartTime_;
-    int previousProposers_;
-
-    // Time it took for the last consensus round to converge
-    std::chrono::milliseconds previousRoundTime_;
-
-    // Convergence tracking, trusted peers indexed by hash of public key
-    hash_map<NodeID_t, Pos_t>  peerPositions_;
-
-    // Transaction Sets, indexed by hash of transaction tree
-    hash_map<TxSetID_t, const TxSet_t> acquired_;
-
-    // Disputed transactions
-    hash_map<TxID_t, Dispute_t> disputes_;
-    hash_set<TxSetID_t> compares_;
-
-    // Close time estimates, keep ordered for predictable traverse
-    std::map <Time_t, int> closeTimes_;
-
-    // nodes that have bowed out of this consensus process
-    hash_set<NodeID_t> deadNodes_;
-    beast::Journal j_;
-
-    // The timestamp of the last validation we used, in network time. This is
-    // only used for our own validations.
-    Time_t lastValidationTime_;
 
     bool firstRound_;
 };

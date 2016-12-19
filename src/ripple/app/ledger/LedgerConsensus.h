@@ -62,13 +62,6 @@ public:
 
     virtual bool peerPosition (Time_t const& now, Pos_t const& position) = 0;
 
-    virtual void startRound (
-        Time_t const& now,
-        LgrID_t const& prevLCLHash,
-        std::shared_ptr<Ledger const> const& prevLedger,
-        int previousProposers,
-        std::chrono::milliseconds previousConvergeTime) = 0;
-
     /** Simulate the consensus process without any network traffic.
 
         The end result, is that consensus begins and completes as if everyone

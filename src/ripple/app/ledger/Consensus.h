@@ -43,53 +43,12 @@ public:
     virtual
     ~Consensus () = default;
 
-    /** Returns whether we are issuing proposals currently. */
-    virtual
-    bool
-    isProposing () const = 0;
-
-    /** Returns whether we are issuing validations currently. */
-    virtual
-    bool
-    isValidating () const = 0;
-
-    /** Returns the number of unique proposers we observed for the LCL. */
-    virtual
-    int
-    getLastCloseProposers () const = 0;
-
-    /** Returns the time (in milliseconds) that the last close took. */
-    virtual
-    std::chrono::milliseconds
-    getLastCloseDuration () const = 0;
-
-    /** Called to create a LedgerConsensus instance */
-    virtual
-    std::shared_ptr<LedgerConsensus<RCLCxTraits>>
-    makeLedgerConsensus (
-        Application& app,
-        InboundTransactions& inboundTransactions,
-        LedgerMaster& ledgerMaster,
-        LocalTxs& localTxs) = 0;
-
-    /** Called when a new round of consensus is about to begin */
-    virtual
-    void
-    startRound (
-        NetClock::time_point now,
-        LedgerConsensus<RCLCxTraits>& consensus,
-        LedgerHash const &prevLCLHash,
-        std::shared_ptr<Ledger const> const& prevLedger) = 0;
-
     virtual
     void
     storeProposal (
         LedgerProposal::ref proposal,
         NodeID const& nodeID) = 0;
 };
-
-std::unique_ptr<Consensus>
-make_Consensus (Config const& config, Logs& logs);
 
 }
 

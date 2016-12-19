@@ -19,6 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/consensus/RCLConsensus.h>
+#include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/misc/NetworkOPs.h>
 
 namespace ripple {
 
@@ -45,5 +47,29 @@ RCLConsensus::RCLConsensus(
 
 }
 
+void
+RCLConsensus::onStartRound(RCLCxLedger const & ledger)
+{
+    inboundTransactions_.newRound(ledger.seq());
+}
+
+// First bool is whether or not we can propose
+// Second bool is whether or not we can validate
+std::pair <bool, bool>
+RCLConsensus::getMode ()
+{
+    bool propose = false;
+    bool validate = false;
+
+    if (! app_.getOPs().isNeedNetworkLedger() && (valPublic_.size() != 0))
+    {
+        // We have a key, and we have some idea what the ledger is
+        validate = true;
+
+        // propose only if we're in sync with the network
+        propose = app_.getOPs().getOperatingMode() == NetworkOPs::omFULL;
+    }
+    return { propose, validate };
+}
 
 }

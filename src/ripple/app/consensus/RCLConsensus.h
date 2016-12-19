@@ -78,6 +78,17 @@ public:
 private:
     friend class Consensus<RCLConsensus, RCLCxTraits>;
 
+    /** Notification that a new consensus round has begun.
+
+        @param ledger The ledger we are building consensus on
+    */
+    void
+    onStartRound(RCLCxLedger const & ledger);
+
+    //! @return Whether consensus should be (proposing, validating)
+    std::pair <bool, bool>
+    getMode ();
+
     Application& app_;
     std::unique_ptr <FeeVote> feeVote_;
     LedgerMaster & ledgerMaster_;
@@ -89,6 +100,11 @@ private:
     PublicKey valPublic_;
     SecretKey valSecret_;
     LedgerHash acquiringLedger_;
+
+    // The timestamp of the last validation we used, in network time. This is
+    // only used for our own validations.
+    NetClock::time_point lastValidationTime_;
+
 
 };
 
