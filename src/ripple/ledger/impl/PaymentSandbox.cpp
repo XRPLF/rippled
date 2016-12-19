@@ -21,6 +21,7 @@
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STAccount.h>
 #include <boost/optional.hpp>
@@ -186,15 +187,26 @@ PaymentSandbox::balanceHook (AccountID const& account,
     {
         auto delta = amount.zeroed ();
         auto lastBal = amount;
+        auto minBal = amount;
         for (auto curSB = this; curSB; curSB = curSB->ps_)
         {
             if (auto adj = curSB->tab_.adjustments (account, issuer, currency))
             {
                 delta += adj->debits;
                 lastBal = adj->origBalance;
+                if (lastBal < minBal)
+                    minBal = lastBal;
             }
         }
         adjustedAmt = std::min(amount, lastBal - delta);
+        if (rules().enabled(featureRIPD1368))
+        {
+            // The adjusted amount should never be larger than the balance. In
+            // some circumstances, it is possible for the deferred credits table
+            // to compute usable balance just slightly above what the ledger
+            // calculates (but always less than the actual balance).
+            adjustedAmt = std::min(adjustedAmt, minBal);
+        }
         if (amendmentRIPD1274 (info ().parentCloseTime))
             adjustedAmt.setIssuer(amount.getIssuer());
     }
