@@ -771,7 +771,7 @@ dirDelete (ApplyView& view,
             if (iter.page().key != pageId.key)
             {
                 if (uNodeDir++ == 20)
-                    return tefBAD_LEDGER;
+                    return false;
                 pageId = iter.page();
             }
 
@@ -779,12 +779,10 @@ dirDelete (ApplyView& view,
         }
 
         if (!found)
-            return tefBAD_LEDGER;
+            return false;
     }
 
-    if (view.dirRemove (root, uNodeDir, uLedgerIndex, bKeepRoot))
-        return tesSUCCESS;
-    return tefBAD_LEDGER;
+    return view.dirRemove (root, uNodeDir, uLedgerIndex, bKeepRoot);
 }
 
 TER
