@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2016 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -16,243 +16,259 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/protocol/types.h>
 #include <test/support/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/JsonFields.h>
 #include <cstdlib>
-#include <memory>
-#include <vector>
 
 namespace ripple {
 
-struct AccountTxPaging_test : beast::unit_test::suite
+class AccountTxPaging_test : public beast::unit_test::suite
 {
-    std::unique_ptr<DatabaseCon> db_;
-    std::unique_ptr<AccountIDCache> idCache_;
-    NetworkOPs::AccountTxs txs_;
-    AccountID account_;
-
-    void
-    run() override
+    bool
+    checkTransaction (Json::Value const& tx, int sequence, int ledger)
     {
-        std::string data_path;
-
-        if (auto const fixtures = std::getenv("TEST_FIXTURES"))
-            data_path = fixtures;
-
-        if (data_path.empty ())
-        {
-            fail("The 'TEST_FIXTURES' environment variable is empty.");
-            return;
-        }
-
-        DatabaseCon::Setup dbConf;
-        dbConf.dataDir = data_path + "/";
-
-        db_ = std::make_unique <DatabaseCon> (
-            dbConf, "account-tx-transactions.db", nullptr, 0);
-
-        idCache_ = std::make_unique<AccountIDCache>(128000);
-
-        account_ = *parseBase58<AccountID>(
-            "rfu6L5p3azwPzQZsbTafuVk884N9YoKvVG");
-
-        testAccountTxPaging();
+        return (
+            tx[jss::tx][jss::Sequence].asInt() == sequence &&
+            tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
-    void
-    checkToken (Json::Value const& token, int ledger, int sequence)
-    {
-        BEAST_EXPECT(token.isMember ("ledger"));
-        BEAST_EXPECT(token["ledger"].asInt() == ledger);
-        BEAST_EXPECT(token.isMember ("seq"));
-        BEAST_EXPECT(token["seq"].asInt () == sequence);
-    }
-
-    void
-    checkTransaction (NetworkOPs::AccountTx const& tx, int ledger, int index)
-    {
-        BEAST_EXPECT(tx.second->getLgrSeq () == ledger);
-        BEAST_EXPECT(tx.second->getIndex () == index);
-    }
-
-    std::size_t
-    next (
+    auto next(
+        test::jtx::Env & env,
+        test::jtx::Account const& account,
+        int ledger_min,
+        int ledger_max,
         int limit,
         bool forward,
-        Json::Value& token,
-        std::int32_t minLedger,
-        std::int32_t maxLedger)
+        Json::Value const& marker = Json::nullValue)
     {
-        txs_.clear();
+        Json::Value jvc;
+        jvc[jss::account] = account.human();
+        jvc[jss::ledger_index_min] = ledger_min;
+        jvc[jss::ledger_index_max] = ledger_max;
+        jvc[jss::forward] = forward;
+        jvc[jss::limit] = limit;
+        if (marker)
+            jvc[jss::marker] = marker;
 
-        std::int32_t const page_length = 200;
-        bool const admin = true;
-
-        test::jtx::Env env(*this);
-        Application& app = env.app();
-        auto& txs = txs_;
-
-        auto bound = [&txs, &app](
-            std::uint32_t ledger_index,
-            std::string const& status,
-            Blob const& rawTxn,
-            Blob const& rawMeta)
-        {
-            convertBlobsToTxResult (
-                txs, ledger_index, status, rawTxn, rawMeta, app);
-        };
-
-        accountTxPage(*db_, *idCache_, [](std::uint32_t){}, bound, account_, minLedger,
-            maxLedger, forward, token, limit, admin, page_length);
-
-        return txs_.size();
+        return env.rpc("json", "account_tx", to_string(jvc))[jss::result];
     }
 
     void
     testAccountTxPaging ()
     {
-        using namespace std::placeholders;
+        testcase("Paging for Single Account");
+        using namespace test::jtx;
 
-        bool const forward = true;
+        Env env(*this);
+        Account A1 {"A1"};
+        Account A2 {"A2"};
+        Account A3 {"A3"};
 
-        std::int32_t min_ledger;
-        std::int32_t max_ledger;
-        Json::Value token;
-        int limit;
+        env.fund(XRP(10000), A1, A2, A3);
+        env.close();
 
-        // the supplied account-tx-transactions.db contains contains
-        // transactions with the following ledger/sequence pairs.
-        //  3|5
-        //  4|4
-        //  4|10
-        //  5|4
-        //  5|7
-        //  6|1
-        //  6|5
-        //  6|6
-        //  6|7
-        //  6|8
-        //  6|9
-        //  6|10
-        //  6|11
+        env.trust(A3["USD"](1000), A1);
+        env.trust(A2["USD"](1000), A1);
+        env.trust(A3["USD"](1000), A2);
+        env.close();
 
-        min_ledger = 2;
-        max_ledger = 5;
-
+        int count = 0;
+        while (count < 5)
         {
-            limit = 2;
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 2);
-            checkTransaction (txs_[0], 3, 5);
-            checkTransaction (txs_[1], 4, 4);
-            checkToken (token, 4, 10);
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 2);
-            checkTransaction (txs_[0], 4, 10);
-            checkTransaction (txs_[1], 5, 4);
-            checkToken (token, 5, 7);
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
-            checkTransaction (txs_[0], 5, 7);
-
-            BEAST_EXPECT(! token["ledger"]);
-            BEAST_EXPECT(! token["seq"]);
+            env(pay(A2, A1, A2["USD"](2)));
+            env(pay(A3, A1, A3["USD"](2)));
+            env(offer(A1, XRP(11), A1["USD"](1)));
+            env(offer(A2, XRP(10), A2["USD"](1)));
+            env(offer(A3, XRP(9),  A3["USD"](1)));
+            env.close();
+            count++;
         }
 
-        token = Json::nullValue;
+        /* The sequence/ledger for A3 are as follows:
+         * seq     ledger_index
+         * 3  ----> 3
+         * 1  ----> 3
+         * 2  ----> 4
+         * 2  ----> 4
+         * 2  ----> 5
+         * 3  ----> 5
+         * 4  ----> 6
+         * 5  ----> 6
+         * 6  ----> 7
+         * 7  ----> 7
+         * 8  ----> 8
+         * 9  ----> 8
+         * 10 ----> 9
+         * 11 ----> 9
+        */
 
-        min_ledger = 3;
-        max_ledger = 9;
-
+        // page through the results in several ways.
         {
-            limit = 1;
+            // limit = 2, 3x
+            auto jrr = next(env, A3, 2, 5, 2, true);
+            auto txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
+            BEAST_EXPECT(checkTransaction (txs[1u], 1, 3));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
 
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
-            checkTransaction (txs_[0], 3, 5);
-            checkToken (token, 4, 4);
+            jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
+            BEAST_EXPECT(checkTransaction (txs[1u], 2, 4));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
 
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
-            checkTransaction (txs_[0], 4, 4);
-            checkToken (token, 4, 10);
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
-            checkTransaction (txs_[0], 4, 10);
-            checkToken (token, 5, 4);
-        }
-
-        {
-            limit = 3;
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 3);
-            checkTransaction (txs_[0], 5, 4);
-            checkTransaction (txs_[1], 5, 7);
-            checkTransaction (txs_[2], 6, 1);
-            checkToken (token, 6, 5);
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 3);
-            checkTransaction (txs_[0], 6, 5);
-            checkTransaction (txs_[1], 6, 6);
-            checkTransaction (txs_[2], 6, 7);
-            checkToken (token, 6, 8);
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 3);
-            checkTransaction (txs_[0], 6, 8);
-            checkTransaction (txs_[1], 6, 9);
-            checkTransaction (txs_[2], 6, 10);
-            checkToken (token, 6, 11);
-
-            BEAST_EXPECT(next(limit, forward, token, min_ledger, max_ledger) == 1);
-            checkTransaction (txs_[0], 6, 11);
-
-            BEAST_EXPECT(! token["ledger"]);
-            BEAST_EXPECT(! token["seq"]);
-        }
-
-        token = Json::nullValue;
-
-        {
-            limit = 2;
-
-            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 2);
-            checkTransaction (txs_[0], 6, 11);
-            checkTransaction (txs_[1], 6, 10);
-            checkToken (token, 6, 9);
-
-            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 2);
-            checkTransaction (txs_[0], 6, 9);
-            checkTransaction (txs_[1], 6, 8);
-            checkToken (token, 6, 7);
+            jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 2, 5));
+            BEAST_EXPECT(checkTransaction (txs[1u], 3, 5));
+            BEAST_EXPECT(! jrr[jss::marker]);
         }
 
         {
-            limit = 3;
+            // limit 1, 3x
+            auto jrr = next(env, A3, 3, 9, 1, true);
+            auto txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
 
-            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 3);
-            checkTransaction (txs_[0], 6, 7);
-            checkTransaction (txs_[1], 6, 6);
-            checkTransaction (txs_[2], 6, 5);
-            checkToken (token, 6, 1);
+            jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 1, 3));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
 
-            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 3);
-            checkTransaction (txs_[0], 6, 1);
-            checkTransaction (txs_[1], 5, 7);
-            checkTransaction (txs_[2], 5, 4);
-            checkToken (token, 4, 10);
+            jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
 
-            BEAST_EXPECT(next(limit, ! forward, token, min_ledger, max_ledger) == 3);
-            checkTransaction (txs_[0], 4, 10);
-            checkTransaction (txs_[1], 4, 4);
-            checkTransaction (txs_[2], 3, 5);
+            // continue with limit 3, to end
+            jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
+            BEAST_EXPECT(checkTransaction (txs[1u], 2, 5));
+            BEAST_EXPECT(checkTransaction (txs[2u], 3, 5));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 6));
+            BEAST_EXPECT(checkTransaction (txs[1u], 5, 6));
+            BEAST_EXPECT(checkTransaction (txs[2u], 6, 7));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 7, 7));
+            BEAST_EXPECT(checkTransaction (txs[1u], 8, 8));
+            BEAST_EXPECT(checkTransaction (txs[2u], 9, 8));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 10, 9));
+            BEAST_EXPECT(checkTransaction (txs[1u], 11, 9));
+            BEAST_EXPECT(! jrr[jss::marker]);
         }
 
-        BEAST_EXPECT(! token["ledger"]);
-        BEAST_EXPECT(! token["seq"]);
+        {
+            // limit 2, 2x, descending
+            auto jrr = next(env, A3, 3, 9, 2, false);
+            auto txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 11, 9));
+            BEAST_EXPECT(checkTransaction (txs[1u], 10, 9));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 2, false, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 9, 8));
+            BEAST_EXPECT(checkTransaction (txs[1u], 8, 8));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            // limit 3 until done
+            jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 7, 7));
+            BEAST_EXPECT(checkTransaction (txs[1u], 6, 7));
+            BEAST_EXPECT(checkTransaction (txs[2u], 5, 6));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 4, 6));
+            BEAST_EXPECT(checkTransaction (txs[1u], 3, 5));
+            BEAST_EXPECT(checkTransaction (txs[2u], 2, 5));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 2, 4));
+            BEAST_EXPECT(checkTransaction (txs[1u], 2, 4));
+            BEAST_EXPECT(checkTransaction (txs[2u], 1, 3));
+            if(! BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+                return;
+            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
+            BEAST_EXPECT(! jrr[jss::marker]);
+        }
+    }
+
+public:
+    void
+    run() override
+    {
+        testAccountTxPaging();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(AccountTxPaging,app,ripple);
+BEAST_DEFINE_TESTSUITE(AccountTxPaging,app,ripple);
 
 }
+
