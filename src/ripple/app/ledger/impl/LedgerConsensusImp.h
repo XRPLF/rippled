@@ -92,9 +92,6 @@ public:
 
 private:
 
-    /** Check if we've reached consensus */
-    bool haveConsensus ();
-
 
     /** We have a new last closed ledger, process it. Final accept logic
 
@@ -109,13 +106,6 @@ private:
       @param ledger  The ledger associated with the event.
     */
     void statusChange (protocol::NodeEvent event, ReadView const& ledger);
-
-
-    /**
-       Called while trying to avalanche towards consensus.
-       Adjusts our positions to try to agree with other validators.
-    */
-    void updateOurPositions ();
 
     /** We have a new LCL and must accept it */
     void beginAccept (bool synchronous);

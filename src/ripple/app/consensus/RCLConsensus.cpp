@@ -253,6 +253,12 @@ RCLConsensus::numProposersValidated(LedgerHash const & h) const
     return app_.getValidations().getTrustedValidationCount(h);
 }
 
+int
+RCLConsensus::numProposersFinished(LedgerHash const & h) const
+{
+    return app_.getValidations().getNodesAfter(h);
+}
+
 uint256
 RCLConsensus::getLCL (
     uint256 const& currentLedger,

@@ -157,6 +157,14 @@ private:
     int
     numProposersValidated(LedgerHash const & h) const;
 
+    /**
+        @param h The hash of the ledger of interest.
+        @return The number of validating peers that have validated a ledger
+                succeeding the one provided.
+    */
+    int
+    numProposersFinished(LedgerHash const & h) const;
+
     /** Propose the given position to my peers.
 
         @param position Our proposed position

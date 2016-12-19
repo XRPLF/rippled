@@ -290,6 +290,11 @@ private:
     void
     updateOurPositions ();
 
+    /** @return Whether we've reached consensus
+    */
+    bool
+    haveConsensus ();
+
     /** Revoke our outstanding proposal, if any, and cease proposing at least
         until this round ends.
     */
@@ -1383,6 +1388,74 @@ void Consensus<Derived, Traits>::updateOurPositions ()
             gotTxSetInternal (*ourNewSet, false);
         }
     }
+}
+
+template <class Derived, class Traits>
+bool
+Consensus<Derived, Traits>::haveConsensus ()
+{
+    // CHECKME: should possibly count unacquired TX sets as disagreeing
+    int agree = 0, disagree = 0;
+    auto  ourPosition = ourPosition_->position ();
+
+    // Count number of agreements/disagreements with our position
+    for (auto& it : peerProposals_)
+    {
+        if (it.second.isBowOut ())
+            continue;
+
+        if (it.second.position () == ourPosition)
+        {
+            ++agree;
+        }
+        else
+        {
+
+            using std::to_string;
+
+            JLOG (j_.debug()) << to_string (it.first)
+                << " has " << to_string (it.second.position ());
+            ++disagree;
+            if (compares_.count(it.second.position()) == 0)
+            { // Make sure we have generated disputes
+                auto hash = it.second.position();
+                JLOG (j_.debug())
+                    << "We have not compared to " << hash;
+                auto it1 = acquired_.find (hash);
+                auto it2 = acquired_.find(ourPosition_->position ());
+                if ((it1 != acquired_.end()) && (it2 != acquired_.end()))
+                {
+                    compares_.insert(hash);
+                    createDisputes(it2->second, it1->second);
+                }
+            }
+        }
+    }
+    int currentFinished = impl().numProposersFinished(prevLedgerHash_);
+
+    JLOG (j_.debug())
+        << "Checking for TX consensus: agree=" << agree
+        << ", disagree=" << disagree;
+
+    // Determine if we actually have consensus or not
+    auto ret = checkConsensus (previousProposers_, agree + disagree, agree,
+        currentFinished, previousRoundTime_, roundTime_, proposing_,
+        j_);
+
+    if (ret == ConsensusState::No)
+        return false;
+
+    // There is consensus, but we need to track if the network moved on
+    // without us.
+    consensusFail_ = (ret == ConsensusState::MovedOn);
+
+    if (consensusFail_)
+    {
+        JLOG (j_.error()) << "Unable to reach consensus";
+        JLOG (j_.error()) << getJson(true);
+    }
+
+    return true;
 }
 
 template <class Derived, class Traits>
