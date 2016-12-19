@@ -113,17 +113,6 @@ public:
     */
     void timerEntry (Time_t const& now) override;
 
-    /**
-      A server has taken a new position, adjust our tracking
-      Called when a peer takes a new postion.
-
-      @param newPosition the new position
-      @return            true if we should do delayed relay of this position.
-    */
-    bool peerPosition (
-        Time_t const& now,
-        Pos_t const& newPosition) override;
-
     void simulate(
         Time_t const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay) override;

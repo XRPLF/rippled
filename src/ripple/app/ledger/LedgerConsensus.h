@@ -60,8 +60,6 @@ public:
 
     virtual void timerEntry (Time_t const& now) = 0;
 
-    virtual bool peerPosition (Time_t const& now, Pos_t const& position) = 0;
-
     /** Simulate the consensus process without any network traffic.
 
         The end result, is that consensus begins and completes as if everyone

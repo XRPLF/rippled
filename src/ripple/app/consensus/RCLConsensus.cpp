@@ -167,4 +167,14 @@ RCLConsensus::relay(LedgerProposal const & proposal)
 }
 
 
+boost::optional<RCLTxSet>
+RCLConsensus::acquireTxSet(LedgerProposal const & position)
+{
+    if (auto set = inboundTransactions_.getSet(position.position(), true))
+    {
+        return RCLTxSet{std::move(set)};
+    }
+    return boost::none;
+}
+
 }

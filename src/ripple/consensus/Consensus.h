@@ -96,6 +96,18 @@ public:
         typename Ledger_t::ID const& prevLgrId,
         Ledger_t const& prevLgr);
 
+
+    /** A peer has proposed a new position, adjust our tracking
+
+        @param now The network adjusted time
+        @param newPosition The new peer's position
+        @return Whether we should do delayed relay of this proposal.
+    */
+    bool
+    peerProposal (
+        NetTime_t const& now,
+        Proposal_t const& newPosition);
+
     /* @return the ID/hash of the last closed ledger */
     typename Ledger_t::ID
     LCL()
@@ -338,6 +350,109 @@ void Consensus<Derived, Traits>::startRound (
         // consider closing the ledger immediately
         timerEntry (now_);
     }
+}
+
+template <class Derived, class Traits>
+bool Consensus<Derived, Traits>::peerProposal (
+    NetTime_t const& now,
+    Proposal_t const& newPosition)
+{
+    auto const peerID = newPosition.nodeID ();
+
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
+    now_ = now;
+
+    if (newPosition.prevLedger() != prevLedgerHash_)
+    {
+        JLOG (j_.debug()) << "Got proposal for "
+            << newPosition.prevLedger()
+            << " but we are on " << prevLedgerHash_;
+        return false;
+    }
+
+    if (deadNodes_.find (peerID) != deadNodes_.end ())
+    {
+        using std::to_string;
+        JLOG (j_.info())
+            << "Position from dead node: " << to_string (peerID);
+        return false;
+    }
+
+    {
+        // update current position
+        auto currentPosition = peerProposals_.find(peerID);
+
+        if (currentPosition != peerProposals_.end())
+        {
+            if (newPosition.proposeSeq ()
+                <= currentPosition->second.proposeSeq())
+            {
+                return false;
+            }
+        }
+
+        if (newPosition.isBowOut ())
+        {
+            using std::to_string;
+
+            JLOG (j_.info())
+                << "Peer bows out: " << to_string (peerID);
+
+            for (auto& it : disputes_)
+                it.second.unVote (peerID);
+            if (currentPosition != peerProposals_.end())
+                peerProposals_.erase (peerID);
+            deadNodes_.insert (peerID);
+
+            return true;
+        }
+
+        if (currentPosition != peerProposals_.end())
+            currentPosition->second = newPosition;
+        else
+            peerProposals_.emplace (peerID, newPosition);
+    }
+
+    if (newPosition.isInitial ())
+    {
+        // Record the close time estimate
+        JLOG (j_.trace())
+            << "Peer reports close time as "
+            << newPosition.closeTime().time_since_epoch().count();
+        ++closeTimes_[newPosition.closeTime()];
+    }
+
+    JLOG (j_.trace()) << "Processing peer proposal "
+        << newPosition.proposeSeq () << "/"
+        << newPosition.position ();
+
+    {
+        auto ait = acquired_.find (newPosition.position());
+        if (ait == acquired_.end())
+        {
+            if (auto set = impl().acquireTxSet(newPosition))
+            {
+                ait = acquired_.emplace (newPosition.position(),
+                    std::move(*set)).first;
+            }
+        }
+
+
+        if (ait != acquired_.end())
+        {
+            for (auto& it : disputes_)
+                it.second.setVote (peerID,
+                    ait->second.exists (it.first));
+        }
+        else
+        {
+            JLOG (j_.debug())
+                << "Don't have tx set for peer";
+        }
+    }
+
+    return true;
 }
 
 

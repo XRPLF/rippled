@@ -76,13 +76,13 @@ public:
     static char const* getCountedObjectName() { return "Consensus"; }
 
     /** Save the given consensus proposed by a peer with nodeID for later
-		use in consensus.
+        use in consensus.
 
-		@param proposal Proposed peer position
-		@param nodeID ID of peer
-	*/
-	void
-	storeProposal( LedgerProposal::ref proposal, NodeID const& nodeID);
+        @param proposal Proposed peer position
+        @param nodeID ID of peer
+    */
+    void
+    storeProposal( LedgerProposal::ref proposal, NodeID const& nodeID);
 
 private:
     friend class Consensus<RCLConsensus, RCLCxTraits>;
@@ -98,27 +98,39 @@ private:
     std::pair <bool, bool>
     getMode ();
 
-    /** Attempt to acquire a specific ledger.  If not available, asynchronously
-		acquires from the network.
+    /** Attempt to acquire a specific ledger.
 
-		@param ledger The ID/hash of the ledger acquire
-		@return Optional ledger, will be seated if we locally had the ledger
-	 */
+        If not available, asynchronously acquires from the network.
+
+        @param ledger The ID/hash of the ledger acquire
+        @return Optional ledger, will be seated if we locally had the ledger
+     */
     boost::optional<RCLCxLedger>
     acquireLedger(LedgerHash const & ledger);
 
     /** Get peer's proposed positions.
-		@param prevLedger The base ledger which proposals are based on
-	    @return The set of proposals
-	*/
+        @param prevLedger The base ledger which proposals are based on
+        @return The set of proposals
+    */
     std::vector<LedgerProposal>
     proposals (LedgerHash const& prevLedger);
 
     /** Relay the given proposal to all peers
-		@param proposal The proposal to relay.
+        @param proposal The proposal to relay.
      */
     void
     relay(LedgerProposal const & proposal);
+
+     /** Acquire the transaction set associated with a proposal.
+
+         If the transaction set is not available locally, will attempt acquire it
+         from the network.
+
+         @param position The proposal to acquire transactions for
+         @return Optional set of transactions, seated if available.
+    */
+    boost::optional<RCLTxSet>
+    acquireTxSet(LedgerProposal const & position);
 
     //!-------------------------------------------------------------------------
     Application& app_;
