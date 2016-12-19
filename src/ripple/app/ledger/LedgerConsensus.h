@@ -58,8 +58,6 @@ public:
 
     virtual void gotMap (Time_t const& now, TxSet_t const& map) = 0;
 
-    virtual void timerEntry (Time_t const& now) = 0;
-
     /** Simulate the consensus process without any network traffic.
 
         The end result, is that consensus begins and completes as if everyone

@@ -108,6 +108,13 @@ public:
         NetTime_t const& now,
         Proposal_t const& newPosition);
 
+    /** Call periodically to drive consensus forward
+
+        @param now The network adjusted time
+    */
+    void
+    timerEntry (NetTime_t const& now);
+
     /* @return the ID/hash of the last closed ledger */
     typename Ledger_t::ID
     LCL()
@@ -173,11 +180,42 @@ private:
     void
     playbackProposals ();
 
+
+    /** Handle pre-close state.
+
+        In the pre-close state, the ledger is open as we wait for new
+        transactions.  After enough time has elapsed, we will close the ledger
+        and start the consensus process.
+    */
+    void
+    statePreClose ();
+
+    /** Handle establish state.
+
+        In the establish state, the ledger has closed and we work with peers
+        to reach consensus. Update our position only on the timer, and in this
+        state.
+
+        If we have consensus, move to the processing state.
+    */
+    void
+    stateEstablish ();
+
+
+    /** Revoke our outstanding proposal, if any, and cease proposing at least
+        until this round ends.
+    */
+    void
+    leaveConsensus ();
+
+    /** @return The Derived class that implements the CRTP requirements.
+    */
     Derived &
 	impl()
 	{
 		return *static_cast<Derived*>(this);
 	}
+
 
 	mutable std::recursive_mutex lock_;
 
@@ -455,6 +493,63 @@ bool Consensus<Derived, Traits>::peerProposal (
     return true;
 }
 
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::timerEntry (NetTime_t const& now)
+{
+    std::lock_guard<std::recursive_mutex> _(lock_);
+
+    now_ = now;
+
+    try
+    {
+       if ((state_ != State::processing) && (state_ != State::accepted))
+           checkLCL ();
+
+        using namespace std::chrono;
+        roundTime_ = duration_cast<milliseconds>
+                           (clock_.now() - consensusStartTime_);
+
+        closePercent_ = roundTime_ * 100 /
+            std::max<milliseconds> (
+                previousRoundTime_, AV_MIN_CONSENSUS_TIME);
+
+        switch (state_)
+        {
+        case State::open:
+            statePreClose ();
+
+            if (state_ != State::establish) return;
+
+            // Fall through
+
+        case State::establish:
+            stateEstablish ();
+            return;
+
+        case State::processing:
+            // We are processing the finished ledger
+            // logic of calculating next ledger advances us out of this state
+            // nothing to do
+            return;
+
+        case State::accepted:
+            // NetworkOPs needs to setup the next round
+            // nothing to do
+            return;
+        }
+
+        assert (false);
+    }
+    catch (typename Traits::MissingTxException_t const& mn)
+    {
+        // This should never happen
+        leaveConsensus ();
+        JLOG (j_.error()) <<
+           "Missing node during consensus process " << mn;
+        Rethrow();
+    }
+}
 
 // Handle a change in the LCL during a consensus round
 template <class Derived, class Traits>
@@ -514,6 +609,85 @@ Consensus<Derived, Traits>::playbackProposals ()
     }
 }
 
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::statePreClose ()
+{
+    // it is shortly before ledger close time
+    bool anyTransactions = impl().hasOpenTransactions();
+    int proposersClosed = peerProposals_.size ();
+    int proposersValidated = impl().numProposersValidated(prevLedgerHash_);
+
+    // This computes how long since last ledger's close time
+    using namespace std::chrono;
+    milliseconds sinceClose;
+    {
+        bool previousCloseCorrect = haveCorrectLCL_
+            && previousLedger_.closeAgree ()
+            && (previousLedger_.closeTime() !=
+                (previousLedger_.parentCloseTime() + 1s));
+
+        auto lastCloseTime = previousCloseCorrect
+            ? previousLedger_.closeTime() // use consensus timing
+            : closeTime_; // use the time we saw internally
+
+        if (now_ >= lastCloseTime )
+            sinceClose = duration_cast<milliseconds>(now_ - lastCloseTime);
+        else
+            sinceClose = -duration_cast<milliseconds>(lastCloseTime  - now_);
+    }
+
+    auto const idleInterval = std::max<seconds>(LEDGER_IDLE_INTERVAL,
+        duration_cast<seconds>(2 * previousLedger_.closeTimeResolution()));
+
+    // Decide if we should close the ledger
+    if (shouldCloseLedger (anyTransactions
+        , previousProposers_, proposersClosed, proposersValidated
+        , previousRoundTime_, sinceClose, roundTime_
+        , idleInterval, j_))
+    {
+        closeLedger ();
+    }
+}
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::stateEstablish ()
+{
+    // Give everyone a chance to take an initial position
+    if (roundTime_ < LEDGER_MIN_CONSENSUS)
+        return;
+
+    updateOurPositions ();
+
+    // Nothing to do if we don't have consensus.
+    if (!haveConsensus ())
+        return;
+
+    if (!haveCloseTimeConsensus_)
+    {
+        JLOG (j_.info()) <<
+            "We have TX consensus but not CT consensus";
+        return;
+    }
+
+    JLOG (j_.info()) <<
+        "Converge cutoff (" << peerProposals_.size () << " participants)";
+    state_ = State::processing;
+    beginAccept (false);
+}
+
+
+template <class Derived, class Traits>
+void Consensus<Derived, Traits>::leaveConsensus ()
+{
+    if (ourPosition_ && ! ourPosition_->isBowOut ())
+    {
+        ourPosition_->bowOut(now_);
+        impl().propose(*ourPosition_);
+    }
+    proposing_ = false;
+}
 
 } // ripple
 

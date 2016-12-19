@@ -24,6 +24,8 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/protocol/digest.h>
 
 namespace ripple {
 
@@ -166,6 +168,38 @@ RCLConsensus::relay(LedgerProposal const & proposal)
     app_.overlay().relay (prop, proposal.getSuppressionID ());
 }
 
+void
+RCLConsensus::propose (LedgerProposal const& position)
+{
+    JLOG (j_.trace()) << "We propose: " <<
+        (position.isBowOut () ?  std::string ("bowOut") :
+            to_string (position.position ()));
+
+    protocol::TMProposeSet prop;
+
+    prop.set_currenttxhash (position.position().begin(),
+        256 / 8);
+    prop.set_previousledger (position.prevLedger().begin(),
+        256 / 8);
+    prop.set_proposeseq (position.proposeSeq());
+    prop.set_closetime (
+        position.closeTime().time_since_epoch().count());
+
+    prop.set_nodepubkey (valPublic_.data(), valPublic_.size());
+
+    auto signingHash = sha512Half(
+        HashPrefix::proposal,
+        std::uint32_t(position.proposeSeq()),
+        position.closeTime().time_since_epoch().count(),
+        position.prevLedger(), position.position());
+
+    auto sig = signDigest (
+        valPublic_, valSecret_, signingHash);
+
+    prop.set_signature (sig.data(), sig.size());
+
+    app_.overlay().send(prop);
+}
 
 boost::optional<RCLTxSet>
 RCLConsensus::acquireTxSet(LedgerProposal const & position)
@@ -175,6 +209,19 @@ RCLConsensus::acquireTxSet(LedgerProposal const & position)
         return RCLTxSet{std::move(set)};
     }
     return boost::none;
+}
+
+
+bool
+RCLConsensus::hasOpenTransactions() const
+{
+    return ! app_.openLedger().empty();
+}
+
+int
+RCLConsensus::numProposersValidated(LedgerHash const & h) const
+{
+    return app_.getValidations().getTrustedValidationCount(h);
 }
 
 }

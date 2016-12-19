@@ -132,6 +132,26 @@ private:
     boost::optional<RCLTxSet>
     acquireTxSet(LedgerProposal const & position);
 
+    /** @return whether the open ledger has any transactions
+    */
+    bool
+    hasOpenTransactions() const;
+
+    /**
+	    @param h The hash of the ledger of interest
+        @return the number of proposers that validated a ledger
+    */
+    int
+    numProposersValidated(LedgerHash const & h) const;
+
+    /** Propose the given position to my peers.
+
+        @param position Our proposed position
+    */
+    void
+    propose (LedgerProposal const& position);
+
+
     //!-------------------------------------------------------------------------
     Application& app_;
     std::unique_ptr <FeeVote> feeVote_;

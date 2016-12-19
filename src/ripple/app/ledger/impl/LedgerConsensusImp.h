@@ -108,11 +108,6 @@ public:
         Time_t const& now,
         TxSet_t const& map) override;
 
-    /**
-      On timer call the correct handler for each state.
-    */
-    void timerEntry (Time_t const& now) override;
-
     void simulate(
         Time_t const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay) override;
@@ -123,16 +118,6 @@ public:
     void shareSet (TxSet_t const&);
 
 private:
-    /**
-      Handle pre-close state.
-    */
-    void statePreClose ();
-
-    /** We are establishing a consensus
-       Update our position only on the timer, and in this state.
-       If we have consensus, move to the finish state
-    */
-    void stateEstablish ();
 
     /** Check if we've reached consensus */
     bool haveConsensus ();
@@ -190,15 +175,6 @@ private:
     void adjustCount (TxSet_t const& map,
         std::vector<NodeID_t> const& peers);
 
-    /**
-      Revoke our outstanding proposal, if any, and
-      cease proposing at least until this round ends
-    */
-    void leaveConsensus ();
-
-    /** Make and send a proposal
-    */
-    void propose ();
 
     /** Send a node status change message to our directly connected peers
 
