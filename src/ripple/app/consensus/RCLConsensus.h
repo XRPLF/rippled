@@ -87,6 +87,9 @@ public:
 private:
     friend class Consensus<RCLConsensus, RCLCxTraits>;
 
+    //-------------------------------------------------------------------------
+    // Consensus type requirements.
+
     /** Notification that a new consensus round has begun.
 
         @param ledger The ledger we are building consensus on
@@ -150,6 +153,20 @@ private:
     */
     void
     propose (LedgerProposal const& position);
+
+    /** Get the last closed ledger (LCL) seen on the network
+
+        @param currentLedger Current ledger used in consensus
+		@param priorLedger Prior ledger used in consensus
+		@param believedCorrect Whether consensus believes currentLedger is LCL
+
+		@return The hash of the last closed network
+	 */
+    uint256
+    getLCL (
+        uint256 const& currentLedger,
+        uint256 const& priorLedger,
+        bool believedCorrect);
 
 
     //!-------------------------------------------------------------------------

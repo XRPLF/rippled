@@ -224,4 +224,44 @@ RCLConsensus::numProposersValidated(LedgerHash const & h) const
     return app_.getValidations().getTrustedValidationCount(h);
 }
 
+uint256
+RCLConsensus::getLCL (
+    uint256 const& currentLedger,
+    uint256 const& priorLedger,
+    bool believedCorrect)
+{
+    // Get validators that are on our ledger, or "close" to being on
+    // our ledger.
+    auto vals =
+        app_.getValidations().getCurrentValidations(
+            currentLedger, priorLedger,
+            app_.getLedgerMaster().getValidLedgerIndex());
+
+    uint256 netLgr = currentLedger;
+    int netLgrCount = 0;
+    for (auto& it : vals)
+    {
+        if ((it.second.first > netLgrCount) ||
+            ((it.second.first == netLgrCount) && (it.first == priorLedger)))
+        {
+           netLgr = it.first;
+           netLgrCount = it.second.first;
+        }
+    }
+
+    if(netLgr != currentLedger)
+    {
+      if (believedCorrect)
+        app_.getOPs().consensusViewChange();
+      if (auto stream = j_.debug())
+      {
+        for (auto& it : vals)
+            stream << "V: " << it.first << ", " << it.second.first;
+        stream << getJson (true);
+      }
+    }
+
+    return netLgr;
+}
+
 }
