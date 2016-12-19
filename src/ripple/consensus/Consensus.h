@@ -284,6 +284,12 @@ private:
     */
     void adjustCount (TxSet_t const& txSet, std::vector<NodeID_t> const& peers);
 
+    /** Adjust our positions to try to agree with other validators.
+
+    */
+    void
+    updateOurPositions ();
+
     /** Revoke our outstanding proposal, if any, and cease proposing at least
         until this round ends.
     */
@@ -1183,6 +1189,202 @@ void Consensus<Derived, Traits>::adjustCount (TxSet_t const& txSet,
             it.second.setVote (pit, setHas);
     }
 }
+
+/** How many of the participants must agree to reach a given threshold?
+
+    Note that the number may not precisely yield the requested percentage.
+    For example, with with size = 5 and percent = 70, we return 3, but
+    3 out of 5 works out to 60%. There are no security implications to
+    this.
+
+    @param participants the number of participants (i.e. validators)
+    @param the percent that we want to reach
+
+    @return the number of participants which must agree
+*/
+inline int
+participantsNeeded (int participants, int percent)
+{
+    int result = ((participants * percent) + (percent / 2)) / 100;
+
+    return (result == 0) ? 1 : result;
+}
+
+template <class Derived, class Traits>
+void Consensus<Derived, Traits>::updateOurPositions ()
+{
+    // Compute a cutoff time
+    auto peerCutoff = now_ - PROPOSE_FRESHNESS;
+    auto ourCutoff = now_ - PROPOSE_INTERVAL;
+
+    // Verify freshness of peer positions and compute close times
+    std::map<NetTime_t, int> closeTimes;
+    {
+        auto it = peerProposals_.begin ();
+        while (it != peerProposals_.end ())
+        {
+            if (it->second.isStale (peerCutoff))
+            {
+                // peer's proposal is stale, so remove it
+                auto const& peerID = it->second.nodeID ();
+                JLOG (j_.warn())
+                    << "Removing stale proposal from " << peerID;
+                for (auto& dt : disputes_)
+                    dt.second.unVote (peerID);
+                it = peerProposals_.erase (it);
+            }
+            else
+            {
+                // proposal is still fresh
+                ++closeTimes[effectiveCloseTime(it->second.closeTime(),
+                    closeResolution_, previousLedger_.closeTime())];
+                ++it;
+            }
+        }
+    }
+
+    // This will stay unseated unless there are any changes
+    boost::optional <TxSet_t> ourNewSet;
+
+    // Update votes on disputed transactions
+    {
+        boost::optional <TxSet_t> changedSet;
+        for (auto& it : disputes_)
+        {
+            // Because the threshold for inclusion increases,
+            //  time can change our position on a dispute
+            if (it.second.updateVote (closePercent_, proposing_))
+            {
+                if (! changedSet)
+                    changedSet = *ourSet_;
+
+                if (it.second.getOurVote ())
+                {
+                    // now a yes
+                    changedSet->insert (it.second.tx());
+                }
+                else
+                {
+                    // now a no
+                    changedSet->erase (it.first);
+                }
+            }
+        }
+        if (changedSet)
+        {
+            ourNewSet.emplace (*changedSet);
+        }
+    }
+
+    int neededWeight;
+
+    if (closePercent_ < AV_MID_CONSENSUS_TIME)
+        neededWeight = AV_INIT_CONSENSUS_PCT;
+    else if (closePercent_ < AV_LATE_CONSENSUS_TIME)
+        neededWeight = AV_MID_CONSENSUS_PCT;
+    else if (closePercent_ < AV_STUCK_CONSENSUS_TIME)
+        neededWeight = AV_LATE_CONSENSUS_PCT;
+    else
+        neededWeight = AV_STUCK_CONSENSUS_PCT;
+
+    NetTime_t closeTime = {};
+    haveCloseTimeConsensus_ = false;
+
+    if (peerProposals_.empty ())
+    {
+        // no other times
+        haveCloseTimeConsensus_ = true;
+        closeTime = effectiveCloseTime(ourPosition_->closeTime(),
+            closeResolution_, previousLedger_.closeTime());
+    }
+    else
+    {
+        int participants = peerProposals_.size ();
+        if (proposing_)
+        {
+            ++closeTimes[effectiveCloseTime(ourPosition_->closeTime(),
+                closeResolution_, previousLedger_.closeTime())];
+            ++participants;
+        }
+
+        // Threshold for non-zero vote
+        int threshVote = participantsNeeded (participants,
+            neededWeight);
+
+        // Threshold to declare consensus
+        int const threshConsensus = participantsNeeded (
+            participants, AV_CT_CONSENSUS_PCT);
+
+        JLOG (j_.info()) << "Proposers:"
+            << peerProposals_.size () << " nw:" << neededWeight
+            << " thrV:" << threshVote << " thrC:" << threshConsensus;
+
+        for (auto const& it : closeTimes)
+        {
+            JLOG (j_.debug()) << "CCTime: seq "
+                << previousLedger_.seq() + 1 << ": "
+                << it.first.time_since_epoch().count()
+                << " has " << it.second << ", "
+                << threshVote << " required";
+
+            if (it.second >= threshVote)
+            {
+                // A close time has enough votes for us to try to agree
+                closeTime = it.first;
+                threshVote = it.second;
+
+                if (threshVote >= threshConsensus)
+                    haveCloseTimeConsensus_ = true;
+            }
+        }
+
+        if (!haveCloseTimeConsensus_)
+        {
+            JLOG (j_.debug()) << "No CT consensus:"
+                << " Proposers:" << peerProposals_.size ()
+                << " Proposing:" << (proposing_ ? "yes" : "no")
+                << " Thresh:" << threshConsensus
+                << " Pos:" << closeTime.time_since_epoch().count();
+        }
+    }
+
+    // Temporarily send a new proposal if there's any change to our
+    // claimed close time. Once the new close time code is deployed
+    // to the full network, this can be relaxed to force a change
+    // only if the rounded close time has changed.
+    if (! ourNewSet &&
+            ((closeTime != ourPosition_->closeTime())
+            || ourPosition_->isStale (ourCutoff)))
+    {
+        // close time changed or our position is stale
+        ourNewSet.emplace (*ourSet_);
+    }
+
+    if (ourNewSet)
+    {
+        auto newHash = ourNewSet->id();
+
+        // Setting ourSet_ here prevents gotTxSetInternal
+        // from checking for new disputes. But we only changed
+        // positions on existing disputes, so no need to.
+        ourSet_ = ourNewSet;
+
+        JLOG (j_.info())
+            << "Position change: CTime "
+            << closeTime.time_since_epoch().count()
+            << ", tx " << newHash;
+
+        if (ourPosition_->changePosition (
+            newHash, closeTime, now_))
+        {
+            if (proposing_)
+                impl().propose (*ourPosition_);
+
+            gotTxSetInternal (*ourNewSet, false);
+        }
+    }
+}
+
 template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::leaveConsensus ()
