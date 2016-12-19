@@ -155,6 +155,11 @@ private:
     void
     handleLCL (typename Ledger_t::ID const& lgrId);
 
+    /** If we radically changed our consensus context for some reason,
+        we need to replay recent proposals so that they're not lost.
+    */
+    void
+    playbackProposals ();
 
     Derived &
 	impl()
@@ -381,8 +386,17 @@ Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
     {
             haveCorrectLCL_ = false;
     }
+}
 
-
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::playbackProposals ()
+{
+    for (auto const & p : impl().proposals(prevLedgerHash_))
+    {
+        if(peerProposal(now_, p))
+            impl().relay(p);
+    }
 }
 
 

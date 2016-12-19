@@ -35,37 +35,5 @@ ConsensusImp::newLCL (
     lastCloseConvergeTook_ = convergeTime;
 }
 
-void
-ConsensusImp::storeProposal (
-    LedgerProposal::ref proposal,
-    NodeID const& nodeID)
-{
-    std::lock_guard <std::mutex> _(lock_);
-
-    auto& props = storedProposals_[nodeID];
-
-    if (props.size () >= 10)
-        props.pop_front ();
-
-    props.push_back (proposal);
-}
-
-std::vector <LedgerProposal>
-ConsensusImp::getStoredProposals (uint256 const& prevLedger)
-{
-
-    std::vector <LedgerProposal> ret;
-
-    {
-        std::lock_guard <std::mutex> _(lock_);
-
-        for (auto const& it : storedProposals_)
-            for (auto const& prop : it.second)
-                if (prop->prevLedger() == prevLedger)
-                    ret.emplace_back (*prop);
-    }
-
-    return ret;
-}
 
 }

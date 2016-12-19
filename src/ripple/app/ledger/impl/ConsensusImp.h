@@ -38,24 +38,11 @@ class ConsensusImp
 public:
 
     void
-    storeProposal (
-        LedgerProposal::ref proposal,
-        NodeID const& nodeID) override;
-
-    void
     newLCL (
         int proposers,
         std::chrono::milliseconds convergeTime);
 
-    std::vector <LedgerProposal>
-    getStoredProposals (uint256 const& previousLedger);
 
-private:
-
-    Consensus::Proposals storedProposals_;
-
-    // lock to protect storedProposals_
-    std::mutex lock_;
 };
 
 }

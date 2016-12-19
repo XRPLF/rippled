@@ -234,11 +234,6 @@ private:
     */
     void updateOurPositions ();
 
-    /** If we radically changed our consensus context for some reason,
-        we need to replay recent proposals so that they're not lost.
-    */
-    void playbackProposals ();
-
     /** We have just decided to close the ledger. Start the consensus timer,
        stash the close time, inform peers, and take a position
     */
@@ -255,10 +250,6 @@ private:
 
     /** Convert an advertised close time to an effective close time */
     NetClock::time_point effectiveCloseTime(NetClock::time_point closeTime);
-
-private:
-
-    bool firstRound_;
 };
 
 //------------------------------------------------------------------------------

@@ -23,6 +23,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/overlay/Overlay.h>
 
 namespace ripple {
 
@@ -108,5 +109,62 @@ RCLConsensus::acquireLedger(LedgerHash const & ledger)
 
     return RCLCxLedger(buildLCL);
 }
+
+
+std::vector<LedgerProposal>
+RCLConsensus::proposals (LedgerHash const& prevLedger)
+{
+    std::vector <LedgerProposal> ret;
+    {
+        std::lock_guard <std::mutex> _(proposalsLock_);
+
+        for (auto const& it : proposals_)
+            for (auto const& prop : it.second)
+                if (prop->prevLedger() == prevLedger)
+                    ret.emplace_back (*prop);
+    }
+
+    return ret;
+}
+
+void
+RCLConsensus::storeProposal (
+    LedgerProposal::ref proposal,
+    NodeID const& nodeID)
+{
+    std::lock_guard <std::mutex> _(proposalsLock_);
+
+    auto& props = proposals_[nodeID];
+
+    if (props.size () >= 10)
+        props.pop_front ();
+
+    props.push_back (proposal);
+}
+
+void
+RCLConsensus::relay(LedgerProposal const & proposal)
+{
+    protocol::TMProposeSet prop;
+
+    prop.set_proposeseq (
+        proposal.proposeSeq ());
+    prop.set_closetime (
+        proposal.closeTime ().time_since_epoch().count());
+
+    prop.set_currenttxhash (
+        proposal.position().begin(), 256 / 8);
+    prop.set_previousledger (
+        proposal.prevLedger().begin(), 256 / 8);
+
+    auto const pk = proposal.getPublicKey().slice();
+    prop.set_nodepubkey (pk.data(), pk.size());
+
+    auto const sig = proposal.getSignature();
+    prop.set_signature (sig.data(), sig.size());
+
+    app_.overlay().relay (prop, proposal.getSuppressionID ());
+}
+
 
 }

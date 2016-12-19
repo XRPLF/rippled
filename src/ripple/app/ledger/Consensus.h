@@ -38,17 +38,10 @@ class LocalTxs;
 class Consensus
 {
 public:
-    using Proposals = hash_map <NodeID, std::deque<LedgerProposal::pointer>>;
 
     virtual
     ~Consensus () = default;
 
-    virtual
-    void
-    storeProposal (
-        LedgerProposal::ref proposal,
-        NodeID const& nodeID) = 0;
-};
 
 }
 
