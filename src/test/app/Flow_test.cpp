@@ -1379,6 +1379,61 @@ struct Flow_test : public beast::unit_test::suite
         }
     }
 
+    template<class... Features>
+    void
+    testReexecuteDirectStep(Features&&... fs)
+    {
+        testcase("ReexecuteDirectStep");
+
+        using namespace jtx;
+        Env env(*this, features(fs)...);
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env(trust(alice, USD(100)));
+
+        env(pay(
+            gw, alice,
+            // 12.55....
+            STAmount{USD.issue(), std::uint64_t(1255555555555555ull), -14, false}));
+
+        env(offer(gw,
+            // 5.0...
+            STAmount{
+                USD.issue(), std::uint64_t(5000000000000000ull), -15, false},
+            XRP(1000)));
+
+        env(offer(gw,
+            // .555...
+            STAmount{
+                USD.issue(), std::uint64_t(5555555555555555ull), -16, false},
+            XRP(10)));
+
+        env(offer(gw,
+            // 4.44....
+            STAmount{
+                USD.issue(), std::uint64_t(4444444444444444ull), -15, false},
+            XRP(.1)));
+
+        env(offer(alice,
+            // 17
+            STAmount{
+                USD.issue(), std::uint64_t(1700000000000000ull), -14, false},
+            XRP(.001)));
+
+        // Need to be past this time to see the bug
+        env.close(amendmentRIPD1274SoTime() +
+            100 * env.closed()->info().closeTimeResolution);
+
+        env(pay(alice, bob, XRP(10000)), path(~XRP), sendmax(USD(100)),
+            txflags(tfPartialPayment | tfNoRippleDirect));
+    }
+
+
     void run() override
     {
         testDirectStep ();
@@ -1394,6 +1449,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(true);
         testUnfundedOffer(true);
         testUnfundedOffer(false);
+        testReexecuteDirectStep(featureFlow, featureRIPD1368);
     }
 };
 
