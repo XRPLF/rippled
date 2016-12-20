@@ -1335,9 +1335,6 @@
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTraits.h">
-      <Filter>ripple\app\consensus</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
@@ -1368,20 +1365,11 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\BookListeners.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\Consensus.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\ConsensusTransSetSF.h">
       <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\ConsensusImp.h">
-      <Filter>ripple\app\ledger\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\InboundLedger.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
@@ -1395,12 +1383,6 @@
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerCleaner.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.cpp">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\impl\LedgerConsensusImp.h">
-      <Filter>ripple\app\ledger\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\impl\LedgerMaster.cpp">
       <Filter>ripple\app\ledger\impl</Filter>
     </ClCompile>
@@ -1438,9 +1420,6 @@
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerCleaner.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerConsensus.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerHistory.cpp">
