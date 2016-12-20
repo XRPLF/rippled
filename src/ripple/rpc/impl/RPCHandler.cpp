@@ -124,10 +124,18 @@ error_code_i fillHandler (Context& context,
         }
     }
 
-    if (!context.params.isMember ("command"))
+    if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return rpcCOMMAND_MISSING;
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method))
+    {
+        if (context.params[jss::command].asString() !=
+            context.params[jss::method].asString())
+            return rpcUNKNOWN_COMMAND;
+    }
 
-    std::string strCommand  = context.params[jss::command].asString ();
+    std::string strCommand  = context.params.isMember(jss::command) ?
+                              context.params[jss::command].asString() :
+                              context.params[jss::method].asString();
 
     JLOG (context.j.trace()) << "COMMAND:" << strCommand;
     JLOG (context.j.trace()) << "REQUEST:" << context.params;

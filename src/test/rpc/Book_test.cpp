@@ -72,6 +72,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
@@ -106,8 +112,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -143,6 +155,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
@@ -181,8 +199,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -210,6 +234,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
@@ -254,8 +284,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -292,6 +328,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
@@ -344,8 +386,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -382,6 +430,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
@@ -441,8 +495,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -496,6 +556,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
@@ -563,8 +629,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -603,6 +675,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
@@ -681,8 +759,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -739,6 +823,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::asks) &&
@@ -833,8 +923,14 @@ public:
         }
 
         // RPC unsubscribe
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        auto jv = wsc->invoke("unsubscribe", books);
+        BEAST_EXPECT(jv[jss::status] == "success");
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
     }
 
     void
@@ -863,6 +959,12 @@ public:
             }
 
             auto jv = wsc->invoke("subscribe", books);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
             if(! BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             BEAST_EXPECT(jv[jss::result].isMember(jss::offers) &&
@@ -886,7 +988,15 @@ public:
         jvParams[jss::ledger_index] = "validated";
         jvParams[jss::taker_gets][jss::currency] = "USD";
         jvParams[jss::taker_gets][jss::issuer] = gw.human();
-        auto jrr = wsc->invoke("book_offers", jvParams)[jss::result];
+
+        auto jv = wsc->invoke("book_offers", jvParams);
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
+        auto jrr = jv[jss::result];
 
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
@@ -927,7 +1037,14 @@ public:
                        t[jss::TakerPays] == XRP(2000).value().getJson(0);
             }));
 
-        jrr = wsc->invoke("book_offers", jvParams)[jss::result];
+        jv = wsc->invoke("book_offers", jvParams);
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
+        jrr = jv[jss::result];
 
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == 2);
@@ -946,8 +1063,14 @@ public:
         BEAST_EXPECT(jrNextOffer[jss::owner_funds] == "50");
         BEAST_EXPECT(jrNextOffer[jss::quality] == "400000000");
 
-        BEAST_EXPECT(wsc->invoke("unsubscribe",
-            books)[jss::status] == "success");
+        jv = wsc->invoke("unsubscribe", books);
+        if (wsc->version() == 2)
+        {
+            BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+        }
+        BEAST_EXPECT(jv[jss::status] == "success");
     }
 
     void

@@ -107,13 +107,16 @@ class WSClientImpl : public WSClient
     std::condition_variable cv_;
     std::list<std::shared_ptr<msg>> msgs_;
 
+    unsigned rpc_version_;
+
 public:
-    WSClientImpl(Config const& cfg, bool v2)
+    WSClientImpl(Config const& cfg, bool v2, unsigned rpc_version)
         : work_(ios_)
         , strand_(ios_)
         , thread_([&]{ ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
+        , rpc_version_(rpc_version)
     {
         auto const ep = getEndpoint(cfg, v2);
         stream_.connect(ep);
@@ -143,7 +146,15 @@ public:
             Json::Value jp;
             if(params)
                jp = params;
-            jp[jss::command] = cmd;
+            if (rpc_version_ == 2)
+            {
+                jp[jss::method] = cmd;
+                jp[jss::jsonrpc] = "2.0";
+                jp[jss::ripplerpc] = "2.0";
+                jp[jss::id] = 5;
+            }
+            else
+                jp[jss::command] = cmd;
             auto const s = to_string(jp);
             ws_.write_frame(true, buffer(s));
         }
@@ -167,7 +178,6 @@ public:
                 ret[jss::status] = jss::error;
                 return ret;
             }
-
             if ((*jv).isMember(jss::status) &&
                 (*jv).isMember(jss::result))
                     (*jv)[jss::result][jss::status] =
@@ -221,6 +231,11 @@ public:
         return std::move(m->jv);
     }
 
+    unsigned version() const override
+    {
+        return rpc_version_;
+    }
+
 private:
     void
     on_read_msg(error_code const& ec)
@@ -254,9 +269,9 @@ private:
 };
 
 std::unique_ptr<WSClient>
-makeWSClient(Config const& cfg, bool v2)
+makeWSClient(Config const& cfg, bool v2, unsigned rpc_version)
 {
-    return std::make_unique<WSClientImpl>(cfg, v2);
+    return std::make_unique<WSClientImpl>(cfg, v2, rpc_version);
 }
 
 } // test
