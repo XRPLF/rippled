@@ -24,6 +24,8 @@
 #include <ripple/beast/core/Thread.h>
 #include <ripple/beast/core/LockFreeStack.h>
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -119,19 +121,27 @@ private:
     class Worker
         : public beast::LockFreeStack <Worker>::Node
         , public beast::LockFreeStack <Worker, PausedTag>::Node
-        , public beast::Thread
     {
     public:
         Worker (Workers& workers, std::string const& threadName);
 
         ~Worker ();
 
+        void notify ();
+
     private:
-        void run () override;
+        void run ();
         void runImpl ();
 
     private:
         Workers& m_workers;
+        std::string const threadName_;
+
+        std::thread thread_;
+        std::mutex mutex_;
+        std::condition_variable wakeup_;
+        int wakeCount_;               // how many times to un-pause
+        bool shouldExit_;
     };
 
 private:

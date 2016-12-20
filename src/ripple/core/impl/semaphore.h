@@ -54,9 +54,6 @@ public:
         m_cond.notify_one ();
     }
 
-    // Deprecated, for backward compatibility
-    void signal () { notify (); }
-
     /** Block until notify is called. */
     void wait ()
     {
