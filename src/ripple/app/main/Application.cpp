@@ -1264,9 +1264,17 @@ int ApplicationImp::fdlimit() const
 void
 ApplicationImp::startGenesisLedger()
 {
+    std::vector<uint256> initialAmendments =
+        (config_->START_UP == Config::FRESH) ?
+            m_amendmentTable->getDesired() :
+            std::vector<uint256>{};
+
     std::shared_ptr<Ledger> const genesis =
         std::make_shared<Ledger>(
-            create_genesis, *config_, family());
+            create_genesis,
+            *config_,
+            initialAmendments,
+            family());
     m_ledgerMaster->storeLedger (genesis);
 
     auto const next = std::make_shared<Ledger>(

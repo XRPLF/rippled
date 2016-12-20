@@ -186,7 +186,11 @@ public:
 
 //------------------------------------------------------------------------------
 
-Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
+Ledger::Ledger (
+        create_genesis_t,
+        Config const& config,
+        std::vector<uint256> const& amendments,
+        Family& family)
     : mImmutable (false)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
         family, SHAMap::version{1}))
@@ -205,6 +209,14 @@ Ledger::Ledger (create_genesis_t, Config const& config, Family& family)
     sle->setAccountID (sfAccount, id);
     sle->setFieldAmount (sfBalance, info_.drops);
     rawInsert(sle);
+
+    if (! amendments.empty())
+    {
+        auto const sle = std::make_shared<SLE>(keylet::amendments());
+        sle->setFieldV256 (sfAmendments, STVector256{amendments});
+        rawInsert(sle);
+    }
+
     stateMap_->flushDirty (hotACCOUNT_NODE, info_.seq);
     setImmutable(config);
 }
@@ -217,9 +229,11 @@ Ledger::Ledger (
         beast::Journal j)
     : mImmutable (true)
     , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        info.txHash, family, SHAMap::version{1}))
+        info.txHash, family,
+        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
     , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        info.accountHash, family, SHAMap::version{1}))
+        info.accountHash, family,
+        SHAMap::version{getSHAMapV2(info) ? 2 : 1}))
     , info_ (info)
 {
     loaded = true;
@@ -273,6 +287,12 @@ Ledger::Ledger (Ledger const& prevLedger,
     info_.closeTimeResolution = getNextLedgerTimeResolution(
         prevLedger.info_.closeTimeResolution,
         getCloseAgree(prevLedger.info()), info_.seq);
+
+    if (stateMap_->is_v2())
+    {
+        info_.closeFlags |= sLCF_SHAMapV2;
+    }
+
     if (prevLedger.info_.closeTime == NetClock::time_point{})
     {
         info_.closeTime = roundCloseTime(closeTime, info_.closeTimeResolution);
@@ -1053,6 +1073,7 @@ Ledger::make_v2()
     info_.accountHash = stateMap_->getHash ().as_uint256();
     info_.txHash = txMap_->getHash ().as_uint256();
     info_.hash = calculateLedgerHash (info_);
+    info_.closeFlags |= sLCF_SHAMapV2;
 }
 
 void

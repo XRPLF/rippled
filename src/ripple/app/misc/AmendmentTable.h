@@ -85,6 +85,13 @@ public:
     virtual std::vector <uint256>
     doValidation (std::set <uint256> const& enabled) = 0;
 
+    // The set of amendments to enable in the genesis ledger
+    // This will return all known, non-vetoed amendments.
+    // If we ever have two amendments that should not both be
+    // enabled at the same time, we should ensure one is vetoed.
+    virtual std::vector <uint256>
+    getDesired () = 0;
+
     // The two function below adapt the API callers expect to the
     // internal amendment table API. This allows the amendment
     // table implementation to be independent of the ledger

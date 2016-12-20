@@ -94,8 +94,14 @@ public:
         of XRP in the system. No more XRP than the amount which
         starts in this account can ever exist, with amounts
         used to pay fees being destroyed.
+
+        Amendments specified are enabled in the genesis ledger
     */
-    Ledger (create_genesis_t, Config const& config, Family& family);
+    Ledger (
+        create_genesis_t,
+        Config const& config,
+        std::vector<uint256> const& amendments,
+        Family& family);
 
     Ledger (
         LedgerInfo const& info,

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/test/jtx.h>
 
@@ -80,7 +81,8 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary]       = false;
-        auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
         BEAST_EXPECT(
             jrr[jss::ledger_current_index].isIntegral() &&
             jrr[jss::ledger_current_index].asInt() > 0 );
@@ -91,7 +93,8 @@ public:
         for (auto delta = -1; delta <= 1; delta++)
         {
             jvParams[jss::limit] = max_limit + delta;
-            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            auto const jrr = env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
             BEAST_EXPECT(
                 checkArraySize( jrr[jss::state],
                     (delta > 0 && !as_admin) ? max_limit : max_limit + delta ));
@@ -121,7 +124,8 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary]       = true;
-        auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        auto const jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
         BEAST_EXPECT(
             jrr[jss::ledger_current_index].isIntegral() &&
             jrr[jss::ledger_current_index].asInt() > 0);
@@ -144,7 +148,8 @@ public:
             // bad limit
             Json::Value jvParams;
             jvParams[jss::limit] = "0"; // NOT an integer
-            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            auto const jrr = env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not integer.");
@@ -154,7 +159,8 @@ public:
             // invalid marker
             Json::Value jvParams;
             jvParams[jss::marker] = "NOT_A_MARKER";
-            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            auto const jrr = env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
@@ -164,7 +170,8 @@ public:
             // invalid marker - not a string
             Json::Value jvParams;
             jvParams[jss::marker] = 1;
-            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            auto const jrr = env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "invalidParams");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not valid.");
@@ -174,7 +181,8 @@ public:
             // ask for a bad ledger index
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 10u;
-            auto const jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            auto const jrr = env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
             BEAST_EXPECT(jrr[jss::error]         == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::status]        == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
@@ -204,21 +212,73 @@ public:
         Json::Value jvParams;
         jvParams[jss::ledger_index] = "current";
         jvParams[jss::binary]       = false;
-        auto jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        auto jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
         auto const total_count = jrr[jss::state].size();
 
         // now make request with a limit and loop until we get all
         jvParams[jss::limit]        = 5;
-        jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+        jrr = env.rpc ( "json", "ledger_data",
+            boost::lexical_cast<std::string>(jvParams)) [jss::result];
         BEAST_EXPECT( checkMarker(jrr) );
         auto running_total = jrr[jss::state].size();
         while ( jrr.isMember(jss::marker) )
         {
             jvParams[jss::marker] = jrr[jss::marker];
-            jrr = env.rpc ( "json", "ledger_data", jvParams.toStyledString() ) [jss::result];
+            jrr = env.rpc ( "json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams)) [jss::result];
             running_total += jrr[jss::state].size();
         }
         BEAST_EXPECT( running_total == total_count );
+    }
+
+    void testLedgerHeader()
+    {
+        using namespace test::jtx;
+        Env env { *this };
+        env.fund(XRP(100000), "alice");
+        env.close();
+
+        // Ledger header should be present in the first query
+        {
+            // Closed ledger with non binary form
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "closed";
+            auto jrr = env.rpc("json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+                BEAST_EXPECT(jrr[jss::ledger][jss::ledger_hash] ==
+                    to_string(env.closed()->info().hash));
+        }
+        {
+            // Closed ledger with binary form
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "closed";
+            jvParams[jss::binary] = true;
+            auto jrr = env.rpc("json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+            {
+                auto data = strUnHex(
+                    jrr[jss::ledger][jss::ledger_data].asString());
+                if (BEAST_EXPECT(data.second))
+                {
+                    Serializer s(data.first.data(), data.first.size());
+                    std::uint32_t seq;
+                    BEAST_EXPECT(s.getInteger<std::uint32_t>(seq, 0));
+                    BEAST_EXPECT(seq == 3);
+                }
+            }
+        }
+        {
+            // Current ledger with binary form
+            Json::Value jvParams;
+            jvParams[jss::binary] = true;
+            auto jrr = env.rpc("json", "ledger_data",
+                boost::lexical_cast<std::string>(jvParams))[jss::result];
+            BEAST_EXPECT(jrr.isMember(jss::ledger));
+            BEAST_EXPECT(! jrr[jss::ledger].isMember(jss::ledger_data));
+        }
     }
 
     void run()
@@ -228,8 +288,8 @@ public:
         testCurrentLedgerBinary();
         testBadInput();
         testMarkerFollow();
+        testLedgerHeader();
     }
-
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerData,app,ripple);
