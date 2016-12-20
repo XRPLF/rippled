@@ -65,7 +65,7 @@ public:
     // Called when another attempt is made to fetch this same ledger
     void update (std::uint32_t seq);
 
-    std::shared_ptr<Ledger> const&
+    std::shared_ptr<Ledger const>
     getLedger() const
     {
         return mLedger;

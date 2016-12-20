@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
@@ -38,6 +39,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
 {
     auto const hasHash = context.params.isMember (jss::ledger_hash);
     auto const hasIndex = context.params.isMember (jss::ledger_index);
+    std::uint32_t ledgerIndex = 0;
 
     auto& ledgerMaster = context.app.getLedgerMaster();
     LedgerHash ledgerHash;
@@ -47,6 +49,8 @@ Json::Value doLedgerRequest (RPC::Context& context)
         return RPC::make_param_error(
             "Exactly one of ledger_hash and ledger_index can be set.");
     }
+
+    context.loadType = Resource::feeHighBurdenRPC;
 
     if (hasHash)
     {
@@ -65,7 +69,7 @@ Json::Value doLedgerRequest (RPC::Context& context)
             RPC::Tuning::maxValidatedLedgerAge)
             return rpcError (rpcNO_CURRENT);
 
-        auto ledgerIndex = jsonIndex.asInt();
+        ledgerIndex = jsonIndex.asInt();
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->info().seq)
@@ -118,28 +122,29 @@ Json::Value doLedgerRequest (RPC::Context& context)
         ledgerHash = neededHash ? *neededHash : zero; // kludge
     }
 
-    auto ledger = ledgerMaster.getLedgerByHash (ledgerHash);
+    // Try to get the desired ledger
+    // Verify all nodes even if we think we have it
+    auto ledger = context.app.getInboundLedgers().acquire (
+        ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
+
+    // In standalone mode, accept the ledger from the ledger cache
+    if (! ledger && context.app.config().standalone())
+        ledger = ledgerMaster.getLedgerByHash (ledgerHash);
+
     if (ledger)
     {
-        // We already have the ledger they want
+        // We already had the entire ledger verified/acquired
         Json::Value jvResult;
         jvResult[jss::ledger_index] = ledger->info().seq;
         addJson (jvResult, {*ledger, 0});
         return jvResult;
     }
-    else
-    {
-        // Try to get the desired ledger
-        if (auto il = context.app.getInboundLedgers ().acquire (
-                ledgerHash, 0, InboundLedger::fcGENERIC))
-            return getJson (LedgerFill (*il));
 
-        if (auto il = context.app.getInboundLedgers().find (ledgerHash))
-            return il->getJson (0);
+    if (auto il = context.app.getInboundLedgers().find (ledgerHash))
+        return il->getJson (0);
 
-        return RPC::make_error (
-            rpcNOT_READY, "findCreate failed to return an inbound ledger");
-    }
+    return RPC::make_error (
+        rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
 
 } // ripple
