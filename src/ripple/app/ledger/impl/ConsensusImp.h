@@ -37,11 +37,6 @@ class ConsensusImp
 {
 public:
 
-    void
-    newLCL (
-        int proposers,
-        std::chrono::milliseconds convergeTime);
-
 
 };
 

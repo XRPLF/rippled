@@ -63,6 +63,7 @@ class RCLConsensus : public Consensus<RCLConsensus, RCLCxTraits>
 {
 public:
     using Base = Consensus<RCLConsensus, RCLCxTraits>;
+    using Base::accept;
 
     //! Constructor
     RCLConsensus(
@@ -223,8 +224,69 @@ private:
         NetClock::time_point closeTime,
         NetClock::time_point now);
 
-    //!-------------------------------------------------------------------------
 
+    /** Dispatch a call to Consensus::accept
+
+        Accepting a ledger may be expensive, so this function can dispatch
+        that call to another thread if desired and must call the accept
+        method of the generic consensus algorithm.
+
+        @param txSet The transactions to accept.
+    */
+    void
+    dispatchAccept(RCLTxSet const & txSet);
+
+
+    /** Accept a new ledger based on the given transactions.
+
+        TODO: Too many arguments, need to group related types.
+
+        @param set The set of accepted transactions
+        @param consensuCloseTime Consensus agreed upon close time
+        @param proposing_ Whether we are proposing
+        @param proposing_ Whether we are validating
+        @param haveCorrectLCL_ Whether we had the correct last closed ledger
+        @param consensuFail_ Whether consensus failed
+        @param prevLedgerHash_ The hash/id of the previous ledger
+        @param previousLedger_ The previous ledger
+        @param closeResolution_ The close time resolution used this round
+        @param now Current network adjsuted time
+        @param roundTime_ Duration of this consensus round
+        @param disputes_ Disputed trarnsactions from this round
+        @param closeTimes_ Histogram of peers close times
+        @param closeTime Our close time
+        @param json Json representation of consensus
+        @return Whether we should continue validating
+     */
+    bool
+    accept(
+        RCLTxSet const& set,
+        NetClock::time_point consensusCloseTime,
+        bool proposing_,
+        bool validating_,
+        bool haveCorrectLCL_,
+        bool consensusFail_,
+        LedgerHash const &prevLedgerHash_,
+        RCLCxLedger const & previousLedger_,
+        NetClock::duration closeResolution_,
+        NetClock::time_point const & now,
+        std::chrono::milliseconds const & roundTime_,
+        hash_map<RCLCxTx::ID, DisputedTx <RCLCxTx, NodeID>> const & disputes_,
+        std::map <NetClock::time_point, int> closeTimes_,
+        NetClock::time_point const & closeTime,
+        Json::Value && json
+    );
+
+    /** Signal the end of consensus to the application, which will start the
+        next round.
+
+        @param correctLCL Whether we believe we have the correct LCL
+    */
+    void
+    endConsensus(bool correctLCL);
+
+    //!-------------------------------------------------------------------------
+    // Additional members (not directly required by Consensus interface)
     /** Notify peers of a consensus state change
 
         @param ne Event type for notification
@@ -234,6 +296,53 @@ private:
     void
     notify(protocol::NodeEvent ne, RCLCxLedger const & ledger, bool haveCorrectLCL);
 
+      /** Build the new last closed ledger.
+
+          Accept the given the provided set of consensus transactions and build
+          the last closed ledger. Since consensus just agrees on which
+          transactions to apply, but not whether they make it into the closed
+          ledger, this function also populates retriableTxs with those that can
+          be retried in the next round.
+
+          @param previousLedger Prior ledger building upon
+          @param set The set of transactions to apply to the ledger
+          @param closeTime The the ledger closed
+          @param closeTimeCorrect Whether consensus agreed on close time
+          @param closeResolution Resolution used to determine consensus close time
+          @param now Current network adjusted time
+          @param roundTime Duration of this consensus rorund
+          @param retriableTxs Populate with transactions to retry in next round
+          @return The newly built ledger
+    */
+    RCLCxLedger
+    buildLCL(
+        RCLCxLedger const & previousLedger,
+        RCLTxSet const & set,
+        NetClock::time_point closeTime,
+        bool closeTimeCorrect,
+        NetClock::duration closeResolution,
+        NetClock::time_point now,
+        std::chrono::milliseconds roundTime,
+        CanonicalTXSet & retriableTxs
+    );
+
+    /** Validate the given ledger and share with peers as necessary
+
+        @param ledger The ledger to validate
+        @param now Current network adjusted time
+        @param proposing Whether we were proposing transactions while generating
+                         this ledger.  If we are not proposing, a validation
+                         can still be sent to inform peers that we know we
+                         aren't fully participating in consensus but are still
+                         around and trying to catch up.
+    */
+    void
+    validate(
+        RCLCxLedger const & ledger,
+        NetClock::time_point now,
+        bool proposing);
+
+    //!-------------------------------------------------------------------------
     Application& app_;
     std::unique_ptr <FeeVote> feeVote_;
     LedgerMaster & ledgerMaster_;

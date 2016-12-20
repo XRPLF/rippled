@@ -203,6 +203,21 @@ public:
     Json::Value
     getJson (bool full) const;
 
+protected:
+    /** Accept a new last closed ledger.
+
+        We believe the network reached Consensus on a set of transactions. This
+        function accepts those new transactions, creating a new last closed
+        ledger.  The bulk of the work is dispatched to the deriving class' accept
+        method.
+
+        @param set Our consensus transaction set
+
+        @note This is protected so the Derived class can call it from dispatchAccept.
+    */
+    void
+    accept(TxSet_t const& set);
+
 private:
 
     /** Change our view of the last closed ledger
@@ -316,6 +331,23 @@ private:
     */
     void
     gotTxSetInternal ( TxSet_t const& txSet, bool acquired);
+
+
+    /** Initiate acceptance of a the next closed ledger.
+
+        After consensus is complete, beginAccept is called to start
+        accepting the consensus transaction set.  In synchronous mode, this will
+        directly call the accept member function. However, since accepting and
+        generating a new ledger is likely computationally intensive, the
+        asynchronous mode defer to the Derived class dispatchAccept call to
+        schedule the call to accept.
+
+        @param synchronous Do not dispatch to Derived and instead call accept
+                           directly.
+    */
+    void
+    beginAccept (bool synchronous);
+
 
     /** @return The Derived class that implements the CRTP requirements.
     */
@@ -1457,6 +1489,66 @@ Consensus<Derived, Traits>::haveConsensus ()
 
     return true;
 }
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::beginAccept (bool synchronous)
+{
+    if (! ourPosition_ || ! ourSet_)
+    {
+        JLOG (j_.fatal())
+            << "We don't have a consensus set";
+        abort ();
+    }
+
+
+    previousProposers_ = peerProposals_.size();
+    previousRoundTime_ = roundTime_;
+
+    if (synchronous)
+        accept (*ourSet_);
+    else
+    {
+        impl().dispatchAccept(*ourSet_);
+    }
+}
+
+
+template <class Derived, class Traits>
+void
+Consensus<Derived, Traits>::accept (TxSet_t const& set)
+{
+
+    bool validatingOut = impl().accept(set,
+        ourPosition_->closeTime(),
+        proposing_,
+        validating_,
+        haveCorrectLCL_,
+        consensusFail_,
+        prevLedgerHash_,
+        previousLedger_,
+        closeResolution_,
+        now_,
+        roundTime_,
+        disputes_,
+        closeTimes_,
+        closeTime_,
+        getJson(true)
+        );
+
+    // we have accepted a new ledger
+    bool correct;
+    {
+        std::lock_guard<std::recursive_mutex> _(lock_);
+        validating_ = validatingOut;
+        state_ = State::accepted;
+        correct = haveCorrectLCL_;
+    }
+
+    impl().endConsensus (correct);
+}
+
+
 
 template <class Derived, class Traits>
 void

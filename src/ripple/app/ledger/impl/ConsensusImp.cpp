@@ -27,13 +27,5 @@ namespace ripple {
 
 
 void
-ConsensusImp::newLCL (
-    int proposers,
-    std::chrono::milliseconds convergeTime)
-{
-    lastCloseProposers_ = proposers;
-    lastCloseConvergeTook_ = convergeTime;
-}
-
 
 }

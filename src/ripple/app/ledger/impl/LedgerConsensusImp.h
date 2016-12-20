@@ -93,26 +93,6 @@ public:
 private:
 
 
-    /** We have a new last closed ledger, process it. Final accept logic
-
-      @param set Our consensus set
-    */
-    void accept (TxSet_t const& set);
-
-    /** Send a node status change message to our directly connected peers
-
-      @param event   The event which caused the status change.  This is
-                     typically neACCEPTED_LEDGER or neCLOSING_LEDGER.
-      @param ledger  The ledger associated with the event.
-    */
-    void statusChange (protocol::NodeEvent event, ReadView const& ledger);
-
-    /** We have a new LCL and must accept it */
-    void beginAccept (bool synchronous);
-
-    void endConsensus (bool correctLCL);
-
-
     /** Add our load fee to our validation */
     void addLoad(STValidation::ref val);
 
