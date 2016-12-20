@@ -17,7 +17,7 @@ Basic idea: being able to edit rippled source files with our favorite tools and 
 ## Build Rippled from scratch
 
 ```
-DOCKER_PLAY_ROOT/rdplay build
+DOCKER_PLAY_ROOT/rdde build
 ...
 
 Install file: "build/gcc.release/rippled" as "build/rippled"
