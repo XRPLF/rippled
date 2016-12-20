@@ -68,7 +68,7 @@ This tool will build three type of docker images :
 * rippled-runner (~250MB) : a docker image with rippled run dependencies as defined in DOCKER_PLAY_ROOT/RippledRunner/Dockerfile.
 * rippled-tester (~350MB) : a docker image with rippled run dependencies and nodejs as defined in DOCKER_PLAY_ROOT/RippledTester/Dockerfile. 
 
-**Also notice on each docker images a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000,1000) but you're free to change the Dockerfile files to fit your environment).**
+Also notice on each docker images a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000,1000) but you're free to change the Dockerfile files to fit your environment).
 
 This tool will then run containers based on these images. As the working volumes are mounted from your cloned git repository in your host you can reuse these containers multiple time to build, run and test rippled.
 
