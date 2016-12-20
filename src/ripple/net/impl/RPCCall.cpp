@@ -1415,7 +1415,10 @@ void fromNetwork (
 
     // Send request
 
+    // Number of bytes to try to receive if no
+    // Content-Length header received
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
+
     using namespace std::chrono_literals;
     auto constexpr RPC_NOTIFY = 10min;
 
