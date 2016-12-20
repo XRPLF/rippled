@@ -236,6 +236,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\extras\beast\test\yield_to.hpp">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\amount.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\extras\beast\unit_test\detail\const_container.hpp">
