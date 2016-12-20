@@ -80,9 +80,8 @@ void Workers::setNumberOfThreads (int numberOfThreads)
                 else
                 {
                     worker = new Worker (*this, m_threadNames);
+                    m_everyone.push_front (worker);
                 }
-
-                m_everyone.push_front (worker);
             }
         }
         else if (numberOfThreads < m_numberOfThreads)
@@ -96,7 +95,7 @@ void Workers::setNumberOfThreads (int numberOfThreads)
                 ++m_pauseCount;
 
                 // Pausing a thread counts as one "internal task"
-                m_semaphore.signal ();
+                m_semaphore.notify ();
             }
         }
 
@@ -115,7 +114,7 @@ void Workers::pauseAllThreadsAndWait ()
 
 void Workers::addTask ()
 {
-    m_semaphore.signal ();
+    m_semaphore.notify ();
 }
 
 int Workers::numberOfCurrentlyRunningTasks () const noexcept
@@ -144,27 +143,50 @@ void Workers::deleteWorkers (beast::LockFreeStack <Worker>& stack)
 //------------------------------------------------------------------------------
 
 Workers::Worker::Worker (Workers& workers, std::string const& threadName)
-    : Thread (threadName)
-    , m_workers (workers)
+    : m_workers {workers}
+    , threadName_ {threadName}
+    , wakeCount_ {0}
+    , shouldExit_ {false}
 {
-    startThread ();
+    thread_ = std::thread {&Workers::Worker::run, this};
 }
 
 Workers::Worker::~Worker ()
 {
-    stopThread ();
+    {
+        std::lock_guard <std::mutex> lock {mutex_};
+        ++wakeCount_;
+        shouldExit_ = true;
+    }
+
+    wakeup_.notify_one();
+    thread_.join();
+}
+
+void Workers::Worker::notify ()
+{
+    {
+        std::lock_guard <std::mutex> lock {mutex_};
+        ++wakeCount_;
+    }
+    wakeup_.notify_one();
+}
+
+static void setInactiveThreadName (std::string const& threadName)
+{
+    beast::Thread::setCurrentThreadName ("(" + threadName + ")");
 }
 
 void Workers::Worker::run ()
 {
-    // Call runImpl() and report if any exceptions escape runImpl.
-    threadEntry (this, &Workers::Worker::runImpl,
-                 "Workers::Worker::run(); Thread: " + Thread::getThreadName());
+    setInactiveThreadName (threadName_);
+    threadEntry (this, &Workers::Worker::runImpl, threadName_);
 }
 
 void Workers::Worker::runImpl ()
 {
-    while (! threadShouldExit ())
+    bool shouldExit = true;
+    do
     {
         // Increment the count of active workers, and if
         // we are the first one then reset the "all paused" event
@@ -208,7 +230,7 @@ void Workers::Worker::runImpl ()
             --m_workers.m_runningTaskCount;
 
             // Put the name back in case the callback changed it
-            Thread::setCurrentThreadName (Thread::getThreadName());
+            beast::Thread::setCurrentThreadName (threadName_);
         }
 
         // Any worker that goes into the paused list must
@@ -223,17 +245,22 @@ void Workers::Worker::runImpl ()
         if (--m_workers.m_activeCount == 0)
             m_workers.m_allPaused.signal ();
 
-        Thread::setCurrentThreadName ("(" + getThreadName() + ")");
+        setInactiveThreadName (threadName_);
 
         // [1] We will be here when the paused list is popped
         //
-        // We block on our event object, a requirement of being
+        // We block on our condition_variable, wakeup_, a requirement of being
         // put into the paused list.
         //
-        // This will get signaled on either a reactivate or a stopThread()
-        //
-        wait ();
-    }
+        // wakeup_ will get signaled by either Worker::notify() or ~Worker.
+        {
+            std::unique_lock <std::mutex> lock {mutex_};
+            wakeup_.wait (lock, [this] {return this->wakeCount_ > 0;});
+
+            shouldExit = shouldExit_;
+            --wakeCount_;
+        }
+    } while (! shouldExit);
 }
 
 } // ripple

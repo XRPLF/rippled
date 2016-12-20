@@ -29,9 +29,9 @@ class Workers_test : public beast::unit_test::suite
 public:
     struct TestCallback : Workers::Callback
     {
-        explicit TestCallback(int count_)
-            : finished(false, count_ == 0)
-            , count(count_)
+        TestCallback()
+            : finished(false, false)
+            , count(0)
         {
         }
 
@@ -45,26 +45,41 @@ public:
         std::atomic <int> count;
     };
 
-    void testThreads(int const threadCount)
+    void testThreads(int const tc1, int const tc2, int const tc3)
     {
-        testcase("threadCount = " + std::to_string(threadCount));
+        testcase("threadCounts: " + std::to_string(tc1) +
+            " -> " + std::to_string(tc2) + " -> " + std::to_string(tc3));
 
-        TestCallback cb(threadCount);
+        TestCallback cb;
 
-        Workers w(cb, "Test", 0);
-        BEAST_EXPECT(w.getNumberOfThreads() == 0);
+        Workers w(cb, "Test", tc1);
+        BEAST_EXPECT(w.getNumberOfThreads() == tc1);
 
-        w.setNumberOfThreads(threadCount);
-        BEAST_EXPECT(w.getNumberOfThreads() == threadCount);
+        auto testForThreadCount = [this, &cb, &w] (int const threadCount)
+        {
+            // Prepare the callback.
+            cb.count = threadCount;
+            if (threadCount == 0)
+                cb.finished.signal();
+            else
+                cb.finished.reset();
 
-        for (int i = 0; i < threadCount; ++i)
-            w.addTask();
+            // Execute the test.
+            w.setNumberOfThreads(threadCount);
+            BEAST_EXPECT(w.getNumberOfThreads() == threadCount);
 
-        // 10 seconds should be enough to finish on any system
-        //
-        bool signaled = cb.finished.wait(10 * 1000);
-        BEAST_EXPECT(signaled);
+            for (int i = 0; i < threadCount; ++i)
+                w.addTask();
 
+            // 10 seconds should be enough to finish on any system
+            //
+            bool const signaled = cb.finished.wait(10 * 1000);
+            BEAST_EXPECT(signaled);
+            BEAST_EXPECT(cb.count.load() == 0);
+        };
+        testForThreadCount (tc1);
+        testForThreadCount (tc2);
+        testForThreadCount (tc3);
         w.pauseAllThreadsAndWait();
 
         // We had better finished all our work!
@@ -73,12 +88,12 @@ public:
 
     void run()
     {
-        testThreads(0);
-        testThreads(1);
-        testThreads(2);
-        testThreads(4);
-        testThreads(16);
-        testThreads(64);
+        testThreads( 0, 0,  0);
+        testThreads( 1, 0,  1);
+        testThreads( 2, 1,  2);
+        testThreads( 4, 3,  5);
+        testThreads(16, 4, 15);
+        testThreads(64, 3, 65);
     }
 };
 
