@@ -32,7 +32,7 @@ Depending your environment and needs you can tune scons options in command line.
 **NOTE:** if you want to change your builds options you will have to remove the rippled-builder container and rerun rdde with the new options.
 
 ```
-# static build using 4 cpu
+# static build using 4 jobs
 DOCKER_PLAY_ROOT/rdde build -j 4 --static
 ...
 scons: Reading SConscript files ...
@@ -49,7 +49,7 @@ RPC.Status.fillJson OK
 ...
 56.3s, 127 suites, 589 cases, 334502 tests total, 0 failures
 
-# dynamic build using 4 cpu and stripping
+# dynamic build using 4 jobs and stripping
 DOCKER_PLAY_ROOT/rdde build -j 4 strip
 ...
 Install file: "build/gcc.release/rippled" as "build/rippled"
