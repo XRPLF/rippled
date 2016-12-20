@@ -705,7 +705,7 @@ bool Ledger::walkLedger (beast::Journal j) const
     return missingNodes1.empty () && missingNodes2.empty ();
 }
 
-bool Ledger::assertSane (beast::Journal ledgerJ)
+bool Ledger::assertSane (beast::Journal ledgerJ) const
 {
     if (info_.hash.isNonZero () &&
             info_.accountHash.isNonZero () &&

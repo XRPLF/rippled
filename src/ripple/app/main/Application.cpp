@@ -1565,7 +1565,7 @@ bool ApplicationImp::loadOldLedger (
 {
     try
     {
-        std::shared_ptr<Ledger> loadLedger, replayLedger;
+        std::shared_ptr<Ledger const> loadLedger, replayLedger;
 
         if (isFileName)
         {
