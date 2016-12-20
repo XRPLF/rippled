@@ -36,7 +36,9 @@ locateRepoRoot() {
 case "$1" in
     build)
         locateRepoRoot
-
+        
+        BUILD_OPTIONS=`echo $@ | sed -e "s/$1 //g"`
+        
         IS_RIPPLED_BUILDER_READY=`docker ps -a | grep rippled-builder | wc -l`
         if [ $IS_RIPPLED_BUILDER_READY -eq 0 ]; then
 
@@ -45,8 +47,11 @@ case "$1" in
                 cd $REPO_ROOT/Builds/DockerPlay/RippledBuilder
                 docker build -t rippled-builder .
             fi
-            docker run -ti -v $REPO_ROOT:/RIPPLED:rw --name=rippled-builder rippled-builder
-
+            if [ "x$BUILD_OPTIONS" = "x" ]; then
+                docker run -ti -v $REPO_ROOT:/RIPPLED:rw --name=rippled-builder rippled-builder
+            else
+                docker run -ti -v $REPO_ROOT:/RIPPLED:rw --env BUILD_OPTS="$BUILD_OPTIONS" --name=rippled-builder rippled-builder
+            fi
         else
 
             docker start rippled-builder 

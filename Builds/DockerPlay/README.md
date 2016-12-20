@@ -16,12 +16,45 @@ Basic idea: being able to edit rippled source files with our favorite tools and 
 
 ## Build Rippled from scratch
 
+### Basic build with dynamic link
 ```
 DOCKER_PLAY_ROOT/rdde build
 ...
 
 Install file: "build/gcc.release/rippled" as "build/rippled"
 scons: done building targets.
+```
+
+### Adding some scons option
+
+Depending your environment and needs you can tune scons options in command line. Bellows are some examples.
+ 
+**NOTE:** if you want to change your builds options you will have to remove the rippled-builder container and rerun rdde with the new options.
+
+```
+# static build using 4 cpu
+DOCKER_PLAY_ROOT/rdde build -j 4 --static
+...
+scons: Reading SConscript files ...
+scons: done reading SConscript files.
+scons: Building targets ...
+/usr/bin/g++ -o build/gcc.release/rippled -pthread -rdynamic -g -static-libstdc++ build/gcc.release/src/ripple/beast/unity/beast_insight_unity.o build/gcc.release/src/ripple/beast/unity/beast_net_unity.o build/gcc.release/src/ripple/beast/unity/beast_utility_unity.o build/gcc.release/src/ripple/unity/app_ledger.o build/gcc.release/src/ripple/unity/app_main.o build/gcc.release/src/ripple/unity/app_misc.o build/gcc.release/src/ripple/unity/app_paths.o build/gcc.release/src/ripple/unity/app_tx.o build/gcc.release/src/ripple/unity/conditions.o build/gcc.release/src/ripple/unity/core.o build/gcc.release/src/ripple/unity/basics.o build/gcc.release/src/ripple/unity/crypto.o build/gcc.release/src/ripple/unity/ledger.o build/gcc.release/src/ripple/unity/net.o build/gcc.release/src/ripple/unity/overlay.o build/gcc.release/src/ripple/unity/peerfinder.o build/gcc.release/src/ripple/unity/json.o build/gcc.release/src/ripple/unity/protocol.o build/gcc.release/src/ripple/unity/rpcx.o build/gcc.release/src/ripple/unity/shamap.o build/gcc.release/src/ripple/unity/server.o build/gcc.release/src/ripple/unity/test.o build/gcc.release/src/unity/app_test_unity.o build/gcc.release/src/unity/basics_test_unity.o build/gcc.release/src/unity/beast_test_unity.o build/gcc.release/src/unity/core_test_unity.o build/gcc.release/src/unity/conditions_test_unity.o build/gcc.release/src/unity/json_test_unity.o build/gcc.release/src/unity/ledger_test_unity.o build/gcc.release/src/unity/overlay_test_unity.o build/gcc.release/src/unity/peerfinder_test_unity.o build/gcc.release/src/unity/protocol_test_unity.o build/gcc.release/src/unity/resource_test_unity.o build/gcc.release/src/unity/rpc_test_unity.o build/gcc.release/src/unity/server_test_unity.o build/gcc.release/src/unity/shamap_test_unity.o build/gcc.release/src/unity/test_unity.o build/gcc.release/src/ripple/unity/nodestore.o build/gcc.release/src/unity/nodestore_test_unity.o build/gcc.release/src/ripple/unity/soci.o build/gcc.release/src/ripple/unity/soci_ripple.o build/gcc.release/src/ripple/unity/secp256k1.o build/gcc.release/src/ripple/beast/unity/beast_hash_unity.o build/gcc.release/src/ripple/unity/beast.o build/gcc.release/src/ripple/unity/lz4.o build/gcc.release/src/ripple/unity/protobuf.o build/gcc.release/src/ripple/unity/ripple.proto.o build/gcc.release/src/ripple/unity/resource.o build/gcc.release/src/ripple/unity/websocket02.o build/gcc.release/src/sqlite/sqlite_unity.o build/gcc.release/src/ripple/unity/ed25519_donna.o build/gcc.release/src/ripple/unity/rocksdb.o build/gcc.release/src/ripple/unity/snappy.o -ldl -lrt -Wl,-Bstatic -lssl -lcrypto -lprotobuf -lboost_chrono -lboost_coroutine -lboost_context -lboost_date_time -lboost_filesystem -lboost_program_options -lboost_regex -lboost_system -lboost_thread -Wl,-Bdynamic -ldl -ldl -lpthread -lz
+Install file: "build/gcc.release/rippled" as "build/rippled"
+scons: done building targets.
+
+RIPPLED_REPO_ROOT/build/rippled --unittest
+RPC.Status.codeString OK
+RPC.Status.codeString error
+RPC.Status.fillJson OK
+...
+56.3s, 127 suites, 589 cases, 334502 tests total, 0 failures
+
+# dynamic build using 4 cpu and stripping
+DOCKER_PLAY_ROOT/rdde build -j 4 strip
+...
+Install file: "build/gcc.release/rippled" as "build/rippled"
+scons: done building targets.
+Strip final build ...
 ```
 
 ## Start your fresh Rippled
