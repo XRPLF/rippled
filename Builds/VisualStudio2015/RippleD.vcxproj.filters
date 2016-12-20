@@ -448,6 +448,9 @@
     <Filter Include="test\conditions">
       <UniqueIdentifier>{F421E9A0-BB69-E638-F7AC-A3BD9B7D4827}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\consensus">
+      <UniqueIdentifier>{330C919A-D367-9106-B0FF-BCE5B46A76B2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="test\core">
       <UniqueIdentifier>{26D7F11B-5BF1-54BC-8BF5-D45F68A6A408}</UniqueIdentifier>
     </Filter>
@@ -5157,6 +5160,9 @@
     <ClCompile Include="..\..\src\test\conditions\RsaSha256_test.cpp">
       <Filter>test\conditions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\consensus\LedgerTiming_test.cpp">
+      <Filter>test\consensus</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\core\Config_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
@@ -5602,6 +5608,9 @@
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\conditions_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\consensus_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\core_test_unity.cpp">

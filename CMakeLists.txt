@@ -207,6 +207,7 @@ app_test_unity.cpp
 basics_test_unity.cpp
 beast_test_unity.cpp
 conditions_test_unity.cpp
+consensus_test_unity.cpp
 core_test_unity.cpp
 json_test_unity.cpp
 ledger_test_unity.cpp

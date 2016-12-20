@@ -954,6 +954,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/basics', '.cpp'))
     append_sources(result, *list_sources('src/test/beast', '.cpp'))
     append_sources(result, *list_sources('src/test/conditions', '.cpp'))
+    append_sources(result, *list_sources('src/test/consensus', '.cpp'))
     append_sources(result, *list_sources('src/test/core', '.cpp'))
     append_sources(result, *list_sources('src/test/json', '.cpp'))
     append_sources(result, *list_sources('src/test/ledger', '.cpp'))
@@ -1017,6 +1018,7 @@ def get_unity_sources(toolchain):
         'src/test/unity/app_test_unity.cpp',
         'src/test/unity/basics_test_unity.cpp',
         'src/test/unity/beast_test_unity.cpp',
+	'src/test/unity/consensus_test_unity.cpp',
         'src/test/unity/core_test_unity.cpp',
         'src/test/unity/conditions_test_unity.cpp',
         'src/test/unity/json_test_unity.cpp',
