@@ -29,91 +29,113 @@ namespace ripple {
 
 
 //------------------------------------------------------------------------------
-
 // These are protocol parameters used to control the behavior of the system and
 // they should not be changed arbitrarily.
 
-// The percentage threshold above which we can declare consensus.
+//! The percentage threshold above which we can declare consensus.
 auto constexpr minimumConsensusPercentage = 80;
 
 using namespace std::chrono_literals;
-// All possible close time resolutions. Values should not be duplicated.
+/**  Possible close time resolutions.
+
+    Values should not be duplicated.
+    @see getNextLedgerTimeResolution
+*/
 std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] =
     { 10s, 20s, 30s, 60s, 90s, 120s };
 
 #ifndef _MSC_VER
-// Initial resolution of ledger close time.
+//! Initial resolution of ledger close time.
 auto constexpr ledgerDefaultTimeResolution = ledgerPossibleTimeResolutions[2];
 #else
 // HH Remove this workaround of a VS bug when possible
+//! Initial resolution of ledger close time.
 auto constexpr ledgerDefaultTimeResolution = 30s;
 #endif
 
-// How often we increase the close time resolution
+//! How often we increase the close time resolution (in numbers of ledgers)
 auto constexpr increaseLedgerTimeResolutionEvery = 8;
 
-// How often we decrease the close time resolution
+//! How often we decrease the close time resolution (in numbers of ledgers)
 auto constexpr decreaseLedgerTimeResolutionEvery = 1;
 
-// The number of seconds a ledger may remain idle before closing
+//! The number of seconds a ledger may remain idle before closing
 auto constexpr LEDGER_IDLE_INTERVAL = 15s;
 
-// The number of seconds a validation remains current after its ledger's close
-// time. This is a safety to protect against very old validations and the time
-// it takes to adjust the close time accuracy window
+/** The number of seconds a validation remains current after its ledger's close
+    time.
+
+    This is a safety to protect against very old validations and the time
+    it takes to adjust the close time accuracy window.
+*/
 auto constexpr VALIDATION_VALID_WALL = 5min;
 
-// The number of seconds a validation remains current after the time we first
-// saw it. This provides faster recovery in very rare cases where the number
-// of validations produced by the network is lower than normal
+/** Duration a validation remains current after first observed.
+
+    The number of seconds a validation remains current after the time we first
+    saw it. This provides faster recovery in very rare cases where the number
+    of validations produced by the network is lower than normal
+*/
 auto constexpr VALIDATION_VALID_LOCAL = 3min;
 
-// The number of seconds before a close time that we consider a validation
-// acceptable. This protects against extreme clock errors
+/**  Duration pre-close in which validations are acceptable.
+
+    The number of seconds before a close time that we consider a validation
+    acceptable. This protects against extreme clock errors
+*/
 auto constexpr VALIDATION_VALID_EARLY = 3min;
 
-// The number of seconds we wait minimum to ensure participation
+//! The number of seconds we wait minimum to ensure participation
 auto constexpr LEDGER_MIN_CONSENSUS = 2s;
 
-// Minimum number of seconds to wait to ensure others have computed the LCL
+//! Minimum number of seconds to wait to ensure others have computed the LCL
 auto constexpr LEDGER_MIN_CLOSE = 2s;
 
-// How often we check state or change positions (in milliseconds)
+//! How often we check state or change positions
 auto constexpr LEDGER_GRANULARITY = 1s;
 
-// How long we consider a proposal fresh
+//! How long we consider a proposal fresh
 auto constexpr PROPOSE_FRESHNESS = 20s;
 
-// How often we force generating a new proposal to keep ours fresh
+//! How often we force generating a new proposal to keep ours fresh
 auto constexpr PROPOSE_INTERVAL = 12s;
 
+//------------------------------------------------------------------------------
 // Avalanche tuning
-// percentage of nodes on our UNL that must vote yes
+//! Percentage of nodes on our UNL that must vote yes
 auto constexpr AV_INIT_CONSENSUS_PCT = 50;
 
-// percentage of previous close time before we advance
+//! Percentage of previous close time before we advance
 auto constexpr AV_MID_CONSENSUS_TIME = 50;
 
-// percentage of nodes that most vote yes after advancing
+//! Percentage of nodes that most vote yes after advancing
 auto constexpr AV_MID_CONSENSUS_PCT = 65;
 
-// percentage of previous close time before we advance
+//! Percentage of previous close time before we advance
 auto constexpr AV_LATE_CONSENSUS_TIME = 85;
 
-// percentage of nodes that most vote yes after advancing
+//! Percentage of nodes that most vote yes after advancing
 auto constexpr AV_LATE_CONSENSUS_PCT = 70;
 
+//! Percentage of previous close time before we are stuck
 auto constexpr AV_STUCK_CONSENSUS_TIME = 200;
+
+//! Percentage of nodes that must vote yes after we are stuck
 auto constexpr AV_STUCK_CONSENSUS_PCT = 95;
 
+//! Percentage of nodes required to reach agreement on ledger close time
 auto constexpr AV_CT_CONSENSUS_PCT = 75;
 
-// The minimum amount of time to consider the previous round
-// to have taken. This ensures that there is an opportunity
-// for a round at each avalanche threshold even if the
-// previous consensus was very fast. This should be at least
-// twice the interval between proposals (0.7s) divided by
-// the interval between mid and late consensus ([85-50]/100).
+/** The minimum amount of time to consider the previous round
+    to have taken.
+
+    The minimum amount of time to consider the previous round
+    to have taken. This ensures that there is an opportunity
+    for a round at each avalanche threshold even if the
+    previous consensus was very fast. This should be at least
+    twice the interval between proposals (0.7s) divided by
+    the interval between mid and late consensus ([85-50]/100).
+*/
 auto constexpr AV_MIN_CONSENSUS_TIME = 5s;
 
 /** Calculates the close time resolution for the specified ledger.
@@ -129,8 +151,8 @@ auto constexpr AV_MIN_CONSENSUS_TIME = 5s;
     ledger
     @param ledgerSeq the sequence number of the new ledger
 
-    @pre previousResolution must be a valid bin from
-    @b ledgerPossibleTimeResolutions
+    @pre previousResolution must be a valid bin
+         from @ref ledgerPossibleTimeResolutions
 */
 template <class duration>
 duration
@@ -191,6 +213,15 @@ roundCloseTime(
 }
 
 
+/** Calculate the effective ledger close time
+
+    After adjusting the ledger close time based on the current resolution, also
+    ensure it is sufficiently separated from the prior close time.
+
+    @param closeTime The raw ledger close time
+    @param resolution The current close time resolution
+    @param priorCloseTime The close time of the prior ledger
+*/
 template <class time_point>
 time_point effectiveCloseTime(time_point closeTime,
    typename time_point::duration const resolution,
@@ -249,9 +280,9 @@ checkConsensusReached (int agreeing, int total, bool count_self);
 /** Whether we have or don't have a consensus */
 enum class ConsensusState
 {
-    No,           // We do not have consensus
-    MovedOn,      // The network has consensus without us
-    Yes           // We have consensus along with the network
+    No,           //!< We do not have consensus
+    MovedOn,      //!< The network has consensus without us
+    Yes           //!< We have consensus along with the network
 };
 
 /** Determine whether the network reached consensus and whether we joined.

@@ -34,7 +34,154 @@ namespace ripple {
     1.  The set of transactions included in the ledger.
     2.  The close time for the ledger.
 
+  The general consensus stages:
+     1. Consensus finishes, we build a new last closed ledger and a new open
+        ledger based on it.
+     2. The open ledger interval starts. This gives servers time to finish
+         building the new last closed ledger and fill the new ledger
+         with transactions.
+     3. The ledger closes. Servers send their initial proposal.
+     4. We do not change our position or declare a consensus for at least
+        LEDGER_MIN_CONSENSUS to ensure servers have a chance to make an initial
+        proposal.
+     5. On a frequent timer event, we change our position if needed based on
+        received peer positions.
+     6. When we have a consensus, go to step 1.
+
   This class uses CRTP to allow adapting Consensus for specific applications.
+
+  The Derived template argument is used to embed consensus within the
+  larger application framework. The Traits template identifies types that
+  play important roles in Consensus (transactions, ledgers, etc.) and which must
+  conform to the generic interface outlined below. The Traits typesmust be copy
+  constructible and assignable.
+
+  @note The interface below is in flux as this code is refactored.
+
+  @code
+  // A single transaction
+  struct Tx
+  {
+    // Unique identifier of transaction
+    using ID = ...;
+
+    ID id() const;
+
+  };
+
+  // A set of transactions
+  struct TxSet
+  {
+    // Unique ID of TxSet (not of Tx)
+    using ID = ...;
+    // Type of individual transaction comprising the TxSet
+    using Tx = Tx;
+
+    bool insert(Tx const &);
+    bool erase(Tx::ID const &);
+    bool exists(Tx::ID const &) const;
+    // Return value should have semantics like Tx const *
+    Tx const * find(Tx::ID const &) const ;
+    ID const & id() const;
+
+    // Return set of transactions that are not common to this set or other
+    // boolean indicates which set it was in
+    std::map<Tx::ID, bool> compare(TxSet const & other) const;
+  };
+
+  // Agreed upon state that consensus transactions will modify
+  struct Ledger
+  {
+    using ID = ...;
+
+    // Unique identifier of ledgerr
+    ID const & id() const;
+    auto seq() const;
+    auto closeTimeResolution() const;
+    auto closeAgree() const;
+    auto closeTime() const;
+    auto parentCloseTime() const;
+    auto const & parentID() const;
+    Json::Value getJson() const;
+  };
+
+  struct Traits
+  {
+    // Times with epoch/measurements approprate for sharing with peers
+    using NetTime_t = Time;
+    using Ledger_t = Ledger;
+    using Proposal_t = ConsensusProposal<..>;
+    using TxSet_t = TxSet;
+    // To be removed; currently needed to handle missing SHAMap node exception
+    using MissingTxException_t = MissingTx;
+  }
+
+  class ConsensusImp : public Consensus<ConsensusImp, Traits>
+  {
+      // Whether consensus should (proposing,validating).
+      std::pair<bool, bool> getMode();
+
+      // Attempt to acquire a specific ledger.
+      Ledger const * acquireLedger(Ledger::ID const & ledgerID);
+
+      // Get peers' proposed positions.
+      auto const & proposals(Ledger::ID const & ledgerID);
+
+      // Acquire the transaction set associated with a proposal.
+      TxSet const * acquireTxSet(Proposal const & proposal);
+
+      // Whether the open ledger has any transactions
+      bool hasOpenTransactions() const;
+
+      // Number of proposers that have vallidated the given ledger
+      int numProposersValidated(Ledger::ID const & prevLedger) const;
+
+      // Number of proposers that have validated a ledger descended from requested ledger.
+      int numProposersFinished(LedgerHash const & h) const;
+
+      // Called when a new round of consensus has started
+      void onStartRound(Ledger const &);
+
+      // Called when ledger is closes
+      void onClose(Ledger const &, bool haveCorrectLCL);
+
+      // Setup later call to Consensus::accept which will call Derived::accept
+      // Can call Consensus::accept immediately if no interest in offloading
+      void dispatchAccept(TxSet const & );
+
+      // Share given transaction set with peers
+      void share(TxSet const &s);
+
+      // Return the ID of the last closed (and validated) ledger
+      Ledger::ID getLCL(Ledger::ID const & currLedger,
+                      Ledger::ID const & priorLedger,
+                      bool haveCorrectLCL);
+
+      // Propose the position to peers.
+      void propose(Proposal const & pos);
+
+      // Relay disputed transaction to peers
+      void relay(DisputedTx<Txn, NodeID> const & dispute);
+
+      // Create initial position for current consensus round
+      std::pair <TxSet, Proposal>
+      makeInitialPosition(
+            Ledger const & prevLedger,
+            bool isProposing,
+            bool isCorrectLCL,
+            Time closeTime,
+            Time now)
+
+
+      // Process the accepted transaction set, generating the newly closed ledger
+      // and clearing out the openTxs that were included.
+      bool accept(TxSet const& set, ... )
+
+      // Called when time to end current round of consensus.  Client code
+      // determines when to call startRound again.
+      void endConsensus(bool correct);
+  };
+  @endcode
 
   @tparam Derived The deriving class which adapts the Consensus algorithm.
   @tparam Traits Provides definitions of types used in Consensus.
@@ -42,25 +189,21 @@ namespace ripple {
 template <class Derived, class Traits>
 class Consensus
 {
+    //! Current stage of consensus
     enum class State
     {
-        // We haven't closed our ledger yet, but others might have
+        //! We haven't closed our ledger yet, but others might have
         open,
 
-        // Establishing consensus
+        //! Establishing consensus
         establish,
 
-        // We have closed on a transaction set and are
-        // processing the new ledger
+        //! We have closed on a transaction set and are processing the new ledger
         processing,
 
-        // We have accepted / validated a new last closed ledger
-        // and need to start a new round
+        //! We have accepted a new last closed ledger and need to start a new round
         accepted,
     };
-
-public:
-    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
     using NetTime_t = typename Traits::NetTime_t;
     using Ledger_t = typename Traits::Ledger_t;
@@ -70,13 +213,19 @@ public:
     using NodeID_t = typename Proposal_t::NodeID;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
+public:
+
+    //! Clock type for measuring time within the consensus code
+    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
+
     Consensus(Consensus const&) = delete;
+
+    //! Deleted copy operator
     Consensus& operator=(Consensus const&) = delete;
-    ~Consensus () = default;
 
 	/** Constructor.
 
-	    @param clock The clock used to internally measure consensus progress
+	    @param clock The clock used to internally sample consensus progress
 		@param j The journal to log debug output
 	*/
 	Consensus(clock_type const & clock, beast::Journal j);
@@ -84,11 +233,13 @@ public:
 
     /** Kick-off the next round of consensus.
 
+        Called by the client code to start each round of consensus.
+
         @param now The network adjusted time
         @param prevLgrId the ID/hash of the last ledger
-        @param previousLedger Best guess of what the last closed ledger was.
+        @param prevLgr Best guess of what the last closed ledger was.
 
-        Note that @b prevLgrId is not required to the ID of @b prevLgr since
+        @note @b prevLgrId is not required to the ID of @b prevLgr since
         the ID is shared independent of the full ledger.
     */
     void
@@ -118,6 +269,7 @@ public:
 
     /**
         Process a transaction set, typically acquired from the network
+
         @param now The network adjusted time
         @param txSet the transaction set
     */
@@ -144,25 +296,33 @@ public:
         NetTime_t const& now,
         boost::optional<std::chrono::milliseconds> consensusDelay);
 
-    /* @return the ID/hash of the last closed ledger */
+    /** Get the last closed ledger ID.
+
+        The last closed ledger is the last validated ledger seen by the consensus
+        code.
+
+        @return ID of last closed ledger.
+    */
     typename Ledger_t::ID
     LCL()
     {
        std::lock_guard<std::recursive_mutex> _(lock_);
-       return prevLedgerHash_;
+       return prevLedgerID_;
     }
 
-    /** @return The number of proposing peers that participated in the
-                previous round.
-    */
+    //! Get the number of proposing peers that participated in the previous round.
     int
     getLastCloseProposers() const
     {
         return previousProposers_;
     }
 
-    /** @return The duration of the previous round measured from closing the
-                open ledger to starting accepting the results.
+    /** Get duration of the previous round.
+
+        The duration of the round is measured from closing the open ledger to
+        starting acceptance of the consensus transaction set.
+
+        @return Last round duration in milliseconds
     */
     std::chrono::milliseconds
     getLastCloseDuration() const
@@ -170,23 +330,24 @@ public:
         return previousRoundTime_;
     }
 
-    /** @return Whether we are sending proposals during consensus.
-    */
+    //! Whether we are sending proposals during consensus.
     bool
     proposing() const
     {
         return proposing_;
     }
 
-    /** @return Whether we are validating consensus ledgers.
-    */
+    //! Whether we are validating consensus ledgers.
     bool
     validating() const
     {
         return validating_;
     }
 
-    /** @return Whether we have the correct last closed ledger.
+    /** Whether we have the correct last closed ledger.
+
+        This is typically a case where we have seen the ID/hash of a newer
+        ledger, but do not have the ledger itself.
     */
     bool
     haveCorrectLCL() const
@@ -399,7 +560,10 @@ private:
 
     //-------------------------------------------------------------------------
     // Non-peer (self) consensus data
-    typename Ledger_t::ID prevLedgerHash_;
+
+    // Last validated ledger ID provided to consensus
+    typename Ledger_t::ID prevLedgerID_;
+    // Last validated ledger seen by consensus
     Ledger_t previousLedger_;
 
     // Transaction Sets, indexed by hash of transaction tree
@@ -464,7 +628,7 @@ Consensus<Derived, Traits>::startRound (
 
     state_ = State::open;
     now_ = now;
-    prevLedgerHash_ = prevLCLHash;
+    prevLedgerID_ = prevLCLHash;
     previousLedger_ = prevLedger;
     ourPosition_.reset();
     ourSet_.reset();
@@ -473,7 +637,7 @@ Consensus<Derived, Traits>::startRound (
     closePercent_ = 0;
     haveCloseTimeConsensus_ = false;
     consensusStartTime_ = clock_.now();
-    haveCorrectLCL_ = (previousLedger_.id() == prevLedgerHash_);
+    haveCorrectLCL_ = (previousLedger_.id() == prevLedgerID_);
 
     impl().onStartRound(previousLedger_);
 
@@ -512,7 +676,7 @@ Consensus<Derived, Traits>::startRound (
     {
         // If we were not handed the correct LCL, then set our state
         // to not proposing.
-        handleLCL (prevLedgerHash_);
+        handleLCL (prevLedgerID_);
 
         if (! haveCorrectLCL_)
         {
@@ -545,11 +709,11 @@ Consensus<Derived, Traits>::peerProposal (
 
     now_ = now;
 
-    if (newPosition.prevLedger() != prevLedgerHash_)
+    if (newPosition.prevLedger() != prevLedgerID_)
     {
         JLOG (j_.debug()) << "Got proposal for "
             << newPosition.prevLedger()
-            << " but we are on " << prevLedgerHash_;
+            << " but we are on " << prevLedgerID_;
         return false;
     }
 
@@ -855,13 +1019,13 @@ template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
 {
-    assert (lgrId != prevLedgerHash_ ||
+    assert (lgrId != prevLedgerID_ ||
             previousLedger_.id() != lgrId);
 
-    if (prevLedgerHash_ != lgrId)
+    if (prevLedgerID_ != lgrId)
     {
         // first time switching to this ledger
-        prevLedgerHash_ = lgrId;
+        prevLedgerID_ = lgrId;
 
         if (haveCorrectLCL_ && proposing_ && ourPosition_)
         {
@@ -880,14 +1044,14 @@ Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
         playbackProposals ();
     }
 
-    if (previousLedger_.id() == prevLedgerHash_)
+    if (previousLedger_.id() == prevLedgerID_)
         return;
 
     // we need to switch the ledger we're working from
-    if (auto buildLCL = impl().acquireLedger(prevLedgerHash_))
+    if (auto buildLCL = impl().acquireLedger(prevLedgerID_))
     {
         JLOG (j_.info()) <<
-        "Have the consensus ledger " << prevLedgerHash_;
+        "Have the consensus ledger " << prevLedgerID_;
 
         startRound (now_, lgrId, *buildLCL);
     }
@@ -903,11 +1067,11 @@ void
 Consensus<Derived, Traits>::checkLCL ()
 {
     auto netLgr = impl().getLCL (
-        prevLedgerHash_,
+        prevLedgerID_,
         haveCorrectLCL_ ? previousLedger_.parentID() : typename Ledger_t::ID{},
         haveCorrectLCL_);
 
-    if (netLgr != prevLedgerHash_)
+    if (netLgr != prevLedgerID_)
     {
         // LCL change
         const char* status;
@@ -938,7 +1102,7 @@ Consensus<Derived, Traits>::checkLCL ()
             << "View of consensus changed during " << status
             << " status=" << status << ", "
             << (haveCorrectLCL_ ? "CorrectLCL" : "IncorrectLCL");
-        JLOG (j_.warn()) << prevLedgerHash_
+        JLOG (j_.warn()) << prevLedgerID_
             << " to " << netLgr;
         JLOG (j_.warn())
             << previousLedger_.getJson();
@@ -952,7 +1116,7 @@ template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::playbackProposals ()
 {
-    for (auto const & p : impl().proposals(prevLedgerHash_))
+    for (auto const & p : impl().proposals(prevLedgerID_))
     {
         if(peerProposal(now_, p))
             impl().relay(p);
@@ -966,7 +1130,7 @@ Consensus<Derived, Traits>::statePreClose ()
     // it is shortly before ledger close time
     bool anyTransactions = impl().hasOpenTransactions();
     int proposersClosed = peerProposals_.size ();
-    int proposersValidated = impl().numProposersValidated(prevLedgerHash_);
+    int proposersValidated = impl().numProposersValidated(prevLedgerID_);
 
     // This computes how long since last ledger's close time
     using namespace std::chrono;
@@ -1235,8 +1399,8 @@ void Consensus<Derived, Traits>::adjustCount (TxSet_t const& txSet,
     3 out of 5 works out to 60%. There are no security implications to
     this.
 
-    @param participants the number of participants (i.e. validators)
-    @param the percent that we want to reach
+    @param participants The number of participants (i.e. validators)
+    @param percent The percent that we want to reach
 
     @return the number of participants which must agree
 */
@@ -1464,7 +1628,7 @@ Consensus<Derived, Traits>::haveConsensus ()
             }
         }
     }
-    int currentFinished = impl().numProposersFinished(prevLedgerHash_);
+    int currentFinished = impl().numProposersFinished(prevLedgerID_);
 
     JLOG (j_.debug())
         << "Checking for TX consensus: agree=" << agree
@@ -1526,7 +1690,7 @@ Consensus<Derived, Traits>::accept (TxSet_t const& set)
         validating_,
         haveCorrectLCL_,
         consensusFail_,
-        prevLedgerHash_,
+        prevLedgerID_,
         previousLedger_,
         closeResolution_,
         now_,

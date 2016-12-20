@@ -28,13 +28,14 @@
 
 namespace ripple {
 
-/** Represents a ledger in the RCL-specific instance of Consensus.
+/** Represents a ledger in RCLConsensus.
 
     RCLCxLedger is a thin wrapper over `std::shared_ptr<Ledger const>`.
 */
 class RCLCxLedger
 {
 public:
+    //! Unique identifier of a ledger
     using ID = LedgerHash;
 
     /** Default constructor
@@ -51,56 +52,56 @@ public:
     */
     RCLCxLedger(std::shared_ptr<Ledger const> const & l) : ledger_{ l } {}
 
-    //! @return Sequence number of the ledger.
+    //! Sequence number of the ledger.
     auto const &
     seq() const
     {
         return ledger_->info().seq;
     }
 
-    //! @return Unique identifier (hash) of this ledger.
+    //! Unique identifier (hash) of this ledger.
     auto const &
     id() const
     {
         return ledger_->info().hash;
     }
 
-    //! @return Unique identifier (hash) of this ledger's parent.
+    //! Unique identifier (hash) of this ledger's parent.
     auto const &
     parentID() const
     {
         return ledger_->info().parentHash;
     }
 
-    //! @return Resolution used when calculating this ledger's close time.
+    //! Resolution used when calculating this ledger's close time.
     auto
     closeTimeResolution() const
     {
         return ledger_->info().closeTimeResolution;
     }
 
-    //! @return Whether consensus process agreed on close time of the ledger.
+    //! Whether consensus process agreed on close time of the ledger.
     bool
     closeAgree() const
     {
         return ripple::getCloseAgree(ledger_->info());
     }
 
-    //! @return The close time of this ledger
+    //! The close time of this ledger
     auto
     closeTime() const
     {
         return ledger_->info().closeTime;
     }
 
-    //! @return The close time of this ledger's parent.
+    //! The close time of this ledger's parent.
     auto
     parentCloseTime() const
     {
         return ledger_->info().parentCloseTime;
     }
 
-    //! @return JSON representation of this ledger.
+    //! JSON representation of this ledger.
     Json::Value
     getJson() const
     {

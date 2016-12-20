@@ -44,10 +44,15 @@ class LedgerMaster;
 //! Types used to adapt consensus for RCL
 struct RCLCxTraits
 {
+    //! Ripple Network Time
     using NetTime_t = NetClock::time_point;
+    //! Ledger type presented to Consensus
     using Ledger_t = RCLCxLedger;
+    //! Proposal type used in Consensus
     using Proposal_t = LedgerProposal;
+    //! TxSet type presented to Consensus
     using TxSet_t = RCLTxSet;
+    //! MissingTxException type neede by Consensus
     using MissingTxException_t = SHAMapMissingNode;
 };
 
@@ -61,9 +66,9 @@ class RCLConsensus : public Consensus<RCLConsensus, RCLCxTraits>
                      , public std::enable_shared_from_this <RCLConsensus>
                      , public CountedObject <RCLConsensus>
 {
-public:
     using Base = Consensus<RCLConsensus, RCLCxTraits>;
     using Base::accept;
+public:
 
     //! Constructor
     RCLConsensus(
@@ -113,7 +118,7 @@ private:
     boost::optional<RCLCxLedger>
     acquireLedger(LedgerHash const & ledger);
 
-    /** Get peer's proposed positions.
+    /** Get peers' proposed positions.
         @param prevLedger The base ledger which proposals are based on
         @return The set of proposals
     */
@@ -121,6 +126,7 @@ private:
     proposals (LedgerHash const& prevLedger);
 
     /** Relay the given proposal to all peers
+
         @param proposal The proposal to relay.
      */
     void
@@ -130,7 +136,7 @@ private:
 
         Only relay if the provided transaction hasn't been shared recently.
 
-        @param tx The disputed transaction to relay.
+        @param dispute The disputed transaction to relay.
     */
     void
     relay(DisputedTx <RCLCxTx, NodeID> const & dispute);
@@ -146,19 +152,21 @@ private:
     boost::optional<RCLTxSet>
     acquireTxSet(LedgerProposal const & position);
 
-    /** @return whether the open ledger has any transactions
+    /** Whether the open ledger has any transactions
     */
     bool
     hasOpenTransactions() const;
 
-    /**
+    /** Number of proposers that have vallidated the given ledger
+
         @param h The hash of the ledger of interest
         @return the number of proposers that validated a ledger
     */
     int
     numProposersValidated(LedgerHash const & h) const;
 
-    /**
+    /** Number of proposers that have validated a ledger descended from requested ledger.
+
         @param h The hash of the ledger of interest.
         @return The number of validating peers that have validated a ledger
                 succeeding the one provided.
@@ -242,11 +250,11 @@ private:
         TODO: Too many arguments, need to group related types.
 
         @param set The set of accepted transactions
-        @param consensuCloseTime Consensus agreed upon close time
+        @param consensusCloseTime Consensus agreed upon close time
         @param proposing_ Whether we are proposing
-        @param proposing_ Whether we are validating
+        @param validating_ Whether we are validating
         @param haveCorrectLCL_ Whether we had the correct last closed ledger
-        @param consensuFail_ Whether consensus failed
+        @param consensusFail_ Whether consensus failed
         @param prevLedgerHash_ The hash/id of the previous ledger
         @param previousLedger_ The previous ledger
         @param closeResolution_ The close time resolution used this round

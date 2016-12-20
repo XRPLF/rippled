@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-/** Represents a transaction in the RCL-specific instance of Consensus.
+/** Represents a transaction in RCLConsensus.
 
     RCLCxTx is a thin wrapper over the SHAMapItem that corresponds to the
     transaction.
@@ -45,7 +45,7 @@ public:
     RCLCxTx(SHAMapItem const& txn) : tx_{ txn }
     { }
 
-    //! @return the unique identifier/hash of the transaction
+    //! The unique identifier/hash of the transaction
     ID const&
     id() const
     {
@@ -56,7 +56,7 @@ public:
     SHAMapItem const tx_;
 };
 
-/** Represents a set of transactions in the RCL-specific instance of Consensus.
+/** Represents a set of transactions in RCLConsensus.
 
     RCLTxSet is a thin wrapper over a SHAMap that stores the set of
     transactions.
@@ -69,9 +69,9 @@ public:
     //! The type that corresponds to a single transaction
     using Tx = RCLCxTx;
 
-    /** Constructr
+    /** Constructor
 
-        @param m The SHAMap to wrap
+        @param m SHAMap to wrap
     */
     RCLTxSet (std::shared_ptr<SHAMap> m) :
         map_{ std::move(m) }
@@ -131,7 +131,7 @@ public:
         return map_->peekItem (entry);
     }
 
-    //! @return the unique ID/hahs of the transaction set
+    //! The unique ID/hash of the transaction set
     ID
     id() const
     {

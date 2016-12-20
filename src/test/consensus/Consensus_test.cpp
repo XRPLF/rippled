@@ -489,7 +489,7 @@ public:
         }
 
         void
-        relay(Consensus<Peer, Traits>::Dispute_t const & dispute)
+        relay(DisputedTx<Txn, NodeID> const & dispute)
         {
             relay(dispute.tx());
         }

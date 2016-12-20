@@ -39,7 +39,9 @@ namespace ripple
     As consensus proceeds, peers may change their position on the
     transactions.  Each proposal has an increasing sequence number that orders
     the successive proposals.  A peer may also choose to leave consensus
-    indicated by sending a ConsensuProposal with sequence equal to `seqLeave.
+    indicated by sending a ConsensusProposal with sequence equal to `seqLeave`.
+
+    Refer to @ref Consensus for requirements of the template arguments.
 
     @tparam NodeID_t Type used to uniquely identify nodes/peers
     @tparam LedgerID_t Type used to uniquely identify ledgers
@@ -65,9 +67,9 @@ public:
 
     using NodeID = NodeID_t;
 
-    /** (Peer) Constructor
+    /** Constructor (Peer)
 
-        Constructs a peer's consensus proposal
+        Constructs a peer's consensus proposal.
 
         @param prevLedger The previous ledger this proposal is building on.
         @param seq The sequence number of this proposal.
@@ -93,9 +95,10 @@ public:
 
     }
 
-    /** (Self) Constructor
+    /** Constructor (Self)
 
-        Constructs our initial consensus position for this ledger
+        Constructs our initial consensus position for this ledger.
+
         @param prevLedger The previous ledger this proposal is building on.
         @param position The position taken on transactions in this round.
         @param closeTime Position of when this ledger closed.
@@ -103,12 +106,12 @@ public:
         @param nodeID Our ID
     */
     ConsensusProposal(
-        LedgerID_t const& prevLgr,
+        LedgerID_t const& prevLedger,
         Position_t const& position,
         Time_t closeTime,
         Time_t now,
         NodeID_t const& nodeID)
-    : previousLedger_(prevLgr)
+    : previousLedger_(prevLedger)
     , position_(position)
     , closeTime_(closeTime)
     , time_(now)
@@ -118,31 +121,32 @@ public:
 
     }
 
-    //! @return Identifying index of which peer took this position.
+    //! Identifying which peer took this position.
     NodeID_t const&
     nodeID () const
     {
         return nodeID_;
     }
 
-    //! @return The proposed position.
+    //! Get the proposed position.
     Position_t const&
     position () const
     {
         return position_;
     }
 
-    //! @return The prior accepted ledger this position is based on.
+    //! Get the prior accepted ledger this position is based on.
     LedgerID_t const&
     prevLedger () const
     {
         return previousLedger_;
     }
 
-    /** Get the sequence number of this proposal.
+    /** Get the sequence number of this proposal
 
         Starting with an initial sequence number of `seqJoin`, successive
         proposals from a peer will increase the sequence number.
+
         @return the sequence number
     */
     std::uint32_t
@@ -151,22 +155,21 @@ public:
         return proposeSeq_;
     }
 
-    //! @return The current position on the consensus close time.
+    //! The current position on the consensus close time.
     Time_t
     closeTime () const
     {
         return closeTime_;
     }
 
-    //! @return When this position was taken.
+    //! Get when this position was taken.
     Time_t
     seenTime () const
     {
         return time_;
     }
 
-    /**
-        @return Whether this is the first position taken during the current
+    /** Whether this is the first position taken during the current
         consensus round.
     */
     bool
@@ -175,22 +178,21 @@ public:
         return proposeSeq_ == seqJoin;
     }
 
-    //! @return Whether this node left the consensus process
+    //! Get whether this node left the consensus process
     bool
     isBowOut () const
     {
         return proposeSeq_ == seqLeave;
     }
 
-    //! @return Whether this position is stale relative to the provided cutoff
+    //! Get whether this position is stale relative to the provided cutoff
     bool
     isStale (Time_t cutoff) const
     {
         return time_ <= cutoff;
     }
 
-    /**
-        Update the position during the consensus process. This will increment
+    /** Update the position during the consensus process. This will increment
         the proposal's sequence number.
 
         @param newPosition The new position taken.
@@ -218,6 +220,8 @@ public:
 
     /** Leave consensus
 
+        Update position to indicate the node left consensus.
+
         @param now Time when this node left consensus.
      */
     void
@@ -227,7 +231,7 @@ public:
         proposeSeq_     = seqLeave;
     }
 
-    //! @return JSON representation for debugging
+    //! Get JSON representation for debugging
     Json::Value
     getJson () const
     {

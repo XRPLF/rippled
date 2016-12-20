@@ -38,6 +38,8 @@ namespace ripple {
 
     Undisputed transactions have no corresponding @ref DisputedTx object.
 
+    Refer to @ref Consensus for details on the template type requirements.
+
     @tparam Tx_t The type for a transaction
     @tparam NodeID_t The type for a node identifier
 */
@@ -45,9 +47,8 @@ namespace ripple {
 template <class Tx_t, class NodeID_t>
 class DisputedTx
 {
-public:
     using TxID_t   = typename Tx_t::ID;
-
+public:
     /** Constructor
 
         @param tx The transaction under dispute
@@ -65,21 +66,21 @@ public:
     {
     }
 
-    //! @return The unique id/hash of the disputed transaction.
+    //! The unique id/hash of the disputed transaction.
     TxID_t
     const& ID () const
     {
         return tx_.id();
     }
 
-    //! @return Our vote on whether the transaction should be included.
+    //! Our vote on whether the transaction should be included.
     bool
     getOurVote () const
     {
         return ourVote_;
     }
 
-    //! @return The disputed transaction.
+    //! The disputed transaction.
     Tx_t
     const& tx () const
     {
@@ -101,7 +102,7 @@ public:
     void
     setVote (NodeID_t const& peer, bool votesYes);
 
-    /** Remove peer's vote
+    /** Remove a peer's vote
 
         @param peer Identifier of peer.
     */
@@ -110,8 +111,8 @@ public:
 
     /** Update our vote given progression of consensus.
 
-        Updates our vote on this disupated transaction based on our peer's vote
-        and how far along the consensus has proceeded.
+        Updates our vote on this disputed transaction based on our peers' votes
+        and how far along consensus has proceeded.
 
         @param percentTime Percentage progress through consensus, e.g. 50%
                through or 90%.
@@ -121,7 +122,7 @@ public:
     bool
     updateVote (int percentTime, bool proposing);
 
-    //! @return JSON representation of dispute, used for debugging
+    //! JSON representation of dispute, used for debugging
     Json::Value
     getJson () const;
 
