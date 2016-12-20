@@ -17,4 +17,5 @@
 */
 //==============================================================================
 
+#include <test/consensus/Consensus_test.cpp>
 #include <test/consensus/LedgerTiming_test.cpp>

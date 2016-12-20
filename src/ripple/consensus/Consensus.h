@@ -22,7 +22,8 @@
 
 #include <ripple/consensus/DisputedTx.h>
 #include <ripple/beast/utility/Journal.h>
-
+#include <ripple/basics/Log.h>
+#include <ripple/json/json_writer.h>
 namespace ripple {
 
 /** Generic implementation of consensus algorithm.

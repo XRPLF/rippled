@@ -25,6 +25,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/LedgerTiming.h>
+#include <ripple/basics/Log.h>
 #include <memory>
 
 namespace ripple {
