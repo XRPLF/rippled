@@ -36,7 +36,7 @@ DOCKER_PLAY_ROOT/rdde start [name - default: standalone]
 ...
 
 ```
-** NOTE: ** name parameters is optional. If you want to setup your own take care to read technical details described in next paraph (Behind the scene)
+**NOTE:** name parameters is optional. If you want to setup your own take care to read technical details described in next paraph (Behind the scene)
 
 ## Stop your fresh Rippled
 
@@ -70,7 +70,7 @@ This tool will build three type of docker images :
 
 **Also notice on each docker images a rippled user is created to fit your host user uid/gid (Debian users generally have (uid,gid)=(1000,1000) but you're free to change the Dockerfile files to fit your environment).**
 
-Once built this tool will run containers based on these images. As the working volumes are mounted from your cloned git repository in your host you can reuse these containers multiple time to build, run and test rippled.
+This tool will then run containers based on these images. As the working volumes are mounted from your cloned git repository in your host you can reuse these containers multiple time to build, run and test rippled.
 
 ## Build Rippled from scratch
 
