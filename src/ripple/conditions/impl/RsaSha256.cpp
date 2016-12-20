@@ -160,6 +160,12 @@ parsePayloadHelper(
     std::memcpy (signature.alloc (len), start, len);
     std::advance (start, len);
 
+    // Per 4.4.2 of the RFC we must check whether the
+    // signature and modulus consist of the same number
+    // of octets:
+    if (signature.size() != modulus.size())
+        return false;
+
     // Enforce constraints from the RFC:
     BigNum sig (BN_bin2bn (
         signature.data(), signature.size(), nullptr));
@@ -178,13 +184,8 @@ parsePayloadHelper(
     if (!checkModulusLength (modBytes))
         return false;
 
-    // Per 4.4.2 of the RFC we must check whether the
-    // signature and modulus consist of the same number
-    // of octets and that the signature is numerically
-    // less than the modulus:
-    if (BN_num_bytes (sig.get()) != modBytes)
-        return false;
-
+    // Per 4.4.2 of the RFC we must check that the signature
+    // is numerically less than the modulus:
     return BN_cmp (sig.get(), mod.get()) < 0;
 }
 
