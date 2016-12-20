@@ -104,13 +104,13 @@ class HTTPClientImp
 public:
     HTTPClientImp (boost::asio::io_service& io_service,
         const unsigned short port,
-        std::size_t responseMax,
+        std::size_t responseSize,
         beast::Journal& j)
         : mSocket (io_service, httpClientSSLContext->context ())
         , mResolver (io_service)
         , mHeader (maxClientHeaderBytes)
         , mPort (port)
-        , mResponseMax (responseMax)
+        , mResponseSize (responseSize)
         , mDeadline (io_service)
         , j_ (j)
     {
@@ -411,19 +411,14 @@ public:
             mBody = smMatch[1];
 
         if (boost::regex_match (strHeader, smMatch, reSize))
-        {
-            int size = beast::lexicalCastThrow <int> (std::string(smMatch[1]));
+            mResponseSize = beast::lexicalCastThrow <int> (std::string(smMatch[1]));
 
-            if (size < mResponseMax)
-                mResponseMax = size;
-        }
-
-        if (mResponseMax == 0)
+        if (mResponseSize == 0)
         {
             // no body wanted or available
             invokeComplete (ecResult, mStatus);
         }
-        else if (mBody.size () >= mResponseMax)
+        else if (mBody.size () >= mResponseSize)
         {
             // we got the whole thing
             invokeComplete (ecResult, mStatus, mBody);
@@ -431,7 +426,7 @@ public:
         else
         {
             mSocket.async_read (
-                mResponse.prepare (mResponseMax - mBody.size ()),
+                mResponse.prepare (mResponseSize - mBody.size ()),
                 boost::asio::transfer_all (),
                 std::bind (&HTTPClientImp::handleData,
                              shared_from_this (),
@@ -507,13 +502,13 @@ private:
     bool                                                        mSSL;
     AutoSocket                                                  mSocket;
     boost::asio::ip::tcp::resolver                              mResolver;
-    std::shared_ptr<boost::asio::ip::tcp::resolver::query>    mQuery;
+    std::shared_ptr<boost::asio::ip::tcp::resolver::query>      mQuery;
     boost::asio::streambuf                                      mRequest;
     boost::asio::streambuf                                      mHeader;
     boost::asio::streambuf                                      mResponse;
     std::string                                                 mBody;
     const unsigned short                                        mPort;
-    int                                                         mResponseMax;
+    int                                                         mResponseSize;
     int                                                         mStatus;
     std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>         mBuild;
     std::function<bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> mComplete;
