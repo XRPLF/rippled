@@ -118,12 +118,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--nonpm', '-n',
-    action='store_true',
-    help='Do not run npm tests',
-)
-
-parser.add_argument(
     '--clean', '-c',
     action='store_true',
     help='delete all build artifacts after testing',
@@ -203,15 +197,6 @@ def run_tests(args):
                 if not ARGS.keep_going:
                     break
 
-            if not ARGS.nonpm:
-                print('npm tests for', target)
-                resultcode, lines = shell('npm', ('test', '--rippled=' + executable,))
-                if resultcode:
-                    if not ARGS.verbose:
-                        print('ERROR:\n', *lines, sep='')
-                    failed.append([target, 'npm'])
-                    if not ARGS.keep_going:
-                        break
     return failed
 
 

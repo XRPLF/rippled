@@ -22,7 +22,3 @@ test:
   override:
     # Execute unit tests under gdb
     - gdb -return-child-result -quiet -batch -ex "set env MALLOC_CHECK_=3" -ex "set print thread-events off" -ex run -ex "thread apply all backtrace full" -ex "quit" --args build/clang.debug/rippled --unittest
-    - npm install --progress=false
-    - |
-      echo "exports.default_server_config = {\"rippled_path\" : \"$HOME/rippled/build/clang.debug/rippled\"};" > test/config.js
-    - npm test

@@ -125,8 +125,3 @@ test_script:
         # Run the rippled unit tests
         & $exe --unittest
 
-        # Run the rippled integration tests
-        & npm install --progress=false
-        & npm test --rippled="$exe"
-
-

@@ -53,11 +53,6 @@ if [ -x $HOME/bin/g++ ]; then
     $HOME/bin/g++ -v
 fi
 
-# Avoid `spurious errors` caused by ~/.npm permission issues
-# Does it already exist? Who owns? What permissions?
-ls -lah ~/.npm || mkdir ~/.npm
-# Make sure we own it
-chown -Rc $USER ~/.npm
 pip install --user https://github.com/codecov/codecov-python/archive/master.zip
 
 bash bin/sh/install-boost.sh

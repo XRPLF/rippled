@@ -25,9 +25,6 @@ build() {
 }
 
 check() {
-	cd "$srcdir/$pkgname"
-	npm install
-	npm test
 	build/rippled --unittest
 }
 
