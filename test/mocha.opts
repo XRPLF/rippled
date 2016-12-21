@@ -1,6 +1,0 @@
---require ./test/mocha-loader-patch.js
---reporter spec
---compilers coffee:coffee-script/register
---ui tdd
---timeout 10000
---slow 600
