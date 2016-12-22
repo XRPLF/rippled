@@ -74,8 +74,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         env.trust(A3["USD"](1000), A2);
         env.close();
 
-        int count = 0;
-        while (count < 5)
+        for (auto i = 0; i < 5; ++i)
         {
             env(pay(A2, A1, A2["USD"](2)));
             env(pay(A3, A1, A3["USD"](2)));
@@ -83,7 +82,6 @@ class AccountTxPaging_test : public beast::unit_test::suite
             env(offer(A2, XRP(10), A2["USD"](1)));
             env(offer(A3, XRP(9),  A3["USD"](1)));
             env.close();
-            count++;
         }
 
         /* The sequence/ledger for A3 are as follows:
@@ -106,7 +104,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
 
         // page through the results in several ways.
         {
-            // limit = 2, 3x
+            // limit = 2, 3 batches giving the first 6 txs
             auto jrr = next(env, A3, 2, 5, 2, true);
             auto txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
@@ -135,7 +133,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         }
 
         {
-            // limit 1, 3x
+            // limit 1, 3 requests giving the first 3 txs
             auto jrr = next(env, A3, 3, 9, 1, true);
             auto txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
@@ -160,7 +158,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
-            // continue with limit 3, to end
+            // continue with limit 3, to end of all txs
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
@@ -201,7 +199,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         }
 
         {
-            // limit 2, 2x, descending
+            // limit 2, descending, 2 batches giving last 4 txs
             auto jrr = next(env, A3, 3, 9, 2, false);
             auto txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
@@ -220,7 +218,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             if(! BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
-            // limit 3 until done
+            // continue with limit 3 until all txs have been seen
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
             if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
