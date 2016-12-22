@@ -69,6 +69,7 @@ install:
             echo "Download from $env:RIPPLED_DEPS_URL"
             Start-FileDownload "$env:RIPPLED_DEPS_URL"
             7z x "$($env:RIPPLED_DEPS_PATH).zip" -oC:\ -y > $null
+            if ($LastExitCode -ne 0) { throw "7z failed" }
         }
 
   # Newer DEPS include a versions file.
@@ -92,6 +93,7 @@ build_script:
         if ($env:build -eq "scons") {
           # Build with scons
           scons $env:target -j%NUMBER_OF_PROCESSORS%
+          if ($LastExitCode -ne 0) { throw "scons build failed" }
         }
         else
         {
@@ -102,7 +104,9 @@ build_script:
           New-Item -ItemType Directory -Force -Path "build/$cmake_target"
           Push-Location "build/$cmake_target"
           cmake -G"Visual Studio 14 2015 Win64" -Dtarget="$cmake_target" ../..
+          if ($LastExitCode -ne 0) { throw "CMake failed" }
           cmake --build . --config $env:buildconfig -- -m
+          if ($LastExitCode -ne 0) { throw "CMake build failed" }
           Pop-Location
         }
 
@@ -122,6 +126,10 @@ after_build:
 
 test_script:
   - ps: |
-        # Run the rippled unit tests
-        & $exe --unittest
+        & {
+          # Run the rippled unit tests
+          & $exe --unittest
+          # https://connect.microsoft.com/PowerShell/feedback/details/751703/option-to-stop-script-if-command-line-exe-fails
+          if ($LastExitCode -ne 0) { throw "Unit tests failed" }
+        }
 
