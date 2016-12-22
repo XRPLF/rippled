@@ -18,7 +18,6 @@ software components:
 * (Optional) [Python and Scons](README.md#optional-install-python-and-scons)
 * [OpenSSL Library](README.md#install-openssl)
 * [Boost library](README.md#build-boost)
-* [Node.js](README.md#install-nodejs)
 
 ## Install Software
 
@@ -242,9 +241,7 @@ and then choose the **Build->Build Solution** menu item.
 
 # Unit Tests (Recommended)
 
-## Internal
-
-The internal rippled unit tests are written in C++ and are part
+The rippled unit tests are written in C++ and are part
 of the rippled executable.
 
 From a Windows console, run the unit tests:

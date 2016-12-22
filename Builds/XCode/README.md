@@ -18,7 +18,6 @@ these software components:
 * [Homebrew](http://brew.sh/)
 * [Git](http://git-scm.com/)
 * [Scons](http://www.scons.org/)
-* [Node.js](http://nodejs.org/download/)
 
 ## Install Software
 

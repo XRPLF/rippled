@@ -25,6 +25,7 @@ build() {
 }
 
 check() {
+	cd "$srcdir/$pkgname"
 	build/rippled --unittest
 }
 
