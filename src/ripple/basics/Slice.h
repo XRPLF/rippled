@@ -43,20 +43,19 @@ namespace ripple {
 class Slice
 {
 private:
-    std::uint8_t const* data_;
+    std::uint8_t const* data_ = nullptr;
     std::size_t size_ = 0;
 
 public:
     /** Default constructed Slice has length 0. */
-    Slice() = default;
+    Slice() noexcept = default;
 
-    Slice (Slice const&) = default;
-    Slice& operator= (Slice const&) = default;
+    Slice (Slice const&) noexcept = default;
+    Slice& operator= (Slice const&) noexcept = default;
 
     /** Create a slice pointing to existing memory. */
-    Slice (void const* data, std::size_t size)
-        : data_ (reinterpret_cast<
-            std::uint8_t const*>(data))
+    Slice (void const* data, std::size_t size) noexcept
+        : data_ (reinterpret_cast<std::uint8_t const*>(data))
         , size_ (size)
     {
     }
@@ -131,9 +130,13 @@ inline
 bool
 operator== (Slice const& lhs, Slice const& rhs) noexcept
 {
-    return lhs.size() == rhs.size() &&
-        std::memcmp(
-            lhs.data(), rhs.data(), lhs.size()) == 0;
+    if (lhs.size() != rhs.size())
+        return false;
+
+    if (lhs.size() == 0)
+        return true;
+
+    return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
 
 inline
