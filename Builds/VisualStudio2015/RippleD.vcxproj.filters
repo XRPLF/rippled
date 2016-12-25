@@ -5034,6 +5034,9 @@
     <ClCompile Include="..\..\src\test\basics\RangeSet_test.cpp">
       <Filter>test\basics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\basics\Slice_test.cpp">
+      <Filter>test\basics</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\basics\StringUtilities_test.cpp">
       <Filter>test\basics</Filter>
     </ClCompile>
