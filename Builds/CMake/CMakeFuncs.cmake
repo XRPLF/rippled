@@ -269,11 +269,11 @@ endmacro()
 
 # Params: Boost components to search for.
 macro(use_boost)
+    if ((NOT DEFINED BOOST_ROOT) AND (DEFINED ENV{BOOST_ROOT}))
+        set(BOOST_ROOT $ENV{BOOST_ROOT})
+    endif()
     if(WIN32 OR CYGWIN)
         # Workaround for MSVC having two boost versions - x86 and x64 on same PC in stage folders
-        if ((NOT DEFINED BOOST_ROOT) AND (DEFINED ENV{BOOST_ROOT}))
-            set(BOOST_ROOT $ENV{BOOST_ROOT})
-        endif()
         if(DEFINED BOOST_ROOT)
             if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND IS_DIRECTORY ${BOOST_ROOT}/stage64/lib)
                 set(Boost_LIBRARY_DIR ${BOOST_ROOT}/stage64/lib)
