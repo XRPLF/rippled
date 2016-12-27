@@ -124,17 +124,17 @@ RCLConsensus::acquireLedger(LedgerHash const & ledger)
 }
 
 
-std::vector<LedgerProposal>
+std::vector<RCLCxPeerPos>
 RCLConsensus::proposals (LedgerHash const& prevLedger)
 {
-    std::vector <LedgerProposal> ret;
+    std::vector <RCLCxPeerPos> ret;
     {
-        std::lock_guard <std::mutex> _(proposalsLock_);
+        std::lock_guard <std::mutex> _(peerPositionsLock_);
 
-        for (auto const& it : proposals_)
-            for (auto const& prop : it.second)
-                if (prop->prevLedger() == prevLedger)
-                    ret.emplace_back (*prop);
+        for (auto const& it : peerPositions_)
+            for (auto const& pos : it.second)
+                if (pos->proposal().prevLedger() == prevLedger)
+                    ret.emplace_back (*pos);
     }
 
     return ret;
@@ -142,23 +142,25 @@ RCLConsensus::proposals (LedgerHash const& prevLedger)
 
 void
 RCLConsensus::storeProposal (
-    LedgerProposal::ref proposal,
+    RCLCxPeerPos::ref peerPos,
     NodeID const& nodeID)
 {
-    std::lock_guard <std::mutex> _(proposalsLock_);
+    std::lock_guard <std::mutex> _(peerPositionsLock_);
 
-    auto& props = proposals_[nodeID];
+    auto& props = peerPositions_[nodeID];
 
     if (props.size () >= 10)
         props.pop_front ();
 
-    props.push_back (proposal);
+    props.push_back (peerPos);
 }
 
 void
-RCLConsensus::relay(LedgerProposal const & proposal)
+RCLConsensus::relay(RCLCxPeerPos const & peerPos)
 {
     protocol::TMProposeSet prop;
+
+    auto const & proposal = peerPos.proposal();
 
     prop.set_proposeseq (
         proposal.proposeSeq ());
@@ -170,13 +172,13 @@ RCLConsensus::relay(LedgerProposal const & proposal)
     prop.set_previousledger (
         proposal.prevLedger().begin(), proposal.position().size());
 
-    auto const pk = proposal.getPublicKey().slice();
+    auto const pk = peerPos.getPublicKey().slice();
     prop.set_nodepubkey (pk.data(), pk.size());
 
-    auto const sig = proposal.getSignature();
+    auto const sig = peerPos.getSignature();
     prop.set_signature (sig.data(), sig.size());
 
-    app_.overlay().relay (prop, proposal.getSuppressionID ());
+    app_.overlay().relay (prop, peerPos.getSuppressionID ());
 }
 
 void
@@ -199,7 +201,7 @@ RCLConsensus::relay(DisputedTx <RCLCxTx, NodeID> const & dispute)
     }
 }
 void
-RCLConsensus::propose (LedgerProposal const& proposal)
+RCLConsensus::propose (RCLCxPeerPos::Proposal const& proposal)
 {
     JLOG (j_.trace()) << "We propose: " <<
         (proposal.isBowOut () ?  std::string ("bowOut") :
@@ -239,9 +241,9 @@ RCLConsensus::share (RCLTxSet const& set)
 }
 
 boost::optional<RCLTxSet>
-RCLConsensus::acquireTxSet(LedgerProposal const & position)
+RCLConsensus::acquireTxSet(RCLTxSet::ID const & setId)
 {
-    if (auto set = inboundTransactions_.getSet(position.position(), true))
+    if (auto set = inboundTransactions_.getSet(setId, true))
     {
         return RCLTxSet{std::move(set)};
     }
@@ -314,7 +316,7 @@ RCLConsensus::onClose(RCLCxLedger const & ledger, bool haveCorrectLCL)
     notify(protocol::neCLOSING_LEDGER, ledger, haveCorrectLCL);
 }
 
-std::pair <RCLTxSet, LedgerProposal>
+std::pair <RCLTxSet, typename RCLCxPeerPos::Proposal>
 RCLConsensus::makeInitialPosition (RCLCxLedger const & prevLedgerT,
         bool proposing,
         bool correctLCL,
@@ -376,10 +378,11 @@ RCLConsensus::makeInitialPosition (RCLCxLedger const & prevLedgerT,
     initialSet = initialSet->snapShot(false);
     auto setHash = initialSet->getHash().as_uint256();
 
-    return std::make_pair<RCLTxSet, LedgerProposal> (
+    return std::make_pair<RCLTxSet, RCLCxPeerPos::Proposal> (
         std::move (initialSet),
-        LedgerProposal {
+        RCLCxPeerPos::Proposal {
             initialLedger->info().parentHash,
+            RCLCxPeerPos::Proposal::seqJoin,
             setHash,
             closeTime,
             now,

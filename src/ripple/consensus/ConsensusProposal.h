@@ -56,20 +56,17 @@ template <
     class Time_t>
 class ConsensusProposal
 {
-private:
+public:
+    using NodeID = NodeID_t;
+
     //< Sequence value when a peer initially joins consensus
     static std::uint32_t const seqJoin = 0;
 
     //< Sequence number when  a peer wants to bow out and leave consensus
     static std::uint32_t const seqLeave = 0xffffffff;
 
-public:
 
-    using NodeID = NodeID_t;
-
-    /** Constructor (Peer)
-
-        Constructs a peer's consensus proposal.
+    /** Constructor
 
         @param prevLedger The previous ledger this proposal is building on.
         @param seq The sequence number of this proposal.
@@ -90,32 +87,6 @@ public:
     , closeTime_(closeTime)
     , time_(now)
     , proposeSeq_(seq)
-    , nodeID_(nodeID)
-    {
-
-    }
-
-    /** Constructor (Self)
-
-        Constructs our initial consensus position for this ledger.
-
-        @param prevLedger The previous ledger this proposal is building on.
-        @param position The position taken on transactions in this round.
-        @param closeTime Position of when this ledger closed.
-        @param now Time when the proposal was taken.
-        @param nodeID Our ID
-    */
-    ConsensusProposal(
-        LedgerID_t const& prevLedger,
-        Position_t const& position,
-        Time_t closeTime,
-        Time_t now,
-        NodeID_t const& nodeID)
-    : previousLedger_(prevLedger)
-    , position_(position)
-    , closeTime_(closeTime)
-    , time_(now)
-    , proposeSeq_(seqJoin)
     , nodeID_(nodeID)
     {
 

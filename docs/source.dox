@@ -116,7 +116,7 @@ INPUT                  = \
     ../src/ripple/app/consensus/RCLCxTx.h \
     ../src/ripple/app/consensus/RCLCxLedger.h \
     ../src/ripple/app/consensus/RCLConsensus.h \
-    ../src/ripple/app/ledger/LedgerProposal.h \
+    ../src/ripple/app/consensus/RCLCxPeerPos.h \
 
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =

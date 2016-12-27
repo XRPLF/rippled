@@ -292,11 +292,10 @@ public:
 
     };
 
-    /** Position is a peer proposal in the consensus process and is represented
+    /** Proposal is a position taken in the consensus process and is represented
         directly from the generic types.
     */
-    using Proposal = ConsensusProposal<NodeID, Ledger::ID,
-        TxSetType, Time>;
+    using Proposal = ConsensusProposal<NodeID, Ledger::ID, TxSetType, Time>;
 
     /** The RCL consensus process catches missing node SHAMap error
         in several points. This exception is meant to represent a similar
@@ -323,7 +322,7 @@ public:
         // are the same.  In the RCL, the internal time and network time differ.
         using NetTime_t = Time;
         using Ledger_t = Ledger;
-        using Proposal_t = Proposal;
+        using NodeID_t = NodeID;
         using TxSet_t = TxSet;
         using MissingTxException_t = MissingTx;
     };
@@ -355,7 +354,7 @@ public:
 
         //! Map from Ledger::ID to vector of Positions with that ledger
         //! as the prior ledger
-        bc::flat_map<Ledger::ID, std::vector<Proposal>> proposals_;
+        bc::flat_map<Ledger::ID, std::vector<Proposal>> peerPositions_;
         bc::flat_map<TxSet::ID, TxSet> txSets;
         bc::flat_set<Txn::ID> seenTxs;
 
@@ -396,14 +395,13 @@ public:
         auto const &
         proposals(Ledger::ID const & ledgerHash)
         {
-            return proposals_[ledgerHash];
+            return peerPositions_[ledgerHash];
         }
 
         TxSet const *
-        acquireTxSet(Proposal const & proposal)
+        acquireTxSet(TxSet::ID const & setId)
         {
-            // Weird . . should getPosition() type really be TxSet_idtype?
-            auto it = txSets.find(proposal.position());
+            auto it = txSets.find(setId);
             if(it != txSets.end())
                 return &(it->second);
             // TODO Ask network for it?
@@ -505,7 +503,7 @@ public:
             TxSet res{ openTxs };
 
             return { res,
-                Proposal{prevLedger.id(), res.id(), closeTime, now, id} };
+                Proposal{prevLedger.id(), Proposal::seqJoin, res.id(), closeTime, now, id} };
         }
 
         // Process the accepted transaction set, generating the newly closed ledger
@@ -565,7 +563,7 @@ public:
         receive(Proposal const & p)
         {
             // filter proposals already seen?
-            proposals_[p.prevLedger()].push_back(p);
+            peerPositions_[p.prevLedger()].push_back(p);
             peerProposal(net.now(), p);
 
         }

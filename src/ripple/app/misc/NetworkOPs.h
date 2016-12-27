@@ -23,7 +23,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <memory>
@@ -150,7 +150,7 @@ public:
     //--------------------------------------------------------------------------
 
     // ledger proposal/close functions
-    virtual void processTrustedProposal (LedgerProposal::pointer proposal,
+    virtual void processTrustedProposal (RCLCxPeerPos::pointer peerPos,
         std::shared_ptr<protocol::TMProposeSet> set,
             NodeID const& node) = 0;
 

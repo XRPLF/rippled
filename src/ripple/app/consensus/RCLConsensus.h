@@ -29,7 +29,7 @@
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/app/consensus/RCLCxLedger.h>
 #include <ripple/app/consensus/RCLCxTx.h>
-#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/basics/CountedObject.h>
@@ -48,8 +48,8 @@ struct RCLCxTraits
     using NetTime_t = NetClock::time_point;
     //! Ledger type presented to Consensus
     using Ledger_t = RCLCxLedger;
-    //! Proposal type used in Consensus
-    using Proposal_t = LedgerProposal;
+    //! Peer identifier type used in Consensus
+    using NodeID_t = NodeID;
     //! TxSet type presented to Consensus
     using TxSet_t = RCLTxSet;
     //! MissingTxException type neede by Consensus
@@ -85,11 +85,11 @@ public:
     /** Save the given consensus proposed by a peer with nodeID for later
         use in consensus.
 
-        @param proposal Proposed peer position
+        @param peerPos Proposed peer position
         @param nodeID ID of peer
     */
     void
-    storeProposal( LedgerProposal::ref proposal, NodeID const& nodeID);
+    storeProposal( RCLCxPeerPos::ref peerPos, NodeID const& nodeID);
 
 private:
     friend class Consensus<RCLConsensus, RCLCxTraits>;
@@ -122,15 +122,15 @@ private:
         @param prevLedger The base ledger which proposals are based on
         @return The set of proposals
     */
-    std::vector<LedgerProposal>
+    std::vector<RCLCxPeerPos>
     proposals (LedgerHash const& prevLedger);
 
     /** Relay the given proposal to all peers
 
-        @param proposal The proposal to relay.
+        @param peerPos The peer position to relay.
      */
     void
-    relay(LedgerProposal const & proposal);
+    relay(RCLCxPeerPos const & peerPos);
 
     /** Relay disputed transacction to peers.
 
@@ -146,11 +146,11 @@ private:
          If the transaction set is not available locally, will attempt acquire it
          from the network.
 
-         @param position The proposal to acquire transactions for
+         @param setId The transaction set ID associated with the proposal
          @return Optional set of transactions, seated if available.
     */
     boost::optional<RCLTxSet>
-    acquireTxSet(LedgerProposal const & position);
+    acquireTxSet(RCLTxSet::ID const & setId);
 
     /** Whether the open ledger has any transactions
     */
@@ -176,10 +176,10 @@ private:
 
     /** Propose the given position to my peers.
 
-        @param position Our proposed position
+        @param proposal Our proposed position
     */
     void
-    propose (LedgerProposal const& position);
+    propose (RCLCxPeerPos::Proposal const& proposal);
 
     /** Share the given tx set with peers.
 
@@ -224,7 +224,7 @@ private:
                           (ii) the corresponding proposal of those transactions
                                to send to peers
      */
-    std::pair <RCLTxSet, LedgerProposal>
+    std::pair <RCLTxSet, typename RCLCxPeerPos::Proposal>
     makeInitialPosition (
         RCLCxLedger const & prevLedger,
         bool isProposing,
@@ -367,9 +367,9 @@ private:
     // only used for our own validations.
     NetClock::time_point lastValidationTime_;
 
-    using Proposals = hash_map <NodeID, std::deque<LedgerProposal::pointer>>;
-    Proposals proposals_;
-    std::mutex proposalsLock_;
+    using PeerPositions = hash_map <NodeID, std::deque<RCLCxPeerPos::pointer>>;
+    PeerPositions peerPositions_;
+    std::mutex peerPositionsLock_;
 };
 
 }

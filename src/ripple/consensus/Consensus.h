@@ -21,6 +21,7 @@
 #define RIPPLE_CONSENSUS_CONSENSUS_H_INCLUDED
 
 #include <ripple/consensus/DisputedTx.h>
+#include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_writer.h>
@@ -110,7 +111,7 @@ namespace ripple {
     // Times with epoch/measurements approprate for sharing with peers
     using NetTime_t = Time;
     using Ledger_t = Ledger;
-    using Proposal_t = ConsensusProposal<..>;
+    using NodeID_t = std::uint32_t;
     using TxSet_t = TxSet;
     // To be removed; currently needed to handle missing SHAMap node exception
     using MissingTxException_t = MissingTx;
@@ -124,11 +125,12 @@ namespace ripple {
       // Attempt to acquire a specific ledger.
       Ledger const * acquireLedger(Ledger::ID const & ledgerID);
 
-      // Get peers' proposed positions.
+      // Get peers' proposed positions. Returns an iterable
+      // with value_type convertable to ConsensusPosition<...>
       auto const & proposals(Ledger::ID const & ledgerID);
 
-      // Acquire the transaction set associated with a proposal.
-      TxSet const * acquireTxSet(Proposal const & proposal);
+      // Acquire the transaction set associated with a proposed position.
+      TxSet const * acquireTxSet(TxSet::ID const & setID);
 
       // Whether the open ledger has any transactions
       bool hasOpenTransactions() const;
@@ -137,7 +139,7 @@ namespace ripple {
       int numProposersValidated(Ledger::ID const & prevLedger) const;
 
       // Number of proposers that have validated a ledger descended from requested ledger.
-      int numProposersFinished(LedgerHash const & h) const;
+      int numProposersFinished(LedgerHash const & h) const;re
 
       // Called when a new round of consensus has started
       void onStartRound(Ledger const &);
@@ -158,7 +160,12 @@ namespace ripple {
                       bool haveCorrectLCL);
 
       // Propose the position to peers.
-      void propose(Proposal const & pos);
+      void propose(ConsensusProposal<...> const & pos);
+
+      // Relay a received peer proposal on to other peer's.
+      // The argument type should be convertible to ConsensusProposal<...>
+      // but may be a different type.
+      void relay(implementation_defined const & pos);
 
       // Relay disputed transaction to peers
       void relay(DisputedTx<Txn, NodeID> const & dispute);
@@ -207,10 +214,11 @@ class Consensus
 
     using NetTime_t = typename Traits::NetTime_t;
     using Ledger_t = typename Traits::Ledger_t;
-    using Proposal_t = typename Traits::Proposal_t;
     using TxSet_t = typename Traits::TxSet_t;
+    using NodeID_t = typename Traits::NodeID_t;
     using Tx_t = typename TxSet_t::Tx;
-    using NodeID_t = typename Proposal_t::NodeID;
+    using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID,
+        typename TxSet_t::ID, NetTime_t>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
 public:
@@ -252,13 +260,13 @@ public:
     /** A peer has proposed a new position, adjust our tracking
 
         @param now The network adjusted time
-        @param newPosition The new peer's position
+        @param newProposal The new proposal from a peer
         @return Whether we should do delayed relay of this proposal.
     */
     bool
     peerProposal (
         NetTime_t const& now,
-        Proposal_t const& newPosition);
+        Proposal_t const& newProposal);
 
     /** Call periodically to drive consensus forward
 
@@ -701,18 +709,18 @@ template <class Derived, class Traits>
 bool
 Consensus<Derived, Traits>::peerProposal (
     NetTime_t const& now,
-    Proposal_t const& newPosition)
+    Proposal_t const& newProposal)
 {
-    auto const peerID = newPosition.nodeID ();
+    auto const peerID = newProposal.nodeID ();
 
     std::lock_guard<std::recursive_mutex> _(lock_);
 
     now_ = now;
 
-    if (newPosition.prevLedger() != prevLedgerID_)
+    if (newProposal.prevLedger() != prevLedgerID_)
     {
         JLOG (j_.debug()) << "Got proposal for "
-            << newPosition.prevLedger()
+            << newProposal.prevLedger()
             << " but we are on " << prevLedgerID_;
         return false;
     }
@@ -731,14 +739,14 @@ Consensus<Derived, Traits>::peerProposal (
 
         if (currentPosition != peerProposals_.end())
         {
-            if (newPosition.proposeSeq ()
+            if (newProposal.proposeSeq ()
                 <= currentPosition->second.proposeSeq())
             {
                 return false;
             }
         }
 
-        if (newPosition.isBowOut ())
+        if (newProposal.isBowOut ())
         {
             using std::to_string;
 
@@ -755,31 +763,31 @@ Consensus<Derived, Traits>::peerProposal (
         }
 
         if (currentPosition != peerProposals_.end())
-            currentPosition->second = newPosition;
+            currentPosition->second = newProposal;
         else
-            peerProposals_.emplace (peerID, newPosition);
+            peerProposals_.emplace (peerID, newProposal);
     }
 
-    if (newPosition.isInitial ())
+    if (newProposal.isInitial ())
     {
         // Record the close time estimate
         JLOG (j_.trace())
             << "Peer reports close time as "
-            << newPosition.closeTime().time_since_epoch().count();
-        ++closeTimes_[newPosition.closeTime()];
+            << newProposal.closeTime().time_since_epoch().count();
+        ++closeTimes_[newProposal.closeTime()];
     }
 
     JLOG (j_.trace()) << "Processing peer proposal "
-        << newPosition.proposeSeq () << "/"
-        << newPosition.position ();
+        << newProposal.proposeSeq () << "/"
+        << newProposal.position ();
 
     {
-        auto ait = acquired_.find (newPosition.position());
+        auto ait = acquired_.find (newProposal.position());
         if (ait == acquired_.end())
         {
-            if (auto set = impl().acquireTxSet(newPosition))
+            if (auto set = impl().acquireTxSet(newProposal.position()))
             {
-                ait = acquired_.emplace (newPosition.position(),
+                ait = acquired_.emplace (newProposal.position(),
                     std::move(*set)).first;
             }
         }

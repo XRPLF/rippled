@@ -290,7 +290,7 @@ public:
 
     // Ledger proposal/close functions.
     void processTrustedProposal (
-        LedgerProposal::pointer proposal,
+        RCLCxPeerPos::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
         NodeID const &node) override;
 
@@ -1499,15 +1499,15 @@ uint256 NetworkOPsImp::getConsensusLCL ()
 }
 
 void NetworkOPsImp::processTrustedProposal (
-    LedgerProposal::pointer proposal,
+    RCLCxPeerPos::pointer peerPos,
     std::shared_ptr<protocol::TMProposeSet> set,
     NodeID const& node)
 {
-    mConsensus->storeProposal (proposal, node);
+    mConsensus->storeProposal (peerPos, node);
 
     if (mConsensus->peerProposal (
-        app_.timeKeeper().closeTime(), *proposal))
-        app_.overlay().relay(*set, proposal->getSuppressionID());
+        app_.timeKeeper().closeTime(), peerPos->proposal()))
+        app_.overlay().relay(*set, peerPos->getSuppressionID());
     else
         JLOG(m_journal.info()) << "Not relaying trusted proposal";
 }

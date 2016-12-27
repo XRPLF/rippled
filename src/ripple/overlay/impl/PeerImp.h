@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/basics/Log.h> // deprecated
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
@@ -452,7 +452,7 @@ private:
     void
     checkPropose (Job& job,
         std::shared_ptr<protocol::TMProposeSet> const& packet,
-            LedgerProposal::pointer proposal);
+            RCLCxPeerPos::pointer peerPos);
 
     void
     checkValidation (STValidation::pointer val,

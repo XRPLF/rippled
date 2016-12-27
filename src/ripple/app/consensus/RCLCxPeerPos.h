@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGER_LEDGERPROPOSAL_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERPROPOSAL_H_INCLUDED
+#ifndef RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
+#define RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>
@@ -34,63 +34,38 @@
 
 namespace ripple {
 
-/** A potentially signed ConsensusProposal for use in RCLConsensus.
+/** A peer's signed, proposed position for use in RCLConsensus.
+
+    Carries a ConsensusProposal signed by a peer.
 */
-class LedgerProposal
-    : public CountedObject <LedgerProposal>
-    , public ConsensusProposal<NodeID, uint256, uint256, NetClock::time_point>
+class RCLCxPeerPos
+    : public CountedObject <RCLCxPeerPos>
 {
-    using Base =
+public:
+    static char const* getCountedObjectName () { return "RCLCxPeerPos"; }
+    using pointer = std::shared_ptr<RCLCxPeerPos>;
+    using ref = const pointer&;
+
+    //< The type of the proposed position
+    using Proposal =
         ConsensusProposal<NodeID, uint256, uint256, NetClock::time_point>;
 
 
-public:
-    static char const* getCountedObjectName () { return "LedgerProposal"; }
-    using pointer = std::shared_ptr<LedgerProposal>;
-    using ref = const pointer&;
+    /** Constructor
 
-    /** Constructor (Peer)
+        Constructs a signed peer position.
 
-        Constructs a peer's ledger proposal.
-
-        @param prevLedger The previous ledger this proposal is building on.
-        @param proposeSeq The sequence number of this proposal.
-        @param propose The position taken on transactions in this round.
-        @param closeTime Position of when this ledger closed.
-        @param now Time when the proposal was taken.
         @param publicKey Public key of the peer
-        @param nodeID ID of node/peer taking this position.
         @param signature Signature provided with the proposal
-        @param suppress
+        @param suppress ????
+        @param proposal The consensus proposal
     */
 
-    LedgerProposal (
-        uint256 const& prevLedger,
-        std::uint32_t proposeSeq,
-        uint256 const& propose,
-        NetClock::time_point closeTime,
-        NetClock::time_point now,
+    RCLCxPeerPos (
         PublicKey const& publicKey,
-        NodeID const& nodeID,
         Slice const& signature,
-        uint256 const& suppress);
-
-    /** Constructor (Self)
-
-        Constructs our own ledger proposal.
-
-        @param prevLedger The previous ledger this proposal is building on.
-        @param position The position taken on transactions in this round.
-        @param closeTime Position of when this ledger closed.
-        @param now Time when the proposal was taken.
-        @param nodeID Our ID
-    */
-    LedgerProposal (
-        uint256 const& prevLedger,
-        uint256 const& position,
-        NetClock::time_point closeTime,
-        NetClock::time_point now,
-        NodeID const& nodeID);
+        uint256 const& suppress,
+        Proposal && proposal);
 
     //! Create the signing hash for the proposal
     uint256 getSigningHash () const;
@@ -116,6 +91,17 @@ public:
         return mSuppression;
     }
 
+    //! The consensus proposal
+    Proposal const & proposal() const
+    {
+        return proposal_;
+    }
+
+    operator Proposal const &() const
+    {
+        return proposal_;
+    }
+
     //! JSON representation of proposal
     Json::Value getJson () const;
 
@@ -126,12 +112,13 @@ private:
     {
         using beast::hash_append;
         hash_append(h, HashPrefix::proposal);
-        hash_append(h, std::uint32_t(proposeSeq()));
-        hash_append(h, closeTime());
-        hash_append(h, prevLedger());
-        hash_append(h, position());
+        hash_append(h, std::uint32_t(proposal().proposeSeq()));
+        hash_append(h, proposal().closeTime());
+        hash_append(h, proposal().prevLedger());
+        hash_append(h, proposal().position());
     }
 
+    Proposal proposal_;
     uint256 mSuppression;
     PublicKey publicKey_;
     Buffer signature_;

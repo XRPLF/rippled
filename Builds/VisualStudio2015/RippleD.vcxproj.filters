@@ -1335,6 +1335,12 @@
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.cpp">
+      <Filter>ripple\app\consensus</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.h">
+      <Filter>ripple\app\consensus</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
       <Filter>ripple\app\consensus</Filter>
     </ClInclude>
@@ -1432,12 +1438,6 @@
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerMaster.h">
-      <Filter>ripple\app\ledger</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerProposal.cpp">
-      <Filter>ripple\app\ledger</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">

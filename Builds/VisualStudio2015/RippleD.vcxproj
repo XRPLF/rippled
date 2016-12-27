@@ -827,6 +827,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxLedger.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxPeerPos.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\consensus\RCLCxTx.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\AbstractFetchPackContainer.h">
@@ -926,12 +932,6 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerHolder.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerMaster.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerProposal.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerProposal.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
     </ClInclude>

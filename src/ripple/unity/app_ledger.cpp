@@ -26,7 +26,6 @@
 #include <ripple/app/ledger/ConsensusTransSetSF.cpp>
 #include <ripple/app/ledger/Ledger.cpp>
 #include <ripple/app/ledger/LedgerHistory.cpp>
-#include <ripple/app/ledger/LedgerProposal.cpp>
 #include <ripple/app/ledger/OrderBookDB.cpp>
 #include <ripple/app/ledger/TransactionStateSF.cpp>
 

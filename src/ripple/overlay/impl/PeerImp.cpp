@@ -1275,10 +1275,10 @@ PeerImp::onMessage (std::shared_ptr <protocol::TMProposeSet> const& m)
     JLOG(p_journal_.trace()) <<
         "Proposal: " << (isTrusted ? "trusted" : "UNTRUSTED");
 
-    auto proposal = std::make_shared<LedgerProposal> (
-        prevLedger, set.proposeseq (), proposeHash, closeTime,
-        app_.timeKeeper().closeTime(), publicKey, calcNodeID(publicKey),
-        signature, suppression);
+    auto proposal = std::make_shared<RCLCxPeerPos> (
+        publicKey, signature, suppression,
+        RCLCxPeerPos::Proposal{prevLedger, set.proposeseq (), proposeHash, closeTime,
+            app_.timeKeeper().closeTime(),calcNodeID(publicKey)});
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue ().addJob (
@@ -1878,7 +1878,7 @@ PeerImp::checkTransaction (int flags,
 void
 PeerImp::checkPropose (Job& job,
     std::shared_ptr <protocol::TMProposeSet> const& packet,
-        LedgerProposal::pointer proposal)
+        RCLCxPeerPos::pointer peerPos)
 {
     bool isTrusted = (job.getType () == jtPROPOSAL_t);
 
@@ -1888,7 +1888,7 @@ PeerImp::checkPropose (Job& job,
     assert (packet);
     protocol::TMProposeSet& set = *packet;
 
-    if (! cluster() && ! proposal->checkSign ())
+    if (! cluster() && !peerPos->checkSign ())
     {
         JLOG(p_journal_.warn()) <<
             "Proposal fails sig check";
@@ -1899,16 +1899,16 @@ PeerImp::checkPropose (Job& job,
     if (isTrusted)
     {
         app_.getOPs ().processTrustedProposal (
-            proposal, packet, calcNodeID (publicKey_));
+            peerPos, packet, calcNodeID (publicKey_));
     }
     else
     {
-        if (app_.getOPs().getConsensusLCL() == proposal->prevLedger())
+        if (app_.getOPs().getConsensusLCL() == peerPos->proposal().prevLedger())
         {
             // relay untrusted proposal
             JLOG(p_journal_.trace()) <<
                 "relaying UNTRUSTED proposal";
-            overlay_.relay(set, proposal->getSuppressionID());
+            overlay_.relay(set, peerPos->getSuppressionID());
         }
         else
         {

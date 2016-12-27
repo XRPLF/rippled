@@ -19,3 +19,4 @@
 #include <BeastConfig.h>
 
 #include <ripple/app/consensus/RCLConsensus.cpp>
+#include <ripple/app/consensus/RCLCxPeerPos.cpp>

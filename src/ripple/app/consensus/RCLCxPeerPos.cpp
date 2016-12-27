@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/core/Config.h>
 #include <ripple/protocol/JsonFields.h>
@@ -28,47 +28,29 @@
 namespace ripple {
 
 // Used to construct received proposals
-LedgerProposal::LedgerProposal (
-        uint256 const& pLgr,
-        std::uint32_t seq,
-        uint256 const& tx,
-        NetClock::time_point closeTime,
-        NetClock::time_point now,
+RCLCxPeerPos::RCLCxPeerPos (
         PublicKey const& publicKey,
-        NodeID const& nodeID,
         Slice const& signature,
-        uint256 const& suppression)
-    : Base{ pLgr, seq, tx, closeTime, now, nodeID }
-    , mSuppression (suppression)
-    , publicKey_ (publicKey)
-    , signature_(signature)
+        uint256 const& suppression,
+        Proposal && proposal)
+    : proposal_{ std::move(proposal)}
+    , mSuppression {suppression}
+    , publicKey_{publicKey}
+    , signature_{signature}
 {
 
 }
-
-// Used to construct local proposals
-// CAUTION: publicKey_ not set
-LedgerProposal::LedgerProposal (
-        uint256 const& prevLgr,
-        uint256 const& position,
-        NetClock::time_point closeTime,
-        NetClock::time_point now,
-        NodeID const& nodeID)
-    : Base{ prevLgr, position, closeTime, now, nodeID }
-{
-}
-
-uint256 LedgerProposal::getSigningHash () const
+uint256 RCLCxPeerPos::getSigningHash () const
 {
     return sha512Half(
         HashPrefix::proposal,
-        std::uint32_t(proposeSeq()),
-        closeTime().time_since_epoch().count(),
-        prevLedger(),
-        position());
+        std::uint32_t(proposal().proposeSeq()),
+        proposal().closeTime().time_since_epoch().count(),
+        proposal().prevLedger(),
+        proposal().position());
 }
 
-bool LedgerProposal::checkSign () const
+bool RCLCxPeerPos::checkSign () const
 {
     return verifyDigest (
         publicKey_,
@@ -77,9 +59,9 @@ bool LedgerProposal::checkSign () const
         false);
 }
 
-Json::Value LedgerProposal::getJson () const
+Json::Value RCLCxPeerPos::getJson () const
 {
-    auto ret = Base::getJson();
+    auto ret = proposal().getJson();
 
     if (publicKey_.size())
         ret[jss::peer_id] =  toBase58 (
