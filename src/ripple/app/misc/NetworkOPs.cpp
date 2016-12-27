@@ -203,7 +203,7 @@ public:
             ledgerMaster,
             *m_localTX,
             app.getInboundTransactions(),
-			stopwatch(),
+            stopwatch(),
             app_.logs().journal("LedgerConsensus")))
         , m_ledgerMaster (ledgerMaster)
         , mLastLoadBase (256)
@@ -1503,7 +1503,7 @@ void NetworkOPsImp::processTrustedProposal (
     std::shared_ptr<protocol::TMProposeSet> set,
     NodeID const& node)
 {
-	mConsensus->storeProposal (proposal, node);
+    mConsensus->storeProposal (proposal, node);
 
     if (mConsensus->peerProposal (
         app_.timeKeeper().closeTime(), *proposal))

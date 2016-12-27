@@ -223,12 +223,12 @@ public:
     //! Deleted copy operator
     Consensus& operator=(Consensus const&) = delete;
 
-	/** Constructor.
+    /** Constructor.
 
-	    @param clock The clock used to internally sample consensus progress
-		@param j The journal to log debug output
-	*/
-	Consensus(clock_type const & clock, beast::Journal j);
+        @param clock The clock used to internally sample consensus progress
+        @param j The journal to log debug output
+    */
+    Consensus(clock_type const & clock, beast::Journal j);
 
 
     /** Kick-off the next round of consensus.
@@ -243,7 +243,7 @@ public:
         the ID is shared independent of the full ledger.
     */
     void
-	startRound (
+    startRound (
         NetTime_t const& now,
         typename Ledger_t::ID const& prevLgrId,
         Ledger_t const& prevLgr);
@@ -514,13 +514,13 @@ private:
     /** @return The Derived class that implements the CRTP requirements.
     */
     Derived &
-	impl()
-	{
-		return *static_cast<Derived*>(this);
-	}
+    impl()
+    {
+        return *static_cast<Derived*>(this);
+    }
 
 
-	mutable std::recursive_mutex lock_;
+    mutable std::recursive_mutex lock_;
 
     //-------------------------------------------------------------------------
     // Consensus state variables
@@ -597,7 +597,7 @@ private:
 template <class Derived, class Traits>
 Consensus<Derived, Traits>::Consensus (
         clock_type const & clock,
-	    beast::Journal journal)
+        beast::Journal journal)
     : clock_(clock)
     , j_(journal)
 {
@@ -1050,9 +1050,7 @@ Consensus<Derived, Traits>::handleLCL (typename Ledger_t::ID const& lgrId)
     // we need to switch the ledger we're working from
     if (auto buildLCL = impl().acquireLedger(prevLedgerID_))
     {
-        JLOG (j_.info()) <<
-        "Have the consensus ledger " << prevLedgerID_;
-
+        JLOG (j_.info()) << "Have the consensus ledger " << prevLedgerID_;
         startRound (now_, lgrId, *buildLCL);
     }
     else
@@ -1416,8 +1414,8 @@ template <class Derived, class Traits>
 void Consensus<Derived, Traits>::updateOurPositions ()
 {
     // Compute a cutoff time
-    auto peerCutoff = now_ - PROPOSE_FRESHNESS;
-    auto ourCutoff = now_ - PROPOSE_INTERVAL;
+    auto const peerCutoff = now_ - PROPOSE_FRESHNESS;
+    auto const ourCutoff = now_ - PROPOSE_INTERVAL;
 
     // Verify freshness of peer positions and compute close times
     std::map<NetTime_t, int> closeTimes;
@@ -1450,31 +1448,26 @@ void Consensus<Derived, Traits>::updateOurPositions ()
 
     // Update votes on disputed transactions
     {
-        boost::optional <TxSet_t> changedSet;
         for (auto& it : disputes_)
         {
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
             if (it.second.updateVote (closePercent_, proposing_))
             {
-                if (! changedSet)
-                    changedSet = *ourSet_;
+                if (!ourNewSet)
+                    ourNewSet = *ourSet_;
 
                 if (it.second.getOurVote ())
                 {
                     // now a yes
-                    changedSet->insert (it.second.tx());
+                    ourNewSet->insert (it.second.tx());
                 }
                 else
                 {
                     // now a no
-                    changedSet->erase (it.first);
+                    ourNewSet->erase (it.first);
                 }
             }
-        }
-        if (changedSet)
-        {
-            ourNewSet.emplace (*changedSet);
         }
     }
 

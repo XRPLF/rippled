@@ -36,10 +36,10 @@ namespace ripple
     An instance of ConsensusProposal can be either our own proposal or one of
     our peer's.
 
-    As consensus proceeds, peers may change their position on the
-    transactions.  Each proposal has an increasing sequence number that orders
-    the successive proposals.  A peer may also choose to leave consensus
-    indicated by sending a ConsensusProposal with sequence equal to `seqLeave`.
+    As consensus proceeds, peers may change their position on the transaction,
+    or choose to abstain. Each successive proposal includes a strictly
+    monotonically increasing number (or, if a peer is choosing to abstain,
+    the special value `seqLeave`).
 
     Refer to @ref Consensus for requirements of the template arguments.
 

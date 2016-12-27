@@ -35,8 +35,6 @@
 namespace ripple {
 
 /** A potentially signed ConsensusProposal for use in RCLConsensus.
-
-    A signed
 */
 class LedgerProposal
     : public CountedObject <LedgerProposal>
@@ -101,7 +99,7 @@ public:
     bool checkSign () const;
 
     //! Signature of the proposal (not necessarily verified)
-    Blob const& getSignature () const
+    Slice getSignature () const
     {
         return signature_;
     }
@@ -136,7 +134,7 @@ private:
 
     uint256 mSuppression;
     PublicKey publicKey_;
-    Blob signature_;
+    Buffer signature_;
 };
 
 /** Calculate a unique identifier for a signed proposal.

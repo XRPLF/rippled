@@ -41,10 +41,9 @@ LedgerProposal::LedgerProposal (
     : Base{ pLgr, seq, tx, closeTime, now, nodeID }
     , mSuppression (suppression)
     , publicKey_ (publicKey)
+    , signature_(signature)
 {
-    signature_.resize (signature.size());
-    std::memcpy(signature_.data(),
-        signature.data(), signature.size());
+
 }
 
 // Used to construct local proposals
@@ -74,7 +73,7 @@ bool LedgerProposal::checkSign () const
     return verifyDigest (
         publicKey_,
         getSigningHash(),
-        makeSlice (signature_),
+        signature_,
         false);
 }
 

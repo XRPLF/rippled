@@ -166,9 +166,9 @@ RCLConsensus::relay(LedgerProposal const & proposal)
         proposal.closeTime ().time_since_epoch().count());
 
     prop.set_currenttxhash (
-        proposal.position().begin(), 256 / 8);
+        proposal.position().begin(), proposal.position().size());
     prop.set_previousledger (
-        proposal.prevLedger().begin(), 256 / 8);
+        proposal.prevLedger().begin(), proposal.position().size());
 
     auto const pk = proposal.getPublicKey().slice();
     prop.set_nodepubkey (pk.data(), pk.size());
@@ -199,29 +199,29 @@ RCLConsensus::relay(DisputedTx <RCLCxTx, NodeID> const & dispute)
     }
 }
 void
-RCLConsensus::propose (LedgerProposal const& position)
+RCLConsensus::propose (LedgerProposal const& proposal)
 {
     JLOG (j_.trace()) << "We propose: " <<
-        (position.isBowOut () ?  std::string ("bowOut") :
-            to_string (position.position ()));
+        (proposal.isBowOut () ?  std::string ("bowOut") :
+            to_string (proposal.position ()));
 
     protocol::TMProposeSet prop;
 
-    prop.set_currenttxhash (position.position().begin(),
-        256 / 8);
-    prop.set_previousledger (position.prevLedger().begin(),
-        256 / 8);
-    prop.set_proposeseq (position.proposeSeq());
+    prop.set_currenttxhash (proposal.position().begin(),
+        proposal.position().size());
+    prop.set_previousledger (proposal.prevLedger().begin(),
+        proposal.position().size());
+    prop.set_proposeseq (proposal.proposeSeq());
     prop.set_closetime (
-        position.closeTime().time_since_epoch().count());
+        proposal.closeTime().time_since_epoch().count());
 
     prop.set_nodepubkey (valPublic_.data(), valPublic_.size());
 
     auto signingHash = sha512Half(
         HashPrefix::proposal,
-        std::uint32_t(position.proposeSeq()),
-        position.closeTime().time_since_epoch().count(),
-        position.prevLedger(), position.position());
+        std::uint32_t(proposal.proposeSeq()),
+        proposal.closeTime().time_since_epoch().count(),
+        proposal.prevLedger(), proposal.position());
 
     auto sig = signDigest (
         valPublic_, valSecret_, signingHash);
@@ -887,7 +887,7 @@ RCLConsensus::validate(
     // suppress it if we receive it - FIXME: wrong suppression
     app_.getHashRouter ().addSuppression (signingHash);
     app_.getValidations ().addValidation (v, "local");
-    Blob validation = v->getSigned ();
+    Blob validation = v->getSerialized ();
     protocol::TMValidation val;
     val.set_validation (&validation[0], validation.size ());
     // Send signed validation to all of our directly connected peers
