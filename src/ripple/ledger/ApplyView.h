@@ -195,9 +195,78 @@ public:
 
     //--------------------------------------------------------------------------
 
+   /** Add an entry to a directory
+
+        @param directory the base of the directory
+        @param key the entry to insert
+        @param strictOrder keep entries in order of insertion
+        @param describe callback to add required entries to a new page
+
+        @return a `std::pair`, indicating whether the insertion
+                succeeded, and, if successful, the page number
+                in which the item was stored.
+
+        @note this function will only fail if the page counter
+              exceeds the maximum number of allowable pages,
+              which is, currently, 18,446,744,073,709,551,615.
+
+        Effects:
+            May create a page (including a root page), if no
+            space is available for the entry.
+    */
+    /** @{ */
+    std::pair<bool, std::uint64_t>
+    dirInsert (
+        Keylet const& directory,
+        uint256 const& key,
+        bool strictOrder,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+
+    std::pair<bool, std::uint64_t>
+    dirInsert (
+        Keylet const& directory,
+        Keylet const& key,
+        bool strictOrder,
+        std::function<void(std::shared_ptr<SLE> const&)> describe);
+    /** @} */
+
+    /** Remove an entry from a directory
+
+        @param directory the base of the directory
+        @param page the page number for this page
+        @param key the entry to remove
+        @param keepRoot if deleting the last entry, don't
+                        delete the directory itself.
+
+        @return `true` if the entry was found and deleted and
+                false otherwise.
+
+        Effects:
+            Removes zero or more pages, potentially removing
+            the directory itself.
+    */
+    /** @{ */
+    bool
+    dirRemove (
+        Keylet const& directory,
+        std::uint64_t page,
+        uint256 const& key,
+        bool keepRoot);
+
+    bool
+    dirRemove (
+        Keylet const& directory,
+        std::uint64_t page,
+        Keylet const& key,
+        bool keepRoot);
+    /** @} */
+
+    //--------------------------------------------------------------------------
+
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
-    virtual void
+    virtual
+    void
     creditHook (AccountID const& from,
         AccountID const& to,
         STAmount const& amount,
@@ -208,9 +277,11 @@ public:
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual
-    void adjustOwnerCountHook (AccountID const& account,
+    void
+    adjustOwnerCountHook (AccountID const& account,
         std::uint32_t cur, std::uint32_t next)
-    {};
+    {
+    }
 
 };
 

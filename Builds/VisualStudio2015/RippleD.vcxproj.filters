@@ -2652,6 +2652,9 @@
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyStateTable.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyView.cpp">
+      <Filter>ripple\ledger\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\ledger\impl\ApplyViewBase.cpp">
       <Filter>ripple\ledger\impl</Filter>
     </ClCompile>

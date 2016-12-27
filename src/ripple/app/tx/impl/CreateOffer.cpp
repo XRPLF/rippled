@@ -904,10 +904,16 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
     std::uint64_t uOwnerNode;
 
+    bool success;
+
     // Add offer to owner's directory.
-    std::tie(result, std::ignore) = dirAdd(view, uOwnerNode,
+    // FIXME: SortedOwnerDirPages
+    std::tie(success, uOwnerNode) = view.dirInsert(
         keylet::ownerDir (account_), offer_index,
-        describeOwnerDir (account_), viewJ);
+        true, describeOwnerDir (account_));
+
+    if (!success)
+        result = tecDIR_FULL;
 
     if (result == tesSUCCESS)
     {
@@ -920,14 +926,14 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
 
         Book const book { saTakerPays.issue(), saTakerGets.issue() };
         std::uint64_t uBookNode;
-        bool isNewBook;
 
         // Add offer to order book, using the original rate
         // before any crossing occured.
-        auto dir = keylet::quality (keylet::book (book), uRate);
+        auto const dir = keylet::quality (keylet::book (book), uRate);
+        bool const bookExisted = static_cast<bool>(view.peek (dir));
 
-        std::tie(result, isNewBook) = dirAdd (view, uBookNode,
-            dir, offer_index, [&](SLE::ref sle)
+        std::tie(success, uBookNode) = view.dirInsert(
+            dir, offer_index, true, [&](SLE::ref sle)
             {
                 sle->setFieldH160 (sfTakerPaysCurrency,
                     saTakerPays.issue().currency);
@@ -938,7 +944,10 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
                 sle->setFieldH160 (sfTakerGetsIssuer,
                     saTakerGets.issue().account);
                 sle->setFieldU64 (sfExchangeRate, uRate);
-            }, viewJ);
+            });
+
+        if (!success)
+            result = tecDIR_FULL;
 
         if (result == tesSUCCESS)
         {
@@ -958,7 +967,7 @@ CreateOffer::applyGuts (ApplyView& view, ApplyView& view_cancel)
                 sleOffer->setFlag (lsfSell);
             view.insert(sleOffer);
 
-            if (isNewBook)
+            if (!bookExisted)
                 ctx_.app.getOrderBookDB().addOrderBook(book);
         }
     }

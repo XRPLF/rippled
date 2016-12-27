@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/ledger/Directory.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
 #include <ripple/basics/contract.h>
@@ -71,14 +72,6 @@ bool amendmentRIPD1298 (NetClock::time_point const closeTime)
 {
     return closeTime > amendmentRIPD1298SoTime();
 }
-
-// VFALCO NOTE A copy of the other one for now
-/** Maximum number of entries in a directory page
-    A change would be protocol-breaking.
-*/
-#ifndef DIR_NODE_MAX
-#define DIR_NODE_MAX  32
-#endif
 
 //------------------------------------------------------------------------------
 //
@@ -750,294 +743,47 @@ describeOwnerDir(AccountID const& account)
     };
 }
 
-std::pair<TER, bool>
-dirAdd (ApplyView& view,
-    std::uint64_t&                          uNodeDir,
-    Keylet const&                           dir,
-    uint256 const&                          uLedgerIndex,
-    std::function<void (SLE::ref)>          fDescriber,
-    beast::Journal j)
-{
-    JLOG (j.trace()) << "dirAdd:" <<
-        " dir=" << to_string (dir.key) <<
-        " uLedgerIndex=" << to_string (uLedgerIndex);
-
-    auto sleRoot = view.peek(dir);
-
-    if (! sleRoot)
-    {
-        // No root, make it.
-        sleRoot = std::make_shared<SLE>(dir);
-        sleRoot->setFieldH256 (sfRootIndex, dir.key);
-        view.insert (sleRoot);
-        fDescriber (sleRoot);
-
-        STVector256 v;
-        v.push_back (uLedgerIndex);
-        sleRoot->setFieldV256 (sfIndexes, v);
-
-        JLOG (j.trace()) <<
-            "dirAdd: created root " << to_string (dir.key) <<
-            " for entry " << to_string (uLedgerIndex);
-
-        uNodeDir = 0;
-
-        return { tesSUCCESS, true };
-    }
-
-    SLE::pointer sleNode;
-    STVector256 svIndexes;
-
-    uNodeDir = sleRoot->getFieldU64 (sfIndexPrevious);       // Get index to last directory node.
-
-    if (uNodeDir)
-    {
-        // Try adding to last node.
-        sleNode = view.peek (keylet::page(dir, uNodeDir));
-        assert (sleNode);
-    }
-    else
-    {
-        // Try adding to root.  Didn't have a previous set to the last node.
-        sleNode     = sleRoot;
-    }
-
-    svIndexes = sleNode->getFieldV256 (sfIndexes);
-
-    if (DIR_NODE_MAX != svIndexes.size ())
-    {
-        // Add to current node.
-        view.update(sleNode);
-    }
-    // Add to new node.
-    else if (!++uNodeDir)
-    {
-        return { tecDIR_FULL, false };
-    }
-    else
-    {
-        // Have old last point to new node
-        sleNode->setFieldU64 (sfIndexNext, uNodeDir);
-        view.update(sleNode);
-
-        // Have root point to new node.
-        sleRoot->setFieldU64 (sfIndexPrevious, uNodeDir);
-        view.update (sleRoot);
-
-        // Create the new node.
-        sleNode = std::make_shared<SLE>(
-            keylet::page(dir, uNodeDir));
-        sleNode->setFieldH256 (sfRootIndex, dir.key);
-        view.insert (sleNode);
-
-        if (uNodeDir != 1)
-            sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
-
-        fDescriber (sleNode);
-
-        svIndexes   = STVector256 ();
-    }
-
-    svIndexes.push_back (uLedgerIndex); // Append entry.
-    sleNode->setFieldV256 (sfIndexes, svIndexes);   // Save entry.
-
-    JLOG (j.trace()) <<
-        "dirAdd:   creating: root: " << to_string (dir.key);
-    JLOG (j.trace()) <<
-        "dirAdd:  appending: Entry: " << to_string (uLedgerIndex);
-    JLOG (j.trace()) <<
-        "dirAdd:  appending: Node: " << strHex (uNodeDir);
-
-    return { tesSUCCESS, false };
-}
-
 // Ledger must be in a state for this to work.
-TER
+static
+bool
 dirDelete (ApplyView& view,
     const bool                      bKeepRoot,      // --> True, if we never completely clean up, after we overflow the root node.
-    const std::uint64_t&            uNodeDir,       // --> Node containing entry.
-    uint256 const&                  uRootIndex,     // --> The index of the base of the directory.  Nodes are based off of this.
+    std::uint64_t                   uNodeDir,       // --> Node containing entry.
+    Keylet const&                   root,           // --> The base of the directory.  Nodes are based off of this.
     uint256 const&                  uLedgerIndex,   // --> Value to remove from directory.
     const bool                      bStable,        // --> True, not to change relative order of entries.
     const bool                      bSoft,          // --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
     beast::Journal j)
 {
-    std::uint64_t uNodeCur = uNodeDir;
-    SLE::pointer sleNode =
-        view.peek(keylet::page(uRootIndex, uNodeCur));
-
-    if (!sleNode)
+    // Emulate the old semantics: if uNodeDir isn't hard
+    // and fast and there's no page number, search for the
+    // item in the first 20 pages:
+    if (bSoft && uNodeDir == 0)
     {
-        JLOG (j.warn()) << "dirDelete: no such node:" <<
-            " uRootIndex=" << to_string (uRootIndex) <<
-            " uNodeDir=" << strHex (uNodeDir) <<
-            " uLedgerIndex=" << to_string (uLedgerIndex);
+        // Attempt to find the page that contains the item we need:
+        Dir dir(view, root);
 
-        if (!bSoft)
-        {
-            assert (false);
-            return tefBAD_LEDGER;
-        }
-        else if (uNodeDir < 20)
-        {
-            // Go the extra mile. Even if node doesn't exist, try the next node.
+        auto iter = dir.begin();
+        auto pageId = iter.page();
+        bool found = false;
 
-            return dirDelete (view, bKeepRoot,
-                uNodeDir + 1, uRootIndex, uLedgerIndex, bStable, true, j);
-        }
-        else
+        while (!found && iter != dir.end())
         {
-            return tefBAD_LEDGER;
+            if (iter.page().key != pageId.key)
+            {
+                if (uNodeDir++ == 20)
+                    return false;
+                pageId = iter.page();
+            }
+
+            found = (iter.index() == uLedgerIndex);
         }
+
+        if (!found)
+            return false;
     }
 
-    STVector256 svIndexes = sleNode->getFieldV256 (sfIndexes);
-
-    auto it = std::find (svIndexes.begin (), svIndexes.end (), uLedgerIndex);
-
-    if (svIndexes.end () == it)
-    {
-        if (!bSoft)
-        {
-            assert (false);
-            JLOG (j.warn()) << "dirDelete: no such entry";
-            return tefBAD_LEDGER;
-        }
-
-        if (uNodeDir < 20)
-        {
-            // Go the extra mile. Even if entry not in node, try the next node.
-            return dirDelete (view, bKeepRoot, uNodeDir + 1,
-                uRootIndex, uLedgerIndex, bStable, true, j);
-        }
-
-        return tefBAD_LEDGER;
-    }
-
-    // Remove the element.
-    if (svIndexes.size () > 1)
-    {
-        if (bStable)
-        {
-            svIndexes.erase (it);
-        }
-        else
-        {
-            *it = svIndexes[svIndexes.size () - 1];
-            svIndexes.resize (svIndexes.size () - 1);
-        }
-    }
-    else
-    {
-        svIndexes.clear ();
-    }
-
-    sleNode->setFieldV256 (sfIndexes, svIndexes);
-    view.update(sleNode);
-
-    if (svIndexes.empty ())
-    {
-        // May be able to delete nodes.
-        std::uint64_t       uNodePrevious   = sleNode->getFieldU64 (sfIndexPrevious);
-        std::uint64_t       uNodeNext       = sleNode->getFieldU64 (sfIndexNext);
-
-        if (!uNodeCur)
-        {
-            // Just emptied root node.
-
-            if (!uNodePrevious)
-            {
-                // Never overflowed the root node.  Delete it.
-                view.erase(sleNode);
-            }
-            // Root overflowed.
-            else if (bKeepRoot)
-            {
-                // If root overflowed and not allowed to delete overflowed root node.
-            }
-            else if (uNodePrevious != uNodeNext)
-            {
-                // Have more than 2 nodes.  Can't delete root node.
-            }
-            else
-            {
-                // Have only a root node and a last node.
-                auto sleLast = view.peek(keylet::page(uRootIndex, uNodeNext));
-
-                assert (sleLast);
-
-                if (sleLast->getFieldV256 (sfIndexes).empty ())
-                {
-                    // Both nodes are empty.
-
-                    view.erase (sleNode);  // Delete root.
-                    view.erase (sleLast);  // Delete last.
-                }
-                else
-                {
-                    // Have an entry, can't delete root node.
-                }
-            }
-        }
-        // Just emptied a non-root node.
-        else if (uNodeNext)
-        {
-            // Not root and not last node. Can delete node.
-
-            auto slePrevious =
-                view.peek(keylet::page(uRootIndex, uNodePrevious));
-            auto sleNext = view.peek(keylet::page(uRootIndex, uNodeNext));
-            assert (slePrevious);
-            if (!slePrevious)
-            {
-                JLOG (j.warn()) << "dirDelete: previous node is missing";
-                return tefBAD_LEDGER;
-            }
-            assert (sleNext);
-            if (!sleNext)
-            {
-                JLOG (j.warn()) << "dirDelete: next node is missing";
-                return tefBAD_LEDGER;
-            }
-
-            // Fix previous to point to its new next.
-            slePrevious->setFieldU64 (sfIndexNext, uNodeNext);
-            view.update (slePrevious);
-
-            // Fix next to point to its new previous.
-            sleNext->setFieldU64 (sfIndexPrevious, uNodePrevious);
-            view.update (sleNext);
-
-            view.erase(sleNode);
-        }
-        // Last node.
-        else if (bKeepRoot || uNodePrevious)
-        {
-            // Not allowed to delete last node as root was overflowed.
-            // Or, have pervious entries preventing complete delete.
-        }
-        else
-        {
-            // Last and only node besides the root.
-            auto sleRoot = view.peek (keylet::page(uRootIndex));
-
-            assert (sleRoot);
-
-            if (sleRoot->getFieldV256 (sfIndexes).empty ())
-            {
-                // Both nodes are empty.
-
-                view.erase(sleRoot);  // Delete root.
-                view.erase(sleNode);  // Delete last.
-            }
-            else
-            {
-                // Root has an entry, can't delete.
-            }
-        }
-    }
-
-    return tesSUCCESS;
+    return view.dirRemove (root, uNodeDir, uLedgerIndex, bKeepRoot);
 }
 
 TER
@@ -1069,25 +815,25 @@ trustCreate (ApplyView& view,
         ltRIPPLE_STATE, uIndex);
     view.insert (sleRippleState);
 
-    std::uint64_t   uLowNode;
-    std::uint64_t   uHighNode;
+    std::uint64_t uLowNode;
+    std::uint64_t uHighNode;
 
-    TER terResult;
+    bool success;
 
-    std::tie (terResult, std::ignore) = dirAdd (view,
-        uLowNode, keylet::ownerDir (uLowAccountID),
-        sleRippleState->key(),
-        describeOwnerDir (uLowAccountID), j);
+    // FIXME: SortedOwnerDirPages
+    std::tie (success, uLowNode) = view.dirInsert (
+        keylet::ownerDir (uLowAccountID), sleRippleState->key(),
+        true, describeOwnerDir (uLowAccountID));
 
-    if (tesSUCCESS == terResult)
+    if (success)
     {
-        std::tie (terResult, std::ignore) = dirAdd (view,
-            uHighNode, keylet::ownerDir (uHighAccountID),
-            sleRippleState->key(),
-            describeOwnerDir (uHighAccountID), j);
+        // FIXME: SortedOwnerDirPages
+        std::tie (success, uHighNode) = view.dirInsert (
+            keylet::ownerDir (uHighAccountID), sleRippleState->key(),
+            true, describeOwnerDir (uHighAccountID));
     }
 
-    if (tesSUCCESS == terResult)
+    if (success)
     {
         const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
         const bool bSetHigh = bSrcHigh ^ bSetDst;
@@ -1148,7 +894,7 @@ trustCreate (ApplyView& view,
             uDstAccountID, saBalance, saBalance.zeroed());
     }
 
-    return terResult;
+    return success ? tesSUCCESS : tecDIR_FULL;
 }
 
 TER
@@ -1158,42 +904,30 @@ trustDelete (ApplyView& view,
             AccountID const& uHighAccountID,
                  beast::Journal j)
 {
-    // Detect legacy dirs.
-    bool        bLowNode    = sleRippleState->isFieldPresent (sfLowNode);
-    bool        bHighNode   = sleRippleState->isFieldPresent (sfHighNode);
-    std::uint64_t uLowNode    = sleRippleState->getFieldU64 (sfLowNode);
-    std::uint64_t uHighNode   = sleRippleState->getFieldU64 (sfHighNode);
-    TER         terResult;
-
     JLOG (j.trace())
         << "trustDelete: Deleting ripple line: low";
-    terResult   = dirDelete(view,
-        false,
-        uLowNode,
-        getOwnerDirIndex (uLowAccountID),
-        sleRippleState->key(),
-        false,
-        !bLowNode,
-        j);
 
-    if (tesSUCCESS == terResult)
+    bool success = dirDelete(view, false,
+        sleRippleState->getFieldU64 (sfLowNode),
+        keylet::ownerDir (uLowAccountID),
+        sleRippleState->key(), false,
+        !sleRippleState->isFieldPresent (sfLowNode), j);
+
+    if (success)
     {
         JLOG (j.trace())
                 << "trustDelete: Deleting ripple line: high";
-        terResult   = dirDelete (view,
-            false,
-            uHighNode,
-            getOwnerDirIndex (uHighAccountID),
-            sleRippleState->key(),
-            false,
-            !bHighNode,
-            j);
+        success = dirDelete (view, false,
+            sleRippleState->getFieldU64 (sfHighNode),
+            keylet::ownerDir (uHighAccountID),
+            sleRippleState->key(), false,
+            !sleRippleState->isFieldPresent (sfHighNode), j);
     }
 
     JLOG (j.trace()) << "trustDelete: Deleting ripple line: state";
     view.erase(sleRippleState);
 
-    return terResult;
+    return success ? tesSUCCESS : tefBAD_LEDGER;
 }
 
 TER
@@ -1203,28 +937,26 @@ offerDelete (ApplyView& view,
 {
     if (! sle)
         return tesSUCCESS;
-    auto offerIndex = sle->key();
-    auto owner = sle->getAccountID  (sfAccount);
 
-    // Detect legacy directories.
-    bool bOwnerNode = sle->isFieldPresent (sfOwnerNode);
-    std::uint64_t uOwnerNode = sle->getFieldU64 (sfOwnerNode);
-    uint256 uDirectory = sle->getFieldH256 (sfBookDirectory);
-    std::uint64_t uBookNode  = sle->getFieldU64 (sfBookNode);
+    auto const& offerIndex = sle->key();
+    auto owner = (*sle)[sfAccount];
 
-    TER terResult  = dirDelete (view, false, uOwnerNode,
-        getOwnerDirIndex (owner), offerIndex, false, !bOwnerNode, j);
-    TER terResult2 = dirDelete (view, false, uBookNode,
-        uDirectory, offerIndex, true, false, j);
+    // We detect legacy entries which may not have an owner node
+    auto success1 = dirDelete (view, false,
+        (*sle)[sfOwnerNode], keylet::ownerDir(owner),
+        offerIndex, false, !sle->isFieldPresent (sfOwnerNode), j);
+    auto success2 = dirDelete (view, false,
+        sle->getFieldU64 (sfBookNode),
+        keylet::book(sle->getFieldH256 (sfBookDirectory)),
+        offerIndex, true, false, j);
 
-    if (tesSUCCESS == terResult)
+    if (success1)
         adjustOwnerCount(view, view.peek(
             keylet::account(owner)), -1, j);
 
     view.erase(sle);
 
-    return (terResult == tesSUCCESS) ?
-        terResult2 : terResult;
+    return (success1 && success2) ? tesSUCCESS : tefBAD_LEDGER;
 }
 
 // Direct send w/o fees:
