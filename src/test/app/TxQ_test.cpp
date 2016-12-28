@@ -1641,6 +1641,8 @@ public:
                 !RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
+                BEAST_EXPECT(result.isMember(jss::ledger_current_index)
+                    && result[jss::ledger_current_index] == 3);
                 BEAST_EXPECT(result.isMember(jss::current_ledger_size));
                 BEAST_EXPECT(result.isMember(jss::current_queue_size));
                 BEAST_EXPECT(result.isMember(jss::expected_ledger_size));
@@ -1667,6 +1669,8 @@ public:
                 !RPC::contains_error(fee[jss::result])))
             {
                 auto const& result = fee[jss::result];
+                BEAST_EXPECT(result.isMember(jss::ledger_current_index)
+                    && result[jss::ledger_current_index] == 4);
                 BEAST_EXPECT(result.isMember(jss::current_ledger_size));
                 BEAST_EXPECT(result.isMember(jss::current_queue_size));
                 BEAST_EXPECT(result.isMember(jss::expected_ledger_size));

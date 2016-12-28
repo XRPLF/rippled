@@ -1381,6 +1381,7 @@ TxQ::doRPC(Application& app) const
 
     auto& levels = ret[jss::levels] = Json::objectValue;
 
+    ret[jss::ledger_current_index] = view->info().seq;
     ret[jss::expected_ledger_size] = to_string(metrics->txPerLedger);
     ret[jss::current_ledger_size] = to_string(metrics->txInLedger);
     ret[jss::current_queue_size] = to_string(metrics->txCount);
