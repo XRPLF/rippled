@@ -92,7 +92,7 @@ public:
 
         expectEquals (result[jss::key_type],
             params.isMember (jss::key_type) ? params[jss::key_type]
-                                            : "secp256k1");
+                                            : Json::Value{"secp256k1"});
 
         std::string seed = result[jss::master_seed].asString();
 
@@ -115,7 +115,7 @@ public:
         expectEquals (result[jss::public_key_hex], s.public_key_hex);
         expectEquals (result[jss::key_type],
             params.isMember (jss::key_type) ? params[jss::key_type]
-                                            : "secp256k1");
+                                            : Json::Value{"secp256k1"});
     }
 
     void testSeed (boost::optional<std::string> const& keyType,

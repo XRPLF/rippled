@@ -68,7 +68,7 @@ STUInt8::getJson (int) const
         std::string token, human;
 
         if (transResultInfo (static_cast<TER> (value_), token, human))
-            return token;
+            return Json::Value{token};
 
         JLOG (debugLog().error())
             << "Unknown result code in metadata: " << value_;
@@ -127,7 +127,7 @@ STUInt16::getJson (int) const
             static_cast <LedgerEntryType> (value_));
 
         if (item != nullptr)
-            return item->getName ();
+            return Json::Value{item->getName()};
     }
 
     if (getFName () == sfTransactionType)
@@ -136,7 +136,7 @@ STUInt16::getJson (int) const
             static_cast <TxType> (value_));
 
         if (item != nullptr)
-            return item->getName ();
+            return Json::Value{item->getName()};
     }
 
     return value_;
@@ -197,7 +197,7 @@ template <>
 Json::Value
 STUInt64::getJson (int) const
 {
-    return strHex (value_);
+    return Json::Value{strHex(value_)};
 }
 
 } // ripple
