@@ -113,7 +113,7 @@ public:
             env.app().getJobQueue().rendezvous();
 
             // Finalize transactions
-            jv = wsc->invoke("ledger_accept");
+            jv = wsc->invoke("ledger_accept", {});
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
@@ -253,7 +253,7 @@ public:
                 "tesSUCCESS");
 
             // Finalize transaction
-            jv = wsc->invoke("ledger_accept");
+            jv = wsc->invoke("ledger_accept", {});
             if (wsc->version() == 2)
             {
                 BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
@@ -286,7 +286,7 @@ public:
             // Close ledgers
             for(auto i = 0; i < 8; ++i)
             {
-                auto jv = wsc->invoke("ledger_accept");
+                auto jv = wsc->invoke("ledger_accept", {});
                 if (wsc->version() == 2)
                 {
                     BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
@@ -343,7 +343,7 @@ public:
             // Close ledgers
             for (auto i = 0; i < 2; ++i)
             {
-                auto jv = wsc->invoke("ledger_accept");
+                auto jv = wsc->invoke("ledger_accept", {});
                 if (wsc->version() == 2)
                 {
                     BEAST_EXPECT(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");

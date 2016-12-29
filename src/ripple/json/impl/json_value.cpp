@@ -504,6 +504,77 @@ bool operator== (const Value& x, const Value& y)
     return 0;  // unreachable
 }
 
+bool
+operator== (const Value& x, const std::string& y)
+{
+    if (x.type_ != stringValue)
+        return false;
+    return x.value_.string_ == y;
+}
+
+bool
+operator== (const Value& x, const StaticString& y)
+{
+    if (x.type_ != stringValue)
+        return false;
+    return std::string(x.value_.string_) == y;
+}
+
+bool
+operator== (const Value& x, const char* y)
+{
+    if (x.type_ != stringValue)
+        return false;
+    return std::string(x.value_.string_) == std::string(y);
+}
+
+bool
+operator== (const Value& x, Json::Int y)
+{
+    if (x.type_ != intValue)
+    {
+        if (x.type_ == uintValue)
+            return !integerCmp(y, x.value_.uint_);
+        return false;
+    }
+    return x.value_.int_ == y;
+}
+
+bool
+operator== (const Value& x, Json::UInt y)
+{
+    if (x.type_ != uintValue)
+    {
+        if (x.type_ == intValue)
+            return !integerCmp(x.value_.int_, y);
+        return false;
+    }
+    return x.value_.uint_ == y;
+}
+
+bool
+operator== (const Value& x, double y)
+{
+    if (x.type_ != realValue)
+        return false;
+    return x.value_.real_ == y;
+}
+
+bool
+operator== (const Value& x, bool y)
+{
+    if (x.type_ != booleanValue)
+        return false;
+    return x.value_.bool_ == y;
+}
+
+bool
+operator== (const Value& x, ValueType y)
+{
+    return x == Value{y};
+}
+
+
 const char*
 Value::asCString () const
 {

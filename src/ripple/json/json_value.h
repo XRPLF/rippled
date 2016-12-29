@@ -215,7 +215,7 @@ public:
     Value ( Int value );
     Value ( UInt value );
     Value ( double value );
-    Value ( const char* value );
+    explicit Value ( const char* value );
     Value ( const char* beginValue, const char* endValue );
     /** \brief Constructs a value from a static string.
 
@@ -227,9 +227,9 @@ public:
      * Json::Value aValue( StaticString("some text") );
      * \endcode
      */
-    Value ( const StaticString& value );
-    Value ( std::string const& value );
-    Value ( bool value );
+    explicit Value ( const StaticString& value );
+    explicit Value ( std::string const& value );
+    explicit Value ( bool value );
     Value ( const Value& other );
     ~Value ();
 
@@ -237,6 +237,15 @@ public:
 
     Value ( Value&& other ) noexcept;
     Value& operator= ( Value&& other ) noexcept;
+
+    Value& operator=(std::string const& s) {return *this = Value{s};}
+    Value& operator=(Int i) {return *this = Value{i};}
+    Value& operator=(UInt u) {return *this = Value{u};}
+    Value& operator=(double d) {return *this = Value{d};}
+    Value& operator=(const char* s) {return *this = Value{s};}
+    Value& operator=(const StaticString& s) {return *this = Value{s};}
+    Value& operator=(bool b) {return *this = Value{b};}
+    Value& operator=(ValueType type) {return *this = Value{type};}
 
     /// Swap values.
     /// \note Currently, comments are intentionally not swapped, for
@@ -307,6 +316,14 @@ public:
     ///
     /// Equivalent to jsonvalue[jsonvalue.size()] = value;
     Value& append ( const Value& value );
+    Value& append ( const std::string& value ) {return append(Value{value});}
+    Value& append ( Int value ) {return append(Value{value});}
+    Value& append ( UInt value ) {return append(Value{value});}
+    Value& append ( double value ) {return append(Value{value});}
+    Value& append ( const char* value ) {return append(Value{value});}
+    Value& append ( const StaticString& value ) {return append(Value{value});}
+    Value& append ( bool value ) {return append(Value{value});}
+    Value& append ( ValueType type ) {return append(Value{type});}
 
     /// Access an object value by name, create a null member if it does not exist.
     Value& operator[] ( const char* key );
@@ -372,6 +389,14 @@ public:
 
     friend bool operator== (const Value&, const Value&);
     friend bool operator< (const Value&, const Value&);
+    friend bool operator== (const Value&, const std::string&);
+    friend bool operator== (const Value&, const StaticString&);
+    friend bool operator== (const Value&, const char*);
+    friend bool operator== (const Value&, Json::Int);
+    friend bool operator== (const Value&, Json::UInt);
+    friend bool operator== (const Value&, double);
+    friend bool operator== (const Value&, bool);
+    friend bool operator== (const Value&, ValueType);
 
 private:
     Value& resolveReference ( const char* key,
@@ -417,6 +442,22 @@ inline
 bool operator>= (const Value& x, const Value& y)
 {
     return ! (x < y);
+}
+
+bool operator== (const Value&, const std::string&);
+bool operator== (const Value&, const StaticString&);
+bool operator== (const Value&, const char*);
+bool operator== (const Value&, Json::Int);
+bool operator== (const Value&, Json::UInt);
+bool operator== (const Value&, double);
+bool operator== (const Value&, bool);
+bool operator== (const Value&, ValueType);
+
+inline
+bool
+operator!= (const Value& x, const std::string& y)
+{
+    return !(x == y);
 }
 
 /** \brief Experimental do not use: Allocator to customize member name and string value memory management done by Value.

@@ -332,10 +332,10 @@ ServerHandlerImp::onWSMessage(
 {
     Json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::maxRequestSize ||
-        ! Json::Reader{}.parse(jv, buffers) ||
-        ! jv ||
-        ! jv.isObject())
+    bool parse_error = true;
+    if (size <= RPC::Tuning::maxRequestSize)
+        parse_error = !Json::Reader{}.parse(jv, buffers);
+    if (parse_error || !jv || !(jv.isObject() || jv.isArray()))
     {
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
@@ -359,21 +359,26 @@ ServerHandlerImp::onWSMessage(
     JLOG(m_journal.trace())
         << "Websocket received '" << jv << "'";
 
-    m_jobQueue.postCoro(jtCLIENT, "WS-Client",
-        [this, session = std::move(session),
-            jv = std::move(jv)](auto const& c)
-        {
-            auto const jr =
-                this->processSession(session, c, jv);
-            auto const s = to_string(jr);
-            auto const n = s.length();
-            beast::streambuf sb(n);
-            sb.commit(boost::asio::buffer_copy(
-                sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
-            session->send(std::make_shared<
-                StreambufWSMsg<decltype(sb)>>(std::move(sb)));
-            session->complete();
-        });
+    auto const num_requests = jv.isArray() ? jv.size() : 1;
+    for (unsigned i = 0; i < num_requests; ++i)
+    {
+        Json::Value& jvi = jv.isArray() ? jv[i] : jv;
+        m_jobQueue.postCoro(jtCLIENT, "WS-Client",
+            [this, session = session,
+                jv = std::move(jvi)](auto const& c)
+            {
+                auto const jr =
+                    this->processSession(session, c, jv);
+                auto const s = to_string(jr);
+                auto const n = s.length();
+                beast::streambuf sb(n);
+                sb.commit(boost::asio::buffer_copy(
+                    sb.prepare(n), boost::asio::buffer(s.c_str(), n)));
+                session->send(std::make_shared<
+                    StreambufWSMsg<decltype(sb)>>(std::move(sb)));
+                session->complete();
+            });
+    }
 }
 
 void
@@ -388,6 +393,14 @@ void
 ServerHandlerImp::onStopped (Server&)
 {
     stopped();
+}
+
+static
+void
+extract_params(Json::Value& jv, Json::Value const& params)
+{
+    for (auto i = params.begin(); i != params.end(); ++i)
+        jv[i.key().asString()] = *i;
 }
 
 //------------------------------------------------------------------------------
@@ -442,6 +455,15 @@ ServerHandlerImp::processSession(
     }
     else
     {
+        auto request = jv;
+        if (request.isMember(jss::params))
+        {
+            auto& params = jv[jss::params];
+            if (params.isArray())
+                extract_params(request, params[0u]);
+            else
+                extract_params(request, params);
+        }
         RPC::Context context{
             app_.journal("RPCHandler"),
             jv,
@@ -537,183 +559,188 @@ ServerHandlerImp::processRequest (Port const& port,
 {
     auto rpcJ = app_.journal ("RPC");
 
-    Json::Value jsonRPC;
+    Json::Value jsonOrig;
     {
         Json::Reader reader;
         if ((request.size () > RPC::Tuning::maxRequestSize) ||
-            ! reader.parse (request, jsonRPC) ||
-            ! jsonRPC ||
-            ! jsonRPC.isObject ())
+            ! reader.parse (request, jsonOrig) ||
+            ! jsonOrig ||
+            ! (jsonOrig.isObject() || jsonOrig.isArray()))
         {
             HTTPReply (400, "Unable to parse request", output, rpcJ);
             return;
         }
     }
 
-    // Parse id now so errors from here on will have the id
-    //
-    // VFALCO NOTE Except that "id" isn't included in the following errors.
-    //
-    Json::Value const& id = jsonRPC [jss::id];
-    Json::Value const& method = jsonRPC [jss::method];
-
-    if (! method) {
-        HTTPReply (400, "Null method", output, rpcJ);
-        return;
-    }
-
-    if (!method.isString ()) {
-        HTTPReply (400, "method is not string", output, rpcJ);
-        return;
-    }
-
-    /* ---------------------------------------------------------------------- */
-    auto role = Role::FORBID;
-    auto required = RPC::roleRequired(id.asString());
-    if (jsonRPC.isMember(jss::params) &&
-        jsonRPC[jss::params].isArray() &&
-        jsonRPC[jss::params].size() > 0 &&
-        jsonRPC[jss::params][Json::UInt(0)].isObject())
+    auto size = jsonOrig.isArray() ? jsonOrig.size() : 1;
+    for (unsigned i = 0; i < size; ++i)
     {
-        role = requestRole(required, port, jsonRPC[jss::params][Json::UInt(0)],
-            remoteIPAddress, user);
-    }
-    else
-    {
-        role = requestRole(required, port, Json::objectValue,
-            remoteIPAddress, user);
-    }
+        Json::Value const& jsonRPC = jsonOrig.isArray() ? jsonOrig[i] : jsonOrig;
+        // Parse id now so errors from here on will have the id
+        //
+        // VFALCO NOTE Except that "id" isn't included in the following errors.
+        //
+        Json::Value const& id = jsonRPC [jss::id];
+        Json::Value const& method = jsonRPC [jss::method];
 
-    /**
-     * Clear header-assigned values if not positively identified from a
-     * secure_gateway.
-     */
-    if (role != Role::IDENTIFIED)
-    {
-        forwardedFor.clear();
-        user.clear();
-    }
-
-    Resource::Consumer usage;
-    if (isUnlimited(role))
-    {
-        usage = m_resourceManager.newUnlimitedEndpoint(
-            remoteIPAddress.to_string());
-    }
-    else
-    {
-        usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
-        if (usage.disconnect())
-        {
-            HTTPReply(503, "Server is overloaded", output, rpcJ);
-            return;
+        if (! method) {
+            HTTPReply (400, "Null method", output, rpcJ);
+            continue;
         }
-    }
 
-    std::string strMethod = method.asString ();
-    if (strMethod.empty())
-    {
-        HTTPReply (400, "method is empty", output, rpcJ);
-        return;
-    }
+        if (!method.isString ()) {
+            HTTPReply (400, "method is not string", output, rpcJ);
+            continue;
+        }
 
-    // Extract request parameters from the request Json as `params`.
-    //
-    // If the field "params" is empty, `params` is an empty object.
-    //
-    // Otherwise, that field must be an array of length 1 (why?)
-    // and we take that first entry and validate that it's an object.
-    Json::Value params = jsonRPC [jss::params];
+        /* ---------------------------------------------------------------------- */
+        auto role = Role::FORBID;
+        auto required = RPC::roleRequired(id.asString());
+        if (jsonRPC.isMember(jss::params) &&
+            jsonRPC[jss::params].isArray() &&
+            jsonRPC[jss::params].size() > 0 &&
+            jsonRPC[jss::params][Json::UInt(0)].isObject())
+        {
+            role = requestRole(required, port, jsonRPC[jss::params][Json::UInt(0)],
+                remoteIPAddress, user);
+        }
+        else
+        {
+            role = requestRole(required, port, Json::objectValue,
+                remoteIPAddress, user);
+        }
 
-    if (! params)
-        params = Json::Value (Json::objectValue);
+        /**
+         * Clear header-assigned values if not positively identified from a
+         * secure_gateway.
+         */
+        if (role != Role::IDENTIFIED)
+        {
+            forwardedFor.clear();
+            user.clear();
+        }
 
-    else if (!params.isArray () || params.size() != 1)
-    {
-        HTTPReply (400, "params unparseable", output, rpcJ);
-        return;
-    }
-    else
-    {
-        params = std::move (params[0u]);
-        if (!params.isObject())
+        Resource::Consumer usage;
+        if (isUnlimited(role))
+        {
+            usage = m_resourceManager.newUnlimitedEndpoint(
+                remoteIPAddress.to_string());
+        }
+        else
+        {
+            usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
+            if (usage.disconnect())
+            {
+                HTTPReply(503, "Server is overloaded", output, rpcJ);
+                continue;
+            }
+        }
+
+        std::string strMethod = method.asString ();
+        if (strMethod.empty())
+        {
+            HTTPReply (400, "method is empty", output, rpcJ);
+            continue;
+        }
+
+        // Extract request parameters from the request Json as `params`.
+        //
+        // If the field "params" is empty, `params` is an empty object.
+        //
+        // Otherwise, that field must be an array of length 1 (why?)
+        // and we take that first entry and validate that it's an object.
+        Json::Value params = jsonRPC [jss::params];
+
+        if (! params)
+            params = Json::Value (Json::objectValue);
+
+        else if (!params.isArray () || params.size() != 1)
         {
             HTTPReply (400, "params unparseable", output, rpcJ);
-            return;
+            continue;
         }
-    }
-
-    // VFALCO TODO Shouldn't we handle this earlier?
-    //
-    if (role == Role::FORBID)
-    {
-        // VFALCO TODO Needs implementing
-        // FIXME Needs implementing
-        // XXX This needs rate limiting to prevent brute forcing password.
-        HTTPReply (403, "Forbidden", output, rpcJ);
-        return;
-    }
-
-    JLOG(m_journal.debug()) << "Query: " << strMethod << params;
-
-    // Provide the JSON-RPC method as the field "command" in the request.
-    params[jss::command] = strMethod;
-    JLOG (m_journal.trace())
-        << "doRpcCommand:" << strMethod << ":" << params;
-
-    Resource::Charge loadType = Resource::feeReferenceRPC;
-    auto const start (std::chrono::high_resolution_clock::now ());
-
-    RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
-        app_.getLedgerMaster(), usage, role, coro, InfoSub::pointer(),
-        {user, forwardedFor}};
-    Json::Value result;
-    RPC::doCommand (context, result);
-
-    // Always report "status".  On an error report the request as received.
-    if (result.isMember (jss::error))
-    {
-        result[jss::status] = jss::error;
-        result[jss::request] = params;
-        JLOG (m_journal.debug())  <<
-            "rpcError: " << result [jss::error] <<
-            ": " << result [jss::error_message];
-    }
-    else
-    {
-        result[jss::status]  = jss::success;
-    }
-
-    Json::Value reply (Json::objectValue);
-    reply[jss::result] = std::move (result);
-    if (jsonRPC.isMember(jss::jsonrpc))
-        reply[jss::jsonrpc] = jsonRPC[jss::jsonrpc];
-    if (jsonRPC.isMember(jss::ripplerpc))
-        reply[jss::ripplerpc] = jsonRPC[jss::ripplerpc];
-    if (jsonRPC.isMember(jss::id))
-        reply[jss::id] = jsonRPC[jss::id];
-    auto response = to_string (reply);
-
-    rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
-        std::chrono::duration_cast <std::chrono::milliseconds> (
-            std::chrono::high_resolution_clock::now () - start)));
-    ++rpc_requests_;
-    rpc_size_.notify (static_cast <beast::insight::Event::value_type> (
-        response.size ()));
-
-    response += '\n';
-    usage.charge (loadType);
-
-    if (auto stream = m_journal.debug())
-    {
-        static const int maxSize = 10000;
-        if (response.size() <= maxSize)
-            stream << "Reply: " << response;
         else
-            stream << "Reply: " << response.substr (0, maxSize);
-    }
+        {
+            params = std::move (params[0u]);
+            if (!params.isObject())
+            {
+                HTTPReply (400, "params unparseable", output, rpcJ);
+                continue;
+            }
+        }
 
-    HTTPReply (200, response, output, rpcJ);
+        // VFALCO TODO Shouldn't we handle this earlier?
+        //
+        if (role == Role::FORBID)
+        {
+            // VFALCO TODO Needs implementing
+            // FIXME Needs implementing
+            // XXX This needs rate limiting to prevent brute forcing password.
+            HTTPReply (403, "Forbidden", output, rpcJ);
+            continue;
+        }
+
+        JLOG(m_journal.debug()) << "Query: " << strMethod << params;
+
+        // Provide the JSON-RPC method as the field "command" in the request.
+        params[jss::command] = strMethod;
+        JLOG (m_journal.trace())
+            << "doRpcCommand:" << strMethod << ":" << params;
+
+        Resource::Charge loadType = Resource::feeReferenceRPC;
+        auto const start (std::chrono::high_resolution_clock::now ());
+
+        RPC::Context context {m_journal, params, app_, loadType, m_networkOPs,
+            app_.getLedgerMaster(), usage, role, coro, InfoSub::pointer(),
+            {user, forwardedFor}};
+        Json::Value result;
+        RPC::doCommand (context, result);
+
+        // Always report "status".  On an error report the request as received.
+        if (result.isMember (jss::error))
+        {
+            result[jss::status] = jss::error;
+            result[jss::request] = params;
+            JLOG (m_journal.debug())  <<
+                "rpcError: " << result [jss::error] <<
+                ": " << result [jss::error_message];
+        }
+        else
+        {
+            result[jss::status]  = jss::success;
+        }
+
+        Json::Value reply (Json::objectValue);
+        reply[jss::result] = std::move (result);
+        if (jsonRPC.isMember(jss::jsonrpc))
+            reply[jss::jsonrpc] = jsonRPC[jss::jsonrpc];
+        if (jsonRPC.isMember(jss::ripplerpc))
+            reply[jss::ripplerpc] = jsonRPC[jss::ripplerpc];
+        if (jsonRPC.isMember(jss::id))
+            reply[jss::id] = jsonRPC[jss::id];
+        auto response = to_string (reply);
+
+        rpc_time_.notify (static_cast <beast::insight::Event::value_type> (
+            std::chrono::duration_cast <std::chrono::milliseconds> (
+                std::chrono::high_resolution_clock::now () - start)));
+        ++rpc_requests_;
+        rpc_size_.notify (static_cast <beast::insight::Event::value_type> (
+            response.size ()));
+
+        response += '\n';
+        usage.charge (loadType);
+
+        if (auto stream = m_journal.debug())
+        {
+            static const int maxSize = 10000;
+            if (response.size() <= maxSize)
+                stream << "Reply: " << response;
+            else
+                stream << "Reply: " << response.substr (0, maxSize);
+        }
+
+        HTTPReply (200, response, output, rpcJ);
+    }
 }
 
 //------------------------------------------------------------------------------

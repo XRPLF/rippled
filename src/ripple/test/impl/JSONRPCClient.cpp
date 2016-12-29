@@ -147,6 +147,43 @@ public:
         return jv;
     }
 
+    Json::Value
+    invoke(Json::Value const& cmd) override
+    {
+        using namespace beast::http;
+        using namespace boost::asio;
+        using namespace std::string_literals;
+
+        request_v1<string_body> req;
+        req.method = "POST";
+        req.url = "/";
+        req.version = 11;
+        req.headers.insert("Content-Type", "application/json; charset=UTF-8");
+        req.headers.insert("Host",
+            ep_.address().to_string() + ":" + std::to_string(ep_.port()));
+        req.body = to_string(cmd);
+        prepare(req);
+        write(stream_, req);
+
+        response_v1<streambuf_body> res;
+        Json::Reader jr;
+        Json::Value jv;
+        if (cmd.isArray())
+        {
+            for (unsigned i = 0; i < cmd.size(); ++i)
+            {
+                read(stream_, bin_, res);
+                jr.parse(buffer_string(res.body.data()), jv[i]);
+            }
+        }
+        else
+        {
+            read(stream_, bin_, res);
+            jr.parse(buffer_string(res.body.data()), jv);
+        }
+        return jv;
+    }
+
     unsigned version() const override
     {
         return rpc_version_;
