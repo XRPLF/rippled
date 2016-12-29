@@ -105,6 +105,9 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 INPUT                  = \
 \
+    ../src/ripple/app/misc/TxQ.h \
+    ../src/ripple/app/tx/apply.h \
+    ../src/ripple/app/tx/applySteps.h \
     ../src/ripple/protocol/STObject.h \
     ../src/ripple/protocol/JsonFields.h \
     ../src/test/jtx/AbstractClient.h \

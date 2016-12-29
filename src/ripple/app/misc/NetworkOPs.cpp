@@ -1609,8 +1609,8 @@ NetworkOPsImp::ServerFeeSummary::operator !=(NetworkOPsImp::ServerFeeSummary con
 
     if(em && b.em)
     {
-        return (em->minFeeLevel != b.em->minFeeLevel ||
-                em->expFeeLevel != b.em->expFeeLevel ||
+        return (em->minProcessingFeeLevel != b.em->minProcessingFeeLevel ||
+                em->openLedgerFeeLevel != b.em->openLedgerFeeLevel ||
                 em->referenceFeeLevel != b.em->referenceFeeLevel);
     }
 
@@ -1653,12 +1653,12 @@ void NetworkOPsImp::pubServer ()
         {
             auto const loadFactor =
                 std::max(static_cast<std::uint64_t>(f.loadFactorServer),
-                    mulDiv(f.em->expFeeLevel, f.loadBaseServer,
+                    mulDiv(f.em->openLedgerFeeLevel, f.loadBaseServer,
                         f.em->referenceFeeLevel).second);
 
             jvObj [jss::load_factor]   = clamp(loadFactor);
-            jvObj [jss::load_factor_fee_escalation] = clamp(f.em->expFeeLevel);
-            jvObj [jss::load_factor_fee_queue] = clamp(f.em->minFeeLevel);
+            jvObj [jss::load_factor_fee_escalation] = clamp(f.em->openLedgerFeeLevel);
+            jvObj [jss::load_factor_fee_queue] = clamp(f.em->minProcessingFeeLevel);
             jvObj [jss::load_factor_fee_reference]
                 = clamp(f.em->referenceFeeLevel);
 
@@ -2195,7 +2195,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
     auto const loadFactorServer = app_.getFeeTrack().getLoadFactor();
     auto const loadBaseServer = app_.getFeeTrack().getLoadBase();
     auto const loadFactorFeeEscalation = escalationMetrics ?
-        escalationMetrics->expFeeLevel : 1;
+        escalationMetrics->openLedgerFeeLevel : 1;
     auto const loadBaseFeeEscalation = escalationMetrics ?
         escalationMetrics->referenceFeeLevel : 1;
 
@@ -2221,7 +2221,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
                     max32, loadFactorFeeEscalation));
             info[jss::load_factor_fee_queue] =
                 static_cast<std::uint32_t> (std::min(
-                    max32, escalationMetrics->minFeeLevel));
+                    max32, escalationMetrics->minProcessingFeeLevel));
             info[jss::load_factor_fee_reference] =
                 static_cast<std::uint32_t> (std::min(
                     max32, loadBaseFeeEscalation));
@@ -2258,11 +2258,12 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
                 info[jss::load_factor_fee_escalation] =
                     static_cast<double> (loadFactorFeeEscalation) /
                         escalationMetrics->referenceFeeLevel;
-            if (escalationMetrics->minFeeLevel !=
+            if (escalationMetrics->minProcessingFeeLevel !=
                     escalationMetrics->referenceFeeLevel)
                 info[jss::load_factor_fee_queue] =
-                    static_cast<double> (escalationMetrics->minFeeLevel) /
-                        escalationMetrics->referenceFeeLevel;
+                    static_cast<double> (
+                        escalationMetrics->minProcessingFeeLevel) /
+                            escalationMetrics->referenceFeeLevel;
         }
     }
 

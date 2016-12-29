@@ -59,13 +59,13 @@ class TxQ_test : public beast::unit_test::suite
         BEAST_EXPECT(metrics.txQMaxSize == expectedMaxCount);
         BEAST_EXPECT(metrics.txInLedger == expectedInLedger);
         BEAST_EXPECT(metrics.txPerLedger == expectedPerLedger);
-        BEAST_EXPECT(metrics.minFeeLevel == expectedMinFeeLevel);
+        BEAST_EXPECT(metrics.minProcessingFeeLevel == expectedMinFeeLevel);
         BEAST_EXPECT(metrics.medFeeLevel == expectedMedFeeLevel);
         auto expectedCurFeeLevel = expectedInLedger > expectedPerLedger ?
             expectedMedFeeLevel * expectedInLedger * expectedInLedger /
                 (expectedPerLedger * expectedPerLedger) :
                     metrics.referenceFeeLevel;
-        BEAST_EXPECT(metrics.expFeeLevel == expectedCurFeeLevel);
+        BEAST_EXPECT(metrics.openLedgerFeeLevel == expectedCurFeeLevel);
     }
 
     void
@@ -91,7 +91,7 @@ class TxQ_test : public beast::unit_test::suite
             return fee(none);
 
         // Don't care about the overflow flag
-        return fee(mulDiv(metrics->expFeeLevel,
+        return fee(mulDiv(metrics->openLedgerFeeLevel,
             view.fees().base, metrics->referenceFeeLevel).second + 1);
     }
 
