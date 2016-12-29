@@ -52,7 +52,11 @@ public:
     virtual
     Json::Value
     invoke(std::string const& cmd,
-        Json::Value const& params = {}) = 0;
+        Json::Value const& params) = 0;
+
+    virtual
+    Json::Value
+    invoke(Json::Value const& cmd) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
     virtual unsigned version() const = 0;

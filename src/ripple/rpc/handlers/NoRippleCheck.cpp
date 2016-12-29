@@ -70,7 +70,7 @@ Json::Value doNoRippleCheck (RPC::Context& context)
         if (role == "gateway")
             roleGateway = true;
         else if (role != "user")
-        return RPC::invalid_field_message ("role");
+        return Json::Value{RPC::invalid_field_message("role")};
     }
 
     unsigned int limit;

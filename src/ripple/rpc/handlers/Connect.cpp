@@ -39,7 +39,7 @@ Json::Value doConnect (RPC::Context& context)
 {
     auto lock = make_lock(context.app.getMasterMutex());
     if (context.app.config().standalone())
-        return "cannot connect in standalone mode";
+        return Json::Value{"cannot connect in standalone mode"};
 
     if (!context.params.isMember (jss::ip))
         return RPC::missing_field_error (jss::ip);

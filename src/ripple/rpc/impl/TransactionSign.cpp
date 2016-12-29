@@ -829,7 +829,7 @@ static Json::Value checkMultiSignFields (Json::Value const& jvRequest)
     Json::Value const& tx_json (jvRequest [jss::tx_json]);
 
     if (!tx_json.isObject())
-        return RPC::invalid_field_message (jss::tx_json);
+        return Json::Value{RPC::invalid_field_message(jss::tx_json)};
 
     // There are a couple of additional fields we need to check before
     // we serialize.  If we serialize first then we generate less useful
