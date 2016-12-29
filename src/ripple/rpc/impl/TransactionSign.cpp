@@ -707,10 +707,10 @@ Json::Value checkFee (
         {
             auto const baseFee = ledger->fees().base;
             auto escalatedFee = mulDiv(
-                metrics->expFeeLevel, baseFee,
+                metrics->openLedgerFeeLevel, baseFee,
                     metrics->referenceFeeLevel).second;
             if (mulDiv(escalatedFee, metrics->referenceFeeLevel,
-                    baseFee).second < metrics->expFeeLevel)
+                    baseFee).second < metrics->openLedgerFeeLevel)
                 ++escalatedFee;
             fee = std::max(fee, escalatedFee);
         }

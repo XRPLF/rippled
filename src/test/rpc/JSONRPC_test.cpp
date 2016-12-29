@@ -2203,7 +2203,8 @@ public:
                 auto metrics = env.app().getTxQ().getMetrics(*env.current());
                 if (!BEAST_EXPECT(metrics))
                     break;
-                if (metrics->expFeeLevel > metrics->minFeeLevel)
+                if (metrics->openLedgerFeeLevel >
+                        metrics->minProcessingFeeLevel)
                     break;
                 env(noop(env.master));
             }
