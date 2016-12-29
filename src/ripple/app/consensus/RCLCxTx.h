@@ -69,38 +69,77 @@ public:
     //! The type that corresponds to a single transaction
     using Tx = RCLCxTx;
 
+    //< Provide a mutable view of a TxSet
+    class MutableTxSet
+    {
+        friend class RCLTxSet;
+        //! The SHAMap representing the transactions.
+        std::shared_ptr <SHAMap> map_;
+
+        MutableTxSet(RCLTxSet const & src)
+            : map_{ src.map_->snapShot(true) }
+        {
+
+        }
+
+        public:
+
+            /** Insert a new transaction into the set.
+
+            @param t The transaction to insert.
+            @return Whether the transaction took place.
+            */
+            bool
+            insert(Tx const& t)
+            {
+                return map_->addItem(
+                    SHAMapItem{ t.id(), t.tx_.peekData() },
+                    true, false);
+            }
+
+            /** Remove a transaction from the set.
+
+            @param entry The ID of the transaction to remove.
+            @return Whether the transaction was removed.
+            */
+            bool
+            erase(Tx::ID const& entry)
+            {
+                return map_->delItem(entry);
+            }
+    };
+
     /** Constructor
 
         @param m SHAMap to wrap
     */
-    RCLTxSet (std::shared_ptr<SHAMap> m) :
-        map_{ std::move(m) }
+    RCLTxSet (std::shared_ptr<SHAMap> m)
+        : map_{ std::move(m) }
     {
         assert(map_);
     }
 
-    /** Insert a new transaction into the set.
+    /** Constructor from a previosly created MutableTxSet
 
-        @param t The transaction to insert.
-        @return Whether the transaction took place.
-    */
-    bool
-    insert (Tx const& t)
+        @param m MutableTxSet that will become fixed
+     */
+    RCLTxSet(MutableTxSet const & m)
+        : map_{m.map_->snapShot(false)}
     {
-        return map_->addItem (
-            SHAMapItem {t.id(), t.tx_.peekData()},
-            true, false);
+
     }
 
-    /** Remove a transaction from the set.
+    /** Get a mutable view of the tx set
 
-        @param entry The ID of the transaction to remove.
-        @return Whether the transaction was removed.
+        When updating our position on disputed transactions
+        during consensus, we need a mutable version of the set.
+
+        @return A mutable view of this tx set
     */
-    bool
-    erase (Tx::ID const& entry)
+    MutableTxSet
+    mutableSet() const
     {
-        return map_->delItem (entry);
+        return MutableTxSet(*this);
     }
 
     /** Test if a transaction is in the set.

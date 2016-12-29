@@ -78,8 +78,6 @@ namespace ripple {
     // Type of individual transaction comprising the TxSet
     using Tx = Tx;
 
-    bool insert(Tx const &);
-    bool erase(Tx::ID const &);
     bool exists(Tx::ID const &) const;
     // Return value should have semantics like Tx const *
     Tx const * find(Tx::ID const &) const ;
@@ -88,6 +86,21 @@ namespace ripple {
     // Return set of transactions that are not common to this set or other
     // boolean indicates which set it was in
     std::map<Tx::ID, bool> compare(TxSet const & other) const;
+
+    // A mutable view of transactions
+    struct MutableTxSet
+    {
+    bool insert(Tx const &);
+    bool erase(Tx::ID const &);
+    };
+    // get a mutable view of the transactions
+    MutablTxSet mutableSet() const;
+    // Construct from a mutable view.
+    TxSet(MutableTxSet const &);
+
+    // Alternatively, if the TxSet is itself mutable
+    // just alias MutableTxSet = TxSet
+
   };
 
   // Agreed upon state that consensus transactions will modify
@@ -1456,27 +1469,32 @@ void Consensus<Derived, Traits>::updateOurPositions ()
 
     // Update votes on disputed transactions
     {
+        boost::optional<typename TxSet_t::MutableTxSet> mutableSet;
         for (auto& it : disputes_)
         {
+
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
             if (it.second.updateVote (closePercent_, proposing_))
             {
-                if (!ourNewSet)
-                    ourNewSet = *ourSet_;
+                if (!mutableSet)
+                    mutableSet = ourSet_->mutableSet();
 
                 if (it.second.getOurVote ())
                 {
                     // now a yes
-                    ourNewSet->insert (it.second.tx());
+                    mutableSet->insert (it.second.tx());
                 }
                 else
                 {
                     // now a no
-                    ourNewSet->erase (it.first);
+                    mutableSet->erase (it.first);
                 }
             }
         }
+
+        if(mutableSet)
+            ourNewSet.emplace(*mutableSet);
     }
 
     int neededWeight;
