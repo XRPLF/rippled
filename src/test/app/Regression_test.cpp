@@ -16,7 +16,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>

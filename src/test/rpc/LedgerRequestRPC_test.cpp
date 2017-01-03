@@ -20,7 +20,7 @@
 #include <BeastConfig.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/JsonFields.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 

@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {

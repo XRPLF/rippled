@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/BasicConfig.h>
-#include <test/support/TestSuite.h>
+#include <test/jtx/TestSuite.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/ClusterNode.h>
 
