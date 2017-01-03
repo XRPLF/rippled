@@ -24,7 +24,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <ripple/protocol/JsonFields.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {

@@ -21,7 +21,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 
 namespace ripple {

@@ -30,7 +30,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <chrono>
 #include <condition_variable>

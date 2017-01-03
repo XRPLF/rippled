@@ -19,7 +19,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
 #include <ripple/protocol/types.h>
-#include <test/support/jtx.h>
+#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <cstdlib>
 #include <memory>
