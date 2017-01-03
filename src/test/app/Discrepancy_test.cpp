@@ -25,10 +25,6 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/ledger/tests/PathSet.h>
-#include <boost/filesystem.hpp>
-#include <boost/scope_exit.hpp>
-#include <ripple/basics/StringUtilities.h>
-#include <fstream>
 
 namespace ripple {
 
