@@ -966,6 +966,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/server', '.cpp'))
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
     append_sources(result, *list_sources('src/test/jtx', '.cpp'))
+    append_sources(result, *list_sources('src/test/csf', '.cpp'))    
 
     
     if use_shp(toolchain):
@@ -1018,7 +1019,7 @@ def get_unity_sources(toolchain):
         'src/test/unity/app_test_unity.cpp',
         'src/test/unity/basics_test_unity.cpp',
         'src/test/unity/beast_test_unity.cpp',
-	'src/test/unity/consensus_test_unity.cpp',
+    	'src/test/unity/consensus_test_unity.cpp',
         'src/test/unity/core_test_unity.cpp',
         'src/test/unity/conditions_test_unity.cpp',
         'src/test/unity/json_test_unity.cpp',
@@ -1030,7 +1031,8 @@ def get_unity_sources(toolchain):
         'src/test/unity/rpc_test_unity.cpp',
         'src/test/unity/server_test_unity.cpp',
         'src/test/unity/shamap_test_unity.cpp',
-        'src/test/unity/support_unity.cpp'
+        'src/test/unity/jtx_unity.cpp',
+        'src/test/unity/csf_unity.cpp'
     )
 
     if use_shp(toolchain):

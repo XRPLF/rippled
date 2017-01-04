@@ -238,9 +238,10 @@ public:
     //! Clock type for measuring time within the consensus code
     using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
 
-    Consensus(Consensus const&) = delete;
+    Consensus(Consensus &&) = default;
+    Consensus& operator=(Consensus &&) = default;
 
-    //! Deleted copy operator
+    Consensus(Consensus const&) = delete;
     Consensus& operator=(Consensus const&) = delete;
 
     /** Constructor.
@@ -326,7 +327,7 @@ public:
     typename Ledger_t::ID
     LCL()
     {
-       std::lock_guard<std::recursive_mutex> _(lock_);
+       std::lock_guard<std::recursive_mutex> _(*lock_);
        return prevLedgerID_;
     }
 
@@ -540,7 +541,8 @@ private:
     }
 
 
-    mutable std::recursive_mutex lock_;
+    // TODO: Move this to clients
+    mutable std::unique_ptr<std::recursive_mutex> lock_;
 
     //-------------------------------------------------------------------------
     // Consensus state variables
@@ -626,7 +628,8 @@ template <class Derived, class Traits>
 Consensus<Derived, Traits>::Consensus (
         clock_type const & clock,
         beast::Journal journal)
-    : clock_(clock)
+    : lock_(std::make_unique<std::recursive_mutex>())
+    , clock_(clock)
     , j_(journal)
 {
     JLOG (j_.debug()) << "Creating consensus object";
@@ -639,7 +642,7 @@ Consensus<Derived, Traits>::startRound (
     typename Ledger_t::ID const& prevLCLHash,
     Ledger_t const & prevLedger)
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard<std::recursive_mutex> _(*lock_);
 
     if (state_ == State::processing)
     {
@@ -733,7 +736,7 @@ Consensus<Derived, Traits>::peerProposal (
 {
     auto const peerID = newProposal.nodeID ();
 
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard<std::recursive_mutex> _(*lock_);
 
     now_ = now;
 
@@ -833,7 +836,7 @@ template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::timerEntry (NetClock::time_point const& now)
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard<std::recursive_mutex> _(*lock_);
 
     now_ = now;
 
@@ -885,7 +888,7 @@ Consensus<Derived, Traits>::gotTxSet (
     NetClock::time_point const& now,
     TxSet_t const& txSet)
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard<std::recursive_mutex> _(*lock_);
 
     now_ = now;
 
@@ -909,7 +912,7 @@ Consensus<Derived, Traits>::simulate (
     NetClock::time_point const& now,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard<std::recursive_mutex> _(*lock_);
 
     JLOG (j_.info()) << "Simulating consensus";
     now_ = now;
@@ -927,7 +930,7 @@ Consensus<Derived, Traits>::getJson (bool full) const
     using Int = Json::Value::Int;
 
     Json::Value ret (Json::objectValue);
-    std::lock_guard<std::recursive_mutex> _(lock_);
+    std::lock_guard<std::recursive_mutex> _(*lock_);
 
     ret["proposing"] = proposing_;
     ret["validating"] = validating_;
@@ -1733,7 +1736,7 @@ Consensus<Derived, Traits>::accept (TxSet_t const& set)
     // we have accepted a new ledger
     bool correct;
     {
-        std::lock_guard<std::recursive_mutex> _(lock_);
+        std::lock_guard<std::recursive_mutex> _(*lock_);
         validating_ = validatingOut;
         state_ = State::accepted;
         correct = haveCorrectLCL_;

@@ -218,7 +218,8 @@ resource_test_unity.cpp
 rpc_test_unity.cpp
 server_test_unity.cpp
 shamap_test_unity.cpp
-support_unity.cpp)
+jtx_unity.cpp
+csf_unity.cpp)
 
 list(APPEND rippled_src_unity ${beast_unity_srcs} ${ripple_unity_srcs} ${test_unity_srcs})
 
@@ -305,7 +306,8 @@ foreach(curdir
         rpc
         server
         shamap
-        jtx)
+        jtx
+        csf)
     file(GLOB_RECURSE cursrcs src/test/${curdir}/*.cpp)
     list(APPEND test_srcs "${cursrcs}")
 endforeach()

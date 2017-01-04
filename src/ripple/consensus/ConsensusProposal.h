@@ -242,5 +242,21 @@ private:
     NodeID_t nodeID_;
 
 };
+
+template <class NodeID_t,
+    class LedgerID_t,
+    class Position_t>
+bool
+operator==(ConsensusProposal<NodeID_t, LedgerID_t, Position_t> const & a,
+           ConsensusProposal<NodeID_t, LedgerID_t, Position_t> const & b)
+{
+    return a.nodeID() == b.nodeID() &&
+           a.proposeSeq() == b.proposeSeq() &&
+           a.prevLedger() == b.prevLedger() &&
+           a.position() == b.position() &&
+           a.closeTime() == b.closeTime() &&
+           a.seenTime() == b.seenTime();
+}
+
 }
 #endif

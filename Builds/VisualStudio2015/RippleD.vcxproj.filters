@@ -454,6 +454,12 @@
     <Filter Include="test\core">
       <UniqueIdentifier>{26D7F11B-5BF1-54BC-8BF5-D45F68A6A408}</UniqueIdentifier>
     </Filter>
+    <Filter Include="test\csf">
+      <UniqueIdentifier>{8E0BEDEF-0473-BB6D-7AD3-877644873E62}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test\csf\impl">
+      <UniqueIdentifier>{2B6B8B80-5419-52D9-8CB9-758C3FB7FD0A}</UniqueIdentifier>
+    </Filter>
     <Filter Include="test\json">
       <UniqueIdentifier>{87249A3B-D8F5-1A8C-6C1D-F1CDCCF5242B}</UniqueIdentifier>
     </Filter>
@@ -5163,6 +5169,33 @@
     <ClCompile Include="..\..\src\test\core\Workers_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\test\csf.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\BasicNetwork.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\test\csf\BasicNetwork_test.cpp">
+      <Filter>test\csf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\csf\impl\UNL.cpp">
+      <Filter>test\csf\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\test\csf\Ledger.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Peer.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Sim.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\Tx.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\test\csf\UNL.h">
+      <Filter>test\csf</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\test\json\json_value_test.cpp">
       <Filter>test\json</Filter>
     </ClCompile>
@@ -5193,12 +5226,6 @@
     <ClInclude Include="..\..\src\test\jtx\balance.h">
       <Filter>test\jtx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\test\jtx\BasicNetwork.h">
-      <Filter>test\jtx</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\test\jtx\BasicNetwork_test.cpp">
-      <Filter>test\jtx</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\test\jtx\basic_prop.h">
       <Filter>test\jtx</Filter>
     </ClInclude>
@@ -5598,7 +5625,13 @@
     <ClCompile Include="..\..\src\test\unity\core_test_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\csf_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\unity\json_test_unity.cpp">
+      <Filter>test\unity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\unity\jtx_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\ledger_test_unity.cpp">
@@ -5626,9 +5659,6 @@
       <Filter>test\unity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\unity\shamap_test_unity.cpp">
-      <Filter>test\unity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\test\unity\support_unity.cpp">
       <Filter>test\unity</Filter>
     </ClCompile>
   </ItemGroup>
