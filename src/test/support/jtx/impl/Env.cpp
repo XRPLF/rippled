@@ -170,7 +170,8 @@ Env::AppBundle::AppBundle(beast::unit_test::suite& suite,
         std::move(logs), std::move(timeKeeper_));
     app = owned.get();
     app->logs().threshold(beast::severities::kError);
-    app->setup();
+    if(! app->setup())
+        Throw<std::runtime_error> ("Env::AppBundle: setup failed");
     timeKeeper->set(
         app->getLedgerMaster().getClosedLedger()->info().closeTime);
     app->doStart();
