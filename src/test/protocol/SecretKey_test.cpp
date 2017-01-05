@@ -34,14 +34,6 @@ namespace ripple {
 
 class SecretKey_test : public beast::unit_test::suite
 {
-    static
-    bool equal(SecretKey const& lhs, SecretKey const& rhs)
-    {
-        return std::equal (
-            lhs.data(), lhs.data() + lhs.size(),
-            rhs.data(), rhs.data() + rhs.size());
-    }
-
 public:
     using blob = std::vector<std::uint8_t>;
 
@@ -332,7 +324,7 @@ public:
                 "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(equal (sk1, *sk2));
+            BEAST_EXPECT(sk1 == *sk2);
         }
 
         {
@@ -345,7 +337,7 @@ public:
                 "paKv46LztLqK3GaKz1rG2nQGN6M4JLyRtxFBYFTw4wAVHtGys36");
             BEAST_EXPECT(sk2);
 
-            BEAST_EXPECT(equal (sk1, *sk2));
+            BEAST_EXPECT(sk1 == *sk2);
         }
 
         // Try converting short, long and malformed data
@@ -416,11 +408,11 @@ public:
 
             auto const ski = parseBase58<SecretKey> (
                 TOKEN_NODE_PRIVATE, si);
-            BEAST_EXPECT(ski && equal(keys[i], *ski));
+            BEAST_EXPECT(ski && keys[i] == *ski);
 
             for (std::size_t j = i; j != keys.size(); ++j)
             {
-                BEAST_EXPECT(equal (keys[i], keys[j]) == (i == j));
+                BEAST_EXPECT((keys[i] == keys[j]) == (i == j));
 
                 auto const sj = toBase58 (
                     TokenType::TOKEN_NODE_PRIVATE,
@@ -430,9 +422,9 @@ public:
 
                 auto const skj = parseBase58<SecretKey> (
                     TOKEN_NODE_PRIVATE, sj);
-                BEAST_EXPECT(skj && equal(keys[j], *skj));
+                BEAST_EXPECT(skj && keys[j] == *skj);
 
-                BEAST_EXPECT(equal (*ski, *skj) == (i == j));
+                BEAST_EXPECT((*ski == *skj) == (i == j));
             }
         }
     }
@@ -446,11 +438,12 @@ public:
             generateSeed ("masterpassphrase"));
 
         SecretKey sk2 (sk1);
-        BEAST_EXPECT(equal (sk1, sk2));
+        BEAST_EXPECT(sk1 == sk2);
 
         SecretKey sk3;
+        BEAST_EXPECT(sk3 != sk2);
         sk3 = sk2;
-        BEAST_EXPECT(equal (sk3, sk2));
+        BEAST_EXPECT(sk3 == sk2);
     }
 
     void run() override
