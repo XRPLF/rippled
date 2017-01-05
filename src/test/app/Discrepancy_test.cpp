@@ -20,11 +20,11 @@
 #include <BeastConfig.h>
 #include <test/support/jtx.h>
 #include <test/support/jtx/Env.h>
+#include <test/support/PathSet.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/protocol/SField.h>
-#include <ripple/ledger/tests/PathSet.h>
 
 namespace ripple {
 
