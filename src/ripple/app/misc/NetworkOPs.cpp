@@ -577,11 +577,13 @@ static std::array<char const*, 5> const stateNames {{
     "tracking",
     "full"}};
 
+#ifndef __INTELLISENSE__
 static_assert (NetworkOPs::omDISCONNECTED == 0, "");
 static_assert (NetworkOPs::omCONNECTED == 1, "");
 static_assert (NetworkOPs::omSYNCING == 2, "");
 static_assert (NetworkOPs::omTRACKING == 3, "");
 static_assert (NetworkOPs::omFULL == 4, "");
+#endif
 
 std::array<char const*, 5> const NetworkOPsImp::states_ = stateNames;
 

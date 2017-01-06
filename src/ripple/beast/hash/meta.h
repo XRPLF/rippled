@@ -39,8 +39,10 @@ struct static_and<>
 {
 };
 
+#ifndef __INTELLISENSE__
 static_assert( static_and<true, true, true>::value, "");
 static_assert(!static_and<true, false, true>::value, "");
+#endif
 
 template <std::size_t ...>
 struct static_sum;
@@ -58,7 +60,9 @@ struct static_sum<>
 {
 };
 
+#ifndef __INTELLISENSE__
 static_assert(static_sum<5, 2, 17, 0>::value == 24, "");
+#endif
 
 template <class T, class U>
 struct enable_if_lvalue

@@ -40,12 +40,14 @@ enum class endian
 #endif
 };
 
+#ifndef __INTELLISENSE__
 static_assert(endian::native == endian::little ||
               endian::native == endian::big,
               "endian::native shall be one of endian::little or endian::big");
 
 static_assert(endian::big != endian::little,
               "endian::big and endian::little shall have different values");
+#endif
 
 } // beast
 

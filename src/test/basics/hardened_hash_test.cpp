@@ -170,8 +170,10 @@ public:
 
 using sha256_t = unsigned_integer <256, std::size_t>;
 
+#ifndef __INTELLISENSE__
 static_assert (sha256_t::bits == 256,
     "sha256_t must have 256 bits");
+#endif
 
 } // ripple
 

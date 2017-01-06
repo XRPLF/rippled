@@ -28,6 +28,7 @@
 // Some basic tests, to keep an eye on things and make sure these types work ok
 // on all platforms.
 
+#ifndef __INTELLISENSE__
 static_assert (sizeof (std::intptr_t) == sizeof (void*), "std::intptr_t must be the same size as void*");
 
 static_assert (sizeof (std::int8_t) == 1,   "std::int8_t must be exactly 1 byte!");
@@ -39,6 +40,7 @@ static_assert (sizeof (std::uint8_t) == 1,  "std::uint8_t must be exactly 1 byte
 static_assert (sizeof (std::uint16_t) == 2, "std::uint16_t must be exactly 2 bytes!");
 static_assert (sizeof (std::uint32_t) == 4, "std::uint32_t must be exactly 4 bytes!");
 static_assert (sizeof (std::uint64_t) == 8, "std::uint64_t must be exactly 8 bytes!");
+#endif
 
 namespace beast
 {
