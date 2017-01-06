@@ -1264,8 +1264,9 @@ rpcClient(std::vector<std::string> const& args,
             ServerHandler::Setup setup;
             try
             {
-                std::stringstream ss;
-                setup = setup_ServerHandler(config, ss);
+                setup = setup_ServerHandler(
+                    config,
+                    beast::logstream { logs.journal ("HTTPClient").warn() });
             }
             catch (std::exception const&)
             {
@@ -1396,10 +1397,12 @@ void fromNetwork (
     Logs& logs,
     std::function<void (Json::Value const& jvInput)> callbackFuncP)
 {
+    auto j = logs.journal ("HTTPClient");
+
     // Connect to localhost
     if (!quiet)
     {
-        std::cerr << (bSSL ? "Securely connecting to " : "Connecting to ") <<
+        JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") <<
             strIp << ":" << iPort << std::endl;
     }
 
@@ -1415,8 +1418,6 @@ void fromNetwork (
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
     using namespace std::chrono_literals;
     auto constexpr RPC_NOTIFY = 10min;
-
-    auto j = logs.journal ("HTTPClient");
 
     HTTPClient::request (
         bSSL,
@@ -1434,7 +1435,7 @@ void fromNetwork (
         std::bind (&RPCCallImp::onResponse, callbackFuncP,
                    std::placeholders::_1, std::placeholders::_2,
                    std::placeholders::_3, j),
-        logs);
+        j);
 }
 
 } // RPCCall

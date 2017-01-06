@@ -105,14 +105,14 @@ public:
     HTTPClientImp (boost::asio::io_service& io_service,
         const unsigned short port,
         std::size_t responseMax,
-        Logs& l)
+        beast::Journal& j)
         : mSocket (io_service, httpClientSSLContext->context ())
         , mResolver (io_service)
         , mHeader (maxClientHeaderBytes)
         , mPort (port)
         , mResponseMax (responseMax)
         , mDeadline (io_service)
-        , j_ (l.journal ("HTTPClient"))
+        , j_ (j)
     {
         if (!httpClientSSLContext->sslVerify())
             mSocket.SSLSocket ().set_verify_mode (boost::asio::ssl::verify_none);
@@ -540,10 +540,10 @@ void HTTPClient::get (
     std::chrono::seconds timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete,
-    Logs& l)
+    beast::Journal& j)
 {
     auto client = std::make_shared<HTTPClientImp> (
-        io_service, port, responseMax, l);
+        io_service, port, responseMax, j);
     client->get (bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -557,12 +557,12 @@ void HTTPClient::get (
     std::chrono::seconds timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete,
-    Logs& l)
+    beast::Journal& j)
 {
     std::deque<std::string> deqSites (1, strSite);
 
     auto client = std::make_shared<HTTPClientImp> (
-        io_service, port, responseMax, l);
+        io_service, port, responseMax, j);
     client->get (bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -576,12 +576,12 @@ void HTTPClient::request (
     std::chrono::seconds timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         std::string const& strData)> complete,
-    Logs& l)
+    beast::Journal& j)
 {
     std::deque<std::string> deqSites (1, strSite);
 
     auto client = std::make_shared<HTTPClientImp> (
-        io_service, port, responseMax, l);
+        io_service, port, responseMax, j);
     client->request (bSSL, deqSites, setRequest, timeout, complete);
 }
 

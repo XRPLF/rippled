@@ -1197,7 +1197,9 @@ bool ApplicationImp::setup()
     }
 
     {
-        auto setup = setup_ServerHandler(*config_, std::cerr);
+        auto setup = setup_ServerHandler(
+            *config_,
+            beast::logstream { m_journal.error() });
         setup.makeContexts();
         serverHandler_->setup (setup, m_journal);
     }

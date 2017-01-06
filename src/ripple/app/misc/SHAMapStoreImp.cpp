@@ -459,7 +459,7 @@ SHAMapStoreImp::dbPaths()
     {
         if (! boost::filesystem::is_directory (dbPath))
         {
-            std::cerr << "node db path must be a directory. "
+            journal_.error() << "node db path must be a directory. "
                     << dbPath.string();
             Throw<std::runtime_error> (
                     "node db path must be a directory.");
@@ -494,7 +494,7 @@ SHAMapStoreImp::dbPaths()
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
-        std::cerr << "state db error: " << std::endl
+        journal_.error() << "state db error: " << std::endl
                 << "  writableDbExists " << writableDbExists
                 << " archiveDbExists " << archiveDbExists << std::endl
                 << "  writableDb '" << state.writableDb

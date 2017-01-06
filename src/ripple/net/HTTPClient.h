@@ -48,7 +48,7 @@ public:
         std::size_t responseMax,
         std::chrono::seconds timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
-        Logs& l);
+        beast::Journal& j);
 
     static void get (
         bool bSSL,
@@ -59,7 +59,7 @@ public:
         std::size_t responseMax,
         std::chrono::seconds timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
-        Logs& l);
+        beast::Journal& j);
 
     static void request (
         bool bSSL,
@@ -70,7 +70,7 @@ public:
         std::size_t responseMax,
         std::chrono::seconds timeout,
         std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
-        Logs& l);
+        beast::Journal& j);
 };
 
 } // ripple
