@@ -298,9 +298,6 @@
     <Filter Include="ripple\unity">
       <UniqueIdentifier>{5DB3CD0B-B361-B301-9562-697CA8A52B68}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\websocket">
-      <UniqueIdentifier>{44780F86-42D3-2F2B-0846-5AEE2CA6D7FE}</UniqueIdentifier>
-    </Filter>
     <Filter Include="rocksdb2">
       <UniqueIdentifier>{15B4B65A-0F03-7BA9-38CD-42A5712392CB}</UniqueIdentifier>
     </Filter>
@@ -2691,6 +2688,9 @@
     <ClInclude Include="..\..\src\ripple\ledger\View.h">
       <Filter>ripple\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\net\AutoSocket.h">
+      <Filter>ripple\net</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
@@ -3783,12 +3783,6 @@
     <ClCompile Include="..\..\src\ripple\unity\soci_ripple.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
-      <Filter>ripple\websocket</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <Filter>rocksdb2\db</Filter>
     </ClCompile>
