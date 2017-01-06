@@ -109,12 +109,14 @@ public:
         bool m_console;
     };
 
+#ifndef __INTELLISENSE__
 static_assert(std::is_default_constructible<Sink>::value == false, "");
 static_assert(std::is_copy_constructible<Sink>::value == false, "");
 static_assert(std::is_move_constructible<Sink>::value == false, "");
 static_assert(std::is_copy_assignable<Sink>::value == false, "");
 static_assert(std::is_move_assignable<Sink>::value == false, "");
 static_assert(std::is_nothrow_destructible<Sink>::value == true, "");
+#endif
 
     /** Returns a Sink which does nothing. */
     static Sink& getNullSink ();
@@ -161,12 +163,14 @@ private:
         std::ostringstream mutable m_ostream;
     };
 
+#ifndef __INTELLISENSE__
 static_assert(std::is_default_constructible<ScopedStream>::value == false, "");
 static_assert(std::is_copy_constructible<ScopedStream>::value == true, "");
 static_assert(std::is_move_constructible<ScopedStream>::value == true, "");
 static_assert(std::is_copy_assignable<ScopedStream>::value == false, "");
 static_assert(std::is_move_assignable<ScopedStream>::value == false, "");
 static_assert(std::is_nothrow_destructible<ScopedStream>::value == true, "");
+#endif
 
     //--------------------------------------------------------------------------
 public:
@@ -237,12 +241,14 @@ public:
         Severity m_level;
     };
 
+#ifndef __INTELLISENSE__
 static_assert(std::is_default_constructible<Stream>::value == true, "");
 static_assert(std::is_copy_constructible<Stream>::value == true, "");
 static_assert(std::is_move_constructible<Stream>::value == true, "");
 static_assert(std::is_copy_assignable<Stream>::value == false, "");
 static_assert(std::is_move_assignable<Stream>::value == false, "");
 static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
+#endif
 
     //--------------------------------------------------------------------------
 
@@ -322,12 +328,14 @@ static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
     /** @} */
 };
 
+#ifndef __INTELLISENSE__
 static_assert(std::is_default_constructible<Journal>::value == true, "");
 static_assert(std::is_copy_constructible<Journal>::value == true, "");
 static_assert(std::is_move_constructible<Journal>::value == true, "");
 static_assert(std::is_copy_assignable<Journal>::value == false, "");
 static_assert(std::is_move_assignable<Journal>::value == false, "");
 static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
+#endif
 
 //------------------------------------------------------------------------------
 

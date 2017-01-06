@@ -28,6 +28,7 @@
 namespace ripple {
 namespace tests {
 
+#ifndef __INTELLISENSE__
 static_assert( std::is_nothrow_destructible <SHAMap>{}, "");
 static_assert(!std::is_default_constructible<SHAMap>{}, "");
 static_assert(!std::is_copy_constructible   <SHAMap>{}, "");
@@ -97,6 +98,7 @@ static_assert(!std::is_copy_constructible   <SHAMapTreeNode>{}, "");
 static_assert(!std::is_copy_assignable      <SHAMapTreeNode>{}, "");
 static_assert(!std::is_move_constructible   <SHAMapTreeNode>{}, "");
 static_assert(!std::is_move_assignable      <SHAMapTreeNode>{}, "");
+#endif
 
 inline bool operator== (SHAMapItem const& a, SHAMapItem const& b) { return a.key() == b.key(); }
 inline bool operator!= (SHAMapItem const& a, SHAMapItem const& b) { return a.key() != b.key(); }
