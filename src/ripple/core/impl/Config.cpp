@@ -263,6 +263,9 @@ void Config::setup (std::string const& strConf, bool bQuiet,
 
 void Config::load ()
 {
+    // NOTE: this writes to cerr because we want cout to be reserved
+    // for the writing of the json response (so that stdout can be part of a
+    // pipeline, for instance)
     if (!QUIET)
         std::cerr << "Loading: " << CONFIG_FILE << "\n";
 
