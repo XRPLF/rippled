@@ -346,7 +346,7 @@ public:
         @return Last round duration in milliseconds
     */
     std::chrono::milliseconds
-    getLastCloseDuration() const
+    getLastConvergeDuration() const
     {
         return previousRoundTime_;
     }
@@ -559,11 +559,16 @@ private:
 
     // How much time has elapsed since the round started
     std::chrono::milliseconds roundTime_ = std::chrono::milliseconds{0};
+    // How long has this round been open
+    std::chrono::milliseconds openTime_ = std::chrono::milliseconds{0};
 
-    // How long the close has taken, expressed as a percentage of the time that
-    // we expected it to take.
-    int closePercent_{0};
+    // How long the consensus convergence has taken, expressed as
+    // a percentage of the time that we expected it to take.
+    int convergePercent_{0};
     typename NetTime_t::duration closeResolution_ = ledgerDefaultTimeResolution;
+    // When startRound was last called
+    clock_type::time_point openStartTime_;
+    // When consensus started
     clock_type::time_point consensusStartTime_;
 
     // Time it took for the last consensus round to converge
@@ -655,9 +660,9 @@ Consensus<Derived, Traits>::startRound (
     ourSet_.reset();
     consensusFail_ = false;
     roundTime_ = 0ms;
-    closePercent_ = 0;
+    convergePercent_ = 0;
     haveCloseTimeConsensus_ = false;
-    consensusStartTime_ = clock_.now();
+    openStartTime_ = clock_.now();
     haveCorrectLCL_ = (previousLedger_.id() == prevLedgerID_);
 
     impl().onStartRound(previousLedger_);
@@ -836,39 +841,31 @@ Consensus<Derived, Traits>::timerEntry (NetTime_t const& now)
            checkLCL ();
 
         using namespace std::chrono;
-        roundTime_ = duration_cast<milliseconds>
-                           (clock_.now() - consensusStartTime_);
-
-        closePercent_ = roundTime_ * 100 /
-            std::max<milliseconds> (
-                previousRoundTime_, AV_MIN_CONSENSUS_TIME);
 
         switch (state_)
         {
         case State::open:
             statePreClose ();
-
-            if (state_ != State::establish) return;
-
-            // Fall through
+            break;
 
         case State::establish:
             stateEstablish ();
-            return;
+            break;
 
         case State::processing:
             // We are processing the finished ledger
             // logic of calculating next ledger advances us out of this state
             // nothing to do
-            return;
+            break;
 
         case State::accepted:
             // NetworkOPs needs to setup the next round
             // nothing to do
-            return;
-        }
+            break;
 
-        assert (false);
+        default:
+            assert (false);
+        }
     }
     catch (typename Traits::MissingTxException_t const& mn)
     {
@@ -973,7 +970,7 @@ Consensus<Derived, Traits>::getJson (bool full) const
     if (full)
     {
         ret["current_ms"] = static_cast<Int>(roundTime_.count());
-        ret["close_percent"] = closePercent_;
+        ret["converge_percent"] = convergePercent_;
         ret["close_resolution"] = static_cast<Int>(closeResolution_.count());
         ret["have_time_consensus"] = haveCloseTimeConsensus_;
         ret["previous_proposers"] = previousProposers_;
@@ -1146,13 +1143,16 @@ template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::statePreClose ()
 {
+    using namespace std::chrono;
+
     // it is shortly before ledger close time
     bool anyTransactions = impl().hasOpenTransactions();
     int proposersClosed = peerProposals_.size ();
     int proposersValidated = impl().numProposersValidated(prevLedgerID_);
 
+    openTime_ = duration_cast<milliseconds>(clock_.now() - openStartTime_);
+
     // This computes how long since last ledger's close time
-    using namespace std::chrono;
     milliseconds sinceClose;
     {
         bool previousCloseCorrect = haveCorrectLCL_
@@ -1176,7 +1176,7 @@ Consensus<Derived, Traits>::statePreClose ()
     // Decide if we should close the ledger
     if (shouldCloseLedger (anyTransactions
         , previousProposers_, proposersClosed, proposersValidated
-        , previousRoundTime_, sinceClose, roundTime_
+        , previousRoundTime_, sinceClose, openTime_
         , idleInterval, j_))
     {
         closeLedger ();
@@ -1187,6 +1187,14 @@ template <class Derived, class Traits>
 void
 Consensus<Derived, Traits>::stateEstablish ()
 {
+    using namespace std::chrono;
+    roundTime_ = duration_cast<milliseconds>
+                           (clock_.now() - consensusStartTime_);
+
+    convergePercent_ = roundTime_ * 100 /
+        std::max<milliseconds> (
+            previousRoundTime_, AV_MIN_CONSENSUS_TIME);
+
     // Give everyone a chance to take an initial position
     if (roundTime_ < LEDGER_MIN_CONSENSUS)
         return;
@@ -1475,7 +1483,7 @@ void Consensus<Derived, Traits>::updateOurPositions ()
 
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
-            if (it.second.updateVote (closePercent_, proposing_))
+            if (it.second.updateVote (convergePercent_, proposing_))
             {
                 if (!mutableSet)
                     mutableSet = ourSet_->mutableSet();
@@ -1499,11 +1507,11 @@ void Consensus<Derived, Traits>::updateOurPositions ()
 
     int neededWeight;
 
-    if (closePercent_ < AV_MID_CONSENSUS_TIME)
+    if (convergePercent_ < AV_MID_CONSENSUS_TIME)
         neededWeight = AV_INIT_CONSENSUS_PCT;
-    else if (closePercent_ < AV_LATE_CONSENSUS_TIME)
+    else if (convergePercent_ < AV_LATE_CONSENSUS_TIME)
         neededWeight = AV_MID_CONSENSUS_PCT;
-    else if (closePercent_ < AV_STUCK_CONSENSUS_TIME)
+    else if (convergePercent_ < AV_STUCK_CONSENSUS_TIME)
         neededWeight = AV_LATE_CONSENSUS_PCT;
     else
         neededWeight = AV_STUCK_CONSENSUS_PCT;

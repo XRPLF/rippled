@@ -757,8 +757,8 @@ public:
             // The other peers take an extra timer period before they find that
             // Peer 0 agrees with them ( 1->0->1,  2->0->2, ...)
             if(p->id != 0)
-                BEAST_EXPECT(p->getLastCloseDuration()
-                    > peers[0]->getLastCloseDuration());
+                BEAST_EXPECT(p->getLastConvergeDuration()
+                    > peers[0]->getLastConvergeDuration());
 
             BEAST_EXPECT(lgrID.txs.find(Txn{ 0 }) == lgrID.txs.end());
             for(int i = 1; i < peers.size(); ++i)

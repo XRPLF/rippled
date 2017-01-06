@@ -2100,12 +2100,12 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     {
         lastClose[jss::converge_time_s] =
             std::chrono::duration<double>{
-                mConsensus->getLastCloseDuration()}.count();
+                mConsensus->getLastConvergeDuration()}.count();
     }
     else
     {
         lastClose[jss::converge_time] =
-                Json::Int (mConsensus->getLastCloseDuration().count());
+                Json::Int (mConsensus->getLastConvergeDuration().count());
     }
 
     info[jss::last_close] = lastClose;
