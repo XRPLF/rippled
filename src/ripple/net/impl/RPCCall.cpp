@@ -1429,10 +1429,12 @@ void fromNetwork (
     Logs& logs,
     std::function<void (Json::Value const& jvInput)> callbackFuncP)
 {
+    auto j = logs.journal ("HTTPClient");
+
     // Connect to localhost
     if (!quiet)
     {
-        std::cerr << (bSSL ? "Securely connecting to " : "Connecting to ") <<
+        JLOG(j.info()) << (bSSL ? "Securely connecting to " : "Connecting to ") <<
             strIp << ":" << iPort << std::endl;
     }
 
@@ -1448,8 +1450,6 @@ void fromNetwork (
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
     using namespace std::chrono_literals;
     auto constexpr RPC_NOTIFY = 10min;
-
-    auto j = logs.journal ("HTTPClient");
 
     HTTPClient::request (
         bSSL,

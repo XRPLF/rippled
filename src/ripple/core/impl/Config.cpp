@@ -264,7 +264,7 @@ void Config::setup (std::string const& strConf, bool bQuiet,
 void Config::load ()
 {
     if (!QUIET)
-        std::cerr << "Loading: " << CONFIG_FILE << "\n";
+        std::cout << "Loading: " << CONFIG_FILE << "\n";
 
     std::ifstream ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
 
