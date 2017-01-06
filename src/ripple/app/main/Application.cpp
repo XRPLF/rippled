@@ -73,7 +73,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/shamap/Family.h>
-#include <ripple/websocket/MakeServer.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>

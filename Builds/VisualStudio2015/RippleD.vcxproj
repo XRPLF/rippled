@@ -2126,6 +2126,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\ledger\View.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\net\AutoSocket.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\net\impl\HTTPClient.cpp">
@@ -3262,10 +3264,6 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\soci\include\private;..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\websocket\AutoSocket.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\websocket\MakeServer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
