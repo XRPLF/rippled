@@ -25,7 +25,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/contract.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <boost/format.hpp>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
@@ -298,13 +298,7 @@ SHAMapStoreImp::copyNode (std::uint64_t& nodeCount,
 void
 SHAMapStoreImp::run()
 {
-    threadEntry (
-        this, &SHAMapStoreImp::runImpl, "SHAMapStoreImp::run()");
-}
-
-void
-SHAMapStoreImp::runImpl()
-{
+    beast::setCurrentThreadName ("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();

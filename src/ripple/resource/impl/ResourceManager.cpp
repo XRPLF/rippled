@@ -22,8 +22,7 @@
 #include <ripple/resource/impl/Logic.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
-#include <ripple/core/ThreadEntry.h>
-#include <ripple/beast/core/Thread.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -114,13 +113,7 @@ public:
 private:
     void run ()
     {
-        threadEntry (
-            this, &ManagerImp::runImpl, "Resource::Manager::run()");
-    }
-
-    void runImpl ()
-    {
-        beast::Thread::setCurrentThreadName ("Resource::Manager");
+        beast::setCurrentThreadName ("Resource::Manager");
         for(;;)
         {
             logic_.periodicActivity();

@@ -22,9 +22,8 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/core/ThreadEntry.h>
 #include <ripple/protocol/JsonFields.h>
-#include <ripple/beast/core/Thread.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 
 namespace ripple {
 namespace detail {
@@ -243,13 +242,7 @@ private:
 
     void run ()
     {
-        threadEntry (
-            this, &LedgerCleanerImp::runImpl, "LedgerCleanerImp::run()");
-    }
-
-    void runImpl ()
-    {
-        beast::Thread::setCurrentThreadName ("LedgerCleaner");
+        beast::setCurrentThreadName ("LedgerCleaner");
         JLOG (j_.debug()) << "Started";
 
         init();

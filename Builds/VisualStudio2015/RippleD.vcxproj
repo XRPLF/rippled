@@ -1465,10 +1465,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\basics\impl\ThreadName.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\Time.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -1512,8 +1508,6 @@
     <ClInclude Include="..\..\src\ripple\basics\Sustain.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ToString.h">
     </ClInclude>
@@ -1581,6 +1575,11 @@
     <ClCompile Include="..\..\src\ripple\beast\core\core.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\core\CurrentThreadName.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\CurrentThreadName.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\LexicalCast.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\linux_SystemStats.cpp">
@@ -1615,11 +1614,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\Thread.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\Thread.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\Time.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1937,7 +1931,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\ThreadEntry.cpp">
+    <ClCompile Include="..\..\src\ripple\core\impl\TerminateHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug.classic|x64'">..\..\src\soci\src\core;..\..\src\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1975,7 +1969,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Stoppable.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\ThreadEntry.h">
+    <ClInclude Include="..\..\src\ripple\core\TerminateHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
     </ClInclude>
@@ -4353,6 +4347,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\beast\beast_CurrentThreadName_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\beast\beast_Debug_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
@@ -4434,6 +4432,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Stoppable_test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\TerminateHandler_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='debug|x64'">True</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='release|x64'">True</ExcludedFromBuild>
     </ClCompile>

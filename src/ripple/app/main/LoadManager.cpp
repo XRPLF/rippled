@@ -23,9 +23,8 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/UptimeTimer.h>
-#include <ripple/core/ThreadEntry.h>
 #include <ripple/json/to_string.h>
-#include <ripple/beast/core/Thread.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -108,12 +107,7 @@ void LoadManager::onStop ()
 
 void LoadManager::run ()
 {
-    threadEntry (this, &LoadManager::runImpl, "LoadManager::run()");
-}
-
-void LoadManager::runImpl ()
-{
-    beast::Thread::setCurrentThreadName ("LoadManager");
+    beast::setCurrentThreadName ("LoadManager");
 
     using clock_type = std::chrono::steady_clock;
 

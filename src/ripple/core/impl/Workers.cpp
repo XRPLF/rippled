@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/core/impl/Workers.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <cassert>
 
 namespace ripple {
@@ -170,18 +170,7 @@ void Workers::Worker::notify ()
     wakeup_.notify_one();
 }
 
-static void setInactiveThreadName (std::string const& threadName)
-{
-    beast::Thread::setCurrentThreadName ("(" + threadName + ")");
-}
-
 void Workers::Worker::run ()
-{
-    setInactiveThreadName (threadName_);
-    threadEntry (this, &Workers::Worker::runImpl, threadName_);
-}
-
-void Workers::Worker::runImpl ()
 {
     bool shouldExit = true;
     do
@@ -194,6 +183,9 @@ void Workers::Worker::runImpl ()
 
         for (;;)
         {
+            // Put the name back in case the callback changed it
+            beast::setCurrentThreadName (threadName_);
+
             // Acquire a task or "internal task."
             //
             m_workers.m_semaphore.wait ();
@@ -226,9 +218,6 @@ void Workers::Worker::runImpl ()
             ++m_workers.m_runningTaskCount;
             m_workers.m_callback.processTask ();
             --m_workers.m_runningTaskCount;
-
-            // Put the name back in case the callback changed it
-            beast::Thread::setCurrentThreadName (threadName_);
         }
 
         // Any worker that goes into the paused list must
@@ -243,7 +232,8 @@ void Workers::Worker::runImpl ()
         if (--m_workers.m_activeCount == 0)
             m_workers.m_allPaused.signal ();
 
-        setInactiveThreadName (threadName_);
+        // Set inactive thread name.
+        beast::setCurrentThreadName ("(" + threadName_ + ")");
 
         // [1] We will be here when the paused list is popped
         //

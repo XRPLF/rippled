@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012 - 2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_THREADNAME_H_INCLUDED
-#define RIPPLE_BASICS_THREADNAME_H_INCLUDED
+#ifndef RIPPLE_CORE_TERMINATE_HANDLER_H_INCLUDED
+#define RIPPLE_CORE_TERMINATE_HANDLER_H_INCLUDED
 
-namespace ripple {
+namespace ripple
+{
 
-// VFALCO This should use the beast function
-extern void setCallingThreadName (char const*);
+void terminateHandler();
 
 } // ripple
 

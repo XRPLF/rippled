@@ -20,10 +20,8 @@
 #include <BeastConfig.h>
 #include <ripple/core/impl/SNTPClock.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/ThreadName.h>
 #include <ripple/basics/random.h>
-#include <ripple/beast/core/Thread.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
@@ -203,13 +201,8 @@ public:
 
     void doRun ()
     {
-        setCallingThreadName("SNTPClock");
-
-        // Get the address of an overloaded asio method
-        using Pio_service_mem = std::size_t (boost::asio::io_service::*)();
-        Pio_service_mem pRun = &boost::asio::io_service::run;
-
-        threadEntry (&io_service_, pRun, "SNTPClientImp::doRun()");
+        beast::setCurrentThreadName("rippled: SNTPClock");
+        io_service_.run();
     }
 
     void

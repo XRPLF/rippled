@@ -19,8 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/app/main/BasicApp.h>
-#include <ripple/beast/core/Thread.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {
@@ -30,13 +29,10 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
         threads_.emplace_back(
             [this, numberOfThreads]()
             {
-                beast::Thread::setCurrentThreadName(
+                beast::setCurrentThreadName(
                     std::string("io_service #") +
                         std::to_string(numberOfThreads));
-
-                ripple::threadEntry (&io_service_,
-                    &boost::asio::io_service::run,
-                        "io_service::run");
+                this->io_service_.run();
             });
 }
 

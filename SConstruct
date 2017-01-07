@@ -392,8 +392,6 @@ def config_base(env):
             env.Prepend(LIBPATH=['%s/lib' % openssl])
         except:
             pass
-        if not 'vcxproj' in COMMAND_LINE_TARGETS:
-            env.Append(CPPDEFINES=['NO_LOG_UNHANDLED_EXCEPTIONS'])
 
     # handle command-line arguments
     profile_jemalloc = ARGUMENTS.get('profile-jemalloc')
@@ -965,7 +963,7 @@ def get_classic_sources(toolchain):
     append_sources(result, *list_sources('src/test/shamap', '.cpp'))
     append_sources(result, *list_sources('src/test/jtx', '.cpp'))
 
-    
+
     if use_shp(toolchain):
         cc_flags = {'CCFLAGS': ['--system-header-prefix=rocksdb2']}
     else:

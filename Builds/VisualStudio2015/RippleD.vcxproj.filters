@@ -1980,9 +1980,6 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\Sustain.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\basics\impl\ThreadName.cpp">
-      <Filter>ripple\basics\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\Time.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -2041,9 +2038,6 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\TaggedCache.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\ThreadName.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ToString.h">
@@ -2142,6 +2136,12 @@
     <ClCompile Include="..\..\src\ripple\beast\core\core.unity.cpp">
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\core\CurrentThreadName.cpp">
+      <Filter>ripple\beast\core</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\beast\core\CurrentThreadName.h">
+      <Filter>ripple\beast\core</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\beast\core\LexicalCast.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
@@ -2188,12 +2188,6 @@
       <Filter>ripple\beast\core</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\beast\core\SystemStats.h">
-      <Filter>ripple\beast\core</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\beast\core\Thread.cpp">
-      <Filter>ripple\beast\core</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\beast\core\Thread.h">
       <Filter>ripple\beast\core</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\core\Time.cpp">
@@ -2532,7 +2526,7 @@
     <ClCompile Include="..\..\src\ripple\core\impl\Stoppable.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\ThreadEntry.cpp">
+    <ClCompile Include="..\..\src\ripple\core\impl\TerminateHandler.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\core\impl\TimeKeeper.cpp">
@@ -2571,7 +2565,7 @@
     <ClInclude Include="..\..\src\ripple\core\Stoppable.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\ThreadEntry.h">
+    <ClInclude Include="..\..\src\ripple\core\TerminateHandler.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\TimeKeeper.h">
@@ -5109,6 +5103,9 @@
     <ClCompile Include="..\..\src\test\beast\beast_basic_seconds_clock_test.cpp">
       <Filter>test\beast</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test\beast\beast_CurrentThreadName_test.cpp">
+      <Filter>test\beast</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\test\beast\beast_Debug_test.cpp">
       <Filter>test\beast</Filter>
     </ClCompile>
@@ -5170,6 +5167,9 @@
       <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Stoppable_test.cpp">
+      <Filter>test\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\core\TerminateHandler_test.cpp">
       <Filter>test\core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\test\core\Workers_test.cpp">

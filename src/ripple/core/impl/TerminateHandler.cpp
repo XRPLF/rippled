@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012 - 2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -18,61 +18,52 @@
 //==============================================================================
 
 #include <BeastConfig.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/core/TerminateHandler.h>
 #include <ripple/basics/Log.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 
 #include <boost/coroutine/exceptions.hpp>
-#include <boost/thread/tss.hpp>
 #include <exception>
 #include <iostream>
+#include <typeinfo>
 
 namespace ripple {
-
-#ifndef NO_LOG_UNHANDLED_EXCEPTIONS
-static boost::thread_specific_ptr<std::string> threadName;
-
-namespace detail {
-void setThreadName(std::string name)
-{
-    try
-    {
-        threadName.reset(new std::string{std::move(name)});
-    }
-    catch(...)
-    {
-    }
-}
-}
 
 void terminateHandler()
 {
     if (std::current_exception())
     {
-        std::string const name = threadName.get() ? *threadName.get() : "Unknown";
+        auto const thName =
+            beast::getCurrentThreadName().value_or("Unknown");
         try
         {
             throw;
         }
         catch (const std::exception& e)
         {
-            std::cerr << name << ": " << e.what () << '\n';
+            auto exName = typeid (e).name();
+            std::cerr
+                << "Terminating thread " << thName << ": unhandled "
+                << exName << " '" << e.what () << "'\n";
             JLOG(debugLog().fatal())
-                << name << ": " << e.what () << '\n';
+                << "Terminating thread " << thName << ": unhandled "
+                << exName << " '" << e.what () << "'\n";
         }
         catch (boost::coroutines::detail::forced_unwind const&)
         {
-            std::cerr << name << ": forced_unwind\n";
+            std::cerr
+                << "Terminating thread " << thName << ": forced_unwind\n";
             JLOG(debugLog().fatal())
-                << name << ": forced_unwind\n";
+                << "Terminating thread " << thName << ": forced_unwind\n";
         }
         catch (...)
         {
-            std::cerr << name << ": unknown exception\n";
-            JLOG (debugLog ().fatal ())
-                << name << ": unknown exception\n";
+            std::cerr
+                << "Terminating thread " << thName << ": unknown exception\n";
+            JLOG (debugLog().fatal())
+                << "Terminating thread " << thName << ": unknown exception\n";
         }
     }
 }
-#endif
 
 }

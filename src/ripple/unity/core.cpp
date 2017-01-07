@@ -28,7 +28,7 @@
 #include <ripple/core/impl/JobQueue.cpp>
 #include <ripple/core/impl/SNTPClock.cpp>
 #include <ripple/core/impl/Stoppable.cpp>
+#include <ripple/core/impl/TerminateHandler.cpp>
 #include <ripple/core/impl/TimeKeeper.cpp>
-#include <ripple/core/impl/ThreadEntry.cpp>
 #include <ripple/core/impl/Workers.cpp>
 

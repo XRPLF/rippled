@@ -25,7 +25,6 @@
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/core/List.h>
-#include <ripple/beast/core/Thread.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <array>
@@ -99,7 +98,7 @@ private:
     std::vector<std::weak_ptr<Door<Handler>>> list_;
     int high_ = 0;
     std::array <std::size_t, 64> hist_;
-    
+
     io_list ios_;
 
 public:

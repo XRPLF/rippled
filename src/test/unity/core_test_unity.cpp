@@ -23,4 +23,5 @@
 #include <test/core/DeadlineTimer_test.cpp>
 #include <test/core/SociDB_test.cpp>
 #include <test/core/Stoppable_test.cpp>
+#include <test/core/TerminateHandler_test.cpp>
 #include <test/core/Workers_test.cpp>

@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/Job.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <cassert>
 
 namespace ripple {
@@ -77,12 +77,15 @@ bool Job::shouldCancel () const
 
 void Job::doJob ()
 {
-    std::stringstream ss;
-    ss << "Job::doJob(); Job name: "
-        << mName << "; Job type: " << mType
-        << "; Job info: " << mJob.target_type ().name ();
+    beast::setCurrentThreadName ("doJob: " + mName);
+    m_loadEvent->start ();
+    m_loadEvent->reName (mName);
 
-    threadEntry (this, &Job::doJobImpl, ss.str());
+    mJob (*this);
+
+    // Destroy the lambda, otherwise we won't include
+    // its duration in the time measurement
+    mJob = nullptr;
 }
 
 void Job::rename (std::string const& newName)
@@ -132,18 +135,6 @@ bool Job::operator<= (const Job& j) const
         return true;
 
     return mJobIndex <= j.mJobIndex;
-}
-
-void Job::doJobImpl ()
-{
-    m_loadEvent->start ();
-    m_loadEvent->reName (mName);
-
-    mJob (*this);
-
-    // Destroy the lambda, otherwise we won't include
-    // its duration in the time measurement
-    mJob = std::function<void(Job&)>();
 }
 
 }
