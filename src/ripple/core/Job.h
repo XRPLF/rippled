@@ -135,9 +135,6 @@ public:
     bool operator>= (const Job& j) const;
 
 private:
-    void doJobImpl();
-
-private:
     CancelCallback m_cancelCallback;
     JobType                     mType;
     std::uint64_t               mJobIndex;

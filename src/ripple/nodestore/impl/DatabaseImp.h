@@ -26,11 +26,10 @@
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/core/ThreadEntry.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/TaggedCache.h>
-#include <ripple/beast/core/Thread.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <chrono>
 #include <condition_variable>
 #include <set>
@@ -335,17 +334,10 @@ public:
 
     //------------------------------------------------------------------------------
 
-    // Uncaught exception handling for async read threads
+    // Entry point for async read threads
     void threadEntry ()
     {
-        ::ripple::threadEntry (
-            this, &DatabaseImp::threadEntryImpl, "DatabaseImp::threadEntry()");
-    }
-
-    // Entry point for async read threads
-    void threadEntryImpl ()
-    {
-        beast::Thread::setCurrentThreadName ("prefetch");
+        beast::setCurrentThreadName ("prefetch");
         while (1)
         {
             uint256 hash;

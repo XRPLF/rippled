@@ -19,7 +19,7 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/Sustain.h>
-#include <ripple/basics/ThreadName.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <boost/format.hpp>
 
 // For Sustain Linux variants
@@ -103,7 +103,7 @@ std::string DoSustain ()
         auto cc = std::to_string (childCount);
         if (pChild == 0)
         {
-            setCallingThreadName ("main");
+            beast::setCurrentThreadName ("rippled: main");
             signal (SIGINT, SIG_DFL);
             signal (SIGHUP, SIG_DFL);
             signal (SIGUSR1, SIG_DFL);
@@ -111,7 +111,7 @@ std::string DoSustain ()
             return "Launching child " + cc;
         }
 
-        setCallingThreadName (("#" + cc).c_str());
+        beast::setCurrentThreadName (("rippled: #" + cc).c_str());
 
         sleep (sleepBeforeWaiting);
 

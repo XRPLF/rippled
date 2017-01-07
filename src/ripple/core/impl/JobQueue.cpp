@@ -461,7 +461,6 @@ JobQueue::processTask ()
             }
             type = job.getType();
             JobTypeData& data(getJobTypeData(type));
-            beast::Thread::setCurrentThreadName (data.name ());
             JLOG(m_journal.trace()) << "Doing " << data.name () << " job";
             on_dequeue (job.getType (), start_time - job.queue_time ());
             job.doJob ();

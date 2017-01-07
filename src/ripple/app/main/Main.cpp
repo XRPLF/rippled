@@ -25,10 +25,9 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Sustain.h>
-#include <ripple/basics/ThreadName.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/ThreadEntry.h>
+#include <ripple/core/TerminateHandler.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
@@ -37,6 +36,7 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/core/Time.h>
 #include <ripple/beast/utility/Debug.h>
 #include <beast/unit_test/dstream.hpp>
@@ -190,7 +190,7 @@ int run (int argc, char** argv)
 
     using namespace std;
 
-    setCallingThreadName ("main");
+    beast::setCurrentThreadName ("rippled: main");
 
     po::variables_map vm;
 
@@ -460,8 +460,7 @@ int run (int argc, char** argv)
         app->doStart();
 
         // Block until we get a stop RPC.
-        ripple::threadEntry (
-            app.get(), &Application::run, "Main::run()");
+        app->run();
 
         // Try to write out some entropy to use the next time we start.
         auto entropy = getEntropyFile (app->config());
@@ -472,7 +471,7 @@ int run (int argc, char** argv)
     }
 
     // We have an RPC command to process:
-    setCallingThreadName ("rpc");
+    beast::setCurrentThreadName ("rippled: rpc");
     return RPCCall::fromCommandLine (
         *config,
         vm["parameters"].as<std::vector<std::string>>(),
@@ -526,9 +525,8 @@ int main (int argc, char** argv)
 #endif
 
     atexit(&google::protobuf::ShutdownProtobufLibrary);
-#ifndef NO_LOG_UNHANDLED_EXCEPTIONS
+
     std::set_terminate(ripple::terminateHandler);
-#endif
 
     auto const result (ripple::run (argc, argv));
 

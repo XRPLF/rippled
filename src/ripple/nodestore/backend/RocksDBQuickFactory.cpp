@@ -29,7 +29,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
-#include <ripple/beast/core/Thread.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <atomic>
 #include <memory>
 
@@ -69,7 +69,7 @@ public:
         std::size_t const id (++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
-        beast::Thread::setCurrentThreadName (ss.str());
+        beast::setCurrentThreadName (ss.str());
 
         (*f)(a);
     }

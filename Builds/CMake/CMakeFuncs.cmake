@@ -527,8 +527,7 @@ macro(setup_build_boilerplate)
     endif()
 
     if (APPLE)
-      add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1
-        -DNO_LOG_UNHANDLED_EXCEPTIONS)
+      add_definitions(-DBEAST_COMPILE_OBJECTIVE_CPP=1)
       add_compile_options(
         -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-function)
     endif()

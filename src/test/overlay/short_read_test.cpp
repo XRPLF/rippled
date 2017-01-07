@@ -19,13 +19,13 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/make_SSLContext.h>
-#include <beast/core/placeholders.hpp>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
+#include <beast/core/placeholders.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <ripple/beast/core/Thread.h>
 #include <cassert>
 #include <condition_variable>
 #include <functional>
@@ -552,7 +552,7 @@ public:
         : work_(boost::in_place(std::ref(io_service_)))
         , thread_(std::thread([this]()
             {
-                beast::Thread::setCurrentThreadName("io_service");
+                beast::setCurrentThreadName("io_service");
                 this->io_service_.run();
             }))
         , context_(make_SSLContext(""))

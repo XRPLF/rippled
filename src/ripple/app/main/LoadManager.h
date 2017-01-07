@@ -97,7 +97,6 @@ public:
 
 private:
     void run ();
-    void runImpl ();
 
 private:
     Application& app_;

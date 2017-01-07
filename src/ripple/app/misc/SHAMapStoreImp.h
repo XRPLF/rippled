@@ -175,7 +175,6 @@ private:
     // callback for visitNodes
     bool copyNode (std::uint64_t& nodeCount, SHAMapAbstractNode const &node);
     void run();
-    void runImpl();
     void dbPaths();
     std::shared_ptr <NodeStore::Backend> makeBackendRotating (
             std::string path = std::string());

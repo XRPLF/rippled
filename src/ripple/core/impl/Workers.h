@@ -21,8 +21,8 @@
 #define RIPPLE_CORE_WORKERS_H_INCLUDED
 
 #include <ripple/core/impl/semaphore.h>
-#include <ripple/beast/core/Thread.h>
 #include <ripple/beast/core/LockFreeStack.h>
+#include <ripple/beast/core/WaitableEvent.h>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -131,7 +131,6 @@ private:
 
     private:
         void run ();
-        void runImpl ();
 
     private:
         Workers& m_workers;

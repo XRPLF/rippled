@@ -19,8 +19,8 @@
 
 #include <BeastConfig.h>
 #include <ripple/core/DeadlineTimer.h>
-#include <ripple/core/ThreadEntry.h>
 #include <ripple/basics/contract.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <cassert>
 #include <condition_variable>
 #include <mutex>
@@ -133,13 +133,8 @@ public:
 
     void run ()
     {
-        threadEntry (
-            this, &Manager::runImpl, "DeadlineTimer::Manager::run()");
-    }
-
-    void runImpl ()
-    {
         using namespace std::chrono;
+        beast::setCurrentThreadName ("DeadlineTimer");
         bool shouldExit = true;
 
         do

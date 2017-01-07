@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 #include <ripple/basics/UptimeTimer.h>
-#include <ripple/beast/core/Thread.h>
 
 #include <atomic>
 
