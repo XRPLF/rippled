@@ -294,10 +294,12 @@ public:
         env.fund(XRP(100000), gw);
         env.close();
 
-        auto const result = env.rpc ( "ledger_request", "1" ) [jss::result];
-        BEAST_EXPECT(result[jss::error]         == "noPermission");
-        BEAST_EXPECT(result[jss::status]        == "error");
-        BEAST_EXPECT(result[jss::error_message] == "You don't have permission for this command.");
+        auto const result = env.rpc ( "ledger_request", "1" )  [jss::result];
+        // The current HTTP/S ServerHandler returns an HTTP 403 error code here
+        // rather than a noPermission JSON error.  The JSONRPCClient just eats that
+        // error and returns an null result.
+        BEAST_EXPECT(result.type() == Json::nullValue);
+
     }
 
     void run ()
