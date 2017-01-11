@@ -22,7 +22,7 @@
 
 #include <ripple/json/json_value.h>
 #include <beast/core/streambuf.hpp>
-#include <beast/http/body_type.hpp>
+#include <beast/http/message.hpp>
 
 namespace ripple {
 
@@ -36,10 +36,10 @@ struct json_body
         beast::streambuf sb_;
 
     public:
-        template<bool isRequest, class Headers>
+        template<bool isRequest, class Fields>
         explicit
         writer(beast::http::message<
-            isRequest, json_body, Headers> const& m)
+            isRequest, json_body, Fields> const& m) noexcept
         {
             stream(m.body,
                 [&](void const* data, std::size_t n)
@@ -50,22 +50,22 @@ struct json_body
         }
 
         void
-        init(beast::error_code&)
+        init(beast::error_code&) noexcept
         {
         }
 
         std::uint64_t
-        content_length() const
+        content_length() const noexcept
         {
             return sb_.size();
         }
 
-        template<class Write>
+        template<class Writef>
         boost::tribool
-        operator()(beast::http::resume_context&&,
-            beast::error_code&, Write&& write)
+        write(beast::http::resume_context&&,
+            beast::error_code&, Writef&& wf) noexcept
         {
-            write(sb_.data());
+            wf(sb_.data());
             return true;
         }
     };

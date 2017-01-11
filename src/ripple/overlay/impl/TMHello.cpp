@@ -154,7 +154,7 @@ buildHello (
 }
 
 void
-appendHello (beast::http::headers& h,
+appendHello (beast::http::fields& h,
     protocol::TMHello const& hello)
 {
     //h.append ("Protocol-Versions",...
@@ -222,7 +222,7 @@ parse_ProtocolVersions(boost::string_ref const& value)
 }
 
 boost::optional<protocol::TMHello>
-parseHello (bool request, beast::http::headers const& h, beast::Journal journal)
+parseHello (bool request, beast::http::fields const& h, beast::Journal journal)
 {
     // protocol version in TMHello is obsolete,
     // it is supplanted by the values in the headers.
