@@ -91,7 +91,7 @@ public:
     const_iterator cend()   const { return data()+bytes; }
 
     /** Value hashing function.
-        The seed prevents crafted inputs from causing degenarate parent containers.
+        The seed prevents crafted inputs from causing degenerate parent containers.
     */
     using hasher = hardened_hash <>;
 

@@ -26,6 +26,28 @@
 namespace ripple {
 namespace test {
 
+// a non-hashing Hasher that just copies the bytes.
+// used to test hash_append in base_uint
+template <std::size_t Bits>
+struct nonhash
+{
+    static constexpr std::size_t WIDTH = Bits / 8;
+    std::array<std::uint8_t, WIDTH> data_;
+    static beast::endian const endian = beast::endian::big;
+
+    nonhash() = default;
+
+    void
+    operator() (void const* key, std::size_t len) noexcept
+    {
+        assert(len == WIDTH);
+        memcpy(data_.data(), key, len);
+    }
+
+    explicit
+    operator std::size_t() noexcept { return WIDTH; }
+};
+
 struct base_uint_test : beast::unit_test::suite
 {
     using test96 = base_uint<96>;
@@ -52,6 +74,12 @@ struct base_uint_test : beast::unit_test::suite
         {
             BEAST_EXPECT(d == ++t);
         }
+
+        nonhash<96> h;
+        hash_append(h, u);
+        test96 y;
+        test96 w {std::vector<std::uint8_t>(h.data_.begin(), h.data_.end())};
+        BEAST_EXPECT(w == u);
 
         test96 v { ~u };
         uset.insert(v);
